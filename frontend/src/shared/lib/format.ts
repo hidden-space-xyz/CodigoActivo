@@ -236,15 +236,24 @@ export function normalizeNationalId(value: string): string {
 
 /**
  * Checks a Spanish DNI (eight digits and a control letter) or NIE (X, Y or Z, seven digits and a
- * control letter) after normalizing it, including the control letter the API also verifies.
+ * control letter) after normalizing it, with the Ministry of the Interior algorithm the API also
+ * applies: the number, reading a NIE's X, Y or Z as 0, 1 or 2, modulo 23 picks the control letter.
+ * Any single mistyped digit or swap of two adjacent digits changes that letter, so the value never
+ * needs to be typed twice. Returns `'format'` when the value is not shaped like a DNI or NIE,
+ * `'letter'` when its control letter does not match the number, and `null` when it is valid.
  */
-export function isValidNationalId(value: string): boolean {
+export function nationalIdError(value: string): 'format' | 'letter' | null {
   const normalized = normalizeNationalId(value)
-  if (!NATIONAL_ID_SHAPE.test(normalized)) return false
+  if (!NATIONAL_ID_SHAPE.test(normalized)) return 'format'
   const first = normalized.charAt(0)
   const digits = `${NIE_PREFIXES[first] ?? first}${normalized.slice(1, 8)}`
-  return (
-    normalized.charAt(8) ===
-    NATIONAL_ID_CONTROL_LETTERS.charAt(Number(digits) % NATIONAL_ID_CONTROL_LETTERS.length)
+  const expected = NATIONAL_ID_CONTROL_LETTERS.charAt(
+    Number(digits) % NATIONAL_ID_CONTROL_LETTERS.length,
   )
+  return normalized.charAt(8) === expected ? null : 'letter'
+}
+
+/** Shorthand for `nationalIdError(value) === null`, for forms that only gate their submit on it. */
+export function isValidNationalId(value: string): boolean {
+  return nationalIdError(value) === null
 }

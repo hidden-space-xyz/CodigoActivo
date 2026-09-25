@@ -35,7 +35,6 @@ async function fillAdult(wrapper: VueWrapper): Promise<void> {
   await wrapper.find('#reg-password').setValue('correct-horse-battery')
   await wrapper.find('#reg-password-confirm').setValue('correct-horse-battery')
   await wrapper.find('#reg-national-id').setValue('x-1234567-l')
-  await wrapper.find('#reg-national-id-confirm').setValue('X1234567L')
   await selectGender(wrapper, 0, 'Female')
 }
 
@@ -48,10 +47,34 @@ function addMinorButton(wrapper: VueWrapper) {
 }
 
 function errors(wrapper: VueWrapper): string[] {
-  return wrapper.findAll('.reg__error').map((error) => error.text())
+  return wrapper.findAll('.reg__error, .national-id-input__error').map((error) => error.text())
 }
 
 describe('RegistrationForm', () => {
+  it('groups the adult into personal data, contact and account access, then minors and consent', async () => {
+    const { wrapper } = await renderForm()
+
+    expect(wrapper.findAll('h2').map((heading) => heading.text())).toEqual([
+      t('features.register.form.yourData'),
+      t('features.register.form.contactTitle'),
+      t('features.register.form.accessTitle'),
+      t('features.register.form.minorsTitle'),
+    ])
+    expect(wrapper.findAll('[id^="reg-"]').map((field) => field.attributes('id'))).toEqual([
+      'reg-firstname',
+      'reg-lastname',
+      'reg-national-id',
+      'reg-gender',
+      'reg-phone',
+      'reg-secondary-phone',
+      'reg-email',
+      'reg-password',
+      'reg-password-confirm',
+      'reg-promotional-consent',
+    ])
+    expect(wrapper.find('#reg-national-id-confirm').exists()).toBe(false)
+  })
+
   it('shows every validation error on an empty submit and does not emit', async () => {
     const { wrapper } = await renderForm()
 
@@ -59,21 +82,56 @@ describe('RegistrationForm', () => {
 
     expect(wrapper.emitted('submit')).toBeUndefined()
     expect(errors(wrapper)).toEqual([
-      t('validation.emailInvalid'),
+      t('validation.nationalIdFormat'),
       t('validation.genderRequired'),
+      t('validation.emailInvalid'),
       t('validation.passwordMin'),
-      t('validation.nationalIdInvalid'),
     ])
     expect(wrapper.findAll('.ca-invalid').length).toBeGreaterThanOrEqual(6)
   })
 
-  it('does not show validation errors before the first submit', async () => {
+  it('does not show validation errors while a field is being typed', async () => {
     const { wrapper } = await renderForm()
 
     await wrapper.find('#reg-email').setValue('not-an-email')
 
     expect(errors(wrapper)).toEqual([])
     expect(wrapper.find('.ca-invalid').exists()).toBe(false)
+  })
+
+  it('reports a wrong value as soon as its field is left, but not a blank one', async () => {
+    const { wrapper } = await renderForm()
+    for (const id of ['#reg-national-id', '#reg-secondary-phone', '#reg-email', '#reg-password']) {
+      await wrapper.find(id).trigger('blur')
+    }
+    expect(errors(wrapper)).toEqual([])
+
+    await wrapper.find('#reg-phone').setValue('600000000')
+    for (const [id, value] of [
+      ['#reg-national-id', '1234567'],
+      ['#reg-secondary-phone', '600000000'],
+      ['#reg-email', 'ada@example'],
+      ['#reg-password', 'short'],
+    ] as const) {
+      await wrapper.find(id).setValue(value)
+      await wrapper.find(id).trigger('blur')
+    }
+
+    expect(errors(wrapper)).toEqual([
+      t('validation.nationalIdFormat'),
+      t('validation.secondaryPhoneSameAsPrimary'),
+      t('validation.emailInvalid'),
+      t('validation.passwordMin'),
+    ])
+
+    await wrapper.find('#reg-email').setValue('ada@example.test')
+    await wrapper.find('#reg-password').setValue('correct-horse-battery')
+
+    expect(errors(wrapper)).toEqual([
+      t('validation.nationalIdFormat'),
+      t('validation.secondaryPhoneSameAsPrimary'),
+    ])
+    expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
   it('refuses a secondary phone equal to the phone', async () => {
@@ -105,29 +163,30 @@ describe('RegistrationForm', () => {
     expect(errors(wrapper)).toEqual([t('validation.passwordsMismatch')])
   })
 
-  it('reports mismatched DNI/NIE entries once the confirmation loses focus', async () => {
-    const { wrapper } = await renderForm()
-    await wrapper.find('#reg-national-id').setValue('12345678Z')
-    await wrapper.find('#reg-national-id-confirm').setValue('12345678X')
+  it('checks the DNI/NIE control letter once the field is left and normalizes it', async () => {
+    const { form, wrapper } = await renderForm()
+    await wrapper.find('#reg-national-id').setValue('12345678X')
     expect(errors(wrapper)).toEqual([])
 
-    await wrapper.find('#reg-national-id-confirm').trigger('blur')
-    expect(errors(wrapper)).toEqual([t('validation.nationalIdsMismatch')])
+    await wrapper.find('#reg-national-id').trigger('blur')
+    expect(errors(wrapper)).toEqual([t('validation.nationalIdLetter')])
 
-    await wrapper.find('#reg-national-id-confirm').setValue(' 1234 5678-z ')
+    await wrapper.find('#reg-national-id').setValue(' 1234 5678-z ')
     expect(errors(wrapper)).toEqual([])
+
+    await wrapper.find('#reg-national-id').trigger('blur')
+    expect(form.nationalId).toBe('12345678Z')
   })
 
-  it('rejects a DNI/NIE with a wrong control letter even when both entries match', async () => {
+  it('does not emit with a DNI/NIE whose control letter does not match', async () => {
     const { wrapper } = await renderForm()
     await fillAdult(wrapper)
     await wrapper.find('#reg-national-id').setValue('X1234567A')
-    await wrapper.find('#reg-national-id-confirm').setValue('X1234567A')
 
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.emitted('submit')).toBeUndefined()
-    expect(errors(wrapper)).toEqual([t('validation.nationalIdInvalid')])
+    expect(errors(wrapper)).toEqual([t('validation.nationalIdLetter')])
   })
 
   it('offers an unchecked promotional consent box that updates the form', async () => {
@@ -158,7 +217,6 @@ describe('RegistrationForm', () => {
       password: 'correct-horse-battery',
       confirmPassword: 'correct-horse-battery',
       nationalId: 'x-1234567-l',
-      confirmNationalId: 'X1234567L',
       gender: 'Female',
       promotionalConsent: false,
       minors: [],
@@ -173,7 +231,6 @@ describe('RegistrationForm', () => {
     ['#reg-password', 'short'],
     ['#reg-password-confirm', 'different-password'],
     ['#reg-national-id', 'X1234567A'],
-    ['#reg-national-id-confirm', '12345678Z'],
   ])('does not emit when %s is set to %j', async (selector, value) => {
     const { wrapper } = await renderForm()
     await fillAdult(wrapper)
@@ -194,6 +251,9 @@ describe('RegistrationForm', () => {
       t('features.register.form.minorLegend', { n: 1 }),
       t('features.register.form.minorLegend', { n: 2 }),
     ])
+    expect(wrapper.get('.reg__minors').element.lastElementChild).toBe(
+      addMinorButton(wrapper).element,
+    )
 
     await wrapper.find('form').trigger('submit')
     expect(wrapper.emitted('submit')).toBeUndefined()

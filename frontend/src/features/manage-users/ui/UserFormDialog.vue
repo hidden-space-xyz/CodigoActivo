@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { AppButton as Button } from '@/shared/ui'
+import { AppButton as Button, NationalIdInput } from '@/shared/ui'
 
 import { genderOptions } from '@/entities/user'
 import type { UpdateUserInput, User } from '@/entities/user'
@@ -53,7 +53,6 @@ interface UserForm {
   secondaryPhone: string
   birthDate: Date | null
   nationalId: string
-  confirmNationalId: string
   promotionalConsent: boolean
   gender: Gender | null
   currentPassword: string
@@ -67,7 +66,6 @@ const form = reactive<UserForm>({
   secondaryPhone: '',
   birthDate: null,
   nationalId: '',
-  confirmNationalId: '',
   promotionalConsent: false,
   gender: null,
   currentPassword: '',
@@ -98,11 +96,6 @@ const childNotMinor = computed(
     !isMinorBirthDate.value,
 )
 const nationalIdInvalid = computed(() => !isDependent.value && !isValidNationalId(form.nationalId))
-const nationalIdsMismatch = computed(
-  () =>
-    !isDependent.value &&
-    normalizeNationalId(form.confirmNationalId) !== normalizeNationalId(form.nationalId),
-)
 const emailInvalid = computed(() => {
   if (isDependent.value) return false
   const value = form.email.trim()
@@ -145,7 +138,6 @@ watch(
     form.secondaryPhone = props.user?.secondaryPhone ?? ''
     form.birthDate = parseDateOnly(props.user?.birthDate)
     form.nationalId = props.user?.nationalId ?? ''
-    form.confirmNationalId = form.nationalId
     form.promotionalConsent = props.user?.promotionalConsent ?? false
     form.gender = props.user?.gender ?? null
     form.currentPassword = ''
@@ -171,7 +163,6 @@ function save(): void {
     birthDateInvalid.value ||
     childNotMinor.value ||
     nationalIdInvalid.value ||
-    nationalIdsMismatch.value ||
     emailInvalid.value ||
     contactMissing.value ||
     secondaryPhoneRepeated.value ||
@@ -227,92 +218,55 @@ function save(): void {
           />
         </div>
       </div>
-      <div v-if="isDependent" class="form__field">
-        <label for="user-birth-date">{{ $t('common.birthDate') }}</label>
-        <el-date-picker
-          id="user-birth-date"
-          v-model="form.birthDate"
-          type="date"
-          :format="DATE_FORMAT"
-          :disabled-date="disabledBirthDate"
-          :class="{ 'ca-invalid': submitted && (birthDateInvalid || childNotMinor) }"
-        />
-        <small v-if="submitted && birthDateInvalid" class="form__error">{{
-          $t('features.manageUsers.birthDateInvalid')
-        }}</small>
-        <small v-else-if="submitted && childNotMinor" class="form__error">{{
-          $t('features.manageUsers.childBirthDateNotMinor')
-        }}</small>
-      </div>
-      <div v-else class="form__row">
-        <div class="form__field">
+      <div class="form__row">
+        <div v-if="isDependent" class="form__field">
+          <label for="user-birth-date">{{ $t('common.birthDate') }}</label>
+          <el-date-picker
+            id="user-birth-date"
+            v-model="form.birthDate"
+            type="date"
+            :format="DATE_FORMAT"
+            :disabled-date="disabledBirthDate"
+            :class="{ 'ca-invalid': submitted && (birthDateInvalid || childNotMinor) }"
+          />
+          <small v-if="submitted && birthDateInvalid" class="form__error">{{
+            $t('features.manageUsers.birthDateInvalid')
+          }}</small>
+          <small v-else-if="submitted && childNotMinor" class="form__error">{{
+            $t('features.manageUsers.childBirthDateNotMinor')
+          }}</small>
+        </div>
+        <div v-else class="form__field">
           <label for="user-national-id">{{ $t('common.nationalId') }}</label>
-          <el-input
+          <NationalIdInput
             id="user-national-id"
             v-model="form.nationalId"
-            autocomplete="off"
-            autocapitalize="characters"
-            spellcheck="false"
-            :maxlength="12"
-            :class="{ 'ca-invalid': submitted && nationalIdInvalid }"
+            :show-errors="submitted"
           />
-          <small v-if="submitted && nationalIdInvalid" class="form__error">{{
-            $t('validation.nationalIdInvalid')
-          }}</small>
         </div>
         <div class="form__field">
-          <label for="user-national-id-confirm">{{ $t('common.confirmNationalId') }}</label>
-          <el-input
-            id="user-national-id-confirm"
-            v-model="form.confirmNationalId"
-            autocomplete="off"
-            autocapitalize="characters"
-            spellcheck="false"
-            :maxlength="12"
-            :class="{ 'ca-invalid': submitted && nationalIdsMismatch }"
-          />
-          <small v-if="submitted && nationalIdsMismatch" class="form__error">{{
-            $t('validation.nationalIdsMismatch')
+          <label for="user-gender">{{ $t('common.gender') }}</label>
+          <el-select
+            id="user-gender"
+            v-model="form.gender"
+            :class="{ 'ca-invalid': submitted && !form.gender }"
+          >
+            <el-option
+              v-for="option in genders"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+          <small v-if="submitted && !form.gender" class="form__error">{{
+            $t('validation.genderRequired')
           }}</small>
         </div>
-      </div>
-      <div class="form__field">
-        <label for="user-gender">{{ $t('common.gender') }}</label>
-        <el-select
-          id="user-gender"
-          v-model="form.gender"
-          :class="{ 'ca-invalid': submitted && !form.gender }"
-        >
-          <el-option
-            v-for="option in genders"
-            :key="option.value"
-            :label="option.label"
-            :value="option.value"
-          />
-        </el-select>
-        <small v-if="submitted && !form.gender" class="form__error">{{
-          $t('validation.genderRequired')
-        }}</small>
       </div>
       <p v-if="isDependent" class="form__hint">
         {{ $t('features.manageUsers.dependentContact') }}
       </p>
       <template v-else>
-        <div class="form__field">
-          <label for="user-email">{{ $t('common.email') }}</label>
-          <el-input
-            id="user-email"
-            v-model="form.email"
-            type="email"
-            :maxlength="256"
-            :class="{
-              'ca-invalid': submitted && (emailInvalid || (contactMissing && !form.email.trim())),
-            }"
-          />
-          <small v-if="submitted && emailInvalid" class="form__error">{{
-            $t('validation.emailFormat')
-          }}</small>
-        </div>
         <div class="form__row">
           <div class="form__field">
             <label for="user-phone">{{ $t('common.phone') }}</label>
@@ -342,6 +296,21 @@ function save(): void {
               $t('validation.secondaryPhoneSameAsPrimary')
             }}</small>
           </div>
+        </div>
+        <div class="form__field">
+          <label for="user-email">{{ $t('common.email') }}</label>
+          <el-input
+            id="user-email"
+            v-model="form.email"
+            type="email"
+            :maxlength="256"
+            :class="{
+              'ca-invalid': submitted && (emailInvalid || (contactMissing && !form.email.trim())),
+            }"
+          />
+          <small v-if="submitted && emailInvalid" class="form__error">{{
+            $t('validation.emailFormat')
+          }}</small>
         </div>
         <div class="form__consent">
           <el-checkbox id="user-promotional-consent" v-model="form.promotionalConsent" />

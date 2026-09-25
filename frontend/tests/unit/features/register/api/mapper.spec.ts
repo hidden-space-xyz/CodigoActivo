@@ -15,7 +15,6 @@ function buildForm(overrides: Partial<RegistrationForm> = {}): RegistrationForm 
     password: ' spaced password ',
     confirmPassword: ' spaced password ',
     nationalId: ' x-1234567-l ',
-    confirmNationalId: 'X1234567L',
     gender: 'Female',
     promotionalConsent: false,
     minors: [],
@@ -24,7 +23,7 @@ function buildForm(overrides: Partial<RegistrationForm> = {}): RegistrationForm 
 }
 
 describe('toRegisterRequest', () => {
-  it('trims the contact fields, normalizes the DNI/NIE and drops both confirmations', () => {
+  it('trims the contact fields, normalizes the DNI/NIE and drops the password confirmation', () => {
     expect(toRegisterRequest(buildForm())).toEqual({
       firstName: 'Ada',
       lastName: 'Lovelace',

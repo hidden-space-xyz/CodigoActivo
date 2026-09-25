@@ -14,7 +14,7 @@ let minorKeySeq = 0
 
 /**
  * Editable state of the registration form. Only minors carry a `dateOfBirth` (`YYYY-MM-DD`); the
- * adult is identified by a DNI or NIE typed twice (`nationalId` and `confirmNationalId`).
+ * adult is identified by a DNI or NIE, typed once because its control letter already catches typos.
  */
 export interface RegistrationForm {
   firstName: string
@@ -26,7 +26,6 @@ export interface RegistrationForm {
   password: string
   confirmPassword: string
   nationalId: string
-  confirmNationalId: string
   gender: Gender | null
   /** Optional agreement to receive promotional content; unchecked by default. */
   promotionalConsent: boolean
@@ -50,7 +49,6 @@ export function createEmptyRegistrationForm(): RegistrationForm {
     password: '',
     confirmPassword: '',
     nationalId: '',
-    confirmNationalId: '',
     gender: null,
     promotionalConsent: false,
     minors: [],

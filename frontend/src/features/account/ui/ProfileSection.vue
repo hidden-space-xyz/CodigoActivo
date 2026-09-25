@@ -7,7 +7,7 @@ import type { UpdateProfileInput } from '@/entities/account'
 import { genderLabel, genderOptions } from '@/entities/user'
 import { ApiError } from '@/shared/api'
 import type { Gender } from '@/shared/api/generated/models'
-import { BaseButton } from '@/shared/ui'
+import { BaseButton, NationalIdInput } from '@/shared/ui'
 import {
   getErrorMessage,
   isValidNationalId,
@@ -33,7 +33,6 @@ const editForm = reactive<{
   phone: string
   secondaryPhone: string
   nationalId: string
-  confirmNationalId: string
   promotionalConsent: boolean
   gender: Gender | null
   currentPassword: string
@@ -44,7 +43,6 @@ const editForm = reactive<{
   phone: '',
   secondaryPhone: '',
   nationalId: '',
-  confirmNationalId: '',
   promotionalConsent: false,
   gender: null,
   currentPassword: '',
@@ -65,10 +63,6 @@ const secondaryPhoneRepeated = computed(
     !!editForm.secondaryPhone.trim() && editForm.secondaryPhone.trim() === editForm.phone.trim(),
 )
 const nationalIdValid = computed(() => isValidNationalId(editForm.nationalId))
-const nationalIdsMismatch = computed(
-  () =>
-    normalizeNationalId(editForm.confirmNationalId) !== normalizeNationalId(editForm.nationalId),
-)
 
 function openEdit(): void {
   editSubmitted.value = false
@@ -80,7 +74,6 @@ function openEdit(): void {
   editForm.phone = user.value?.phone ?? ''
   editForm.secondaryPhone = user.value?.secondaryPhone ?? ''
   editForm.nationalId = user.value?.nationalId ?? ''
-  editForm.confirmNationalId = editForm.nationalId
   editForm.promotionalConsent = user.value?.promotionalConsent ?? false
   editForm.gender = user.value?.gender ?? null
   editForm.currentPassword = ''
@@ -91,13 +84,7 @@ function saveEdit(): void {
   editSubmitted.value = true
   editError.value = ''
   const gender = editForm.gender
-  if (
-    !gender ||
-    passwordMissing.value ||
-    secondaryPhoneRepeated.value ||
-    !nationalIdValid.value ||
-    nationalIdsMismatch.value
-  )
+  if (!gender || passwordMissing.value || secondaryPhoneRepeated.value || !nationalIdValid.value)
     return
   const request: UpdateProfileInput = {
     firstName: editForm.firstName.trim(),
@@ -190,16 +177,8 @@ function savePassword(): void {
         <dd>{{ user.firstName }} {{ user.lastName }}</dd>
       </div>
       <div class="acc-info__row">
-        <dt>{{ $t('common.email') }}</dt>
-        <dd>{{ user.email || '—' }}</dd>
-      </div>
-      <div class="acc-info__row">
-        <dt>{{ $t('common.phone') }}</dt>
-        <dd>{{ user.phone || '—' }}</dd>
-      </div>
-      <div class="acc-info__row">
-        <dt>{{ $t('common.secondaryPhone') }}</dt>
-        <dd>{{ user.secondaryPhone || '—' }}</dd>
+        <dt>{{ $t('common.status') }}</dt>
+        <dd>{{ user.statusName || '—' }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.nationalId') }}</dt>
@@ -210,8 +189,16 @@ function savePassword(): void {
         <dd>{{ user.gender ? genderLabel(user.gender) : '—' }}</dd>
       </div>
       <div class="acc-info__row">
-        <dt>{{ $t('common.status') }}</dt>
-        <dd>{{ user.statusName || '—' }}</dd>
+        <dt>{{ $t('common.phone') }}</dt>
+        <dd>{{ user.phone || '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.secondaryPhone') }}</dt>
+        <dd>{{ user.secondaryPhone || '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.email') }}</dt>
+        <dd>{{ user.email || '—' }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.promotionalConsent') }}</dt>
@@ -236,31 +223,12 @@ function savePassword(): void {
             <el-input id="p-lastname" v-model="editForm.lastName" :maxlength="120" required />
           </div>
           <div class="acc-form__field">
-            <label for="p-email">{{ $t('common.email') }}</label>
-            <el-input
-              id="p-email"
-              v-model="editForm.email"
-              type="email"
-              :maxlength="256"
-              required
+            <label for="p-national-id">{{ $t('common.nationalId') }}</label>
+            <NationalIdInput
+              id="p-national-id"
+              v-model="editForm.nationalId"
+              :show-errors="editSubmitted"
             />
-          </div>
-          <div class="acc-form__field">
-            <label for="p-phone">{{ $t('common.phone') }}</label>
-            <el-input id="p-phone" v-model="editForm.phone" type="tel" :maxlength="40" required />
-          </div>
-          <div class="acc-form__field">
-            <label for="p-secondary-phone">{{ $t('common.secondaryPhoneOptional') }}</label>
-            <el-input
-              id="p-secondary-phone"
-              v-model="editForm.secondaryPhone"
-              type="tel"
-              :maxlength="40"
-              :class="{ 'ca-invalid': editSubmitted && secondaryPhoneRepeated }"
-            />
-            <small v-if="editSubmitted && secondaryPhoneRepeated" class="acc-form__error">{{
-              $t('validation.secondaryPhoneSameAsPrimary')
-            }}</small>
           </div>
           <div class="acc-form__field">
             <label for="p-gender">{{ $t('common.gender') }}</label>
@@ -281,36 +249,31 @@ function savePassword(): void {
             }}</small>
           </div>
           <div class="acc-form__field">
-            <label for="p-national-id">{{ $t('common.nationalId') }}</label>
-            <el-input
-              id="p-national-id"
-              v-model="editForm.nationalId"
-              autocomplete="off"
-              autocapitalize="characters"
-              spellcheck="false"
-              :maxlength="12"
-              :class="{ 'ca-invalid': editSubmitted && !nationalIdValid }"
-              required
-            />
-            <small v-if="editSubmitted && !nationalIdValid" class="acc-form__error">{{
-              $t('validation.nationalIdInvalid')
-            }}</small>
+            <label for="p-phone">{{ $t('common.phone') }}</label>
+            <el-input id="p-phone" v-model="editForm.phone" type="tel" :maxlength="40" required />
           </div>
           <div class="acc-form__field">
-            <label for="p-national-id-confirm">{{ $t('common.confirmNationalId') }}</label>
+            <label for="p-secondary-phone">{{ $t('common.secondaryPhoneOptional') }}</label>
             <el-input
-              id="p-national-id-confirm"
-              v-model="editForm.confirmNationalId"
-              autocomplete="off"
-              autocapitalize="characters"
-              spellcheck="false"
-              :maxlength="12"
-              :class="{ 'ca-invalid': editSubmitted && nationalIdsMismatch }"
+              id="p-secondary-phone"
+              v-model="editForm.secondaryPhone"
+              type="tel"
+              :maxlength="40"
+              :class="{ 'ca-invalid': editSubmitted && secondaryPhoneRepeated }"
+            />
+            <small v-if="editSubmitted && secondaryPhoneRepeated" class="acc-form__error">{{
+              $t('validation.secondaryPhoneSameAsPrimary')
+            }}</small>
+          </div>
+          <div class="acc-form__field acc-form__field--wide">
+            <label for="p-email">{{ $t('common.email') }}</label>
+            <el-input
+              id="p-email"
+              v-model="editForm.email"
+              type="email"
+              :maxlength="256"
               required
             />
-            <small v-if="editSubmitted && nationalIdsMismatch" class="acc-form__error">{{
-              $t('validation.nationalIdsMismatch')
-            }}</small>
           </div>
           <div class="acc-form__consent acc-form__field--wide">
             <el-checkbox id="p-promotional-consent" v-model="editForm.promotionalConsent" />

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 import { createEmptyMinor, type RegistrationForm } from '../model/registration-form'
 import { genderOptions } from '@/entities/user'
-import { BaseButton } from '@/shared/ui'
-import { isValidNationalId, normalizeNationalId, todayIso, yearsAgoIso } from '@/shared/lib'
+import { BaseButton, NationalIdInput } from '@/shared/ui'
+import { isValidNationalId, todayIso, yearsAgoIso } from '@/shared/lib'
 
 const props = defineProps<{
   /** Reactive form state owned by the parent; the component edits it in place. */
@@ -23,32 +23,36 @@ const emit = defineEmits<{
 const model = props.form
 
 const submitted = ref(false)
-const confirmTouched = ref(false)
+const touched = reactive({
+  email: false,
+  password: false,
+  confirmPassword: false,
+  secondaryPhone: false,
+})
 const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(model.email.trim()))
+const showEmailInvalid = computed(
+  () => !emailValid.value && (submitted.value || (touched.email && !!model.email.trim())),
+)
 const passwordTooShort = computed(() => model.password.length < 12)
+const showPasswordTooShort = computed(
+  () => passwordTooShort.value && (submitted.value || (touched.password && !!model.password)),
+)
 const passwordsMismatch = computed(() => model.confirmPassword !== model.password)
 const showMismatch = computed(
-  () => (submitted.value || confirmTouched.value) && passwordsMismatch.value,
+  () => passwordsMismatch.value && (submitted.value || touched.confirmPassword),
 )
 const secondaryPhoneRepeated = computed(
   () => !!model.secondaryPhone.trim() && model.secondaryPhone.trim() === model.phone.trim(),
 )
-const nationalIdTouched = ref(false)
-const nationalIdValid = computed(() => isValidNationalId(model.nationalId))
-const nationalIdsMismatch = computed(
-  () => normalizeNationalId(model.confirmNationalId) !== normalizeNationalId(model.nationalId),
-)
-const showNationalIdMismatch = computed(
-  () => (submitted.value || nationalIdTouched.value) && nationalIdsMismatch.value,
+const showSecondaryPhoneRepeated = computed(
+  () => secondaryPhoneRepeated.value && (submitted.value || touched.secondaryPhone),
 )
 
 const isValid = computed(() => {
   if (!model.firstName.trim() || !model.lastName.trim()) return false
-  if (!emailValid.value || !model.phone.trim()) return false
-  if (secondaryPhoneRepeated.value) return false
-  if (passwordTooShort.value || passwordsMismatch.value) return false
-  if (!nationalIdValid.value || nationalIdsMismatch.value) return false
-  if (!model.gender) return false
+  if (!isValidNationalId(model.nationalId) || !model.gender) return false
+  if (!model.phone.trim() || secondaryPhoneRepeated.value) return false
+  if (!emailValid.value || passwordTooShort.value || passwordsMismatch.value) return false
   return model.minors.every(
     (minor) => minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth && minor.gender,
   )
@@ -83,183 +87,161 @@ function removeMinor(index: number): void {
     </div>
 
     <form class="reg__form" @submit.prevent="onSubmit">
-      <h2 class="reg__section-title">{{ $t('features.register.form.yourData') }}</h2>
-      <div class="reg__grid">
-        <div class="reg__field">
-          <label class="reg__label" for="reg-firstname">{{ $t('common.firstName') }}</label>
-          <el-input
-            id="reg-firstname"
-            v-model="model.firstName"
-            autocomplete="given-name"
-            :maxlength="120"
-            :class="{ 'ca-invalid': submitted && !model.firstName.trim() }"
-            required
-          />
-        </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-lastname">{{ $t('common.lastName') }}</label>
-          <el-input
-            id="reg-lastname"
-            v-model="model.lastName"
-            autocomplete="family-name"
-            :maxlength="120"
-            :class="{ 'ca-invalid': submitted && !model.lastName.trim() }"
-            required
-          />
-        </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-email">{{ $t('common.email') }}</label>
-          <el-input
-            id="reg-email"
-            v-model="model.email"
-            type="email"
-            inputmode="email"
-            autocomplete="email"
-            autocapitalize="none"
-            autocorrect="off"
-            spellcheck="false"
-            :maxlength="256"
-            :class="{ 'ca-invalid': submitted && !emailValid }"
-            required
-          />
-          <small v-if="submitted && !emailValid" class="reg__error">{{
-            $t('validation.emailInvalid')
-          }}</small>
-        </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-phone">{{ $t('common.phone') }}</label>
-          <el-input
-            id="reg-phone"
-            v-model="model.phone"
-            type="tel"
-            inputmode="tel"
-            autocomplete="tel"
-            :maxlength="40"
-            :class="{ 'ca-invalid': submitted && !model.phone.trim() }"
-            required
-          />
-        </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-secondary-phone">{{
-            $t('common.secondaryPhoneOptional')
-          }}</label>
-          <el-input
-            id="reg-secondary-phone"
-            v-model="model.secondaryPhone"
-            type="tel"
-            inputmode="tel"
-            autocomplete="tel"
-            :maxlength="40"
-            :class="{ 'ca-invalid': submitted && secondaryPhoneRepeated }"
-          />
-          <small v-if="submitted && secondaryPhoneRepeated" class="reg__error">{{
-            $t('validation.secondaryPhoneSameAsPrimary')
-          }}</small>
-        </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-gender">{{ $t('common.gender') }}</label>
-          <el-select
-            id="reg-gender"
-            v-model="model.gender"
-            :class="{ 'ca-invalid': submitted && !model.gender }"
-          >
-            <el-option
-              v-for="option in genders"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
+      <section class="reg__section">
+        <h2 class="reg__section-title">{{ $t('features.register.form.yourData') }}</h2>
+        <div class="reg__grid">
+          <div class="reg__field">
+            <label class="reg__label" for="reg-firstname">{{ $t('common.firstName') }}</label>
+            <el-input
+              id="reg-firstname"
+              v-model="model.firstName"
+              autocomplete="given-name"
+              :maxlength="120"
+              :class="{ 'ca-invalid': submitted && !model.firstName.trim() }"
+              required
             />
-          </el-select>
-          <small v-if="submitted && !model.gender" class="reg__error">{{
-            $t('validation.genderRequired')
-          }}</small>
+          </div>
+          <div class="reg__field">
+            <label class="reg__label" for="reg-lastname">{{ $t('common.lastName') }}</label>
+            <el-input
+              id="reg-lastname"
+              v-model="model.lastName"
+              autocomplete="family-name"
+              :maxlength="120"
+              :class="{ 'ca-invalid': submitted && !model.lastName.trim() }"
+              required
+            />
+          </div>
+          <div class="reg__field">
+            <label class="reg__label" for="reg-national-id">{{ $t('common.nationalId') }}</label>
+            <NationalIdInput
+              id="reg-national-id"
+              v-model="model.nationalId"
+              :show-errors="submitted"
+            />
+          </div>
+          <div class="reg__field">
+            <label class="reg__label" for="reg-gender">{{ $t('common.gender') }}</label>
+            <el-select
+              id="reg-gender"
+              v-model="model.gender"
+              :class="{ 'ca-invalid': submitted && !model.gender }"
+            >
+              <el-option
+                v-for="option in genders"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+            <small v-if="submitted && !model.gender" class="reg__error">{{
+              $t('validation.genderRequired')
+            }}</small>
+          </div>
         </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-password">{{ $t('common.password') }}</label>
-          <el-input
-            id="reg-password"
-            v-model="model.password"
-            type="password"
-            show-password
-            autocomplete="new-password"
-            :maxlength="128"
-            :class="{ 'ca-invalid': submitted && passwordTooShort }"
-            required
-          />
-          <small v-if="submitted && passwordTooShort" class="reg__error">{{
-            $t('validation.passwordMin')
-          }}</small>
-        </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-password-confirm">{{
-            $t('common.confirmPassword')
-          }}</label>
-          <el-input
-            id="reg-password-confirm"
-            v-model="model.confirmPassword"
-            type="password"
-            show-password
-            autocomplete="new-password"
-            :maxlength="128"
-            :class="{ 'ca-invalid': showMismatch }"
-            required
-            @blur="confirmTouched = true"
-          />
-          <small v-if="showMismatch" class="reg__error">{{
-            $t('validation.passwordsMismatch')
-          }}</small>
-        </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-national-id">{{ $t('common.nationalId') }}</label>
-          <el-input
-            id="reg-national-id"
-            v-model="model.nationalId"
-            autocomplete="off"
-            autocapitalize="characters"
-            spellcheck="false"
-            :maxlength="12"
-            :class="{ 'ca-invalid': submitted && !nationalIdValid }"
-            required
-          />
-          <small v-if="submitted && !nationalIdValid" class="reg__error">{{
-            $t('validation.nationalIdInvalid')
-          }}</small>
-        </div>
-        <div class="reg__field">
-          <label class="reg__label" for="reg-national-id-confirm">{{
-            $t('common.confirmNationalId')
-          }}</label>
-          <el-input
-            id="reg-national-id-confirm"
-            v-model="model.confirmNationalId"
-            autocomplete="off"
-            autocapitalize="characters"
-            spellcheck="false"
-            :maxlength="12"
-            :class="{ 'ca-invalid': showNationalIdMismatch }"
-            required
-            @blur="nationalIdTouched = true"
-          />
-          <small v-if="showNationalIdMismatch" class="reg__error">{{
-            $t('validation.nationalIdsMismatch')
-          }}</small>
-        </div>
-      </div>
+      </section>
 
-      <div class="reg__consent">
-        <el-checkbox id="reg-promotional-consent" v-model="model.promotionalConsent" />
-        <label for="reg-promotional-consent" class="reg__consent-label">{{
-          $t('common.promotionalConsentOption')
-        }}</label>
-      </div>
-
-      <div class="reg__minors">
-        <div class="reg__minors-head">
-          <h2 class="reg__section-title">{{ $t('features.register.form.minorsTitle') }}</h2>
-          <BaseButton variant="ghost" type="button" @click="addMinor">{{
-            $t('features.register.form.addMinor')
-          }}</BaseButton>
+      <section class="reg__section">
+        <h2 class="reg__section-title">{{ $t('features.register.form.contactTitle') }}</h2>
+        <div class="reg__grid">
+          <div class="reg__field">
+            <label class="reg__label" for="reg-phone">{{ $t('common.phone') }}</label>
+            <el-input
+              id="reg-phone"
+              v-model="model.phone"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              :maxlength="40"
+              :class="{ 'ca-invalid': submitted && !model.phone.trim() }"
+              required
+            />
+          </div>
+          <div class="reg__field">
+            <label class="reg__label" for="reg-secondary-phone">{{
+              $t('common.secondaryPhoneOptional')
+            }}</label>
+            <el-input
+              id="reg-secondary-phone"
+              v-model="model.secondaryPhone"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              :maxlength="40"
+              :class="{ 'ca-invalid': showSecondaryPhoneRepeated }"
+              @blur="touched.secondaryPhone = true"
+            />
+            <small v-if="showSecondaryPhoneRepeated" class="reg__error">{{
+              $t('validation.secondaryPhoneSameAsPrimary')
+            }}</small>
+          </div>
         </div>
+      </section>
+
+      <section class="reg__section">
+        <h2 class="reg__section-title">{{ $t('features.register.form.accessTitle') }}</h2>
+        <div class="reg__grid">
+          <div class="reg__field reg__field--wide">
+            <label class="reg__label" for="reg-email">{{ $t('common.email') }}</label>
+            <el-input
+              id="reg-email"
+              v-model="model.email"
+              type="email"
+              inputmode="email"
+              autocomplete="email"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              :maxlength="256"
+              :class="{ 'ca-invalid': showEmailInvalid }"
+              required
+              @blur="touched.email = true"
+            />
+            <small v-if="showEmailInvalid" class="reg__error">{{
+              $t('validation.emailInvalid')
+            }}</small>
+          </div>
+          <div class="reg__field">
+            <label class="reg__label" for="reg-password">{{ $t('common.password') }}</label>
+            <el-input
+              id="reg-password"
+              v-model="model.password"
+              type="password"
+              show-password
+              autocomplete="new-password"
+              :maxlength="128"
+              :class="{ 'ca-invalid': showPasswordTooShort }"
+              required
+              @blur="touched.password = true"
+            />
+            <small v-if="showPasswordTooShort" class="reg__error">{{
+              $t('validation.passwordMin')
+            }}</small>
+          </div>
+          <div class="reg__field">
+            <label class="reg__label" for="reg-password-confirm">{{
+              $t('common.confirmPassword')
+            }}</label>
+            <el-input
+              id="reg-password-confirm"
+              v-model="model.confirmPassword"
+              type="password"
+              show-password
+              autocomplete="new-password"
+              :maxlength="128"
+              :class="{ 'ca-invalid': showMismatch }"
+              required
+              @blur="touched.confirmPassword = true"
+            />
+            <small v-if="showMismatch" class="reg__error">{{
+              $t('validation.passwordsMismatch')
+            }}</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="reg__minors">
+        <h2 class="reg__section-title">{{ $t('features.register.form.minorsTitle') }}</h2>
         <p class="reg__minors-note">
           {{ $t('features.register.form.minorsNote') }}
         </p>
@@ -340,11 +322,30 @@ function removeMinor(index: number): void {
             </div>
           </fieldset>
         </transition-group>
-      </div>
 
-      <BaseButton type="submit" variant="primary" block :loading="isSubmitting" class="reg__submit">
-        {{ $t('features.register.form.submit') }}
-      </BaseButton>
+        <BaseButton variant="ghost" type="button" class="reg__add-minor" @click="addMinor">{{
+          $t('features.register.form.addMinor')
+        }}</BaseButton>
+      </section>
+
+      <div class="reg__footer">
+        <div class="reg__consent">
+          <el-checkbox id="reg-promotional-consent" v-model="model.promotionalConsent" />
+          <label for="reg-promotional-consent" class="reg__consent-label">{{
+            $t('common.promotionalConsentOption')
+          }}</label>
+        </div>
+
+        <BaseButton
+          type="submit"
+          variant="primary"
+          block
+          :loading="isSubmitting"
+          class="reg__submit"
+        >
+          {{ $t('features.register.form.submit') }}
+        </BaseButton>
+      </div>
     </form>
   </div>
 </template>
@@ -361,12 +362,16 @@ function removeMinor(index: number): void {
   padding: 30px;
 }
 
+.reg__section + .reg__section {
+  margin-top: 24px;
+}
+
 .reg__section-title {
   font-family: var(--ca-font-display);
   font-weight: 600;
   font-size: 18px;
   color: var(--ca-text-bright);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .reg__grid {
@@ -378,6 +383,10 @@ function removeMinor(index: number): void {
 .reg__field {
   display: flex;
   flex-direction: column;
+}
+
+.reg__field--wide {
+  grid-column: 1 / -1;
 }
 
 .reg__label {
@@ -420,35 +429,13 @@ function removeMinor(index: number): void {
   box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
 
-.reg__consent {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.reg__consent-label {
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--ca-text-muted);
-  cursor: pointer;
-}
-
 .reg__minors {
   margin-top: 28px;
   padding-top: 24px;
   border-top: 1px solid var(--ca-border);
 }
 
-.reg__minors-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
 .reg__minors-note {
-  margin: 6px 0 16px;
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--ca-text-dim);
@@ -491,8 +478,31 @@ function removeMinor(index: number): void {
   border-color: var(--ca-danger);
 }
 
+.reg__add-minor {
+  margin-top: 16px;
+}
+
+.reg__footer {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--ca-border);
+}
+
+.reg__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.reg__consent-label {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
+  cursor: pointer;
+}
+
 .reg__submit {
-  margin-top: 26px;
+  margin-top: 20px;
   width: 100%;
 }
 
