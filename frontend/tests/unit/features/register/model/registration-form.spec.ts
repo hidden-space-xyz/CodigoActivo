@@ -16,7 +16,6 @@ describe('registration form factories', () => {
       password: '',
       confirmPassword: '',
       nationalId: '',
-      confirmNationalId: '',
       gender: null,
       promotionalConsent: false,
       minors: [],

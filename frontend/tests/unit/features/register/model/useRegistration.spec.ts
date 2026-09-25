@@ -53,7 +53,6 @@ function fillAdult(registration: Registration): void {
     password: 'correct-horse-battery',
     confirmPassword: 'correct-horse-battery',
     nationalId: '12345678Z',
-    confirmNationalId: '12345678Z',
     gender: 'Female',
   })
 }

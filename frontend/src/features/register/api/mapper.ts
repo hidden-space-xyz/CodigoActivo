@@ -21,8 +21,8 @@ function toRegisterMinorRequest(minor: MinorForm): RegisterMinorRequest {
 
 /**
  * Builds the register request from the form, trimming names, email and phones, sending a blank
- * secondary phone as `null`, normalizing the DNI or NIE and dropping both confirmation fields. Throws if the adult or any minor has no gender; the
- * form validates this first.
+ * secondary phone as `null`, normalizing the DNI or NIE and dropping the password confirmation.
+ * Throws if the adult or any minor has no gender; the form validates this first.
  */
 export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
   const { gender } = form

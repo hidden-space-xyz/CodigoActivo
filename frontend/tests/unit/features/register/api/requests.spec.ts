@@ -34,7 +34,6 @@ describe('register requests', () => {
       password: 'correct-horse-battery',
       confirmPassword: 'correct-horse-battery',
       nationalId: '12345678z',
-      confirmNationalId: '12345678Z',
       gender: 'Female' as const,
       promotionalConsent: true,
     }

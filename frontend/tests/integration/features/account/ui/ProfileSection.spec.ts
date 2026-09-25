@@ -80,21 +80,21 @@ describe('ProfileSection', () => {
     await vi.waitFor(() => expect(wrapper.find('.acc-info').exists()).toBe(true))
   })
 
-  it('shows the personal data of the signed-in user', async () => {
+  it('shows the personal data of the signed-in user in the registration order', async () => {
     serveProfile(buildUserResponse({ secondaryPhone: '622222222', status: { name: 'Activo' } }))
 
     await renderSection()
 
-    expect(infoRows()).toEqual({
-      [t('common.name')]: 'Ada Lovelace',
-      [t('common.email')]: 'ada@example.test',
-      [t('common.phone')]: '600000000',
-      [t('common.secondaryPhone')]: '622222222',
-      [t('common.nationalId')]: '12345678Z',
-      [t('common.gender')]: genderLabel('Female'),
-      [t('common.status')]: 'Activo',
-      [t('common.promotionalConsent')]: t('common.no'),
-    })
+    expect(Object.entries(infoRows())).toEqual([
+      [t('common.name'), 'Ada Lovelace'],
+      [t('common.status'), 'Activo'],
+      [t('common.nationalId'), '12345678Z'],
+      [t('common.gender'), genderLabel('Female')],
+      [t('common.phone'), '600000000'],
+      [t('common.secondaryPhone'), '622222222'],
+      [t('common.email'), 'ada@example.test'],
+      [t('common.promotionalConsent'), t('common.no')],
+    ])
   })
 
   it('shows dashes for missing optional data', async () => {
@@ -142,12 +142,20 @@ describe('ProfileSection', () => {
     expect(dialog.querySelector<HTMLInputElement>('#p-firstname')?.value).toBe('Ada')
     expect(dialog.querySelector<HTMLInputElement>('#p-email')?.value).toBe('ada@example.test')
     expect(dialog.querySelector<HTMLInputElement>('#p-national-id')?.value).toBe('12345678Z')
-    expect(dialog.querySelector<HTMLInputElement>('#p-national-id-confirm')?.value).toBe(
-      '12345678Z',
+    expect(dialog.querySelector('#p-national-id')?.getAttribute('autocapitalize')).toBe(
+      'characters',
     )
-    for (const id of ['#p-national-id', '#p-national-id-confirm']) {
-      expect(dialog.querySelector(id)?.getAttribute('autocapitalize')).toBe('characters')
-    }
+    expect(dialog.querySelector('#p-national-id-confirm')).toBeNull()
+    expect([...dialog.querySelectorAll('[id^="p-"]')].map((field) => field.id)).toEqual([
+      'p-firstname',
+      'p-lastname',
+      'p-national-id',
+      'p-gender',
+      'p-phone',
+      'p-secondary-phone',
+      'p-email',
+      'p-promotional-consent',
+    ])
     expect(dialog.querySelector<HTMLInputElement>('#p-promotional-consent')?.checked).toBe(false)
     await fill(dialog, '#p-firstname', '  Augusta ')
     await fill(dialog, '#p-lastname', ' King ')
@@ -155,7 +163,6 @@ describe('ProfileSection', () => {
     await fill(dialog, '#p-phone', ' 611111111 ')
     await fill(dialog, '#p-secondary-phone', ' 622222222 ')
     await fill(dialog, '#p-national-id', 'x-1234567-l')
-    await fill(dialog, '#p-national-id-confirm', 'X1234567L')
     await click(dialog.querySelector('#p-promotional-consent') as Element)
     await selectGender(wrapper, 'Other')
     await fill(dialog, '#p-current', 'old-password')
@@ -319,12 +326,12 @@ describe('ProfileSection', () => {
     expect(updated).not.toHaveBeenCalled()
   })
 
-  it('asks no birth date and requires a valid DNI/NIE typed twice', async () => {
+  it('asks no birth date and requires a DNI/NIE whose control letter matches', async () => {
     serveProfile()
-    const updated = vi.fn()
+    const bodies: unknown[] = []
     server.use(
-      http.put('/api/users/:userId', () => {
-        updated()
+      http.put('/api/users/:userId', async ({ request }) => {
+        bodies.push(await request.json())
         return HttpResponse.json(buildUserResponse())
       }),
     )
@@ -336,21 +343,20 @@ describe('ProfileSection', () => {
 
     await fill(dialog, '#p-national-id', '12345678A')
     await click(buttonByText(dialog, t('common.save')))
-    expect(dialog.textContent).toContain(t('validation.nationalIdInvalid'))
-    expect(dialog.textContent).toContain(t('validation.nationalIdsMismatch'))
-    expect(updated).not.toHaveBeenCalled()
+    expect(dialog.textContent).toContain(t('validation.nationalIdLetter'))
+    expect(bodies).toHaveLength(0)
 
-    await fill(dialog, '#p-national-id', 'X1234567L')
-    await fill(dialog, '#p-national-id-confirm', 'X1234567A')
+    await fill(dialog, '#p-national-id', 'X123456')
     await click(buttonByText(dialog, t('common.save')))
-    expect(dialog.textContent).not.toContain(t('validation.nationalIdInvalid'))
-    expect(dialog.textContent).toContain(t('validation.nationalIdsMismatch'))
-    expect(updated).not.toHaveBeenCalled()
+    expect(dialog.textContent).toContain(t('validation.nationalIdFormat'))
+    expect(bodies).toHaveLength(0)
 
-    await fill(dialog, '#p-national-id-confirm', ' x 1234567 l ')
+    await fill(dialog, '#p-national-id', ' x 1234567 l ')
+    expect(dialog.textContent).not.toContain(t('validation.nationalIdFormat'))
     await click(buttonByText(dialog, t('common.save')))
 
-    await vi.waitFor(() => expect(updated).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({ nationalId: 'X1234567L' })
   })
 
   it('shows the promotional consent the user gave', async () => {
@@ -374,7 +380,6 @@ describe('ProfileSection', () => {
       'p-phone',
       'p-secondary-phone',
       'p-national-id',
-      'p-national-id-confirm',
     ]) {
       expect(dialog.querySelector<HTMLInputElement>(`#${id}`)?.value).toBe('')
     }

@@ -104,36 +104,46 @@ describe('UserFormDialog', () => {
     })
   })
 
-  it('shows the DNI/NIE twice and the consent of an adult instead of a birth date', async () => {
+  it('shows the DNI/NIE once and the consent of an adult instead of a birth date', async () => {
     const { wrapper, dialog } = await renderDialog(
       toUser(buildUserResponse({ promotionalConsent: true })),
     )
 
     expect(wrapper.findComponent(ElDatePicker).exists()).toBe(false)
     expect(inputValue('#user-national-id')).toBe('12345678Z')
-    expect(inputValue('#user-national-id-confirm')).toBe('12345678Z')
-    for (const id of ['#user-national-id', '#user-national-id-confirm']) {
-      expect(dialog.querySelector(id)?.getAttribute('autocapitalize')).toBe('characters')
-    }
+    expect(dialog.querySelector('#user-national-id')?.getAttribute('autocapitalize')).toBe(
+      'characters',
+    )
+    expect(dialog.querySelector('#user-national-id-confirm')).toBeNull()
     expect(consentBox(dialog).checked).toBe(true)
     expect(dialog.textContent).toContain(t('common.promotionalConsentOption'))
   })
 
-  it('requires a valid DNI/NIE typed twice and sends it normalized', async () => {
+  it('orders the fields of an adult like the registration form', async () => {
+    const { dialog } = await renderDialog(adult)
+
+    expect([...dialog.querySelectorAll('[id^="user-"]')].map((field) => field.id)).toEqual([
+      'user-first-name',
+      'user-last-name',
+      'user-national-id',
+      'user-gender',
+      'user-phone',
+      'user-secondary-phone',
+      'user-email',
+      'user-promotional-consent',
+    ])
+  })
+
+  it('requires a DNI/NIE whose control letter matches and sends it normalized', async () => {
     const { wrapper, dialog } = await renderDialog(adult)
 
     await typeInto('#user-national-id', 'X1234567A')
     await click(findButton(t('common.save'), dialog))
-    expect(dialog.textContent).toContain(t('validation.nationalIdInvalid'))
-    expect(dialog.textContent).toContain(t('validation.nationalIdsMismatch'))
-
-    await typeInto('#user-national-id', 'x-1234567-l')
-    await click(findButton(t('common.save'), dialog))
-    expect(dialog.textContent).not.toContain(t('validation.nationalIdInvalid'))
-    expect(dialog.textContent).toContain(t('validation.nationalIdsMismatch'))
+    expect(dialog.textContent).toContain(t('validation.nationalIdLetter'))
     expect(wrapper.emitted('submit')).toBeUndefined()
 
-    await typeInto('#user-national-id-confirm', 'X 1234567 L')
+    await typeInto('#user-national-id', 'x-1234567-l')
+    expect(dialog.textContent).not.toContain(t('validation.nationalIdLetter'))
     await click(findButton(t('common.save'), dialog))
 
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
@@ -349,7 +359,7 @@ describe('UserFormDialog', () => {
     expect(inputValue('#user-first-name')).toBe('')
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).toContain(t('validation.nationalIdInvalid'))
+    expect(dialog.textContent).toContain(t('validation.nationalIdFormat'))
     expect(dialog.textContent).not.toContain(t('features.manageUsers.birthDateInvalid'))
     expect(dialog.textContent).toContain(t('validation.genderRequired'))
     expect(dialog.querySelectorAll('.ca-invalid').length).toBeGreaterThanOrEqual(4)

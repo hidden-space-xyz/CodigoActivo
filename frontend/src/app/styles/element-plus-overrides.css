@@ -261,6 +261,11 @@
   --el-checkbox-disabled-input-fill: var(--ca-bg-deep);
 }
 
+.el-checkbox:has(+ label) {
+  --el-checkbox-height: 20px;
+  margin-right: 0;
+}
+
 .el-radio {
   --el-radio-text-color: var(--ca-text);
   --el-radio-input-bg-color: var(--ca-input-bg);
