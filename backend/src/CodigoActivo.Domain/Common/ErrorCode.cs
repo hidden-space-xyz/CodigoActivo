@@ -364,6 +364,12 @@ public enum ErrorCode
     SecondaryPhoneSameAsPrimary,
 
     /// <summary>
+    /// Selects the option for an email address whose domain is on the disposable email domain list,
+    /// refused when registering or changing an account email.
+    /// </summary>
+    DisposableEmailNotAllowed,
+
+    /// <summary>
     /// Selects the invalid credentials option.
     /// </summary>
     InvalidCredentials,

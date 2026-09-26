@@ -120,6 +120,12 @@ preview always matches what the corresponding send would reach. Operational valu
 [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery); security properties are in
 [SECURITY.md](SECURITY.md#email-abuse-controls).
 
+Registration and email changes ask `DisposableEmailChecker` whether an address belongs to a disposable
+mailbox provider; it looks the domain and its parent domains (`EmailDomains`) up in
+`disposable_email_domains` through `IDisposableEmailDomainRepository`. The `DisposableEmailDomainRefresher`
+hosted service keeps that table filled from an external list, replacing it only with a download that
+`DisposableEmailDomainList` validated ([DEPLOYMENT.md](DEPLOYMENT.md#disposable-email-domains)).
+
 ## Frontend
 
 The frontend follows Feature-Sliced Design. Imports flow downward, and slices at the same layer do not import

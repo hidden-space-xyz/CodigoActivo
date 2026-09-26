@@ -109,6 +109,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         {
             RemoveHostedService<ExpiredSessionCleaner>(services);
             RemoveHostedService<EmailOutboxProcessor>(services);
+            RemoveHostedService<DisposableEmailDomainRefresher>(services);
 
             services.RemoveAll<DeploymentModeLock>();
             services.AddSingleton(sp => new DeploymentModeLock(
@@ -145,9 +146,10 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
 
     /// <summary>
     /// Drops a background worker whose timing would race the tests: the periodic session purge would
-    /// delete rows behind a test that moves the clock past a session expiry on purpose, and the email
+    /// delete rows behind a test that moves the clock past a session expiry on purpose, the email
     /// delivery worker would compete with the synchronous drain installed by
-    /// <see cref="UseSynchronousEmailOutbox"/>. Both are exercised directly instead.
+    /// <see cref="UseSynchronousEmailOutbox"/>, and the disposable email domain refresh would reach
+    /// the internet and fill the list behind the tests. All are exercised directly instead.
     /// </summary>
     /// <typeparam name="T">Hosted service to unregister.</typeparam>
     private static void RemoveHostedService<T>(IServiceCollection services)

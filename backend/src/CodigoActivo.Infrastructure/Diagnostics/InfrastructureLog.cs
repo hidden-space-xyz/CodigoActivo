@@ -1,12 +1,13 @@
 using CodigoActivo.Domain.Communication;
+using CodigoActivo.Infrastructure.Communication;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Diagnostics;
 
 /// <summary>
-/// Declares the operational events of the infrastructure layer: outbound email trouble and failed
-/// background runs. Templates carry counts, enum values and exceptions, never identifiers,
-/// addresses, names or values typed by the client.
+/// Declares the operational events of the infrastructure layer: outbound email trouble, failed
+/// background runs and disposable email domain list refreshes. Templates carry counts, enum values
+/// and exceptions, never identifiers, addresses, names or values typed by the client.
 /// </summary>
 public static partial class InfrastructureLog
 {
@@ -174,6 +175,51 @@ public static partial class InfrastructureLog
         Message = "The expired session cleanup run failed; the next run will retry"
     )]
     public static partial void ExpiredSessionCleanupFailed(
+        this ILogger logger,
+        Exception exception
+    );
+
+    /// <summary>
+    /// Records that the disposable email domain list could not be downloaded.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure raised by the source, the transport or the timeout.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "The disposable email domain list could not be downloaded; the last valid list stays in use and "
+            + "the download will be retried"
+    )]
+    public static partial void DisposableEmailDomainDownloadFailed(
+        this ILogger logger,
+        Exception exception
+    );
+
+    /// <summary>
+    /// Records that a downloaded disposable email domain list failed validation.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="kind">Check the downloaded list failed.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "The downloaded disposable email domain list was rejected as {Kind}; the last valid list stays in use "
+            + "and the download will be retried"
+    )]
+    public static partial void DisposableEmailDomainListRejected(
+        this ILogger logger,
+        DisposableEmailDomainListRejection kind
+    );
+
+    /// <summary>
+    /// Records that a valid disposable email domain list could not be stored.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure raised while storing the list.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "The disposable email domain list could not be stored; the last valid list stays in use and the "
+            + "next run will retry"
+    )]
+    public static partial void DisposableEmailDomainListNotStored(
         this ILogger logger,
         Exception exception
     );

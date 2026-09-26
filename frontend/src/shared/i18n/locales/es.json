@@ -284,6 +284,7 @@
     "UserNationalIdRequired": "Debes indicar el DNI o NIE.",
     "UserEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
     "SecondaryPhoneSameAsPrimary": "El teléfono secundario debe ser distinto del principal.",
+    "DisposableEmailNotAllowed": "Por motivos de seguridad no se permite usar direcciones de correo electrónico temporales o desechables. Utiliza una dirección de correo permanente.",
     "InvalidCredentials": "El correo electrónico o la contraseña no son correctos.",
     "UserAccountBlocked": "Tu cuenta está bloqueada. Contacta al administrador.",
     "UserAccountIsDependent": "Esta cuenta depende de un responsable y no puede iniciar sesión directamente.",

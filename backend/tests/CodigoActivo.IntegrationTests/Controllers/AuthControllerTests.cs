@@ -304,6 +304,50 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         (await CountNewAdultsAsync()).Should().Be(0);
     }
 
+    [Theory]
+    [InlineData("new.adult@mailinator.com")]
+    [InlineData(" New.Adult@Inbox.Mailinator.COM ")]
+    public async Task RegisterDisposableEmailReturnsBadRequestAndCreatesNothing(string email)
+    {
+        await Factory.SeedAsync(db =>
+        {
+            db.DisposableEmailDomains.Add(new DisposableEmailDomain { Domain = "mailinator.com" });
+            return Task.CompletedTask;
+        });
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(email: email),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.DisposableEmailNotAllowed);
+        var normalized = email.Trim().ToLowerInvariant();
+        (
+            await Factory.QueryAsync(db =>
+                Task.FromResult(db.Users.Count(u => u.Email == normalized))
+            )
+        )
+            .Should()
+            .Be(0);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RegisterWithoutAnyStoredDisposableListAcceptsEveryDomain()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(email: "new.adult@mailinator.com"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
     [Fact]
     public async Task RegisterSecondaryPhoneIsStoredAndReturned()
     {

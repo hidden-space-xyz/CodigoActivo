@@ -171,7 +171,9 @@ Backend unit tests use xUnit v3, AwesomeAssertions and NSubstitute; integration 
 PostgreSQL 18 Testcontainers instance and disable parallel execution. The test host lifts the email guard and
 request rate limits by default; use the factory's `WithEmailGuard`/`WithRateLimits` to exercise them. The
 test host also delivers the email outbox inline instead of running the background worker; tests that queue
-mail indirectly or advance the clock to a scheduled retry call `Factory.DrainEmailOutboxAsync()`.
+mail indirectly or advance the clock to a scheduled retry call `Factory.DrainEmailOutboxAsync()`. It never
+downloads the disposable email domain list, so `disposable_email_domains` starts empty and every domain is
+accepted; tests that need a blocked domain seed that table.
 
 Frontend tests use Vitest, Vue Test Utils and jsdom in `frontend/tests/`, mirroring `src/`: `tests/unit/`
 covers isolated units, `tests/integration/` mounts components or `App.vue` with real plugins.

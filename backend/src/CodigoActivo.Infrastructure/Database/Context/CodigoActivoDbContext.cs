@@ -139,6 +139,11 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// </summary>
     public DbSet<EmailOutboxContentPart> EmailOutboxContentParts => Set<EmailOutboxContentPart>();
 
+    /// <summary>
+    /// Gets the disposable email domains value.
+    /// </summary>
+    public DbSet<DisposableEmailDomain> DisposableEmailDomains => Set<DisposableEmailDomain>();
+
     async Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken ct)
     {
         try

@@ -29,6 +29,7 @@ public sealed record UpdateUserCommand(Guid UserId, Guid ActingUserId, UpdateUse
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="getById">Handler used to retrieve user by identifier.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
+/// <param name="disposableEmails">Checker that refuses addresses of disposable email providers.</param>
 public sealed class UpdateUserCommandHandler(
     IUserRepository users,
     PasswordAttemptGuard passwordAttempts,
@@ -36,7 +37,8 @@ public sealed class UpdateUserCommandHandler(
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator,
     GetUserByIdQueryHandler getById,
-    AccountSecurityNotifier securityNotifier
+    AccountSecurityNotifier securityNotifier,
+    DisposableEmailChecker disposableEmails
 ) : ICommandHandler<UpdateUserCommand, Result<UserResponse>>
 {
     /// <summary>
@@ -49,8 +51,10 @@ public sealed class UpdateUserCommandHandler(
     /// NIE are never checked against other accounts, so an update cannot reveal who uses them.
     /// Replacing the email, the phone or the secondary phone of the account first re-authenticates
     /// the acting caller, so a hijacked session alone cannot take the account over or redirect its
-    /// contact details; the DNI or NIE needs no password. The secondary phone is optional and must
-    /// differ from the phone. Dependents are created only through
+    /// contact details; the DNI or NIE needs no password. A new email is refused when it belongs to
+    /// a disposable email provider, while an unchanged one is kept even if its domain was listed
+    /// later. The secondary phone is optional and must differ from the phone. Dependents are
+    /// created only through
     /// <c>POST /api/users/{id}/children</c>, and they leave their guardian only when the guardian
     /// deletes them.
     /// </summary>
@@ -188,8 +192,14 @@ public sealed class UpdateUserCommandHandler(
             return Error.BadRequest(ErrorCode.SecondaryPhoneSameAsPrimary);
         }
 
+        var replacesEmail = !string.Equals(email, user.Email, StringComparison.Ordinal);
+        if (replacesEmail && await disposableEmails.IsDisposableAsync(email, ct))
+        {
+            return Error.BadRequest(ErrorCode.DisposableEmailNotAllowed);
+        }
+
         var replacesContact =
-            !string.Equals(email, user.Email, StringComparison.Ordinal)
+            replacesEmail
             || !string.Equals(phone, user.Phone, StringComparison.Ordinal)
             || !string.Equals(secondaryPhone, user.SecondaryPhone, StringComparison.Ordinal);
         if (replacesContact && !await VerifyActingPasswordAsync(command, ct))

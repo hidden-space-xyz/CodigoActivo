@@ -32,6 +32,7 @@ public sealed record RegisterCommand(RegisterRequest Request) : ICommand<Result<
 /// <param name="accountEmails">The account emails value.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
+/// <param name="disposableEmails">Checker that refuses addresses of disposable email providers.</param>
 public sealed class RegisterCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
@@ -40,7 +41,8 @@ public sealed class RegisterCommandHandler(
     AccountVerificationOptions verification,
     AccountEmails accountEmails,
     ILogger<RegisterCommandHandler> logger,
-    ICacheInvalidator cacheInvalidator
+    ICacheInvalidator cacheInvalidator,
+    DisposableEmailChecker disposableEmails
 ) : ICommandHandler<RegisterCommand, Result<RegisterResponse>>
 {
     private const int MaxMinorRegistrations = 20;
@@ -77,6 +79,11 @@ public sealed class RegisterCommandHandler(
         if (string.Equals(secondaryPhone, phone, StringComparison.Ordinal))
         {
             return Error.BadRequest(ErrorCode.SecondaryPhoneSameAsPrimary);
+        }
+
+        if (await disposableEmails.IsDisposableAsync(email, ct))
+        {
+            return Error.BadRequest(ErrorCode.DisposableEmailNotAllowed);
         }
 
         if (await users.ExistsAsync(u => u.Email == email, ct))
