@@ -5039,6 +5039,7 @@
           "UserNationalIdRequired",
           "UserEmailAlreadyInUse",
           "SecondaryPhoneSameAsPrimary",
+          "DisposableEmailNotAllowed",
           "InvalidCredentials",
           "UserAccountBlocked",
           "UserAccountIsDependent",

@@ -51,6 +51,17 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "disposable_email_domains",
+                columns: table => new
+                {
+                    domain = table.Column<string>(type: "character varying(253)", maxLength: 253, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_disposable_email_domains", x => x.domain);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "email_outbox_contents",
                 columns: table => new
                 {
@@ -956,6 +967,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             migrationBuilder.DropTable(
                 name: "activity_user_role_assignments");
+
+            migrationBuilder.DropTable(
+                name: "disposable_email_domains");
 
             migrationBuilder.DropTable(
                 name: "email_outbox_content_parts");

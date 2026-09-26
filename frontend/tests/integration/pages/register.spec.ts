@@ -177,6 +177,23 @@ describe('register page', () => {
     expect((wrapper.get('#reg-firstname').element as HTMLInputElement).value).toBe('Ada')
   })
 
+  it('keeps the form and explains that disposable email addresses are refused', async () => {
+    serveRegister(() => apiError(400, 'DisposableEmailNotAllowed'))
+    const { wrapper } = await renderApp('/register')
+    await clickButton(wrapper, t('features.register.ageGate.confirm'))
+    await fillAdult(wrapper)
+
+    await wrapper.find('form').trigger('submit')
+
+    await vi.waitFor(() =>
+      expect(document.body.querySelector('.el-notification')?.textContent).toContain(
+        t('errors.DisposableEmailNotAllowed'),
+      ),
+    )
+    expect(wrapper.find('form').exists()).toBe(true)
+    expect((wrapper.get('#reg-firstname').element as HTMLInputElement).value).toBe('Ada')
+  })
+
   it('does not call the API when the form is invalid', async () => {
     const received = serveRegister(() => HttpResponse.json({}, { status: 201 }))
     const { wrapper } = await renderApp('/register')

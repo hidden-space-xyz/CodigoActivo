@@ -29,6 +29,7 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly RecordingEmailSender emailSender = new();
     private readonly RecordingLogger<AccountSecurityNotifier> notifierLogger = new();
+    private readonly FakeDisposableEmailDomainRepository disposableDomains = new();
     private readonly User actingUser;
     private readonly UpdateUserCommandHandler sut;
 
@@ -48,7 +49,8 @@ public sealed class UpdateUserCommandHandlerTests
                 clock,
                 new ApplicationOptions(),
                 notifierLogger
-            )
+            ),
+            new DisposableEmailChecker(disposableDomains)
         );
     }
 
@@ -537,6 +539,72 @@ public sealed class UpdateUserCommandHandlerTests
         user.SecondaryPhone.Should().BeNull();
         actingUser.PasswordFailedAttempts.Should().Be(0);
         await AssertNotSavedAsync();
+    }
+
+    [Theory]
+    [InlineData(ActingPassword)]
+    [InlineData("wrong-password")]
+    public async Task HandleAsyncAdultChangedToDisposableEmailReturnsBadRequestBeforeThePassword(
+        string currentPassword
+    )
+    {
+        disposableDomains.Add("mailinator.com");
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@test.com");
+        users.FindReturns(user, actingUser);
+        var request = new UpdateUserRequest(
+            "Ana",
+            "Lopez",
+            "  Ana@Inbox.Mailinator.com ",
+            "555-0100",
+            null,
+            AdultNationalId,
+            false,
+            Gender.Female,
+            null,
+            currentPassword
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.DisposableEmailNotAllowed);
+        user.Email.Should().Be("ana@test.com");
+        actingUser.PasswordFailedAttempts.Should().Be(0);
+        emailSender.Sent.Should().BeEmpty();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncUnchangedEmailOfALaterListedDomainIsKept()
+    {
+        disposableDomains.Add("mailinator.com");
+        var id = Guid.NewGuid();
+        var user = NewUser(id: id, email: "ana@mailinator.com");
+        users.FindReturns(user, actingUser);
+        users
+            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        users.HasUsers(user);
+        var request = new UpdateUserRequest(
+            "Anabel",
+            "Lopez",
+            "ana@mailinator.com",
+            "555-0100",
+            null,
+            AdultNationalId,
+            false,
+            Gender.Female,
+            null,
+            null
+        );
+
+        var result = await HandleAsync(id, request);
+
+        result.IsSuccess.Should().BeTrue();
+        user.FirstName.Should().Be("Anabel");
+        user.Email.Should().Be("ana@mailinator.com");
+        disposableDomains.Lookups.Should().BeEmpty();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -250,6 +250,19 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("assignment_status_types", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.DisposableEmailDomain", b =>
+                {
+                    b.Property<string>("Domain")
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)")
+                        .HasColumnName("domain");
+
+                    b.HasKey("Domain")
+                        .HasName("pk_disposable_email_domains");
+
+                    b.ToTable("disposable_email_domains", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContent", b =>
                 {
                     b.Property<Guid>("Id")

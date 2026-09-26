@@ -354,3 +354,31 @@ public interface ITermsDocumentRepository : IDbRepository<TermsDocument>;
 /// Persists and retrieves activity modality type data from the database.
 /// </summary>
 public interface IActivityModalityTypeRepository : IDbRepository<ActivityModalityType>;
+
+/// <summary>
+/// Reads and replaces the stored disposable email domain list, the last one that passed validation.
+/// The list is only ever replaced as a whole, so it is empty until a first list is obtained.
+/// </summary>
+public interface IDisposableEmailDomainRepository
+{
+    /// <summary>
+    /// Determines whether any of the supplied normalized domains is on the stored list.
+    /// </summary>
+    /// <param name="domains">Normalized domain names to look up.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when at least one domain is listed.</returns>
+    public Task<bool> ContainsAnyAsync(
+        IReadOnlyCollection<string> domains,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// Replaces the stored list with <paramref name="domains"/>, writing only the differences. The
+    /// change executes immediately in a transaction of its own, outside any staged unit of work, so
+    /// concurrent lookups see either the previous list or the new one, never a mix.
+    /// </summary>
+    /// <param name="domains">Validated normalized domain names that make up the new list.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task ReplaceAsync(IReadOnlySet<string> domains, CancellationToken ct = default);
+}

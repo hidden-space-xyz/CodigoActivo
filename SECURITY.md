@@ -196,6 +196,9 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
   origin; the CSP allows scripts, styles, fonts, images and connections only from `'self'` (plus
   `data:`/`blob:` images), sets `base-uri 'none'` and adds `upgrade-insecure-requests` only when nginx's
   normalized scheme is HTTPS. Do not add CDNs, analytics or embeds without a legal basis and consent review.
+- The API downloads the public disposable email domain list once a day (see
+  [Email abuse controls](#email-abuse-controls)); the request carries no user data, and addresses are only
+  checked against the local copy.
 - The only cookies are the session, two-factor challenge and CSRF cookies above; the theme choice stays in
   `localStorage` and is never sent to the server, and `sessionStorage` only holds the stale-build reload mark.
   They are exempt from consent under article 22.2 of the Spanish LSSI, except the persistent session, whose
@@ -329,6 +332,19 @@ codes share storage and expire after 10 minutes with the same cooldown. SMTP mus
 the API refuses to start. Activity signup sends no message; confirming or rejecting one queues an outcome
 email after commit, always to the guardian address for a dependent minor. Delivery errors never roll back
 registration, recovery, activity decisions or security changes.
+
+Registration and email changes (`PUT /api/users/{id}`) refuse addresses of disposable (temporary) mailbox
+providers with `DisposableEmailNotAllowed` (400), which the SPA presents as a security measure. An address
+is refused when its domain (lowercase, punycode, no trailing dot) or any parent domain other than the
+top-level one is in `disposable_email_domains`; an unchanged email is not re-checked, so existing accounts
+keep working. `DisposableEmailDomainRefresher` downloads the list of the
+[disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains) project
+30 seconds after startup and then every 24 hours, or every hour after a failure. A download replaces the
+stored list only when it is at most 2 MiB of UTF-8 text with one valid domain name per line (blank and `#`
+lines ignored), holds at least 1,000 domains and would not refuse any widely used provider in
+`DisposableEmailDomainList.ProtectedDomains` (Gmail, Outlook/Hotmail, Yahoo, iCloud, Proton, GMX,
+Telefónica…). An unreachable or slow source, an error status or a rejected body keeps the last valid list;
+until a first list is stored, every domain is accepted.
 
 Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
 returned to email, or reset by an administrator), its administrator flag or its email or phones queues a

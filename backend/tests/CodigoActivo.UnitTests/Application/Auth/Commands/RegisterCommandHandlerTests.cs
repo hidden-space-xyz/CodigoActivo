@@ -27,6 +27,7 @@ public sealed class RegisterCommandHandlerTests
     private readonly PasswordResetOptions passwordReset = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
+    private readonly FakeDisposableEmailDomainRepository disposableDomains = new();
     private readonly RegisterCommandHandler sut;
 
     public RegisterCommandHandlerTests()
@@ -45,7 +46,8 @@ public sealed class RegisterCommandHandlerTests
                 new TwoFactorOptions()
             ),
             NullLogger<RegisterCommandHandler>.Instance,
-            cacheInvalidator
+            cacheInvalidator,
+            new DisposableEmailChecker(disposableDomains)
         );
     }
 
@@ -266,6 +268,57 @@ public sealed class RegisterCommandHandlerTests
         await cacheInvalidator
             .DidNotReceive()
             .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+    }
+
+    [Theory]
+    [InlineData("ana@mailinator.com")]
+    [InlineData("  Ana@Inbox.MAILINATOR.com  ")]
+    public async Task HandleAsyncDisposableEmailReturnsBadRequestWithoutLookingUpAccounts(
+        string email
+    )
+    {
+        disposableDomains.Add("mailinator.com");
+
+        var result = await sut.HandleAsync(
+            new RegisterCommand(NewRegister(email: email)),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.DisposableEmailNotAllowed);
+        await AssertNotSavedAsync();
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncEmailOutsideTheDisposableListIsRegistered()
+    {
+        disposableDomains.Add("mailinator.com");
+        ExistsReturns(false);
+        users
+            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(NewUser());
+        users
+            .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await sut.HandleAsync(
+            new RegisterCommand(NewRegister(email: "ana@notmailinator.com")),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        disposableDomains
+            .Lookups.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Equal("notmailinator.com");
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Queries;
@@ -77,6 +78,7 @@ public static class DependencyInjection
         AddPasswordLockout(services, configuration);
         AddTwoFactor(services, configuration);
         AddEmail(services, configuration);
+        AddDisposableEmailDomains(services, configuration);
         AddCaching(services);
         AddApplicationHandlers(services);
         return services;
@@ -290,6 +292,35 @@ public static class DependencyInjection
         );
     }
 
+    private static void AddDisposableEmailDomains(
+        IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        var options = new DisposableEmailDomainOptions
+        {
+            SourceUrl = ReadHttpsUri(
+                configuration["DisposableEmailDomains:SourceUrl"],
+                DisposableEmailDomainOptions.DefaultSourceUrl
+            ),
+        };
+        services.AddSingleton(options);
+        services.AddSingleton(_ => new DisposableEmailDomainDownloader(
+            new SocketsHttpHandler { AutomaticDecompression = DecompressionMethods.All },
+            options
+        ));
+        services.AddHostedService<DisposableEmailDomainRefresher>();
+    }
+
+    private static Uri ReadHttpsUri(string? value, Uri fallback)
+    {
+        return
+            Uri.TryCreate(value, UriKind.Absolute, out var parsed)
+            && string.Equals(parsed.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
+            ? parsed
+            : fallback;
+    }
+
     private static EmailGuardOptions BuildEmailGuardOptions(IConfiguration configuration)
     {
         return new EmailGuardOptions
@@ -490,6 +521,7 @@ public static class DependencyInjection
         services.AddScoped<ITermsDocumentRepository, TermsDocumentRepository>();
         services.AddScoped<IActivityModalityTypeRepository, ActivityModalityTypeRepository>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
+        services.AddScoped<IDisposableEmailDomainRepository, DisposableEmailDomainRepository>();
     }
 
     private static void AddSessionCleanup(IServiceCollection services, IConfiguration configuration)
@@ -697,6 +729,7 @@ public static class DependencyInjection
         services.AddScoped<OtpValidator>();
         services.AddScoped<LoginCodeIssuer>();
         services.AddScoped<AuthenticatorCodeVerifier>();
+        services.AddScoped<DisposableEmailChecker>();
     }
 
     private static void AddReportHandlers(IServiceCollection services)

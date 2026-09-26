@@ -80,6 +80,7 @@ export const ErrorCode = {
   UserNationalIdRequired: 'UserNationalIdRequired',
   UserEmailAlreadyInUse: 'UserEmailAlreadyInUse',
   SecondaryPhoneSameAsPrimary: 'SecondaryPhoneSameAsPrimary',
+  DisposableEmailNotAllowed: 'DisposableEmailNotAllowed',
   InvalidCredentials: 'InvalidCredentials',
   UserAccountBlocked: 'UserAccountBlocked',
   UserAccountIsDependent: 'UserAccountIsDependent',

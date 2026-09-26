@@ -213,6 +213,21 @@ pressure (`GlobalEmailBudgetLow`, `GlobalEmailBudgetExhausted`), delivery failur
 (`EmailDeliveryAttemptFailed`, `EmailDeliveryGaveUp`), and an incomplete shutdown drain
 (`EmailOutboxDrainIncomplete`). See [SECURITY.md](SECURITY.md#logging) for where these events are written.
 
+## Disposable email domains
+
+The API downloads the disposable email domain list over HTTPS from `raw.githubusercontent.com` 30 seconds
+after startup and then daily, so `api` needs outbound HTTPS through the `frontend` network. Without it the
+site keeps working: the last valid list stays in `disposable_email_domains` (in `db-data`), or every domain
+is accepted if none was ever stored. Restarting `api` forces a new download. Validation and matching rules
+are in [SECURITY.md](SECURITY.md#email-abuse-controls).
+
+`DisposableEmailDomains:SourceUrl` (default: the project's `disposable_email_blocklist.conf` on its `main`
+branch) can point to a mirror; only absolute HTTPS URLs are accepted, any other value uses the default. It
+is not forwarded by the base Compose file: add `DISPOSABLEEMAILDOMAINS__SOURCEURL` to `api.environment` to
+change it. Monitor `DisposableEmailDomainDownloadFailed` and `DisposableEmailDomainListRejected` (`Warning`,
+retried hourly) and `DisposableEmailDomainListNotStored` (`Error`); while they repeat, new disposable domains
+are not blocked.
+
 ## Locked accounts
 
 Five wrong passwords lock an account for good: the lock has no expiry and is lifted only by a completed

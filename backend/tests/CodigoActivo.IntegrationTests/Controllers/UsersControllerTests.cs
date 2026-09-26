@@ -659,6 +659,28 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task UpdateStandaloneAccountDisposableEmailReturnsBadRequest()
+    {
+        await Factory.SeedAsync(db =>
+        {
+            db.DisposableEmailDomains.Add(new DisposableEmailDomain { Domain = "mailinator.com" });
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(email: "member@mailinator.com", currentPassword: TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.DisposableEmailNotAllowed);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .Email.Should()
+            .Be(TestSeedData.MemberEmail);
+    }
+
+    [Fact]
     public async Task UpdateStandaloneAccountEmailOfAnotherUserReturnsConflict()
     {
         var client = await LoginAsMemberAsync();
