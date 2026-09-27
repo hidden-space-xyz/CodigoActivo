@@ -17,7 +17,9 @@ public interface IDashboardRepository
 }
 
 /// <summary>
-/// Persists and retrieves user data from the database.
+/// Persists and retrieves user data from the database. Users are never removed through this
+/// repository: <see cref="IDeletedAccountRepository.EraseAsync"/> keeps the legal copy first, a
+/// staged <c>Remove</c> without that copy is refused on commit and <c>RemoveAsync</c> always throws.
 /// </summary>
 public interface IUserRepository : IDbRepository<User>
 {
@@ -98,6 +100,37 @@ public interface IUserRepository : IDbRepository<User>
 /// one session, every session of a user, or the rows that already expired.
 /// </summary>
 public interface IUserSessionRepository : IDbRepository<UserSession>;
+
+/// <summary>
+/// Erases accounts while keeping the blocked copy the law requires, and purges those copies once
+/// their retention ends. The copies are write-only for the application: nothing reads them back.
+/// </summary>
+public interface IDeletedAccountRepository
+{
+    /// <summary>
+    /// Deletes the user, and through the cascade their dependents and participation rows, after
+    /// storing a <see cref="DeletedAccount"/> copy of everything the deletion removes. Both happen
+    /// in one transaction that first locks the user, their dependents and the household's
+    /// assignments and terms decisions, so none of them can be added or changed between the copy
+    /// and the deletion, and a failed deletion leaves no copy behind; an erasure aborted by a
+    /// deadlock is retried. Any other staged change of the unit of work is committed with them. It
+    /// executes immediately.
+    /// </summary>
+    /// <param name="user">Tracked user to erase.</param>
+    /// <param name="erasure">Who asked for the deletion and when it happened.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="false"/> when the user no longer exists, which only happens when a concurrent request erased it first.</returns>
+    public Task<bool> EraseAsync(User user, AccountErasure erasure, CancellationToken ct = default);
+
+    /// <summary>
+    /// Physically deletes the copies of accounts deleted at or before the supplied instant. It
+    /// executes immediately.
+    /// </summary>
+    /// <param name="deletedUpTo">Latest deletion timestamp whose copy is purged.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the number of purged copies.</returns>
+    public Task<int> PurgeAsync(DateTimeOffset deletedUpTo, CancellationToken ct = default);
+}
 
 /// <summary>
 /// Persists and retrieves event data from the database.

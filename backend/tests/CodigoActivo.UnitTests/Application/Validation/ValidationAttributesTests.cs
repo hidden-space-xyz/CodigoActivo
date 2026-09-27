@@ -78,6 +78,39 @@ public sealed class ValidationAttributesTests : IDisposable
         new JsonStringAttribute().IsValid(value).Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData(42)]
+    [InlineData(null)]
+    public void IsValidNoRichTextImagesNonStringValuesReturnsTrue(object? value)
+    {
+        new NoRichTextImagesAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("not json")]
+    [InlineData(
+        "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"image\"}]}]}"
+    )]
+    [InlineData("{\"type\":\"doc\",\"content\":[{\"type\":\"table\",\"attrs\":{\"type\":1}}]}")]
+    public void IsValidNoRichTextImagesTextOnlyOrMalformedJsonReturnsTrue(string value)
+    {
+        new NoRichTextImagesAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("{\"type\":\"image\"}")]
+    [InlineData(
+        "{\"type\":\"doc\",\"content\":[{\"type\":\"image\",\"attrs\":{\"src\":\"/api/files/0f8fad5b-d9cb-469f-a165-70867728950e/content\"}}]}"
+    )]
+    [InlineData(
+        "{\"type\":\"doc\",\"content\":[{\"type\":\"table\",\"content\":[{\"type\":\"tableRow\",\"content\":[{\"type\":\"tableCell\",\"content\":[{\"type\":\"image\"}]}]}]}]}"
+    )]
+    public void IsValidNoRichTextImagesAnyImageNodeReturnsFalse(string value)
+    {
+        new NoRichTextImagesAttribute().IsValid(value).Should().BeFalse();
+    }
+
     [Fact]
     public void IsEmptyRichTextRepeatingAPropertyNameReportsNoContent()
     {

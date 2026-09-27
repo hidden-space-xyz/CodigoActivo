@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import { AppButton as Button, ColumnSearch } from '@/shared/ui'
 import RichTextEditor from '@/shared/ui/RichTextEditor.vue'
 
-import { uploadFileRequest } from '@/entities/file'
 import { useTermsDocuments } from '../model/useTermsDocuments'
 import type { TermsDocumentResponse } from '@/shared/api/generated/models'
 import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
@@ -173,7 +172,6 @@ function confirmDelete(item: TermsDocumentResponse): void {
           <RichTextEditor
             v-model="form.description"
             :label="$t('features.manageCatalogs.terms.content')"
-            :upload="uploadFileRequest"
             :invalid="submitted && descriptionMissing"
           />
           <small v-if="submitted && descriptionMissing" class="catalog__error">{{

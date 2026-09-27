@@ -283,6 +283,31 @@ describe('richTextExtensions image parsing', () => {
   })
 })
 
+describe('text-only rich text', () => {
+  const withImage = doc(paragraph(text('Normas')), { type: 'image', attrs: { src: FILE_URL } })
+
+  it('drops images when parsing without images and keeps them otherwise', () => {
+    expect(parseRichText(withImage, { images: false })).toEqual({
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Normas' }] }],
+    })
+    expect(parseRichText(withImage).content?.map((node) => node.type)).toEqual([
+      'paragraph',
+      'image',
+    ])
+  })
+
+  it('has no image node, so pasted images are dropped', () => {
+    const json = generateJSON(
+      `<p>Normas</p><img src="${FILE_URL}">`,
+      richTextExtensions({ images: false }),
+    ) as JSONContent
+
+    expect(JSON.stringify(json)).not.toContain('"image"')
+    expect(JSON.stringify(json)).toContain('Normas')
+  })
+})
+
 describe('serializeRichText', () => {
   it('serializes editor JSON', () => {
     expect(serializeRichText({ type: 'doc', content: [] })).toBe(EMPTY_DOC_JSON)

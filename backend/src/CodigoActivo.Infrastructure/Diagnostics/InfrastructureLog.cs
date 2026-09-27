@@ -6,7 +6,8 @@ namespace CodigoActivo.Infrastructure.Diagnostics;
 
 /// <summary>
 /// Declares the operational events of the infrastructure layer: outbound email trouble, failed
-/// background runs and disposable email domain list refreshes. Templates carry counts, enum values
+/// background runs, retried account erasures and disposable email domain list refreshes. Templates
+/// carry counts, enum values
 /// and exceptions, never identifiers, addresses, names or values typed by the client.
 /// </summary>
 public static partial class InfrastructureLog
@@ -178,6 +179,29 @@ public static partial class InfrastructureLog
         this ILogger logger,
         Exception exception
     );
+
+    /// <summary>
+    /// Records that the periodic purge of deleted account copies failed.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure that ended the run.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "The deleted account purge run failed; the next run will retry"
+    )]
+    public static partial void DeletedAccountPurgeFailed(this ILogger logger, Exception exception);
+
+    /// <summary>
+    /// Records that PostgreSQL aborted an account erasure to resolve a deadlock and that it runs
+    /// again.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="attempts">Attempts already spent on the erasure.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Attempt {Attempts} to erase an account was aborted to resolve a deadlock and will be retried"
+    )]
+    public static partial void AccountErasureDeadlockRetried(this ILogger logger, int attempts);
 
     /// <summary>
     /// Records that the disposable email domain list could not be downloaded.

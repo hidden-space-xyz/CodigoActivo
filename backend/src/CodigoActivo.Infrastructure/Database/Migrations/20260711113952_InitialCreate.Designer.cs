@@ -253,6 +253,30 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("assignment_status_types", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Entities.DeletedAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("data");
+
+                    b.Property<DateTimeOffset>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_deleted_accounts");
+
+                    b.HasIndex("DeletedAt")
+                        .HasDatabaseName("ix_deleted_accounts_deleted_at");
+
+                    b.ToTable("deleted_accounts", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Entities.DisposableEmailDomain", b =>
                 {
                     b.Property<string>("Domain")

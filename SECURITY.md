@@ -115,7 +115,25 @@ is refused with `UserDeleteAuthoredContentExists` while content credits the hous
 for the last administrator (`UserDeleteLastAdminForbidden`). `GET /api/me/deletion` tells the caller whether
 they may delete their account, so the SPA hides the action from the last administrator. The last-administrator
 count is not locked against a concurrent deletion or demotion. `DELETE /api/users/{id}` refuses any
-administrator (`UserDeleteAdminForbidden`) and the caller's own id (`UserSelfDeleteRequiresVerification`).
+administrator (`UserDeleteAdminForbidden`), the caller's own id (`UserSelfDeleteRequiresVerification`) and,
+like the self-service route, an account whose household is credited on content (`UserDeleteAuthoredContentExists`).
+
+**Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's
+or a guardian's — first stores one JSON copy in `deleted_accounts` (`id` is the former user id with no
+foreign key, `deleted_at`, `data` as `jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
+their minors and the household's assignments and terms decisions, and then deletes them; a failed deletion
+keeps no copy, a concurrent signup, status change or cancellation cannot slip in between, and an erasure that
+PostgreSQL aborts to resolve a deadlock is retried up to three times. The copy holds the personal data of the
+account and each minor, the guardian's identification when
+a minor is deleted alone, every assignment of the household with activity, event, role, status and signup
+time, every terms decision (accepted or rejected) of the household — or the guardian's for the minor's
+events — with each document's text as it stood at deletion (documents are not versioned), and who asked
+for the deletion. It never holds password or code hashes, authenticator secrets, the login challenge,
+lockout counters or sessions. Nothing in the application reads the table: the data is plain JSON protected
+only by database access. `DeletedAccountPurger` deletes each copy two years after `deleted_at`, checking
+30 seconds after startup and then hourly. `DeletedAccountGuard` refuses any commit that deletes a user without its copy or changes a
+stored copy, and `RemoveAsync` on users throws. The SPA only tells users that they and their minors lose
+access and cannot recover the account; the privacy policy must state the two-year retention.
 
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also clears any
@@ -167,7 +185,9 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
   `ApiErrorResponse(Title, Status, Code, TraceId)` without stack traces or internal details.
 - User-supplied links allow only absolute HTTP(S) URLs without embedded credentials.
 - Rich-text JSON is checked against node, mark, attribute, nesting and size allowlists; embedded images may
-  only reference this application's UUID-based file endpoint.
+  only reference this application's UUID-based file endpoint. Terms documents are text only: their editor
+  has no image option and drops images from loaded or pasted content, and the API refuses a description with
+  an image node (`RequestValidationFailed`).
 - User-controlled values inserted into email templates are HTML-encoded; administrator-authored bodies are
   plain text rendered inside the branded template.
 
@@ -214,7 +234,7 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
   and never re-asked; a rejection is revisable and overwrites the stored row; a required document's
   rejection is never persisted. `AssignActivity` skips this consent step when an administrator enrolls
   someone else; `AssignHousehold` always runs it. The acceptance row cascades away when the acting user's
-  account is deleted.
+  account is deleted, once the blocked copy of that account holds it.
 - Verification and password-reset links put the user id and a 256-bit code from a cryptographic random
   generator in the URL fragment (`/reset-password#userId=…&code=…`), which browsers never send to the server;
   the page reads and removes it from the address bar, so a reload needs the emailed link again.
@@ -341,10 +361,10 @@ keep working. `DisposableEmailDomainRefresher` downloads the list of the
 [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains) project
 30 seconds after startup and then every 24 hours, or every hour after a failure. A download replaces the
 stored list only when it is at most 2 MiB of UTF-8 text with one valid domain name per line (blank and `#`
-lines ignored), holds at least 1,000 domains and would not refuse any widely used provider in
-`DisposableEmailDomainList.ProtectedDomains` (Gmail, Outlook/Hotmail, Yahoo, iCloud, Proton, GMX,
-Telefónica…). An unreachable or slow source, an error status or a rejected body keeps the last valid list;
-until a first list is stored, every domain is accepted.
+lines ignored), holds at least 1,000 domains and would not refuse any domain in
+`DisposableEmailDomainList.ProtectedDomains` (Gmail, Outlook/Hotmail, Yahoo, iCloud and Proton, plus
+`codigoactivo.es`). An unreachable or slow source, an error status or a rejected body keeps the last valid
+list; until a first list is stored, every domain is accepted.
 
 Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
 returned to email, or reset by an administrator), its administrator flag or its email or phones queues a

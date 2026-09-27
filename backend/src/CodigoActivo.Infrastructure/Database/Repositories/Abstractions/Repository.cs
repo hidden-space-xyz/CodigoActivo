@@ -115,7 +115,7 @@ public abstract class Repository<TEntity>(CodigoActivoDbContext context) : IDbRe
     /// <param name="predicate">Condition that an entity must satisfy.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains an int.</returns>
-    public async Task<int> RemoveAsync(
+    public virtual async Task<int> RemoveAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default
     )

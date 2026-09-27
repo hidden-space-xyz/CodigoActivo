@@ -52,6 +52,56 @@ public sealed class JsonStringAttribute : ValidationAttribute
 }
 
 /// <summary>
+/// Refuses a rich-text document that contains an image node, for fields that must hold text only.
+/// Malformed JSON passes here and is left to <see cref="JsonStringAttribute"/>.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+public sealed class NoRichTextImagesAttribute : ValidationAttribute
+{
+    private static readonly JsonDocumentOptions ParseOptions = new()
+    {
+        AllowDuplicateProperties = false,
+    };
+
+    /// <inheritdoc />
+    public override bool IsValid(object? value)
+    {
+        if (value is not string text)
+        {
+            return true;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(text, ParseOptions);
+            return !ContainsImage(document.RootElement);
+        }
+        catch (JsonException)
+        {
+            return true;
+        }
+    }
+
+    private static bool ContainsImage(JsonElement element)
+    {
+        return element.ValueKind switch
+        {
+            JsonValueKind.Object => IsImage(element)
+                || element.EnumerateObject().Any(property => ContainsImage(property.Value)),
+            JsonValueKind.Array => element.EnumerateArray().Any(ContainsImage),
+            _ => false,
+        };
+    }
+
+    private static bool IsImage(JsonElement element)
+    {
+        return element.TryGetProperty("type", out var type)
+            && type.ValueKind is JsonValueKind.String
+            && string.Equals(type.GetString(), "image", StringComparison.Ordinal);
+    }
+}
+
+/// <summary>
 /// Applies http url validation or authorization to the annotated target.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]

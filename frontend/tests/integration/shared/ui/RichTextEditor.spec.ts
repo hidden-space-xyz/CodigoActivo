@@ -20,7 +20,7 @@ function paragraph(text: string): JSONContent {
 type Upload = (file: File) => Promise<string | undefined>
 
 async function renderEditor(
-  props: { modelValue?: string | null; invalid?: boolean; upload?: Upload } = {},
+  props: { modelValue?: string | null; invalid?: boolean; upload?: Upload | undefined } = {},
 ) {
   const rendered = await renderWithProviders(RichTextEditor, {
     props: {
@@ -403,6 +403,35 @@ describe('RichTextEditor', () => {
 
       expect(upload).not.toHaveBeenCalled()
     })
+  })
+
+  it('is text only without an upload handler', async () => {
+    const { wrapper, editor } = await renderEditor({
+      upload: undefined,
+      modelValue: doc(paragraph('Normas'), {
+        type: 'image',
+        attrs: { src: `/api/files/${FILE_ID}/content` },
+      }),
+    })
+
+    const titles = wrapper.findAll('button').map((candidate) => candidate.attributes('title'))
+    expect(titles).not.toContain(t('editor.insertImage'))
+    expect(titles).toContain(t('editor.insertTable'))
+    expect(wrapper.find('input[type="file"]').exists()).toBe(false)
+    expect(wrapper.find('.ProseMirror img').exists()).toBe(false)
+    expect(wrapper.find('.ProseMirror').text()).toBe('Normas')
+    expect(editor.schema.nodes.image).toBeUndefined()
+
+    await wrapper.setProps({
+      modelValue: doc(paragraph('Otras normas'), {
+        type: 'image',
+        attrs: { src: `/api/files/${FILE_ID}/content` },
+      }),
+    })
+    await settle()
+
+    expect(wrapper.find('.ProseMirror img').exists()).toBe(false)
+    expect(wrapper.find('.ProseMirror').text()).toBe('Otras normas')
   })
 
   it('destroys the editor when unmounted', async () => {

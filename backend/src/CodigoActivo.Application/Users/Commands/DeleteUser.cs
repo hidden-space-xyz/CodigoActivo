@@ -14,16 +14,20 @@ namespace CodigoActivo.Application.Users.Commands;
 public sealed record DeleteUserCommand(Guid UserId, Guid ActingUserId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the user. It serves an administrator removing somebody else and
-/// a guardian removing one of their minors; deleting one's own account goes through
-/// <see cref="DeleteOwnAccountCommand"/>, which also demands the password and the second factor.
+/// Executes the command to delete the user, keeping the blocked copy the law requires. It serves an
+/// administrator removing somebody else and a guardian removing one of their minors; deleting one's
+/// own account goes through <see cref="DeleteOwnAccountCommand"/>, which also demands the password
+/// and the second factor. An account still credited as the author of published content is refused
+/// instead of breaking those rows.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="deletedAccounts">Repository that erases the account after copying it.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class DeleteUserCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
+    IDeletedAccountRepository deletedAccounts,
+    IClock clock,
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<DeleteUserCommand, Result>
 {
@@ -51,8 +55,21 @@ public sealed class DeleteUserCommandHandler(
             return Error.Forbidden(ErrorCode.UserSelfDeleteRequiresVerification);
         }
 
-        users.Remove(user);
-        await uow.SaveChangesAsync(ct);
+        if (await users.HasAuthoredContentAsync(user.Id, ct))
+        {
+            return Error.Conflict(ErrorCode.UserDeleteAuthoredContentExists);
+        }
+
+        var origin =
+            user.ParentId == command.ActingUserId
+                ? AccountDeletionOrigin.Guardian
+                : AccountDeletionOrigin.Administrator;
+        var erasure = new AccountErasure(origin, command.ActingUserId, clock.UtcNow);
+        if (!await deletedAccounts.EraseAsync(user, erasure, ct))
+        {
+            return Error.NotFound(ErrorCode.UserNotFound);
+        }
+
         await cacheInvalidator.InvalidateAsync(CacheTags.Users, CacheTags.Activities);
         return Result.Success();
     }

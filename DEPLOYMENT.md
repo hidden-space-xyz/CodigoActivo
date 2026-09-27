@@ -325,7 +325,10 @@ which invalidates all sessions and stored authenticator secrets (see
 [SECURITY.md](SECURITY.md#data-protection-and-containers)). The email outbox lives in `db-data`, so a
 `db-data` backup includes pending mail; restoring an older backup can redeliver or drop messages queued
 after it was taken, and its protected content depends on the Data Protection key ring in effect when it was
-queued.
+queued. `db-data` also holds `deleted_accounts`, the blocked copies of erased accounts that the API purges two
+years after each deletion: a backup keeps a copy for as long as the backup itself is kept, so backup retention
+adds to those two years, and a restored backup brings expired copies back until the purge that runs 30 seconds
+after startup.
 
 Before public exposure, verify TLS and forwarded headers, firewall access to port `8080`, SMTP delivery,
 database and volume recovery, registration and email verification, the two-step login, password reset,

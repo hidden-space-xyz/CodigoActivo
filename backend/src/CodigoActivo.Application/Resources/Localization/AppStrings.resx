@@ -140,10 +140,10 @@ Equipo de Código Activo</value>
     <value>Eliminar tu cuenta</value>
   </data>
   <data name="emails.accountDeletionCode.introText" xml:space="preserve">
-    <value>Hemos recibido una solicitud para eliminar tu cuenta de Código Activo y todos sus datos, incluidos los de los menores a tu cargo. Introduce este código para confirmarla:</value>
+    <value>Hemos recibido una solicitud para eliminar tu cuenta de Código Activo. Tú y los menores a tu cargo perderéis el acceso para siempre y no podrás recuperar la cuenta. Introduce este código para confirmar la eliminación:</value>
   </data>
   <data name="emails.accountDeletionCode.introHtml" xml:space="preserve">
-    <value>Hemos recibido una solicitud para eliminar tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt; y todos sus datos, incluidos los de los menores a tu cargo. Introduce este código para confirmarla:</value>
+    <value>Hemos recibido una solicitud para eliminar tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Tú y los menores a tu cargo perderéis el acceso para siempre y no podrás recuperar la cuenta. Introduce este código para confirmar la eliminación:</value>
   </data>
   <data name="emails.accountDeletionCode.expiryText" xml:space="preserve">
     <value>El código caduca en {0} minutos y solo sirve una vez.</value>

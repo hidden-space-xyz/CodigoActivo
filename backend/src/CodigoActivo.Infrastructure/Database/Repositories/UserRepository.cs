@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Infrastructure.Database.Context;
@@ -24,6 +25,24 @@ public class UserRepository(CodigoActivoDbContext context)
     public async Task<User?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default)
     {
         return await QueryWithDetails().FirstOrDefaultAsync(u => u.Id == id, ct);
+    }
+
+    /// <summary>
+    /// Always throws: a set-based delete would bypass the legal copy that
+    /// <see cref="IDeletedAccountRepository.EraseAsync"/> stores before erasing a user.
+    /// </summary>
+    /// <param name="predicate">Condition that an entity must satisfy.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>Never returns.</returns>
+    /// <exception cref="NotSupportedException">Always.</exception>
+    public override Task<int> RemoveAsync(
+        Expression<Func<User, bool>> predicate,
+        CancellationToken ct = default
+    )
+    {
+        throw new NotSupportedException(
+            "Users are only deleted through IDeletedAccountRepository.EraseAsync, which stores the legal copy first."
+        );
     }
 
     /// <summary>
