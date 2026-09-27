@@ -269,29 +269,19 @@ public enum ErrorCode
     UserNotFound,
 
     /// <summary>
-    /// Selects the user delete admin forbidden option.
-    /// </summary>
-    UserDeleteAdminForbidden,
-
-    /// <summary>
     /// Selects the user self delete requires verification option.
     /// </summary>
     UserSelfDeleteRequiresVerification,
 
     /// <summary>
-    /// Selects the user delete authored content exists option.
+    /// Selects the user delete initial admin forbidden option.
     /// </summary>
-    UserDeleteAuthoredContentExists,
+    UserDeleteInitialAdminForbidden,
 
     /// <summary>
-    /// Selects the user delete last admin forbidden option.
+    /// Selects the user cannot remove initial admin option.
     /// </summary>
-    UserDeleteLastAdminForbidden,
-
-    /// <summary>
-    /// Selects the user cannot remove last admin option.
-    /// </summary>
-    UserCannotRemoveLastAdmin,
+    UserCannotRemoveInitialAdmin,
 
     /// <summary>
     /// Selects the user type not found option.

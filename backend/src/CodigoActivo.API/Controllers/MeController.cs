@@ -71,7 +71,7 @@ public class MeController : ApiControllerBase
     }
 
     /// <summary>
-    /// Tells whether the signed-in user may delete their own account, which only the last
+    /// Tells whether the signed-in user may delete their own account, which only the initial
     /// administrator may not.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -83,9 +83,7 @@ public class MeController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return Ok(
-            await handler.HandleAsync(new GetAccountDeletionStatusQuery(UserId, IsAdmin), ct)
-        );
+        return Ok(await handler.HandleAsync(new GetAccountDeletionStatusQuery(UserId), ct));
     }
 
     /// <summary>

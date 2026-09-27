@@ -5020,11 +5020,9 @@
           "FileUploadStreamNotSeekable",
           "FileUploadUnsupportedFormat",
           "UserNotFound",
-          "UserDeleteAdminForbidden",
           "UserSelfDeleteRequiresVerification",
-          "UserDeleteAuthoredContentExists",
-          "UserDeleteLastAdminForbidden",
-          "UserCannotRemoveLastAdmin",
+          "UserDeleteInitialAdminForbidden",
+          "UserCannotRemoveInitialAdmin",
           "UserTypeNotFound",
           "ParentUserNotFound",
           "UserParentIsMinor",
@@ -7270,6 +7268,9 @@
             "$ref": "#/components/schemas/UserStatusResponse"
           },
           "isAdmin": {
+            "type": "boolean"
+          },
+          "isInitialAdmin": {
             "type": "boolean"
           },
           "type": {

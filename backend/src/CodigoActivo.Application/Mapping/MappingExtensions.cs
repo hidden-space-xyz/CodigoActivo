@@ -1,4 +1,5 @@
 using CodigoActivo.Application.DTOs;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Mapping;
@@ -40,6 +41,7 @@ public static class MappingExtensions
             null,
             status,
             user.IsAdmin,
+            user.Id == SeedIds.Users.InitialAdministrator,
             null,
             user.TwoFactorMethod
         );

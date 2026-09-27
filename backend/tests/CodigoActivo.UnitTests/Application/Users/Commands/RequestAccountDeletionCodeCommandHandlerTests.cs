@@ -5,6 +5,7 @@ using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
@@ -89,23 +90,22 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncLastAdministratorReturnsForbiddenWithoutCheckingThePassword()
+    public async Task HandleAsyncInitialAdministratorReturnsForbiddenWithoutCheckingThePassword()
     {
-        var user = Signed(isAdmin: true);
-        users.CountsAdministrators(1);
+        var result = await RequestAsync(SeedIds.Users.InitialAdministrator, "WrongPassword!");
 
-        var result = await RequestAsync(user.Id, password: "WrongPassword!");
-
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteLastAdminForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteInitialAdminForbidden);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .FindAsync(default!, TestContext.Current.CancellationToken);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncAdministratorWithAnotherAdministratorEmailsTheCode()
+    public async Task HandleAsyncAdministratorEmailsTheCode()
     {
         var user = Signed(isAdmin: true);
-        users.CountsAdministrators(2);
 
         var result = await RequestAsync(user.Id);
 

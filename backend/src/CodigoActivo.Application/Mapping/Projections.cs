@@ -259,6 +259,7 @@ public static class Projections
             user.UserStatusType.Color
         ),
         IsAdmin = user.IsAdmin,
+        IsInitialAdmin = user.Id == SeedIds.Users.InitialAdministrator,
         TwoFactorMethod = user.TwoFactorMethod,
     };
 
@@ -291,6 +292,7 @@ public static class Projections
                 user.UserStatusType.Color
             ),
             IsAdmin = user.IsAdmin,
+            IsInitialAdmin = user.Id == SeedIds.Users.InitialAdministrator,
             Type = new UserTypeSummaryResponse(
                 user.UserTypeId,
                 user.UserType.Name,

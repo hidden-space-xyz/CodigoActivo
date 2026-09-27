@@ -4,6 +4,7 @@ using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using Microsoft.Extensions.Logging;
@@ -20,11 +21,11 @@ public sealed record DeleteOwnAccountCommand(Guid UserId, DeleteAccountRequest R
 
 /// <summary>
 /// Executes the command that erases the signed-in user, every minor under their guardianship and
-/// all their participation rows, keeping the blocked copy the law requires. Because the deletion
-/// cannot be undone it demands both the current password and the account's second factor, and wrong
-/// codes count towards the same lockout as logins. The last administrator cannot delete themselves,
-/// so the application always keeps one, and an account still credited as the author of published
-/// content is refused instead of breaking those rows.
+/// all their participation rows, keeping the blocked copy the law requires and handing the content
+/// credited to the account over to the initial administrator. Because the deletion cannot be undone
+/// it demands both the current password and the account's second factor, and wrong codes count
+/// towards the same lockout as logins. The initial administrator cannot delete itself, so the
+/// application always keeps an administrator.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="deletedAccounts">Repository that erases the account after copying it.</param>
@@ -60,6 +61,11 @@ public sealed class DeleteOwnAccountCommandHandler(
         CancellationToken ct = default
     )
     {
+        if (command.UserId == SeedIds.Users.InitialAdministrator)
+        {
+            return Error.Forbidden(ErrorCode.UserDeleteInitialAdminForbidden);
+        }
+
         var user = await users.FindAsync(u => u.Id == command.UserId, ct);
         if (user is null)
         {
@@ -99,23 +105,13 @@ public sealed class DeleteOwnAccountCommandHandler(
             return Error.BadRequest(ErrorCode.TwoFactorCodeInvalid);
         }
 
-        if (user.IsAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
-        {
-            return Error.Forbidden(ErrorCode.UserDeleteLastAdminForbidden);
-        }
-
-        if (await users.HasAuthoredContentAsync(user.Id, ct))
-        {
-            return Error.Conflict(ErrorCode.UserDeleteAuthoredContentExists);
-        }
-
         var erasure = new AccountErasure(AccountDeletionOrigin.Self, user.Id, now);
         if (!await deletedAccounts.EraseAsync(user, erasure, ct))
         {
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        await cacheInvalidator.InvalidateAsync(CacheTags.Users, CacheTags.Activities);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Erasure);
         return Result.Success();
     }
 

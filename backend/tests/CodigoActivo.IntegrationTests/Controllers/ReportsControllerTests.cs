@@ -382,7 +382,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             .Items.Select(a => a.UserTypeName)
             .Should()
             .Equal("Participante", "Socio", "Socio", "Socio");
-        page.Items.Select(a => a.FirstName).Should().Equal("Mateo", "Ada", "Pedro", "Bruno");
+        page.Items.Select(a => a.FirstName).Should().Equal("Mateo", "Pedro", "Bruno", "Ada");
     }
 
     [Fact]

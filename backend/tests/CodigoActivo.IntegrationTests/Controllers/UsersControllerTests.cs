@@ -87,6 +87,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         page.Page.Should().Be(1);
         page.Items.Should().Contain(u => u.Email == TestSeedData.AdminEmail);
         page.Items.Should().OnlyContain(u => u.Type != null);
+        page.Items.Where(u => u.IsInitialAdmin)
+            .Select(u => u.Id)
+            .Should()
+            .Equal(SeedIds.Users.InitialAdministrator);
     }
 
     [Fact]
@@ -102,7 +106,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         page.Items.Select(u => u.Id)
             .Should()
             .BeEquivalentTo([TestSeedData.Users.MemberId, TestSeedData.Users.MemberChildId]);
-        page.Items.Should().OnlyContain(u => u.Type == null);
+        page.Items.Should().OnlyContain(u => u.Type == null && !u.IsInitialAdmin);
     }
 
     [Fact]
@@ -1072,5 +1076,27 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var user = await FindAsync<User>(TestSeedData.Users.MemberId);
         user!.IsAdmin.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetAdminRevokeInitialAdministratorReturnsForbiddenEvenToAnotherAdministrator()
+    {
+        var initial = await LoginAsAdminAsync();
+        var grant = await initial.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/admin",
+            new SetAdminRequest(true, TestSeedData.Password),
+            Ct
+        );
+        grant.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var another = await LoginAsMemberAsync();
+
+        var response = await another.PatchJsonAsync(
+            $"/api/users/{SeedIds.Users.InitialAdministrator}/admin",
+            new SetAdminRequest(false, null),
+            Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.UserCannotRemoveInitialAdmin);
+        (await FindAsync<User>(SeedIds.Users.InitialAdministrator))!.IsAdmin.Should().BeTrue();
     }
 }

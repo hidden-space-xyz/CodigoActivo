@@ -6,6 +6,21 @@ namespace CodigoActivo.Domain.Constants;
 public static class SeedIds
 {
     /// <summary>
+    /// Defines stable identifiers for built-in user accounts.
+    /// </summary>
+    public static class Users
+    {
+        /// <summary>
+        /// Identifies the generic administrator created on an empty database. It can be neither
+        /// deleted nor demoted, so the application always keeps an administrator, and it receives
+        /// the content credited to every erased account.
+        /// </summary>
+        public static readonly Guid InitialAdministrator = new(
+            "e8a173b3-72b2-4e11-a35b-2f3810dfe259"
+        );
+    }
+
+    /// <summary>
     /// Defines stable identifiers for built-in user status types records.
     /// </summary>
     public static class UserStatusTypes

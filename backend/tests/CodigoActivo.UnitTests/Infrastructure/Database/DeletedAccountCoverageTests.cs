@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
@@ -13,7 +14,8 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     private const string Decide =
         "every new column or table about a user must be classified here and, when it is copied, "
         + "added to the projections of DeletedAccountSnapshot and to DeletedAccountRepositoryTests; "
-        + "otherwise leave it out on purpose or keep the account alive through HasAuthoredContentAsync";
+        + "otherwise leave it out on purpose or hand it over to the initial administrator in "
+        + "DeletedAccountRepository and DeletedAccountRepositoryTests";
 
     private static readonly string[] CopiedReferences =
     [
@@ -24,7 +26,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
 
     private static readonly string[] TechnicalReferences = ["UserSession.UserId"];
 
-    private static readonly string[] AuthorReferences =
+    private static readonly string[] HandedOverReferences =
     [
         "Activity.CreatedBy",
         "Activity.UpdatedBy",
@@ -128,7 +130,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     }
 
     [Fact]
-    public void EveryForeignKeyToUsersIsCopiedKeepsTheAccountAliveOrIsTechnical()
+    public void EveryForeignKeyToUsersIsCopiedHandedOverOrTechnical()
     {
         var references = Entity<User>()
             .GetReferencingForeignKeys()
@@ -141,7 +143,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         references
             .Should()
             .BeEquivalentTo(
-                [.. CopiedReferences, .. TechnicalReferences, .. AuthorReferences],
+                [.. CopiedReferences, .. TechnicalReferences, .. HandedOverReferences],
                 Decide
             );
     }
@@ -192,6 +194,20 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         var save = () => context.SaveChanges();
 
         save.Should().Throw<InvalidOperationException>().WithMessage("*EraseAsync*");
+    }
+
+    [Fact]
+    public void SaveChangesDeletingTheInitialAdministratorIsRefusedEvenWithItsCopy()
+    {
+        var administrator = NewUser();
+        administrator.Id = SeedIds.Users.InitialAdministrator;
+        context.Users.Attach(administrator);
+        context.Users.Remove(administrator);
+        context.DeletedAccounts.Add(new DeletedAccount { Id = administrator.Id });
+
+        var save = () => context.SaveChanges();
+
+        save.Should().Throw<InvalidOperationException>().WithMessage("*initial administrator*");
     }
 
     [Fact]

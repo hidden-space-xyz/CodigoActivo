@@ -33,6 +33,7 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
         );
 
         var administrator = await db.Users.AsNoTracking().SingleAsync(TestCancellation.Ct);
+        administrator.Id.Should().Be(SeedIds.Users.InitialAdministrator);
         administrator.Email.Should().Be("admin@codigoactivo.test");
         administrator.PasswordHash.Should().Be("fake:bootstrap-password-123");
         administrator.IsAdmin.Should().BeTrue();
@@ -45,16 +46,37 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
     }
 
     [Fact]
-    public async Task SeedAsyncExistingUserIgnoresMissingBootstrapCredentials()
+    public async Task SeedAsyncExistingInitialAdministratorIgnoresMissingBootstrapCredentials()
     {
         await using var db = postgres.CreateContext();
-        db.Users.Add(NewExistingUser());
+        db.Users.Add(NewExistingUser(SeedIds.Users.InitialAdministrator));
         await db.SaveChangesAsync(TestCancellation.Ct);
         var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), new TestClock());
 
         var act = () => seeder.SeedAsync(null, null, TestCancellation.Ct);
 
         await act.Should().NotThrowAsync();
+        (await db.Users.CountAsync(TestCancellation.Ct)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task SeedAsyncUsersWithoutTheInitialAdministratorFail()
+    {
+        await using var db = postgres.CreateContext();
+        db.Users.Add(NewExistingUser(Guid.NewGuid()));
+        await db.SaveChangesAsync(TestCancellation.Ct);
+        var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), new TestClock());
+
+        var act = () =>
+            seeder.SeedAsync(
+                "admin@codigoactivo.test",
+                "bootstrap-password-123",
+                TestCancellation.Ct
+            );
+
+        await act.Should()
+            .ThrowAsync<InvalidOperationException>()
+            .WithMessage("*initial administrator*");
         (await db.Users.CountAsync(TestCancellation.Ct)).Should().Be(1);
     }
 
@@ -77,10 +99,11 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
         return ValueTask.CompletedTask;
     }
 
-    private static User NewExistingUser()
+    private static User NewExistingUser(Guid id)
     {
         return new User
         {
+            Id = id,
             FirstName = "Existing",
             LastName = "User",
             Email = "existing@codigoactivo.test",

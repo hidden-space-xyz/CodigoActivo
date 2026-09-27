@@ -218,15 +218,15 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     {
         EmailSender.Clear();
         ResetClock();
+        await SeedFreshDatabaseAsync();
         await ResetCachesAsync();
+    }
 
-        await using var scope = Services.CreateAsyncScope();
-        var provider = scope.ServiceProvider;
-        var db = provider.GetRequiredService<CodigoActivoDbContext>();
-
+    private async Task SeedFreshDatabaseAsync()
+    {
+        await using var db = postgres.CreateContext();
         await TestDatabase.TruncateAllTablesAsync(db);
-
-        await provider.GetRequiredService<DatabaseSeeder>().SeedAsync(TestCancellation.Ct);
+        await new DatabaseSeeder(db).SeedAsync(TestCancellation.Ct);
         await TestSeedData.SeedUsersAsync(db, TestCancellation.Ct);
     }
 

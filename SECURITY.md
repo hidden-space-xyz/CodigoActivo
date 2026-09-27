@@ -54,10 +54,12 @@ authentication are not supported.
   caller probe whether a given email is already registered.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns
-  `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password, but the last administrator
-  cannot be demoted. Public registration never grants administrator access; on an empty database, startup
-  creates the first administrator from `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD`, ignored once a
-  user exists.
+  `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password. Public registration never
+  grants administrator access; on an empty database, startup creates the initial administrator from
+  `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD`, ignored once a user exists, under the fixed id
+  `SeedIds.Users.InitialAdministrator`. That generic account can be neither demoted
+  (`UserCannotRemoveInitialAdmin`) nor deleted, so the application always keeps an administrator; the SPA
+  disables both actions for it.
 - `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
   password whenever the update would replace the account's email, phone or secondary phone. A missing or
   wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three
@@ -111,12 +113,13 @@ shared keys are only returned to the authenticated owner over HTTPS and never lo
 `POST /api/me/deletion` (email code via `POST /api/me/deletion/code`, sharing storage/lifetime/cooldown with
 the login code, or the authenticator code). Deletion signs the caller out, cascades to remove the user, their
 minors and all participation rows (past ratings stay, see [Event rating anonymity](#event-rating-anonymity)),
-is refused with `UserDeleteAuthoredContentExists` while content credits the household, and is blocked only
-for the last administrator (`UserDeleteLastAdminForbidden`). `GET /api/me/deletion` tells the caller whether
-they may delete their account, so the SPA hides the action from the last administrator. The last-administrator
-count is not locked against a concurrent deletion or demotion. `DELETE /api/users/{id}` refuses any
-administrator (`UserDeleteAdminForbidden`), the caller's own id (`UserSelfDeleteRequiresVerification`) and,
-like the self-service route, an account whose household is credited on content (`UserDeleteAuthoredContentExists`).
+and is refused only to the initial administrator (`UserDeleteInitialAdminForbidden`), before the password is
+checked. `GET /api/me/deletion` tells the caller whether they may delete their account, so the SPA hides the
+action from the initial administrator. `DELETE /api/users/{id}` refuses the initial administrator and the
+caller's own id (`UserSelfDeleteRequiresVerification`); an administrator can delete any other administrator
+without re-entering a password, as with any other user. Every deletion credits the initial administrator
+instead of the household as author, last editor or uploader of events, activities, news, partners, resources
+and files, in the same transaction; the original credit is not kept anywhere.
 
 **Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's
 or a guardian's — first stores one JSON copy in `deleted_accounts` (`id` is the former user id with no
@@ -131,9 +134,10 @@ events — with each document's text as it stood at deletion (documents are not 
 for the deletion. It never holds password or code hashes, authenticator secrets, the login challenge,
 lockout counters or sessions. Nothing in the application reads the table: the data is plain JSON protected
 only by database access. `DeletedAccountPurger` deletes each copy two years after `deleted_at`, checking
-30 seconds after startup and then hourly. `DeletedAccountGuard` refuses any commit that deletes a user without its copy or changes a
-stored copy, and `RemoveAsync` on users throws. The SPA only tells users that they and their minors lose
-access and cannot recover the account; the privacy policy must state the two-year retention.
+30 seconds after startup and then hourly. `DeletedAccountGuard` refuses any commit that deletes the initial
+administrator, deletes a user without its copy or changes a stored copy, and `RemoveAsync` on users throws.
+The SPA only tells users that they and their minors lose access and cannot recover the account; the privacy
+policy must state the two-year retention.
 
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also clears any

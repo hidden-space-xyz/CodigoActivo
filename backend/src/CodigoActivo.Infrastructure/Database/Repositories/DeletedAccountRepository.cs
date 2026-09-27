@@ -1,4 +1,6 @@
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Entities.Abstractions;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Diagnostics;
@@ -9,7 +11,8 @@ using Npgsql;
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 /// <summary>
-/// Erases accounts together with their legal copy and purges the copies whose retention ended.
+/// Erases accounts together with their legal copy, handing their content over to the initial
+/// administrator, and purges the copies whose retention ended.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -20,7 +23,8 @@ public sealed class DeletedAccountRepository(
 {
     /// <summary>
     /// Attempts made when PostgreSQL resolves a deadlock by aborting the erasure, which happens
-    /// when a concurrent signup of the household takes its row locks in the opposite order.
+    /// when a concurrent signup of the household, or a concurrent edit by the erased user of content
+    /// it authored, takes its row locks in the opposite order.
     /// </summary>
     internal const int MaxAttempts = 3;
 
@@ -70,6 +74,7 @@ public sealed class DeletedAccountRepository(
             DeletedAt = erasure.DeletedAt,
             Data = await DeletedAccountSnapshot.BuildAsync(context, user.Id, erasure, ct),
         };
+        await HandOverContentAsync(user.Id, ct);
         context.DeletedAccounts.Add(copy);
         context.Users.Remove(user);
         try
@@ -122,6 +127,64 @@ public sealed class DeletedAccountRepository(
             ct
         );
         return true;
+    }
+
+    /// <summary>
+    /// Credits the initial administrator instead of the household on every row that names one of
+    /// its members as author, last editor or uploader, so those restricted foreign keys no longer
+    /// keep the account alive. The locked user row makes any new credit wait for the deletion.
+    /// </summary>
+    /// <param name="userId">Identifier of the user being erased.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    private async Task HandOverContentAsync(Guid userId, CancellationToken ct)
+    {
+        var household = await context
+            .Users.AsNoTracking()
+            .Where(u => u.Id == userId || u.ParentId == userId)
+            .Select(u => u.Id)
+            .ToListAsync(ct);
+        var heir = SeedIds.Users.InitialAdministrator;
+
+        await HandOverAsync(context.Activities, household, heir, ct);
+        await HandOverAsync(context.Events, household, heir, ct);
+        await HandOverAsync(context.News, household, heir, ct);
+        await HandOverAsync(context.Partners, household, heir, ct);
+        await HandOverAsync(context.Resources, household, heir, ct);
+        await context
+            .Files.Where(f => household.Contains(f.UploadedBy))
+            .ExecuteUpdateAsync(setters => setters.SetProperty(f => f.UploadedBy, heir), ct);
+    }
+
+    private static Task<int> HandOverAsync<TContent>(
+        DbSet<TContent> content,
+        List<Guid> household,
+        Guid heir,
+        CancellationToken ct
+    )
+        where TContent : AuditableEntity
+    {
+        return content
+            .Where(c =>
+                household.Contains(c.CreatedBy)
+                || (c.UpdatedBy != null && household.Contains(c.UpdatedBy.Value))
+            )
+            .ExecuteUpdateAsync(
+                setters =>
+                    setters
+                        .SetProperty(
+                            c => c.CreatedBy,
+                            c => household.Contains(c.CreatedBy) ? heir : c.CreatedBy
+                        )
+                        .SetProperty(
+                            c => c.UpdatedBy,
+                            c =>
+                                c.UpdatedBy != null && household.Contains(c.UpdatedBy.Value)
+                                    ? heir
+                                    : c.UpdatedBy
+                        ),
+                ct
+            );
     }
 
     private static bool IsDeadlock(Exception? exception)

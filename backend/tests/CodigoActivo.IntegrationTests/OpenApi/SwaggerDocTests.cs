@@ -3,18 +3,17 @@ using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
-using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.OpenApi;
 
 public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
-    : IClassFixture<CodigoActivoWebAppFactory>
+    : IntegrationTestBase(factory)
 {
     private const string SwaggerUrl = "/swagger/v1/swagger.json";
 
     private async Task<JsonDocument> FetchSwaggerAsync(CancellationToken ct)
     {
-        var client = factory.CreateClient();
+        var client = CreateClient();
         using var response = await client.GetAsync(TestUri.Rel(SwaggerUrl), ct);
         response.EnsureSuccessStatusCode();
 
@@ -25,7 +24,7 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SwaggerDocumentDevelopmentEnvironmentIsServed()
     {
-        var client = factory.CreateClient();
+        var client = CreateClient();
 
         using var response = await client.GetAsync(TestUri.Rel(SwaggerUrl), Ct);
 

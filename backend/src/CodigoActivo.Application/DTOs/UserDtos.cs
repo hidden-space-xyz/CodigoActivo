@@ -25,6 +25,9 @@ namespace CodigoActivo.Application.DTOs;
 /// <param name="DependentCount">Number of dependents linked to the user.</param>
 /// <param name="Status">The status value.</param>
 /// <param name="IsAdmin">Whether admin.</param>
+/// <param name="IsInitialAdmin">
+/// Whether the account is the initial administrator, which can be neither deleted nor demoted.
+/// </param>
 /// <param name="Type">The type value.</param>
 /// <param name="TwoFactorMethod">Second factor the user presents when logging in.</param>
 public record UserResponse(
@@ -46,6 +49,7 @@ public record UserResponse(
     int? DependentCount,
     UserStatusResponse Status,
     bool IsAdmin,
+    bool IsInitialAdmin,
     UserTypeSummaryResponse? Type,
     TwoFactorMethod TwoFactorMethod
 )
@@ -72,6 +76,7 @@ public record UserResponse(
             null,
             null,
             null!,
+            false,
             false,
             null,
             TwoFactorMethod.Email
@@ -131,7 +136,7 @@ public record DeleteAccountRequest(
 /// Tells the signed-in user whether they may delete their own account.
 /// </summary>
 /// <param name="Allowed">
-/// Whether the deletion can be requested; <see langword="false"/> only for the last administrator.
+/// Whether the deletion can be requested; <see langword="false"/> only for the initial administrator.
 /// </param>
 public record AccountDeletionStatusResponse(bool Allowed);
 

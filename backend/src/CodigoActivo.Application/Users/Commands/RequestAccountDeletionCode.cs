@@ -3,6 +3,7 @@ using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
@@ -23,7 +24,8 @@ public sealed record RequestAccountDeletionCodeCommand(
 /// Executes the command that emails the one-time code confirming an account deletion. The
 /// password is demanded first so a stolen session cannot start the flow, and the code reuses the
 /// storage, lifetime, cooldown and lockout of the emailed login code. Users whose second factor is
-/// an authenticator application read their code from it and never reach this command.
+/// an authenticator application read their code from it and never reach this command, and the
+/// initial administrator, which can never be deleted, is refused before its password is checked.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -51,15 +53,15 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
         CancellationToken ct = default
     )
     {
+        if (command.UserId == SeedIds.Users.InitialAdministrator)
+        {
+            return Error.Forbidden(ErrorCode.UserDeleteInitialAdminForbidden);
+        }
+
         var user = await users.FindAsync(u => u.Id == command.UserId, ct);
         if (user is null)
         {
             return Error.NotFound(ErrorCode.UserNotFound);
-        }
-
-        if (user.IsAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
-        {
-            return Error.Forbidden(ErrorCode.UserDeleteLastAdminForbidden);
         }
 
         if (

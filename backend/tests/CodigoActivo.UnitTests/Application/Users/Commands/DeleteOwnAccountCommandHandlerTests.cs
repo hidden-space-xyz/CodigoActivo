@@ -5,6 +5,7 @@ using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
@@ -135,25 +136,23 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncLastAdministratorReturnsForbidden()
+    public async Task HandleAsyncInitialAdministratorReturnsForbiddenWithoutCheckingThePassword()
     {
-        var user = Signed(isAdmin: true);
-        users.CountsAdministrators(1);
+        var result = await DeleteAsync(SeedIds.Users.InitialAdministrator);
 
-        var result = await DeleteAsync(user.Id);
-
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteLastAdminForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteInitialAdminForbidden);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .FindAsync(default!, TestContext.Current.CancellationToken);
         AssertNothingRemoved();
         await AssertNotSavedAsync();
         await AssertCacheKeptAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncAdministratorWithAnotherAdministratorRemovesTheAccount()
+    public async Task HandleAsyncAdministratorRemovesTheAccount()
     {
         var user = Signed(isAdmin: true);
-        users.CountsAdministrators(2);
-        users.HasAuthoredContentAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await DeleteAsync(user.Id);
 
@@ -268,26 +267,11 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     {
         var user = SignedWithAuthenticator(lastUsedStep: 50);
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(51);
-        users.HasAuthoredContentAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await DeleteAsync(user.Id, code: "123456");
 
         result.IsSuccess.Should().BeTrue();
         await AssertErasedAsync(user);
-    }
-
-    [Fact]
-    public async Task HandleAsyncAuthoredContentExistsReturnsConflictAndChangesNothing()
-    {
-        var user = Signed();
-        users.HasAuthoredContentAsync(user.Id, Arg.Any<CancellationToken>()).Returns(true);
-
-        var result = await DeleteAsync(user.Id);
-
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserDeleteAuthoredContentExists);
-        AssertNothingRemoved();
-        await AssertNotSavedAsync();
-        await AssertCacheKeptAsync();
     }
 
     [Fact]
@@ -308,7 +292,6 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     public async Task HandleAsyncPasswordAndEmailCodeCorrectErasesAndInvalidatesCache()
     {
         var user = Signed();
-        users.HasAuthoredContentAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await DeleteAsync(user.Id);
 
@@ -318,9 +301,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
             .Received(1)
             .InvalidateAsync(
                 Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null
-                    && tags.Contains(CacheTags.Users)
-                    && tags.Contains(CacheTags.Activities)
+                    tags != null && tags.SequenceEqual(CacheTags.Erasure)
                 )
             );
     }
