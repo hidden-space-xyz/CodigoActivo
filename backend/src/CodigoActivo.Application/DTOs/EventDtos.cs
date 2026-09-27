@@ -252,20 +252,20 @@ public record TermsDocumentResponse(Guid Id, string Name, string Description)
 /// Contains the client-supplied data used to create a terms document.
 /// </summary>
 /// <param name="Name">The name value.</param>
-/// <param name="Description">The description value.</param>
+/// <param name="Description">Rich-text document holding text only; images are refused.</param>
 public record CreateTermsDocumentRequest(
     [Required] [MaxLength(120)] [NotBlank] string Name,
-    [Required] [JsonString] [MaxLength(262144)] string Description
+    [Required] [JsonString] [NoRichTextImages] [MaxLength(262144)] string Description
 );
 
 /// <summary>
 /// Contains the client-supplied data used to update the terms document.
 /// </summary>
 /// <param name="Name">The name value.</param>
-/// <param name="Description">The description value.</param>
+/// <param name="Description">Rich-text document holding text only; images are refused.</param>
 public record UpdateTermsDocumentRequest(
     [Required] [MaxLength(120)] [NotBlank] string Name,
-    [Required] [JsonString] [MaxLength(262144)] string Description
+    [Required] [JsonString] [NoRichTextImages] [MaxLength(262144)] string Description
 );
 
 /// <summary>

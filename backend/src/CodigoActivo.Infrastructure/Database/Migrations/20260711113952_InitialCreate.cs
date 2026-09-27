@@ -51,6 +51,19 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "deleted_accounts",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    deleted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    data = table.Column<string>(type: "jsonb", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_deleted_accounts", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "disposable_email_domains",
                 columns: table => new
                 {
@@ -763,6 +776,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_deleted_accounts_deleted_at",
+                table: "deleted_accounts",
+                column: "deleted_at");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_email_outbox_content_parts_content_id",
                 table: "email_outbox_content_parts",
                 column: "content_id");
@@ -967,6 +985,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             migrationBuilder.DropTable(
                 name: "activity_user_role_assignments");
+
+            migrationBuilder.DropTable(
+                name: "deleted_accounts");
 
             migrationBuilder.DropTable(
                 name: "disposable_email_domains");

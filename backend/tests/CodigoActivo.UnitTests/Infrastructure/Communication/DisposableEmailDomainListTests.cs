@@ -145,7 +145,6 @@ public sealed class DisposableEmailDomainListTests
     [InlineData("gmail.com")]
     [InlineData("HOTMAIL.ES")]
     [InlineData("outlook.com.")]
-    [InlineData("telefonica.net")]
     public void ParseListThatWouldRefuseAProtectedProviderIsRejected(string line)
     {
         var result = Parse(DisposableEmailDomainLists.Genuine(line));

@@ -23,6 +23,8 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     private const string Secret = "JBSWY3DPEHPK3PXP";
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly IDeletedAccountRepository deletedAccounts =
+        Substitute.For<IDeletedAccountRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
@@ -33,8 +35,12 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     public DeleteOwnAccountCommandHandlerTests()
     {
         var hasher = new FakePasswordHasher();
+        deletedAccounts
+            .EraseAsync(Arg.Any<User>(), Arg.Any<AccountErasure>(), Arg.Any<CancellationToken>())
+            .Returns(true);
         sut = new DeleteOwnAccountCommandHandler(
             users,
+            deletedAccounts,
             uow,
             clock,
             PasswordGuards.Create(hasher, uow, clock),
@@ -94,6 +100,19 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     private void AssertNothingRemoved()
     {
         users.DidNotReceiveWithAnyArgs().Remove(Arg.Any<User>());
+        _ = deletedAccounts.DidNotReceiveWithAnyArgs().EraseAsync(default!, default!, default);
+    }
+
+    private Task<bool> AssertErasedAsync(User user)
+    {
+        users.DidNotReceiveWithAnyArgs().Remove(Arg.Any<User>());
+        return deletedAccounts
+            .Received(1)
+            .EraseAsync(
+                user,
+                new AccountErasure(AccountDeletionOrigin.Self, user.Id, clock.UtcNow),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     private ValueTask AssertCacheKeptAsync()
@@ -139,8 +158,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var result = await DeleteAsync(user.Id);
 
         result.IsSuccess.Should().BeTrue();
-        users.Received(1).Remove(user);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await AssertErasedAsync(user);
     }
 
     [Fact]
@@ -255,8 +273,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var result = await DeleteAsync(user.Id, code: "123456");
 
         result.IsSuccess.Should().BeTrue();
-        users.Received(1).Remove(user);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await AssertErasedAsync(user);
     }
 
     [Fact]
@@ -274,7 +291,21 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncPasswordAndEmailCodeCorrectRemovesSavesAndInvalidatesCache()
+    public async Task HandleAsyncAccountErasedConcurrentlyReturnsNotFoundAndKeepsTheCache()
+    {
+        var user = Signed();
+        deletedAccounts
+            .EraseAsync(user, Arg.Any<AccountErasure>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        var result = await DeleteAsync(user.Id);
+
+        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        await AssertCacheKeptAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncPasswordAndEmailCodeCorrectErasesAndInvalidatesCache()
     {
         var user = Signed();
         users.HasAuthoredContentAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
@@ -282,8 +313,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var result = await DeleteAsync(user.Id);
 
         result.IsSuccess.Should().BeTrue();
-        users.Received(1).Remove(user);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await AssertErasedAsync(user);
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(

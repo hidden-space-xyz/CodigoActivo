@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
@@ -168,6 +169,22 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         return (await response.ReadJsonAsync<AccountDeletionStatusResponse>(Ct))!;
     }
 
+    private Task<List<DeletedAccount>> CopiesAsync()
+    {
+        return Factory.QueryAsync(db => db.DeletedAccounts.AsNoTracking().ToListAsync(Ct));
+    }
+
+    private async Task<(string? Origin, Guid ActorId)> DeletionOfAsync(Guid userId)
+    {
+        var copy = (await CopiesAsync()).Single(c => c.Id == userId);
+        using var document = JsonDocument.Parse(copy.Data);
+        var deletion = document.RootElement.GetProperty("deletion");
+        return (
+            deletion.GetProperty("origin").GetString(),
+            deletion.GetProperty("actorId").GetGuid()
+        );
+    }
+
     private async Task<(HttpClient Client, string Code)> SignedInMemberWithCodeAsync()
     {
         var client = await LoginAsMemberAsync();
@@ -208,6 +225,17 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
 
         (await FindAsync<Event>(EventId)).Should().NotBeNull("the event itself belongs to nobody");
         (await FindAsync<Activity>(ActivityId)).Should().NotBeNull();
+
+        var copy = (await CopiesAsync())
+            .Should()
+            .ContainSingle("the minors are kept inside the guardian's copy")
+            .Subject;
+        copy.Id.Should().Be(TestSeedData.Users.MemberId);
+        copy.DeletedAt.Should().Be(Factory.Clock.UtcNow);
+        (await DeletionOfAsync(TestSeedData.Users.MemberId))
+            .Should()
+            .Be(("Self", TestSeedData.Users.MemberId));
+        copy.Data.Should().Contain(TestSeedData.Users.MemberChildId.ToString());
     }
 
     [Fact]
@@ -405,6 +433,50 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeConflictAsync(ErrorCode.UserDeleteAuthoredContentExists);
         (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().NotBeNull();
         (await FindAsync<NewsItem>(newsItemId)).Should().NotBeNull();
+        (await CopiesAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteUserFormerAdministratorWithAuthoredContentReturnsConflictAndKeepsEverything()
+    {
+        var newsItemId = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.Files.Add(
+                new FileEntity
+                {
+                    Id = ThumbnailId,
+                    Name = "thumb",
+                    Extension = "png",
+                    UploadedAt = SeededAt,
+                    UploadedBy = TestSeedData.Users.AdminId,
+                }
+            );
+            db.News.Add(
+                new NewsItem
+                {
+                    Id = newsItemId,
+                    Title = "Nota",
+                    Subtitle = "Sub",
+                    Description = "{}",
+                    ThumbnailId = ThumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = TestSeedData.Users.BlockedId,
+                }
+            );
+            return Task.CompletedTask;
+        });
+        var admin = await LoginAsAdminAsync();
+
+        using var response = await admin.DeleteWithCsrfAsync(
+            $"/api/users/{TestSeedData.Users.BlockedId}",
+            Ct
+        );
+
+        await response.ShouldBeConflictAsync(ErrorCode.UserDeleteAuthoredContentExists);
+        (await FindAsync<User>(TestSeedData.Users.BlockedId)).Should().NotBeNull();
+        (await FindAsync<NewsItem>(newsItemId)).Should().NotBeNull();
+        (await CopiesAsync()).Should().BeEmpty();
     }
 
     [Fact]
@@ -461,6 +533,17 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
 
         other.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().BeNull();
+
+        (await CopiesAsync())
+            .Select(copy => copy.Id)
+            .Should()
+            .BeEquivalentTo([TestSeedData.Users.MemberChildId, TestSeedData.Users.PendingId]);
+        (await DeletionOfAsync(TestSeedData.Users.MemberChildId))
+            .Should()
+            .Be(("Guardian", TestSeedData.Users.MemberId));
+        (await DeletionOfAsync(TestSeedData.Users.PendingId))
+            .Should()
+            .Be(("Administrator", TestSeedData.Users.AdminId));
     }
 
     [Fact]

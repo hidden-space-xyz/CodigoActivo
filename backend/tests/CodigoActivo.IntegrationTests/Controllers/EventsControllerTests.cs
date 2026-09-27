@@ -859,4 +859,33 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             .SignupBlocked.Should()
             .BeTrue("the member has not yet decided on the event's only, required document");
     }
+
+    [Fact]
+    public async Task TermsDocumentWithAnImageIsRefusedOnCreateAndUpdate()
+    {
+        const string ImageDocument =
+            "{\"type\":\"doc\",\"content\":[{\"type\":\"image\",\"attrs\":{\"src\":\"/api/files/0f8fad5b-d9cb-469f-a165-70867728950e/content\"}}]}";
+        var termsDocumentId = await SeedTermsDocumentAsync("Reglamento");
+        var admin = await LoginAsAdminAsync();
+
+        using var created = await admin.PostJsonAsync(
+            "/api/events/termsDocument",
+            new CreateTermsDocumentRequest("Con imagen", ImageDocument),
+            Ct
+        );
+        using var updated = await admin.PutJsonAsync(
+            $"/api/events/termsDocument/{termsDocumentId}",
+            new UpdateTermsDocumentRequest("Reglamento", ImageDocument),
+            Ct
+        );
+
+        await created.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        await updated.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        (await FindAsync<TermsDocument>(termsDocumentId))!.Description.Should().Be("{}");
+        await Factory.QueryAsync(async db =>
+        {
+            (await db.TermsDocuments.AnyAsync(d => d.Name == "Con imagen", Ct)).Should().BeFalse();
+            return true;
+        });
+    }
 }

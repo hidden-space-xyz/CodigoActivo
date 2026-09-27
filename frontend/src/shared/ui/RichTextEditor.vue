@@ -19,9 +19,11 @@ const props = defineProps<{
   label: string
   /**
    * Uploads an inserted image and resolves to its stored file id, which becomes the image URL.
-   * Resolving `undefined` skips the insert; a rejection shows the upload error message.
+   * Resolving `undefined` skips the insert; a rejection shows the upload error message. Without it
+   * the editor is text only: it has no image button and drops images from loaded or pasted content.
+   * Read once at mount.
    */
-  upload: (file: File) => Promise<string | undefined>
+  upload?: (file: File) => Promise<string | undefined>
 }>()
 const emit = defineEmits<{
   /** Fired with the serialized JSON document on every user edit, not on external value updates. */
@@ -33,10 +35,12 @@ const uploading = ref(false)
 const uploadError = ref('')
 
 const placeholderVar = computed(() => JSON.stringify(t('editor.placeholder')))
+const upload = props.upload
+const contentOptions = { images: upload !== undefined }
 
 const editor = useEditor({
-  extensions: richTextExtensions(),
-  content: parseRichText(props.modelValue),
+  extensions: richTextExtensions(contentOptions),
+  content: parseRichText(props.modelValue, contentOptions),
   editorProps: {
     attributes: {
       'aria-label': props.label,
@@ -51,9 +55,9 @@ watch(
   (value) => {
     const instance = editor.value
     if (!instance) return
-    const incoming = serializeRichText(parseRichText(value))
+    const incoming = serializeRichText(parseRichText(value, contentOptions))
     if (incoming !== serializeRichText(instance.getJSON())) {
-      instance.commands.setContent(parseRichText(value), { emitUpdate: false })
+      instance.commands.setContent(parseRichText(value, contentOptions), { emitUpdate: false })
     }
   },
 )
@@ -66,11 +70,11 @@ async function onFileChange(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
-  if (!file || !editor.value) return
+  if (!file || !editor.value || !upload) return
   uploading.value = true
   uploadError.value = ''
   try {
-    const fileId = await props.upload(file)
+    const fileId = await upload(file)
     const url = fileContentUrl(fileId)
     if (url) editor.value.chain().focus().setImage({ src: url, alt: file.name }).run()
   } catch {
@@ -287,6 +291,7 @@ onBeforeUnmount(() => editor.value?.destroy())
         <AppIcon name="link" />
       </button>
       <button
+        v-if="upload"
         type="button"
         class="rt__btn"
         :title="$t('editor.insertImage')"
@@ -377,6 +382,7 @@ onBeforeUnmount(() => editor.value?.destroy())
     <EditorContent v-if="editor" :editor="editor" class="rt__content rich-text" />
 
     <input
+      v-if="upload"
       ref="fileInput"
       type="file"
       accept="image/*"

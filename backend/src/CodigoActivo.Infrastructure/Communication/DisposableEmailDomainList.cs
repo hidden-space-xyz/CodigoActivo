@@ -107,7 +107,7 @@ public static partial class DisposableEmailDomainList
         "protonmail.com",
         "yahoo.com",
         "yahoo.es",
-        "codigoactivo.es"
+        "codigoactivo.es",
     }.ToFrozenSet(StringComparer.Ordinal);
 
     private const int MaxDomainLength = 253;

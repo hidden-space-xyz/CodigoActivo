@@ -20,13 +20,14 @@ public sealed record DeleteOwnAccountCommand(Guid UserId, DeleteAccountRequest R
 
 /// <summary>
 /// Executes the command that erases the signed-in user, every minor under their guardianship and
-/// all their participation rows. Because the deletion cannot be undone it demands both the current
-/// password and the account's second factor, and wrong codes count towards the same lockout as
-/// logins. The last administrator cannot delete themselves, so the application always keeps one, and
-/// an account still credited as the author of published content is refused instead of breaking those
-/// rows.
+/// all their participation rows, keeping the blocked copy the law requires. Because the deletion
+/// cannot be undone it demands both the current password and the account's second factor, and wrong
+/// codes count towards the same lockout as logins. The last administrator cannot delete themselves,
+/// so the application always keeps one, and an account still credited as the author of published
+/// content is refused instead of breaking those rows.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="deletedAccounts">Repository that erases the account after copying it.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
@@ -37,6 +38,7 @@ public sealed record DeleteOwnAccountCommand(Guid UserId, DeleteAccountRequest R
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DeleteOwnAccountCommandHandler(
     IUserRepository users,
+    IDeletedAccountRepository deletedAccounts,
     IUnitOfWork uow,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
@@ -107,8 +109,12 @@ public sealed class DeleteOwnAccountCommandHandler(
             return Error.Conflict(ErrorCode.UserDeleteAuthoredContentExists);
         }
 
-        users.Remove(user);
-        await uow.SaveChangesAsync(ct);
+        var erasure = new AccountErasure(AccountDeletionOrigin.Self, user.Id, now);
+        if (!await deletedAccounts.EraseAsync(user, erasure, ct))
+        {
+            return Error.NotFound(ErrorCode.UserNotFound);
+        }
+
         await cacheInvalidator.InvalidateAsync(CacheTags.Users, CacheTags.Activities);
         return Result.Success();
     }

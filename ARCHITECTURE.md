@@ -42,6 +42,10 @@ project-reference discipline.
   rejected the commit, so a handler can answer a lost race instead of failing. A person holds at most one
   assignment per activity (unique index on `user_id`, `activity_id`); the signup commands answer a
   concurrent duplicate with `ActivityAssignmentAlreadyExists` (409).
+- Users are deleted only through `IDeletedAccountRepository.EraseAsync`, which executes immediately and stores
+  the legal copy in the same transaction; `DeletedAccountGuard`, a `SaveChangesInterceptor` that
+  `CodigoActivoDbContext` adds to itself, refuses any other user deletion. What the copy holds and how long it is
+  kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
 - Pure service contracts (`IClock`, `IPasswordHasher`, `ITotpService`, `ISecretProtector`, email and file
   storage ports) live in Domain; application-specific contracts such as cache invalidation stay in
   Application.

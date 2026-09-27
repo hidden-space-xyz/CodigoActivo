@@ -1355,7 +1355,7 @@
       },
       "deleteAccount": {
         "title": "Eliminar mi cuenta",
-        "lead": "Al eliminar tu cuenta borramos para siempre tus datos personales, los de los menores a tu cargo, vuestras inscripciones, vuestras valoraciones y vuestros diplomas. No podremos recuperarlos después.",
+        "lead": "Al eliminar tu cuenta, tú y los menores a tu cargo perderéis el acceso para siempre: se anularán vuestras inscripciones y ya no podrás consultar vuestros diplomas. No podrás recuperar la cuenta después.",
         "lastAdminNote": "Eres la única persona administradora, así que no puedes eliminar tu cuenta. Concede el rango de administrador a otra persona antes de darte de baja.",
         "action": "Eliminar mi cuenta",
         "dialogHeader": "Eliminar mi cuenta",
@@ -1369,10 +1369,10 @@
         "codeLabel": "Código de confirmación",
         "resendPrompt": "¿No te ha llegado?",
         "resend": "Reenviar código",
-        "irreversible": "Entiendo que esta acción es irreversible y eliminará también los datos de los menores a mi cargo",
+        "irreversible": "Entiendo que esta acción es irreversible y que también da de baja a los menores a mi cargo",
         "submit": "Eliminar definitivamente",
         "deletedSummary": "Cuenta eliminada",
-        "deletedDetail": "Tu cuenta y todos sus datos se han eliminado."
+        "deletedDetail": "Tu cuenta se ha eliminado."
       },
       "history": {
         "lead": "Todas las inscripciones de tu unidad familiar, próximas y pasadas. Cuando un evento termina puedes valorarlo.",

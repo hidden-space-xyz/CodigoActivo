@@ -31,6 +31,9 @@ Domain + Application + Infrastructure <- Composition <- API
   `DbContext` directly.
 - `RemoveAsync` and `SetFeaturedAsync` execute immediately; do not mix them with staged work expected to be
   atomic.
+- Delete users only through `IDeletedAccountRepository.EraseAsync`. A new `User` property or table referencing
+  users must be copied into, or deliberately excluded from, `DeletedAccountSnapshot`;
+  `DeletedAccountCoverageTests` only checks that the decision was recorded, not that the data is copied.
 - Expected failures return `Result`/`Result<T>` and an `ErrorCode`. Do not throw for business outcomes.
 - Put wire `*Request`/`*Response` records in `Application/DTOs` and binding queries in
   `Application/Querying`.

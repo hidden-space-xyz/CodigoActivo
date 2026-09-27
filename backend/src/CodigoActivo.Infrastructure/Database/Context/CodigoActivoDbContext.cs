@@ -144,6 +144,11 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// </summary>
     public DbSet<DisposableEmailDomain> DisposableEmailDomains => Set<DisposableEmailDomain>();
 
+    /// <summary>
+    /// Gets the deleted accounts value.
+    /// </summary>
+    public DbSet<DeletedAccount> DeletedAccounts => Set<DeletedAccount>();
+
     async Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken ct)
     {
         try
@@ -167,6 +172,19 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
                 string.Equals(entityType.GetTableName(), tableName, StringComparison.Ordinal)
             )
             ?.ClrType;
+    }
+
+    /// <summary>
+    /// Adds <see cref="DeletedAccountGuard"/> to every instance, whatever registered the options, so
+    /// no commit can delete a user without the legal copy.
+    /// </summary>
+    /// <param name="optionsBuilder">Builder of the options of this instance.</param>
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        ArgumentNullException.ThrowIfNull(optionsBuilder);
+
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.AddInterceptors(DeletedAccountGuard.Instance);
     }
 
     /// <inheritdoc />

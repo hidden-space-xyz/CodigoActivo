@@ -70,6 +70,7 @@ public static class DependencyInjection
         AddPersistence(services, configuration);
         AddRepositories(services);
         AddSessionCleanup(services, configuration);
+        AddDeletedAccountPurge(services);
         AddFileStorage(services, configuration);
         AddClock(services, configuration);
         AddApplicationOptions(services, configuration);
@@ -522,6 +523,13 @@ public static class DependencyInjection
         services.AddScoped<IActivityModalityTypeRepository, ActivityModalityTypeRepository>();
         services.AddScoped<IDashboardRepository, DashboardRepository>();
         services.AddScoped<IDisposableEmailDomainRepository, DisposableEmailDomainRepository>();
+        services.AddScoped<IDeletedAccountRepository, DeletedAccountRepository>();
+    }
+
+    private static void AddDeletedAccountPurge(IServiceCollection services)
+    {
+        services.AddSingleton(new DeletedAccountPurgeOptions());
+        services.AddHostedService<DeletedAccountPurger>();
     }
 
     private static void AddSessionCleanup(IServiceCollection services, IConfiguration configuration)

@@ -49,9 +49,16 @@ const SAFE_MARK_TYPES = new Set([
   'textStyle',
   'highlight',
 ])
+const TEXT_ONLY_NODE_TYPES = new Set([...SAFE_NODE_TYPES].filter((type) => type !== 'image'))
 const MAX_RICH_TEXT_NODES = 5_000
 const MAX_RICH_TEXT_CHARACTERS = 500_000
 const MAX_RICH_TEXT_DEPTH = 50
+
+/** Options shared by the editor extensions and the parser. */
+export interface RichTextOptions {
+  /** When `false`, images are neither accepted by the editor nor kept when parsing. */
+  images?: boolean
+}
 
 function isSameOriginImageSrc(src: string): boolean {
   if (src.startsWith('/') && !src.startsWith('//')) return true
@@ -78,9 +85,11 @@ const SameOriginImage = Image.extend({
 
 /**
  * Tiptap extensions shared by the editor and the HTML renderer, as fresh instances on each call.
- * Links open in a new tab and pasted images are accepted only from the same origin.
+ * Links open in a new tab and pasted images are accepted only from the same origin; with
+ * `images: false` there is no image node, so pasted images are dropped.
  */
-export function richTextExtensions(): AnyExtension[] {
+export function richTextExtensions(options: RichTextOptions = {}): AnyExtension[] {
+  const images = options.images !== false
   return [
     StarterKit.configure({ link: false, underline: false }),
     TextStyle,
@@ -92,12 +101,14 @@ export function richTextExtensions(): AnyExtension[] {
       autolink: true,
       HTMLAttributes: { rel: 'noopener nofollow', target: '_blank' },
     }),
-    TextAlign.configure({ types: ['heading', 'paragraph', 'image'] }),
+    TextAlign.configure({
+      types: images ? ['heading', 'paragraph', 'image'] : ['heading', 'paragraph'],
+    }),
     Table.configure({ resizable: true }),
     TableRow,
     TableHeader,
     TableCell,
-    SameOriginImage,
+    ...(images ? [SameOriginImage] : []),
   ]
 }
 
@@ -115,16 +126,19 @@ export function renderRichTextHtml(value?: string | null): string {
 
 /**
  * Parses stored rich text into a sanitized Tiptap document. Only allow-listed nodes, marks and
- * attributes survive (http/https/mailto/tel links, `/api/files/{id}/content` images, `#rrggbb`
- * colors), within node, depth and character limits. Anything that is not a JSON document yields an
- * empty document.
+ * attributes survive (http/https/mailto/tel links, `/api/files/{id}/content` images unless
+ * `images: false`, `#rrggbb` colors), within node, depth and character limits. Anything that is not
+ * a JSON document yields an empty document.
  */
-export function parseRichText(value?: string | null): JSONContent {
+export function parseRichText(value?: string | null, options: RichTextOptions = {}): JSONContent {
   if (!value) return { type: 'doc', content: [] }
   try {
     const parsed: unknown = JSON.parse(value)
     if (parsed && typeof parsed === 'object' && (parsed as JSONContent).type === 'doc') {
-      return sanitizeRichText(parsed)
+      return sanitizeRichText(
+        parsed,
+        options.images === false ? TEXT_ONLY_NODE_TYPES : SAFE_NODE_TYPES,
+      )
     }
   } catch {}
   return { type: 'doc', content: [] }
@@ -133,10 +147,11 @@ export function parseRichText(value?: string | null): JSONContent {
 interface SanitizeState {
   nodes: number
   characters: number
+  nodeTypes: ReadonlySet<string>
 }
 
-function sanitizeRichText(value: JSONContent): JSONContent {
-  const state: SanitizeState = { nodes: 0, characters: 0 }
+function sanitizeRichText(value: JSONContent, nodeTypes: ReadonlySet<string>): JSONContent {
+  const state: SanitizeState = { nodes: 0, characters: 0, nodeTypes }
   return sanitizeNode(value, state, 0) ?? { ...EMPTY_DOC }
 }
 
@@ -145,7 +160,7 @@ function sanitizeNode(value: JSONContent, state: SanitizeState, depth: number): 
     !value ||
     typeof value !== 'object' ||
     typeof value.type !== 'string' ||
-    !SAFE_NODE_TYPES.has(value.type) ||
+    !state.nodeTypes.has(value.type) ||
     depth > MAX_RICH_TEXT_DEPTH ||
     state.nodes >= MAX_RICH_TEXT_NODES
   ) {

@@ -108,6 +108,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         builder.ConfigureTestServices(services =>
         {
             RemoveHostedService<ExpiredSessionCleaner>(services);
+            RemoveHostedService<DeletedAccountPurger>(services);
             RemoveHostedService<EmailOutboxProcessor>(services);
             RemoveHostedService<DisposableEmailDomainRefresher>(services);
 
@@ -145,8 +146,8 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
     }
 
     /// <summary>
-    /// Drops a background worker whose timing would race the tests: the periodic session purge would
-    /// delete rows behind a test that moves the clock past a session expiry on purpose, the email
+    /// Drops a background worker whose timing would race the tests: the periodic session and deleted
+    /// account purges would delete rows behind a test that moves the clock on purpose, the email
     /// delivery worker would compete with the synchronous drain installed by
     /// <see cref="UseSynchronousEmailOutbox"/>, and the disposable email domain refresh would reach
     /// the internet and fill the list behind the tests. All are exercised directly instead.
