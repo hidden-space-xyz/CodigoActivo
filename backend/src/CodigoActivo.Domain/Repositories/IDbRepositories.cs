@@ -82,16 +82,6 @@ public interface IUserRepository : IDbRepository<User>
         DateTimeOffset now,
         CancellationToken ct = default
     );
-
-    /// <summary>
-    /// Determines whether published content still credits the user or any minor under their
-    /// guardianship as its author, uploader or last editor. Such rows keep the account alive
-    /// because they reference it with a restricted foreign key.
-    /// </summary>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
-    public Task<bool> HasAuthoredContentAsync(Guid userId, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -109,12 +99,13 @@ public interface IDeletedAccountRepository
 {
     /// <summary>
     /// Deletes the user, and through the cascade their dependents and participation rows, after
-    /// storing a <see cref="DeletedAccount"/> copy of everything the deletion removes. Both happen
-    /// in one transaction that first locks the user, their dependents and the household's
-    /// assignments and terms decisions, so none of them can be added or changed between the copy
-    /// and the deletion, and a failed deletion leaves no copy behind; an erasure aborted by a
-    /// deadlock is retried. Any other staged change of the unit of work is committed with them. It
-    /// executes immediately.
+    /// storing a <see cref="DeletedAccount"/> copy of everything the deletion removes. Content that
+    /// credits the household as its author, last editor or uploader is handed over to the initial
+    /// administrator, which is never erased. Everything happens in one transaction that first locks
+    /// the user, their dependents and the household's assignments and terms decisions, so none of
+    /// them can be added or changed between the copy and the deletion, and a failed deletion leaves
+    /// no copy and no handover behind; an erasure aborted by a deadlock is retried. Any other staged
+    /// change of the unit of work is committed with them. It executes immediately.
     /// </summary>
     /// <param name="user">Tracked user to erase.</param>
     /// <param name="erasure">Who asked for the deletion and when it happened.</param>

@@ -110,8 +110,9 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Deletes the selected user. The caller's own account is refused here: erasing it requires
-    /// the password and the second factor through <c>POST /api/me/deletion</c>.
+    /// Deletes the selected user, handing the content credited to the account over to the initial
+    /// administrator, which is itself refused. The caller's own account is refused here too:
+    /// erasing it requires the password and the second factor through <c>POST /api/me/deletion</c>.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -130,7 +131,7 @@ public class UsersController : ApiControllerBase
 
     /// <summary>
     /// Sets the admin state. Granting it requires the caller's password, so the endpoint shares
-    /// the credential rate limits.
+    /// the credential rate limits. The initial administrator always keeps it.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>

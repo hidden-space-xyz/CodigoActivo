@@ -6,6 +6,7 @@ using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
@@ -166,13 +167,10 @@ public sealed class SetAdminCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncRevokeWithOtherAdminsRemainingRevokesWithoutPassword()
+    public async Task HandleAsyncRevokeRevokesWithoutPasswordOrCountingAdministrators()
     {
         var user = NewUser(isAdmin: true);
         users.FindReturns(user);
-        users
-            .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(2);
 
         var result = await HandleAsync(user.Id, false);
 
@@ -185,21 +183,22 @@ public sealed class SetAdminCommandHandlerTests
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Kind.Should().Be(EmailKind.SecurityAlert);
         message.ToAddress.Should().Be(user.Email);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .CountAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncRevokeLastAdminReturnsForbidden()
+    public async Task HandleAsyncRevokeInitialAdministratorReturnsForbidden()
     {
-        var user = NewUser(isAdmin: true);
+        var user = NewUser(id: SeedIds.Users.InitialAdministrator, isAdmin: true);
         users.FindReturns(user);
-        users
-            .CountAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(1);
 
         var result = await HandleAsync(user.Id, false);
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserCannotRemoveLastAdmin);
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserCannotRemoveInitialAdmin);
         user.IsAdmin.Should().BeTrue();
         await AssertNotSavedAsync();
+        emailSender.Sent.Should().BeEmpty();
     }
 }

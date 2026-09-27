@@ -9,7 +9,8 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
 /// <summary>
-/// Creates the initial initial administrator records when they are missing.
+/// Creates the initial administrator, under <see cref="SeedIds.Users.InitialAdministrator"/>, on
+/// an empty database.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 /// <param name="passwordHasher">Service used to securely hash and verify passwords.</param>
@@ -21,12 +22,14 @@ public sealed class InitialAdministratorSeeder(
 )
 {
     /// <summary>
-    /// Creates the required initial administrator records when they do not exist.
+    /// Creates the initial administrator when the database has no users. A database that has users
+    /// but not the initial administrator is refused, because deleting accounts relies on it.
     /// </summary>
     /// <param name="configuredEmail">The configured email value.</param>
     /// <param name="configuredPassword">The configured password value.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">The bootstrap credentials are invalid on an empty database, or the database has users but not the initial administrator.</exception>
     public async Task SeedAsync(
         string? configuredEmail,
         string? configuredPassword,
@@ -35,6 +38,13 @@ public sealed class InitialAdministratorSeeder(
     {
         if (await context.Users.AnyAsync(ct))
         {
+            if (!await context.Users.AnyAsync(u => u.Id == SeedIds.Users.InitialAdministrator, ct))
+            {
+                throw new InvalidOperationException(
+                    $"The database has users but not the initial administrator {SeedIds.Users.InitialAdministrator}; a database created before that account had a fixed identifier must be recreated."
+                );
+            }
+
             return;
         }
 
@@ -62,6 +72,7 @@ public sealed class InitialAdministratorSeeder(
 
         var administrator = new User
         {
+            Id = SeedIds.Users.InitialAdministrator,
             FirstName = "Administrador",
             LastName = "Código Activo",
             Email = email,

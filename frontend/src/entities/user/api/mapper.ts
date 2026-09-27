@@ -27,6 +27,7 @@ export function toUser(user: UserResponse): User {
     promotionalConsent: user.promotionalConsent ?? false,
     gender: user.gender ?? null,
     isAdmin: user.isAdmin ?? false,
+    isInitialAdmin: user.isInitialAdmin ?? false,
     parentId: user.parentId ?? null,
     parentName: user.parentName ?? '',
     dependentCount: user.dependentCount ?? 0,

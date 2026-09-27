@@ -249,7 +249,7 @@ describe('account requests', () => {
   it('surfaces the API error when the own account cannot be deleted', async () => {
     server.use(
       http.post('/api/me/deletion/code', () => apiError(409, 'TwoFactorResendCooldownActive')),
-      http.post('/api/me/deletion', () => apiError(409, 'UserDeleteAuthoredContentExists')),
+      http.post('/api/me/deletion', () => apiError(403, 'UserDeleteInitialAdminForbidden')),
     )
 
     await expect(requestAccountDeletionCodeRequest('secret')).rejects.toMatchObject({
@@ -257,7 +257,7 @@ describe('account requests', () => {
     })
     await expect(
       deleteAccountRequest({ currentPassword: 'secret', code: '123456' }),
-    ).rejects.toMatchObject({ status: 409, code: 'UserDeleteAuthoredContentExists' })
+    ).rejects.toMatchObject({ status: 403, code: 'UserDeleteInitialAdminForbidden' })
   })
 
   it('sends the current and new password', async () => {

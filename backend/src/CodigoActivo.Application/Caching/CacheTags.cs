@@ -86,6 +86,12 @@ public static class CacheTags
     ];
 
     /// <summary>
+    /// Stores the tags invalidated when an account is erased: its user rows and participation, and
+    /// every cached content type, whose author credits may pass to the initial administrator.
+    /// </summary>
+    public static readonly IReadOnlyList<string> Erasure = [.. OutputCached, Users];
+
+    /// <summary>
     /// Stores the shared all value.
     /// </summary>
     public static readonly IReadOnlyList<string> All =

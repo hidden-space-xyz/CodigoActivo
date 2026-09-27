@@ -38,6 +38,13 @@ public sealed class DeletedAccountRepositoryTests(CodigoActivoWebAppFactory fact
     private static readonly Guid ImageRightsId = new("dddddddd-0000-0000-0000-000000000009");
     private static readonly Guid TripRulesId = new("dddddddd-0000-0000-0000-00000000000a");
     private static readonly Guid LoginChallengeId = new("dddddddd-0000-0000-0000-00000000000b");
+    private static readonly Guid ReviewedEventId = new("dddddddd-0000-0000-0000-00000000000c");
+    private static readonly Guid AuthoredActivityId = new("dddddddd-0000-0000-0000-00000000000d");
+    private static readonly Guid NewsItemId = new("dddddddd-0000-0000-0000-00000000000e");
+    private static readonly Guid PartnerId = new("dddddddd-0000-0000-0000-00000000000f");
+    private static readonly Guid ResourceId = new("dddddddd-0000-0000-0000-000000000010");
+    private static readonly Guid UploadId = new("dddddddd-0000-0000-0000-000000000011");
+    private static readonly Guid OtherUploadId = new("dddddddd-0000-0000-0000-000000000012");
 
     private static readonly DateTimeOffset MemberSignedUpAt = SeededAt.AddDays(1);
     private static readonly DateTimeOffset ChildSignedUpAt = SeededAt.AddDays(2);
@@ -253,6 +260,47 @@ public sealed class DeletedAccountRepositoryTests(CodigoActivoWebAppFactory fact
                 )
             );
         });
+    }
+
+    private Task SeedCopyAlreadyStoredForPendingAsync()
+    {
+        return Factory.SeedAsync(db =>
+        {
+            db.News.Add(
+                new NewsItem
+                {
+                    Id = NewsItemId,
+                    Title = "Nota",
+                    Subtitle = "Sub",
+                    Description = "{}",
+                    ThumbnailId = ThumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = TestSeedData.Users.PendingId,
+                }
+            );
+            db.DeletedAccounts.Add(
+                new DeletedAccount
+                {
+                    Id = TestSeedData.Users.PendingId,
+                    DeletedAt = SeededAt,
+                    Data = "{}",
+                }
+            );
+            return Task.CompletedTask;
+        });
+    }
+
+    private async Task AssertPendingKeptWithItsContentAsync()
+    {
+        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().NotBeNull();
+        (await FindAsync<NewsItem>(NewsItemId))!
+            .CreatedBy.Should()
+            .Be(TestSeedData.Users.PendingId, "the handover is rolled back with the deletion");
+        (await CopiesAsync())
+            .Should()
+            .ContainSingle()
+            .Which.Data.Should()
+            .Be("{}", "only the copy stored before remains");
     }
 
     private async Task<bool> EraseAsync(
@@ -614,24 +662,10 @@ public sealed class DeletedAccountRepositoryTests(CodigoActivoWebAppFactory fact
     }
 
     [Fact]
-    public async Task EraseAsyncRefusedByTheDatabaseKeepsTheUserAndStoresNoCopy()
+    public async Task EraseAsyncRefusedByTheDatabaseKeepsTheUserAndRollsBackTheHandover()
     {
         await SeedHouseholdAsync();
-        await Factory.SeedAsync(db =>
-        {
-            db.News.Add(
-                new NewsItem
-                {
-                    Title = "Nota",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    ThumbnailId = ThumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.PendingId,
-                }
-            );
-            return Task.CompletedTask;
-        });
+        await SeedCopyAlreadyStoredForPendingAsync();
 
         var erase = () =>
             EraseAsync(
@@ -640,8 +674,130 @@ public sealed class DeletedAccountRepositoryTests(CodigoActivoWebAppFactory fact
                 TestSeedData.Users.AdminId
             );
 
-        await erase.Should().ThrowAsync<DbUpdateException>();
-        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().NotBeNull();
+        await erase.Should().ThrowAsync<UniqueConstraintViolationException>();
+        await AssertPendingKeptWithItsContentAsync();
+    }
+
+    [Fact]
+    public async Task EraseAsyncHandsEveryCreditOfTheHouseholdOverToTheInitialAdministrator()
+    {
+        await SeedHouseholdAsync();
+        var member = TestSeedData.Users.MemberId;
+        var child = TestSeedData.Users.MemberChildId;
+        var other = TestSeedData.Users.PendingId;
+        await Factory.SeedAsync(db =>
+        {
+            var reviewed = NewEvent(ReviewedEventId, "Revisado", new DateOnly(2026, 10, 1));
+            reviewed.CreatedBy = other;
+            reviewed.UpdatedBy = child;
+            var authored = NewActivity(
+                AuthoredActivityId,
+                CampId,
+                "Autoría",
+                new DateTimeOffset(2026, 6, 3, 10, 0, 0, TimeSpan.Zero),
+                SeedIds.ActivityModalityTypes.Online
+            );
+            authored.CreatedBy = child;
+            authored.UpdatedBy = member;
+            db.Events.Add(reviewed);
+            db.Activities.Add(authored);
+            db.News.Add(
+                new NewsItem
+                {
+                    Id = NewsItemId,
+                    Title = "Nota",
+                    Subtitle = "Sub",
+                    Description = "{}",
+                    ThumbnailId = ThumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = member,
+                    UpdatedBy = other,
+                }
+            );
+            db.Partners.Add(
+                new Partner
+                {
+                    Id = PartnerId,
+                    Name = "Colaborador",
+                    Tier = 1,
+                    FromDate = new DateOnly(2024, 1, 1),
+                    ThumbnailId = ThumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = member,
+                }
+            );
+            db.Resources.Add(
+                new Resource
+                {
+                    Id = ResourceId,
+                    Title = "Recurso",
+                    Subtitle = "Sub",
+                    Description = "{}",
+                    ResourceTypeId = SeedIds.ResourceTypes.Internal,
+                    ThumbnailId = ThumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = other,
+                    UpdatedBy = member,
+                }
+            );
+            db.Files.AddRange(
+                new FileEntity
+                {
+                    Id = UploadId,
+                    Name = "subida",
+                    Extension = "png",
+                    UploadedAt = SeededAt,
+                    UploadedBy = child,
+                },
+                new FileEntity
+                {
+                    Id = OtherUploadId,
+                    Name = "ajena",
+                    Extension = "png",
+                    UploadedAt = SeededAt,
+                    UploadedBy = other,
+                }
+            );
+            return Task.CompletedTask;
+        });
+
+        var erased = await EraseAsync(member, AccountDeletionOrigin.Self, member);
+
+        erased.Should().BeTrue();
+        var heir = SeedIds.Users.InitialAdministrator;
+        var reviewedEvent = (await FindAsync<Event>(ReviewedEventId))!;
+        reviewedEvent.CreatedBy.Should().Be(other);
+        reviewedEvent.UpdatedBy.Should().Be(heir);
+        var authoredActivity = (await FindAsync<Activity>(AuthoredActivityId))!;
+        authoredActivity.CreatedBy.Should().Be(heir);
+        authoredActivity.UpdatedBy.Should().Be(heir);
+        var newsItem = (await FindAsync<NewsItem>(NewsItemId))!;
+        newsItem.CreatedBy.Should().Be(heir);
+        newsItem.UpdatedBy.Should().Be(other);
+        (await FindAsync<Partner>(PartnerId))!.CreatedBy.Should().Be(heir);
+        var resource = (await FindAsync<Resource>(ResourceId))!;
+        resource.CreatedBy.Should().Be(other);
+        resource.UpdatedBy.Should().Be(heir);
+        (await FindAsync<FileEntity>(UploadId))!.UploadedBy.Should().Be(heir);
+        (await FindAsync<FileEntity>(OtherUploadId))!.UploadedBy.Should().Be(other);
+        (await FindAsync<User>(member)).Should().BeNull();
+        (await FindAsync<User>(child)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task EraseAsyncInitialAdministratorIsRefusedAndKeepsEverything()
+    {
+        await SeedHouseholdAsync();
+        var administrator = SeedIds.Users.InitialAdministrator;
+
+        var erase = () => EraseAsync(administrator, AccountDeletionOrigin.Self, administrator);
+
+        await erase
+            .Should()
+            .ThrowAsync<InvalidOperationException>()
+            .WithMessage("*initial administrator*");
+        (await FindAsync<User>(administrator)).Should().NotBeNull();
+        (await FindAsync<Event>(CampId))!.CreatedBy.Should().Be(administrator);
         (await CopiesAsync()).Should().BeEmpty();
     }
 
@@ -769,21 +925,7 @@ public sealed class DeletedAccountRepositoryTests(CodigoActivoWebAppFactory fact
     public async Task EraseAsyncRefusedByTheDatabaseLeavesNoCopyStagedForALaterCommit()
     {
         await SeedHouseholdAsync();
-        await Factory.SeedAsync(db =>
-        {
-            db.News.Add(
-                new NewsItem
-                {
-                    Title = "Nota",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    ThumbnailId = ThumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.PendingId,
-                }
-            );
-            return Task.CompletedTask;
-        });
+        await SeedCopyAlreadyStoredForPendingAsync();
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
         var deletedAccounts = scope.ServiceProvider.GetRequiredService<IDeletedAccountRepository>();
@@ -798,11 +940,12 @@ public sealed class DeletedAccountRepositoryTests(CodigoActivoWebAppFactory fact
         var save = () =>
             scope.ServiceProvider.GetRequiredService<IUnitOfWork>().SaveChangesAsync(Ct);
 
-        await erase.Should().ThrowAsync<DbUpdateException>();
-        await erase.Should().ThrowAsync<DbUpdateException>("a retry stages a fresh copy");
+        await erase.Should().ThrowAsync<UniqueConstraintViolationException>();
+        await erase
+            .Should()
+            .ThrowAsync<UniqueConstraintViolationException>("a retry stages a fresh copy");
         await save.Should().ThrowAsync<InvalidOperationException>().WithMessage("*EraseAsync*");
-        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().NotBeNull();
-        (await CopiesAsync()).Should().BeEmpty();
+        await AssertPendingKeptWithItsContentAsync();
     }
 
     [Fact]

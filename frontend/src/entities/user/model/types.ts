@@ -28,6 +28,8 @@ export interface User {
   readonly promotionalConsent: boolean
   readonly gender: Gender | null
   readonly isAdmin: boolean
+  /** The generic administrator created on first start: it can be neither deleted nor demoted. */
+  readonly isInitialAdmin: boolean
   readonly parentId: string | null
   readonly parentName: string
   readonly dependentCount: number

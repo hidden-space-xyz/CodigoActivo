@@ -3,6 +3,7 @@ using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.DTOs;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -37,7 +38,8 @@ public sealed class SetAdminCommandHandler(
 {
     /// <summary>
     /// Handles the request to set admin. Granting the role first re-authenticates the acting
-    /// administrator, so a hijacked session alone cannot escalate another account.
+    /// administrator, so a hijacked session alone cannot escalate another account. The initial
+    /// administrator never loses the role, so the application always keeps an administrator.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -45,6 +47,11 @@ public sealed class SetAdminCommandHandler(
     public async Task<Result> HandleAsync(SetAdminCommand command, CancellationToken ct = default)
     {
         var isAdmin = command.Request.IsAdmin;
+        if (!isAdmin && command.UserId == SeedIds.Users.InitialAdministrator)
+        {
+            return Error.Forbidden(ErrorCode.UserCannotRemoveInitialAdmin);
+        }
+
         if (isAdmin && !await IsActingPasswordValidAsync(command, ct))
         {
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
@@ -59,11 +66,6 @@ public sealed class SetAdminCommandHandler(
         if (user.IsAdmin == isAdmin)
         {
             return Result.Success();
-        }
-
-        if (!isAdmin && await users.CountAsync(u => u.IsAdmin, ct) <= 1)
-        {
-            return Error.Forbidden(ErrorCode.UserCannotRemoveLastAdmin);
         }
 
         user.IsAdmin = isAdmin;

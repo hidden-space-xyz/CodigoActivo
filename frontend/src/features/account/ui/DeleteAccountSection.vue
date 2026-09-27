@@ -8,7 +8,7 @@ const {
   isAuthenticator,
   email,
   canDelete,
-  isLastAdmin,
+  isInitialAdmin,
   errorMessage,
   reset,
   requestCode,
@@ -84,8 +84,8 @@ function submit(): void {
       <p class="acc-danger__lead">{{ $t('features.account.deleteAccount.lead') }}</p>
     </div>
 
-    <p v-if="isLastAdmin" class="acc-danger__note">
-      {{ $t('features.account.deleteAccount.lastAdminNote') }}
+    <p v-if="isInitialAdmin" class="acc-danger__note">
+      {{ $t('features.account.deleteAccount.initialAdminNote') }}
     </p>
     <div v-else-if="canDelete" class="acc-danger__actions">
       <BaseButton variant="ghost" class="acc-danger__trigger" @click="open">

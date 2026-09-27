@@ -40,6 +40,7 @@ export interface UserResponse {
   dependentCount?: number | null;
   status?: UserStatusResponse;
   isAdmin?: boolean;
+  isInitialAdmin?: boolean;
   type?: UserTypeSummaryResponse;
   twoFactorMethod?: TwoFactorMethod;
 }

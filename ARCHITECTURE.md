@@ -42,17 +42,19 @@ project-reference discipline.
   rejected the commit, so a handler can answer a lost race instead of failing. A person holds at most one
   assignment per activity (unique index on `user_id`, `activity_id`); the signup commands answer a
   concurrent duplicate with `ActivityAssignmentAlreadyExists` (409).
-- Users are deleted only through `IDeletedAccountRepository.EraseAsync`, which executes immediately and stores
-  the legal copy in the same transaction; `DeletedAccountGuard`, a `SaveChangesInterceptor` that
-  `CodigoActivoDbContext` adds to itself, refuses any other user deletion. What the copy holds and how long it is
-  kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
+- Users are deleted only through `IDeletedAccountRepository.EraseAsync`, which executes immediately and, in the
+  same transaction, stores the legal copy and hands the content credited to the household over to the initial
+  administrator; `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself,
+  refuses any other user deletion and any deletion of the initial administrator. What the copy holds and how
+  long it is kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
 - Pure service contracts (`IClock`, `IPasswordHasher`, `ITotpService`, `ISecretProtector`, email and file
   storage ports) live in Domain; application-specific contracts such as cache invalidation stay in
   Application.
 - EF Core uses Npgsql and snake-case names. IDs are client-generated `Guid` values. Closed value sets are
   string enums; administrator-managed lookups are tables seeded with stable IDs from `SeedIds`.
 - Startup locks the selected demo mode, applies migrations, seeds catalogs, creates the initial administrator
-  when the user table is empty, and adds demo data when enabled.
+  (`SeedIds.Users.InitialAdministrator`) when the user table is empty, refuses a database that has users but
+  not that account, and adds demo data when enabled.
 
 ### Commands and queries
 

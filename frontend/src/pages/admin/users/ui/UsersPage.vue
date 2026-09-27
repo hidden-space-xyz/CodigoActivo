@@ -501,7 +501,7 @@ function confirmDelete(user: User): void {
         <template #default="{ row }">
           <el-switch
             :model-value="!!row.isAdmin"
-            :disabled="setAdmin.isPending.value"
+            :disabled="setAdmin.isPending.value || row.isInitialAdmin"
             :aria-label="$t('pages.admin.users.aria.admin')"
             @update:model-value="
               (value: string | number | boolean) => toggleAdmin(row, value === true)
@@ -553,6 +553,7 @@ function confirmDelete(user: User): void {
               circle
               type="danger"
               :aria-label="$t('common.delete')"
+              :disabled="row.isInitialAdmin"
               @click="confirmDelete(row)"
             />
           </div>

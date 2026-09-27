@@ -78,7 +78,7 @@ export async function updateAccountProfileRequest(
 
 /**
  * Asks the API whether the signed-in user may delete their own account (`GET /api/me/deletion`);
- * only the last administrator may not.
+ * only the initial administrator may not.
  */
 export async function getAccountDeletionAllowedRequest(): Promise<boolean> {
   const { data } = await getApiMeDeletion()

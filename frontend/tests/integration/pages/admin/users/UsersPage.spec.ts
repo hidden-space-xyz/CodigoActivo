@@ -555,6 +555,17 @@ describe('admin users page', () => {
     await expectNotification(t('common.error'))
   })
 
+  it('locks the role and the deletion of the initial administrator', async () => {
+    serveUsers([buildUserResponse({ isAdmin: true, isInitialAdmin: true }), tim])
+    const { wrapper } = await renderPage()
+    const [initialSwitch, timSwitch] = wrapper.findAllComponents(ElSwitch)
+
+    expect(initialSwitch?.props('disabled')).toBe(true)
+    expect(timSwitch?.props('disabled')).toBe(false)
+    expect(findButton(t('common.delete'), rowElement(wrapper, 0)).disabled).toBe(true)
+    expect(findButton(t('common.delete'), rowElement(wrapper, 1)).disabled).toBe(false)
+  })
+
   it('deletes a user after confirmation and reports failures', async () => {
     serveUsers([ada, withoutId()])
     const deleted: string[] = []

@@ -266,7 +266,10 @@ docker compose up -d
 When the user table is empty, startup requires a valid bootstrap email and a 12–128 character password and
 creates the first active administrator before accepting requests, seeded with the fixed DNI/NIE `00000000T`;
 change it from the administrator's profile after first login, since no other account can register with that
-value while it is in use. Once any user exists, both bootstrap variables are ignored.
+value while it is in use. Once any user exists, both bootstrap variables are ignored. This generic account has
+a fixed id, can be neither deleted nor demoted, and receives the content of deleted accounts; startup fails on
+a database that has users but not that account, which only happens with databases created before the id was
+fixed and means the database must be recreated.
 
 ## Development overlay
 

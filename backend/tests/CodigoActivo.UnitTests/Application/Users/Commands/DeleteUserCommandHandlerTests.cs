@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
@@ -62,15 +63,29 @@ public sealed class DeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncTargetIsAdminReturnsForbidden()
+    public async Task HandleAsyncTargetIsTheInitialAdministratorReturnsForbiddenWithoutLoadingIt()
     {
-        var id = Guid.NewGuid();
-        users.FindReturns(NewUser(id: id, isAdmin: true));
+        var result = await DeleteAsync(SeedIds.Users.InitialAdministrator, Guid.NewGuid());
 
-        var result = await DeleteAsync(id, Guid.NewGuid());
-
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteAdminForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteInitialAdminForbidden);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .FindAsync(default!, TestContext.Current.CancellationToken);
         await AssertNotErasedAsync();
+        await AssertCacheKeptAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncTargetIsAnotherAdministratorErasesItAsAdministrator()
+    {
+        var user = NewUser(isAdmin: true);
+        users.FindReturns(user);
+        var administratorId = Guid.NewGuid();
+
+        var result = await DeleteAsync(user.Id, administratorId);
+
+        result.IsSuccess.Should().BeTrue();
+        await AssertErasedAsync(user, AccountDeletionOrigin.Administrator, administratorId);
     }
 
     [Fact]
@@ -99,20 +114,6 @@ public sealed class DeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAuthoredContentExistsReturnsConflictAndChangesNothing()
-    {
-        var user = NewUser(isAdmin: false);
-        users.FindReturns(user);
-        users.HasAuthoredContentAsync(user.Id, Arg.Any<CancellationToken>()).Returns(true);
-
-        var result = await DeleteAsync(user.Id, Guid.NewGuid());
-
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserDeleteAuthoredContentExists);
-        await AssertNotErasedAsync();
-        await AssertCacheKeptAsync();
-    }
-
-    [Fact]
     public async Task HandleAsyncAdministratorErasesAsAdministratorAndInvalidatesCache()
     {
         var user = NewUser(isAdmin: false);
@@ -128,9 +129,7 @@ public sealed class DeleteUserCommandHandlerTests
             .Received(1)
             .InvalidateAsync(
                 Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null
-                    && tags.Contains(CacheTags.Users)
-                    && tags.Contains(CacheTags.Activities)
+                    tags != null && tags.SequenceEqual(CacheTags.Erasure)
                 )
             );
     }

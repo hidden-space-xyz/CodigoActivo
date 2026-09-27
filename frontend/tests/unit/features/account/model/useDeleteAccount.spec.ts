@@ -50,22 +50,22 @@ describe('useDeleteAccount', () => {
     const { result } = await withSetup(() => useDeleteAccount(), { user: {} })
 
     expect(result.canDelete.value).toBe(true)
-    expect(result.isLastAdmin.value).toBe(false)
+    expect(result.isInitialAdmin.value).toBe(false)
   })
 
-  it('lets an administrator delete only once the API confirms another one remains', async () => {
+  it('lets an administrator delete only once the API allows it', async () => {
     server.use(http.get('/api/me/deletion', () => HttpResponse.json({ allowed: true })))
     const { result } = await withSetup(() => useDeleteAccount(), { user: { isAdmin: true } })
 
     await vi.waitFor(() => expect(result.canDelete.value).toBe(true))
-    expect(result.isLastAdmin.value).toBe(false)
+    expect(result.isInitialAdmin.value).toBe(false)
   })
 
-  it('flags the last administrator and withholds the deletion', async () => {
+  it('flags the initial administrator and withholds the deletion', async () => {
     server.use(http.get('/api/me/deletion', () => HttpResponse.json({ allowed: false })))
     const { result } = await withSetup(() => useDeleteAccount(), { user: { isAdmin: true } })
 
-    await vi.waitFor(() => expect(result.isLastAdmin.value).toBe(true))
+    await vi.waitFor(() => expect(result.isInitialAdmin.value).toBe(true))
     expect(result.canDelete.value).toBe(false)
   })
 
@@ -149,16 +149,16 @@ describe('useDeleteAccount', () => {
     expect(router.currentRoute.value.name).toBe('account')
   })
 
-  it('explains a refusal caused by content the user still authors', async () => {
+  it('explains a refusal of the initial administrator', async () => {
     server.use(
-      http.post('/api/me/deletion', () => apiError(409, 'UserDeleteAuthoredContentExists')),
+      http.post('/api/me/deletion', () => apiError(403, 'UserDeleteInitialAdminForbidden')),
     )
-    const { result } = await withSetup(() => useDeleteAccount(), { user: {} })
+    const { result } = await withSetup(() => useDeleteAccount(), { user: { isAdmin: true } })
 
     result.confirm.mutate({ currentPassword: 'secret', code: '123456' })
 
     await vi.waitFor(() =>
-      expect(result.errorMessage.value).toBe(t('errors.UserDeleteAuthoredContentExists')),
+      expect(result.errorMessage.value).toBe(t('errors.UserDeleteInitialAdminForbidden')),
     )
   })
 })

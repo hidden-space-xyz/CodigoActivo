@@ -356,8 +356,9 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeletionLastAdministratorIsNotAllowedAndIsRefusedOnBothSteps()
+    public async Task DeletionInitialAdministratorIsNotAllowedAndIsRefusedOnBothSteps()
     {
+        await PromoteMemberToAdministratorAsync();
         await SeedAuthenticatorAsync(TestSeedData.Users.AdminId);
         var client = CreateClient();
         await PassPasswordStepAsync(client, TestSeedData.AdminCredentials);
@@ -367,37 +368,37 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         (await StatusAsync(client)).Allowed.Should().BeFalse();
 
         using var code = await RequestCodeAsync(client);
-        await code.ShouldBeForbiddenAsync(ErrorCode.UserDeleteLastAdminForbidden);
+        await code.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
 
         using var response = await DeleteAsync(client, CurrentCode());
-        await response.ShouldBeForbiddenAsync(ErrorCode.UserDeleteLastAdminForbidden);
+        await response.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
 
         Factory.EmailSender.Sent.Should().BeEmpty();
         (await FindAsync<User>(TestSeedData.Users.AdminId)).Should().NotBeNull();
     }
 
     [Fact]
-    public async Task DeletionAdministratorWithAnotherAdministratorErasesTheAccount()
+    public async Task DeletionAdministratorErasesTheAccountAndKeepsTheInitialAdministrator()
     {
         await PromoteMemberToAdministratorAsync();
-        var client = await LoginAsAdminAsync();
+        var client = await LoginAsMemberAsync();
 
         (await StatusAsync(client)).Allowed.Should().BeTrue();
 
         using var requested = await RequestCodeAsync(client);
         requested.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.AdminEmail);
+        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
 
         using var response = await DeleteAsync(client, code);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await FindAsync<User>(TestSeedData.Users.AdminId)).Should().BeNull();
-        var remaining = await FindAsync<User>(TestSeedData.Users.MemberId);
+        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
+        var remaining = await FindAsync<User>(TestSeedData.Users.AdminId);
         remaining!.IsAdmin.Should().BeTrue();
     }
 
     [Fact]
-    public async Task DeletionAuthoredContentReturnsConflictAndKeepsEverything()
+    public async Task DeletionHandsAuthoredContentOverToTheInitialAdministrator()
     {
         var (client, code) = await SignedInMemberWithCodeAsync();
         var newsItemId = Guid.NewGuid();
@@ -430,15 +431,18 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
 
         using var response = await DeleteAsync(client, code);
 
-        await response.ShouldBeConflictAsync(ErrorCode.UserDeleteAuthoredContentExists);
-        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().NotBeNull();
-        (await FindAsync<NewsItem>(newsItemId)).Should().NotBeNull();
-        (await CopiesAsync()).Should().BeEmpty();
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
+        (await FindAsync<NewsItem>(newsItemId))!
+            .CreatedBy.Should()
+            .Be(SeedIds.Users.InitialAdministrator);
+        (await CopiesAsync()).Select(copy => copy.Id).Should().Equal(TestSeedData.Users.MemberId);
     }
 
     [Fact]
-    public async Task DeleteUserFormerAdministratorWithAuthoredContentReturnsConflictAndKeepsEverything()
+    public async Task DeleteUserAdministratorWithAuthoredContentErasesItAndHandsTheContentOver()
     {
+        await PromoteMemberToAdministratorAsync();
         var newsItemId = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
@@ -461,7 +465,8 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                     Description = "{}",
                     ThumbnailId = ThumbnailId,
                     CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.BlockedId,
+                    CreatedBy = TestSeedData.Users.MemberId,
+                    UpdatedBy = TestSeedData.Users.MemberId,
                 }
             );
             return Task.CompletedTask;
@@ -469,14 +474,18 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         var admin = await LoginAsAdminAsync();
 
         using var response = await admin.DeleteWithCsrfAsync(
-            $"/api/users/{TestSeedData.Users.BlockedId}",
+            $"/api/users/{TestSeedData.Users.MemberId}",
             Ct
         );
 
-        await response.ShouldBeConflictAsync(ErrorCode.UserDeleteAuthoredContentExists);
-        (await FindAsync<User>(TestSeedData.Users.BlockedId)).Should().NotBeNull();
-        (await FindAsync<NewsItem>(newsItemId)).Should().NotBeNull();
-        (await CopiesAsync()).Should().BeEmpty();
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
+        var newsItem = (await FindAsync<NewsItem>(newsItemId))!;
+        newsItem.CreatedBy.Should().Be(SeedIds.Users.InitialAdministrator);
+        newsItem.UpdatedBy.Should().Be(SeedIds.Users.InitialAdministrator);
+        (await DeletionOfAsync(TestSeedData.Users.MemberId))
+            .Should()
+            .Be(("Administrator", TestSeedData.Users.AdminId));
     }
 
     [Fact]
@@ -547,16 +556,19 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeleteUserAdministratorOwnIdIsRefusedAsAdministratorFirst()
+    public async Task DeleteUserInitialAdministratorIsRefusedToItselfAndToAnotherAdministrator()
     {
-        var client = await LoginAsAdminAsync();
+        await PromoteMemberToAdministratorAsync();
+        var initial = await LoginAsAdminAsync();
+        var another = await LoginAsMemberAsync();
+        var url = $"/api/users/{SeedIds.Users.InitialAdministrator}";
 
-        using var response = await client.DeleteWithCsrfAsync(
-            $"/api/users/{TestSeedData.Users.AdminId}",
-            Ct
-        );
+        using var own = await initial.DeleteWithCsrfAsync(url, Ct);
+        using var other = await another.DeleteWithCsrfAsync(url, Ct);
 
-        await response.ShouldBeForbiddenAsync(ErrorCode.UserDeleteAdminForbidden);
-        (await FindAsync<User>(TestSeedData.Users.AdminId)).Should().NotBeNull();
+        await own.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
+        await other.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
+        (await FindAsync<User>(SeedIds.Users.InitialAdministrator)).Should().NotBeNull();
+        (await CopiesAsync()).Should().BeEmpty();
     }
 }

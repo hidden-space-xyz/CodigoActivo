@@ -2,6 +2,7 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Users.Commands;
@@ -14,11 +15,12 @@ namespace CodigoActivo.Application.Users.Commands;
 public sealed record DeleteUserCommand(Guid UserId, Guid ActingUserId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the user, keeping the blocked copy the law requires. It serves an
-/// administrator removing somebody else and a guardian removing one of their minors; deleting one's
-/// own account goes through <see cref="DeleteOwnAccountCommand"/>, which also demands the password
-/// and the second factor. An account still credited as the author of published content is refused
-/// instead of breaking those rows.
+/// Executes the command to delete the user, keeping the blocked copy the law requires and handing
+/// the content credited to the account over to the initial administrator. It serves an
+/// administrator removing somebody else, another administrator included, and a guardian removing
+/// one of their minors; deleting one's own account goes through
+/// <see cref="DeleteOwnAccountCommand"/>, which also demands the password and the second factor.
+/// The initial administrator is never deleted.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="deletedAccounts">Repository that erases the account after copying it.</param>
@@ -39,25 +41,20 @@ public sealed class DeleteUserCommandHandler(
     /// <returns>A task whose result indicates success or contains the application error.</returns>
     public async Task<Result> HandleAsync(DeleteUserCommand command, CancellationToken ct = default)
     {
+        if (command.UserId == SeedIds.Users.InitialAdministrator)
+        {
+            return Error.Forbidden(ErrorCode.UserDeleteInitialAdminForbidden);
+        }
+
         var user = await users.FindAsync(u => u.Id == command.UserId, ct);
         if (user is null)
         {
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        if (user.IsAdmin)
-        {
-            return Error.Forbidden(ErrorCode.UserDeleteAdminForbidden);
-        }
-
         if (command.UserId == command.ActingUserId)
         {
             return Error.Forbidden(ErrorCode.UserSelfDeleteRequiresVerification);
-        }
-
-        if (await users.HasAuthoredContentAsync(user.Id, ct))
-        {
-            return Error.Conflict(ErrorCode.UserDeleteAuthoredContentExists);
         }
 
         var origin =
@@ -70,7 +67,7 @@ public sealed class DeleteUserCommandHandler(
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        await cacheInvalidator.InvalidateAsync(CacheTags.Users, CacheTags.Activities);
+        await cacheInvalidator.InvalidateAsync(CacheTags.Erasure);
         return Result.Success();
     }
 }
