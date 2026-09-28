@@ -100,7 +100,7 @@ describe('useRegistration', () => {
       ...createEmptyMinor(),
       firstName: 'Byron',
       lastName: 'King',
-      dateOfBirth: '2016-02-03',
+      birthDate: '2016-02-03',
       gender: 'Male',
     })
 
@@ -122,14 +122,14 @@ describe('useRegistration', () => {
         ...createEmptyMinor(),
         firstName: 'A',
         lastName: 'K',
-        dateOfBirth: '2016-01-01',
+        birthDate: '2016-01-01',
         gender: 'Male',
       },
       {
         ...createEmptyMinor(),
         firstName: 'B',
         lastName: 'K',
-        dateOfBirth: '2017-01-01',
+        birthDate: '2017-01-01',
         gender: 'Other',
       },
     )
@@ -141,15 +141,13 @@ describe('useRegistration', () => {
   })
 
   it('shows an error notification and stays on the form when registration fails', async () => {
-    server.use(http.post('/api/auth/register', () => apiError(409, 'RegisterEmailAlreadyInUse')))
+    server.use(http.post('/api/auth/register', () => apiError(409, 'UserEmailAlreadyInUse')))
     const { result } = await mountComposable(() => useRegistration(), { attach: true })
     fillAdult(result)
     result.confirmAdult()
 
     result.submit()
-    await vi.waitFor(() =>
-      expect(notificationText()).toContain(t('errors.RegisterEmailAlreadyInUse')),
-    )
+    await vi.waitFor(() => expect(notificationText()).toContain(t('errors.UserEmailAlreadyInUse')))
 
     expect(notificationText()).toContain(t('common.error'))
     expect(notificationText()).toContain('trace-123')

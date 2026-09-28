@@ -2,12 +2,10 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.Diagnostics;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Domain.Security;
@@ -48,7 +46,9 @@ public sealed class RegisterCommandHandler(
     private const int MaxMinorRegistrations = 20;
 
     /// <summary>
-    /// Handles the request to register.
+    /// Handles the request to register. <see cref="User.CreateIndependent"/> and
+    /// <see cref="User.CreateDependent"/> decide which details the adult and each minor need;
+    /// this handler adds the checks that need I/O: a disposable or already registered email.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -59,28 +59,60 @@ public sealed class RegisterCommandHandler(
     )
     {
         var request = command.Request;
-
-        var today = clock.Today;
-
-        var email = request.Email.NormalizeEmailOrNull();
-        var phone = request.Phone.NormalizeOrNull();
-        var secondaryPhone = request.SecondaryPhone.NormalizeOrNull();
-        var nationalId = request.NationalId.NormalizeNationalIdOrNull();
-        if (email is null || phone is null || string.IsNullOrWhiteSpace(request.Password))
-        {
-            return Error.BadRequest(ErrorCode.RegisterContactInfoRequired);
-        }
-
-        if (nationalId is null)
+        var minorRequests = request.Minors ?? [];
+        if (
+            string.IsNullOrWhiteSpace(request.Password)
+            || minorRequests.Count > MaxMinorRegistrations
+        )
         {
             return Error.BadRequest(ErrorCode.RequestValidationFailed);
         }
 
-        if (string.Equals(secondaryPhone, phone, StringComparison.Ordinal))
+        var today = clock.Today;
+        var now = clock.UtcNow;
+
+        var created = User.CreateIndependent(
+            new PersonDetails(
+                request.FirstName,
+                request.LastName,
+                request.Gender,
+                request.Email,
+                request.Phone,
+                request.SecondaryPhone,
+                request.NationalId,
+                request.PromotionalConsent
+            ),
+            now
+        );
+        if (created.IsFailure)
         {
-            return Error.BadRequest(ErrorCode.SecondaryPhoneSameAsPrimary);
+            return created.Error!;
         }
 
+        var adult = created.Value;
+        var minors = new List<User>(minorRequests.Count);
+        foreach (var minor in minorRequests)
+        {
+            var child = User.CreateDependent(
+                adult,
+                new PersonDetails(
+                    minor.FirstName,
+                    minor.LastName,
+                    minor.Gender,
+                    BirthDate: minor.BirthDate
+                ),
+                today,
+                now
+            );
+            if (child.IsFailure)
+            {
+                return child.Error!;
+            }
+
+            minors.Add(child.Value);
+        }
+
+        var email = adult.Email!;
         if (await disposableEmails.IsDisposableAsync(email, ct))
         {
             return Error.BadRequest(ErrorCode.DisposableEmailNotAllowed);
@@ -88,58 +120,15 @@ public sealed class RegisterCommandHandler(
 
         if (await users.ExistsAsync(u => u.Email == email, ct))
         {
-            return Error.Conflict(ErrorCode.RegisterEmailAlreadyInUse);
+            return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
         }
 
-        var minorRequests = request.Minors ?? [];
-        if (minorRequests.Count > MaxMinorRegistrations)
-        {
-            return Error.BadRequest(ErrorCode.RequestValidationFailed);
-        }
-
-        if (minorRequests.Any(minor => !minor.BirthDate.IsMinor(today)))
-        {
-            return Error.BadRequest(ErrorCode.RegisterMinorBirthDateNotMinor);
-        }
-
-        var now = clock.UtcNow;
-
-        var adult = new User
-        {
-            FirstName = request.FirstName.Trim(),
-            LastName = request.LastName.Trim(),
-            NationalId = nationalId,
-            PromotionalConsent = request.PromotionalConsent,
-            Gender = request.Gender,
-            Email = email,
-            Phone = phone,
-            SecondaryPhone = secondaryPhone,
-            PasswordHash = hasher.Hash(request.Password),
-            UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
-            IsAdmin = false,
-            UserTypeId = SeedIds.UserTypes.Participant,
-            CreatedAt = now,
-        };
-
+        adult.PasswordHash = hasher.Hash(request.Password);
         var otpCode = AccountTokens.Create();
         adult.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
 
         await users.AddAsync(adult, ct);
-
-        var pendingMinors = minorRequests
-            .Select(minor => new User
-            {
-                FirstName = minor.FirstName.Trim(),
-                LastName = minor.LastName.Trim(),
-                BirthDate = minor.BirthDate,
-                Gender = minor.Gender,
-                ParentId = adult.Id,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-                UserTypeId = SeedIds.UserTypes.Participant,
-                CreatedAt = now,
-            })
-            .ToList();
-        foreach (var child in pendingMinors)
+        foreach (var child in minors)
         {
             await users.AddAsync(child, ct);
         }

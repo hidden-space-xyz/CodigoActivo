@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Mapping;
 using CodigoActivo.Domain.Common;

@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { AppButton as Button, NationalIdInput } from '@/shared/ui'
 
-import { genderOptions } from '@/entities/user'
+import { genderOptions, toUpdateUserInput, usePersonForm } from '@/entities/user'
 import type { UpdateUserInput, User } from '@/entities/user'
-import type { Gender } from '@/shared/api/generated/models'
-import {
-  ageFrom,
-  isValidNationalId,
-  normalizeNationalId,
-  parseDateOnly,
-  toDateOnly,
-} from '@/shared/lib'
 
 const DATE_FORMAT = 'DD/MM/YYYY'
+const VALUE_FORMAT = 'YYYY-MM-DD'
 
 const props = defineProps<{
   /** Opens the dialog; each time it opens the form is repopulated from `user`. */
@@ -33,44 +26,14 @@ const emit = defineEmits<{
   /** Fired with `false` when the dialog is closed or dismissed. */
   'update:visible': [value: boolean]
   /**
-   * Fired with the validated changes. A dependent always reports `null` email, phones and DNI/NIE
-   * and no promotional consent, because the server keeps the guardian's details, plus a birth date
-   * that keeps it a minor whenever it changes, so an unchanged birth date of a dependent that has
-   * come of age is still accepted; a standalone account reports a `null` birth date, its normalized
-   * DNI/NIE and its consent, and blank contact values are sent as `null`. The user's current
-   * `parentId` is preserved. `currentPassword` carries the signed-in user's password when the
-   * change replaces the email, the phone or the secondary phone of the account or the server already
-   * refused one, and is `null` otherwise.
+   * Fired with the changes once the person rules of `usePersonForm` accept them, shaped by
+   * `toUpdateUserInput` and keeping the user's current `parentId`. `currentPassword` carries the
+   * signed-in user's password when the change replaces the email, the phone or the secondary phone
+   * of the account or the server already refused one, and is `null` otherwise.
    */
   submit: [body: UpdateUserInput]
 }>()
 
-interface UserForm {
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  secondaryPhone: string
-  birthDate: Date | null
-  nationalId: string
-  promotionalConsent: boolean
-  gender: Gender | null
-  currentPassword: string
-}
-
-const form = reactive<UserForm>({
-  firstName: '',
-  lastName: '',
-  email: '',
-  phone: '',
-  secondaryPhone: '',
-  birthDate: null,
-  nationalId: '',
-  promotionalConsent: false,
-  gender: null,
-  currentPassword: '',
-})
-const submitted = ref(false)
 const genders = genderOptions()
 
 function disabledBirthDate(date: Date): boolean {
@@ -78,76 +41,32 @@ function disabledBirthDate(date: Date): boolean {
 }
 
 const isDependent = computed(() => Boolean(props.user?.parentId))
-const isMinorBirthDate = computed(() => {
-  const age = ageFrom(form.birthDate)
-  return age !== null && age < 18
+const {
+  draft,
+  currentPassword,
+  submitted,
+  errors,
+  requiresPassword,
+  passwordMissing,
+  load,
+  rejectPassword,
+  submit,
+} = usePersonForm({
+  kind: () => (isDependent.value ? 'dependent' : 'independent'),
+  stored: () => props.user,
 })
-const birthDateInvalid = computed(
-  () => isDependent.value && (!form.birthDate || form.birthDate > new Date()),
-)
-const birthDateChanged = computed(
-  () => form.birthDate !== null && toDateOnly(form.birthDate) !== props.user?.birthDate,
-)
-const childNotMinor = computed(
-  () =>
-    isDependent.value &&
-    !birthDateInvalid.value &&
-    birthDateChanged.value &&
-    !isMinorBirthDate.value,
-)
-const nationalIdInvalid = computed(() => !isDependent.value && !isValidNationalId(form.nationalId))
-const emailInvalid = computed(() => {
-  if (isDependent.value) return false
-  const value = form.email.trim()
-  return value.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-})
-const contactMissing = computed(
-  () => !isDependent.value && (!form.email.trim() || !form.phone.trim()),
-)
-const storedEmail = computed(() => props.user?.email ?? '')
-const storedPhone = computed(() => props.user?.phone ?? '')
-const storedSecondaryPhone = computed(() => props.user?.secondaryPhone ?? '')
-const secondaryPhoneRepeated = computed(
-  () =>
-    !isDependent.value &&
-    !!form.secondaryPhone.trim() &&
-    form.secondaryPhone.trim() === form.phone.trim(),
-)
-const replacesContact = computed(() => {
-  if (isDependent.value) return false
-  return (
-    form.email.trim().toLowerCase() !== storedEmail.value.toLowerCase() ||
-    form.phone.trim() !== storedPhone.value ||
-    form.secondaryPhone.trim() !== storedSecondaryPhone.value
-  )
-})
-const passwordRejected = ref(false)
-const requiresPassword = computed(() => replacesContact.value || passwordRejected.value)
-const passwordMissing = computed(() => requiresPassword.value && !form.currentPassword)
 
 watch(
   () => props.visible,
   (open) => {
-    if (!open) return
-    submitted.value = false
-    passwordRejected.value = false
-    form.firstName = props.user?.firstName ?? ''
-    form.lastName = props.user?.lastName ?? ''
-    form.email = props.user?.email ?? ''
-    form.phone = props.user?.phone ?? ''
-    form.secondaryPhone = props.user?.secondaryPhone ?? ''
-    form.birthDate = parseDateOnly(props.user?.birthDate)
-    form.nationalId = props.user?.nationalId ?? ''
-    form.promotionalConsent = props.user?.promotionalConsent ?? false
-    form.gender = props.user?.gender ?? null
-    form.currentPassword = ''
+    if (open) load(props.user)
   },
 )
 
 watch(
   () => props.error,
   (value) => {
-    if (value) passwordRejected.value = true
+    if (value) rejectPassword()
   },
 )
 
@@ -156,37 +75,8 @@ function close(): void {
 }
 
 function save(): void {
-  submitted.value = true
-  if (
-    !form.firstName.trim() ||
-    !form.lastName.trim() ||
-    birthDateInvalid.value ||
-    childNotMinor.value ||
-    nationalIdInvalid.value ||
-    emailInvalid.value ||
-    contactMissing.value ||
-    secondaryPhoneRepeated.value ||
-    passwordMissing.value ||
-    !form.gender
-  ) {
-    return
-  }
-  const gender = form.gender
-  const dependent = isDependent.value
-  const body: UpdateUserInput = {
-    firstName: form.firstName.trim(),
-    lastName: form.lastName.trim(),
-    email: dependent || !form.email.trim() ? null : form.email.trim(),
-    phone: dependent || !form.phone.trim() ? null : form.phone.trim(),
-    secondaryPhone: dependent || !form.secondaryPhone.trim() ? null : form.secondaryPhone.trim(),
-    birthDate: dependent && form.birthDate ? toDateOnly(form.birthDate) : null,
-    nationalId: dependent ? null : normalizeNationalId(form.nationalId),
-    promotionalConsent: !dependent && form.promotionalConsent,
-    gender,
-    parentId: props.user?.parentId ?? null,
-    currentPassword: requiresPassword.value ? form.currentPassword : null,
-  }
-  emit('submit', body)
+  const submission = submit()
+  if (submission) emit('submit', toUpdateUserInput(submission, props.user?.parentId ?? null))
 }
 </script>
 
@@ -203,19 +93,21 @@ function save(): void {
           <label for="user-first-name">{{ $t('common.firstName') }}</label>
           <el-input
             id="user-first-name"
-            v-model="form.firstName"
+            v-model="draft.firstName"
             :maxlength="120"
-            :class="{ 'ca-invalid': submitted && !form.firstName.trim() }"
+            :class="{ 'ca-invalid': errors.firstName }"
           />
+          <small v-if="errors.firstName" class="form__error">{{ errors.firstName }}</small>
         </div>
         <div class="form__field">
           <label for="user-last-name">{{ $t('common.lastName') }}</label>
           <el-input
             id="user-last-name"
-            v-model="form.lastName"
+            v-model="draft.lastName"
             :maxlength="120"
-            :class="{ 'ca-invalid': submitted && !form.lastName.trim() }"
+            :class="{ 'ca-invalid': errors.lastName }"
           />
+          <small v-if="errors.lastName" class="form__error">{{ errors.lastName }}</small>
         </div>
       </div>
       <div class="form__row">
@@ -223,24 +115,20 @@ function save(): void {
           <label for="user-birth-date">{{ $t('common.birthDate') }}</label>
           <el-date-picker
             id="user-birth-date"
-            v-model="form.birthDate"
+            v-model="draft.birthDate"
             type="date"
             :format="DATE_FORMAT"
+            :value-format="VALUE_FORMAT"
             :disabled-date="disabledBirthDate"
-            :class="{ 'ca-invalid': submitted && (birthDateInvalid || childNotMinor) }"
+            :class="{ 'ca-invalid': errors.birthDate }"
           />
-          <small v-if="submitted && birthDateInvalid" class="form__error">{{
-            $t('features.manageUsers.birthDateInvalid')
-          }}</small>
-          <small v-else-if="submitted && childNotMinor" class="form__error">{{
-            $t('features.manageUsers.childBirthDateNotMinor')
-          }}</small>
+          <small v-if="errors.birthDate" class="form__error">{{ errors.birthDate }}</small>
         </div>
         <div v-else class="form__field">
           <label for="user-national-id">{{ $t('common.nationalId') }}</label>
           <NationalIdInput
             id="user-national-id"
-            v-model="form.nationalId"
+            v-model="draft.nationalId"
             :show-errors="submitted"
           />
         </div>
@@ -248,8 +136,8 @@ function save(): void {
           <label for="user-gender">{{ $t('common.gender') }}</label>
           <el-select
             id="user-gender"
-            v-model="form.gender"
-            :class="{ 'ca-invalid': submitted && !form.gender }"
+            v-model="draft.gender"
+            :class="{ 'ca-invalid': errors.gender }"
           >
             <el-option
               v-for="option in genders"
@@ -258,9 +146,7 @@ function save(): void {
               :value="option.value"
             />
           </el-select>
-          <small v-if="submitted && !form.gender" class="form__error">{{
-            $t('validation.genderRequired')
-          }}</small>
+          <small v-if="errors.gender" class="form__error">{{ errors.gender }}</small>
         </div>
       </div>
       <p v-if="isDependent" class="form__hint">
@@ -272,28 +158,24 @@ function save(): void {
             <label for="user-phone">{{ $t('common.phone') }}</label>
             <el-input
               id="user-phone"
-              v-model="form.phone"
+              v-model="draft.phone"
               type="tel"
               :maxlength="40"
-              :class="{
-                'ca-invalid': submitted && contactMissing && !form.phone.trim(),
-              }"
+              :class="{ 'ca-invalid': errors.phone }"
             />
-            <small v-if="submitted && contactMissing" class="form__error">{{
-              $t('features.manageUsers.contactRequired')
-            }}</small>
+            <small v-if="errors.phone" class="form__error">{{ errors.phone }}</small>
           </div>
           <div class="form__field">
             <label for="user-secondary-phone">{{ $t('common.secondaryPhoneOptional') }}</label>
             <el-input
               id="user-secondary-phone"
-              v-model="form.secondaryPhone"
+              v-model="draft.secondaryPhone"
               type="tel"
               :maxlength="40"
-              :class="{ 'ca-invalid': submitted && secondaryPhoneRepeated }"
+              :class="{ 'ca-invalid': errors.secondaryPhone }"
             />
-            <small v-if="submitted && secondaryPhoneRepeated" class="form__error">{{
-              $t('validation.secondaryPhoneSameAsPrimary')
+            <small v-if="errors.secondaryPhone" class="form__error">{{
+              errors.secondaryPhone
             }}</small>
           </div>
         </div>
@@ -301,19 +183,15 @@ function save(): void {
           <label for="user-email">{{ $t('common.email') }}</label>
           <el-input
             id="user-email"
-            v-model="form.email"
+            v-model="draft.email"
             type="email"
             :maxlength="256"
-            :class="{
-              'ca-invalid': submitted && (emailInvalid || (contactMissing && !form.email.trim())),
-            }"
+            :class="{ 'ca-invalid': errors.email }"
           />
-          <small v-if="submitted && emailInvalid" class="form__error">{{
-            $t('validation.emailFormat')
-          }}</small>
+          <small v-if="errors.email" class="form__error">{{ errors.email }}</small>
         </div>
         <div class="form__consent">
-          <el-checkbox id="user-promotional-consent" v-model="form.promotionalConsent" />
+          <el-checkbox id="user-promotional-consent" v-model="draft.promotionalConsent" />
           <label for="user-promotional-consent">{{ $t('common.promotionalConsentOption') }}</label>
         </div>
       </template>
@@ -324,7 +202,7 @@ function save(): void {
         <p class="form__hint">{{ $t('features.manageUsers.contactChange.message') }}</p>
         <el-input
           id="user-current-password"
-          v-model="form.currentPassword"
+          v-model="currentPassword"
           type="password"
           show-password
           autocomplete="current-password"

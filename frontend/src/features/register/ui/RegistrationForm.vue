@@ -2,9 +2,17 @@
 import { computed, reactive, ref } from 'vue'
 
 import { createEmptyMinor, type RegistrationForm } from '../model/registration-form'
-import { genderOptions } from '@/entities/user'
+import {
+  genderOptions,
+  minorBirthDateRange,
+  parseDependentPerson,
+  parseIndependentPerson,
+  personProblemMessage,
+  type PersonField,
+  type PersonProblem,
+} from '@/entities/user'
 import { BaseButton, NationalIdInput } from '@/shared/ui'
-import { isValidNationalId, todayIso, yearsAgoIso } from '@/shared/lib'
+import { toDateOnly } from '@/shared/lib'
 
 const props = defineProps<{
   /** Reactive form state owned by the parent; the component edits it in place. */
@@ -29,10 +37,42 @@ const touched = reactive({
   confirmPassword: false,
   secondaryPhone: false,
 })
-const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(model.email.trim()))
-const showEmailInvalid = computed(
-  () => !emailValid.value && (submitted.value || (touched.email && !!model.email.trim())),
+const today = toDateOnly(new Date())
+const birthDateRange = minorBirthDateRange(today)
+
+const adult = computed(() => parseIndependentPerson(model))
+const adultErrors = computed(() => {
+  const { problems } = adult.value
+  const visible = (field: 'firstName' | 'lastName' | 'gender' | 'phone') =>
+    submitted.value ? personMessage(field, problems[field]) : null
+  const visibleOnceLeft = (field: 'email' | 'secondaryPhone') =>
+    submitted.value || (touched[field] && model[field].trim() !== '')
+      ? personMessage(field, problems[field])
+      : null
+  return {
+    firstName: visible('firstName'),
+    lastName: visible('lastName'),
+    gender: visible('gender'),
+    phone: visible('phone'),
+    email: visibleOnceLeft('email'),
+    secondaryPhone: visibleOnceLeft('secondaryPhone'),
+  }
+})
+const minors = computed(() =>
+  model.minors.map((minor) => parseDependentPerson(minor, { today }).problems),
 )
+
+function personMessage(field: PersonField, problem: PersonProblem | undefined): string | null {
+  return problem ? personProblemMessage(field, problem) : null
+}
+
+function minorError(
+  index: number,
+  field: 'firstName' | 'lastName' | 'gender' | 'birthDate',
+): string | null {
+  return submitted.value ? personMessage(field, minors.value[index]?.[field]) : null
+}
+
 const passwordTooShort = computed(() => model.password.length < 12)
 const showPasswordTooShort = computed(
   () => passwordTooShort.value && (submitted.value || (touched.password && !!model.password)),
@@ -41,22 +81,14 @@ const passwordsMismatch = computed(() => model.confirmPassword !== model.passwor
 const showMismatch = computed(
   () => passwordsMismatch.value && (submitted.value || touched.confirmPassword),
 )
-const secondaryPhoneRepeated = computed(
-  () => !!model.secondaryPhone.trim() && model.secondaryPhone.trim() === model.phone.trim(),
-)
-const showSecondaryPhoneRepeated = computed(
-  () => secondaryPhoneRepeated.value && (submitted.value || touched.secondaryPhone),
-)
 
-const isValid = computed(() => {
-  if (!model.firstName.trim() || !model.lastName.trim()) return false
-  if (!isValidNationalId(model.nationalId) || !model.gender) return false
-  if (!model.phone.trim() || secondaryPhoneRepeated.value) return false
-  if (!emailValid.value || passwordTooShort.value || passwordsMismatch.value) return false
-  return model.minors.every(
-    (minor) => minor.firstName.trim() && minor.lastName.trim() && minor.dateOfBirth && minor.gender,
-  )
-})
+const isValid = computed(
+  () =>
+    adult.value.person !== null &&
+    !passwordTooShort.value &&
+    !passwordsMismatch.value &&
+    minors.value.every((problems) => Object.keys(problems).length === 0),
+)
 
 const genders = genderOptions()
 
@@ -65,9 +97,6 @@ function onSubmit(): void {
   if (!isValid.value) return
   emit('submit')
 }
-
-const maxBirthDateIso = todayIso()
-const adultThresholdIso = yearsAgoIso(18)
 
 function addMinor(): void {
   model.minors.push(createEmptyMinor())
@@ -97,9 +126,12 @@ function removeMinor(index: number): void {
               v-model="model.firstName"
               autocomplete="given-name"
               :maxlength="120"
-              :class="{ 'ca-invalid': submitted && !model.firstName.trim() }"
+              :class="{ 'ca-invalid': adultErrors.firstName }"
               required
             />
+            <small v-if="adultErrors.firstName" class="reg__error">{{
+              adultErrors.firstName
+            }}</small>
           </div>
           <div class="reg__field">
             <label class="reg__label" for="reg-lastname">{{ $t('common.lastName') }}</label>
@@ -108,9 +140,10 @@ function removeMinor(index: number): void {
               v-model="model.lastName"
               autocomplete="family-name"
               :maxlength="120"
-              :class="{ 'ca-invalid': submitted && !model.lastName.trim() }"
+              :class="{ 'ca-invalid': adultErrors.lastName }"
               required
             />
+            <small v-if="adultErrors.lastName" class="reg__error">{{ adultErrors.lastName }}</small>
           </div>
           <div class="reg__field">
             <label class="reg__label" for="reg-national-id">{{ $t('common.nationalId') }}</label>
@@ -125,7 +158,7 @@ function removeMinor(index: number): void {
             <el-select
               id="reg-gender"
               v-model="model.gender"
-              :class="{ 'ca-invalid': submitted && !model.gender }"
+              :class="{ 'ca-invalid': adultErrors.gender }"
             >
               <el-option
                 v-for="option in genders"
@@ -134,9 +167,7 @@ function removeMinor(index: number): void {
                 :value="option.value"
               />
             </el-select>
-            <small v-if="submitted && !model.gender" class="reg__error">{{
-              $t('validation.genderRequired')
-            }}</small>
+            <small v-if="adultErrors.gender" class="reg__error">{{ adultErrors.gender }}</small>
           </div>
         </div>
       </section>
@@ -153,9 +184,10 @@ function removeMinor(index: number): void {
               inputmode="tel"
               autocomplete="tel"
               :maxlength="40"
-              :class="{ 'ca-invalid': submitted && !model.phone.trim() }"
+              :class="{ 'ca-invalid': adultErrors.phone }"
               required
             />
+            <small v-if="adultErrors.phone" class="reg__error">{{ adultErrors.phone }}</small>
           </div>
           <div class="reg__field">
             <label class="reg__label" for="reg-secondary-phone">{{
@@ -168,11 +200,11 @@ function removeMinor(index: number): void {
               inputmode="tel"
               autocomplete="tel"
               :maxlength="40"
-              :class="{ 'ca-invalid': showSecondaryPhoneRepeated }"
+              :class="{ 'ca-invalid': adultErrors.secondaryPhone }"
               @blur="touched.secondaryPhone = true"
             />
-            <small v-if="showSecondaryPhoneRepeated" class="reg__error">{{
-              $t('validation.secondaryPhoneSameAsPrimary')
+            <small v-if="adultErrors.secondaryPhone" class="reg__error">{{
+              adultErrors.secondaryPhone
             }}</small>
           </div>
         </div>
@@ -193,13 +225,11 @@ function removeMinor(index: number): void {
               autocorrect="off"
               spellcheck="false"
               :maxlength="256"
-              :class="{ 'ca-invalid': showEmailInvalid }"
+              :class="{ 'ca-invalid': adultErrors.email }"
               required
               @blur="touched.email = true"
             />
-            <small v-if="showEmailInvalid" class="reg__error">{{
-              $t('validation.emailInvalid')
-            }}</small>
+            <small v-if="adultErrors.email" class="reg__error">{{ adultErrors.email }}</small>
           </div>
           <div class="reg__field">
             <label class="reg__label" for="reg-password">{{ $t('common.password') }}</label>
@@ -269,9 +299,12 @@ function removeMinor(index: number): void {
                   :id="`minor-firstname-${index}`"
                   v-model="minor.firstName"
                   :maxlength="120"
-                  :class="{ 'ca-invalid': submitted && !minor.firstName.trim() }"
+                  :class="{ 'ca-invalid': minorError(index, 'firstName') }"
                   required
                 />
+                <small v-if="minorError(index, 'firstName')" class="reg__error">{{
+                  minorError(index, 'firstName')
+                }}</small>
               </div>
               <div class="reg__field">
                 <label class="reg__label" :for="`minor-lastname-${index}`">{{
@@ -281,9 +314,12 @@ function removeMinor(index: number): void {
                   :id="`minor-lastname-${index}`"
                   v-model="minor.lastName"
                   :maxlength="120"
-                  :class="{ 'ca-invalid': submitted && !minor.lastName.trim() }"
+                  :class="{ 'ca-invalid': minorError(index, 'lastName') }"
                   required
                 />
+                <small v-if="minorError(index, 'lastName')" class="reg__error">{{
+                  minorError(index, 'lastName')
+                }}</small>
               </div>
               <div class="reg__field">
                 <label class="reg__label" :for="`minor-dob-${index}`">{{
@@ -291,13 +327,17 @@ function removeMinor(index: number): void {
                 }}</label>
                 <input
                   :id="`minor-dob-${index}`"
-                  v-model="minor.dateOfBirth"
+                  v-model="minor.birthDate"
                   type="date"
                   class="reg__date"
-                  :min="adultThresholdIso"
-                  :max="maxBirthDateIso"
+                  :class="{ 'reg__date--invalid': minorError(index, 'birthDate') }"
+                  :min="birthDateRange.min"
+                  :max="birthDateRange.max"
                   required
                 />
+                <small v-if="minorError(index, 'birthDate')" class="reg__error">{{
+                  minorError(index, 'birthDate')
+                }}</small>
               </div>
               <div class="reg__field">
                 <label class="reg__label" :for="`minor-gender-${index}`">{{
@@ -306,7 +346,7 @@ function removeMinor(index: number): void {
                 <el-select
                   :id="`minor-gender-${index}`"
                   v-model="minor.gender"
-                  :class="{ 'ca-invalid': submitted && !minor.gender }"
+                  :class="{ 'ca-invalid': minorError(index, 'gender') }"
                 >
                   <el-option
                     v-for="option in genders"
@@ -315,8 +355,8 @@ function removeMinor(index: number): void {
                     :value="option.value"
                   />
                 </el-select>
-                <small v-if="submitted && !minor.gender" class="reg__error">{{
-                  $t('validation.genderRequired')
+                <small v-if="minorError(index, 'gender')" class="reg__error">{{
+                  minorError(index, 'gender')
                 }}</small>
               </div>
             </div>
@@ -411,6 +451,10 @@ function removeMinor(index: number): void {
 
 .reg__date:focus {
   border-color: var(--ca-orange);
+}
+
+.reg__date--invalid {
+  border-color: var(--ca-danger);
 }
 
 .reg__error {

@@ -35,7 +35,10 @@ project-reference discipline.
 ### Domain and persistence
 
 - Entities live in `CodigoActivo.Domain/Entities`; invariants are normally guard clauses in Application
-  handlers, though `User` also owns account-state transitions.
+  handlers, though `User` also owns account-state transitions and the person rules: `CreateIndependent`,
+  `CreateDependent` and `PlanProfileChange`/`ApplyProfileChange` decide which details an independent
+  account or a dependent needs and answer each broken rule with one `ErrorCode`, while registration and
+  profile handlers keep only the checks that need I/O (disposable or taken email, re-authentication).
 - Repository interfaces live in `Domain/Repositories`. All repositories in one request share the scoped
   `CodigoActivoDbContext`; `IUnitOfWork.SaveChangesAsync` commits staged changes once and turns a
   PostgreSQL unique violation into `UniqueConstraintViolationException`, naming the entity whose table
@@ -159,6 +162,11 @@ Handwritten `api/requests.ts` modules isolate generated functions. Entity module
 models and expose TanStack Query composables; query keys come from each entity's `api/query-keys.ts` factory.
 Entity-scoped reads/mutations stay with the entity; workflows depending on session state, multiple entities or
 user interaction belong to a feature. Pages contain route composition and view-shaping only.
+
+Person field rules mirror the backend `User` rules in one place, `entities/user`: `usePersonForm` (and the
+`parseIndependentPerson`/`parseDependentPerson` functions behind it) validates and normalizes an independent
+account or a dependent and decides when a change needs the caller's password; the registration, profile,
+minors and admin user forms only bind fields and show its messages.
 
 ### Routing, session and presentation
 

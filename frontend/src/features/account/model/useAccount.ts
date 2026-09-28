@@ -15,9 +15,8 @@ import {
 import { activityQueryKeys } from '@/entities/activity'
 import type {
   AccountProfile,
-  AddMinorInput,
   ChangePasswordInput,
-  UpdateMinorInput,
+  MinorInput,
   UpdateProfileInput,
 } from '@/entities/account'
 import { getCurrentUserRequest, useSession } from '@/entities/session'
@@ -78,12 +77,12 @@ export function useAccount() {
   })
 
   const addChild = useMutation({
-    mutationFn: (input: AddMinorInput) => withUserId((id) => addAccountChildRequest(id, input)),
+    mutationFn: (input: MinorInput) => withUserId((id) => addAccountChildRequest(id, input)),
     onSuccess: invalidateChildren,
   })
 
   const updateChild = useMutation({
-    mutationFn: (vars: { childId: string; input: UpdateMinorInput }) =>
+    mutationFn: (vars: { childId: string; input: MinorInput }) =>
       withUserId((id) => updateAccountChildRequest(vars.childId, id, vars.input)),
     onSuccess: invalidateChildren,
   })

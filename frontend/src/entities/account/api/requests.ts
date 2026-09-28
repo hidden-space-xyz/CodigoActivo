@@ -22,12 +22,11 @@ import {
 import { toPage, unwrapOrNull } from '@/shared/api'
 
 import type {
-  AddMinorInput,
   ChangePasswordInput,
   DeleteAccountInput,
   DisableAuthenticatorInput,
   EventRatingInput,
-  UpdateMinorInput,
+  MinorInput,
   UpdateProfileInput,
 } from '../model/account-inputs'
 import type {
@@ -139,7 +138,7 @@ export async function disableAuthenticatorRequest(input: DisableAuthenticatorInp
 /** Registers a minor under `parentId` and returns the created child. */
 export async function addAccountChildRequest(
   parentId: string,
-  input: AddMinorInput,
+  input: MinorInput,
 ): Promise<AccountChild> {
   const response = await postApiUsersUserIdChildren(parentId, toAddMinorRequest(input))
   return toAccountChild(response.data)
@@ -149,7 +148,7 @@ export async function addAccountChildRequest(
 export async function updateAccountChildRequest(
   childId: string,
   parentId: string,
-  input: UpdateMinorInput,
+  input: MinorInput,
 ): Promise<AccountChild> {
   const response = await putApiUsersUserId(childId, toUpdateMinorRequest(input, parentId))
   return toAccountChild(response.data)

@@ -1,12 +1,11 @@
 import type {
-  UpdateUserRequest,
   UserResponse,
   UserStatusResponse,
   UserTypeSummaryResponse,
 } from '@/shared/api/generated/models'
 import { TwoFactorMethod } from '@/shared/api/generated/models'
 
-import type { UpdateUserInput, User, UserCatalogRef } from '../model/types'
+import type { User, UserCatalogRef } from '../model/types'
 
 function toCatalogRef(item?: UserStatusResponse | UserTypeSummaryResponse): UserCatalogRef | null {
   if (!item) return null
@@ -34,22 +33,5 @@ export function toUser(user: UserResponse): User {
     status: toCatalogRef(user.status),
     type: toCatalogRef(user.type),
     twoFactorMethod: user.twoFactorMethod ?? TwoFactorMethod.Email,
-  }
-}
-
-/** Copies the form input field by field into the `PUT /api/users/{id}` body. */
-export function toUpdateUserRequest(input: UpdateUserInput): UpdateUserRequest {
-  return {
-    firstName: input.firstName,
-    lastName: input.lastName,
-    email: input.email,
-    phone: input.phone,
-    secondaryPhone: input.secondaryPhone,
-    birthDate: input.birthDate,
-    nationalId: input.nationalId,
-    promotionalConsent: input.promotionalConsent,
-    gender: input.gender,
-    parentId: input.parentId,
-    currentPassword: input.currentPassword,
   }
 }

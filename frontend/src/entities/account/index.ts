@@ -1,10 +1,9 @@
 export type {
-  AddMinorInput,
   ChangePasswordInput,
   DeleteAccountInput,
   DisableAuthenticatorInput,
   EventRatingInput,
-  UpdateMinorInput,
+  MinorInput,
   UpdateProfileInput,
 } from './model/account-inputs'
 export type {

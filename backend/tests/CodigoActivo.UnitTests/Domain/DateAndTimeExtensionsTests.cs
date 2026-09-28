@@ -1,8 +1,8 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Extensions;
+using CodigoActivo.Domain.Common;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Application.Extensions;
+namespace CodigoActivo.UnitTests.Domain;
 
 public sealed class DateAndTimeExtensionsTests
 {

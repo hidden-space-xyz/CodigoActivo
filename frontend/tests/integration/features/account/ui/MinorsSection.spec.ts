@@ -3,9 +3,9 @@ import { ElDialog, ElSelect } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
 import MinorsSection from '@/features/account/ui/MinorsSection.vue'
-import { genderLabel } from '@/entities/user'
+import { genderLabel, minorBirthDateRange } from '@/entities/user'
 import type { UserResponse } from '@/shared/api/generated/models'
-import { formatDate, yearsAgoIso } from '@/shared/lib'
+import { formatDate } from '@/shared/lib'
 
 import { buildChildResponse, omit } from '../../../../support/fixtures/account/account'
 import {
@@ -155,10 +155,10 @@ describe('MinorsSection', () => {
     await click(buttonByText(document.body, t('features.account.minors.add')))
     const dialog = dialogByTitle(t('features.account.minors.addHeader'))
     await fillMinor(dialog)
-    expect(dialog.textContent).not.toContain(t('validation.genderRequired'))
+    expect(dialog.textContent).not.toContain(t('entities.user.person.genderRequired'))
     await click(buttonByText(dialog, t('common.save')))
 
-    expect(dialog.textContent).toContain(t('validation.genderRequired'))
+    expect(dialog.textContent).toContain(t('entities.user.person.genderRequired'))
     expect(dialog.querySelector('.ca-invalid')).not.toBeNull()
     expect(posted).not.toHaveBeenCalled()
   })
@@ -212,20 +212,21 @@ describe('MinorsSection', () => {
     expect(notificationTexts().join()).toContain(t('features.account.minors.updatedSummary'))
   })
 
-  it('accepts an adult birth date when editing but not when adding a minor', async () => {
-    serveChildren()
-    let body: unknown
+  it('refuses to turn a minor into an adult but keeps the stored birth date of one who came of age', async () => {
+    const grownUp = buildChildResponse({ id: 'child-3', firstName: 'Tom', birthDate: '2000-03-04' })
+    serveChildren([BYRON, grownUp])
+    const bodies: unknown[] = []
     server.use(
       http.put('/api/users/:userId', async ({ request }) => {
-        body = await request.json()
-        return HttpResponse.json(BYRON)
+        bodies.push(await request.json())
+        return HttpResponse.json(grownUp)
       }),
     )
     await renderSection()
 
     await click(buttonByText(document.body, t('features.account.minors.add')))
     const addDialog = dialogByTitle(t('features.account.minors.addHeader'))
-    expect(addDialog.querySelector('#m-dob')?.getAttribute('min')).toBe(yearsAgoIso(18))
+    expect(addDialog.querySelector('#m-dob')?.getAttribute('min')).toBe(minorBirthDateRange().min)
     await click(buttonByText(addDialog, t('common.cancel')))
 
     await click(buttonByText(minorItem('Byron Lovelace'), t('common.edit')))
@@ -234,8 +235,20 @@ describe('MinorsSection', () => {
     await fill(editDialog, '#m-dob', '1999-05-05')
     await click(buttonByText(editDialog, t('common.save')))
 
-    await vi.waitFor(() => expect(body).toBeDefined())
-    expect(body).toMatchObject({ birthDate: '1999-05-05', parentId: 'user-1' })
+    expect(editDialog.textContent).toContain(t('entities.user.person.birthDateNotMinor'))
+    expect(bodies).toHaveLength(0)
+    await click(buttonByText(editDialog, t('common.cancel')))
+
+    await click(buttonByText(minorItem('Tom Lovelace'), t('common.edit')))
+    await fill(editDialog, '#m-firstname', 'Thomas')
+    await click(buttonByText(editDialog, t('common.save')))
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      firstName: 'Thomas',
+      birthDate: '2000-03-04',
+      parentId: 'user-1',
+    })
   })
 
   it('requires choosing a gender when editing a minor without one', async () => {
@@ -246,7 +259,7 @@ describe('MinorsSection', () => {
     const dialog = dialogByTitle(t('features.account.minors.editHeader'))
     await click(buttonByText(dialog, t('common.save')))
 
-    expect(dialog.textContent).toContain(t('validation.genderRequired'))
+    expect(dialog.textContent).toContain(t('entities.user.person.genderRequired'))
   })
 
   it('notifies when a minor cannot be updated', async () => {

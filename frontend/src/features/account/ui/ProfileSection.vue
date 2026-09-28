@@ -3,17 +3,10 @@ import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAccount } from '../model/useAccount'
-import type { UpdateProfileInput } from '@/entities/account'
-import { genderLabel, genderOptions } from '@/entities/user'
+import { genderLabel, genderOptions, usePersonForm } from '@/entities/user'
 import { ApiError } from '@/shared/api'
-import type { Gender } from '@/shared/api/generated/models'
 import { BaseButton, NationalIdInput } from '@/shared/ui'
-import {
-  getErrorMessage,
-  isValidNationalId,
-  normalizeNationalId,
-  useCrudFeedback,
-} from '@/shared/lib'
+import { getErrorMessage, useCrudFeedback } from '@/shared/lib'
 
 const { t } = useI18n()
 const feedback = useCrudFeedback()
@@ -24,96 +17,49 @@ const user = computed(() => profile.data.value ?? null)
 const genders = genderOptions()
 
 const editVisible = ref(false)
-const editSubmitted = ref(false)
 const editError = ref('')
-const editForm = reactive<{
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  secondaryPhone: string
-  nationalId: string
-  promotionalConsent: boolean
-  gender: Gender | null
-  currentPassword: string
-}>({
-  firstName: '',
-  lastName: '',
-  email: '',
-  phone: '',
-  secondaryPhone: '',
-  nationalId: '',
-  promotionalConsent: false,
-  gender: null,
-  currentPassword: '',
-})
-
-const passwordRejected = ref(false)
-const replacesContact = computed(() => {
-  return (
-    editForm.email.trim().toLowerCase() !== (user.value?.email ?? '').toLowerCase() ||
-    editForm.phone.trim() !== (user.value?.phone ?? '') ||
-    editForm.secondaryPhone.trim() !== (user.value?.secondaryPhone ?? '')
-  )
-})
-const requiresPassword = computed(() => replacesContact.value || passwordRejected.value)
-const passwordMissing = computed(() => requiresPassword.value && !editForm.currentPassword)
-const secondaryPhoneRepeated = computed(
-  () =>
-    !!editForm.secondaryPhone.trim() && editForm.secondaryPhone.trim() === editForm.phone.trim(),
-)
-const nationalIdValid = computed(() => isValidNationalId(editForm.nationalId))
+const {
+  draft,
+  currentPassword,
+  submitted: editSubmitted,
+  errors,
+  requiresPassword,
+  passwordMissing,
+  load,
+  rejectPassword,
+  submit,
+} = usePersonForm({ kind: 'independent', stored: () => user.value })
 
 function openEdit(): void {
-  editSubmitted.value = false
   editError.value = ''
-  passwordRejected.value = false
-  editForm.firstName = user.value?.firstName ?? ''
-  editForm.lastName = user.value?.lastName ?? ''
-  editForm.email = user.value?.email ?? ''
-  editForm.phone = user.value?.phone ?? ''
-  editForm.secondaryPhone = user.value?.secondaryPhone ?? ''
-  editForm.nationalId = user.value?.nationalId ?? ''
-  editForm.promotionalConsent = user.value?.promotionalConsent ?? false
-  editForm.gender = user.value?.gender ?? null
-  editForm.currentPassword = ''
+  load(user.value)
   editVisible.value = true
 }
 
 function saveEdit(): void {
-  editSubmitted.value = true
   editError.value = ''
-  const gender = editForm.gender
-  if (!gender || passwordMissing.value || secondaryPhoneRepeated.value || !nationalIdValid.value)
-    return
-  const request: UpdateProfileInput = {
-    firstName: editForm.firstName.trim(),
-    lastName: editForm.lastName.trim(),
-    email: editForm.email.trim(),
-    phone: editForm.phone.trim(),
-    secondaryPhone: editForm.secondaryPhone.trim() || null,
-    nationalId: normalizeNationalId(editForm.nationalId),
-    promotionalConsent: editForm.promotionalConsent,
-    gender,
-    currentPassword: requiresPassword.value ? editForm.currentPassword : null,
-  }
-  updateProfile.mutate(request, {
-    onSuccess: () => {
-      editVisible.value = false
-      feedback.success(
-        t('features.account.profile.savedDetail'),
-        t('features.account.profile.savedSummary'),
-      )
+  const submission = submit()
+  if (submission?.kind !== 'independent') return
+  updateProfile.mutate(
+    { ...submission.person, currentPassword: submission.currentPassword },
+    {
+      onSuccess: () => {
+        editVisible.value = false
+        feedback.success(
+          t('features.account.profile.savedDetail'),
+          t('features.account.profile.savedSummary'),
+        )
+      },
+      onError: (error) => {
+        if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
+          rejectPassword()
+          editError.value = getErrorMessage(error)
+          return
+        }
+        feedback.error(error)
+      },
     },
-    onError: (error) => {
-      if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
-        passwordRejected.value = true
-        editError.value = getErrorMessage(error)
-        return
-      }
-      feedback.error(error)
-    },
-  })
+  )
 }
 
 const passwordVisible = ref(false)
@@ -216,17 +162,31 @@ function savePassword(): void {
         <div class="acc-form__grid">
           <div class="acc-form__field">
             <label for="p-firstname">{{ $t('common.firstName') }}</label>
-            <el-input id="p-firstname" v-model="editForm.firstName" :maxlength="120" required />
+            <el-input
+              id="p-firstname"
+              v-model="draft.firstName"
+              :maxlength="120"
+              :class="{ 'ca-invalid': errors.firstName }"
+              required
+            />
+            <small v-if="errors.firstName" class="acc-form__error">{{ errors.firstName }}</small>
           </div>
           <div class="acc-form__field">
             <label for="p-lastname">{{ $t('common.lastName') }}</label>
-            <el-input id="p-lastname" v-model="editForm.lastName" :maxlength="120" required />
+            <el-input
+              id="p-lastname"
+              v-model="draft.lastName"
+              :maxlength="120"
+              :class="{ 'ca-invalid': errors.lastName }"
+              required
+            />
+            <small v-if="errors.lastName" class="acc-form__error">{{ errors.lastName }}</small>
           </div>
           <div class="acc-form__field">
             <label for="p-national-id">{{ $t('common.nationalId') }}</label>
             <NationalIdInput
               id="p-national-id"
-              v-model="editForm.nationalId"
+              v-model="draft.nationalId"
               :show-errors="editSubmitted"
             />
           </div>
@@ -234,8 +194,8 @@ function savePassword(): void {
             <label for="p-gender">{{ $t('common.gender') }}</label>
             <el-select
               id="p-gender"
-              v-model="editForm.gender"
-              :class="{ 'ca-invalid': editSubmitted && !editForm.gender }"
+              v-model="draft.gender"
+              :class="{ 'ca-invalid': errors.gender }"
             >
               <el-option
                 v-for="option in genders"
@@ -244,39 +204,47 @@ function savePassword(): void {
                 :value="option.value"
               />
             </el-select>
-            <small v-if="editSubmitted && !editForm.gender" class="acc-form__error">{{
-              $t('validation.genderRequired')
-            }}</small>
+            <small v-if="errors.gender" class="acc-form__error">{{ errors.gender }}</small>
           </div>
           <div class="acc-form__field">
             <label for="p-phone">{{ $t('common.phone') }}</label>
-            <el-input id="p-phone" v-model="editForm.phone" type="tel" :maxlength="40" required />
+            <el-input
+              id="p-phone"
+              v-model="draft.phone"
+              type="tel"
+              :maxlength="40"
+              :class="{ 'ca-invalid': errors.phone }"
+              required
+            />
+            <small v-if="errors.phone" class="acc-form__error">{{ errors.phone }}</small>
           </div>
           <div class="acc-form__field">
             <label for="p-secondary-phone">{{ $t('common.secondaryPhoneOptional') }}</label>
             <el-input
               id="p-secondary-phone"
-              v-model="editForm.secondaryPhone"
+              v-model="draft.secondaryPhone"
               type="tel"
               :maxlength="40"
-              :class="{ 'ca-invalid': editSubmitted && secondaryPhoneRepeated }"
+              :class="{ 'ca-invalid': errors.secondaryPhone }"
             />
-            <small v-if="editSubmitted && secondaryPhoneRepeated" class="acc-form__error">{{
-              $t('validation.secondaryPhoneSameAsPrimary')
+            <small v-if="errors.secondaryPhone" class="acc-form__error">{{
+              errors.secondaryPhone
             }}</small>
           </div>
           <div class="acc-form__field acc-form__field--wide">
             <label for="p-email">{{ $t('common.email') }}</label>
             <el-input
               id="p-email"
-              v-model="editForm.email"
+              v-model="draft.email"
               type="email"
               :maxlength="256"
+              :class="{ 'ca-invalid': errors.email }"
               required
             />
+            <small v-if="errors.email" class="acc-form__error">{{ errors.email }}</small>
           </div>
           <div class="acc-form__consent acc-form__field--wide">
-            <el-checkbox id="p-promotional-consent" v-model="editForm.promotionalConsent" />
+            <el-checkbox id="p-promotional-consent" v-model="draft.promotionalConsent" />
             <label for="p-promotional-consent">{{ $t('common.promotionalConsentOption') }}</label>
           </div>
           <div v-if="requiresPassword" class="acc-form__field acc-form__field--wide">
@@ -288,7 +256,7 @@ function savePassword(): void {
             </p>
             <el-input
               id="p-current"
-              v-model="editForm.currentPassword"
+              v-model="currentPassword"
               type="password"
               show-password
               autocomplete="current-password"

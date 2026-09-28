@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Domain.Entities;
 
 namespace CodigoActivo.Application.Querying;
@@ -60,7 +59,7 @@ public static class UserFilters
         source = source.WhereContains(u => u.Email, query.Email);
         source = source.WhereContains(
             u => u.NationalId,
-            query.NationalId.NormalizeNationalIdOrNull()
+            SpanishNationalId.Normalize(query.NationalId)
         );
         return source.WhereContains(
             u => (u.Phone ?? "") + " " + (u.SecondaryPhone ?? ""),

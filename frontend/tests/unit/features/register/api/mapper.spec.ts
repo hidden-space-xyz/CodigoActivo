@@ -52,14 +52,14 @@ describe('toRegisterRequest', () => {
             key: 1,
             firstName: ' Byron ',
             lastName: ' King ',
-            dateOfBirth: '2015-01-02',
+            birthDate: '2015-01-02',
             gender: 'Male',
           },
           {
             key: 2,
             firstName: 'Anne',
             lastName: 'King',
-            dateOfBirth: '2017-03-04',
+            birthDate: '2017-03-04',
             gender: 'Other',
           },
         ],
@@ -72,16 +72,16 @@ describe('toRegisterRequest', () => {
     ])
   })
 
-  it('throws when the adult has no gender', () => {
-    expect(() => toRegisterRequest(buildForm({ gender: null }))).toThrow('missing gender')
+  it('throws when the adult breaks a person rule', () => {
+    expect(() => toRegisterRequest(buildForm({ gender: null }))).toThrow('invalid registrant')
   })
 
-  it('throws when a minor has no gender', () => {
+  it('throws when a minor breaks a person rule', () => {
     const form = buildForm({
-      minors: [{ key: 1, firstName: 'B', lastName: 'K', dateOfBirth: '2015-01-02', gender: null }],
+      minors: [{ key: 1, firstName: 'B', lastName: 'K', birthDate: '2015-01-02', gender: null }],
     })
 
-    expect(() => toRegisterRequest(form)).toThrow('missing minor gender')
+    expect(() => toRegisterRequest(form)).toThrow('invalid minor')
   })
 })
 

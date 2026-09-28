@@ -186,13 +186,13 @@ describe('UserFormDialog', () => {
     await typeInto('#user-current-password', 'admin-password')
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).toContain(t('validation.secondaryPhoneSameAsPrimary'))
+    expect(dialog.textContent).toContain(t('entities.user.person.sameAsPhone'))
     expect(wrapper.emitted('submit')).toBeUndefined()
 
     await typeInto('#user-secondary-phone', '  ')
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).not.toContain(t('validation.secondaryPhoneSameAsPrimary'))
+    expect(dialog.textContent).not.toContain(t('entities.user.person.sameAsPhone'))
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
       secondaryPhone: null,
       currentPassword: 'admin-password',
@@ -255,16 +255,16 @@ describe('UserFormDialog', () => {
     const { wrapper, dialog } = await renderDialog(minor)
     const picker = wrapper.findComponent(ElDatePicker)
 
-    picker.vm.$emit('update:modelValue', new Date(1999, 4, 5))
+    picker.vm.$emit('update:modelValue', '1999-05-05')
     await flushPromises()
     expect(dialog.querySelector('#user-current-password')).toBeNull()
 
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).toContain(t('features.manageUsers.childBirthDateNotMinor'))
+    expect(dialog.textContent).toContain(t('entities.user.person.birthDateNotMinor'))
     expect(wrapper.emitted('submit')).toBeUndefined()
 
-    picker.vm.$emit('update:modelValue', new Date(2017, 2, 3))
+    picker.vm.$emit('update:modelValue', '2017-03-03')
     await flushPromises()
     await click(findButton(t('common.save'), dialog))
 
@@ -292,20 +292,20 @@ describe('UserFormDialog', () => {
     await typeInto('#user-first-name', 'Thomas')
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).not.toContain(t('features.manageUsers.childBirthDateNotMinor'))
+    expect(dialog.textContent).not.toContain(t('entities.user.person.birthDateNotMinor'))
     expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({
       firstName: 'Thomas',
       birthDate: '2000-03-04',
       parentId: 'user-1',
     })
 
-    picker.vm.$emit('update:modelValue', new Date(2001, 2, 4))
+    picker.vm.$emit('update:modelValue', '2001-03-04')
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).toContain(t('features.manageUsers.childBirthDateNotMinor'))
+    expect(dialog.textContent).toContain(t('entities.user.person.birthDateNotMinor'))
     expect(wrapper.emitted('submit')).toHaveLength(1)
 
-    picker.vm.$emit('update:modelValue', new Date(2012, 6, 8))
+    picker.vm.$emit('update:modelValue', '2012-07-08')
     await click(findButton(t('common.save'), dialog))
 
     expect(wrapper.emitted('submit')?.[1]?.[0]).toMatchObject({ birthDate: '2012-07-08' })
@@ -342,13 +342,13 @@ describe('UserFormDialog', () => {
 
     await typeInto('#user-phone', '')
     await click(findButton(t('common.save'), dialog))
-    expect(dialog.textContent).toContain(t('features.manageUsers.contactRequired'))
+    expect(dialog.textContent).toContain(t('entities.user.person.required'))
 
     await typeInto('#user-phone', '600000000')
     await typeInto('#user-email', 'not-an-email')
     await click(findButton(t('common.save'), dialog))
-    expect(dialog.textContent).toContain(t('validation.emailFormat'))
-    expect(dialog.textContent).not.toContain(t('features.manageUsers.contactRequired'))
+    expect(dialog.textContent).toContain(t('entities.user.person.emailFormat'))
+    expect(dialog.textContent).not.toContain(t('entities.user.person.required'))
 
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
@@ -360,8 +360,8 @@ describe('UserFormDialog', () => {
     await click(findButton(t('common.save'), dialog))
 
     expect(dialog.textContent).toContain(t('validation.nationalIdFormat'))
-    expect(dialog.textContent).not.toContain(t('features.manageUsers.birthDateInvalid'))
-    expect(dialog.textContent).toContain(t('validation.genderRequired'))
+    expect(dialog.textContent).not.toContain(t('entities.user.person.birthDateInvalid'))
+    expect(dialog.textContent).toContain(t('entities.user.person.genderRequired'))
     expect(dialog.querySelectorAll('.ca-invalid').length).toBeGreaterThanOrEqual(4)
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
@@ -376,12 +376,12 @@ describe('UserFormDialog', () => {
 
     picker.vm.$emit('update:modelValue', null)
     await click(findButton(t('common.save'), dialog))
-    expect(dialog.textContent).toContain(t('features.manageUsers.birthDateInvalid'))
+    expect(dialog.textContent).toContain(t('entities.user.person.birthDateInvalid'))
 
-    picker.vm.$emit('update:modelValue', new Date(2030, 0, 1))
+    picker.vm.$emit('update:modelValue', '2030-01-01')
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).toContain(t('features.manageUsers.birthDateInvalid'))
+    expect(dialog.textContent).toContain(t('entities.user.person.birthDateInvalid'))
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
@@ -389,7 +389,7 @@ describe('UserFormDialog', () => {
     const { wrapper, dialog } = await renderDialog(toUser(without(buildUserResponse(), 'gender')))
 
     await click(findButton(t('common.save'), dialog))
-    expect(dialog.textContent).toContain(t('validation.genderRequired'))
+    expect(dialog.textContent).toContain(t('entities.user.person.genderRequired'))
 
     wrapper.findComponent(ElSelect).vm.$emit('update:modelValue', 'Other')
     await click(findButton(t('common.save'), dialog))
