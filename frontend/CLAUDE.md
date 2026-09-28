@@ -1,8 +1,6 @@
 # Frontend guidance
 
-`npm run check` is the complete frontend gate: generated-client verification, type-check/build, Vitest with
-90% coverage thresholds, ESLint, Steiger, Stylelint, Knip and Prettier. `npm run api:generate` regenerates the
-client from `swagger.json`; `npm run api:check` verifies it is in sync.
+`npm run check` is the complete frontend gate.
 
 ## Rules
 

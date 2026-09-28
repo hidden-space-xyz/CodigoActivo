@@ -31,14 +31,11 @@ from a clone, use `docker compose -f docker-compose.yml ...` so the override is 
 ## Configuration facts
 
 - The API reads flat environment variables. It does not load the root `.env`; Docker Compose does.
-- Database variables are `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER` and
-  `POSTGRES_PASSWORD`.
 - `SMTP_HOST` and `SMTP_FROM_ADDRESS` are always required at startup: every login is completed with a
   one-time code (mandatory two-factor authentication), emailed by default. Locally point them at a mail
   catcher such as Mailpit; the Compose development override already does.
 - New accounts always confirm their email before the first login; there is no configuration switch.
 - An empty database requires valid `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` values.
-- Vite reads `frontend/.env.local`; point `VITE_API_PROXY_TARGET` to the local API.
 - Production nginx is published on host port `8080` on all interfaces. Do not describe it as loopback-only.
 - Configuration names in checked-in examples are uppercase. .NET nested overrides use `SECTION__KEY` and
   must also be forwarded explicitly by Compose.
