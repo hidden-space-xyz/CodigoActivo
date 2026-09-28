@@ -12,15 +12,12 @@ import {
   formatSignedPercent,
   formatTimeRange,
   fullName,
-  isValidNationalId,
   nationalIdError,
   normalizeNationalId,
   parseDateOnly,
-  toDateInput,
   toDateOnly,
   todayIso,
   toSelectOptions,
-  yearsAgoIso,
 } from '@/shared/lib'
 
 function freezeTime(date: Date): void {
@@ -49,12 +46,11 @@ describe('toDateOnly', () => {
   })
 })
 
-describe('todayIso and yearsAgoIso', () => {
-  it('use the current UTC date', () => {
+describe('todayIso', () => {
+  it('uses the current UTC date', () => {
     freezeTime(new Date('2026-09-17T12:00:00Z'))
 
     expect(todayIso()).toBe('2026-09-17')
-    expect(yearsAgoIso(18)).toBe('2008-09-17')
   })
 })
 
@@ -186,17 +182,6 @@ describe('formatDate', () => {
   })
 })
 
-describe('toDateInput', () => {
-  it('returns the UTC date part', () => {
-    expect(toDateInput('2025-06-01T12:00:00Z')).toBe('2025-06-01')
-  })
-
-  it('returns an empty string for missing or invalid values', () => {
-    expect(toDateInput(null)).toBe('')
-    expect(toDateInput('bad')).toBe('')
-  })
-})
-
 describe('formatDateTimeRange', () => {
   const start = new Date(2025, 0, 15, 10, 30)
 
@@ -308,13 +293,5 @@ describe('nationalIdError', () => {
 
     expect(typos).toHaveLength(79)
     expect(typos.filter((typo) => nationalIdError(typo) !== 'letter')).toEqual([])
-  })
-})
-
-describe('isValidNationalId', () => {
-  it('accepts only values without a problem', () => {
-    expect(isValidNationalId('x-1234567-l')).toBe(true)
-    expect(isValidNationalId('X1234567A')).toBe(false)
-    expect(isValidNationalId('X123')).toBe(false)
   })
 })

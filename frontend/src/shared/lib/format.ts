@@ -52,13 +52,6 @@ export function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-/** The date `years` before now as UTC `YYYY-MM-DD`; used for the adult (18+) birth-date limit. */
-export function yearsAgoIso(years: number): string {
-  const date = new Date()
-  date.setFullYear(date.getFullYear() - years)
-  return date.toISOString().slice(0, 10)
-}
-
 /** Completed years since a birth date, or `null` when the date is missing or invalid. */
 export function ageFrom(value?: Date | string | null): number | null {
   if (!value) return null
@@ -147,14 +140,6 @@ export function formatDate(value?: string | null): string {
   const date = parseDisplayDate(value)
   if (Number.isNaN(date.getTime())) return '—'
   return dateFormatter.format(date)
-}
-
-/** UTC `YYYY-MM-DD` value for date inputs, or `''` when missing or invalid. */
-export function toDateInput(value?: string | null): string {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toISOString().slice(0, 10)
 }
 
 function toDate(value?: Date | string | null): Date | null {
@@ -251,9 +236,4 @@ export function nationalIdError(value: string): 'format' | 'letter' | null {
     Number(digits) % NATIONAL_ID_CONTROL_LETTERS.length,
   )
   return normalized.charAt(8) === expected ? null : 'letter'
-}
-
-/** Shorthand for `nationalIdError(value) === null`, for forms that only gate their submit on it. */
-export function isValidNationalId(value: string): boolean {
-  return nationalIdError(value) === null
 }

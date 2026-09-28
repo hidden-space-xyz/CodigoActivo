@@ -2,7 +2,6 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Entities;
@@ -42,21 +41,16 @@ public sealed class UpdateUserCommandHandler(
 ) : ICommandHandler<UpdateUserCommand, Result<UserResponse>>
 {
     /// <summary>
-    /// Handles the request to update the user. The stored account decides which rules apply, never
-    /// the request: an account that is not a dependent has no birth date, needs a DNI or NIE and
-    /// cannot be given a guardian, while a dependent keeps the guardian it already has, needs a
-    /// birth date and never stores a DNI, NIE or promotional consent. A dependent birth date must
-    /// keep it a minor only when it changes, so a dependent that has already come of age stays
-    /// editable with its stored birth date. Only the email must be unique; the phone and the DNI or
-    /// NIE are never checked against other accounts, so an update cannot reveal who uses them.
-    /// Replacing the email, the phone or the secondary phone of the account first re-authenticates
-    /// the acting caller, so a hijacked session alone cannot take the account over or redirect its
-    /// contact details; the DNI or NIE needs no password. A new email is refused when it belongs to
-    /// a disposable email provider, while an unchanged one is kept even if its domain was listed
-    /// later. The secondary phone is optional and must differ from the phone. Dependents are
-    /// created only through
-    /// <c>POST /api/users/{id}/children</c>, and they leave their guardian only when the guardian
-    /// deletes them.
+    /// Handles the request to update the user. <see cref="User.PlanProfileChange"/> decides which
+    /// rules apply to the stored account; this handler adds the checks that need I/O before the
+    /// change is applied. Only the email must be unique; the phone and the DNI or NIE are never
+    /// checked against other accounts, so an update cannot reveal who uses them. Replacing the
+    /// email, the phone or the secondary phone of the account first re-authenticates the acting
+    /// caller, so a hijacked session alone cannot take the account over or redirect its contact
+    /// details; the DNI or NIE needs no password. A new email is refused when it belongs to a
+    /// disposable email provider, while an unchanged one is kept even if its domain was listed
+    /// later. Dependents are created only through <c>POST /api/users/{id}/children</c>, and they
+    /// leave their guardian only when the guardian deletes them.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -74,148 +68,62 @@ public sealed class UpdateUserCommandHandler(
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        var previousEmail = user.Email;
-        var previousPhone = user.Phone;
-        var previousSecondaryPhone = user.SecondaryPhone;
-
-        var rules = user.ParentId is null
-            ? await ApplyStandaloneAccountRulesAsync(command, user, ct)
-            : ApplyDependentRules(request, user);
-        if (rules.IsFailure)
+        var planned = user.PlanProfileChange(
+            new PersonDetails(
+                request.FirstName,
+                request.LastName,
+                request.Gender,
+                request.Email,
+                request.Phone,
+                request.SecondaryPhone,
+                request.NationalId,
+                request.PromotionalConsent,
+                request.BirthDate
+            ),
+            request.ParentId,
+            clock.Today
+        );
+        if (planned.IsFailure)
         {
-            return rules.Error!;
+            return planned.Error!;
         }
 
-        user.FirstName = request.FirstName.Trim();
-        user.LastName = request.LastName.Trim();
-        user.Gender = request.Gender;
-        user.UpdatedAt = clock.UtcNow;
+        var change = planned.Value;
+        if (
+            change.NewEmail is { } newEmail
+            && await disposableEmails.IsDisposableAsync(newEmail, ct)
+        )
+        {
+            return Error.BadRequest(ErrorCode.DisposableEmailNotAllowed);
+        }
+
+        if (change.ReplacesContact && !await VerifyActingPasswordAsync(command, ct))
+        {
+            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
+        }
+
+        if (change.Email is { } email && await users.EmailExistsAsync(email, command.UserId, ct))
+        {
+            return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
+        }
+
+        var previousEmail = user.Email;
+        user.ApplyProfileChange(change, clock.UtcNow);
 
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
-        var emailChanged = !string.Equals(previousEmail, user.Email, StringComparison.Ordinal);
-        var phoneChanged =
-            !string.Equals(previousPhone, user.Phone, StringComparison.Ordinal)
-            || !string.Equals(
-                previousSecondaryPhone,
-                user.SecondaryPhone,
-                StringComparison.Ordinal
-            );
-        if ((emailChanged || phoneChanged) && previousEmail is not null)
+        if (change.ReplacesContact && previousEmail is not null)
         {
             await securityNotifier.NotifyIdentifiersChangedAsync(
                 previousEmail,
                 user.FirstName,
-                emailChanged ? user.Email : null,
+                change.NewEmail,
                 ct
             );
         }
 
         return await getById.HandleAsync(new GetUserByIdQuery(command.UserId), ct);
-    }
-
-    private async Task<Result> ApplyStandaloneAccountRulesAsync(
-        UpdateUserCommand command,
-        User user,
-        CancellationToken ct
-    )
-    {
-        var request = command.Request;
-        if (request.BirthDate is not null)
-        {
-            return Error.BadRequest(ErrorCode.UserBirthDateNotAllowedForAdult);
-        }
-
-        if (request.ParentId is not null)
-        {
-            return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
-        }
-
-        var nationalId = request.NationalId.NormalizeNationalIdOrNull();
-        if (nationalId is null)
-        {
-            return Error.BadRequest(ErrorCode.UserNationalIdRequired);
-        }
-
-        var contact = await ApplyContactRulesAsync(command, user, ct);
-        if (contact.IsFailure)
-        {
-            return contact;
-        }
-
-        user.NationalId = nationalId;
-        user.PromotionalConsent = request.PromotionalConsent;
-        return Result.Success();
-    }
-
-    private Result ApplyDependentRules(UpdateUserRequest request, User user)
-    {
-        if (request.ParentId is { } parent && parent != user.ParentId)
-        {
-            return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
-        }
-
-        if (request.BirthDate is not { } birthDate)
-        {
-            return Error.BadRequest(ErrorCode.UserChildBirthDateRequired);
-        }
-
-        if (birthDate != user.BirthDate && !birthDate.IsMinor(clock.Today))
-        {
-            return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
-        }
-
-        user.BirthDate = birthDate;
-        user.NationalId = null;
-        user.PromotionalConsent = false;
-        return Result.Success();
-    }
-
-    private async Task<Result> ApplyContactRulesAsync(
-        UpdateUserCommand command,
-        User user,
-        CancellationToken ct
-    )
-    {
-        var request = command.Request;
-        var email = request.Email.NormalizeEmailOrNull();
-        var phone = request.Phone.NormalizeOrNull();
-        var secondaryPhone = request.SecondaryPhone.NormalizeOrNull();
-        if (email is null || phone is null)
-        {
-            return Error.BadRequest(ErrorCode.UserContactInfoRequired);
-        }
-
-        if (string.Equals(secondaryPhone, phone, StringComparison.Ordinal))
-        {
-            return Error.BadRequest(ErrorCode.SecondaryPhoneSameAsPrimary);
-        }
-
-        var replacesEmail = !string.Equals(email, user.Email, StringComparison.Ordinal);
-        if (replacesEmail && await disposableEmails.IsDisposableAsync(email, ct))
-        {
-            return Error.BadRequest(ErrorCode.DisposableEmailNotAllowed);
-        }
-
-        var replacesContact =
-            replacesEmail
-            || !string.Equals(phone, user.Phone, StringComparison.Ordinal)
-            || !string.Equals(secondaryPhone, user.SecondaryPhone, StringComparison.Ordinal);
-        if (replacesContact && !await VerifyActingPasswordAsync(command, ct))
-        {
-            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
-        }
-
-        if (await users.EmailExistsAsync(email, command.UserId, ct))
-        {
-            return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
-        }
-
-        user.Email = email;
-        user.Phone = phone;
-        user.SecondaryPhone = secondaryPhone;
-        return Result.Success();
     }
 
     private async Task<bool> VerifyActingPasswordAsync(

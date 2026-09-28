@@ -85,21 +85,6 @@ public sealed class AddChildCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncParentIsADependentReturnsBadRequest()
-    {
-        users.FindReturns(NewUser(parentId: Guid.NewGuid(), dob: MinorDob));
-        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Gender.Male);
-
-        var result = await sut.HandleAsync(
-            new AddChildCommand(Guid.NewGuid(), request),
-            TestContext.Current.CancellationToken
-        );
-
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentIsMinor);
-        await AssertNotSavedAsync();
-    }
-
-    [Fact]
     public async Task HandleAsyncChildBirthDateNotMinorReturnsBadRequest()
     {
         users.FindReturns(NewUser());

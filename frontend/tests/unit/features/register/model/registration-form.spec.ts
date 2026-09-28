@@ -37,7 +37,7 @@ describe('registration form factories', () => {
       key: first.key,
       firstName: '',
       lastName: '',
-      dateOfBirth: '',
+      birthDate: '',
       gender: null,
     })
     expect(second.key).toBeGreaterThan(first.key)

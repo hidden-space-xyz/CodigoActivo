@@ -1,10 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Caching;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
 
@@ -53,32 +51,26 @@ public sealed class AddChildCommandHandler(
             return Error.NotFound(ErrorCode.ParentUserNotFound);
         }
 
-        if (parent.ParentId is not null)
+        var child = User.CreateDependent(
+            parent,
+            new PersonDetails(
+                request.FirstName,
+                request.LastName,
+                request.Gender,
+                BirthDate: request.BirthDate
+            ),
+            clock.Today,
+            clock.UtcNow
+        );
+        if (child.IsFailure)
         {
-            return Error.BadRequest(ErrorCode.UserParentIsMinor);
+            return child.Error!;
         }
 
-        if (!request.BirthDate.IsMinor(clock.Today))
-        {
-            return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
-        }
-
-        var now = clock.UtcNow;
-        var child = new User
-        {
-            FirstName = request.FirstName.Trim(),
-            LastName = request.LastName.Trim(),
-            BirthDate = request.BirthDate,
-            Gender = request.Gender,
-            ParentId = command.ParentId,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-            UserTypeId = SeedIds.UserTypes.Participant,
-            CreatedAt = now,
-        };
-        await users.AddAsync(child, ct);
+        await users.AddAsync(child.Value, ct);
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
-        return await getById.HandleAsync(new GetUserByIdQuery(child.Id), ct);
+        return await getById.HandleAsync(new GetUserByIdQuery(child.Value.Id), ct);
     }
 }

@@ -10,12 +10,7 @@ import type {
 } from '@/shared/api/generated/models'
 import { TwoFactorMethod } from '@/shared/api/generated/models'
 
-import type {
-  AddMinorInput,
-  EventRatingInput,
-  UpdateMinorInput,
-  UpdateProfileInput,
-} from '../model/account-inputs'
+import type { EventRatingInput, MinorInput, UpdateProfileInput } from '../model/account-inputs'
 import type {
   AccountChild,
   AccountCertificate,
@@ -83,7 +78,7 @@ export function toUpdateProfileRequest(input: UpdateProfileInput): UpdateUserReq
 }
 
 /** Builds the body for registering a minor under the current account. */
-export function toAddMinorRequest(input: AddMinorInput): RegisterMinorRequest {
+export function toAddMinorRequest(input: MinorInput): RegisterMinorRequest {
   return {
     firstName: input.firstName,
     lastName: input.lastName,
@@ -93,7 +88,7 @@ export function toAddMinorRequest(input: AddMinorInput): RegisterMinorRequest {
 }
 
 /** Builds the user update body for a minor, keeping it linked to `parentId`. */
-export function toUpdateMinorRequest(input: UpdateMinorInput, parentId: string): UpdateUserRequest {
+export function toUpdateMinorRequest(input: MinorInput, parentId: string): UpdateUserRequest {
   return {
     firstName: input.firstName,
     lastName: input.lastName,

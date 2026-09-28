@@ -300,7 +300,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        await response.ShouldBeConflictAsync(ErrorCode.RegisterEmailAlreadyInUse);
+        await response.ShouldBeConflictAsync(ErrorCode.UserEmailAlreadyInUse);
         (await CountNewAdultsAsync()).Should().Be(0);
     }
 

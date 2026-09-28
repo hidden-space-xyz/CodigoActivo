@@ -78,7 +78,7 @@ public sealed class InitialAdministratorSeeder(
             Email = email,
             Phone = null,
             PasswordHash = passwordHasher.Hash(configuredPassword),
-            NationalId = "00000000T",
+            NationalId = SpanishNationalId.FromDniNumber(0),
             Gender = Gender.Other,
             UserStatusTypeId = SeedIds.UserStatusTypes.Active,
             UserTypeId = SeedIds.UserTypes.Member,

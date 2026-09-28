@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { toUpdateUserRequest, toUser } from '@/entities/user/api/mapper'
+import { toUser } from '@/entities/user/api/mapper'
 
 import { buildUserResponse } from '../../../../support/fixtures/user'
 
@@ -64,23 +64,5 @@ describe('user mapper', () => {
       status: { id: '', name: '', color: null },
       type: { id: '', name: '', color: null },
     })
-  })
-
-  it('copies the form input into the update body', () => {
-    const input = {
-      firstName: 'Byron',
-      lastName: 'King',
-      email: null,
-      phone: null,
-      secondaryPhone: null,
-      birthDate: '2015-01-02',
-      nationalId: null,
-      promotionalConsent: false,
-      gender: 'Male',
-      parentId: 'parent-1',
-      currentPassword: 'Str0ngPass!23',
-    } as const
-
-    expect(toUpdateUserRequest(input)).toEqual(input)
   })
 })

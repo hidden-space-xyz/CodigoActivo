@@ -44,16 +44,11 @@ export interface DeleteAccountInput {
   code: string
 }
 
-/** Form values for registering a minor in the household; minors have no email or phone. */
-export interface AddMinorInput {
-  firstName: string
-  lastName: string
-  birthDate: string
-  gender: Gender
-}
-
-/** Form values for editing an existing minor; the parent link is supplied separately. */
-export interface UpdateMinorInput {
+/**
+ * Values for adding a minor to the household or editing one; minors have no email or phone, and
+ * the parent link is supplied separately.
+ */
+export interface MinorInput {
   firstName: string
   lastName: string
   birthDate: string

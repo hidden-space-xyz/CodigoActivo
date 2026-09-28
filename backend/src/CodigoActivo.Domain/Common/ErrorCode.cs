@@ -299,7 +299,8 @@ public enum ErrorCode
     UserParentIsMinor,
 
     /// <summary>
-    /// Selects the user child birth date not minor option.
+    /// Selects the option for a dependent created, when registering or later, or given a new birth
+    /// date that does not make it a minor.
     /// </summary>
     UserChildBirthDateNotMinor,
 
@@ -334,17 +335,19 @@ public enum ErrorCode
     UserChildBirthDateRequired,
 
     /// <summary>
-    /// Selects the user contact info required option.
+    /// Selects the option for an independent account registered or updated without an email or a
+    /// phone, or asked for an emailed code while it has no email.
     /// </summary>
     UserContactInfoRequired,
 
     /// <summary>
-    /// Selects the option for an independent account updated without a DNI or NIE.
+    /// Selects the option for an independent account registered or updated without a DNI or NIE.
     /// </summary>
     UserNationalIdRequired,
 
     /// <summary>
-    /// Selects the user email already in use option.
+    /// Selects the option for an account registered or updated with an email another account
+    /// already uses.
     /// </summary>
     UserEmailAlreadyInUse,
 
@@ -383,21 +386,6 @@ public enum ErrorCode
     /// Selects the current user not found option.
     /// </summary>
     CurrentUserNotFound,
-
-    /// <summary>
-    /// Selects the register contact info required option.
-    /// </summary>
-    RegisterContactInfoRequired,
-
-    /// <summary>
-    /// Selects the option for a registration whose email another account already uses.
-    /// </summary>
-    RegisterEmailAlreadyInUse,
-
-    /// <summary>
-    /// Selects the register minor birth date not minor option.
-    /// </summary>
-    RegisterMinorBirthDateNotMinor,
 
     /// <summary>
     /// Selects the otp invalid or expired option.

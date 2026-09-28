@@ -1,6 +1,5 @@
 using System.Text.Json;
 using AwesomeAssertions;
-using CodigoActivo.Application.Validation;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Storage;
@@ -323,7 +322,6 @@ public sealed class DemoDataSeederTests
     public void BuildGraphDefaultAdultsHaveUniqueValidNationalIdsAndNoBirthDate()
     {
         var adults = graph.Users.Where(u => u.ParentId is null).ToList();
-        var validator = new SpanishNationalIdAttribute();
 
         adults.Should().NotBeEmpty();
         adults
@@ -332,7 +330,7 @@ public sealed class DemoDataSeederTests
             {
                 adult.BirthDate.Should().BeNull();
                 adult.NationalId.Should().NotBeNull().And.HaveLength(9);
-                validator.IsValid(adult.NationalId).Should().BeTrue();
+                SpanishNationalId.IsValid(adult.NationalId).Should().BeTrue();
             });
         adults.Select(u => u.NationalId).Should().OnlyHaveUniqueItems();
         adults.Should().Contain(u => u.PromotionalConsent);

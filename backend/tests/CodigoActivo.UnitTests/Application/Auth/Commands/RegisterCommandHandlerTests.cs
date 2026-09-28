@@ -136,21 +136,6 @@ public sealed class RegisterCommandHandlerTests
             && user.UserTypeId == SeedIds.UserTypes.Participant;
     }
 
-    [Theory]
-    [InlineData("   ")]
-    [InlineData("-")]
-    [InlineData(" - ")]
-    public async Task HandleAsyncBlankNationalIdReturnsBadRequest(string nationalId)
-    {
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(nationalId: nationalId)),
-            TestContext.Current.CancellationToken
-        );
-
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RequestValidationFailed);
-        await AssertNotSavedAsync();
-    }
-
     [Fact]
     public async Task HandleAsyncNewAdultStoresNationalIdAndConsentButNoBirthDate()
     {
@@ -186,37 +171,8 @@ public sealed class RegisterCommandHandlerTests
         minor.BirthDate.Should().Be(MinorBirthDate);
     }
 
-    [Theory]
-    [InlineData("  +34 600 111 222  ", "+34 600 111 222")]
-    [InlineData("   ", null)]
-    [InlineData(null, null)]
-    public async Task HandleAsyncSecondaryPhoneIsStoredTrimmedOrLeftUnset(
-        string? secondaryPhone,
-        string? expected
-    )
-    {
-        var added = await CaptureAddedUsersAsync();
-        ExistsReturns(false);
-        users
-            .GetByIdWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(NewUser());
-        users
-            .ListChildrenWithDetailsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns([]);
-
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(secondaryPhone: secondaryPhone, minors: [NewMinor()])),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        added[0].Phone.Should().Be("+34123456789");
-        added[0].SecondaryPhone.Should().Be(expected);
-        added[1].SecondaryPhone.Should().BeNull();
-    }
-
     [Fact]
-    public async Task HandleAsyncSecondaryPhoneEqualToPhoneReturnsBadRequest()
+    public async Task HandleAsyncBrokenProfileRuleIsRefusedWithoutAddingAnyone()
     {
         ExistsReturns(false);
 
@@ -229,27 +185,23 @@ public sealed class RegisterCommandHandlerTests
         await AssertNotSavedAsync();
         await users
             .DidNotReceiveWithAnyArgs()
+            .ExistsAsync(default!, TestContext.Current.CancellationToken);
+        await users
+            .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
     }
 
-    [Theory]
-    [InlineData("   ", "+34123456789", "password123")]
-    [InlineData("ana@test.com", "   ", "password123")]
-    [InlineData("ana@test.com", "+34123456789", "   ")]
-    public async Task HandleAsyncMissingContactInfoReturnsBadRequest(
-        string email,
-        string phone,
-        string password
-    )
+    [Fact]
+    public async Task HandleAsyncBlankPasswordReturnsBadRequest()
     {
         ExistsReturns(false);
 
         var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(email: email, phone: phone, password: password)),
+            new RegisterCommand(NewRegister(password: "   ")),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RegisterContactInfoRequired);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RequestValidationFailed);
         await AssertNotSavedAsync();
     }
 
@@ -263,7 +215,7 @@ public sealed class RegisterCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.RegisterEmailAlreadyInUse);
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserEmailAlreadyInUse);
         await AssertNotSavedAsync();
         await cacheInvalidator
             .DidNotReceive()
@@ -331,8 +283,11 @@ public sealed class RegisterCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.RegisterMinorBirthDateNotMinor);
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserChildBirthDateNotMinor);
         await AssertNotSavedAsync();
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]

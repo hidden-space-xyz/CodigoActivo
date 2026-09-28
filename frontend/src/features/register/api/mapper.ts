@@ -1,44 +1,24 @@
-import type {
-  RegisterMinorRequest,
-  RegisterRequest,
-  RegisterResponse,
-} from '@/shared/api/generated/models'
-import { normalizeNationalId } from '@/shared/lib'
+import { parseDependentPerson, parseIndependentPerson } from '@/entities/user'
+import type { RegisterRequest, RegisterResponse } from '@/shared/api/generated/models'
 
-import type { MinorForm, RegistrationForm } from '../model/registration-form'
+import type { RegistrationForm } from '../model/registration-form'
 import type { RegistrationResult } from '../model/types'
 
-function toRegisterMinorRequest(minor: MinorForm): RegisterMinorRequest {
-  const { gender } = minor
-  if (!gender) throw new Error('missing minor gender')
-  return {
-    firstName: minor.firstName.trim(),
-    lastName: minor.lastName.trim(),
-    birthDate: minor.dateOfBirth,
-    gender,
-  }
-}
-
 /**
- * Builds the register request from the form, trimming names, email and phones, sending a blank
- * secondary phone as `null`, normalizing the DNI or NIE and dropping the password confirmation.
- * Throws if the adult or any minor has no gender; the form validates this first.
+ * Builds the register request from the form with the person rules of `@/entities/user`: trimmed
+ * names, email and phones, a blank secondary phone as `null` and a normalized DNI or NIE. The
+ * password confirmation is dropped. Throws if the adult or any minor breaks a rule; the form
+ * validates them first.
  */
 export function toRegisterRequest(form: RegistrationForm): RegisterRequest {
-  const { gender } = form
-  if (!gender) throw new Error('missing gender')
-  return {
-    firstName: form.firstName.trim(),
-    lastName: form.lastName.trim(),
-    email: form.email.trim(),
-    phone: form.phone.trim(),
-    secondaryPhone: form.secondaryPhone.trim() || null,
-    password: form.password,
-    nationalId: normalizeNationalId(form.nationalId),
-    gender,
-    promotionalConsent: form.promotionalConsent,
-    minors: form.minors.map(toRegisterMinorRequest),
-  }
+  const adult = parseIndependentPerson(form).person
+  if (!adult) throw new Error('invalid registrant')
+  const minors = form.minors.map((minor) => {
+    const person = parseDependentPerson(minor).person
+    if (!person) throw new Error('invalid minor')
+    return person
+  })
+  return { ...adult, password: form.password, minors }
 }
 
 /** Reduces the register response to what the success step needs, defaulting missing fields. */

@@ -36,7 +36,6 @@ public sealed class DemoDataSeeder(
     private const int AdultCount = 20;
     private const int MemberAdultCount = 14;
     private const int ChildCount = 5;
-    private const string NationalIdControlLetters = "TRWAGMYFPDXBNJZSQVHLCKE";
 
     private const int EventSpacingDays = 14;
     private const int FinishedEventCount = 15;
@@ -773,11 +772,7 @@ public sealed class DemoDataSeeder(
 
     private static string BuildNationalId(int index)
     {
-        var number = 20_000_000 + (index * 1_234_567);
-        return string.Create(
-            CultureInfo.InvariantCulture,
-            $"{number:D8}{NationalIdControlLetters[number % NationalIdControlLetters.Length]}"
-        );
+        return SpanishNationalId.FromDniNumber(20_000_000 + (index * 1_234_567));
     }
 
     private static DateOnly BuildBirthDate(int index, int year)

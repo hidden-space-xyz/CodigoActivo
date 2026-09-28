@@ -50,7 +50,7 @@ authentication are not supported.
   differ from the same account's phone (`SecondaryPhoneSameAsPrimary`). `POST /api/auth/login` resolves the account by email only.
 - **Known limitation**: `POST /api/auth/register` accepts anonymous requests, so an attacker who knows
   someone else's email can register with it; the account is created pending verification and the email
-  stays reserved until an administrator deletes it. The 409 (`RegisterEmailAlreadyInUse`) also lets a
+  stays reserved until an administrator deletes it. The 409 (`UserEmailAlreadyInUse`) also lets a
   caller probe whether a given email is already registered.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns

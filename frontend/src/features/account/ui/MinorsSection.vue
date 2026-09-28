@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAccount } from '../model/useAccount'
 import type { AccountChild } from '@/entities/account'
-import { genderLabel, genderOptions } from '@/entities/user'
-import type { Gender } from '@/shared/api/generated/models'
+import { genderLabel, genderOptions, minorBirthDateRange, usePersonForm } from '@/entities/user'
 import { BaseButton } from '@/shared/ui'
-import { formatDate, toDateInput, todayIso, useCrudFeedback, yearsAgoIso } from '@/shared/lib'
+import { formatDate, useCrudFeedback } from '@/shared/lib'
 
 const { t } = useI18n()
 const feedback = useCrudFeedback()
@@ -16,42 +15,28 @@ const { children, addChild, updateChild, deleteChild } = useAccount()
 const items = computed(() => children.data.value ?? [])
 
 const dialogVisible = ref(false)
-const mode = ref<'add' | 'edit'>('add')
-const editingId = ref<string | null>(null)
-const form = reactive<{
-  firstName: string
-  lastName: string
-  birthDate: string
-  gender: Gender | null
-}>({ firstName: '', lastName: '', birthDate: '', gender: null })
-const submitted = ref(false)
+const editing = ref<AccountChild | null>(null)
+const mode = computed(() => (editing.value ? 'edit' : 'add'))
+const { draft, errors, load, submit } = usePersonForm({
+  kind: 'dependent',
+  stored: () => editing.value,
+})
 const genders = genderOptions()
 
-const maxBirthDateIso = todayIso()
-const adultThresholdIso = yearsAgoIso(18)
-const minBirthDateIso = computed(() => (mode.value === 'add' ? adultThresholdIso : undefined))
+const birthDateRange = minorBirthDateRange()
+const minBirthDateIso = computed(() => (mode.value === 'add' ? birthDateRange.min : undefined))
 
 const saving = computed(() => addChild.isPending.value || updateChild.isPending.value)
 
 function openAdd(): void {
-  mode.value = 'add'
-  submitted.value = false
-  editingId.value = null
-  form.firstName = ''
-  form.lastName = ''
-  form.birthDate = ''
-  form.gender = null
+  editing.value = null
+  load()
   dialogVisible.value = true
 }
 
 function openEdit(child: AccountChild): void {
-  mode.value = 'edit'
-  submitted.value = false
-  editingId.value = child.id ?? null
-  form.firstName = child.firstName ?? ''
-  form.lastName = child.lastName ?? ''
-  form.birthDate = toDateInput(child.birthDate)
-  form.gender = child.gender ?? null
+  editing.value = child
+  load(child)
   dialogVisible.value = true
 }
 
@@ -60,43 +45,26 @@ function notifyError(error: unknown): void {
 }
 
 function save(): void {
-  submitted.value = true
-  const gender = form.gender
-  if (!gender) return
-  if (mode.value === 'add') {
-    addChild.mutate(
-      {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        birthDate: form.birthDate,
-        gender,
+  const submission = submit()
+  if (submission?.kind !== 'dependent') return
+  const child = editing.value
+  if (!child) {
+    addChild.mutate(submission.person, {
+      onSuccess: () => {
+        dialogVisible.value = false
+        feedback.success(
+          t('features.account.minors.addedDetail'),
+          t('features.account.minors.addedSummary'),
+        )
       },
-      {
-        onSuccess: () => {
-          dialogVisible.value = false
-          feedback.success(
-            t('features.account.minors.addedDetail'),
-            t('features.account.minors.addedSummary'),
-          )
-        },
-        onError: notifyError,
-      },
-    )
+      onError: notifyError,
+    })
     return
   }
 
-  const childId = editingId.value
-  if (!childId) return
+  if (!child.id) return
   updateChild.mutate(
-    {
-      childId,
-      input: {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        birthDate: form.birthDate,
-        gender,
-      },
-    },
+    { childId: child.id, input: submission.person },
     {
       onSuccess: () => finishEdit(),
       onError: notifyError,
@@ -179,30 +147,46 @@ function confirmDelete(): void {
         <div class="acc-form__grid">
           <div class="acc-form__field">
             <label for="m-firstname">{{ $t('common.firstName') }}</label>
-            <el-input id="m-firstname" v-model="form.firstName" :maxlength="120" required />
+            <el-input
+              id="m-firstname"
+              v-model="draft.firstName"
+              :maxlength="120"
+              :class="{ 'ca-invalid': errors.firstName }"
+              required
+            />
+            <small v-if="errors.firstName" class="acc-form__error">{{ errors.firstName }}</small>
           </div>
           <div class="acc-form__field">
             <label for="m-lastname">{{ $t('common.lastName') }}</label>
-            <el-input id="m-lastname" v-model="form.lastName" :maxlength="120" required />
+            <el-input
+              id="m-lastname"
+              v-model="draft.lastName"
+              :maxlength="120"
+              :class="{ 'ca-invalid': errors.lastName }"
+              required
+            />
+            <small v-if="errors.lastName" class="acc-form__error">{{ errors.lastName }}</small>
           </div>
           <div class="acc-form__field">
             <label for="m-dob">{{ $t('common.birthDate') }}</label>
             <input
               id="m-dob"
-              v-model="form.birthDate"
+              v-model="draft.birthDate"
               type="date"
               class="acc-date"
+              :class="{ 'acc-date--invalid': errors.birthDate }"
               :min="minBirthDateIso"
-              :max="maxBirthDateIso"
+              :max="birthDateRange.max"
               required
             />
+            <small v-if="errors.birthDate" class="acc-form__error">{{ errors.birthDate }}</small>
           </div>
           <div class="acc-form__field">
             <label for="m-gender">{{ $t('common.gender') }}</label>
             <el-select
               id="m-gender"
-              v-model="form.gender"
-              :class="{ 'ca-invalid': submitted && !form.gender }"
+              v-model="draft.gender"
+              :class="{ 'ca-invalid': errors.gender }"
             >
               <el-option
                 v-for="option in genders"
@@ -211,9 +195,7 @@ function confirmDelete(): void {
                 :value="option.value"
               />
             </el-select>
-            <small v-if="submitted && !form.gender" class="acc-form__error">{{
-              $t('validation.genderRequired')
-            }}</small>
+            <small v-if="errors.gender" class="acc-form__error">{{ errors.gender }}</small>
           </div>
         </div>
         <div class="acc-form__actions">
@@ -370,6 +352,16 @@ function confirmDelete(): void {
 .acc-form__error {
   color: var(--ca-danger-ink);
   font-size: 13.5px;
+}
+
+.acc-date--invalid {
+  border-color: var(--ca-danger);
+}
+
+.ca-invalid {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
 }
 
 .ca-invalid :deep(.el-select__wrapper) {

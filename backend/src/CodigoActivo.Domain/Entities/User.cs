@@ -1,9 +1,15 @@
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities.Abstractions;
 
 namespace CodigoActivo.Domain.Entities;
 
 /// <summary>
-/// Represents the persisted user domain entity and its relationships.
+/// Represents the persisted user domain entity and its relationships. A person is either an
+/// independent account, which logs in and needs an email, a phone and a DNI or NIE, or a dependent
+/// of a guardian, which has none of those and needs a birth date instead. Create them with
+/// <see cref="CreateIndependent"/> and <see cref="CreateDependent"/>, and edit them with
+/// <see cref="PlanProfileChange"/> and <see cref="ApplyProfileChange"/>, which own those rules.
 /// </summary>
 public class User : IdentifiableEntity
 {
@@ -217,6 +223,208 @@ public class User : IdentifiableEntity
     /// Gets or sets the related assignments collection.
     /// </summary>
     public ICollection<ActivityUserRoleAssignment> Assignments { get; set; } = [];
+
+    /// <summary>
+    /// Creates an independent account, pending email verification and as a participant. It needs
+    /// a valid DNI or NIE, an email and a phone, may add a secondary phone different from the
+    /// phone, and has no birth date. The caller sets the password hash and the verification code
+    /// once the checks that need I/O have passed.
+    /// </summary>
+    /// <param name="details">Details as supplied by the registrant.</param>
+    /// <param name="now">Current timestamp, stored as the creation time.</param>
+    /// <returns>The unsaved account, or the error of the first broken rule.</returns>
+    public static Result<User> CreateIndependent(PersonDetails details, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(details);
+        var account = new User
+        {
+            FirstName = string.Empty,
+            LastName = string.Empty,
+            UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
+            UserTypeId = SeedIds.UserTypes.Participant,
+            CreatedAt = now,
+        };
+        var change = account.PlanIndependentChange(details, guardianId: null);
+        if (change.IsFailure)
+        {
+            return change.Error!;
+        }
+
+        account.Apply(change.Value);
+        return account;
+    }
+
+    /// <summary>
+    /// Creates a dependent of <paramref name="guardian"/> as a participant. It needs a birth date
+    /// that is not in the future and makes it a minor on <paramref name="today"/>, and it has no
+    /// email, phones, DNI, NIE, password or promotional consent. A dependent cannot be a guardian.
+    /// </summary>
+    /// <param name="guardian">Independent account the dependent is created under.</param>
+    /// <param name="details">Details as supplied; only the names, gender and birth date apply.</param>
+    /// <param name="today">Local day on which the age is evaluated.</param>
+    /// <param name="now">Current timestamp, stored as the creation time.</param>
+    /// <returns>The unsaved dependent, or the error of the first broken rule.</returns>
+    public static Result<User> CreateDependent(
+        User guardian,
+        PersonDetails details,
+        DateOnly today,
+        DateTimeOffset now
+    )
+    {
+        ArgumentNullException.ThrowIfNull(guardian);
+        ArgumentNullException.ThrowIfNull(details);
+        if (guardian.ParentId is not null)
+        {
+            return Error.BadRequest(ErrorCode.UserParentIsMinor);
+        }
+
+        var dependent = new User
+        {
+            FirstName = string.Empty,
+            LastName = string.Empty,
+            ParentId = guardian.Id,
+            UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+            UserTypeId = SeedIds.UserTypes.Participant,
+            CreatedAt = now,
+        };
+        var change = dependent.PlanDependentChange(details, guardianId: null, today);
+        if (change.IsFailure)
+        {
+            return change.Error!;
+        }
+
+        dependent.Apply(change.Value);
+        return dependent;
+    }
+
+    /// <summary>
+    /// Checks and normalizes a change to the profile without applying it. The stored account
+    /// decides which rules apply, never the details: an independent account needs a valid DNI or
+    /// NIE, an email and a phone, may add a secondary phone different from the phone, and is
+    /// refused a birth date or a guardian; a dependent keeps its guardian, needs a birth date and
+    /// ignores the contact details, DNI, NIE and consent. A dependent's birth date must keep it a
+    /// minor only when it changes, so a dependent that has come of age stays editable.
+    /// </summary>
+    /// <param name="details">Details as supplied.</param>
+    /// <param name="guardianId">
+    /// Guardian named by the caller; only accepted for a dependent, repeating the one it has.
+    /// </param>
+    /// <param name="today">Local day on which a dependent's age is evaluated.</param>
+    /// <returns>The planned change, or the error of the first broken rule.</returns>
+    public Result<ProfileChange> PlanProfileChange(
+        PersonDetails details,
+        Guid? guardianId,
+        DateOnly today
+    )
+    {
+        ArgumentNullException.ThrowIfNull(details);
+        return ParentId is null
+            ? PlanIndependentChange(details, guardianId)
+            : PlanDependentChange(details, guardianId, today);
+    }
+
+    /// <summary>
+    /// Applies a change planned for this account by <see cref="PlanProfileChange"/>.
+    /// </summary>
+    /// <param name="change">Change planned for this account.</param>
+    /// <param name="now">Current timestamp, stored as the update time.</param>
+    /// <exception cref="ArgumentException">The change was planned for another account.</exception>
+    public void ApplyProfileChange(ProfileChange change, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        if (!ReferenceEquals(change.Account, this))
+        {
+            throw new ArgumentException(
+                "The profile change was planned for another account.",
+                nameof(change)
+            );
+        }
+
+        Apply(change);
+        UpdatedAt = now;
+    }
+
+    private Result<ProfileChange> PlanIndependentChange(PersonDetails details, Guid? guardianId)
+    {
+        if (details.BirthDate is not null)
+        {
+            return Error.BadRequest(ErrorCode.UserBirthDateNotAllowedForAdult);
+        }
+
+        if (guardianId is not null)
+        {
+            return Error.BadRequest(ErrorCode.UserParentNotAllowedForAdult);
+        }
+
+        var nationalId = SpanishNationalId.Normalize(details.NationalId);
+        if (nationalId is null)
+        {
+            return Error.BadRequest(ErrorCode.UserNationalIdRequired);
+        }
+
+        if (!SpanishNationalId.IsValid(nationalId))
+        {
+            return Error.BadRequest(ErrorCode.RequestValidationFailed);
+        }
+
+        var contact = ContactDetails.From(details);
+        if (contact.IsFailure)
+        {
+            return contact.Error!;
+        }
+
+        return new ProfileChange(this, details, contact.Value, nationalId, birthDate: null);
+    }
+
+    private Result<ProfileChange> PlanDependentChange(
+        PersonDetails details,
+        Guid? guardianId,
+        DateOnly today
+    )
+    {
+        if (guardianId is { } requested && requested != ParentId)
+        {
+            return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
+        }
+
+        if (details.BirthDate is not { } birthDate)
+        {
+            return Error.BadRequest(ErrorCode.UserChildBirthDateRequired);
+        }
+
+        if (birthDate != BirthDate)
+        {
+            if (birthDate > today)
+            {
+                return Error.BadRequest(ErrorCode.RequestValidationFailed);
+            }
+
+            if (!birthDate.IsMinor(today))
+            {
+                return Error.BadRequest(ErrorCode.UserChildBirthDateNotMinor);
+            }
+        }
+
+        return new ProfileChange(this, details, contact: null, nationalId: null, birthDate);
+    }
+
+    private void Apply(ProfileChange change)
+    {
+        FirstName = change.FirstName;
+        LastName = change.LastName;
+        Gender = change.Gender;
+        NationalId = change.NationalId;
+        PromotionalConsent = change.PromotionalConsent;
+        if (change.Contact is { } contact)
+        {
+            Email = contact.Email;
+            Phone = contact.Phone;
+            SecondaryPhone = contact.SecondaryPhone;
+            return;
+        }
+
+        BirthDate = change.BirthDate;
+    }
 
     /// <summary>
     /// Determines whether sue otp.

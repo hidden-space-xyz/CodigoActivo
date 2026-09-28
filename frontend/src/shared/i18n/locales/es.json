@@ -49,15 +49,11 @@
     "no": "No"
   },
   "validation": {
-    "emailInvalid": "Introduce un correo válido.",
-    "emailFormat": "El correo no tiene un formato válido.",
     "passwordMin": "La contraseña debe tener al menos 12 caracteres.",
     "newPasswordMin": "La nueva contraseña debe tener al menos 12 caracteres.",
     "passwordsMismatch": "Las contraseñas no coinciden.",
     "nationalIdFormat": "Escribe 8 números y la letra (DNI) o X, Y o Z, 7 números y la letra (NIE).",
-    "nationalIdLetter": "El número y la letra no concuerdan. Revisa que estén bien escritos.",
-    "secondaryPhoneSameAsPrimary": "El teléfono secundario debe ser distinto del principal.",
-    "genderRequired": "Selecciona un género."
+    "nationalIdLetter": "El número y la letra no concuerdan. Revisa que estén bien escritos."
   },
   "nav": {
     "home": "Inicio",
@@ -288,9 +284,6 @@
     "UserAccountIsDependent": "Esta cuenta depende de un responsable y no puede iniciar sesión directamente.",
     "UserAccountPendingVerification": "Tu cuenta aún no ha sido verificada.",
     "CurrentUserNotFound": "No se encontró el usuario de la sesión actual.",
-    "RegisterContactInfoRequired": "Debes indicar al menos un dato de contacto para registrarte.",
-    "RegisterEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
-    "RegisterMinorBirthDateNotMinor": "La fecha de nacimiento indicada no corresponde a un menor de edad.",
     "OtpInvalidOrExpired": "El enlace de verificación no es válido o ha expirado.",
     "OtpResendNotAllowed": "No se puede reenviar el correo de verificación para esta cuenta.",
     "OtpResendCooldownActive": "Espera un momento antes de solicitar un nuevo enlace.",
@@ -1149,9 +1142,6 @@
     "manageUsers": {
       "editHeader": "Editar usuario",
       "dependentContact": "Esta persona está a cargo de un responsable, así que no tiene correo, teléfono ni DNI/NIE propios: se usan los de su responsable.",
-      "birthDateInvalid": "Indica una fecha de nacimiento válida.",
-      "childBirthDateNotMinor": "La fecha de nacimiento debe corresponder a un menor de edad.",
-      "contactRequired": "Los usuarios adultos necesitan correo y teléfono.",
       "contactChange": {
         "message": "Vas a cambiar el correo con el que esta persona inicia sesión y recibe sus códigos, o sus teléfonos. Por seguridad, confirma tu contraseña.",
         "passwordLabel": "Tu contraseña",
@@ -1600,6 +1590,14 @@
         "Female": "Mujer",
         "Other": "Otro",
         "PreferNotToSay": "Prefiero no decirlo"
+      },
+      "person": {
+        "required": "Este campo es obligatorio.",
+        "genderRequired": "Selecciona un género.",
+        "emailFormat": "El correo no tiene un formato válido.",
+        "sameAsPhone": "El teléfono secundario debe ser distinto del principal.",
+        "birthDateInvalid": "Indica una fecha de nacimiento válida.",
+        "birthDateNotMinor": "La fecha de nacimiento debe corresponder a un menor de edad."
       }
     }
   }

@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Querying;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;

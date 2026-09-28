@@ -82,9 +82,12 @@ describe('RegistrationForm', () => {
 
     expect(wrapper.emitted('submit')).toBeUndefined()
     expect(errors(wrapper)).toEqual([
+      t('entities.user.person.required'),
+      t('entities.user.person.required'),
       t('validation.nationalIdFormat'),
-      t('validation.genderRequired'),
-      t('validation.emailInvalid'),
+      t('entities.user.person.genderRequired'),
+      t('entities.user.person.required'),
+      t('entities.user.person.required'),
       t('validation.passwordMin'),
     ])
     expect(wrapper.findAll('.ca-invalid').length).toBeGreaterThanOrEqual(6)
@@ -119,8 +122,8 @@ describe('RegistrationForm', () => {
 
     expect(errors(wrapper)).toEqual([
       t('validation.nationalIdFormat'),
-      t('validation.secondaryPhoneSameAsPrimary'),
-      t('validation.emailInvalid'),
+      t('entities.user.person.sameAsPhone'),
+      t('entities.user.person.emailFormat'),
       t('validation.passwordMin'),
     ])
 
@@ -129,7 +132,7 @@ describe('RegistrationForm', () => {
 
     expect(errors(wrapper)).toEqual([
       t('validation.nationalIdFormat'),
-      t('validation.secondaryPhoneSameAsPrimary'),
+      t('entities.user.person.sameAsPhone'),
     ])
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
@@ -142,7 +145,7 @@ describe('RegistrationForm', () => {
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.emitted('submit')).toBeUndefined()
-    expect(errors(wrapper)).toEqual([t('validation.secondaryPhoneSameAsPrimary')])
+    expect(errors(wrapper)).toEqual([t('entities.user.person.sameAsPhone')])
     expect(wrapper.find('#reg-secondary-phone').element.closest('.ca-invalid')).not.toBeNull()
 
     await wrapper.find('#reg-secondary-phone').setValue('611111111')
@@ -257,10 +260,14 @@ describe('RegistrationForm', () => {
 
     await wrapper.find('form').trigger('submit')
     expect(wrapper.emitted('submit')).toBeUndefined()
-    expect(errors(wrapper)).toEqual([
-      t('validation.genderRequired'),
-      t('validation.genderRequired'),
-    ])
+    expect(errors(wrapper)).toEqual(
+      Array.from({ length: 2 }, () => [
+        t('entities.user.person.required'),
+        t('entities.user.person.required'),
+        t('entities.user.person.birthDateInvalid'),
+        t('entities.user.person.genderRequired'),
+      ]).flat(),
+    )
 
     await wrapper.find('#minor-firstname-0').setValue('Byron')
     await wrapper.find('#minor-lastname-0').setValue('King')
@@ -279,7 +286,7 @@ describe('RegistrationForm', () => {
         key: form.minors[0]?.key,
         firstName: 'Byron',
         lastName: 'King',
-        dateOfBirth: '2016-02-03',
+        birthDate: '2016-02-03',
         gender: 'Male',
       },
     ])
@@ -304,7 +311,7 @@ describe('RegistrationForm', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
-  it('asks no birth date of the adult and limits minors to between 18 years ago and today', async () => {
+  it('asks no birth date of the adult and limits minors to those not yet 18 today', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-09-17T12:00:00Z'))
     const { wrapper } = await renderForm()
@@ -312,8 +319,30 @@ describe('RegistrationForm', () => {
     await addMinorButton(wrapper).trigger('click')
 
     expect(wrapper.find('#reg-dob').exists()).toBe(false)
-    expect(wrapper.get('#minor-dob-0').attributes('min')).toBe('2008-09-17')
+    expect(wrapper.get('#minor-dob-0').attributes('min')).toBe('2008-09-18')
     expect(wrapper.get('#minor-dob-0').attributes('max')).toBe('2026-09-17')
+  })
+
+  it('refuses a minor who turns 18 today, as the server would', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-17T12:00:00Z'))
+    const { wrapper } = await renderForm()
+    await fillAdult(wrapper)
+    await addMinorButton(wrapper).trigger('click')
+    await wrapper.find('#minor-firstname-0').setValue('Byron')
+    await wrapper.find('#minor-lastname-0').setValue('King')
+    await selectGender(wrapper, 1, 'Male')
+    await wrapper.find('#minor-dob-0').setValue('2008-09-17')
+
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.emitted('submit')).toBeUndefined()
+    expect(errors(wrapper)).toEqual([t('entities.user.person.birthDateNotMinor')])
+
+    await wrapper.find('#minor-dob-0').setValue('2008-09-18')
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.emitted('submit')).toHaveLength(1)
   })
 
   it('emits back from the back link', async () => {

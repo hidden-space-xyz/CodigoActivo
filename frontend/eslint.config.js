@@ -174,6 +174,7 @@ export default withVueTs(
             '/^features\\.account\\.certificates\\.sheet\\./u',
             '/^entities\\.event\\.status\\./u',
             '/^entities\\.user\\.gender\\./u',
+            '/^entities\\.user\\.person\\./u',
           ],
         },
       ],

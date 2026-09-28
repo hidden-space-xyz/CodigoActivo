@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using System.Text.Json;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodigoActivo.Application.Validation;
@@ -148,53 +147,22 @@ public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
 }
 
 /// <summary>
-/// Validates a Spanish national identity number: a DNI (eight digits and a control letter) or a
-/// NIE (X, Y or Z, seven digits and a control letter). Spaces, hyphens and lowercase letters are
-/// tolerated because the value is normalized first. Null or blank values pass so optional
-/// members can omit it, while any other value that normalizes to nothing, such as a lone hyphen,
-/// is invalid. Mark the member as required when it is mandatory.
+/// Validates a Spanish national identity number with <see cref="SpanishNationalId.IsValid"/>.
+/// Spaces, hyphens and lowercase letters are tolerated because the value is normalized first. Null
+/// or blank values pass so optional members can omit it, while any other value that normalizes to
+/// nothing, such as a lone hyphen, is invalid. Mark the member as required when it is mandatory.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class SpanishNationalIdAttribute : ValidationAttribute
 {
-    private const string ControlLetters = "TRWAGMYFPDXBNJZSQVHLCKE";
-
     /// <inheritdoc />
     public override bool IsValid(object? value)
     {
         return value switch
         {
             null => true,
-            string text => string.IsNullOrWhiteSpace(text)
-                || (
-                    text.NormalizeNationalIdOrNull() is { } normalized
-                    && HasValidControlLetter(normalized)
-                ),
+            string text => string.IsNullOrWhiteSpace(text) || SpanishNationalId.IsValid(text),
             _ => false,
         };
-    }
-
-    private static bool HasValidControlLetter(string normalized)
-    {
-        if (normalized.Length != 9)
-        {
-            return false;
-        }
-
-        var leading = normalized[0] switch
-        {
-            'X' => '0',
-            'Y' => '1',
-            'Z' => '2',
-            var other => other,
-        };
-        var digits = leading + normalized[1..8];
-        if (!digits.All(char.IsAsciiDigit))
-        {
-            return false;
-        }
-
-        var number = int.Parse(digits, NumberStyles.None, CultureInfo.InvariantCulture);
-        return normalized[8] == ControlLetters[number % ControlLetters.Length];
     }
 }
