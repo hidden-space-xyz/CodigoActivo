@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Auth;
 using CodigoActivo.Application.DTOs;
@@ -21,10 +22,12 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     private const string Password = "Str0ngPass!23";
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly TwoFactorOptions options = new();
+    private readonly PasswordLockoutOptions lockout = new();
     private readonly RequestAccountDeletionCodeCommandHandler sut;
 
     public RequestAccountDeletionCodeCommandHandlerTests()
@@ -41,7 +44,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
             users,
             uow,
             clock,
-            hasher,
+            PasswordGuards.Create(hasher, uow, clock, sessions, emailSender, lockout),
             options,
             new LoginCodeIssuer(
                 hasher,
@@ -122,6 +125,48 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var result = await RequestAsync(user.Id, password: "WrongPassword!");
 
         result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.PasswordFailedAttempts.Should().Be(1);
+        emailSender.Sent.Should().BeEmpty();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncRepeatedWrongPasswordsLockTheAccountRevokeSessionsAndWarnTheOwner()
+    {
+        var user = Signed();
+
+        for (var attempt = 1; attempt <= lockout.MaxFailedAttempts; attempt++)
+        {
+            var result = await RequestAsync(user.Id, password: "WrongPassword!");
+
+            result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+            user.PasswordFailedAttempts.Should().Be(attempt);
+            user.IsPasswordLocked().Should().Be(attempt == lockout.MaxFailedAttempts);
+        }
+
+        user.PasswordLockedAt.Should().Be(clock.UtcNow);
+        user.LoginCodeHash.Should().BeNull();
+        await sessions
+            .Received(1)
+            .RemoveAsync(
+                Arg.Any<Expression<Func<UserSession, bool>>>(),
+                Arg.Any<CancellationToken>()
+            );
+        var alert = emailSender.Sent.Should().ContainSingle().Subject;
+        alert.Kind.Should().Be(EmailKind.SecurityAlert);
+        alert.ToAddress.Should().Be("ana@test.com");
+    }
+
+    [Fact]
+    public async Task HandleAsyncPasswordLockedAccountRefusesTheCorrectPasswordWithoutEmailing()
+    {
+        var user = Signed();
+        user.PasswordLockedAt = clock.UtcNow.AddMinutes(-5);
+
+        var result = await RequestAsync(user.Id);
+
+        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        user.LoginCodeHash.Should().BeNull();
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }

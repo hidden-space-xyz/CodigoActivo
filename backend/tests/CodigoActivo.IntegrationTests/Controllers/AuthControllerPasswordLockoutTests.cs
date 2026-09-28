@@ -321,4 +321,34 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         using var login = await AttemptAsync(CreateClient(), TestSeedData.Password);
         await login.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
     }
+
+    [Fact]
+    public async Task DeletionCodeWrongPasswordCountsTowardsTheSameLock()
+    {
+        var client = await LoginAsMemberAsync();
+
+        for (var attempt = 1; attempt <= Threshold; attempt++)
+        {
+            using var response = await client.PostJsonAsync(
+                "/api/me/deletion/code",
+                new AccountDeletionCodeRequest(WrongPassword),
+                Ct
+            );
+            await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
+
+            var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+            stored!.PasswordFailedAttempts.Should().Be(attempt);
+            stored.IsPasswordLocked().Should().Be(attempt >= Threshold);
+        }
+
+        using var revoked = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+        await revoked.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
+
+        var alert = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
+        alert.Kind.Should().Be(EmailKind.SecurityAlert);
+        alert.ToAddress.Should().Be(TestSeedData.MemberEmail);
+
+        using var login = await AttemptAsync(CreateClient(), TestSeedData.Password);
+        await login.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
+    }
 }
