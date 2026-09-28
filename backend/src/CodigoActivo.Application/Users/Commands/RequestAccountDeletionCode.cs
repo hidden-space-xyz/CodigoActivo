@@ -6,7 +6,6 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Constants;
 using CodigoActivo.Domain.Entities;
 using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Security;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -22,22 +21,23 @@ public sealed record RequestAccountDeletionCodeCommand(
 
 /// <summary>
 /// Executes the command that emails the one-time code confirming an account deletion. The
-/// password is demanded first so a stolen session cannot start the flow, and the code reuses the
-/// storage, lifetime, cooldown and lockout of the emailed login code. Users whose second factor is
-/// an authenticator application read their code from it and never reach this command, and the
-/// initial administrator, which can never be deleted, is refused before its password is checked.
+/// password is demanded first so a stolen session cannot start the flow, and wrong passwords count
+/// towards the same account lock as logins. The code reuses the storage, lifetime, cooldown and
+/// lockout of the emailed login code. Users whose second factor is an authenticator application
+/// read their code from it and never reach this command, and the initial administrator, which can
+/// never be deleted, is refused before its password is checked.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="hasher">Hasher used to verify the current password.</param>
+/// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="options">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed one-time codes.</param>
 public sealed class RequestAccountDeletionCodeCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    IPasswordHasher hasher,
+    PasswordAttemptGuard passwordAttempts,
     TwoFactorOptions options,
     LoginCodeIssuer loginCodes
 ) : ICommandHandler<RequestAccountDeletionCodeCommand, Result>
@@ -65,8 +65,11 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
         }
 
         if (
-            string.IsNullOrEmpty(user.PasswordHash)
-            || !hasher.Verify(command.Request.CurrentPassword, user.PasswordHash)
+            !await passwordAttempts.VerifyReauthenticationAsync(
+                user,
+                command.Request.CurrentPassword,
+                ct
+            )
         )
         {
             return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
