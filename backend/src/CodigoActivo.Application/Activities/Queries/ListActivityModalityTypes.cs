@@ -1,9 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Caching;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Activities.Queries;
@@ -17,11 +15,11 @@ public sealed record ListActivityModalityTypesQuery
 /// <summary>
 /// Executes the query to list activity modality types.
 /// </summary>
-/// <param name="modalityTypes">Repository used to persist and retrieve modality types.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListActivityModalityTypesQueryHandler(
-    IActivityModalityTypeRepository modalityTypes,
+    IReadStore readStore,
     IQueryExecutor executor,
     HybridCache cache
 ) : IQueryHandler<ListActivityModalityTypesQuery, IReadOnlyList<ActivityModalityTypeResponse>>
@@ -41,10 +39,9 @@ public sealed class ListActivityModalityTypesQueryHandler(
             executor,
             "activities:modality-types",
             () =>
-                modalityTypes
-                    .Query()
-                    .OrderBy(modality => modality.Name)
-                    .Select(Projections.ActivityModalityType),
+                readStore
+                    .ActivityModalityTypes.OrderBy(modality => modality.Name)
+                    .Select(ActivityProjections.ActivityModalityType),
             ct
         );
     }

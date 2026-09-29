@@ -1,12 +1,13 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
+using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
 
 namespace CodigoActivo.UnitTests.Application.Activities;
 
@@ -19,163 +20,121 @@ namespace CodigoActivo.UnitTests.Application.Activities;
 /// </summary>
 public sealed class TermsGateTests
 {
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
+    private readonly IEventTermsAcceptanceRepository termsAcceptances =
+        Substitute.For<IEventTermsAcceptanceRepository>();
     private readonly TestClock clock = new();
     private readonly TermsGate sut;
 
     public TermsGateTests()
     {
-        sut = new TermsGate(activities, events, new FakeQueryExecutor(), clock);
+        sut = new TermsGate(events, termsAcceptances, clock);
     }
 
-    private void HasActivity(Guid activityId, Guid eventId)
+    private Guid HasDocuments(params (Guid TermsDocumentId, bool Required)[] documents)
     {
-        activities
-            .Query()
-            .Returns(
-                new List<Activity>
-                {
-                    new()
-                    {
-                        Id = activityId,
-                        Title = "Taller",
-                        Description = "{}",
-                        Location = "Sala",
-                        EventId = eventId,
-                    },
-                }.AsQueryable()
-            );
-    }
-
-    private void HasDocuments(
-        Guid eventId,
-        params (Guid TermsDocumentId, bool Required)[] documents
-    )
-    {
-        events
-            .QueryTermsDocuments()
-            .Returns(
-                documents
-                    .Select(d => new EventTermsDocument
-                    {
-                        EventId = eventId,
-                        TermsDocumentId = d.TermsDocumentId,
-                        IsRequired = d.Required,
-                        DisplayOrder = 0,
-                    })
-                    .ToList()
-                    .AsQueryable()
-            );
+        var ev = Event.Create(
+            new EventContent("Feria", "s", "{}", Guid.NewGuid()),
+            EventSchedule
+                .Create(
+                    new DateOnly(2026, 7, 1),
+                    new DateOnly(2026, 7, 31),
+                    null,
+                    OpenStart,
+                    OpenEnd
+                )
+                .Value,
+            EventCategorySelection.Create([Guid.NewGuid()]).Value,
+            EventTermsLinks
+                .Create([
+                    .. documents.Select(d => new EventTermsLink(d.TermsDocumentId, d.Required)),
+                ])
+                .Value,
+            Guid.NewGuid(),
+            clock.UtcNow
+        );
+        events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        return ev.Id;
     }
 
     private void HasAcceptances(params EventTermsAcceptance[] acceptances)
     {
-        events
-            .ListTermsAcceptancesAsync(
-                Arg.Any<Guid>(),
-                Arg.Any<Guid>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(acceptances.ToList());
+        termsAcceptances
+            .ListAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(acceptances);
     }
 
     [Fact]
-    public async Task EnsureDecidedAsyncActivityMissingReturnsActivityNotFound()
+    public async Task EnsureDecidedAsyncEventMissingSucceedsWithoutRecording()
     {
-        activities.Query().Returns(new List<Activity>().AsQueryable());
+        events.Finds(null);
 
         var result = await sut.EnsureDecidedAsync(
             Guid.NewGuid(),
-            Guid.NewGuid(),
-            null,
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
-    }
-
-    [Fact]
-    public async Task EnsureDecidedAsyncEventWithoutDocumentsSucceedsWithoutPersisting()
-    {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId);
-
-        var result = await sut.EnsureDecidedAsync(
-            activityId,
             Guid.NewGuid(),
             [new TermsDecisionRequest(Guid.NewGuid(), true)],
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
-        await events
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncEventWithoutDocumentsSucceedsWithoutPersisting()
+    {
+        var eventId = HasDocuments();
+
+        var result = await sut.EnsureDecidedAsync(
+            eventId,
+            Guid.NewGuid(),
+            [new TermsDecisionRequest(Guid.NewGuid(), true)],
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .ListTermsAcceptancesAsync(default, default, TestContext.Current.CancellationToken);
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
+        await termsAcceptances
+            .DidNotReceiveWithAnyArgs()
+            .ListAsync(default, default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EnsureDecidedAsyncDecisionForUnlinkedDocumentIsIgnored()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var linkedRequiredId = Guid.NewGuid();
         var unlinkedId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (linkedRequiredId, true));
-        HasAcceptances(
-            new EventTermsAcceptance
-            {
-                TermsDocumentId = linkedRequiredId,
-                Accepted = true,
-                DecidedAt = clock.UtcNow,
-            }
-        );
+        var eventId = HasDocuments((linkedRequiredId, true));
+        HasAcceptances(StoredDecision(linkedRequiredId, true, clock.UtcNow));
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             Guid.NewGuid(),
             [new TermsDecisionRequest(unlinkedId, true)],
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EnsureDecidedAsyncRequiredDocumentWithStoredRejectionAcceptingOverwritesRowInPlace()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (termsDocumentId, true));
-        var stored = new EventTermsAcceptance
-        {
-            TermsDocumentId = termsDocumentId,
-            Accepted = false,
-            DecidedAt = clock.UtcNow.AddDays(-1),
-        };
+        var eventId = HasDocuments((termsDocumentId, true));
+        var stored = StoredDecision(termsDocumentId, false, clock.UtcNow.AddDays(-1));
         HasAcceptances(stored);
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             Guid.NewGuid(),
             [new TermsDecisionRequest(termsDocumentId, true)],
             TestContext.Current.CancellationToken
@@ -188,33 +147,22 @@ public sealed class TermsGateTests
             );
         stored.Accepted.Should().BeTrue();
         stored.DecidedAt.Should().Be(clock.UtcNow);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EnsureDecidedAsyncOptionalDocumentWithStoredRejectionAcceptingOverwritesRowInPlace()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (termsDocumentId, false));
-        var stored = new EventTermsAcceptance
-        {
-            TermsDocumentId = termsDocumentId,
-            Accepted = false,
-            DecidedAt = clock.UtcNow.AddDays(-1),
-        };
+        var eventId = HasDocuments((termsDocumentId, false));
+        var stored = StoredDecision(termsDocumentId, false, clock.UtcNow.AddDays(-1));
         HasAcceptances(stored);
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             Guid.NewGuid(),
             [new TermsDecisionRequest(termsDocumentId, true)],
             TestContext.Current.CancellationToken
@@ -227,34 +175,23 @@ public sealed class TermsGateTests
                 "a rejection is revisable regardless of whether the document is required or optional"
             );
         stored.DecidedAt.Should().Be(clock.UtcNow);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EnsureDecidedAsyncOptionalDocumentWithStoredRejectionRejectingAgainLeavesDecidedAtUnchanged()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (termsDocumentId, false));
+        var eventId = HasDocuments((termsDocumentId, false));
         var originalDecidedAt = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
-        var stored = new EventTermsAcceptance
-        {
-            TermsDocumentId = termsDocumentId,
-            Accepted = false,
-            DecidedAt = originalDecidedAt,
-        };
+        var stored = StoredDecision(termsDocumentId, false, originalDecidedAt);
         HasAcceptances(stored);
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             Guid.NewGuid(),
             [new TermsDecisionRequest(termsDocumentId, false)],
             TestContext.Current.CancellationToken
@@ -270,34 +207,23 @@ public sealed class TermsGateTests
                 originalDecidedAt,
                 "a repeated rejection is not a change, so the original decision instant must survive"
             );
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EnsureDecidedAsyncDocumentWithStoredAcceptanceRejectingIsIgnoredKeepingAcceptanceIntact()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (termsDocumentId, true));
+        var eventId = HasDocuments((termsDocumentId, true));
         var originalDecidedAt = clock.UtcNow.AddDays(-1);
-        var stored = new EventTermsAcceptance
-        {
-            TermsDocumentId = termsDocumentId,
-            Accepted = true,
-            DecidedAt = originalDecidedAt,
-        };
+        var stored = StoredDecision(termsDocumentId, true, originalDecidedAt);
         HasAcceptances(stored);
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             Guid.NewGuid(),
             [new TermsDecisionRequest(termsDocumentId, false)],
             TestContext.Current.CancellationToken
@@ -310,119 +236,90 @@ public sealed class TermsGateTests
                 "an acceptance is the proof of consent and must never be overwritten by a later rejection"
             );
         stored.DecidedAt.Should().Be(originalDecidedAt);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EnsureDecidedAsyncRequiredDocumentWithStoredRejectionRejectingAgainLeavesRowUnchangedAndStillBlocks()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (termsDocumentId, true));
+        var eventId = HasDocuments((termsDocumentId, true));
         var originalDecidedAt = clock.UtcNow.AddDays(-1);
-        var stored = new EventTermsAcceptance
-        {
-            TermsDocumentId = termsDocumentId,
-            Accepted = false,
-            DecidedAt = originalDecidedAt,
-        };
+        var stored = StoredDecision(termsDocumentId, false, originalDecidedAt);
         HasAcceptances(stored);
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             Guid.NewGuid(),
             [new TermsDecisionRequest(termsDocumentId, false)],
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
         stored.Accepted.Should().BeFalse();
         stored.DecidedAt.Should().Be(originalDecidedAt);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EnsureDecidedAsyncRejectingRequiredDocumentFailsWithoutPersisting()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (termsDocumentId, true));
+        var eventId = HasDocuments((termsDocumentId, true));
         HasAcceptances();
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             Guid.NewGuid(),
             [new TermsDecisionRequest(termsDocumentId, false)],
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EnsureDecidedAsyncMissingDecisionForRequiredDocumentFailsWithoutPersisting()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (termsDocumentId, true));
+        var eventId = HasDocuments((termsDocumentId, true));
         HasAcceptances();
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             Guid.NewGuid(),
             null,
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EnsureDecidedAsyncRejectingOptionalDocumentPersistsRejectionAndSucceeds()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (termsDocumentId, false));
+        var eventId = HasDocuments((termsDocumentId, false));
         HasAcceptances();
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             userId,
             [new TermsDecisionRequest(termsDocumentId, false)],
             TestContext.Current.CancellationToken
@@ -431,9 +328,9 @@ public sealed class TermsGateTests
         result
             .IsSuccess.Should()
             .BeTrue("an optional document never blocks the signup, regardless of the decision");
-        await events
+        await termsAcceptances
             .Received(1)
-            .AddTermsAcceptanceAsync(
+            .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
                     && a.EventId == eventId
@@ -449,18 +346,15 @@ public sealed class TermsGateTests
     [Fact]
     public async Task EnsureDecidedAsyncAllRequiredAcceptedSucceedsWithClockTimestamp()
     {
-        var activityId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var requiredOne = Guid.NewGuid();
         var requiredTwo = Guid.NewGuid();
-        HasActivity(activityId, eventId);
-        HasDocuments(eventId, (requiredOne, true), (requiredTwo, true));
+        var eventId = HasDocuments((requiredOne, true), (requiredTwo, true));
         HasAcceptances();
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            activityId,
+            eventId,
             userId,
             [
                 new TermsDecisionRequest(requiredOne, true),
@@ -470,9 +364,9 @@ public sealed class TermsGateTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await events
+        await termsAcceptances
             .Received(1)
-            .AddTermsAcceptanceAsync(
+            .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
                     && a.TermsDocumentId == requiredOne
@@ -481,9 +375,9 @@ public sealed class TermsGateTests
                 ),
                 Arg.Any<CancellationToken>()
             );
-        await events
+        await termsAcceptances
             .Received(1)
-            .AddTermsAcceptanceAsync(
+            .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
                     && a.TermsDocumentId == requiredTwo

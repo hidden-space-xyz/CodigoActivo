@@ -1,10 +1,8 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Emails.Queries;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Emails.EmailTestData;
 
@@ -12,12 +10,12 @@ namespace CodigoActivo.UnitTests.Application.Emails.Queries;
 
 public sealed class GetUsersEmailAudienceQueryHandlerTests
 {
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetUsersEmailAudienceQueryHandler sut;
 
     public GetUsersEmailAudienceQueryHandlerTests()
     {
-        sut = new GetUsersEmailAudienceQueryHandler(users, new FakeQueryExecutor());
+        sut = new GetUsersEmailAudienceQueryHandler(store, new FakeQueryExecutor());
     }
 
     private async Task<EmailAudienceResponse> AudienceAsync(UserListQuery filters)
@@ -33,15 +31,15 @@ public sealed class GetUsersEmailAudienceQueryHandlerTests
     [Fact]
     public async Task HandleAsyncMixedConsentCountsDistinctAddressesAndThoseWithoutConsent()
     {
-        var parent = NewUser("Ana", "ana@test.local", promotionalConsent: true);
-        users.HasUsers(
+        var parent = NewUserRow("Ana", "ana@test.local", promotionalConsent: true);
+        store.Users.AddRange([
             parent,
-            NewUser("Berto", "berto@test.local"),
-            NewUser("Carla", "carla@test.local", promotionalConsent: true),
-            NewUser("Duplicado", "BERTO@test.local"),
-            NewUser("Hijo", null, parent),
-            NewUser("Blanco", "   ")
-        );
+            NewUserRow("Berto", "berto@test.local"),
+            NewUserRow("Carla", "carla@test.local", promotionalConsent: true),
+            NewUserRow("Duplicado", "BERTO@test.local"),
+            NewUserRow("Hijo", null, parent),
+            NewUserRow("Blanco", "   "),
+        ]);
 
         var audience = await AudienceAsync(new UserListQuery());
 
@@ -51,10 +49,10 @@ public sealed class GetUsersEmailAudienceQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEveryoneConsentingReportsNoRecipientWithoutConsent()
     {
-        users.HasUsers(
-            NewUser("Ana", "ana@test.local", promotionalConsent: true),
-            NewUser("Berto", "berto@test.local", promotionalConsent: true)
-        );
+        store.Users.AddRange([
+            NewUserRow("Ana", "ana@test.local", promotionalConsent: true),
+            NewUserRow("Berto", "berto@test.local", promotionalConsent: true),
+        ]);
 
         var audience = await AudienceAsync(new UserListQuery());
 
@@ -64,8 +62,8 @@ public sealed class GetUsersEmailAudienceQueryHandlerTests
     [Fact]
     public async Task HandleAsyncFiltersNarrowTheAudienceLikeTheSendEndpoint()
     {
-        var target = NewUser("Ana", "ana@test.local");
-        users.HasUsers(target, NewUser("Berto", "berto@test.local"));
+        var target = NewUserRow("Ana", "ana@test.local");
+        store.Users.AddRange([target, NewUserRow("Berto", "berto@test.local")]);
 
         var byId = await AudienceAsync(new UserListQuery { Id = target.Id });
         var byConsent = await AudienceAsync(new UserListQuery { PromotionalConsent = true });
@@ -77,8 +75,8 @@ public sealed class GetUsersEmailAudienceQueryHandlerTests
     [Fact]
     public async Task HandleAsyncOnlyUsersWithoutAddressReportsAnEmptyAudience()
     {
-        var parent = NewUser("Ana", null);
-        users.HasUsers(parent, NewUser("Hijo", null, parent));
+        var parent = NewUserRow("Ana", null);
+        store.Users.AddRange([parent, NewUserRow("Hijo", null, parent)]);
 
         var audience = await AudienceAsync(new UserListQuery());
 

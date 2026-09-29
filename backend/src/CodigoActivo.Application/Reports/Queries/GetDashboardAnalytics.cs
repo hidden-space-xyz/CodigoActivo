@@ -1,10 +1,10 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Reports.Queries;
@@ -19,24 +19,12 @@ public sealed record GetDashboardAnalyticsQuery(DashboardAnalyticsQuery Filters)
 /// <summary>
 /// Executes the query to retrieve dashboard analytics.
 /// </summary>
-/// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="resources">Repository used to persist and retrieve resources.</param>
-/// <param name="news">Repository used to persist and retrieve news items.</param>
-/// <param name="partners">Repository used to persist and retrieve partners.</param>
-/// <param name="eventCategoryTypes">Repository used to persist and retrieve event category types.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class GetDashboardAnalyticsQueryHandler(
-    IEventRepository events,
-    IActivityRepository activities,
-    IUserRepository users,
-    IResourceRepository resources,
-    INewsItemRepository news,
-    IPartnerRepository partners,
-    IEventCategoryTypeRepository eventCategoryTypes,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock,
     HybridCache cache
@@ -117,84 +105,74 @@ public sealed class GetDashboardAnalyticsQueryHandler(
         var prevUpperUtc = LocalDayRange.UpperExclusiveUtc(prevEnd, tz);
 
         var userRows = await executor.ToListAsync(
-            users
-                .Query()
-                .Select(u => new
-                {
-                    u.CreatedAt,
-                    u.UserTypeId,
-                    u.Gender,
-                    IsMinor = u.ParentId != null,
-                }),
+            readStore.Users.Select(u => new
+            {
+                u.CreatedAt,
+                u.UserTypeId,
+                u.Gender,
+                IsMinor = u.ParentId != null,
+            }),
             ct
         );
 
         var assignmentRows = await executor.ToListAsync(
-            activities
-                .QueryAssignments()
-                .Select(a => new
-                {
-                    a.CreatedAt,
-                    a.AssignmentStatusId,
-                    a.Activity.EventId,
-                }),
+            readStore.Assignments.Select(a => new
+            {
+                a.CreatedAt,
+                a.AssignmentStatusId,
+                a.Activity.EventId,
+            }),
             ct
         );
 
         var eventRows = await executor.ToListAsync(
-            events
-                .Query()
-                .Select(e => new
-                {
-                    e.Id,
-                    e.Title,
-                    e.CreatedAt,
-                    e.EventStartsAt,
-                }),
+            readStore.Events.Select(e => new
+            {
+                e.Id,
+                e.Title,
+                e.CreatedAt,
+                e.EventStartsAt,
+            }),
             ct
         );
 
         var categoryRows = await executor.ToListAsync(
-            eventCategoryTypes
-                .Query()
-                .Select(t => new
-                {
-                    t.Id,
-                    t.Name,
-                    t.Color,
-                    t.Events.Count,
-                }),
+            readStore.EventCategoryTypes.Select(t => new
+            {
+                t.Id,
+                t.Name,
+                t.Color,
+                t.Events.Count,
+            }),
             ct
         );
 
         var resourceDates = await executor.ToListAsync(
-            resources.Query().Select(r => r.CreatedAt),
+            readStore.Resources.Select(r => r.CreatedAt),
             ct
         );
 
-        var newsItemDates = await executor.ToListAsync(news.Query().Select(a => a.CreatedAt), ct);
+        var newsItemDates = await executor.ToListAsync(readStore.News.Select(a => a.CreatedAt), ct);
 
         var partnerDates = await executor.ToListAsync(
-            partners.Query().Select(p => p.CreatedAt),
+            readStore.Partners.Select(p => p.CreatedAt),
             ct
         );
 
         var activityRows = await executor.ToListAsync(
-            activities
-                .Query()
-                .Select(a => new
-                {
-                    a.Id,
-                    a.Title,
-                    a.CreatedAt,
-                    a.ActivityStartsAt,
-                    a.EventId,
-                    EventTitle = a.Event.Title,
-                    Desired = a.RoleCapacities.Sum(c => (int?)c.DesiredCount) ?? 0,
-                    Confirmed = a.Assignments.Count(x =>
-                        x.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
-                    ),
-                }),
+            readStore.Activities.Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.CreatedAt,
+                a.ActivityStartsAt,
+                a.EventId,
+                EventTitle = a.Event.Title,
+                Desired = a.RoleCapacities.Sum(c => (int?)c.DesiredCount) ?? 0,
+                Confirmed = a.Assignments.Count(x =>
+                    x.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                ),
+            }),
             ct
         );
 

@@ -1,13 +1,12 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Users.Commands;
-using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -17,7 +16,7 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 public sealed class ChangeUserTypeCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUserTypeRepository userTypes = Substitute.For<IUserTypeRepository>();
+    private readonly FakeReadStore readStore = new();
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
@@ -27,11 +26,11 @@ public sealed class ChangeUserTypeCommandHandlerTests
     {
         sut = new ChangeUserTypeCommandHandler(
             users,
-            userTypes,
+            readStore,
+            new FakeQueryExecutor(),
             clock,
             uow,
-            cacheInvalidator,
-            new GetUserByIdQueryHandler(users, new FakeQueryExecutor())
+            cacheInvalidator
         );
     }
 
@@ -41,11 +40,16 @@ public sealed class ChangeUserTypeCommandHandlerTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private void TypeExists(bool exists)
+    private void TypeExists(Guid typeId, bool exists)
     {
-        userTypes
-            .ExistsAsync(Arg.Any<Expression<Func<UserType, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(exists);
+        readStore.UserTypes.Add(
+            new UserTypeRow
+            {
+                Id = exists ? typeId : Guid.NewGuid(),
+                Name = "Tipo",
+                Color = "#000",
+            }
+        );
     }
 
     [Fact]
@@ -65,11 +69,12 @@ public sealed class ChangeUserTypeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncRoleMissingReturnsNotFound()
     {
+        var roleId = Guid.NewGuid();
         users.FindReturns(NewUser());
-        TypeExists(false);
+        TypeExists(roleId, false);
 
         var result = await sut.HandleAsync(
-            new ChangeUserTypeCommand(Guid.NewGuid(), Guid.NewGuid()),
+            new ChangeUserTypeCommand(Guid.NewGuid(), roleId),
             TestContext.Current.CancellationToken
         );
 
@@ -84,8 +89,7 @@ public sealed class ChangeUserTypeCommandHandlerTests
         var roleId = Guid.NewGuid();
         var user = NewUser(id: id, dob: AdultDob);
         users.FindReturns(user);
-        TypeExists(true);
-        users.HasUsers(NewUser(id: id));
+        TypeExists(roleId, true);
         clock.UtcNow = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero);
 
         var result = await sut.HandleAsync(
@@ -94,7 +98,6 @@ public sealed class ChangeUserTypeCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Type.Should().NotBeNull();
         user.UserTypeId.Should().Be(roleId);
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -113,10 +116,9 @@ public sealed class ChangeUserTypeCommandHandlerTests
         var id = Guid.NewGuid();
         var roleId = Guid.NewGuid();
         var user = NewUser(id: id, dob: AdultDob);
-        user.UserTypeId = roleId;
+        Persisted.Overwrite(user, new { UserTypeId = roleId });
         users.FindReturns(user);
-        TypeExists(true);
-        users.HasUsers(NewUser(id: id));
+        TypeExists(roleId, true);
 
         var result = await sut.HandleAsync(
             new ChangeUserTypeCommand(id, roleId),

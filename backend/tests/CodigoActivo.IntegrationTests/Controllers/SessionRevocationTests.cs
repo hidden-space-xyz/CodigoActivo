@@ -1,9 +1,9 @@
 using System.Net;
 using System.Security.Claims;
 using AwesomeAssertions;
-using CodigoActivo.API.Security;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -59,7 +59,7 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var user = await db.Users.SingleAsync(u => u.Id == TestSeedData.Users.MemberId, Ct);
-            user.FirstName = "Martita";
+            Persisted.Overwrite(user, new { FirstName = "Martita" });
         });
 
         using var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
@@ -116,7 +116,7 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var row = await db.Set<UserSession>().SingleAsync(s => s.Id == session.Id, Ct);
-            row.UserId = TestSeedData.Users.AdminId;
+            Persisted.Overwrite(row, new { UserId = TestSeedData.Users.AdminId });
         });
 
         var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);

@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Common;
+using CodigoActivo.Application.Abstractions.Querying;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database;
@@ -61,5 +61,17 @@ public sealed class QueryExecutor : IQueryExecutor
     )
     {
         return await source.FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// Determines whether the query returns any result.
+    /// </summary>
+    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
+    /// <param name="source">Source sequence to query.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when at least one item matches.</returns>
+    public async Task<bool> AnyAsync<T>(IQueryable<T> source, CancellationToken ct = default)
+    {
+        return await source.AnyAsync(ct);
     }
 }

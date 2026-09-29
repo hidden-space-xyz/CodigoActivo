@@ -1,6 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Diagnostics;
-using CodigoActivo.Domain.Common;
+using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

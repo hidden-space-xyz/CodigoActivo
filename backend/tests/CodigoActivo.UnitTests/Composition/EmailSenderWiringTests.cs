@@ -1,9 +1,9 @@
 using System.Reflection;
 using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Composition;
-using CodigoActivo.Domain.Communication;
 using CodigoActivo.Infrastructure.Communication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,8 +16,8 @@ public sealed class EmailSenderWiringTests
 {
     private static readonly Assembly[] ProductionAssemblies =
     [
+        typeof(CodigoActivo.Domain.Common.Result).Assembly,
         typeof(IEmailSender).Assembly,
-        typeof(ManualEmailDispatcher).Assembly,
         typeof(SmtpEmailSender).Assembly,
         typeof(DependencyInjection).Assembly,
         typeof(ApiErrorResponseExtensions).Assembly,

@@ -1,10 +1,10 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Activities;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -23,11 +23,11 @@ public sealed record GetLeaderRosterQuery(Guid EventId, Guid UserId)
 /// assignment of their own, each with its currently confirmed attendees; everyone else, including
 /// administrators and the guardians of a leading minor, receives an empty list.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to exclude ended activities and to find each activity's local day.</param>
 public sealed class GetLeaderRosterQueryHandler(
-    IActivityRepository activities,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<GetLeaderRosterQuery, IReadOnlyList<LeaderRosterActivityResponse>>
@@ -45,9 +45,8 @@ public sealed class GetLeaderRosterQueryHandler(
     {
         var now = clock.UtcNow;
         var ledActivities = await executor.ToListAsync(
-            activities
-                .QueryAssignments()
-                .Where(a =>
+            readStore
+                .Assignments.Where(a =>
                     a.UserId == query.UserId
                     && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
                     && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
@@ -70,9 +69,8 @@ public sealed class GetLeaderRosterQueryHandler(
 
         var ledActivityIds = ledActivities.Select(a => a.ActivityId).ToList();
         var attendees = await executor.ToListAsync(
-            activities
-                .QueryAssignments()
-                .Where(a =>
+            readStore
+                .Assignments.Where(a =>
                     ledActivityIds.Contains(a.ActivityId)
                     && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
                 )

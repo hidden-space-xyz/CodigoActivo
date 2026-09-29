@@ -1,6 +1,5 @@
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Application.Files;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -8,15 +7,33 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 /// <summary>
-/// Persists and retrieves file data from the database.
+/// Stores and loads uploaded files, and tells which of them the content still references.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 public class FileRepository(CodigoActivoDbContext context)
-    : Repository<FileEntity>(context),
+    : AggregateRepository<FileEntity>(context),
         IFileRepository
 {
-    private const string ContentUrlSqlPattern =
-        "/api/files/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/content";
+    /// <inheritdoc />
+    public Task<FileEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return Set.FirstOrDefaultAsync(file => file.Id == id, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<FileEntity>> ListByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Where(file => ids.Contains(file.Id)).ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> ExistsAsync(Guid id, CancellationToken ct = default)
+    {
+        return Set.AnyAsync(file => file.Id == id, ct);
+    }
 
     /// <summary>
     /// Determines whether in use.
@@ -100,16 +117,16 @@ public class FileRepository(CodigoActivoDbContext context)
         FormattableString sql = $"""
             SELECT DISTINCT (match[1])::uuid AS "Value"
             FROM (
-                SELECT regexp_matches(description::text, {ContentUrlSqlPattern}, 'g') AS match
+                SELECT regexp_matches(description::text, {RichTextFileReferences.ContentUrlPattern}, 'g') AS match
                 FROM events
                 UNION ALL
-                SELECT regexp_matches(description::text, {ContentUrlSqlPattern}, 'g') AS match
+                SELECT regexp_matches(description::text, {RichTextFileReferences.ContentUrlPattern}, 'g') AS match
                 FROM news
                 UNION ALL
-                SELECT regexp_matches(description::text, {ContentUrlSqlPattern}, 'g') AS match
+                SELECT regexp_matches(description::text, {RichTextFileReferences.ContentUrlPattern}, 'g') AS match
                 FROM resources
                 UNION ALL
-                SELECT regexp_matches(description::text, {ContentUrlSqlPattern}, 'g') AS match
+                SELECT regexp_matches(description::text, {RichTextFileReferences.ContentUrlPattern}, 'g') AS match
                 FROM terms_documents
             ) AS refs
             """;

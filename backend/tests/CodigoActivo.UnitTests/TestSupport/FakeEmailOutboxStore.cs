@@ -1,5 +1,4 @@
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Infrastructure.Communication;
 
 namespace CodigoActivo.UnitTests.TestSupport;
@@ -145,9 +144,8 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
     /// </summary>
     private static EmailOutboxMessage Claimed(EmailOutboxMessage message)
     {
-        return new EmailOutboxMessage
+        var claimed = new EmailOutboxMessage
         {
-            Id = message.Id,
             ContentId = message.ContentId,
             Content = message.Content,
             Kind = message.Kind,
@@ -160,6 +158,8 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
             LockedUntil = message.LockedUntil,
             LastError = message.LastError,
         };
+        Persisted.Overwrite(claimed, new { message.Id });
+        return claimed;
     }
 
     public virtual Task<int> RemoveAsync(

@@ -1,4 +1,3 @@
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -50,8 +49,7 @@ public sealed class DisposableEmailDomainRefresher(
         }
 
         await using var scope = scopes.CreateAsyncScope();
-        var repository =
-            scope.ServiceProvider.GetRequiredService<IDisposableEmailDomainRepository>();
+        var repository = scope.ServiceProvider.GetRequiredService<IDisposableEmailDomainStore>();
         await repository.ReplaceAsync(list.Domains, ct);
         return true;
     }
@@ -90,7 +88,8 @@ public sealed class DisposableEmailDomainRefresher(
         {
             return await RefreshAsync(ct);
         }
-        catch (Exception ex) when (!ct.IsCancellationRequested)
+        catch (Exception ex)
+            when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.DisposableEmailDomainListNotStored(ex);
             return false;

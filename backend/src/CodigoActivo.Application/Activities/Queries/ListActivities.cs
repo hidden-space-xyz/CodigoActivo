@@ -1,9 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Querying;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -17,11 +16,11 @@ public sealed record ListActivitiesQuery(ActivityListQuery Filters)
 /// <summary>
 /// Executes the query to list activities.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ListActivitiesQueryHandler(
-    IActivityRepository activities,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<ListActivitiesQuery, PagedResult<ActivityResponse>>
@@ -55,7 +54,7 @@ public sealed class ListActivitiesQueryHandler(
         CancellationToken ct
     )
     {
-        var source = activities.Query().Select(Projections.Activity);
+        var source = readStore.Activities.Select(ActivityProjections.Activity);
 
         if (query.EventId is { } eventId)
         {

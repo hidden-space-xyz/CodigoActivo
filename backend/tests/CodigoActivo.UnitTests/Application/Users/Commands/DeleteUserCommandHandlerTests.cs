@@ -1,10 +1,11 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -17,16 +18,20 @@ public sealed class DeleteUserCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IDeletedAccountRepository deletedAccounts =
         Substitute.For<IDeletedAccountRepository>();
+    private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly DeleteUserCommandHandler sut;
 
     public DeleteUserCommandHandlerTests()
     {
-        sut = new DeleteUserCommandHandler(users, deletedAccounts, clock, cacheInvalidator);
-        deletedAccounts
-            .EraseAsync(Arg.Any<User>(), Arg.Any<AccountErasure>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        sut = new DeleteUserCommandHandler(
+            users,
+            AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
+            clock,
+            cacheInvalidator
+        );
     }
 
     private Task<Result> DeleteAsync(Guid userId, Guid actingUserId)
@@ -37,11 +42,17 @@ public sealed class DeleteUserCommandHandlerTests
         );
     }
 
-    private Task<bool> AssertNotErasedAsync()
+    private async Task AssertNotErasedAsync()
     {
-        return deletedAccounts
+        await erasureStore
             .DidNotReceiveWithAnyArgs()
-            .EraseAsync(default!, default!, TestContext.Current.CancellationToken);
+            .CaptureLegalCopyAsync(default, default!, TestContext.Current.CancellationToken);
+        await deletedAccounts
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        users.DidNotReceiveWithAnyArgs().Remove(default!);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private ValueTask AssertCacheKeptAsync()
@@ -51,15 +62,30 @@ public sealed class DeleteUserCommandHandlerTests
             .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
     }
 
-    private Task<bool> AssertErasedAsync(User user, AccountDeletionOrigin origin, Guid actorId)
+    private async Task AssertErasedAsync(User user, AccountDeletionOrigin origin, Guid actorId)
     {
-        return deletedAccounts
+        await erasureStore
             .Received(1)
-            .EraseAsync(
-                user,
-                new AccountErasure(origin, actorId, clock.UtcNow),
+            .CaptureLegalCopyAsync(
+                user.Id,
+                Arg.Is<AccountErasure>(erasure =>
+                    erasure.Origin == origin
+                    && erasure.ActorId == actorId
+                    && erasure.DeletedAt == clock.UtcNow
+                ),
                 Arg.Any<CancellationToken>()
             );
+        await deletedAccounts
+            .Received(1)
+            .AddAsync(
+                Arg.Is<DeletedAccount>(copy =>
+                    copy.Id == user.Id
+                    && copy.DeletedAt == clock.UtcNow
+                    && copy.Data == AccountErasers.LegalCopy
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        users.Received(1).Remove(user);
     }
 
     [Fact]
@@ -70,7 +96,7 @@ public sealed class DeleteUserCommandHandlerTests
         result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteInitialAdminForbidden);
         await users
             .DidNotReceiveWithAnyArgs()
-            .FindAsync(default!, TestContext.Current.CancellationToken);
+            .GetByIdAsync(default, TestContext.Current.CancellationToken);
         await AssertNotErasedAsync();
         await AssertCacheKeptAsync();
     }
@@ -124,7 +150,6 @@ public sealed class DeleteUserCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         await AssertErasedAsync(user, AccountDeletionOrigin.Administrator, administratorId);
-        users.DidNotReceiveWithAnyArgs().Remove(Arg.Any<User>());
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -165,13 +190,12 @@ public sealed class DeleteUserCommandHandlerTests
     {
         var user = NewUser(isAdmin: false);
         users.FindReturns(user);
-        deletedAccounts
-            .EraseAsync(user, Arg.Any<AccountErasure>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        erasureStore.LockHouseholdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await DeleteAsync(user.Id, Guid.NewGuid());
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        await AssertNotErasedAsync();
         await AssertCacheKeptAsync();
     }
 }

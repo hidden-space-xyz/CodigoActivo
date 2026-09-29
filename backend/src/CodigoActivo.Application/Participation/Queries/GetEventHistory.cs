@@ -1,8 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
@@ -16,11 +16,11 @@ public sealed record GetEventHistoryQuery(Guid UserId)
 /// <summary>
 /// Executes the query to retrieve event history.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class GetEventHistoryQueryHandler(
-    IActivityRepository activities,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<GetEventHistoryQuery, IReadOnlyList<EventHistoryResponse>>
@@ -39,9 +39,8 @@ public sealed class GetEventHistoryQueryHandler(
         var userId = query.UserId;
 
         var rows = await executor.ToListAsync(
-            activities
-                .QueryAssignments()
-                .Where(a => a.UserId == userId || a.User.ParentId == userId)
+            readStore
+                .Assignments.Where(a => a.UserId == userId || a.User.ParentId == userId)
                 .OrderBy(a => a.Activity.Event.EventStartsAt)
                 .ThenBy(a => a.Activity.ActivityStartsAt)
                 .ThenBy(a => a.Activity.Title)

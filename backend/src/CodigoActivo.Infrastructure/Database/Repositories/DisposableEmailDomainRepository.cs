@@ -1,5 +1,4 @@
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +9,7 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 public sealed class DisposableEmailDomainRepository(CodigoActivoDbContext context)
-    : IDisposableEmailDomainRepository
+    : IDisposableEmailDomainStore
 {
     /// <inheritdoc />
     public Task<bool> ContainsAnyAsync(

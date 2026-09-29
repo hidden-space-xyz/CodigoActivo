@@ -1,14 +1,21 @@
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Partners;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
+using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 /// <summary>
-/// Persists and retrieves partner data from the database.
+/// Stores and loads partners.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 public class PartnerRepository(CodigoActivoDbContext context)
-    : Repository<Partner>(context),
-        IPartnerRepository;
+    : AggregateRepository<Partner>(context),
+        IPartnerRepository
+{
+    /// <inheritdoc />
+    public Task<Partner?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return Set.FirstOrDefaultAsync(partner => partner.Id == id, ct);
+    }
+}

@@ -1,8 +1,9 @@
 using System.Reflection;
 using AwesomeAssertions;
+using CodigoActivo.API.Caching;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Application.Resources.Queries;
 using CodigoActivo.Application.Users.Queries;

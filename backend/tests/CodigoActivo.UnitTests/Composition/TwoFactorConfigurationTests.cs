@@ -1,7 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Options;
+using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Composition;
-using CodigoActivo.Domain.Security;
 using CodigoActivo.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

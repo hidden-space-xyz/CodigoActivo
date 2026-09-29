@@ -42,7 +42,7 @@ public sealed class CsrfValidationMiddleware(
             {
                 logger.CsrfValidationFailed(ex);
 
-                await context.WriteApiErrorAsync(Error.BadRequest(ErrorCode.InvalidCsrfToken));
+                await context.WriteApiErrorAsync(Error.Validation(ErrorCode.InvalidCsrfToken));
                 return;
             }
         }

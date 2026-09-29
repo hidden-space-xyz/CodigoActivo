@@ -1,8 +1,11 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -43,20 +46,22 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         string? nationalId = null
     )
     {
-        return new User
-        {
-            Id = id,
-            FirstName = firstName,
-            LastName = lastName,
-            Email = $"{firstName.ToLowerInvariant()}@codigoactivo.test",
-            Phone = $"+3460000{id.ToString()[^4..]}",
-            SecondaryPhone = secondaryPhone,
-            NationalId = nationalId ?? "87654321X",
-            Gender = Gender.Female,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Participant,
-            CreatedAt = SeededAt,
-        };
+        return Persisted.As<User>(
+            new
+            {
+                Id = id,
+                FirstName = firstName,
+                LastName = lastName,
+                Email = $"{firstName.ToLowerInvariant()}@codigoactivo.test",
+                Phone = $"+3460000{id.ToString()[^4..]}",
+                SecondaryPhone = secondaryPhone,
+                NationalId = nationalId ?? "87654321X",
+                Gender = Gender.Female,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                UserTypeId = SeedIds.UserTypes.Participant,
+                CreatedAt = SeededAt,
+            }
+        );
     }
 
     private static ActivityUserRoleAssignment Assignment(
@@ -67,32 +72,36 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         int minutesAfterSeed = 0
     )
     {
-        return new ActivityUserRoleAssignment
-        {
-            UserId = userId,
-            ActivityId = activityId,
-            ActivityRoleTypeId = roleTypeId,
-            AssignmentStatusId = statusId,
-            CreatedAt = SeededAt.AddMinutes(minutesAfterSeed),
-        };
+        return Persisted.As<ActivityUserRoleAssignment>(
+            new
+            {
+                UserId = userId,
+                ActivityId = activityId,
+                ActivityRoleTypeId = roleTypeId,
+                AssignmentStatusId = statusId,
+                CreatedAt = SeededAt.AddMinutes(minutesAfterSeed),
+            }
+        );
     }
 
     private static Event NewEvent(Guid id, string title)
     {
-        return new Event
-        {
-            Id = id,
-            Title = title,
-            Subtitle = "Edición 2026",
-            Description = "{}",
-            EventStartsAt = new DateOnly(2026, 7, 10),
-            EventEndsAt = new DateOnly(2026, 7, 11),
-            SignupStartsAt = SeededAt,
-            SignupEndsAt = SeededAt.AddDays(30),
-            ThumbnailId = ThumbnailId,
-            CreatedAt = SeededAt,
-            CreatedBy = TestSeedData.Users.AdminId,
-        };
+        return Persisted.As<Event>(
+            new
+            {
+                Id = id,
+                Title = title,
+                Subtitle = "Edición 2026",
+                Description = "{}",
+                EventStartsAt = new DateOnly(2026, 7, 10),
+                EventEndsAt = new DateOnly(2026, 7, 11),
+                SignupStartsAt = SeededAt,
+                SignupEndsAt = SeededAt.AddDays(30),
+                ThumbnailId = ThumbnailId,
+                CreatedAt = SeededAt,
+                CreatedBy = TestSeedData.Users.AdminId,
+            }
+        );
     }
 
     private static Activity NewActivity(
@@ -102,20 +111,22 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         DateTimeOffset startsAt
     )
     {
-        return new Activity
-        {
-            Id = id,
-            Title = title,
-            Description = "Descripción",
-            Location = "Aula 3",
-            ActivityStartsAt = startsAt,
-            ActivityEndsAt = startsAt.AddHours(2),
-            EventId = eventId,
-            ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-            ThumbnailId = ThumbnailId,
-            CreatedAt = SeededAt,
-            CreatedBy = TestSeedData.Users.AdminId,
-        };
+        return Persisted.As<Activity>(
+            new
+            {
+                Id = id,
+                Title = title,
+                Description = "Descripción",
+                Location = "Aula 3",
+                ActivityStartsAt = startsAt,
+                ActivityEndsAt = startsAt.AddHours(2),
+                EventId = eventId,
+                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                ThumbnailId = ThumbnailId,
+                CreatedAt = SeededAt,
+                CreatedBy = TestSeedData.Users.AdminId,
+            }
+        );
     }
 
     /// <summary>
@@ -129,14 +140,16 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                new FileEntity
-                {
-                    Id = ThumbnailId,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = SeededAt,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<FileEntity>(
+                    new
+                    {
+                        Id = ThumbnailId,
+                        Name = "thumb",
+                        Extension = "png",
+                        UploadedAt = SeededAt,
+                        UploadedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.Events.AddRange(
                 NewEvent(EventId, "Jornada tecnológica"),
@@ -161,18 +174,20 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
                 Adult(RequestedId, "Rita", "Ruiz"),
                 Adult(DeniedId, "Diego", "Díaz"),
                 Adult(SiblingOnlyId, "Olga", "Ortiz"),
-                new User
-                {
-                    Id = GuardedChildId,
-                    FirstName = "Nora",
-                    LastName = "Gil",
-                    BirthDate = new DateOnly(2012, 7, 5),
-                    Gender = Gender.Female,
-                    ParentId = GuardianId,
-                    UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-                    UserTypeId = SeedIds.UserTypes.Participant,
-                    CreatedAt = SeededAt,
-                }
+                Persisted.As<User>(
+                    new
+                    {
+                        Id = GuardedChildId,
+                        FirstName = "Nora",
+                        LastName = "Gil",
+                        BirthDate = new DateOnly(2012, 7, 5),
+                        Gender = Gender.Female,
+                        ParentId = GuardianId,
+                        UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+                        UserTypeId = SeedIds.UserTypes.Participant,
+                        CreatedAt = SeededAt,
+                    }
+                )
             );
             db.ActivityUserRoleAssignments.AddRange(
                 Assignment(

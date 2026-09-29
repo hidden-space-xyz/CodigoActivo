@@ -17,6 +17,6 @@ public static class HttpContextExtensions
     {
         var (statusCode, body) = ApiErrorResponseExtensions.Create(error, context);
         context.Response.StatusCode = statusCode;
-        await context.Response.WriteAsJsonAsync(body);
+        await context.Response.WriteAsJsonAsync(body, ApiErrorResponseExtensions.SerializerOptions);
     }
 }

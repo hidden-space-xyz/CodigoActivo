@@ -1,10 +1,11 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Reports.Contracts;
+using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -19,12 +20,12 @@ public sealed record ListEventAttendeesQuery(Guid EventId, EventAttendeeListQuer
 /// <summary>
 /// Executes the query to list event attendees.
 /// </summary>
-/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQueryExecutor executor)
+public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<ListEventAttendeesQuery, PagedResult<EventAttendeeResponse>>
 {
-    private static readonly SortMap<User> AttendeeSort = new SortMap<User>()
+    private static readonly SortMap<UserRow> AttendeeSort = new SortMap<UserRow>()
         .Add("firstName", u => u.FirstName)
         .Add("lastName", u => u.LastName)
         .Add("email", u => u.Email)
@@ -52,7 +53,7 @@ public sealed class ListEventAttendeesQueryHandler(IUserRepository users, IQuery
         var roleTypeId = filters.RoleTypeId;
         var statusId = filters.StatusId;
 
-        var source = UserFilters.ApplyEventAttendees(users.Query(), eventId, filters);
+        var source = UserFilters.ApplyEventAttendees(readStore.Users, eventId, filters);
 
         var projected = AttendeeSort
             .Apply(source, filters.Sort)

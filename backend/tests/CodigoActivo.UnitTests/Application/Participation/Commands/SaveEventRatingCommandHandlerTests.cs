@@ -1,10 +1,10 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Participation.Commands;
+using CodigoActivo.Application.Participation.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -16,7 +16,6 @@ public sealed class SaveEventRatingCommandHandlerTests
     private static readonly Guid EventId = Guid.NewGuid();
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid ChildId = Guid.NewGuid();
-    private static readonly Guid ActivityId = Guid.NewGuid();
 
     private static readonly SaveEventRatingRequest ValidRequest = new(
         5,
@@ -34,81 +33,62 @@ public sealed class SaveEventRatingCommandHandlerTests
 
     public SaveEventRatingCommandHandlerTests()
     {
-        sut = new SaveEventRatingCommandHandler(
-            events,
-            ratings,
-            activities,
-            new FakeQueryExecutor(),
-            clock,
-            uow
-        );
+        sut = new SaveEventRatingCommandHandler(events, ratings, activities, clock, uow);
 
         // Attendance defaults to none; individual tests seed a confirmed assignment when the
         // scenario requires one.
         activities
-            .QueryAssignments()
-            .Returns(Array.Empty<ActivityUserRoleAssignment>().AsQueryable());
+            .HasConfirmedAttendanceAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<Guid>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(false);
     }
 
     private static Event NewEvent(DateOnly endsAt)
     {
-        return new Event
-        {
-            Id = EventId,
-            Title = "Evento",
-            Subtitle = "Sub",
-            Description = "{}",
-            EventStartsAt = endsAt.AddDays(-1),
-            EventEndsAt = endsAt,
-            SignupStartsAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            SignupEndsAt = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
-            ThumbnailId = Guid.NewGuid(),
-        };
+        return Persisted.As<Event>(
+            new
+            {
+                Id = EventId,
+                Title = "Evento",
+                Subtitle = "Sub",
+                Description = "{}",
+                EventStartsAt = endsAt.AddDays(-1),
+                EventEndsAt = endsAt,
+                SignupStartsAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                SignupEndsAt = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
+                ThumbnailId = Guid.NewGuid(),
+            }
+        );
+    }
+
+    private void SeedEvent(DateOnly endsAt)
+    {
+        events.GetByIdAsync(EventId, Arg.Any<CancellationToken>()).Returns(NewEvent(endsAt));
     }
 
     private void SeedFinishedEvent()
     {
-        events.Query().Returns(new[] { NewEvent(clock.Today.AddDays(-1)) }.AsQueryable());
+        SeedEvent(clock.Today.AddDays(-1));
     }
 
     private void SeedConfirmedAssignment(Guid attendeeUserId, Guid? parentId = null)
     {
-        var attendee = new User
-        {
-            Id = attendeeUserId,
-            ParentId = parentId,
-            FirstName = "Nombre",
-            LastName = "Apellido",
-        };
-        var activity = new Activity
-        {
-            Id = ActivityId,
-            EventId = EventId,
-            Title = "Actividad",
-            Description = "Descripción",
-            Location = "Sala",
-        };
         activities
-            .QueryAssignments()
-            .Returns(
-                new[]
-                {
-                    new ActivityUserRoleAssignment
-                    {
-                        ActivityId = ActivityId,
-                        Activity = activity,
-                        UserId = attendeeUserId,
-                        User = attendee,
-                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
-                    },
-                }.AsQueryable()
-            );
+            .HasConfirmedAttendanceAsync(
+                EventId,
+                parentId ?? attendeeUserId,
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(true);
     }
 
     [Fact]
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
-        events.Query().Returns(Array.Empty<Event>().AsQueryable());
+        events.Finds(null);
 
         var result = await sut.HandleAsync(
             new SaveEventRatingCommand(EventId, UserId, ValidRequest),
@@ -122,7 +102,7 @@ public sealed class SaveEventRatingCommandHandlerTests
     [Fact]
     public async Task HandleAsyncEventNotFinishedReturnsConflict()
     {
-        events.Query().Returns(new[] { NewEvent(clock.Today.AddDays(1)) }.AsQueryable());
+        SeedEvent(clock.Today.AddDays(1));
 
         var result = await sut.HandleAsync(
             new SaveEventRatingCommand(EventId, UserId, ValidRequest),

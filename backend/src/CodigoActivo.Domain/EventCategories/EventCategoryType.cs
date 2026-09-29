@@ -1,0 +1,49 @@
+using CodigoActivo.Domain.Common;
+
+namespace CodigoActivo.Domain.EventCategories;
+
+/// <summary>
+/// Category that tags events, shown with its own color. Its name is unique across categories.
+/// </summary>
+public class EventCategoryType : IdentifiableEntity, IAggregateRoot
+{
+    private EventCategoryType() { }
+
+    /// <summary>
+    /// Gets the human-readable name.
+    /// </summary>
+    public string Name { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Gets the display color.
+    /// </summary>
+    public string Color { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Creates a category.
+    /// </summary>
+    /// <param name="name">Name; surrounding spaces are removed.</param>
+    /// <param name="color">Display color; surrounding spaces are removed.</param>
+    /// <param name="id">Stable identifier for seeded categories; a new one otherwise.</param>
+    /// <returns>The new category.</returns>
+    public static EventCategoryType Create(string name, string color, Guid? id = null)
+    {
+        var categoryType = new EventCategoryType { Id = id ?? Guid.NewGuid() };
+        categoryType.Rename(name, color);
+        return categoryType;
+    }
+
+    /// <summary>
+    /// Replaces the name and color of the category.
+    /// </summary>
+    /// <param name="name">New name; surrounding spaces are removed.</param>
+    /// <param name="color">New display color; surrounding spaces are removed.</param>
+    public void Rename(string name, string color)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(color);
+
+        Name = name.Trim();
+        Color = color.Trim();
+    }
+}

@@ -1,9 +1,10 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Participation.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Participation.Commands;
 
@@ -27,14 +28,12 @@ public sealed record SaveEventRatingCommand(
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="ratings">Repository used to persist and retrieve ratings.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 public sealed class SaveEventRatingCommandHandler(
     IEventRepository events,
     IEventRatingRepository ratings,
     IActivityRepository activities,
-    IQueryExecutor executor,
     IClock clock,
     IUnitOfWork uow
 ) : ICommandHandler<SaveEventRatingCommand, Result>
@@ -50,48 +49,31 @@ public sealed class SaveEventRatingCommandHandler(
         CancellationToken ct = default
     )
     {
-        var eventId = command.EventId;
-        var userId = command.UserId;
         var request = command.Request;
 
-        var ends = await executor.FirstOrDefaultAsync(
-            events.Query().Where(e => e.Id == eventId).Select(e => (DateOnly?)e.EventEndsAt),
-            ct
-        );
-        if (ends is not { } eventEndsAt)
+        var ev = await events.GetByIdAsync(command.EventId, ct);
+        if (ev is null)
         {
             return Error.NotFound(ErrorCode.EventNotFound);
         }
 
-        if (eventEndsAt >= clock.Today)
+        if (!ev.HasEndedBy(clock.Today))
         {
             return Error.Conflict(ErrorCode.EventRatingNotFinished);
         }
 
-        var attended = await executor.FirstOrDefaultAsync(
-            activities
-                .QueryAssignments()
-                .Where(a =>
-                    a.Activity.EventId == eventId
-                    && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
-                    && (a.UserId == userId || a.User.ParentId == userId)
-                )
-                .Select(a => (Guid?)a.ActivityId),
-            ct
-        );
-        if (attended is null)
+        if (!await activities.HasConfirmedAttendanceAsync(ev.Id, command.UserId, ct))
         {
             return Error.Conflict(ErrorCode.EventRatingAttendanceRequired);
         }
 
-        var rating = new EventRating { EventId = eventId };
-        rating.Apply(
+        var rating = EventRating.Submit(
+            ev.Id,
             request.Score!.Value,
             request.MostLiked,
             request.LeastLiked,
             request.Suggestions
         );
-
         await ratings.AddAsync(rating, ct);
         await uow.SaveChangesAsync(ct);
 

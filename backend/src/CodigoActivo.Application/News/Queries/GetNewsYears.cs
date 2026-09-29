@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
 
 namespace CodigoActivo.Application.News.Queries;
 
@@ -12,9 +11,9 @@ public sealed record GetNewsYearsQuery : IQuery<IReadOnlyList<int>>;
 /// <summary>
 /// Executes the query to retrieve news years.
 /// </summary>
-/// <param name="news">Repository used to persist and retrieve news items.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetNewsYearsQueryHandler(INewsItemRepository news, IQueryExecutor executor)
+public sealed class GetNewsYearsQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<GetNewsYearsQuery, IReadOnlyList<int>>
 {
     /// <summary>
@@ -29,7 +28,7 @@ public sealed class GetNewsYearsQueryHandler(INewsItemRepository news, IQueryExe
     )
     {
         return executor.ToListAsync(
-            news.Query().Select(a => a.CreatedAt.Year).Distinct().OrderByDescending(year => year),
+            readStore.News.Select(a => a.CreatedAt.Year).Distinct().OrderByDescending(year => year),
             ct
         );
     }

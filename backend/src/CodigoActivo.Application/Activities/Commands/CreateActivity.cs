@@ -1,10 +1,11 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
@@ -15,7 +16,7 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// <param name="Request">Validated client request data.</param>
 /// <param name="UserId">Identifier of the user.</param>
 public sealed record CreateActivityCommand(Guid EventId, CreateActivityRequest Request, Guid UserId)
-    : ICommand<Result<ActivityResponse>>;
+    : ICommand<Result<Guid>>;
 
 /// <summary>
 /// Executes the command to create an activity.
@@ -25,23 +26,21 @@ public sealed record CreateActivityCommand(Guid EventId, CreateActivityRequest R
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
-/// <param name="getById">Handler used to retrieve activity by identifier.</param>
 public sealed class CreateActivityCommandHandler(
     IActivityRepository activities,
     ActivityValidator validator,
     IClock clock,
     IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator,
-    GetActivityByIdQueryHandler getById
-) : ICommandHandler<CreateActivityCommand, Result<ActivityResponse>>
+    ICacheInvalidator cacheInvalidator
+) : ICommandHandler<CreateActivityCommand, Result<Guid>>
 {
     /// <summary>
     /// Handles the request to create an activity.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an activity on success, or an application error on failure.</returns>
-    public async Task<Result<ActivityResponse>> HandleAsync(
+    /// <returns>A task whose result contains the identifier of the created activity, or an application error on failure.</returns>
+    public async Task<Result<Guid>> HandleAsync(
         CreateActivityCommand command,
         CancellationToken ct = default
     )
@@ -62,32 +61,25 @@ public sealed class CreateActivityCommandHandler(
             return validated.Error!;
         }
 
-        var activity = new Activity
-        {
-            Title = request.Title.Trim(),
-            Description = request.Description,
-            Location = request.Location.Trim(),
-            ActivityModalityTypeId = request.ActivityModalityTypeId,
-            ActivityStartsAt = validated.Value.Schedule.StartsAt,
-            ActivityEndsAt = validated.Value.Schedule.EndsAt,
-            EventId = command.EventId,
-            ThumbnailId = request.ThumbnailId,
-            CreatedAt = clock.UtcNow,
-            CreatedBy = command.UserId,
-            RoleCapacities =
-            [
-                .. validated.Value.Capacities.Select(item => new ActivityRoleCapacity
-                {
-                    ActivityRoleTypeId = item.RoleTypeId,
-                    DesiredCount = item.DesiredCount,
-                }),
-            ],
-        };
+        var activity = Activity.Create(
+            command.EventId,
+            new ActivityDetails(
+                request.Title,
+                request.Description,
+                request.Location,
+                request.ActivityModalityTypeId,
+                request.ThumbnailId
+            ),
+            validated.Value.Schedule,
+            validated.Value.Capacities,
+            command.UserId,
+            clock.UtcNow
+        );
 
         await activities.AddAsync(activity, ct);
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
 
-        return await getById.HandleAsync(new GetActivityByIdQuery(activity.Id), ct);
+        return activity.Id;
     }
 }

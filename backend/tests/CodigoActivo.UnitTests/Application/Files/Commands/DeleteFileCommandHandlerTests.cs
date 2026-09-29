@@ -1,9 +1,11 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -15,8 +17,7 @@ public sealed class DeleteFileCommandHandlerTests
 {
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ILocalFileSystemRepository storage =
-        Substitute.For<ILocalFileSystemRepository>();
+    private readonly IFileStorage storage = Substitute.For<IFileStorage>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly DeleteFileCommandHandler sut;
 

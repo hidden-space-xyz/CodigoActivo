@@ -1,6 +1,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Contracts;
+using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.UnitTests.TestSupport;
@@ -18,8 +19,6 @@ public sealed class GlobalExceptionHandlerTests
 {
     private const string RealPath = "/api/users/8f7c2b1e-0000-4000-8000-000000000000";
     private const string RouteTemplate = "api/users/{id}";
-
-    private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
 
     private static readonly GlobalExceptionHandler Sut = new(
         NullLogger<GlobalExceptionHandler>.Instance
@@ -66,7 +65,7 @@ public sealed class GlobalExceptionHandlerTests
         context.Response.Body.Position = 0;
         var body = await JsonSerializer.DeserializeAsync<ApiErrorResponse>(
             context.Response.Body,
-            WebJson,
+            ApiErrorResponseExtensions.SerializerOptions,
             TestContext.Current.CancellationToken
         );
         return body!;

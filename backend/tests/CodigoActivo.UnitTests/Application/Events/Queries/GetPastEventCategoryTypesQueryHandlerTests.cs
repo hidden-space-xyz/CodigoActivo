@@ -1,9 +1,7 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Events.Queries;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
 
@@ -11,29 +9,24 @@ namespace CodigoActivo.UnitTests.Application.Events.Queries;
 
 public sealed class GetPastEventCategoryTypesQueryHandlerTests
 {
-    private readonly IEventCategoryTypeRepository categoryTypes =
-        Substitute.For<IEventCategoryTypeRepository>();
+    private readonly FakeReadStore store = new();
     private readonly TestClock clock = new();
     private readonly GetPastEventCategoryTypesQueryHandler sut;
 
     public GetPastEventCategoryTypesQueryHandlerTests()
     {
-        sut = new GetPastEventCategoryTypesQueryHandler(
-            categoryTypes,
-            new FakeQueryExecutor(),
-            clock
-        );
+        sut = new GetPastEventCategoryTypesQueryHandler(store, new FakeQueryExecutor(), clock);
     }
 
-    private static EventCategoryType WithEvents(
-        EventCategoryType categoryType,
-        params Event[] events
+    private static EventCategoryTypeRow WithEvents(
+        EventCategoryTypeRow categoryType,
+        params EventRow[] events
     )
     {
         foreach (var ev in events)
         {
             categoryType.Events.Add(
-                new EventCategory
+                new EventCategoryRow
                 {
                     EventId = ev.Id,
                     Event = ev,
@@ -50,27 +43,27 @@ public sealed class GetPastEventCategoryTypesQueryHandlerTests
     public async Task HandleAsyncMixedEventsReturnsCategoriesOfPastEventsOrderedByName()
     {
         clock.Today = new DateOnly(2026, 7, 4);
-        var past = NewEvent(
+        var past = NewEventRow(
             "Pasado",
             starts: new DateOnly(2026, 1, 1),
             ends: new DateOnly(2026, 1, 2)
         );
-        var endsToday = NewEvent(
+        var endsToday = NewEventRow(
             "Hoy",
             starts: new DateOnly(2026, 7, 3),
             ends: new DateOnly(2026, 7, 4)
         );
-        var upcoming = NewEvent(
+        var upcoming = NewEventRow(
             "Futuro",
             starts: new DateOnly(2026, 8, 1),
             ends: new DateOnly(2026, 8, 2)
         );
-        categoryTypes.HasCategoryTypes(
-            WithEvents(NewCategoryType("Talleres", "#AA0000"), past, upcoming),
-            WithEvents(NewCategoryType("Charlas", "#00AA00"), past),
-            WithEvents(NewCategoryType("Música"), endsToday, upcoming),
-            NewCategoryType("Sin eventos")
-        );
+        store.EventCategoryTypes.AddRange([
+            WithEvents(NewCategoryTypeRow("Talleres", "#AA0000"), past, upcoming),
+            WithEvents(NewCategoryTypeRow("Charlas", "#00AA00"), past),
+            WithEvents(NewCategoryTypeRow("Música"), endsToday, upcoming),
+            NewCategoryTypeRow("Sin eventos"),
+        ]);
 
         var result = await sut.HandleAsync(
             new GetPastEventCategoryTypesQuery(),

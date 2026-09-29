@@ -1,10 +1,20 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.EventCategories.Contracts;
+using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Application.Files.Contracts;
+using CodigoActivo.Application.News.Contracts;
+using CodigoActivo.Application.Reports.Contracts;
+using CodigoActivo.Application.TermsDocuments.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
@@ -384,16 +394,18 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.News.Add(
-                new NewsItem
-                {
-                    Id = id,
-                    Title = title,
-                    Subtitle = "Subtítulo",
-                    Description = "{}",
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<NewsItem>(
+                    new
+                    {
+                        Id = id,
+                        Title = title,
+                        Subtitle = "Subtítulo",
+                        Description = "{}",
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -408,45 +420,51 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Events.Add(
-                new Event
-                {
-                    Id = eventId,
-                    Title = "Evento",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    EventStartsAt = new DateOnly(2026, 7, 1),
-                    EventEndsAt = new DateOnly(2026, 7, 31),
-                    SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
-                    SignupEndsAt = new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero),
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = eventId,
+                        Title = "Evento",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        EventStartsAt = new DateOnly(2026, 7, 1),
+                        EventEndsAt = new DateOnly(2026, 7, 31),
+                        SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
+                        SignupEndsAt = new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero),
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.Activities.Add(
-                new Activity
-                {
-                    Id = activityId,
-                    Title = "Actividad",
-                    Description = "{}",
-                    Location = "Sala",
-                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                    ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
-                    ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-                    EventId = eventId,
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                    RoleCapacities =
-                    [
-                        new ActivityRoleCapacity
+                Persisted.As<Activity>(
+                    new
+                    {
+                        Id = activityId,
+                        Title = "Actividad",
+                        Description = "{}",
+                        Location = "Sala",
+                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
+                        ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
+                        EventId = eventId,
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                        RoleCapacities = new List<ActivityRoleCapacity>
                         {
-                            ActivityId = activityId,
-                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                            DesiredCount = 1,
+                            Persisted.As<ActivityRoleCapacity>(
+                                new
+                                {
+                                    ActivityId = activityId,
+                                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                                    DesiredCount = 1,
+                                }
+                            ),
                         },
-                    ],
-                }
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -459,12 +477,14 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.EventCategoryTypes.Add(
-                new EventCategoryType
-                {
-                    Id = id,
-                    Name = name ?? Guid.NewGuid().ToString("N"),
-                    Color = "#112233",
-                }
+                Persisted.As<EventCategoryType>(
+                    new
+                    {
+                        Id = id,
+                        Name = name ?? Guid.NewGuid().ToString("N"),
+                        Color = "#112233",
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -483,31 +503,39 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            var ev = new Event
-            {
-                Id = id,
-                Title = title,
-                Subtitle = "Sub",
-                Description = "{}",
-                EventStartsAt = new DateOnly(2026, 8, 1),
-                EventEndsAt = new DateOnly(2026, 8, 10),
-                SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
-                SignupEndsAt = new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
-                Featured = featured,
-                ThumbnailId = thumbnailId,
-                CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
-            };
-            ev.Categories.Add(new EventCategory { EventCategoryTypeId = categoryId });
+            var ev = Persisted.As<Event>(
+                new
+                {
+                    Id = id,
+                    Title = title,
+                    Subtitle = "Sub",
+                    Description = "{}",
+                    EventStartsAt = new DateOnly(2026, 8, 1),
+                    EventEndsAt = new DateOnly(2026, 8, 10),
+                    SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
+                    SignupEndsAt = new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
+                    Featured = featured,
+                    ThumbnailId = thumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
+            Persisted.Add(
+                ev.Categories,
+                Persisted.As<EventCategory>(new { EventCategoryTypeId = categoryId })
+            );
             if (termsDocumentId is { } linkedTermsDocumentId)
             {
-                ev.TermsDocuments.Add(
-                    new EventTermsDocument
-                    {
-                        TermsDocumentId = linkedTermsDocumentId,
-                        IsRequired = true,
-                        DisplayOrder = 0,
-                    }
+                Persisted.Add(
+                    ev.TermsDocuments,
+                    Persisted.As<EventTermsDocument>(
+                        new
+                        {
+                            TermsDocumentId = linkedTermsDocumentId,
+                            IsRequired = true,
+                            DisplayOrder = 0,
+                        }
+                    )
                 );
             }
 
@@ -523,12 +551,14 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.TermsDocuments.Add(
-                new TermsDocument
-                {
-                    Id = id,
-                    Name = name ?? Guid.NewGuid().ToString("N"),
-                    Description = "{}",
-                }
+                Persisted.As<TermsDocument>(
+                    new
+                    {
+                        Id = id,
+                        Name = name ?? Guid.NewGuid().ToString("N"),
+                        Description = "{}",
+                    }
+                )
             );
             return Task.CompletedTask;
         });

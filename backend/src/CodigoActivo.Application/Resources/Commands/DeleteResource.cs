@@ -1,9 +1,10 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Resources;
 
 namespace CodigoActivo.Application.Resources.Commands;
 
@@ -38,7 +39,7 @@ public sealed class DeleteResourceCommandHandler(
         CancellationToken ct = default
     )
     {
-        var resource = await resources.FindAsync(r => r.Id == command.ResourceId, ct);
+        var resource = await resources.GetByIdAsync(command.ResourceId, ct);
         if (resource is null)
         {
             return Error.NotFound(ErrorCode.ResourceNotFound);

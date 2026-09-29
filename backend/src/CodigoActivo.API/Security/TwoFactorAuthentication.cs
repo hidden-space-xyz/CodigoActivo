@@ -1,11 +1,10 @@
 using System.Security.Claims;
 using CodigoActivo.API.Extensions;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Infrastructure.Database.Context;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.Queries;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.API.Security;
 
@@ -29,43 +28,41 @@ public static class TwoFactorAuthentication
 /// sign out, instead of lasting until the cookie expires. An account locked after repeated wrong
 /// passwords has no pending challenge either, so a ticket obtained just before the lock is refused.
 /// </summary>
-/// <param name="db">Database context used for persistence.</param>
-/// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="pendingChallenge">Handler that resolves the pending challenge of an account.</param>
+/// <param name="endChallenge">Handler that closes a pending challenge.</param>
 public sealed class TwoFactorTicketValidator(
-    CodigoActivoDbContext db,
-    IUserRepository users,
-    IUnitOfWork uow
+    GetPendingChallengeQueryHandler pendingChallenge,
+    EndLoginChallengeCommandHandler endChallenge
 )
 {
     private const string PasswordFingerprintClaim = "codigoactivo:credential";
     private const string ChallengeIdClaim = "codigoactivo:challenge";
 
     /// <summary>
-    /// Creates the principal stored in the pending challenge cookie.
+    /// Builds the ticket of the challenge the password step just opened.
     /// </summary>
-    /// <param name="userId">Identifier of the user who presented the correct password.</param>
+    /// <param name="userId">Identifier of the account that passed the password step.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the principal, or <see langword="null"/> when the user cannot log in.</returns>
+    /// <returns>A task whose result contains the principal, or <see langword="null"/> when no challenge is pending.</returns>
     public async Task<ClaimsPrincipal?> CreatePrincipalAsync(
         Guid userId,
         CancellationToken ct = default
     )
     {
-        var pending = await FindPendingChallengeAsync(userId, ct);
+        var pending = await pendingChallenge.HandleAsync(new GetPendingChallengeQuery(userId), ct);
         return pending is null
             ? null
-            : BuildPrincipal(userId, pending.PasswordHash, pending.ChallengeId);
+            : BuildPrincipal(userId, pending.CredentialStamp, pending.ChallengeId);
     }
 
     /// <summary>
-    /// Rejects challenge cookies whose user can no longer log in, changed their password, or whose
-    /// challenge is no longer the one open on the account.
+    /// Validates the pending second-factor cookie on every request.
     /// </summary>
-    /// <param name="context">Cookie validation context.</param>
+    /// <param name="context">Cookie validation context of the request.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task ValidateAsync(CookieValidatePrincipalContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var userId = context.Principal?.GetUserId();
         var presentedFingerprint = context.Principal?.FindFirstValue(PasswordFingerprintClaim);
         var presentedChallenge = ReadChallengeId(context.Principal);
@@ -79,17 +76,14 @@ public sealed class TwoFactorTicketValidator(
             return;
         }
 
-        var pending = await FindPendingChallengeAsync(
-            userId.Value,
+        var pending = await pendingChallenge.HandleAsync(
+            new GetPendingChallengeQuery(userId.Value),
             context.HttpContext.RequestAborted
         );
         if (
             pending is null
             || pending.ChallengeId != presentedChallenge.Value
-            || !SessionTicketValidator.FixedTimeEquals(
-                presentedFingerprint,
-                SessionTicketValidator.Fingerprint(pending.PasswordHash)
-            )
+            || !CredentialStamps.Matches(presentedFingerprint, pending.CredentialStamp)
         )
         {
             await RejectAsync(context);
@@ -113,32 +107,7 @@ public sealed class TwoFactorTicketValidator(
             return;
         }
 
-        var pending = await users.FindAsync(
-            candidate => candidate.Id == user && candidate.LoginChallengeId == challenge,
-            ct
-        );
-        if (pending is null)
-        {
-            return;
-        }
-
-        pending.ClearLoginChallenge();
-        await uow.SaveChangesAsync(ct);
-    }
-
-    private Task<PendingChallenge?> FindPendingChallengeAsync(Guid userId, CancellationToken ct)
-    {
-        return db
-            .Users.AsNoTracking()
-            .Where(user =>
-                user.Id == userId
-                && user.UserStatusTypeId == SeedIds.UserStatusTypes.Active
-                && user.PasswordHash != null
-                && user.PasswordLockedAt == null
-                && user.LoginChallengeId != null
-            )
-            .Select(user => new PendingChallenge(user.PasswordHash!, user.LoginChallengeId!.Value))
-            .SingleOrDefaultAsync(ct);
+        await endChallenge.HandleAsync(new EndLoginChallengeCommand(user, challenge), ct);
     }
 
     private static Guid? ReadChallengeId(ClaimsPrincipal? principal)
@@ -148,14 +117,14 @@ public sealed class TwoFactorTicketValidator(
 
     private static ClaimsPrincipal BuildPrincipal(
         Guid userId,
-        string passwordHash,
+        string credentialStamp,
         Guid challengeId
     )
     {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId.ToString()),
-            new(PasswordFingerprintClaim, SessionTicketValidator.Fingerprint(passwordHash)),
+            new(PasswordFingerprintClaim, credentialStamp),
             new(ChallengeIdClaim, challengeId.ToString()),
         };
         return new ClaimsPrincipal(new ClaimsIdentity(claims, TwoFactorAuthentication.Scheme));
@@ -166,6 +135,4 @@ public sealed class TwoFactorTicketValidator(
         context.RejectPrincipal();
         await context.HttpContext.SignOutAsync(TwoFactorAuthentication.Scheme);
     }
-
-    private sealed record PendingChallenge(string PasswordHash, Guid ChallengeId);
 }

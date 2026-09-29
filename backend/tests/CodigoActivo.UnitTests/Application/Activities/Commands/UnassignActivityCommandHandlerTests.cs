@@ -1,10 +1,13 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -15,6 +18,7 @@ namespace CodigoActivo.UnitTests.Application.Activities.Commands;
 public sealed class UnassignActivityCommandHandlerTests
 {
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
@@ -25,7 +29,7 @@ public sealed class UnassignActivityCommandHandlerTests
     {
         sut = new UnassignActivityCommandHandler(
             activities,
-            new SignupGate(activities, users, new FakeQueryExecutor(), clock),
+            new SignupGate(events, users, clock),
             uow,
             cacheInvalidator
         );
@@ -34,10 +38,27 @@ public sealed class UnassignActivityCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAssignmentMissingReturnsNotFound()
     {
-        activities.ExistingAssignment(null);
+        var activity = NewActivity();
+        activities.Finds(activity);
 
         var result = await sut.HandleAsync(
-            new UnassignActivityCommand(Guid.NewGuid(), Guid.NewGuid(), IsAdmin: false),
+            new UnassignActivityCommand(activity.Id, Guid.NewGuid(), IsAdmin: false),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentNotFound);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncActivityMissingReturnsNotFound()
+    {
+        activities.Finds(null);
+
+        var result = await sut.HandleAsync(
+            new UnassignActivityCommand(Guid.NewGuid(), Guid.NewGuid(), IsAdmin: true),
             TestContext.Current.CancellationToken
         );
 
@@ -50,8 +71,9 @@ public sealed class UnassignActivityCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAsAdminRemovesWithoutWindowCheckAndInvalidatesCache()
     {
-        var assignment = Assignment(Guid.NewGuid(), Guid.NewGuid());
-        activities.ExistingAssignment(assignment);
+        var activity = NewActivity();
+        var assignment = activity.SignUp(Guid.NewGuid());
+        activities.Finds(activity);
 
         var result = await sut.HandleAsync(
             new UnassignActivityCommand(assignment.ActivityId, assignment.UserId, IsAdmin: true),
@@ -59,7 +81,7 @@ public sealed class UnassignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        activities.Received(1).RemoveAssignment(assignment);
+        activity.Assignments.Should().NotContain(assignment);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await cacheInvalidator
             .Received(1)
@@ -74,19 +96,18 @@ public sealed class UnassignActivityCommandHandlerTests
     public async Task HandleAsyncWindowClosedForMemberReturnsSignupClosed()
     {
         var activityId = Guid.NewGuid();
-        var assignment = Assignment(Guid.NewGuid(), activityId);
         clock.UtcNow = Now;
-        activities.ExistingAssignment(assignment);
-        activities.HasActivityWindow(activityId, PastStart, PastEnd);
+        var activity = activities.HasActivityWindow(events, activityId, PastStart, PastEnd);
+        var assignment = activity.SignUp(Guid.NewGuid());
 
         var result = await sut.HandleAsync(
             new UnassignActivityCommand(activityId, assignment.UserId, IsAdmin: false),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
-        activities.DidNotReceiveWithAnyArgs().RemoveAssignment(new ActivityUserRoleAssignment());
+        activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(assignment);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -95,10 +116,9 @@ public sealed class UnassignActivityCommandHandlerTests
     public async Task HandleAsyncWindowOpenForMemberRemovesAssignment()
     {
         var activityId = Guid.NewGuid();
-        var assignment = Assignment(Guid.NewGuid(), activityId);
         clock.UtcNow = Now;
-        activities.ExistingAssignment(assignment);
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        var assignment = activity.SignUp(Guid.NewGuid());
 
         var result = await sut.HandleAsync(
             new UnassignActivityCommand(activityId, assignment.UserId, IsAdmin: false),
@@ -106,7 +126,7 @@ public sealed class UnassignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        activities.Received(1).RemoveAssignment(assignment);
+        activity.Assignments.Should().NotContain(assignment);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

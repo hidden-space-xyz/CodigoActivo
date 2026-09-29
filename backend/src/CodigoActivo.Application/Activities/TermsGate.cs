@@ -1,126 +1,68 @@
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Activities;
 
 /// <summary>
-/// Evaluates whether the terms decisions supplied for a signup satisfy the business rules.
+/// Records the terms decisions supplied for a signup and checks that the required documents of
+/// the event end up accepted, following <see cref="TermsConsent"/>.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="termsAcceptances">Repository of the terms decisions people took.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class TermsGate(
-    IActivityRepository activities,
     IEventRepository events,
-    IQueryExecutor executor,
+    IEventTermsAcceptanceRepository termsAcceptances,
     IClock clock
 )
 {
     /// <summary>
-    /// Ensures that every terms document required by the activity's event has been accepted by
-    /// the user. An acceptance is immutable: once recorded it is the proof of consent and is
-    /// never overwritten or asked again. A rejection is revisable only by a decision that changes
-    /// it to an acceptance: that later decision updates the same row in place instead of leaving
-    /// the user permanently excluded (this also covers a document that was optional, got
-    /// rejected, and was later made required by an administrator). A repeated rejection of an
-    /// already-rejected document is not a change, so it leaves the row (and its original
-    /// <c>DecidedAt</c>) untouched rather than stamping a needless update. Required documents
-    /// never persist a rejection, neither as a new row nor as an update to an existing rejected
-    /// row: the document is simply left undecided so a later call can still accept it. Decisions
-    /// about documents that are not linked to the event are ignored. Nothing is persisted by this
-    /// method: callers must call <see cref="IUnitOfWork.SaveChangesAsync"/> only after every
-    /// other check in the same use case also succeeds.
+    /// Ensures that every terms document required by the event has been accepted by the user,
+    /// staging the new decisions. Nothing is persisted by this method: callers must call
+    /// <see cref="IUnitOfWork.SaveChangesAsync"/> only after every other check in the same use case
+    /// also succeeds.
     /// </summary>
-    /// <param name="activityId">Identifier of the activity.</param>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="decisions">The terms decisions supplied by the caller, if any.</param>
+    /// <param name="eventId">Identifier of the event of the activity signed up to.</param>
+    /// <param name="userId">Identifier of the user who decides.</param>
+    /// <param name="decisions">Terms decisions supplied with the signup.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
     public async Task<Result> EnsureDecidedAsync(
-        Guid activityId,
+        Guid eventId,
         Guid userId,
         IReadOnlyList<TermsDecisionRequest>? decisions,
         CancellationToken ct
     )
     {
-        var eventId = await executor.FirstOrDefaultAsync(
-            activities.Query().Where(a => a.Id == activityId).Select(a => (Guid?)a.EventId),
-            ct
-        );
-        if (eventId is null)
-        {
-            return Error.NotFound(ErrorCode.ActivityNotFound);
-        }
-
-        var documents = await executor.ToListAsync(
-            events
-                .QueryTermsDocuments()
-                .Where(d => d.EventId == eventId)
-                .Select(d => new { d.TermsDocumentId, d.IsRequired }),
-            ct
-        );
-        if (documents.Count is 0)
+        var ev = await events.GetByIdAsync(eventId, ct);
+        if (ev is null || ev.TermsDocuments.Count is 0)
         {
             return Result.Success();
         }
 
-        var acceptances = await events.ListTermsAcceptancesAsync(eventId.Value, userId, ct);
-        var acceptanceByDocument = acceptances.ToDictionary(a => a.TermsDocumentId);
-
-        if (decisions is not null)
+        var outcome = TermsConsent.Apply(
+            ev.Id,
+            userId,
+            ev.TermsDocuments,
+            await termsAcceptances.ListAsync(ev.Id, userId, ct),
+            decisions
+                ?.Select(decision => new TermsDecision(
+                    decision.TermsDocumentId,
+                    decision.Accepted ?? false
+                ))
+                .ToList(),
+            clock.UtcNow
+        );
+        foreach (var acceptance in outcome.Recorded)
         {
-            var requiredById = documents.ToDictionary(d => d.TermsDocumentId, d => d.IsRequired);
-            foreach (var decision in decisions)
-            {
-                if (!requiredById.TryGetValue(decision.TermsDocumentId, out var isRequired))
-                {
-                    continue;
-                }
-
-                var accepted = decision.Accepted ?? false;
-
-                if (acceptanceByDocument.TryGetValue(decision.TermsDocumentId, out var existing))
-                {
-                    if (existing.Accepted || !accepted)
-                    {
-                        continue;
-                    }
-
-                    existing.Accepted = true;
-                    existing.DecidedAt = clock.UtcNow;
-                    continue;
-                }
-
-                if (isRequired && !accepted)
-                {
-                    continue;
-                }
-
-                var acceptance = new EventTermsAcceptance
-                {
-                    EventId = eventId.Value,
-                    UserId = userId,
-                    TermsDocumentId = decision.TermsDocumentId,
-                    Accepted = accepted,
-                    DecidedAt = clock.UtcNow,
-                };
-                await events.AddTermsAcceptanceAsync(acceptance, ct);
-                acceptanceByDocument[decision.TermsDocumentId] = acceptance;
-            }
+            await termsAcceptances.AddAsync(acceptance, ct);
         }
 
-        var missingRequired = documents.Any(d =>
-            d.IsRequired
-            && (
-                !acceptanceByDocument.TryGetValue(d.TermsDocumentId, out var acceptance)
-                || !acceptance.Accepted
-            )
-        );
-        return missingRequired
-            ? (Result)Error.BadRequest(ErrorCode.EventTermsAcceptanceRequired)
+        return outcome.MissingRequired
+            ? Error.Validation(ErrorCode.EventTermsAcceptanceRequired)
             : Result.Success();
     }
 }

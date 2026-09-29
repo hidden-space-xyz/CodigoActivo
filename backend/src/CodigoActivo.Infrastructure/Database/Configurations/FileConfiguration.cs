@@ -1,4 +1,5 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

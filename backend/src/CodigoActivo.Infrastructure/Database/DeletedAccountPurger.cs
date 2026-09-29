@@ -1,6 +1,5 @@
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,13 +12,11 @@ namespace CodigoActivo.Infrastructure.Database;
 /// have passed since the deletion. It runs shortly after startup, so restoring an old backup or a
 /// stopped API only delays the purge until the next start, and then once per interval.
 /// </summary>
-/// <param name="scopes">Scope factory used to resolve the scoped repository of each run.</param>
-/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="scopes">Scope factory used to resolve the use case of each run.</param>
 /// <param name="options">Configuration values used by the component.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DeletedAccountPurger(
     IServiceScopeFactory scopes,
-    IClock clock,
     DeletedAccountPurgeOptions options,
     ILogger<DeletedAccountPurger> logger
 ) : BackgroundService
@@ -32,9 +29,8 @@ public sealed class DeletedAccountPurger(
     public async Task<int> PurgeAsync(CancellationToken ct = default)
     {
         await using var scope = scopes.CreateAsyncScope();
-        var deletedAccounts = scope.ServiceProvider.GetRequiredService<IDeletedAccountRepository>();
-        var deletedUpTo = clock.UtcNow.AddYears(-DeletedAccount.RetentionYears);
-        return await deletedAccounts.PurgeAsync(deletedUpTo, ct);
+        var purge = scope.ServiceProvider.GetRequiredService<PurgeDeletedAccountsCommandHandler>();
+        return await purge.HandleAsync(new PurgeDeletedAccountsCommand(), ct);
     }
 
     /// <summary>

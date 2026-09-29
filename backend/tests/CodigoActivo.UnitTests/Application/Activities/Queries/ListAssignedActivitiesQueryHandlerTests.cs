@@ -1,24 +1,22 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Activities.Queries;
 
 public sealed class ListAssignedActivitiesQueryHandlerTests
 {
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly FakeReadStore store = new();
     private readonly ListAssignedActivitiesQueryHandler sut;
 
     public ListAssignedActivitiesQueryHandlerTests()
     {
-        sut = new ListAssignedActivitiesQueryHandler(activities, new FakeQueryExecutor());
+        sut = new ListAssignedActivitiesQueryHandler(store, new FakeQueryExecutor());
     }
 
-    private static ActivityUserRoleAssignment Assignment(
+    private static AssignmentRow Assignment(
         Guid userId,
         string title,
         DateTimeOffset startsAt,
@@ -29,7 +27,7 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
         {
             UserId = userId,
             ActivityId = Guid.NewGuid(),
-            Activity = new Activity
+            Activity = new ActivityRow
             {
                 Location = "Sala principal",
                 Title = title,
@@ -39,13 +37,13 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
                 EventId = eventId ?? Guid.NewGuid(),
             },
             ActivityRoleTypeId = Guid.NewGuid(),
-            ActivityRoleType = new ActivityRoleType
+            ActivityRoleType = new ActivityRoleTypeRow
             {
                 Description = "Descripción de prueba",
                 Name = "Líder",
             },
             AssignmentStatusId = Guid.NewGuid(),
-            AssignmentStatus = new AssignmentStatusType
+            AssignmentStatus = new AssignmentStatusTypeRow
             {
                 Description = "Descripción de prueba",
                 Name = "Solicitado",
@@ -58,28 +56,15 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
     public async Task HandleAsyncMultipleUsersAssignedFiltersByUserAndOrdersByStart()
     {
         var userId = Guid.NewGuid();
-        activities
-            .QueryAssignments()
-            .Returns(
-                new List<ActivityUserRoleAssignment>
-                {
-                    Assignment(
-                        userId,
-                        "Late",
-                        new DateTimeOffset(2026, 7, 10, 14, 0, 0, TimeSpan.Zero)
-                    ),
-                    Assignment(
-                        userId,
-                        "Early",
-                        new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero)
-                    ),
-                    Assignment(
-                        Guid.NewGuid(),
-                        "Other",
-                        new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero)
-                    ),
-                }.AsQueryable()
-            );
+        store.Assignments.AddRange([
+            Assignment(userId, "Late", new DateTimeOffset(2026, 7, 10, 14, 0, 0, TimeSpan.Zero)),
+            Assignment(userId, "Early", new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero)),
+            Assignment(
+                Guid.NewGuid(),
+                "Other",
+                new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero)
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListAssignedActivitiesQuery(userId, EventId: null),
@@ -95,24 +80,19 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
     {
         var userId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
-        activities
-            .QueryAssignments()
-            .Returns(
-                new List<ActivityUserRoleAssignment>
-                {
-                    Assignment(
-                        userId,
-                        "Mine",
-                        new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero),
-                        eventId
-                    ),
-                    Assignment(
-                        userId,
-                        "OtherEvent",
-                        new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero)
-                    ),
-                }.AsQueryable()
-            );
+        store.Assignments.AddRange([
+            Assignment(
+                userId,
+                "Mine",
+                new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero),
+                eventId
+            ),
+            Assignment(
+                userId,
+                "OtherEvent",
+                new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero)
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListAssignedActivitiesQuery(userId, eventId),

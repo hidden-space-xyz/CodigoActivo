@@ -2,10 +2,10 @@ using System.Globalization;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
+using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Application.Files.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -81,6 +81,7 @@ public class FilesController : ApiControllerBase
     /// </summary>
     /// <param name="file">The file value.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a file, or an error response.</returns>
     [HttpPost]
@@ -91,12 +92,14 @@ public class FilesController : ApiControllerBase
     public async Task<ActionResult<FileResponse>> CreateAsync(
         IFormFile? file,
         [FromServices] CreateFileCommandHandler handler,
+        [FromServices] GetFileByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToCreated(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new CreateFileCommand(ToUploadRequest(file), UserId), ct),
-            f => $"/api/files/{f.Id}"
+            id => getById.HandleAsync(new GetFileByIdQuery(id), ct),
+            id => $"/api/files/{id}"
         );
     }
 
@@ -106,6 +109,7 @@ public class FilesController : ApiControllerBase
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="file">The file value.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a file, or an error response.</returns>
     [HttpPut("{fileId:guid}")]
@@ -117,11 +121,13 @@ public class FilesController : ApiControllerBase
         Guid fileId,
         IFormFile? file,
         [FromServices] UpdateFileCommandHandler handler,
+        [FromServices] GetFileByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(
-            await handler.HandleAsync(new UpdateFileCommand(fileId, ToUploadRequest(file)), ct)
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new UpdateFileCommand(fileId, ToUploadRequest(file)), ct),
+            () => getById.HandleAsync(new GetFileByIdQuery(fileId), ct)
         );
     }
 

@@ -1,9 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Caching;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Activities.Queries;
@@ -16,11 +14,11 @@ public sealed record ListActivityRoleTypesQuery : IQuery<IReadOnlyList<ActivityR
 /// <summary>
 /// Executes the query to list activity role types.
 /// </summary>
-/// <param name="roleTypes">Repository used to persist and retrieve role types.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListActivityRoleTypesQueryHandler(
-    IActivityRoleTypeRepository roleTypes,
+    IReadStore readStore,
     IQueryExecutor executor,
     HybridCache cache
 ) : IQueryHandler<ListActivityRoleTypesQuery, IReadOnlyList<ActivityRoleTypeResponse>>
@@ -39,7 +37,10 @@ public sealed class ListActivityRoleTypesQueryHandler(
         return cache.GetCatalogAsync(
             executor,
             "activities:role-types",
-            () => roleTypes.Query().OrderBy(role => role.Name).Select(Projections.ActivityRoleType),
+            () =>
+                readStore
+                    .ActivityRoleTypes.OrderBy(role => role.Name)
+                    .Select(ActivityProjections.ActivityRoleType),
             ct
         );
     }

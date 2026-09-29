@@ -1,9 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Partners.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Partners.PartnerTestData;
 
@@ -11,19 +9,19 @@ namespace CodigoActivo.UnitTests.Application.Partners.Queries;
 
 public sealed class GetPartnerByIdQueryHandlerTests
 {
-    private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetPartnerByIdQueryHandler sut;
 
     public GetPartnerByIdQueryHandlerTests()
     {
-        sut = new GetPartnerByIdQueryHandler(partners, new FakeQueryExecutor());
+        sut = new GetPartnerByIdQueryHandler(store, new FakeQueryExecutor());
     }
 
     [Fact]
     public async Task HandleAsyncPartnerExistsReturnsPartner()
     {
-        var partner = NewPartner();
-        partners.HasPartners(partner);
+        var partner = NewPartnerRow();
+        store.Partners.Add(partner);
 
         var result = await sut.HandleAsync(
             new GetPartnerByIdQuery(partner.Id),
@@ -37,8 +35,6 @@ public sealed class GetPartnerByIdQueryHandlerTests
     [Fact]
     public async Task HandleAsyncPartnerMissingReturnsNotFound()
     {
-        partners.HasPartners();
-
         var result = await sut.HandleAsync(
             new GetPartnerByIdQuery(Guid.NewGuid()),
             TestContext.Current.CancellationToken

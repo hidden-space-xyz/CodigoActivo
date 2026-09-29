@@ -1,8 +1,6 @@
 using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Security;
-using CodigoActivo.Infrastructure.Database.Context;
-using CodigoActivo.Infrastructure.Database.Seeders;
-using Microsoft.EntityFrameworkCore;
+using CodigoActivo.Composition;
 
 namespace CodigoActivo.API.Startup;
 
@@ -32,13 +30,11 @@ internal static class ApplicationInitializer
 
         await MigrateDatabaseAsync(services, logger, cancellationToken);
         await SeedDatabaseAsync(services, logger, cancellationToken);
-        await services
-            .GetRequiredService<InitialAdministratorSeeder>()
-            .SeedAsync(
-                app.Configuration["BOOTSTRAP_ADMIN_EMAIL"],
-                app.Configuration["BOOTSTRAP_ADMIN_PASSWORD"],
-                cancellationToken
-            );
+        await services.SeedInitialAdministratorAsync(
+            app.Configuration["BOOTSTRAP_ADMIN_EMAIL"],
+            app.Configuration["BOOTSTRAP_ADMIN_PASSWORD"],
+            cancellationToken
+        );
         await SyncDemoDataAsync(services, demoMode);
     }
 
@@ -48,9 +44,7 @@ internal static class ApplicationInitializer
         CancellationToken cancellationToken
     )
     {
-        await services
-            .GetRequiredService<CodigoActivoDbContext>()
-            .Database.MigrateAsync(cancellationToken);
+        await services.MigrateDatabaseAsync(cancellationToken);
         logger.DatabaseMigrationsApplied();
     }
 
@@ -60,7 +54,7 @@ internal static class ApplicationInitializer
         CancellationToken cancellationToken
     )
     {
-        await services.GetRequiredService<DatabaseSeeder>().SeedAsync(cancellationToken);
+        await services.SeedCatalogsAsync(cancellationToken);
         logger.DatabaseSeedApplied();
     }
 
@@ -71,8 +65,7 @@ internal static class ApplicationInitializer
             return;
         }
 
-        var demoSeeder = services.GetRequiredService<DemoDataSeeder>();
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        await demoSeeder.SeedAsync(cancellation.Token);
+        await services.SeedDemoDataAsync(cancellation.Token);
     }
 }

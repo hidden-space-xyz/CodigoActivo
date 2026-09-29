@@ -1,7 +1,9 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
@@ -39,12 +41,8 @@ public sealed class UnassignActivityCommandHandler(
         CancellationToken ct = default
     )
     {
-        var assignment = await activities.GetAssignmentAsync(
-            command.UserId,
-            command.ActivityId,
-            ct
-        );
-        if (assignment is null)
+        var activity = await activities.GetByIdAsync(command.ActivityId, ct);
+        if (activity?.AssignmentOf(command.UserId) is null)
         {
             return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
         }
@@ -52,7 +50,7 @@ public sealed class UnassignActivityCommandHandler(
         if (!command.IsAdmin)
         {
             var signup = await signupGate.EnsureSignupOpenAsync(
-                command.ActivityId,
+                activity,
                 [command.UserId],
                 command.IsAdmin,
                 ct
@@ -63,7 +61,12 @@ public sealed class UnassignActivityCommandHandler(
             }
         }
 
-        activities.RemoveAssignment(assignment);
+        var unassigned = activity.Unassign(command.UserId);
+        if (unassigned.IsFailure)
+        {
+            return unassigned.Error!;
+        }
+
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
         return Result.Success();

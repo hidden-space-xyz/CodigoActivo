@@ -1,9 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Users.Contracts;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Users.Queries;
@@ -16,11 +14,11 @@ public sealed record ListUserStatusTypesQuery : IQuery<IReadOnlyList<UserStatusT
 /// <summary>
 /// Executes the query to list user status types.
 /// </summary>
-/// <param name="userStatusTypes">Repository used to persist and retrieve user status types.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListUserStatusTypesQueryHandler(
-    IUserStatusTypeRepository userStatusTypes,
+    IReadStore readStore,
     IQueryExecutor executor,
     HybridCache cache
 ) : IQueryHandler<ListUserStatusTypesQuery, IReadOnlyList<UserStatusTypeResponse>>
@@ -40,10 +38,9 @@ public sealed class ListUserStatusTypesQueryHandler(
             executor,
             "users:status-types",
             () =>
-                userStatusTypes
-                    .Query()
-                    .OrderBy(type => type.Name)
-                    .Select(Projections.UserStatusType),
+                readStore
+                    .UserStatusTypes.OrderBy(type => type.Name)
+                    .Select(UserProjections.UserStatusType),
             ct
         );
     }

@@ -1,10 +1,10 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Auth;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Emails;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Users.Commands;
@@ -47,29 +47,31 @@ public sealed class SetAdminCommandHandler(
     public async Task<Result> HandleAsync(SetAdminCommand command, CancellationToken ct = default)
     {
         var isAdmin = command.Request.IsAdmin;
-        if (!isAdmin && command.UserId == SeedIds.Users.InitialAdministrator)
+        if (!isAdmin)
         {
-            return Error.Forbidden(ErrorCode.UserCannotRemoveInitialAdmin);
+            var revocable = InitialAdministrator.EnsureMayLoseAdminRights(command.UserId);
+            if (revocable.IsFailure)
+            {
+                return revocable.Error!;
+            }
         }
 
         if (isAdmin && !await IsActingPasswordValidAsync(command, ct))
         {
-            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
+            return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        var user = await users.FindAsync(u => u.Id == command.UserId, ct);
+        var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        if (user.IsAdmin == isAdmin)
+        if (!user.SetAdministrator(isAdmin, clock.UtcNow))
         {
             return Result.Success();
         }
 
-        user.IsAdmin = isAdmin;
-        user.UpdatedAt = clock.UtcNow;
         await uow.SaveChangesAsync(ct);
         logger.AdministratorFlagChanged(isAdmin);
         await securityNotifier.NotifyAsync(
@@ -91,7 +93,7 @@ public sealed class SetAdminCommandHandler(
             return false;
         }
 
-        var actingUser = await users.FindAsync(u => u.Id == command.ActingUserId, ct);
+        var actingUser = await users.GetByIdAsync(command.ActingUserId, ct);
         return await passwordAttempts.VerifyReauthenticationAsync(actingUser, password, ct);
     }
 }

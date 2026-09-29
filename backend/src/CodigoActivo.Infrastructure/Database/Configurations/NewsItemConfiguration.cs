@@ -1,4 +1,6 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -25,7 +27,7 @@ public class NewsItemConfiguration : IEntityTypeConfiguration<NewsItem>
         builder.HasIndex(a => a.CreatedAt);
 
         builder
-            .HasOne(a => a.Thumbnail)
+            .HasOne<FileEntity>()
             .WithMany()
             .HasForeignKey(a => a.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

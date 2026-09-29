@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -25,8 +25,8 @@ public class EventRatingConfiguration : IEntityTypeConfiguration<EventRating>
         builder.HasIndex(r => r.EventId);
 
         builder
-            .HasOne(r => r.Event)
-            .WithMany(e => e.Ratings)
+            .HasOne<Event>()
+            .WithMany()
             .HasForeignKey(r => r.EventId)
             .OnDelete(DeleteBehavior.Cascade);
     }

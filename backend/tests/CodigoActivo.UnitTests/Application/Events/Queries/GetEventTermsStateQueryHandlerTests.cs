@@ -1,24 +1,22 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Events.Queries;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Events.Queries;
 
 public sealed class GetEventTermsStateQueryHandlerTests
 {
-    private readonly IEventRepository events = Substitute.For<IEventRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetEventTermsStateQueryHandler sut;
 
     public GetEventTermsStateQueryHandlerTests()
     {
-        sut = new GetEventTermsStateQueryHandler(events, new FakeQueryExecutor());
+        sut = new GetEventTermsStateQueryHandler(store, new FakeQueryExecutor());
     }
 
-    private static EventTermsDocument NewDocument(
+    private static EventTermsDocumentRow NewDocument(
         Guid eventId,
         Guid termsDocumentId,
         bool required,
@@ -26,13 +24,13 @@ public sealed class GetEventTermsStateQueryHandlerTests
         string name = "Documento"
     )
     {
-        return new EventTermsDocument
+        return new EventTermsDocumentRow
         {
             EventId = eventId,
             TermsDocumentId = termsDocumentId,
             IsRequired = required,
             DisplayOrder = displayOrder,
-            TermsDocument = new TermsDocument
+            TermsDocument = new TermsDocumentRow
             {
                 Id = termsDocumentId,
                 Name = name,
@@ -41,14 +39,14 @@ public sealed class GetEventTermsStateQueryHandlerTests
         };
     }
 
-    private void HasDocuments(params EventTermsDocument[] documents)
+    private void HasDocuments(params EventTermsDocumentRow[] documents)
     {
-        events.QueryTermsDocuments().Returns(documents.AsQueryable());
+        store.EventTermsDocuments.AddRange(documents);
     }
 
-    private void HasAcceptances(params EventTermsAcceptance[] acceptances)
+    private void HasAcceptances(params EventTermsAcceptanceRow[] acceptances)
     {
-        events.QueryTermsAcceptances().Returns(acceptances.AsQueryable());
+        store.EventTermsAcceptances.AddRange(acceptances);
     }
 
     [Fact]
@@ -64,7 +62,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
 
         result.Documents.Should().BeEmpty();
         result.SignupBlocked.Should().BeFalse();
-        events.DidNotReceiveWithAnyArgs().QueryTermsAcceptances();
+        store.ReadsOf<EventTermsAcceptanceRow>().Should().Be(0);
     }
 
     [Fact]
@@ -119,7 +117,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
             NewDocument(eventId, optionalId, required: false, displayOrder: 1)
         );
         HasAcceptances(
-            new EventTermsAcceptance
+            new EventTermsAcceptanceRow
             {
                 EventId = eventId,
                 UserId = userId,
@@ -166,7 +164,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
             NewDocument(eventId, optionalId, required: false, displayOrder: 1)
         );
         HasAcceptances(
-            new EventTermsAcceptance
+            new EventTermsAcceptanceRow
             {
                 EventId = eventId,
                 UserId = userId,
@@ -174,7 +172,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
                 Accepted = true,
                 DecidedAt = decidedAt,
             },
-            new EventTermsAcceptance
+            new EventTermsAcceptanceRow
             {
                 EventId = eventId,
                 UserId = userId,
@@ -204,7 +202,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
         HasDocuments(NewDocument(eventId, requiredId, required: true, displayOrder: 0));
         HasAcceptances(
-            new EventTermsAcceptance
+            new EventTermsAcceptanceRow
             {
                 EventId = eventId,
                 UserId = userId,

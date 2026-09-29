@@ -1,10 +1,12 @@
+using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.Auth.Commands;
-using CodigoActivo.Application.Auth.Queries;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -47,6 +49,7 @@ public class AuthController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getRegistration">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a register, or an error response.</returns>
     [HttpPost("register")]
@@ -55,12 +58,14 @@ public class AuthController : ApiControllerBase
     public async Task<ActionResult<RegisterResponse>> RegisterAsync(
         [FromBody] RegisterRequest request,
         [FromServices] RegisterCommandHandler handler,
+        [FromServices] GetRegistrationQueryHandler getRegistration,
         CancellationToken ct
     )
     {
-        return ToCreated(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new RegisterCommand(request), ct),
-            r => $"/api/users/{r.Adult.Id}"
+            id => getRegistration.HandleAsync(new GetRegistrationQuery(id), ct),
+            id => $"/api/users/{id}"
         );
     }
 
@@ -70,6 +75,7 @@ public class AuthController : ApiControllerBase
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getUser">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPatch("{userId:guid}/verify")]
@@ -79,10 +85,14 @@ public class AuthController : ApiControllerBase
         Guid userId,
         [FromBody] VerifyRequest request,
         [FromServices] VerifyUserCommandHandler handler,
+        [FromServices] GetCurrentUserQueryHandler getUser,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new VerifyUserCommand(userId, request.Otp), ct));
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new VerifyUserCommand(userId, request.Otp), ct),
+            () => getUser.HandleAsync(new GetCurrentUserQuery(userId), ct)
+        );
     }
 
     /// <summary>
@@ -152,6 +162,7 @@ public class AuthController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="tickets">Builds the principal of the pending second-factor challenge.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the pending challenge, or an error response.</returns>
     [HttpPost("login")]
@@ -160,6 +171,7 @@ public class AuthController : ApiControllerBase
     public async Task<ActionResult<LoginChallengeResponse>> LoginAsync(
         [FromBody] LoginRequest request,
         [FromServices] LoginCommandHandler handler,
+        [FromServices] TwoFactorTicketValidator tickets,
         CancellationToken ct
     )
     {
@@ -170,7 +182,6 @@ public class AuthController : ApiControllerBase
         }
 
         var challenge = result.Value;
-        var tickets = HttpContext.RequestServices.GetRequiredService<TwoFactorTicketValidator>();
         var principal = await tickets.CreatePrincipalAsync(challenge.UserId, ct);
         if (principal is null)
         {
@@ -215,6 +226,8 @@ public class AuthController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getUser">Query handler that reads the signed-in user.</param>
+    /// <param name="sessionTickets">Opens the session and builds its principal.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the signed-in user, or an error response.</returns>
     [HttpPost("login/two-factor")]
@@ -223,6 +236,8 @@ public class AuthController : ApiControllerBase
     public async Task<ActionResult<UserResponse>> VerifyTwoFactorAsync(
         [FromBody] TwoFactorLoginRequest request,
         [FromServices] VerifyTwoFactorLoginCommandHandler handler,
+        [FromServices] GetCurrentUserQueryHandler getUser,
+        [FromServices] SessionTicketValidator sessionTickets,
         CancellationToken ct
     )
     {
@@ -241,8 +256,6 @@ public class AuthController : ApiControllerBase
             return ToProblem(result.Error!);
         }
 
-        var sessionTickets =
-            HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
         var principal = await sessionTickets.StartSessionAsync(userId.Value, ct);
         if (principal is null)
         {
@@ -259,7 +272,7 @@ public class AuthController : ApiControllerBase
                 AllowRefresh = false,
             }
         );
-        return Ok(result.Value);
+        return ToOk(await getUser.HandleAsync(new GetCurrentUserQuery(userId.Value), ct));
     }
 
     /// <summary>
@@ -304,7 +317,8 @@ public class AuthController : ApiControllerBase
     )
     {
         return ToOk(
-            await handler.HandleAsync(new BeginAuthenticatorSetupCommand(UserId, request), ct)
+            await handler.HandleAsync(new BeginAuthenticatorSetupCommand(UserId, request), ct),
+            setup => new AuthenticatorSetupResponse(setup.SharedKey, setup.AuthenticatorUri)
         );
     }
 
@@ -357,37 +371,37 @@ public class AuthController : ApiControllerBase
     /// idempotent and needs no valid session, so a ticket whose row is already gone is still
     /// answered by clearing both cookies; a failed revocation is logged and never keeps them.
     /// </summary>
+    /// <param name="sessionTickets">Revokes the session of the caller.</param>
+    /// <param name="challengeTickets">Closes the pending second-factor challenge.</param>
+    /// <param name="logger">Logger used to record a failed revocation.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPost("logout")]
     [AllowAnonymous]
-    public async Task<IActionResult> LogoutAsync(CancellationToken ct)
+    public async Task<IActionResult> LogoutAsync(
+        [FromServices] SessionTicketValidator sessionTickets,
+        [FromServices] TwoFactorTicketValidator challengeTickets,
+        [FromServices] ILogger<AuthController> logger,
+        CancellationToken ct
+    )
     {
-        var sessionTickets =
-            HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>();
         try
         {
             await sessionTickets.EndSessionAsync(User, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            HttpContext
-                .RequestServices.GetRequiredService<ILogger<AuthController>>()
-                .SessionRevocationFailed(ex);
+            logger.SessionRevocationFailed(ex);
         }
 
         try
         {
             var pending = await HttpContext.AuthenticateAsync(TwoFactorAuthentication.Scheme);
-            await HttpContext
-                .RequestServices.GetRequiredService<TwoFactorTicketValidator>()
-                .EndChallengeAsync(pending.Principal, ct);
+            await challengeTickets.EndChallengeAsync(pending.Principal, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            HttpContext
-                .RequestServices.GetRequiredService<ILogger<AuthController>>()
-                .PendingChallengeCloseFailed(ex);
+            logger.PendingChallengeCloseFailed(ex);
         }
 
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

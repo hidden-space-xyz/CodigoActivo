@@ -1,6 +1,5 @@
-using System.Linq.Expressions;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 
@@ -35,6 +34,20 @@ internal static class FileTestData
 
     public static FileEntity NewFile(string name = "photo.png", string extension = "png")
     {
+        return Persisted.As<FileEntity>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                Extension = extension,
+                UploadedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                UploadedBy = Guid.NewGuid(),
+            }
+        );
+    }
+
+    public static FileRow NewFileRow(string name = "photo.png", string extension = "png")
+    {
         return new()
         {
             Id = Guid.NewGuid(),
@@ -49,7 +62,7 @@ internal static class FileTestData
     {
         files.Finds(file);
         files
-            .GetAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .ListByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns([file]);
     }
 
@@ -57,7 +70,7 @@ internal static class FileTestData
     {
         files.Finds(null);
         files
-            .GetAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .ListByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns([]);
     }
 

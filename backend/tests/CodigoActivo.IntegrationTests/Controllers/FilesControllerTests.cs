@@ -1,9 +1,10 @@
 using System.Globalization;
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -173,14 +174,16 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                new FileEntity
-                {
-                    Id = id,
-                    Name = "orphan",
-                    Extension = "png",
-                    UploadedAt = Factory.Clock.UtcNow,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<FileEntity>(
+                    new
+                    {
+                        Id = id,
+                        Name = "orphan",
+                        Extension = "png",
+                        UploadedAt = Factory.Clock.UtcNow,
+                        UploadedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -269,26 +272,30 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                new FileEntity
-                {
-                    Id = thumbnailId,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = Factory.Clock.UtcNow,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<FileEntity>(
+                    new
+                    {
+                        Id = thumbnailId,
+                        Name = "thumb",
+                        Extension = "png",
+                        UploadedAt = Factory.Clock.UtcNow,
+                        UploadedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.News.Add(
-                new NewsItem
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Con imagen",
-                    Subtitle = "Sub",
-                    Description = $"{{\"img\":\"/api/files/{created.Id}/content\"}}",
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<NewsItem>(
+                    new
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Con imagen",
+                        Subtitle = "Sub",
+                        Description = $"{{\"img\":\"/api/files/{created.Id}/content\"}}",
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });

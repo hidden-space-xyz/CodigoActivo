@@ -1,9 +1,11 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Emails.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -43,35 +45,39 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Events.Add(
-                new Event
-                {
-                    Id = eventId,
-                    Title = "Evento",
-                    Subtitle = "Sub",
-                    EventStartsAt = new DateOnly(2026, 7, 1),
-                    EventEndsAt = new DateOnly(2026, 7, 31),
-                    SignupStartsAt = SignupStart,
-                    SignupEndsAt = SignupEnd,
-                    ThumbnailId = thumb,
-                    CreatedAt = CreatedAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = eventId,
+                        Title = "Evento",
+                        Subtitle = "Sub",
+                        EventStartsAt = new DateOnly(2026, 7, 1),
+                        EventEndsAt = new DateOnly(2026, 7, 31),
+                        SignupStartsAt = SignupStart,
+                        SignupEndsAt = SignupEnd,
+                        ThumbnailId = thumb,
+                        CreatedAt = CreatedAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.Activities.Add(
-                new Activity
-                {
-                    Id = activityId,
-                    Title = "Actividad",
-                    Description = "Descripcion",
-                    Location = "Sala",
-                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                    ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
-                    ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
-                    EventId = eventId,
-                    ThumbnailId = thumb,
-                    CreatedAt = CreatedAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Activity>(
+                    new
+                    {
+                        Id = activityId,
+                        Title = "Actividad",
+                        Description = "Descripcion",
+                        Location = "Sala",
+                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
+                        ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
+                        EventId = eventId,
+                        ThumbnailId = thumb,
+                        CreatedAt = CreatedAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });

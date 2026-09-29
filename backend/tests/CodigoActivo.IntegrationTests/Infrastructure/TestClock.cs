@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Common;
+using CodigoActivo.Application.Abstractions.Time;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 

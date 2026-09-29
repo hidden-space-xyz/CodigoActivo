@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" />
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" />
     <PackageReference Include="MailKit" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
@@ -15,6 +16,7 @@
     <PackageReference Include="Otp.NET" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CodigoActivo.Application\CodigoActivo.Application.csproj" />
     <ProjectReference Include="..\CodigoActivo.Domain\CodigoActivo.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -22,5 +24,11 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="CodigoActivo.UnitTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource
+      Include="Communication\Templates\Images\logo-mark.png"
+      LogicalName="CodigoActivo.Infrastructure.Communication.Templates.Images.logo-mark.png"
+    />
   </ItemGroup>
 </Project>

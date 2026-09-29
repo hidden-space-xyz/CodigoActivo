@@ -1,6 +1,5 @@
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Users;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
@@ -8,11 +7,11 @@ namespace CodigoActivo.Infrastructure.Database.Context;
 
 /// <summary>
 /// Refuses any commit that deletes the initial administrator, any commit that deletes a user
-/// without the <see cref="DeletedAccount"/> copy that <see cref="IDeletedAccountRepository.EraseAsync"/>
+/// without the <see cref="DeletedAccount"/> copy that <see cref="AccountEraser.EraseAsync"/>
 /// adds first, and any commit that changes or deletes a stored copy. A dependent deleted together
 /// with an archived guardian is covered by the guardian's copy. Set-based deletes never reach the
-/// change tracker: <c>RemoveAsync</c> on users throws and the retention purge is the only set-based
-/// delete of copies.
+/// change tracker: no repository deletes users in bulk and the retention purge is the only
+/// set-based delete of copies.
 /// </summary>
 public sealed class DeletedAccountGuard : SaveChangesInterceptor
 {
@@ -74,7 +73,7 @@ public sealed class DeletedAccountGuard : SaveChangesInterceptor
             }
         }
 
-        if (deletedUsers.Exists(user => user.Id == SeedIds.Users.InitialAdministrator))
+        if (deletedUsers.Exists(user => user.Id == InitialAdministrator.Id))
         {
             throw new InvalidOperationException(
                 "The initial administrator can never be deleted: it keeps the application administered and owns the content of erased accounts."
@@ -84,7 +83,7 @@ public sealed class DeletedAccountGuard : SaveChangesInterceptor
         if (deletedUsers.Exists(user => !IsArchived(user, archived)))
         {
             throw new InvalidOperationException(
-                "A user can only be deleted through IDeletedAccountRepository.EraseAsync, which stores the legal copy first."
+                "A user can only be deleted through AccountEraser.EraseAsync, which stores the legal copy first."
             );
         }
     }

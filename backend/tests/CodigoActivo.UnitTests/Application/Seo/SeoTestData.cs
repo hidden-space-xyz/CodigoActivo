@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 
 namespace CodigoActivo.UnitTests.Application.Seo;
 
@@ -6,7 +6,7 @@ internal static class SeoTestData
 {
     public const string BaseUrl = "https://codigoactivo.test";
 
-    public static Event NewEvent(DateTimeOffset createdAt, DateTimeOffset? updatedAt = null)
+    public static EventRow NewEventRow(DateTimeOffset createdAt, DateTimeOffset? updatedAt = null)
     {
         return new()
         {
@@ -25,7 +25,7 @@ internal static class SeoTestData
         };
     }
 
-    public static NewsItem NewNewsItem(DateTimeOffset createdAt)
+    public static NewsItemRow NewNewsItemRow(DateTimeOffset createdAt)
     {
         return new()
         {
@@ -39,7 +39,7 @@ internal static class SeoTestData
         };
     }
 
-    public static Resource NewResource(string? url)
+    public static ResourceRow NewResourceRow(string? url)
     {
         return new()
         {

@@ -1,7 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Domain.Activities;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -15,11 +15,11 @@ public sealed record GetHouseholdSignupRolesQuery(Guid ActingUserId)
 /// <summary>
 /// Executes the query to retrieve household signup roles.
 /// </summary>
-/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="roleTypesQuery">Handler used to list activity role types.</param>
 public sealed class GetHouseholdSignupRolesQueryHandler(
-    IUserRepository users,
+    IReadStore readStore,
     IQueryExecutor executor,
     ListActivityRoleTypesQueryHandler roleTypesQuery
 ) : IQueryHandler<GetHouseholdSignupRolesQuery, IReadOnlyList<HouseholdSignupRolesResponse>>
@@ -36,9 +36,8 @@ public sealed class GetHouseholdSignupRolesQueryHandler(
     )
     {
         var members = await executor.ToListAsync(
-            users
-                .Query()
-                .Where(u => u.Id == query.ActingUserId || u.ParentId == query.ActingUserId)
+            readStore
+                .Users.Where(u => u.Id == query.ActingUserId || u.ParentId == query.ActingUserId)
                 .Select(u => new { u.Id, u.UserTypeId }),
             ct
         );
@@ -52,8 +51,8 @@ public sealed class GetHouseholdSignupRolesQueryHandler(
             .. members.Select(member => new HouseholdSignupRolesResponse(
                 member.Id,
                 [
-                    .. SignupPolicy
-                        .SignupRoleIdsFor(member.UserTypeId)
+                    .. SignupRoles
+                        .For(member.UserTypeId)
                         .Select(roleId => new SignupRoleResponse(
                             roleId,
                             roleNames.GetValueOrDefault(roleId, string.Empty)

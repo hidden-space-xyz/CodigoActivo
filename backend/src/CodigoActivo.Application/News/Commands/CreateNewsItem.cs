@@ -1,10 +1,12 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
 
 namespace CodigoActivo.Application.News.Commands;
 
@@ -14,7 +16,7 @@ namespace CodigoActivo.Application.News.Commands;
 /// <param name="Request">Validated client request data.</param>
 /// <param name="UserId">Identifier of the user.</param>
 public sealed record CreateNewsItemCommand(CreateNewsItemRequest Request, Guid UserId)
-    : ICommand<Result<NewsItemResponse>>;
+    : ICommand<Result<Guid>>;
 
 /// <summary>
 /// Executes the command to create a news item.
@@ -30,38 +32,39 @@ public sealed class CreateNewsItemCommandHandler(
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator
-) : ICommandHandler<CreateNewsItemCommand, Result<NewsItemResponse>>
+) : ICommandHandler<CreateNewsItemCommand, Result<Guid>>
 {
     /// <summary>
     /// Handles the request to create a news item.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a news item on success, or an application error on failure.</returns>
-    public async Task<Result<NewsItemResponse>> HandleAsync(
+    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    public async Task<Result<Guid>> HandleAsync(
         CreateNewsItemCommand command,
         CancellationToken ct = default
     )
     {
         var request = command.Request;
 
-        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        if (!await files.ExistsAsync(request.ThumbnailId, ct))
         {
-            return Error.BadRequest(ErrorCode.NewsItemThumbnailNotFound);
+            return Error.Validation(ErrorCode.NewsItemThumbnailNotFound);
         }
 
-        var newsItem = new NewsItem
-        {
-            Title = request.Title.Trim(),
-            Subtitle = request.Subtitle.Trim(),
-            Description = request.Description,
-            ThumbnailId = request.ThumbnailId,
-            CreatedAt = clock.UtcNow,
-            CreatedBy = command.UserId,
-        };
+        var newsItem = NewsItem.Create(
+            new NewsItemContent(
+                request.Title,
+                request.Subtitle,
+                request.Description,
+                request.ThumbnailId
+            ),
+            command.UserId,
+            clock.UtcNow
+        );
         await news.AddAsync(newsItem, ct);
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.News);
-        return newsItem.ToResponse();
+        return newsItem.Id;
     }
 }

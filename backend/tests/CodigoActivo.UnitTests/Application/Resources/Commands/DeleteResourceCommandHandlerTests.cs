@@ -1,9 +1,11 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Resources.Commands;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Resources;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -53,9 +55,8 @@ public sealed class DeleteResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncResourceExistsRemovesSavesCleansUpFilesAndInvalidatesCache()
     {
-        var resource = NewResource();
         var embeddedId = Guid.NewGuid();
-        resource.Description = $"{{\"img\":\"/api/files/{embeddedId}/content\"}}";
+        var resource = NewResource(description: $"{{\"img\":\"/api/files/{embeddedId}/content\"}}");
         resources.Finds(resource);
 
         var result = await sut.HandleAsync(

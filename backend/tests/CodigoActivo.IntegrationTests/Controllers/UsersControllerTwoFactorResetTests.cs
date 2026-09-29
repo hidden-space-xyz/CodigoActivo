@@ -1,8 +1,8 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -21,10 +21,16 @@ public sealed class UsersControllerTwoFactorResetTests(CodigoActivoWebAppFactory
         return Factory.SeedAsync(async db =>
         {
             var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
-            user!.TwoFactorMethod = TwoFactorMethod.Authenticator;
-            user.AuthenticatorKey = FakeSecretProtector.Prefix + "SECRET";
-            user.TwoFactorLockedUntil = Factory.Clock.UtcNow.AddMinutes(10);
-            user.TwoFactorFailedAttempts = 2;
+            Persisted.Overwrite(
+                user!,
+                new
+                {
+                    TwoFactorMethod = TwoFactorMethod.Authenticator,
+                    AuthenticatorKey = FakeSecretProtector.Prefix + "SECRET",
+                    TwoFactorLockedUntil = Factory.Clock.UtcNow.AddMinutes(10),
+                    TwoFactorFailedAttempts = 2,
+                }
+            );
         });
     }
 

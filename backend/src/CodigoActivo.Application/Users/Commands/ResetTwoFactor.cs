@@ -1,9 +1,10 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Auth;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Emails;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -48,7 +49,7 @@ public sealed class ResetTwoFactorCommandHandler(
         CancellationToken ct = default
     )
     {
-        var actingUser = await users.FindAsync(u => u.Id == command.ActingUserId, ct);
+        var actingUser = await users.GetByIdAsync(command.ActingUserId, ct);
         if (
             !await passwordAttempts.VerifyReauthenticationAsync(
                 actingUser,
@@ -57,10 +58,10 @@ public sealed class ResetTwoFactorCommandHandler(
             )
         )
         {
-            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
+            return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        var user = await users.FindAsync(u => u.Id == command.UserId, ct);
+        var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
             return Error.NotFound(ErrorCode.UserNotFound);

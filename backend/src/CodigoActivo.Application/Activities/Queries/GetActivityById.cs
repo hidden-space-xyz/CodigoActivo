@@ -1,8 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -15,12 +14,10 @@ public sealed record GetActivityByIdQuery(Guid ActivityId) : IQuery<Result<Activ
 /// <summary>
 /// Executes the query to retrieve activity by identifier.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetActivityByIdQueryHandler(
-    IActivityRepository activities,
-    IQueryExecutor executor
-) : IQueryHandler<GetActivityByIdQuery, Result<ActivityResponse>>
+public sealed class GetActivityByIdQueryHandler(IReadStore readStore, IQueryExecutor executor)
+    : IQueryHandler<GetActivityByIdQuery, Result<ActivityResponse>>
 {
     /// <summary>
     /// Handles the request to retrieve activity by identifier.
@@ -34,7 +31,9 @@ public sealed class GetActivityByIdQueryHandler(
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            activities.Query().Where(a => a.Id == query.ActivityId).Select(Projections.Activity),
+            readStore
+                .Activities.Where(a => a.Id == query.ActivityId)
+                .Select(ActivityProjections.Activity),
             ct
         );
         return response is null ? Error.NotFound(ErrorCode.ActivityNotFound) : response;

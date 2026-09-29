@@ -1,9 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Resources.Contracts;
 
 namespace CodigoActivo.Application.Resources.Queries;
 
@@ -17,11 +16,11 @@ public sealed record ListResourcesQuery(ResourceListQuery Filters)
 /// <summary>
 /// Executes the query to list resources.
 /// </summary>
-/// <param name="resources">Repository used to persist and retrieve resources.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ListResourcesQueryHandler(
-    IResourceRepository resources,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<ListResourcesQuery, PagedResult<ResourceListItemResponse>>
@@ -55,7 +54,7 @@ public sealed class ListResourcesQueryHandler(
         CancellationToken ct
     )
     {
-        var source = resources.Query().Select(Projections.ResourceListItem);
+        var source = readStore.Resources.Select(ResourceProjections.ResourceListItem);
 
         if (query.ResourceTypeId is { } resourceTypeId)
         {

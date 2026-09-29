@@ -1,11 +1,10 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Partners.Commands;
+using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Application.Partners.Queries;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -62,6 +61,7 @@ public class PartnersController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a partner, or an error response.</returns>
     [HttpPost]
@@ -69,12 +69,14 @@ public class PartnersController : ApiControllerBase
     public async Task<ActionResult<PartnerResponse>> CreateAsync(
         [FromBody] CreatePartnerRequest request,
         [FromServices] CreatePartnerCommandHandler handler,
+        [FromServices] GetPartnerByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToCreated(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new CreatePartnerCommand(request, UserId), ct),
-            p => $"/api/partners/{p.Id}"
+            id => getById.HandleAsync(new GetPartnerByIdQuery(id), ct),
+            id => $"/api/partners/{id}"
         );
     }
 
@@ -84,6 +86,7 @@ public class PartnersController : ApiControllerBase
     /// <param name="partnerId">Identifier of the partner.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a partner, or an error response.</returns>
     [HttpPut("{partnerId:guid}")]
@@ -92,11 +95,13 @@ public class PartnersController : ApiControllerBase
         Guid partnerId,
         [FromBody] UpdatePartnerRequest request,
         [FromServices] UpdatePartnerCommandHandler handler,
+        [FromServices] GetPartnerByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(
-            await handler.HandleAsync(new UpdatePartnerCommand(partnerId, request, UserId), ct)
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new UpdatePartnerCommand(partnerId, request, UserId), ct),
+            () => getById.HandleAsync(new GetPartnerByIdQuery(partnerId), ct)
         );
     }
 

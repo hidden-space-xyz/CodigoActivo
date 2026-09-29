@@ -1,11 +1,8 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Application.Users.Queries;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
 
@@ -13,12 +10,12 @@ namespace CodigoActivo.UnitTests.Application.Users.Queries;
 
 public sealed class ListUsersQueryHandlerTests
 {
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly FakeReadStore store = new();
     private readonly ListUsersQueryHandler sut;
 
     public ListUsersQueryHandlerTests()
     {
-        sut = new ListUsersQueryHandler(users, new FakeQueryExecutor());
+        sut = new ListUsersQueryHandler(store, new FakeQueryExecutor());
     }
 
     private Task<PagedResult<UserResponse>> ListAsAdminAsync(UserListQuery query)
@@ -40,11 +37,11 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncCallerIsAdminReturnsAllUsers()
     {
-        users.HasUsers(
-            NewUser(id: Guid.NewGuid()),
-            NewUser(id: Guid.NewGuid()),
-            NewUser(id: Guid.NewGuid())
-        );
+        store.Users.AddRange([
+            NewUserRow(id: Guid.NewGuid()),
+            NewUserRow(id: Guid.NewGuid()),
+            NewUserRow(id: Guid.NewGuid()),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery());
 
@@ -57,11 +54,11 @@ public sealed class ListUsersQueryHandlerTests
     public async Task HandleAsyncCallerIsNotAdminReturnsOnlySelfAndDependents()
     {
         var caller = Guid.NewGuid();
-        users.HasUsers(
-            NewUser(first: "Self", id: caller),
-            NewUser(first: "Child", parentId: caller),
-            NewUser(first: "Stranger")
-        );
+        store.Users.AddRange([
+            NewUserRow(first: "Self", id: caller),
+            NewUserRow(first: "Child", parentId: caller),
+            NewUserRow(first: "Stranger"),
+        ]);
 
         var result = await ListAsCallerAsync(new UserListQuery(), caller);
 
@@ -74,10 +71,10 @@ public sealed class ListUsersQueryHandlerTests
     public async Task HandleAsyncParentIdFilterReturnsOnlyMatchingChildren()
     {
         var parent = Guid.NewGuid();
-        users.HasUsers(
-            NewUser(first: "Kid", parentId: parent),
-            NewUser(first: "Other", parentId: Guid.NewGuid())
-        );
+        store.Users.AddRange([
+            NewUserRow(first: "Kid", parentId: parent),
+            NewUserRow(first: "Other", parentId: Guid.NewGuid()),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { ParentId = parent });
 
@@ -87,7 +84,7 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNameSearchIsAccentAndCaseInsensitive()
     {
-        users.HasUsers(NewUser(first: "Ávila"), NewUser(first: "Benito"));
+        store.Users.AddRange([NewUserRow(first: "Ávila"), NewUserRow(first: "Benito")]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Name = "avila" });
 
@@ -97,7 +94,7 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNameSearchByLastNameMatchesSubstring()
     {
-        users.HasUsers(NewUser(last: "Gonzalez"), NewUser(last: "Martinez"));
+        store.Users.AddRange([NewUserRow(last: "Gonzalez"), NewUserRow(last: "Martinez")]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Name = "gonz" });
 
@@ -107,11 +104,11 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNameSearchSpansFirstAndLastNameMatchesCombinedFullName()
     {
-        users.HasUsers(
-            NewUser(first: "Ana", last: "García"),
-            NewUser(first: "Ana", last: "Benitez"),
-            NewUser(first: "Gara", last: "Anaya")
-        );
+        store.Users.AddRange([
+            NewUserRow(first: "Ana", last: "García"),
+            NewUserRow(first: "Ana", last: "Benitez"),
+            NewUserRow(first: "Gara", last: "Anaya"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Name = "ana gar" });
 
@@ -121,7 +118,7 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncPhoneFilterMatchesSubstring()
     {
-        users.HasUsers(NewUser(phone: "600111222"), NewUser(phone: "699888777"));
+        store.Users.AddRange([NewUserRow(phone: "600111222"), NewUserRow(phone: "699888777")]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Phone = "111" });
 
@@ -131,8 +128,8 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncIdFilterReturnsOnlyMatchingUser()
     {
-        var target = NewUser(first: "Target");
-        users.HasUsers(target, NewUser(first: "Other"), NewUser(first: "Another"));
+        var target = NewUserRow(first: "Target");
+        store.Users.AddRange([target, NewUserRow(first: "Other"), NewUserRow(first: "Another")]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Id = target.Id });
 
@@ -143,7 +140,10 @@ public sealed class ListUsersQueryHandlerTests
     public async Task HandleAsyncUserTypeIdFilterReturnsOnlyMatchingType()
     {
         var typeId = Guid.NewGuid();
-        users.HasUsers(NewUser(first: "Match", typeId: typeId), NewUser(first: "Other"));
+        store.Users.AddRange([
+            NewUserRow(first: "Match", typeId: typeId),
+            NewUserRow(first: "Other"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { UserTypeId = typeId });
 
@@ -154,7 +154,10 @@ public sealed class ListUsersQueryHandlerTests
     public async Task HandleAsyncUserStatusTypeIdFilterReturnsOnlyMatchingStatus()
     {
         var statusId = Guid.NewGuid();
-        users.HasUsers(NewUser(first: "Match", statusId: statusId), NewUser(first: "Other"));
+        store.Users.AddRange([
+            NewUserRow(first: "Match", statusId: statusId),
+            NewUserRow(first: "Other"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { UserStatusTypeId = statusId });
 
@@ -164,7 +167,10 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncIsAdminFilterReturnsOnlyAdmins()
     {
-        users.HasUsers(NewUser(first: "Boss", isAdmin: true), NewUser(first: "Plain"));
+        store.Users.AddRange([
+            NewUserRow(first: "Boss", isAdmin: true),
+            NewUserRow(first: "Plain"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { IsAdmin = true });
 
@@ -179,9 +185,8 @@ public sealed class ListUsersQueryHandlerTests
         string expected
     )
     {
-        var accepts = NewUser(first: "Acepta");
-        accepts.PromotionalConsent = true;
-        users.HasUsers(accepts, NewUser(first: "Rechaza"));
+        var accepts = NewUserRow(first: "Acepta", promotionalConsent: true);
+        store.Users.AddRange([accepts, NewUserRow(first: "Rechaza")]);
 
         var result = await ListAsAdminAsync(new UserListQuery { PromotionalConsent = consent });
 
@@ -193,11 +198,11 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNationalIdFilterMatchesPartOfTheIdIgnoringCase()
     {
-        users.HasUsers(
-            NewUser(first: "Dni", nationalId: "12345678Z"),
-            NewUser(first: "Nie", nationalId: "X1234567L"),
-            NewUser(first: "Hijo", parentId: Guid.NewGuid())
-        );
+        store.Users.AddRange([
+            NewUserRow(first: "Dni", nationalId: "12345678Z"),
+            NewUserRow(first: "Nie", nationalId: "X1234567L"),
+            NewUserRow(first: "Hijo", parentId: Guid.NewGuid()),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { NationalId = "x123" });
 
@@ -212,11 +217,11 @@ public sealed class ListUsersQueryHandlerTests
     [InlineData("5678-z")]
     public async Task HandleAsyncNationalIdFilterNormalizesTheTermLikeTheStoredValue(string term)
     {
-        users.HasUsers(
-            NewUser(first: "Dni", nationalId: "12345678Z"),
-            NewUser(first: "Nie", nationalId: "X1234567L"),
-            NewUser(first: "Hijo", parentId: Guid.NewGuid())
-        );
+        store.Users.AddRange([
+            NewUserRow(first: "Dni", nationalId: "12345678Z"),
+            NewUserRow(first: "Nie", nationalId: "X1234567L"),
+            NewUserRow(first: "Hijo", parentId: Guid.NewGuid()),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { NationalId = term });
 
@@ -230,11 +235,11 @@ public sealed class ListUsersQueryHandlerTests
     [InlineData(" - - ")]
     public async Task HandleAsyncNationalIdFilterMadeOnlyOfSeparatorsIsIgnored(string term)
     {
-        users.HasUsers(
-            NewUser(first: "Dni", nationalId: "12345678Z"),
-            NewUser(first: "Nie", nationalId: "X1234567L"),
-            NewUser(first: "Hijo", parentId: Guid.NewGuid())
-        );
+        store.Users.AddRange([
+            NewUserRow(first: "Dni", nationalId: "12345678Z"),
+            NewUserRow(first: "Nie", nationalId: "X1234567L"),
+            NewUserRow(first: "Hijo", parentId: Guid.NewGuid()),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { NationalId = term });
 
@@ -244,10 +249,13 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByNationalIdAndConsentOrdersByThoseColumns()
     {
-        var first = NewUser(first: "Primero", nationalId: "00000000T");
-        var second = NewUser(first: "Segundo", nationalId: "12345678Z");
-        second.PromotionalConsent = true;
-        users.HasUsers(second, first);
+        var first = NewUserRow(first: "Primero", nationalId: "00000000T");
+        var second = NewUserRow(
+            first: "Segundo",
+            nationalId: "12345678Z",
+            promotionalConsent: true
+        );
+        store.Users.AddRange([second, first]);
 
         var byId = await ListAsAdminAsync(new UserListQuery { Sort = "nationalId" });
         var byConsent = await ListAsAdminAsync(new UserListQuery { Sort = "-promotionalConsent" });
@@ -259,12 +267,12 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncBirthDateRangeFilterKeepsUsersWithinInclusiveBounds()
     {
-        users.HasUsers(
-            NewUser(first: "Antes", dob: new DateOnly(2005, 6, 14)),
-            NewUser(first: "Inicio", dob: new DateOnly(2005, 6, 15)),
-            NewUser(first: "Fin", dob: new DateOnly(2010, 12, 31)),
-            NewUser(first: "Despues", dob: new DateOnly(2011, 1, 1))
-        );
+        store.Users.AddRange([
+            NewUserRow(first: "Antes", dob: new DateOnly(2005, 6, 14)),
+            NewUserRow(first: "Inicio", dob: new DateOnly(2005, 6, 15)),
+            NewUserRow(first: "Fin", dob: new DateOnly(2010, 12, 31)),
+            NewUserRow(first: "Despues", dob: new DateOnly(2011, 1, 1)),
+        ]);
 
         var result = await ListAsAdminAsync(
             new UserListQuery
@@ -280,10 +288,10 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncBirthDateFromFilterExcludesOlderUsers()
     {
-        users.HasUsers(
-            NewUser(first: "Mayor", dob: new DateOnly(1980, 1, 1)),
-            NewUser(first: "Joven", dob: new DateOnly(2000, 1, 1))
-        );
+        store.Users.AddRange([
+            NewUserRow(first: "Mayor", dob: new DateOnly(1980, 1, 1)),
+            NewUserRow(first: "Joven", dob: new DateOnly(2000, 1, 1)),
+        ]);
 
         var result = await ListAsAdminAsync(
             new UserListQuery { BirthDateFrom = new DateOnly(1990, 1, 1) }
@@ -295,16 +303,13 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByParentNameOrdersByParentFirstName()
     {
-        var zoe = NewUser(first: "Zoe");
-        var ana = NewUser(first: "Ana");
-        var mario = NewUser(first: "Mario");
-        var kidOfZoe = NewUser(first: "HijoZ", parentId: zoe.Id);
-        kidOfZoe.Parent = zoe;
-        var kidOfAna = NewUser(first: "HijoA", parentId: ana.Id);
-        kidOfAna.Parent = ana;
-        var kidOfMario = NewUser(first: "HijoM", parentId: mario.Id);
-        kidOfMario.Parent = mario;
-        users.HasUsers(kidOfZoe, kidOfAna, kidOfMario);
+        var zoe = NewUserRow(first: "Zoe");
+        var ana = NewUserRow(first: "Ana");
+        var mario = NewUserRow(first: "Mario");
+        var kidOfZoe = NewUserRow(first: "HijoZ", parent: zoe);
+        var kidOfAna = NewUserRow(first: "HijoA", parent: ana);
+        var kidOfMario = NewUserRow(first: "HijoM", parent: mario);
+        store.Users.AddRange([kidOfZoe, kidOfAna, kidOfMario]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Sort = "parentName" });
 
@@ -314,13 +319,13 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByDependentsDescendingOrdersByChildrenCount()
     {
-        var none = NewUser(first: "Cero");
-        var two = NewUser(first: "Dos");
-        two.Children.Add(NewUser(first: "Kid1", parentId: two.Id));
-        two.Children.Add(NewUser(first: "Kid2", parentId: two.Id));
-        var one = NewUser(first: "Uno");
-        one.Children.Add(NewUser(first: "Kid3", parentId: one.Id));
-        users.HasUsers(none, two, one);
+        var none = NewUserRow(first: "Cero");
+        var two = NewUserRow(first: "Dos");
+        two.Children.Add(NewUserRow(first: "Kid1", parentId: two.Id));
+        two.Children.Add(NewUserRow(first: "Kid2", parentId: two.Id));
+        var one = NewUserRow(first: "Uno");
+        one.Children.Add(NewUserRow(first: "Kid3", parentId: one.Id));
+        store.Users.AddRange([none, two, one]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Sort = "-dependents" });
 
@@ -331,11 +336,11 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByEmailOrdersResultsByEmail()
     {
-        users.HasUsers(
-            NewUser(email: "charlie@test.com"),
-            NewUser(email: "alice@test.com"),
-            NewUser(email: "bob@test.com")
-        );
+        store.Users.AddRange([
+            NewUserRow(email: "charlie@test.com"),
+            NewUserRow(email: "alice@test.com"),
+            NewUserRow(email: "bob@test.com"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Sort = "email" });
 
@@ -348,11 +353,11 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByStatusOrdersByStatusTypeName()
     {
-        users.HasUsers(
-            NewUser(statusName: "Pending"),
-            NewUser(statusName: "Active"),
-            NewUser(statusName: "Blocked")
-        );
+        store.Users.AddRange([
+            NewUserRow(statusName: "Pending"),
+            NewUserRow(statusName: "Active"),
+            NewUserRow(statusName: "Blocked"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Sort = "status" });
 
@@ -365,11 +370,11 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByTypeOrdersByUserTypeName()
     {
-        users.HasUsers(
-            NewUser(typeName: "Voluntario"),
-            NewUser(typeName: "Miembro"),
-            NewUser(typeName: "Patrocinador")
-        );
+        store.Users.AddRange([
+            NewUserRow(typeName: "Voluntario"),
+            NewUserRow(typeName: "Miembro"),
+            NewUserRow(typeName: "Patrocinador"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Sort = "type" });
 
@@ -382,7 +387,10 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByIsAdminDescendingPutsAdminsFirst()
     {
-        users.HasUsers(NewUser(first: "Plain"), NewUser(first: "Boss", isAdmin: true));
+        store.Users.AddRange([
+            NewUserRow(first: "Plain"),
+            NewUserRow(first: "Boss", isAdmin: true),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Sort = "-isAdmin" });
 
@@ -392,11 +400,10 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncAdminProjectionFillsParentNameAndDependentCount()
     {
-        var parent = NewUser(first: "Padre", last: "Perez");
-        var child = NewUser(first: "Kid", last: "Perez", parentId: parent.Id);
-        child.Parent = parent;
+        var parent = NewUserRow(first: "Padre", last: "Perez");
+        var child = NewUserRow(first: "Kid", last: "Perez", parent: parent);
         parent.Children.Add(child);
-        users.HasUsers(parent, child);
+        store.Users.AddRange([parent, child]);
 
         var result = await ListAsAdminAsync(new UserListQuery());
 
@@ -416,11 +423,10 @@ public sealed class ListUsersQueryHandlerTests
     public async Task HandleAsyncNonAdminProjectionLeavesParentNameAndDependentCountNull()
     {
         var callerId = Guid.NewGuid();
-        var caller = NewUser(first: "Self", id: callerId);
-        var child = NewUser(first: "Kid", parentId: callerId);
-        child.Parent = caller;
+        var caller = NewUserRow(first: "Self", id: callerId);
+        var child = NewUserRow(first: "Kid", parent: caller);
         caller.Children.Add(child);
-        users.HasUsers(caller, child);
+        store.Users.AddRange([caller, child]);
 
         var result = await ListAsCallerAsync(new UserListQuery(), callerId);
 
@@ -431,7 +437,10 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEmailSearchMatchesSubstring()
     {
-        users.HasUsers(NewUser(email: "alpha@test.com"), NewUser(email: "beta@test.com"));
+        store.Users.AddRange([
+            NewUserRow(email: "alpha@test.com"),
+            NewUserRow(email: "beta@test.com"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Email = "beta" });
 
@@ -441,7 +450,11 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncExplicitDescendingSortOrdersResultsDescending()
     {
-        users.HasUsers(NewUser(last: "Aaa"), NewUser(last: "Zzz"), NewUser(last: "Mmm"));
+        store.Users.AddRange([
+            NewUserRow(last: "Aaa"),
+            NewUserRow(last: "Zzz"),
+            NewUserRow(last: "Mmm"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Sort = "-lastName" });
 
@@ -451,7 +464,11 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncPageAndPageSizeGivenReturnsPagedResults()
     {
-        users.HasUsers(NewUser(first: "A"), NewUser(first: "B"), NewUser(first: "C"));
+        store.Users.AddRange([
+            NewUserRow(first: "A"),
+            NewUserRow(first: "B"),
+            NewUserRow(first: "C"),
+        ]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Page = 2, PageSize = 2 });
 

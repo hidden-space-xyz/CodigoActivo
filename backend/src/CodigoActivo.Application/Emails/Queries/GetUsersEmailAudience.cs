@@ -1,8 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Emails.Contracts;
+using CodigoActivo.Application.Users;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Emails.Queries;
 
@@ -17,12 +18,10 @@ public sealed record GetUsersEmailAudienceQuery(UserListQuery Filters)
 /// Executes the query that previews who an email to users would reach, selecting recipients
 /// exactly as <see cref="Commands.SendEmailToUsersCommandHandler"/> does.
 /// </summary>
-/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetUsersEmailAudienceQueryHandler(
-    IUserRepository users,
-    IQueryExecutor executor
-) : IQueryHandler<GetUsersEmailAudienceQuery, Result<EmailAudienceResponse>>
+public sealed class GetUsersEmailAudienceQueryHandler(IReadStore readStore, IQueryExecutor executor)
+    : IQueryHandler<GetUsersEmailAudienceQuery, Result<EmailAudienceResponse>>
 {
     /// <summary>
     /// Handles the request to preview the audience of an email to users.
@@ -36,7 +35,7 @@ public sealed class GetUsersEmailAudienceQueryHandler(
     )
     {
         var audience = await ManualEmailAudience.LoadAsync(
-            UserFilters.Apply(users.Query(), query.Filters),
+            UserFilters.Apply(readStore.Users, query.Filters),
             executor,
             ct
         );

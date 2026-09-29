@@ -1,8 +1,10 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Partners;
 
 namespace CodigoActivo.Application.Partners.Commands;
 
@@ -37,7 +39,7 @@ public sealed class DeletePartnerCommandHandler(
         CancellationToken ct = default
     )
     {
-        var partner = await partners.FindAsync(p => p.Id == command.PartnerId, ct);
+        var partner = await partners.GetByIdAsync(command.PartnerId, ct);
         if (partner is null)
         {
             return Error.NotFound(ErrorCode.PartnerNotFound);

@@ -1,9 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Application.Users.Queries;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
 
@@ -11,14 +9,13 @@ namespace CodigoActivo.UnitTests.Application.Users.Queries;
 
 public sealed class ListUserStatusTypesQueryHandlerTests
 {
-    private readonly IUserStatusTypeRepository userStatusTypes =
-        Substitute.For<IUserStatusTypeRepository>();
+    private readonly FakeReadStore store = new();
     private readonly ListUserStatusTypesQueryHandler sut;
 
     public ListUserStatusTypesQueryHandlerTests()
     {
         sut = new ListUserStatusTypesQueryHandler(
-            userStatusTypes,
+            store,
             new FakeQueryExecutor(),
             new FakeHybridCache()
         );
@@ -27,11 +24,11 @@ public sealed class ListUserStatusTypesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncMultipleStatusTypesProjectsOrderedByName()
     {
-        userStatusTypes.HasStatusTypes(
-            NewStatusType("Pending"),
-            NewStatusType("Active"),
-            NewStatusType("Blocked")
-        );
+        store.UserStatusTypes.AddRange([
+            NewStatusTypeRow("Pending"),
+            NewStatusTypeRow("Active"),
+            NewStatusTypeRow("Blocked"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListUserStatusTypesQuery(),

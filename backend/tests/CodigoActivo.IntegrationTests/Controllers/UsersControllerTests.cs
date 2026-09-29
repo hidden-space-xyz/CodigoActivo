@@ -1,9 +1,11 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -116,20 +118,22 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Users.Add(
-                new User
-                {
-                    Id = accentedId,
-                    FirstName = "Ávila",
-                    LastName = "Fernandez",
-                    Email = "avila@codigoactivo.test",
-                    Phone = "+34600000099",
-                    PasswordHash = TestSeedData.PasswordHash,
-                    NationalId = "55555555K",
-                    Gender = Gender.Female,
-                    UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                    UserTypeId = SeedIds.UserTypes.Member,
-                    CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                }
+                Persisted.As<User>(
+                    new
+                    {
+                        Id = accentedId,
+                        FirstName = "Ávila",
+                        LastName = "Fernandez",
+                        Email = "avila@codigoactivo.test",
+                        Phone = "+34600000099",
+                        PasswordHash = TestSeedData.PasswordHash,
+                        NationalId = "55555555K",
+                        Gender = Gender.Female,
+                        UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                        UserTypeId = SeedIds.UserTypes.Member,
+                        CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -149,20 +153,22 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Users.Add(
-                new User
-                {
-                    Id = accentedId,
-                    FirstName = "Lucia",
-                    LastName = "Gutiérrez",
-                    Email = "lucia@codigoactivo.test",
-                    Phone = "+34600000098",
-                    PasswordHash = TestSeedData.PasswordHash,
-                    NationalId = "66666666Q",
-                    Gender = Gender.Female,
-                    UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                    UserTypeId = SeedIds.UserTypes.Member,
-                    CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                }
+                Persisted.As<User>(
+                    new
+                    {
+                        Id = accentedId,
+                        FirstName = "Lucia",
+                        LastName = "Gutiérrez",
+                        Email = "lucia@codigoactivo.test",
+                        Phone = "+34600000098",
+                        PasswordHash = TestSeedData.PasswordHash,
+                        NationalId = "66666666Q",
+                        Gender = Gender.Female,
+                        UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                        UserTypeId = SeedIds.UserTypes.Member,
+                        CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -350,18 +356,20 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
     private static User SeedChild(string firstName, Guid parentId, DateOnly? birthDate = null)
     {
-        return new()
-        {
-            Id = Guid.NewGuid(),
-            FirstName = firstName,
-            LastName = "Menor",
-            BirthDate = birthDate ?? new DateOnly(2017, 3, 3),
-            Gender = Gender.Other,
-            ParentId = parentId,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-            UserTypeId = SeedIds.UserTypes.Participant,
-            CreatedAt = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
-        };
+        return Persisted.As<User>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                FirstName = firstName,
+                LastName = "Menor",
+                BirthDate = birthDate ?? new DateOnly(2017, 3, 3),
+                Gender = Gender.Other,
+                ParentId = parentId,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+                UserTypeId = SeedIds.UserTypes.Participant,
+                CreatedAt = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
+            }
+        );
     }
 
     [Fact]
@@ -798,7 +806,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var child = await db.Users.FindAsync([TestSeedData.Users.MemberChildId], Ct);
-            child!.BirthDate = adultBirthDate;
+            Persisted.Overwrite(child!, new { BirthDate = adultBirthDate });
         });
         var client = await LoginAsMemberAsync();
 

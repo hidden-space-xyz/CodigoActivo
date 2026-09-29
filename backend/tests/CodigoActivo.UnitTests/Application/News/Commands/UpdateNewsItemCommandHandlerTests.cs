@@ -1,10 +1,13 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.News.Commands;
+using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -49,7 +52,7 @@ public sealed class UpdateNewsItemCommandHandlerTests
         result.Error.Code.Should().Be(ErrorCode.NewsItemNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(_ => true, TestContext.Current.CancellationToken);
+            .ExistsAsync(Arg.Any<Guid>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         await cacheInvalidator
@@ -70,7 +73,7 @@ public sealed class UpdateNewsItemCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.NewsItemThumbnailNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -159,11 +162,11 @@ public sealed class UpdateNewsItemCommandHandlerTests
     [Fact]
     public async Task HandleAsyncImagesDroppedFromDescriptionCleansUpDroppedKeepsRest()
     {
-        var newsItem = NewNewsItem();
         var removedId = Guid.NewGuid();
         var keptId = Guid.NewGuid();
-        newsItem.Description =
-            $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
+        var newsItem = NewNewsItem(
+            description: $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}"
+        );
         news.Finds(newsItem);
         files.ThumbnailExists(true);
         var request = new UpdateNewsItemRequest(

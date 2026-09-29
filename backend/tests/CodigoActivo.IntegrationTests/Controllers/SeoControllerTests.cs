@@ -1,8 +1,11 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.Options;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Common;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.Resources;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -36,67 +39,77 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                new FileEntity
-                {
-                    Id = thumbnailId,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = SeededAt,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<FileEntity>(
+                    new
+                    {
+                        Id = thumbnailId,
+                        Name = "thumb",
+                        Extension = "png",
+                        UploadedAt = SeededAt,
+                        UploadedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.Events.Add(
-                new Event
-                {
-                    Id = content.EventId,
-                    Title = "Evento",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    EventStartsAt = new DateOnly(2026, 8, 1),
-                    EventEndsAt = new DateOnly(2026, 8, 2),
-                    SignupStartsAt = SeededAt,
-                    SignupEndsAt = SeededAt.AddDays(30),
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = content.EventId,
+                        Title = "Evento",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        EventStartsAt = new DateOnly(2026, 8, 1),
+                        EventEndsAt = new DateOnly(2026, 8, 2),
+                        SignupStartsAt = SeededAt,
+                        SignupEndsAt = SeededAt.AddDays(30),
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.News.Add(
-                new NewsItem
-                {
-                    Id = content.NewsItemId,
-                    Title = "Novedad",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<NewsItem>(
+                    new
+                    {
+                        Id = content.NewsItemId,
+                        Title = "Novedad",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.Resources.AddRange(
-                new Resource
-                {
-                    Id = content.InternalResourceId,
-                    Title = "Interno",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    ResourceTypeId = SeedIds.ResourceTypes.Internal,
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                },
-                new Resource
-                {
-                    Id = content.ExternalResourceId,
-                    Title = "Externo",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    Url = "https://example.org/externo",
-                    ResourceTypeId = SeedIds.ResourceTypes.External,
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Resource>(
+                    new
+                    {
+                        Id = content.InternalResourceId,
+                        Title = "Interno",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        ResourceTypeId = SeedIds.ResourceTypes.Internal,
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                ),
+                Persisted.As<Resource>(
+                    new
+                    {
+                        Id = content.ExternalResourceId,
+                        Title = "Externo",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        Url = "https://example.org/externo",
+                        ResourceTypeId = SeedIds.ResourceTypes.External,
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });

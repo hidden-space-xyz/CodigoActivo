@@ -1,12 +1,16 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Events.Queries;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Files;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDocuments;
 
 namespace CodigoActivo.Application.Events.Commands;
 
@@ -17,7 +21,7 @@ namespace CodigoActivo.Application.Events.Commands;
 /// <param name="Request">Validated client request data.</param>
 /// <param name="UserId">Identifier of the user.</param>
 public sealed record UpdateEventCommand(Guid EventId, UpdateEventRequest Request, Guid UserId)
-    : ICommand<Result<EventResponse>>;
+    : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the event.
@@ -31,7 +35,6 @@ public sealed record UpdateEventCommand(Guid EventId, UpdateEventRequest Request
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
-/// <param name="getById">Handler used to retrieve event by identifier.</param>
 public sealed class UpdateEventCommandHandler(
     IEventRepository events,
     IActivityRepository activities,
@@ -41,24 +44,23 @@ public sealed class UpdateEventCommandHandler(
     EventCategoryChecker categoryChecker,
     IClock clock,
     IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator,
-    GetEventByIdQueryHandler getById
-) : ICommandHandler<UpdateEventCommand, Result<EventResponse>>
+    ICacheInvalidator cacheInvalidator
+) : ICommandHandler<UpdateEventCommand, Result>
 {
     /// <summary>
     /// Handles the request to update the event.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an event on success, or an application error on failure.</returns>
-    public async Task<Result<EventResponse>> HandleAsync(
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    public async Task<Result> HandleAsync(
         UpdateEventCommand command,
         CancellationToken ct = default
     )
     {
         var request = command.Request;
 
-        var schedule = EventRules.ValidateSchedule(
+        var schedule = EventSchedule.Create(
             request.EventStartsAt,
             request.EventEndsAt,
             request.EarlySignupStartsAt,
@@ -76,7 +78,7 @@ public sealed class UpdateEventCommandHandler(
             return categories.Error!;
         }
 
-        var ev = await events.GetForEditAsync(command.EventId, ct);
+        var ev = await events.GetByIdAsync(command.EventId, ct);
         if (ev is null)
         {
             return Error.NotFound(ErrorCode.EventNotFound);
@@ -95,40 +97,40 @@ public sealed class UpdateEventCommandHandler(
             )
         )
         {
-            return Error.BadRequest(ErrorCode.EventActivitiesOutsideNewRange);
+            return Error.Validation(ErrorCode.EventActivitiesOutsideNewRange);
         }
 
-        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        if (!await files.ExistsAsync(request.ThumbnailId, ct))
         {
-            return Error.BadRequest(ErrorCode.EventThumbnailNotFound);
+            return Error.Validation(ErrorCode.EventThumbnailNotFound);
         }
 
-        if (request.TermsDocuments is { Count: > 0 } termsDocumentRequests)
+        var terms = await EventTermsRequests.ResolveAsync(
+            request.TermsDocuments,
+            termsDocuments,
+            ct
+        );
+        if (terms.IsFailure)
         {
-            var termsValidation = await ValidateTermsDocumentsAsync(termsDocumentRequests, ct);
-            if (termsValidation.IsFailure)
-            {
-                return termsValidation.Error!;
-            }
+            return terms.Error!;
         }
 
         var previousThumbnailId = ev.ThumbnailId;
         var previousDescription = ev.Description;
 
-        ev.Title = request.Title.Trim();
-        ev.Subtitle = request.Subtitle.Trim();
-        ev.Description = request.Description;
-        ev.EventStartsAt = schedule.Value.EventStartsAt;
-        ev.EventEndsAt = schedule.Value.EventEndsAt;
-        ev.EarlySignupStartsAt = schedule.Value.EarlySignupStartsAt;
-        ev.SignupStartsAt = schedule.Value.SignupStartsAt;
-        ev.SignupEndsAt = schedule.Value.SignupEndsAt;
-        ev.ThumbnailId = request.ThumbnailId;
-        ev.UpdatedAt = clock.UtcNow;
-        ev.UpdatedBy = command.UserId;
-
-        EventRules.SyncCategories(ev, request.CategoryTypeIds!);
-        EventRules.SyncTermsDocuments(ev, request.TermsDocuments);
+        ev.Update(
+            new EventContent(
+                request.Title,
+                request.Subtitle,
+                request.Description,
+                request.ThumbnailId
+            ),
+            schedule.Value,
+            categories.Value,
+            terms.Value,
+            command.UserId,
+            clock.UtcNow
+        );
 
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Events);
@@ -143,7 +145,7 @@ public sealed class UpdateEventCommandHandler(
 
         await orphanCleaner.DeleteOrphanedAsync(orphanCandidates, ct);
 
-        return await getById.HandleAsync(new GetEventByIdQuery(command.EventId), ct);
+        return Result.Success();
     }
 
     private (DateTimeOffset LowerInclusive, DateTimeOffset UpperExclusive) DayBounds(
@@ -155,23 +157,5 @@ public sealed class UpdateEventCommandHandler(
             LocalDayRange.LowerUtc(eventStart, clock.TimeZone),
             LocalDayRange.UpperExclusiveUtc(eventEnd, clock.TimeZone)
         );
-    }
-
-    private async Task<Result> ValidateTermsDocumentsAsync(
-        IReadOnlyList<EventTermsDocumentRequest> termsDocumentRequests,
-        CancellationToken ct
-    )
-    {
-        var ids = termsDocumentRequests.Select(t => t.TermsDocumentId).ToList();
-        var distinctIds = ids.Distinct().ToList();
-        if (distinctIds.Count != ids.Count)
-        {
-            return Error.BadRequest(ErrorCode.EventTermsDocumentDuplicated);
-        }
-
-        var existingCount = await termsDocuments.CountAsync(t => distinctIds.Contains(t.Id), ct);
-        return existingCount != distinctIds.Count
-            ? (Result)Error.BadRequest(ErrorCode.TermsDocumentNotFound)
-            : Result.Success();
     }
 }

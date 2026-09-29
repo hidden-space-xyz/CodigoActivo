@@ -1,5 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
@@ -9,32 +11,68 @@ public sealed class UserEntityTests
     private static readonly DateTimeOffset Seeded = new(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
+    public static TheoryData<Guid, bool, bool, bool> StatusFlags =>
+        new()
+        {
+            { SeedIds.UserStatusTypes.Pending, false, false, true },
+            { SeedIds.UserStatusTypes.Active, false, false, false },
+            { SeedIds.UserStatusTypes.Blocked, true, false, false },
+            { SeedIds.UserStatusTypes.Dependent, false, true, false },
+        };
+
+    public static TheoryData<Guid, string?, bool> SignInStates =>
+        new()
+        {
+            { SeedIds.UserStatusTypes.Active, "hash", true },
+            { SeedIds.UserStatusTypes.Active, null, false },
+            { SeedIds.UserStatusTypes.Pending, "hash", false },
+            { SeedIds.UserStatusTypes.Blocked, "hash", false },
+            { SeedIds.UserStatusTypes.Dependent, "hash", false },
+        };
+
+    private static User UserWithStatus(Guid statusId, string? passwordHash = "hash")
+    {
+        return Persisted.As<User>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                FirstName = "Ada",
+                LastName = "Lovelace",
+                PasswordHash = passwordHash,
+                UserStatusTypeId = statusId,
+                CreatedAt = Seeded,
+            }
+        );
+    }
+
     private static User NewPendingUser()
     {
-        return new()
-        {
-            Id = Guid.NewGuid(),
-            FirstName = "Ada",
-            LastName = "Lovelace",
-            Email = "ada@test.local",
-            BirthDate = new DateOnly(1990, 1, 1),
-            UserStatusTypeId = Guid.NewGuid(),
-            OtpCodeHash = "ABCDEF",
-            OtpExpiresAt = Seeded,
-            OtpLastSentAt = Seeded,
-            CreatedAt = Seeded,
-        };
+        return Persisted.As<User>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                FirstName = "Ada",
+                LastName = "Lovelace",
+                Email = "ada@test.local",
+                BirthDate = new DateOnly(1990, 1, 1),
+                UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
+                OtpCodeHash = "ABCDEF",
+                OtpExpiresAt = Seeded,
+                OtpLastSentAt = Seeded,
+                CreatedAt = Seeded,
+            }
+        );
     }
 
     [Fact]
     public void VerifyPendingUserActivatesAccountAndClearsOtp()
     {
-        var activeStatusId = Guid.NewGuid();
         var user = NewPendingUser();
 
-        user.Verify(activeStatusId, Now);
+        user.Verify(Now);
 
-        user.UserStatusTypeId.Should().Be(activeStatusId);
+        user.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
+        user.IsPendingVerification.Should().BeFalse();
         user.OtpCodeHash.Should().BeNull();
         user.OtpExpiresAt.Should().BeNull();
         user.OtpLastSentAt.Should().BeNull();
@@ -45,9 +83,9 @@ public sealed class UserEntityTests
     public void VerifyPendingUserLeavesLastLoginUntouched()
     {
         var user = NewPendingUser();
-        user.LastLoginAt = null;
+        Persisted.Overwrite(user, new { LastLoginAt = (DateTimeOffset?)null });
 
-        user.Verify(Guid.NewGuid(), Now);
+        user.Verify(Now);
 
         user.LastLoginAt.Should().BeNull();
     }
@@ -80,7 +118,7 @@ public sealed class UserEntityTests
     public void RegisterLoginPendingUserStampsSuppliedLastLoginTime()
     {
         var user = NewPendingUser();
-        user.LastLoginAt = null;
+        Persisted.Overwrite(user, new { LastLoginAt = (DateTimeOffset?)null });
 
         user.RegisterLogin(Now);
 
@@ -156,7 +194,7 @@ public sealed class UserEntityTests
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
         user.StartLoginChallenge(Guid.NewGuid());
-        user.TwoFactorFailedAttempts = 2;
+        Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 2 });
 
         user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeTrue();
 
@@ -214,8 +252,10 @@ public sealed class UserEntityTests
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
         user.StartLoginChallenge(Guid.NewGuid());
-        user.TwoFactorFailedAttempts = 2;
-        user.TwoFactorLockedUntil = Now.AddMinutes(-1);
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorFailedAttempts = 2, TwoFactorLockedUntil = Now.AddMinutes(-1) }
+        );
 
         user.CompleteTwoFactorLogin(Now);
 
@@ -281,8 +321,7 @@ public sealed class UserEntityTests
     public void ClearPasswordFailuresForgetsTheCountWithoutLiftingAnExistingLock()
     {
         var user = NewPendingUser();
-        user.PasswordFailedAttempts = 5;
-        user.PasswordLockedAt = Now;
+        Persisted.Overwrite(user, new { PasswordFailedAttempts = 5, PasswordLockedAt = Now });
 
         user.ClearPasswordFailures();
 
@@ -294,8 +333,7 @@ public sealed class UserEntityTests
     public void ResetPasswordClearsTheLockAndTheFailureCount()
     {
         var user = NewPendingUser();
-        user.PasswordFailedAttempts = 5;
-        user.PasswordLockedAt = Now;
+        Persisted.Overwrite(user, new { PasswordFailedAttempts = 5, PasswordLockedAt = Now });
         user.IssuePasswordResetCode("HASH", Now, TimeSpan.FromMinutes(15));
 
         user.ResetPassword("new-hash", Now.AddMinutes(1));
@@ -312,8 +350,7 @@ public sealed class UserEntityTests
     public void ResetTwoFactorLeavesAPasswordLockInPlace()
     {
         var user = NewPendingUser();
-        user.PasswordFailedAttempts = 5;
-        user.PasswordLockedAt = Now;
+        Persisted.Overwrite(user, new { PasswordFailedAttempts = 5, PasswordLockedAt = Now });
 
         user.ResetTwoFactor(Now);
 
@@ -327,8 +364,10 @@ public sealed class UserEntityTests
         user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
         user.EnableAuthenticator(42, Now);
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
-        user.TwoFactorFailedAttempts = 4;
-        user.TwoFactorLockedUntil = Now.AddMinutes(10);
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorFailedAttempts = 4, TwoFactorLockedUntil = Now.AddMinutes(10) }
+        );
 
         user.ResetTwoFactor(Now);
 
@@ -338,5 +377,345 @@ public sealed class UserEntityTests
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.TwoFactorLockedUntil.Should().BeNull();
         user.IsTwoFactorLocked(Now).Should().BeFalse();
+    }
+
+    [Theory]
+    [MemberData(nameof(StatusFlags))]
+    public void StatusFlagsEachStatusRaisesOnlyItsOwnFlag(
+        Guid statusId,
+        bool blocked,
+        bool dependent,
+        bool pending
+    )
+    {
+        var user = UserWithStatus(statusId);
+
+        user.IsBlocked.Should().Be(blocked);
+        user.IsDependent.Should().Be(dependent);
+        user.IsPendingVerification.Should().Be(pending);
+    }
+
+    [Theory]
+    [MemberData(nameof(SignInStates))]
+    public void CanSignInOnlyAnActiveAccountWithAPasswordMaySignIn(
+        Guid statusId,
+        string? passwordHash,
+        bool expected
+    )
+    {
+        UserWithStatus(statusId, passwordHash).CanSignIn.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(9, true)]
+    [InlineData(10, true)]
+    [InlineData(11, false)]
+    public void UsableOtpCodeHashIssuedCodeIsUsableUntilItExpires(int minutesLater, bool usable)
+    {
+        var user = NewPendingUser();
+        user.IssueOtp("OTP", Now, TimeSpan.FromMinutes(10));
+
+        user.UsableOtpCodeHash(Now.AddMinutes(minutesLater)).Should().Be(usable ? "OTP" : null);
+    }
+
+    [Theory]
+    [InlineData(9, true)]
+    [InlineData(10, true)]
+    [InlineData(11, false)]
+    public void UsableLoginCodeHashIssuedCodeIsUsableUntilItExpires(int minutesLater, bool usable)
+    {
+        var user = NewPendingUser();
+        user.IssueLoginCode("LOGIN", Now, TimeSpan.FromMinutes(10));
+
+        user.UsableLoginCodeHash(Now.AddMinutes(minutesLater)).Should().Be(usable ? "LOGIN" : null);
+    }
+
+    [Theory]
+    [InlineData(9, true)]
+    [InlineData(10, true)]
+    [InlineData(11, false)]
+    public void UsablePasswordResetCodeHashIssuedCodeIsUsableUntilItExpires(
+        int minutesLater,
+        bool usable
+    )
+    {
+        var user = NewPendingUser();
+        user.IssuePasswordResetCode("RESET", Now, TimeSpan.FromMinutes(10));
+
+        user.UsablePasswordResetCodeHash(Now.AddMinutes(minutesLater))
+            .Should()
+            .Be(usable ? "RESET" : null);
+    }
+
+    [Fact]
+    public void UsableCodeHashesNoCodeIssuedReturnNothing()
+    {
+        var user = NewPendingUser();
+        user.ClearOtp();
+
+        user.UsableOtpCodeHash(Now).Should().BeNull();
+        user.UsableLoginCodeHash(Now).Should().BeNull();
+        user.UsablePasswordResetCodeHash(Now).Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(null, 7L, true)]
+    [InlineData(6L, 7L, true)]
+    [InlineData(7L, 7L, false)]
+    [InlineData(8L, 7L, false)]
+    public void AcceptsAuthenticatorStepOnlyAStepNewerThanTheLastUsedIsAccepted(
+        long? lastUsedStep,
+        long step,
+        bool expected
+    )
+    {
+        var user = NewPendingUser();
+        if (lastUsedStep is { } used)
+        {
+            user.RecordAuthenticatorStep(used);
+        }
+
+        user.AcceptsAuthenticatorStep(step).Should().Be(expected);
+    }
+
+    [Fact]
+    public void RecordAuthenticatorStepRemembersTheStepAgainstReplays()
+    {
+        var user = NewPendingUser();
+
+        user.RecordAuthenticatorStep(42);
+
+        user.AuthenticatorLastUsedStep.Should().Be(42);
+        user.AcceptsAuthenticatorStep(42).Should().BeFalse();
+        user.AcceptsAuthenticatorStep(43).Should().BeTrue();
+    }
+
+    [Fact]
+    public void RecordPasswordFailureBelowTheLimitOnlyCounts()
+    {
+        var user = NewPendingUser();
+        var challengeId = Guid.NewGuid();
+        user.StartLoginChallenge(challengeId);
+
+        user.RecordPasswordFailure(3, Now).Should().BeFalse();
+
+        user.PasswordFailedAttempts.Should().Be(1);
+        user.PasswordLockedAt.Should().BeNull();
+        user.IsPasswordLocked().Should().BeFalse();
+        user.LoginChallengeId.Should().Be(challengeId);
+    }
+
+    [Fact]
+    public void RecordPasswordFailureReachingTheLimitLocksAndClosesTheChallenge()
+    {
+        var user = NewPendingUser();
+        user.StartLoginChallenge(Guid.NewGuid());
+        Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
+
+        user.RecordPasswordFailure(3, Now).Should().BeTrue();
+
+        user.PasswordFailedAttempts.Should().Be(3);
+        user.PasswordLockedAt.Should().Be(Now);
+        user.IsPasswordLocked().Should().BeTrue();
+        user.LoginChallengeId.Should().BeNull();
+    }
+
+    [Fact]
+    public void RecordPasswordFailureLockedAccountCountsNothing()
+    {
+        var user = NewPendingUser();
+        var lockedAt = Now.AddDays(-1);
+        var challengeId = Guid.NewGuid();
+        Persisted.Overwrite(user, new { PasswordFailedAttempts = 3, PasswordLockedAt = lockedAt });
+        user.StartLoginChallenge(challengeId);
+
+        user.RecordPasswordFailure(3, Now).Should().BeFalse();
+
+        user.PasswordFailedAttempts.Should().Be(3);
+        user.PasswordLockedAt.Should().Be(lockedAt);
+        user.LoginChallengeId.Should().Be(challengeId);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SetAdministratorDifferentValueChangesItAndStampsTheUpdate(bool isAdmin)
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(user, new { IsAdmin = !isAdmin });
+
+        user.SetAdministrator(isAdmin, Now).Should().BeTrue();
+
+        user.IsAdmin.Should().Be(isAdmin);
+        user.UpdatedAt.Should().Be(Now);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SetAdministratorSameValueChangesNothing(bool isAdmin)
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(user, new { IsAdmin = isAdmin });
+
+        user.SetAdministrator(isAdmin, Now).Should().BeFalse();
+
+        user.IsAdmin.Should().Be(isAdmin);
+        user.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void ChangeTypeStoresTheTypeAndStampsTheUpdate()
+    {
+        var user = NewPendingUser();
+
+        user.ChangeType(SeedIds.UserTypes.Sponsor, Now);
+
+        user.UserTypeId.Should().Be(SeedIds.UserTypes.Sponsor);
+        user.UpdatedAt.Should().Be(Now);
+    }
+
+    [Fact]
+    public void CreateInitialAdministratorBuildsAnActiveAdministratorUnderTheFixedIdentifier()
+    {
+        var administrator = User.CreateInitialAdministrator("admin@test.local", "hash", Now);
+
+        administrator.Id.Should().Be(SeedIds.Users.InitialAdministrator);
+        administrator.FirstName.Should().Be("Administrador");
+        administrator.LastName.Should().Be("Código Activo");
+        administrator.Email.Should().Be("admin@test.local");
+        administrator.PasswordHash.Should().Be("hash");
+        administrator.NationalId.Should().Be(SpanishNationalId.FromDniNumber(0));
+        administrator.Gender.Should().Be(Gender.Other);
+        administrator.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
+        administrator.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
+        administrator.ParentId.Should().BeNull();
+        administrator.IsAdmin.Should().BeTrue();
+        administrator.CreatedAt.Should().Be(Now);
+        administrator.CanSignIn.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(null, "hash")]
+    [InlineData(" ", "hash")]
+    [InlineData("admin@test.local", null)]
+    [InlineData("admin@test.local", "")]
+    public void CreateInitialAdministratorMissingCredentialThrows(
+        string? email,
+        string? passwordHash
+    )
+    {
+        var act = () => User.CreateInitialAdministrator(email!, passwordHash!, Now);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void ResendCooldownsRunOnlyUntilTheCooldownEnds()
+    {
+        var user = NewPendingUser();
+        var cooldown = TimeSpan.FromMinutes(1);
+        user.IssueOtp("OTP", Now, TimeSpan.FromMinutes(15));
+        user.IssuePasswordResetCode("RESET", Now, TimeSpan.FromMinutes(15));
+        user.IssueLoginCode("LOGIN", Now, TimeSpan.FromMinutes(15));
+
+        user.IsOtpResendCoolingDown(Now.AddSeconds(59), cooldown).Should().BeTrue();
+        user.IsOtpResendCoolingDown(Now.AddSeconds(60), cooldown).Should().BeFalse();
+        user.IsPasswordResetResendCoolingDown(Now.AddSeconds(59), cooldown).Should().BeTrue();
+        user.IsPasswordResetResendCoolingDown(Now.AddSeconds(60), cooldown).Should().BeFalse();
+        user.IsLoginCodeResendCoolingDown(Now.AddSeconds(59), cooldown).Should().BeTrue();
+        user.IsLoginCodeResendCoolingDown(Now.AddSeconds(60), cooldown).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ResendCooldownsNothingSentNeverCoolDown()
+    {
+        var user = NewPendingUser();
+        var cooldown = TimeSpan.FromMinutes(1);
+        user.ClearOtp();
+
+        user.IsOtpResendCoolingDown(Now, cooldown).Should().BeFalse();
+        user.IsPasswordResetResendCoolingDown(Now, cooldown).Should().BeFalse();
+        user.IsLoginCodeResendCoolingDown(Now, cooldown).Should().BeFalse();
+    }
+
+    [Fact]
+    public void AssignPasswordStoresTheHash()
+    {
+        var user = NewPendingUser();
+
+        user.AssignPassword("hash");
+
+        user.PasswordHash.Should().Be("hash");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AssignPasswordBlankHashThrowsAndKeepsNoPassword(string? passwordHash)
+    {
+        var user = NewPendingUser();
+
+        var act = () => user.AssignPassword(passwordHash!);
+
+        act.Should().Throw<ArgumentException>();
+        user.PasswordHash.Should().BeNull();
+    }
+
+    [Fact]
+    public void ForgetOtpDeliveryKeepsTheCodeButAllowsAnImmediateResend()
+    {
+        var user = NewPendingUser();
+        user.IssueOtp("OTP", Now, TimeSpan.FromMinutes(15));
+
+        user.ForgetOtpDelivery();
+
+        user.OtpLastSentAt.Should().BeNull();
+        user.OtpCodeHash.Should().Be("OTP");
+        user.OtpExpiresAt.Should().Be(Now.AddMinutes(15));
+        user.IsOtpResendCoolingDown(Now, TimeSpan.FromMinutes(1)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearTwoFactorFailuresForgetsTheCountWithoutLiftingALock()
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorFailedAttempts = 2, TwoFactorLockedUntil = Now.AddMinutes(5) }
+        );
+
+        user.ClearTwoFactorFailures();
+
+        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.IsTwoFactorLocked(Now).Should().BeTrue();
+    }
+
+    [Fact]
+    public void HasLoginChallengeOnlyMatchesTheOpenChallenge()
+    {
+        var user = NewPendingUser();
+        var challengeId = Guid.NewGuid();
+
+        user.HasLoginChallenge(challengeId).Should().BeFalse();
+
+        user.StartLoginChallenge(challengeId);
+
+        user.HasLoginChallenge(challengeId).Should().BeTrue();
+        user.HasLoginChallenge(Guid.NewGuid()).Should().BeFalse();
+    }
+
+    [Fact]
+    public void SessionStartExpiresOnceTheLifetimeElapses()
+    {
+        var userId = Guid.NewGuid();
+
+        var session = UserSession.Start(userId, Now, TimeSpan.FromHours(8));
+
+        session.Id.Should().NotBeEmpty();
+        session.UserId.Should().Be(userId);
+        session.CreatedAt.Should().Be(Now);
+        session.ExpiresAt.Should().Be(Now.AddHours(8));
     }
 }

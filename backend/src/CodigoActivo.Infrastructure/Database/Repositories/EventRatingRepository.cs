@@ -1,14 +1,13 @@
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 /// <summary>
-/// Persists and retrieves event rating data from the database.
+/// Stores event ratings.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 public class EventRatingRepository(CodigoActivoDbContext context)
-    : Repository<EventRating>(context),
+    : AggregateRepository<EventRating>(context),
         IEventRatingRepository;

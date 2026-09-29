@@ -1,7 +1,6 @@
-using System.Linq.Expressions;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
-using NSubstitute;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Domain.Resources;
+using CodigoActivo.UnitTests.TestSupport;
 
 namespace CodigoActivo.UnitTests.Application.Resources;
 
@@ -12,6 +11,17 @@ internal static class ResourceTestData
     public const string EmptyRichText = "{\"type\":\"doc\",\"content\":[]}";
 
     public static ResourceType NewResourceType(bool isExternal = false, string? name = null)
+    {
+        return ResourceType.Create(
+            Guid.NewGuid(),
+            name ?? (isExternal ? "Externo" : "Interno"),
+            isExternal ? "Recurso enlazado" : "Recurso propio",
+            "#3B82F6",
+            isExternal
+        );
+    }
+
+    public static ResourceTypeRow NewResourceTypeRow(bool isExternal = false, string? name = null)
     {
         return new()
         {
@@ -28,10 +38,36 @@ internal static class ResourceTestData
         string subtitle = "Intro",
         int year = 2024,
         string? url = null,
-        ResourceType? type = null
+        ResourceType? type = null,
+        string description = SomeRichText
     )
     {
         var resourceType = type ?? NewResourceType();
+        return Persisted.As<Resource>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Title = title,
+                Subtitle = subtitle,
+                Description = description,
+                Url = url,
+                ResourceTypeId = resourceType.Id,
+                ThumbnailId = Guid.NewGuid(),
+                CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                CreatedBy = Guid.NewGuid(),
+            }
+        );
+    }
+
+    public static ResourceRow NewResourceRow(
+        string title = "Guide",
+        string subtitle = "Intro",
+        int year = 2024,
+        string? url = null,
+        ResourceTypeRow? type = null
+    )
+    {
+        var resourceType = type ?? NewResourceTypeRow();
         return new()
         {
             Id = Guid.NewGuid(),
@@ -47,42 +83,15 @@ internal static class ResourceTestData
         };
     }
 
-    public static void HasResources(this IResourceRepository resources, params Resource[] items)
+    public static ResourceTypeRow TypeExists(this FakeReadStore readStore, bool isExternal = false)
     {
-        resources.Query().Returns(items.AsQueryable());
-    }
-
-    public static void HasTypes(
-        this IResourceTypeRepository resourceTypes,
-        params ResourceType[] items
-    )
-    {
-        resourceTypes.Query().Returns(items.AsQueryable());
-    }
-
-    public static ResourceType TypeExists(
-        this IResourceTypeRepository resourceTypes,
-        bool isExternal = false
-    )
-    {
-        var type = NewResourceType(isExternal);
-        resourceTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<ResourceType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(type);
+        var type = NewResourceTypeRow(isExternal);
+        readStore.ResourceTypes.Add(type);
         return type;
     }
 
-    public static void TypeMissing(this IResourceTypeRepository resourceTypes)
+    public static void TypeMissing(this FakeReadStore readStore)
     {
-        ResourceType? missing = null;
-        resourceTypes
-            .FindAsync(
-                Arg.Any<Expression<Func<ResourceType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(missing);
+        readStore.ResourceTypes.Add(NewResourceTypeRow());
     }
 }

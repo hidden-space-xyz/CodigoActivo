@@ -1,8 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Emails.Contracts;
+using CodigoActivo.Application.Reports.Contracts;
+using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Emails.Queries;
 
@@ -20,12 +21,10 @@ public sealed record GetEventAttendeesEmailAudienceQuery(
 /// Executes the query that previews who an email to event attendees would reach, selecting
 /// recipients exactly as <see cref="Commands.SendEmailToEventAttendeesCommandHandler"/> does.
 /// </summary>
-/// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class GetEventAttendeesEmailAudienceQueryHandler(
-    IUserRepository users,
-    IEventRepository events,
+    IReadStore readStore,
     IQueryExecutor executor
 ) : IQueryHandler<GetEventAttendeesEmailAudienceQuery, Result<EmailAudienceResponse>>
 {
@@ -40,13 +39,13 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandler(
         CancellationToken ct = default
     )
     {
-        if (!await events.ExistsAsync(e => e.Id == query.EventId, ct))
+        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == query.EventId), ct))
         {
             return Error.NotFound(ErrorCode.EventNotFound);
         }
 
         var audience = await ManualEmailAudience.LoadAsync(
-            UserFilters.ApplyEventAttendees(users.Query(), query.EventId, query.Filters),
+            UserFilters.ApplyEventAttendees(readStore.Users, query.EventId, query.Filters),
             executor,
             ct
         );

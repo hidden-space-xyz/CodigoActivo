@@ -1,8 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Files.Queries;
 
@@ -15,8 +14,9 @@ public sealed record GetFileByIdQuery(Guid FileId) : IQuery<Result<FileResponse>
 /// <summary>
 /// Executes the query to retrieve file by identifier.
 /// </summary>
-/// <param name="files">Repository used to persist and retrieve files.</param>
-public sealed class GetFileByIdQueryHandler(IFileRepository files)
+/// <param name="readStore">Read side the query reads from.</param>
+/// <param name="executor">Query executor used to materialize database results.</param>
+public sealed class GetFileByIdQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<GetFileByIdQuery, Result<FileResponse>>
 {
     /// <summary>
@@ -30,9 +30,10 @@ public sealed class GetFileByIdQueryHandler(IFileRepository files)
         CancellationToken ct = default
     )
     {
-        var matches = await files.GetAsync(f => f.Id == query.FileId, ct);
-        var response = matches.Count is 0 ? null : matches[0].ToResponse();
-
-        return response is null ? Error.NotFound(ErrorCode.FileNotFound) : Result.Success(response);
+        var response = await executor.FirstOrDefaultAsync(
+            readStore.Files.Where(f => f.Id == query.FileId).Select(FileProjections.File),
+            ct
+        );
+        return response is null ? Error.NotFound(ErrorCode.FileNotFound) : response;
     }
 }

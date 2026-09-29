@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Activities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,13 +20,13 @@ public class ActivityRoleCapacityConfiguration : IEntityTypeConfiguration<Activi
         builder.Property(x => x.DesiredCount).IsRequired();
 
         builder
-            .HasOne(x => x.Activity)
+            .HasOne<Activity>()
             .WithMany(a => a.RoleCapacities)
             .HasForeignKey(x => x.ActivityId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasOne(x => x.ActivityRoleType)
+            .HasOne<ActivityRoleType>()
             .WithMany()
             .HasForeignKey(x => x.ActivityRoleTypeId)
             .OnDelete(DeleteBehavior.Restrict);

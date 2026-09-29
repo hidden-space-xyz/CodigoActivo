@@ -1,95 +1,74 @@
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities;
 
 /// <summary>
-/// Evaluates whether signup is allowed by the business rules.
+/// Checks that the signup of the event of an activity is open for the people signing up, following
+/// <see cref="Event.SignupPhaseAt"/> and <see cref="EarlySignup"/>. Administrators are not bound by
+/// it.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-public sealed class SignupGate(
-    IActivityRepository activities,
-    IUserRepository users,
-    IQueryExecutor executor,
-    IClock clock
-)
+public sealed class SignupGate(IEventRepository events, IUserRepository users, IClock clock)
 {
     /// <summary>
-    /// Ensures that signup open satisfies the required business rules.
+    /// Ensures the people may sign up to the activity right now.
     /// </summary>
-    /// <param name="activityId">Identifier of the activity.</param>
-    /// <param name="userIds">Identifiers of the user items.</param>
-    /// <param name="isAdmin">Whether is admin.</param>
+    /// <param name="activity">Activity they sign up to.</param>
+    /// <param name="userIds">Identifiers of the people whose entitlement counts.</param>
+    /// <param name="isAdmin">Whether an administrator acts.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
     public async Task<Result> EnsureSignupOpenAsync(
-        Guid activityId,
+        Activity activity,
         IReadOnlyList<Guid> userIds,
         bool isAdmin,
         CancellationToken ct
     )
     {
-        var window = await executor.FirstOrDefaultAsync(
-            activities
-                .Query()
-                .Where(a => a.Id == activityId)
-                .Select(a => new SignupWindow(
-                    a.Event.EarlySignupStartsAt,
-                    a.Event.SignupStartsAt,
-                    a.Event.SignupEndsAt
-                )),
-            ct
-        );
-        if (window is null)
-        {
-            return Error.NotFound(ErrorCode.ActivityNotFound);
-        }
+        ArgumentNullException.ThrowIfNull(activity);
 
         if (isAdmin)
         {
             return Result.Success();
         }
 
-        var now = clock.UtcNow;
-        return now switch
+        var ev = await events.GetByIdAsync(activity.EventId, ct);
+        return ev?.SignupPhaseAt(clock.UtcNow) switch
         {
-            _ when now > window.EndsAt => Error.BadRequest(ErrorCode.ActivitySignupClosed),
-            _ when now >= window.StartsAt => Result.Success(),
-            _ when window.EarlyStartsAt is not { } earlyStart || now < earlyStart =>
-                Error.BadRequest(ErrorCode.ActivitySignupClosed),
-            _ => await AllAllowedInEarlySignupAsync(userIds, ct)
+            SignupPhase.Open => Result.Success(),
+            SignupPhase.EarlyOnly => await AllEntitledToEarlySignupAsync(userIds, ct)
                 ? Result.Success()
-                : Error.BadRequest(ErrorCode.ActivitySignupEarlyOnly),
+                : Error.Validation(ErrorCode.ActivitySignupEarlyOnly),
+            _ => Error.Validation(ErrorCode.ActivitySignupClosed),
         };
     }
 
-    private async Task<bool> AllAllowedInEarlySignupAsync(
+    private async Task<bool> AllEntitledToEarlySignupAsync(
         IReadOnlyList<Guid> userIds,
         CancellationToken ct
     )
     {
-        var userTypeIds = await executor.ToListAsync(
-            users
-                .Query()
-                .Where(u => userIds.Contains(u.Id))
-                .Select(u => u.Parent == null ? u.UserTypeId : u.Parent.UserTypeId),
-            ct
+        var people = await users.ListByIdsAsync(userIds, ct);
+        var guardianIds = people
+            .Where(person => person.ParentId is not null)
+            .Select(person => person.ParentId!.Value)
+            .Distinct()
+            .ToList();
+        var guardians = guardianIds.Count is 0
+            ? []
+            : (await users.ListByIdsAsync(guardianIds, ct)).ToDictionary(user => user.Id);
+
+        return people.All(person =>
+            EarlySignup.IsEntitled(
+                person,
+                person.ParentId is { } parentId ? guardians.GetValueOrDefault(parentId) : null
+            )
         );
-        return userTypeIds.All(IsEarlySignupUserType);
     }
-
-    private static bool IsEarlySignupUserType(Guid userTypeId)
-    {
-        return userTypeId == SeedIds.UserTypes.Member || userTypeId == SeedIds.UserTypes.Sponsor;
-    }
-
-    private sealed record SignupWindow(
-        DateTimeOffset? EarlyStartsAt,
-        DateTimeOffset StartsAt,
-        DateTimeOffset EndsAt
-    );
 }

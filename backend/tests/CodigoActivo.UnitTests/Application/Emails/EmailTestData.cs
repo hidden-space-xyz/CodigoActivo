@@ -1,12 +1,12 @@
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Emails;
-using CodigoActivo.Application.Options;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Emails.Contracts;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
-using NSubstitute;
 
 namespace CodigoActivo.UnitTests.Application.Emails;
 
@@ -14,10 +14,10 @@ internal static class EmailTestData
 {
     public static readonly DateOnly Birth = new(1990, 1, 1);
 
-    public static User NewUser(
+    public static UserRow NewUserRow(
         string first,
         string? email,
-        User? parent = null,
+        UserRow? parent = null,
         bool promotionalConsent = false
     )
     {
@@ -50,13 +50,8 @@ internal static class EmailTestData
         return new ManualEmailDispatcher(
             outbox,
             options,
-            new ApplicationOptions(),
+            new ManualEmailComposer(new ApplicationOptions()),
             NullLogger<ManualEmailDispatcher>.Instance
         );
-    }
-
-    public static void HasUsers(this IUserRepository users, params User[] items)
-    {
-        users.Query().Returns(items.AsQueryable());
     }
 }

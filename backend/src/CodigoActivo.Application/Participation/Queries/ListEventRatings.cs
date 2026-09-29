@@ -1,9 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
@@ -18,14 +17,10 @@ public sealed record ListEventRatingsQuery(Guid EventId, EventRatingListQuery Fi
 /// <summary>
 /// Executes the query to list event ratings.
 /// </summary>
-/// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="ratings">Repository used to persist and retrieve ratings.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class ListEventRatingsQueryHandler(
-    IEventRepository events,
-    IEventRatingRepository ratings,
-    IQueryExecutor executor
-) : IQueryHandler<ListEventRatingsQuery, Result<PagedResult<EventRatingListItemResponse>>>
+public sealed class ListEventRatingsQueryHandler(IReadStore readStore, IQueryExecutor executor)
+    : IQueryHandler<ListEventRatingsQuery, Result<PagedResult<EventRatingListItemResponse>>>
 {
     private static readonly SortMap<EventRatingListItemResponse> Sort =
         new SortMap<EventRatingListItemResponse>()
@@ -44,15 +39,14 @@ public sealed class ListEventRatingsQueryHandler(
         CancellationToken ct = default
     )
     {
-        if (!await events.ExistsAsync(e => e.Id == query.EventId, ct))
+        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == query.EventId), ct))
         {
             return Error.NotFound(ErrorCode.EventNotFound);
         }
 
-        var source = ratings
-            .Query()
-            .Where(r => r.EventId == query.EventId)
-            .Select(Projections.EventRatingListItem);
+        var source = readStore
+            .EventRatings.Where(r => r.EventId == query.EventId)
+            .Select(EventRatingProjections.EventRatingListItem);
 
         return await executor.ToPagedAsync(
             Sort.Apply(source, query.Filters.Sort),

@@ -1,4 +1,6 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Partners;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -25,7 +27,7 @@ public class PartnerConfiguration : IEntityTypeConfiguration<Partner>
         builder.HasIndex(p => new { p.Tier, p.FromDate });
 
         builder
-            .HasOne(p => p.Thumbnail)
+            .HasOne<FileEntity>()
             .WithMany()
             .HasForeignKey(p => p.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

@@ -1,12 +1,13 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Auth;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Options;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -30,7 +31,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
     public ResetTwoFactorCommandHandlerTests()
     {
         actingAdmin = NewUser(isAdmin: true);
-        actingAdmin.PasswordHash = hasher.Hash(ActingPassword);
+        Persisted.Overwrite(actingAdmin, new { PasswordHash = hasher.Hash(ActingPassword) });
         sut = new ResetTwoFactorCommandHandler(
             users,
             PasswordGuards.Create(hasher, uow, clock),
@@ -39,7 +40,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
             new AccountSecurityNotifier(
                 emailSender,
                 clock,
-                new ApplicationOptions(),
+                new AccountEmailComposer(new ApplicationOptions(), clock),
                 NullLogger<AccountSecurityNotifier>.Instance
             )
         );
@@ -60,13 +61,19 @@ public sealed class ResetTwoFactorCommandHandlerTests
     private static User UserWithAuthenticator()
     {
         var user = NewUser();
-        user.TwoFactorMethod = TwoFactorMethod.Authenticator;
-        user.AuthenticatorKey = "protected:secret";
-        user.AuthenticatorLastUsedStep = 12;
-        user.PendingAuthenticatorKey = "protected:pending";
-        user.LoginCodeHash = "code";
-        user.TwoFactorFailedAttempts = 3;
-        user.TwoFactorLockedUntil = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        Persisted.Overwrite(
+            user,
+            new
+            {
+                TwoFactorMethod = TwoFactorMethod.Authenticator,
+                AuthenticatorKey = "protected:secret",
+                AuthenticatorLastUsedStep = (long?)12,
+                PendingAuthenticatorKey = "protected:pending",
+                LoginCodeHash = "code",
+                TwoFactorFailedAttempts = 3,
+                TwoFactorLockedUntil = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            }
+        );
         return user;
     }
 
@@ -84,7 +91,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
 
         var result = await HandleAsync(user.Id, "wrong");
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
         actingAdmin.PasswordFailedAttempts.Should().Be(1);
         await uow.DidNotReceiveWithAnyArgs()
@@ -98,7 +105,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
 
         var result = await HandleAsync(Guid.NewGuid(), ActingPassword);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
         await AssertNotSavedAsync();
     }
 

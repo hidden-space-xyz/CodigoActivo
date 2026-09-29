@@ -1,7 +1,9 @@
-using System.Linq.Expressions;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 
 namespace CodigoActivo.UnitTests.Application.Events;
@@ -15,12 +17,48 @@ internal static class EventTestData
         DateOnly? ends = null,
         bool featured = false,
         DateTimeOffset? signupStart = null,
+        DateTimeOffset? signupEnd = null,
+        string description = "{}",
+        IReadOnlyList<Guid>? categoryTypeIds = null
+    )
+    {
+        var ev = Event.Create(
+            new EventContent(title, subtitle, description, Guid.NewGuid()),
+            EventSchedule
+                .Create(
+                    starts ?? new DateOnly(2026, 8, 1),
+                    ends ?? new DateOnly(2026, 8, 2),
+                    null,
+                    signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
+                    signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)
+                )
+                .Value,
+            EventCategorySelection.Create(categoryTypeIds ?? [Guid.NewGuid()]).Value,
+            EventTermsLinks.None,
+            Guid.NewGuid(),
+            new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        );
+        if (featured)
+        {
+            ev.Feature();
+        }
+
+        return ev;
+    }
+
+    public static EventRow NewEventRow(
+        string title = "Hackathon",
+        string subtitle = "Innovación",
+        DateOnly? starts = null,
+        DateOnly? ends = null,
+        bool featured = false,
+        DateTimeOffset? signupStart = null,
         DateTimeOffset? signupEnd = null
     )
     {
         var start = starts ?? new DateOnly(2026, 8, 1);
         var end = ends ?? new DateOnly(2026, 8, 2);
-        return new Event
+        return new EventRow
         {
             Id = Guid.NewGuid(),
             Title = title,
@@ -34,11 +72,10 @@ internal static class EventTestData
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
-            Categories = [],
         };
     }
 
-    public static EventCategory NewCategory(
+    public static EventCategoryRow NewCategoryRow(
         Guid eventId,
         Guid categoryTypeId,
         string name,
@@ -49,7 +86,7 @@ internal static class EventTestData
         {
             EventId = eventId,
             EventCategoryTypeId = categoryTypeId,
-            EventCategoryType = new EventCategoryType
+            EventCategoryType = new EventCategoryTypeRow
             {
                 Id = categoryTypeId,
                 Name = name,
@@ -58,13 +95,13 @@ internal static class EventTestData
         };
     }
 
-    public static Event WithCategory(Event ev, Guid categoryTypeId, string name)
+    public static EventRow WithCategory(EventRow ev, Guid categoryTypeId, string name)
     {
-        ev.Categories.Add(NewCategory(ev.Id, categoryTypeId, name));
+        ev.Categories.Add(NewCategoryRow(ev.Id, categoryTypeId, name));
         return ev;
     }
 
-    public static EventCategoryType NewCategoryType(string name, string color = "#000000")
+    public static EventCategoryTypeRow NewCategoryTypeRow(string name, string color = "#000000")
     {
         return new()
         {
@@ -128,26 +165,10 @@ internal static class EventTestData
         );
     }
 
-    public static void HasEvents(this IEventRepository events, params Event[] items)
-    {
-        events.Query().Returns(items.AsQueryable());
-    }
-
-    public static void HasCategoryTypes(
-        this IEventCategoryTypeRepository categoryTypes,
-        params EventCategoryType[] items
-    )
-    {
-        categoryTypes.Query().Returns(items.AsQueryable());
-    }
-
     public static void HasCategoryCount(this IEventCategoryTypeRepository categoryTypes, int count)
     {
         categoryTypes
-            .CountAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
+            .CountExistingAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(count);
     }
 
@@ -157,14 +178,26 @@ internal static class EventTestData
     )
     {
         categoryTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<EventCategoryType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
+            .NameExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(taken);
     }
 
     public static TermsDocument NewTermsDocument(
+        string name = "Términos generales",
+        string description = "{}"
+    )
+    {
+        return Persisted.As<TermsDocument>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                Description = description,
+            }
+        );
+    }
+
+    public static TermsDocumentRow NewTermsDocumentRow(
         string name = "Términos generales",
         string description = "{}"
     )
@@ -177,24 +210,13 @@ internal static class EventTestData
         };
     }
 
-    public static void HasTermsDocuments(
-        this ITermsDocumentRepository termsDocuments,
-        params TermsDocument[] items
-    )
-    {
-        termsDocuments.Query().Returns(items.AsQueryable());
-    }
-
     public static void TermsDocumentExists(
         this ITermsDocumentRepository termsDocuments,
         bool exists
     )
     {
         termsDocuments
-            .ExistsAsync(
-                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
+            .NameExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(exists);
     }
 
@@ -204,22 +226,24 @@ internal static class EventTestData
     )
     {
         termsDocuments
-            .FindAsync(
-                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
+            .GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(termsDocument);
     }
 
     public static void TermsDocumentInUse(this IEventRepository events, bool inUse)
     {
-        events.HasTermsDocumentAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(inUse);
+        events
+            .LinksTermsDocumentAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(inUse);
     }
 
-    public static void TermsDocumentAccepted(this IEventRepository events, bool accepted)
+    public static void TermsDocumentAccepted(
+        this IEventTermsAcceptanceRepository termsAcceptances,
+        bool accepted
+    )
     {
-        events
-            .HasTermsAcceptancesAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+        termsAcceptances
+            .AnyForDocumentAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(accepted);
     }
 }

@@ -1,4 +1,6 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,7 +28,7 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.HasIndex(e => e.EventEndsAt);
 
         builder
-            .HasOne(e => e.Thumbnail)
+            .HasOne<FileEntity>()
             .WithMany()
             .HasForeignKey(e => e.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

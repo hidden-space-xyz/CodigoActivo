@@ -1,8 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -17,10 +15,10 @@ public sealed record ListAssignedActivitiesQuery(Guid UserId, Guid? EventId)
 /// <summary>
 /// Executes the query to list assigned activities.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class ListAssignedActivitiesQueryHandler(
-    IActivityRepository activities,
+    IReadStore readStore,
     IQueryExecutor executor
 ) : IQueryHandler<ListAssignedActivitiesQuery, IReadOnlyList<AssignedActivityResponse>>
 {
@@ -35,10 +33,9 @@ public sealed class ListAssignedActivitiesQueryHandler(
         CancellationToken ct = default
     )
     {
-        var source = activities
-            .QueryAssignments()
-            .Where(assignment => assignment.UserId == query.UserId)
-            .Select(Projections.AssignedActivity);
+        var source = readStore
+            .Assignments.Where(assignment => assignment.UserId == query.UserId)
+            .Select(ActivityProjections.AssignedActivity);
 
         if (query.EventId is { } filterEventId)
         {

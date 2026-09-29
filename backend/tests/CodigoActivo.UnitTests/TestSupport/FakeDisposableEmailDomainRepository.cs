@@ -1,8 +1,8 @@
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Infrastructure.Communication;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 
-public sealed class FakeDisposableEmailDomainRepository : IDisposableEmailDomainRepository
+public sealed class FakeDisposableEmailDomainRepository : IDisposableEmailDomainStore
 {
     private readonly Lock gate = new();
     private readonly HashSet<string> domains = new(StringComparer.Ordinal);

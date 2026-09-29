@@ -1,7 +1,6 @@
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
-using NSubstitute;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.UnitTests.Application.Reports;
 
@@ -17,52 +16,38 @@ internal static class ReportTestData
 
     public static readonly DateTimeOffset When = new(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
 
-    public static User NewUser(
+    public static UserRow NewUserRow(
         string first,
-        User? parent = null,
+        UserRow? parent = null,
         Guid? userTypeId = null,
         string? email = null,
         DateOnly? birthDate = null,
         string typeName = "Socio",
-        Gender gender = Gender.Female
+        Gender gender = Gender.Female,
+        string? lastName = null,
+        bool withContact = true
     )
     {
+        var typeId = userTypeId ?? SeedIds.UserTypes.Member;
         return new()
         {
             Id = Guid.NewGuid(),
             FirstName = first,
-            LastName = first + "-last",
-            Email = email ?? (first + "@test.local"),
-            Phone = "555-" + first,
+            LastName = lastName ?? first + "-last",
+            Email = withContact ? email ?? (first + "@test.local") : null,
+            Phone = withContact ? "555-" + first : null,
             BirthDate = birthDate ?? new DateOnly(1990, 6, 15),
             Gender = gender,
             Parent = parent,
             ParentId = parent?.Id,
-            UserTypeId = userTypeId ?? SeedIds.UserTypes.Member,
-            UserType = new UserType
+            UserTypeId = typeId,
+            UserType = new UserTypeRow
             {
+                Id = typeId,
                 Description = "Descripción de prueba",
                 Name = typeName,
                 Color = "#EF4444",
             },
         };
-    }
-
-    public static void HasEvents(this IEventRepository events, params Event[] list)
-    {
-        events.Query().Returns(list.AsQueryable());
-    }
-
-    public static void HasAssignments(
-        this IActivityRepository activities,
-        params ActivityUserRoleAssignment[] assignments
-    )
-    {
-        activities.QueryAssignments().Returns(assignments.AsQueryable());
-    }
-
-    public static void HasUsers(this IUserRepository users, params User[] list)
-    {
-        users.Query().Returns(list.AsQueryable());
     }
 }

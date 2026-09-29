@@ -1,10 +1,8 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
 
@@ -12,15 +10,15 @@ namespace CodigoActivo.UnitTests.Application.Activities.Queries;
 
 public sealed class VerifyTimeOverlapsQueryHandlerTests
 {
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly FakeReadStore store = new();
     private readonly VerifyTimeOverlapsQueryHandler sut;
 
     public VerifyTimeOverlapsQueryHandlerTests()
     {
-        sut = new VerifyTimeOverlapsQueryHandler(activities, new FakeQueryExecutor());
+        sut = new VerifyTimeOverlapsQueryHandler(store, new FakeQueryExecutor());
     }
 
-    private static ActivityUserRoleAssignment OverlapAssignment(Guid userId, Activity activity)
+    private static AssignmentRow OverlapAssignment(Guid userId, ActivityRow activity)
     {
         return new()
         {
@@ -33,8 +31,6 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncActivityMissingReturnsNotFound()
     {
-        activities.Query().Returns(new List<Activity>().AsQueryable());
-
         var result = await sut.HandleAsync(
             new VerifyTimeOverlapsQuery(Guid.NewGuid(), Guid.NewGuid()),
             TestContext.Current.CancellationToken
@@ -48,14 +44,14 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     public async Task HandleAsyncOverlappingAssignmentsReportsOverlapsExcludingTargetAndOtherUsers()
     {
         var userId = Guid.NewGuid();
-        var target = OverlapActivity(Guid.NewGuid(), 10, 12);
-        var clash = OverlapActivity(Guid.NewGuid(), 11, 13, "Choque");
-        activities.Query().Returns(new List<Activity> { target }.AsQueryable());
-        activities.HasAssignments(
+        var target = OverlapActivityRow(Guid.NewGuid(), 10, 12);
+        var clash = OverlapActivityRow(Guid.NewGuid(), 11, 13, "Choque");
+        store.Activities.Add(target);
+        store.Assignments.AddRange([
             OverlapAssignment(userId, target),
             OverlapAssignment(userId, clash),
-            OverlapAssignment(Guid.NewGuid(), OverlapActivity(Guid.NewGuid(), 11, 13, "Ajeno"))
-        );
+            OverlapAssignment(Guid.NewGuid(), OverlapActivityRow(Guid.NewGuid(), 11, 13, "Ajeno")),
+        ]);
 
         var result = await sut.HandleAsync(
             new VerifyTimeOverlapsQuery(target.Id, userId),
@@ -73,16 +69,20 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     public async Task HandleAsyncMultipleOverlapsOrdersByStartThenActivityId()
     {
         var userId = Guid.NewGuid();
-        var target = OverlapActivity(Guid.NewGuid(), 9, 14);
-        var earliest = OverlapActivity(Guid.NewGuid(), 10, 11);
-        var tieFirst = OverlapActivity(new Guid("00000000-0000-0000-0000-000000000001"), 11, 12);
-        var tieSecond = OverlapActivity(new Guid("00000000-0000-0000-0000-000000000002"), 11, 12);
-        activities.Query().Returns(new List<Activity> { target }.AsQueryable());
-        activities.HasAssignments(
+        var target = OverlapActivityRow(Guid.NewGuid(), 9, 14);
+        var earliest = OverlapActivityRow(Guid.NewGuid(), 10, 11);
+        var tieFirst = OverlapActivityRow(new Guid("00000000-0000-0000-0000-000000000001"), 11, 12);
+        var tieSecond = OverlapActivityRow(
+            new Guid("00000000-0000-0000-0000-000000000002"),
+            11,
+            12
+        );
+        store.Activities.Add(target);
+        store.Assignments.AddRange([
             OverlapAssignment(userId, tieSecond),
             OverlapAssignment(userId, tieFirst),
-            OverlapAssignment(userId, earliest)
-        );
+            OverlapAssignment(userId, earliest),
+        ]);
 
         var result = await sut.HandleAsync(
             new VerifyTimeOverlapsQuery(target.Id, userId),
@@ -100,10 +100,10 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     public async Task HandleAsyncDisjointAssignmentsReportsNoOverlaps()
     {
         var userId = Guid.NewGuid();
-        var target = OverlapActivity(Guid.NewGuid(), 10, 12);
-        activities.Query().Returns(new List<Activity> { target }.AsQueryable());
-        activities.HasAssignments(
-            OverlapAssignment(userId, OverlapActivity(Guid.NewGuid(), 13, 14))
+        var target = OverlapActivityRow(Guid.NewGuid(), 10, 12);
+        store.Activities.Add(target);
+        store.Assignments.Add(
+            OverlapAssignment(userId, OverlapActivityRow(Guid.NewGuid(), 13, 14))
         );
 
         var result = await sut.HandleAsync(
@@ -120,10 +120,10 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
     public async Task HandleAsyncAdjacentAssignmentsReportsNoOverlaps()
     {
         var userId = Guid.NewGuid();
-        var target = OverlapActivity(Guid.NewGuid(), 10, 12);
-        activities.Query().Returns(new List<Activity> { target }.AsQueryable());
-        activities.HasAssignments(
-            OverlapAssignment(userId, OverlapActivity(Guid.NewGuid(), 12, 14))
+        var target = OverlapActivityRow(Guid.NewGuid(), 10, 12);
+        store.Activities.Add(target);
+        store.Assignments.Add(
+            OverlapAssignment(userId, OverlapActivityRow(Guid.NewGuid(), 12, 14))
         );
 
         var result = await sut.HandleAsync(

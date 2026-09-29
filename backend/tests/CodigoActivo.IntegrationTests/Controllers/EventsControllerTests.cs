@@ -1,9 +1,14 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.EventCategories.Contracts;
+using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Application.TermsDocuments.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -24,12 +29,14 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.EventCategoryTypes.Add(
-                new EventCategoryType
-                {
-                    Id = id,
-                    Name = name,
-                    Color = color,
-                }
+                Persisted.As<EventCategoryType>(
+                    new
+                    {
+                        Id = id,
+                        Name = name,
+                        Color = color,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -57,35 +64,43 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var startAt = new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         await Factory.SeedAsync(db =>
         {
-            var ev = new Event
-            {
-                Id = id,
-                Title = title,
-                Subtitle = subtitle,
-                Description = "{}",
-                EventStartsAt = start,
-                EventEndsAt = end,
-                SignupStartsAt = signupStartsAt ?? startAt.AddDays(-10),
-                SignupEndsAt = signupEndsAt ?? startAt.AddDays(-1),
-                Featured = featured,
-                ThumbnailId = thumbnailId,
-                CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
-            };
+            var ev = Persisted.As<Event>(
+                new
+                {
+                    Id = id,
+                    Title = title,
+                    Subtitle = subtitle,
+                    Description = "{}",
+                    EventStartsAt = start,
+                    EventEndsAt = end,
+                    SignupStartsAt = signupStartsAt ?? startAt.AddDays(-10),
+                    SignupEndsAt = signupEndsAt ?? startAt.AddDays(-1),
+                    Featured = featured,
+                    ThumbnailId = thumbnailId,
+                    CreatedAt = SeededAt,
+                    CreatedBy = TestSeedData.Users.AdminId,
+                }
+            );
             foreach (var catId in categoryIds)
             {
-                ev.Categories.Add(new EventCategory { EventCategoryTypeId = catId });
+                Persisted.Add(
+                    ev.Categories,
+                    Persisted.As<EventCategory>(new { EventCategoryTypeId = catId })
+                );
             }
 
             if (termsDocumentId is { } linkedTermsDocumentId)
             {
-                ev.TermsDocuments.Add(
-                    new EventTermsDocument
-                    {
-                        TermsDocumentId = linkedTermsDocumentId,
-                        IsRequired = true,
-                        DisplayOrder = 0,
-                    }
+                Persisted.Add(
+                    ev.TermsDocuments,
+                    Persisted.As<EventTermsDocument>(
+                        new
+                        {
+                            TermsDocumentId = linkedTermsDocumentId,
+                            IsRequired = true,
+                            DisplayOrder = 0,
+                        }
+                    )
                 );
             }
 
@@ -101,12 +116,14 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.TermsDocuments.Add(
-                new TermsDocument
-                {
-                    Id = id,
-                    Name = name ?? Guid.NewGuid().ToString("N"),
-                    Description = "{}",
-                }
+                Persisted.As<TermsDocument>(
+                    new
+                    {
+                        Id = id,
+                        Name = name ?? Guid.NewGuid().ToString("N"),
+                        Description = "{}",
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -656,6 +673,28 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task FeatureAsAdminLeavesOnlyTheChosenEventFeaturedWithoutAnEdit()
+    {
+        var previousId = await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            featured: true
+        );
+        var chosenId = await SeedEventAsync(new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 2));
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync($"/api/events/{chosenId}/feature", ct: Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var chosen = await FindAsync<Event>(chosenId);
+        var previous = await FindAsync<Event>(previousId);
+        chosen!.Featured.Should().BeTrue();
+        previous!.Featured.Should().BeFalse();
+        chosen.UpdatedAt.Should().BeNull();
+        previous.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
     public async Task FeatureEventMissingReturns404EventNotFound()
     {
         var client = await LoginAsAdminAsync();
@@ -822,6 +861,29 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<EventCategoryType>(id);
         stored.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteCategoryTypeInUseRemovesItFromTheEvents()
+    {
+        var id = await SeedCategoryTypeAsync("En uso");
+        var keptId = await SeedCategoryTypeAsync("Conservada");
+        var eventId = await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            categoryTypeIds: [id, keptId]
+        );
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.DeleteWithCsrfAsync($"/api/events/categoryType/{id}", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var remaining = await Factory.QueryAsync(db =>
+            db.EventCategories.Where(c => c.EventId == eventId)
+                .Select(c => c.EventCategoryTypeId)
+                .ToListAsync(Ct)
+        );
+        remaining.Should().Equal(keptId);
     }
 
     [Fact]

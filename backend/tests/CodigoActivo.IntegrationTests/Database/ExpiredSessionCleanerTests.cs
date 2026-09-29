@@ -1,6 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.API.Security;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +17,6 @@ public sealed class ExpiredSessionCleanerTests(CodigoActivoWebAppFactory factory
     {
         return new ExpiredSessionCleaner(
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
-            Factory.Clock,
             new SessionCleanupOptions(),
             NullLogger<ExpiredSessionCleaner>.Instance
         );
@@ -29,13 +28,15 @@ public sealed class ExpiredSessionCleanerTests(CodigoActivoWebAppFactory factory
         {
             db.Set<UserSession>()
                 .Add(
-                    new UserSession
-                    {
-                        Id = id,
-                        UserId = userId,
-                        CreatedAt = expiresAt.AddHours(-8),
-                        ExpiresAt = expiresAt,
-                    }
+                    Persisted.As<UserSession>(
+                        new
+                        {
+                            Id = id,
+                            UserId = userId,
+                            CreatedAt = expiresAt.AddHours(-8),
+                            ExpiresAt = expiresAt,
+                        }
+                    )
                 );
             return Task.CompletedTask;
         });

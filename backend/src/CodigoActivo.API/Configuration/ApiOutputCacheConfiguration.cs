@@ -1,6 +1,6 @@
 using CodigoActivo.API.Caching;
-using CodigoActivo.Application.Caching;
-using Microsoft.AspNetCore.OutputCaching;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Common.Caching;
 
 namespace CodigoActivo.API.Configuration;
 

@@ -2,12 +2,9 @@ using System.Text;
 using AwesomeAssertions;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
-using CodigoActivo.Application.Options;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Emails.EmailTestData;
 
@@ -16,7 +13,7 @@ namespace CodigoActivo.UnitTests.Application.Emails.Commands;
 public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
 {
     private readonly List<MemoryStream> attachmentStreams = [];
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly FakeReadStore store = new();
     private readonly RecordingEmailOutbox outbox = new();
     private readonly ManualEmailOptions options = new();
     private readonly SendEmailToUsersCommandHandler sut;
@@ -24,7 +21,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     public SendEmailToUsersCommandHandlerTests()
     {
         sut = new SendEmailToUsersCommandHandler(
-            users,
+            store,
             new FakeQueryExecutor(),
             options,
             NewDispatcher(outbox, options)
@@ -49,7 +46,10 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsyncSeveralRecipientsQueuesOneMessagePerRecipientInOneBatch()
     {
-        users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
+        store.Users.AddRange([
+            NewUserRow("Ana", "ana@test.local"),
+            NewUserRow("Berto", "berto@test.local"),
+        ]);
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
@@ -70,8 +70,8 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsyncDependentWithoutEmailSkipsItWithoutSending()
     {
-        var parent = NewUser("Marta", "marta@test.local");
-        users.HasUsers(parent, NewUser("Mateo", null, parent));
+        var parent = NewUserRow("Marta", "marta@test.local");
+        store.Users.AddRange([parent, NewUserRow("Mateo", null, parent)]);
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
@@ -87,22 +87,25 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsyncFilterMatchesOnlyDependentsReturnsNoRecipients()
     {
-        var parent = NewUser("Marta", "marta@test.local");
-        users.HasUsers(parent, NewUser("Mateo", null, parent));
+        var parent = NewUserRow("Marta", "marta@test.local");
+        store.Users.AddRange([parent, NewUserRow("Mateo", null, parent)]);
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery { ParentId = parent.Id }, Request(), []),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailNoRecipients);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailNoRecipients);
         outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]
     public async Task HandleAsyncNameFilterOnlyMailsMatchingUsers()
     {
-        users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
+        store.Users.AddRange([
+            NewUserRow("Ana", "ana@test.local"),
+            NewUserRow("Berto", "berto@test.local"),
+        ]);
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery { Name = "berto" }, Request(), []),
@@ -117,21 +120,27 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     public async Task HandleAsyncMoreRecipientsThanAllowedReturnsTooManyRecipients()
     {
         options.MaxRecipients = 1;
-        users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
+        store.Users.AddRange([
+            NewUserRow("Ana", "ana@test.local"),
+            NewUserRow("Berto", "berto@test.local"),
+        ]);
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailTooManyRecipients);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailTooManyRecipients);
         outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]
     public async Task HandleAsyncOutboxWithoutRoomReturnsSendFailedAndQueuesNothing()
     {
-        users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
+        store.Users.AddRange([
+            NewUserRow("Ana", "ana@test.local"),
+            NewUserRow("Berto", "berto@test.local"),
+        ]);
         outbox.RejectAll = true;
 
         var result = await sut.HandleAsync(
@@ -139,14 +148,14 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailSendFailed);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailSendFailed);
         outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]
     public async Task HandleAsyncOutboxWriteFailsReturnsSendFailed()
     {
-        users.HasUsers(NewUser("Ana", "ana@test.local"));
+        store.Users.Add(NewUserRow("Ana", "ana@test.local"));
         outbox.ThrowOnEnqueue = new InvalidOperationException("database down");
 
         var result = await sut.HandleAsync(
@@ -154,13 +163,16 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailSendFailed);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailSendFailed);
     }
 
     [Fact]
     public async Task HandleAsyncWithAttachmentSharesOneCopyForEveryRecipient()
     {
-        users.HasUsers(NewUser("Ana", "ana@test.local"), NewUser("Berto", "berto@test.local"));
+        store.Users.AddRange([
+            NewUserRow("Ana", "ana@test.local"),
+            NewUserRow("Berto", "berto@test.local"),
+        ]);
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery(), Request(), [Attachment(size: 6)]),
@@ -182,7 +194,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     [InlineData(@"..\..\etc\passwd")]
     public async Task HandleAsyncAttachmentPathInFileNameKeepsOnlyTheFileName(string fileName)
     {
-        users.HasUsers(NewUser("Ana", "ana@test.local"));
+        store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         await sut.HandleAsync(
             new SendEmailToUsersCommand(
@@ -200,14 +212,14 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     public async Task HandleAsyncAttachmentsOverTheSizeCapReturnsAttachmentsTooLarge()
     {
         options.MaxAttachmentsBytes = 4;
-        users.HasUsers(NewUser("Ana", "ana@test.local"));
+        store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery(), Request(), [Attachment(size: 5)]),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailAttachmentsTooLarge);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailAttachmentsTooLarge);
         outbox.Messages.Should().BeEmpty();
     }
 
@@ -215,7 +227,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     public async Task HandleAsyncMoreAttachmentsThanAllowedReturnsTooManyAttachments()
     {
         options.MaxAttachments = 1;
-        users.HasUsers(NewUser("Ana", "ana@test.local"));
+        store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(
@@ -226,19 +238,19 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailTooManyAttachments);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailTooManyAttachments);
     }
 
     [Fact]
     public async Task HandleAsyncEmptyAttachmentReturnsAttachmentEmpty()
     {
-        users.HasUsers(NewUser("Ana", "ana@test.local"));
+        store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(new UserListQuery(), Request(), [Attachment(size: 0)]),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailAttachmentEmpty);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailAttachmentEmpty);
     }
 }

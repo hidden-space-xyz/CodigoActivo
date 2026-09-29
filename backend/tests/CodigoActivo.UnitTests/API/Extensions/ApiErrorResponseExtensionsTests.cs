@@ -49,7 +49,7 @@ public sealed class ApiErrorResponseExtensionsTests
     {
         return new()
         {
-            { ErrorKind.BadRequest, StatusCodes.Status400BadRequest, "Bad Request" },
+            { ErrorKind.Validation, StatusCodes.Status400BadRequest, "Bad Request" },
             { ErrorKind.Unauthorized, StatusCodes.Status401Unauthorized, "Unauthorized" },
             { ErrorKind.Forbidden, StatusCodes.Status403Forbidden, "Forbidden" },
             { ErrorKind.NotFound, StatusCodes.Status404NotFound, "Not Found" },
@@ -142,7 +142,7 @@ public sealed class ApiErrorResponseExtensionsTests
     public void ToProblemErrorWithTraceIdBuildsObjectResultWithStatusAndTrace()
     {
         var controller = NewController("trace-problem");
-        var error = Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
+        var error = Error.Validation(ErrorCode.PartnerThumbnailNotFound);
 
         var actionResult = controller.ToProblem(error);
 

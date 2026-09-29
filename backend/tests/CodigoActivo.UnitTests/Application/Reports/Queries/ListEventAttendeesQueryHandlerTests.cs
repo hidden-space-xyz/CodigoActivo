@@ -1,13 +1,11 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
 
@@ -15,16 +13,16 @@ namespace CodigoActivo.UnitTests.Application.Reports.Queries;
 
 public sealed class ListEventAttendeesQueryHandlerTests
 {
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly FakeReadStore store = new();
     private readonly ListEventAttendeesQueryHandler sut;
 
     public ListEventAttendeesQueryHandlerTests()
     {
-        sut = new ListEventAttendeesQueryHandler(users, new FakeQueryExecutor());
+        sut = new ListEventAttendeesQueryHandler(store, new FakeQueryExecutor());
     }
 
-    private static ActivityUserRoleAssignment Enroll(
-        User user,
+    private static AssignmentRow Enroll(
+        UserRow user,
         string activityTitle,
         DateTimeOffset startsAt,
         Guid statusId,
@@ -35,12 +33,12 @@ public sealed class ListEventAttendeesQueryHandlerTests
         TimeSpan? duration = null
     )
     {
-        var assignment = new ActivityUserRoleAssignment
+        var assignment = new AssignmentRow
         {
             UserId = user.Id,
             User = user,
             ActivityId = activityId ?? Guid.NewGuid(),
-            Activity = new Activity
+            Activity = new ActivityRow
             {
                 Description = "Descripción de la actividad",
                 Location = "Sala principal",
@@ -50,14 +48,14 @@ public sealed class ListEventAttendeesQueryHandlerTests
                 ActivityEndsAt = startsAt + (duration ?? TimeSpan.FromHours(2)),
             },
             ActivityRoleTypeId = AlphaRoleId,
-            ActivityRoleType = new ActivityRoleType
+            ActivityRoleType = new ActivityRoleTypeRow
             {
                 Description = "Descripción de prueba",
                 Id = AlphaRoleId,
                 Name = "Alpha",
             },
             AssignmentStatusId = statusId,
-            AssignmentStatus = new AssignmentStatusType
+            AssignmentStatus = new AssignmentStatusTypeRow
             {
                 Description = "Descripción de prueba",
                 Id = statusId,
@@ -70,14 +68,14 @@ public sealed class ListEventAttendeesQueryHandlerTests
         return assignment;
     }
 
-    private void HasConfirmedAttendees(params User[] attendees)
+    private void HasConfirmedAttendees(params UserRow[] attendees)
     {
         foreach (var attendee in attendees)
         {
             Enroll(attendee, "Taller", When, Confirmed, "Confirmada");
         }
 
-        users.HasUsers(attendees);
+        store.Users.AddRange(attendees);
     }
 
     private Task<PagedResult<EventAttendeeResponse>> ListAsync(
@@ -94,9 +92,9 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncAssignmentsAcrossActivitiesGroupsPerUserWithOrderedAssignments()
     {
-        var ana = NewUser("Ana", NewUser("Tutora"), gender: Gender.Other);
-        var berto = NewUser("Berto");
-        var outsider = NewUser("Zoe");
+        var ana = NewUserRow("Ana", NewUserRow("Tutora"), gender: Gender.Other);
+        var berto = NewUserRow("Berto");
+        var outsider = NewUserRow("Zoe");
         Enroll(ana, "Charla", When.AddHours(2), Denied, "Rechazada");
         var taller = Enroll(
             ana,
@@ -109,7 +107,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
         Enroll(ana, "Otro evento", When, Confirmed, "Confirmada", eventId: Guid.NewGuid());
         Enroll(berto, "Charla", When.AddHours(2), Requested, "Solicitada");
         Enroll(outsider, "Ajena", When, Confirmed, "Confirmada", eventId: Guid.NewGuid());
-        users.HasUsers(berto, ana, outsider);
+        store.Users.AddRange([berto, ana, outsider]);
 
         var page = await ListAsync(QueriedEventId, new EventAttendeeListQuery());
 
@@ -158,8 +156,8 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSearchMatchingGuardianNameFoldsAccentsAndFiltersUsers()
     {
-        var zoe = NewUser("Zoe", NewUser("María"));
-        var berto = NewUser("Berto");
+        var zoe = NewUserRow("Zoe", NewUserRow("María"));
+        var berto = NewUserRow("Berto");
         HasConfirmedAttendees(zoe, berto);
 
         var page = await ListAsync(QueriedEventId, new EventAttendeeListQuery { Search = "MARIA" });
@@ -171,8 +169,8 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSearchMatchingOwnPhoneFiltersUsers()
     {
-        var zoe = NewUser("Zoe", NewUser("María"));
-        var berto = NewUser("Berto");
+        var zoe = NewUserRow("Zoe", NewUserRow("María"));
+        var berto = NewUserRow("Berto");
         HasConfirmedAttendees(zoe, berto);
 
         var page = await ListAsync(
@@ -189,13 +187,13 @@ public sealed class ListEventAttendeesQueryHandlerTests
     {
         var activityA = Guid.NewGuid();
         var activityB = Guid.NewGuid();
-        var carla = NewUser("Carla");
-        var dani = NewUser("Dani");
+        var carla = NewUserRow("Carla");
+        var dani = NewUserRow("Dani");
         Enroll(carla, "Taller A", When, Confirmed, "Confirmada", activityId: activityA);
         Enroll(carla, "Taller B", When.AddHours(1), Confirmed, "Confirmada", activityId: activityB);
         Enroll(dani, "Taller A", When, Requested, "Solicitada", activityId: activityA);
         Enroll(dani, "Taller B", When.AddHours(1), Confirmed, "Confirmada", activityId: activityB);
-        users.HasUsers(carla, dani);
+        store.Users.AddRange([carla, dani]);
 
         var page = await ListAsync(
             QueriedEventId,
@@ -213,8 +211,8 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncUserTypeFilterReturnsOnlyMatchingUsers()
     {
-        var ana = NewUser("Ana", userTypeId: SeedIds.UserTypes.Participant);
-        var berto = NewUser("Berto");
+        var ana = NewUserRow("Ana", userTypeId: SeedIds.UserTypes.Participant);
+        var berto = NewUserRow("Berto");
         HasConfirmedAttendees(ana, berto);
 
         var page = await ListAsync(
@@ -229,8 +227,8 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncOverlappingAssignmentsFlagsConflictsExcludingDenied()
     {
-        var carla = NewUser("Carla");
-        var dani = NewUser("Dani");
+        var carla = NewUserRow("Carla");
+        var dani = NewUserRow("Dani");
         Enroll(carla, "Taller A", When, Confirmed, "Confirmada");
         Enroll(carla, "Taller B", When.AddHours(1), Requested, "Solicitada");
         Enroll(
@@ -243,7 +241,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
         );
         Enroll(dani, "Taller A", When, Confirmed, "Confirmada");
         Enroll(dani, "Taller B", When.AddHours(1), Denied, "Rechazada");
-        users.HasUsers(carla, dani);
+        store.Users.AddRange([carla, dani]);
 
         var page = await ListAsync(QueriedEventId, new EventAttendeeListQuery());
 
@@ -261,9 +259,9 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByEmailOrdersByEmailAscending()
     {
-        var carla = NewUser("Carla", email: "charlie@test.local");
-        var ana = NewUser("Ana", email: "alice@test.local");
-        var berto = NewUser("Berto", email: "bob@test.local");
+        var carla = NewUserRow("Carla", email: "charlie@test.local");
+        var ana = NewUserRow("Ana", email: "alice@test.local");
+        var berto = NewUserRow("Berto", email: "bob@test.local");
         HasConfirmedAttendees(carla, ana, berto);
 
         var page = await ListAsync(QueriedEventId, new EventAttendeeListQuery { Sort = "email" });
@@ -276,9 +274,9 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByBirthDateDescendingOrdersOldestLast()
     {
-        var oldest = NewUser("Vieja", birthDate: new DateOnly(1980, 1, 1));
-        var youngest = NewUser("Joven", birthDate: new DateOnly(2010, 1, 1));
-        var middle = NewUser("Media", birthDate: new DateOnly(1995, 1, 1));
+        var oldest = NewUserRow("Vieja", birthDate: new DateOnly(1980, 1, 1));
+        var youngest = NewUserRow("Joven", birthDate: new DateOnly(2010, 1, 1));
+        var middle = NewUserRow("Media", birthDate: new DateOnly(1995, 1, 1));
         HasConfirmedAttendees(oldest, youngest, middle);
 
         var page = await ListAsync(
@@ -292,9 +290,9 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByTypeOrdersByUserTypeName()
     {
-        var volunteer = NewUser("Vero", typeName: "Voluntario");
-        var member = NewUser("Mario", typeName: "Miembro");
-        var sponsor = NewUser("Sonia", typeName: "Patrocinador");
+        var volunteer = NewUserRow("Vero", typeName: "Voluntario");
+        var member = NewUserRow("Mario", typeName: "Miembro");
+        var sponsor = NewUserRow("Sonia", typeName: "Patrocinador");
         HasConfirmedAttendees(volunteer, member, sponsor);
 
         var page = await ListAsync(QueriedEventId, new EventAttendeeListQuery { Sort = "type" });
@@ -307,7 +305,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEventMissingReturnsEmptyPage()
     {
-        var ana = NewUser("Ana");
+        var ana = NewUserRow("Ana");
         HasConfirmedAttendees(ana);
 
         var page = await ListAsync(Guid.NewGuid(), new EventAttendeeListQuery());
@@ -319,9 +317,9 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSecondPageReturnsRemainingUsersWithTotal()
     {
-        var ana = NewUser("Ana");
-        var berto = NewUser("Berto");
-        var carla = NewUser("Carla");
+        var ana = NewUserRow("Ana");
+        var berto = NewUserRow("Berto");
+        var carla = NewUserRow("Carla");
         HasConfirmedAttendees(carla, ana, berto);
 
         var page = await ListAsync(

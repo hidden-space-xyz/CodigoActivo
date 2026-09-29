@@ -1,8 +1,8 @@
 using System.Net.Mail;
+using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Security;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -70,22 +70,13 @@ public sealed class InitialAdministratorSeeder(
             );
         }
 
-        var administrator = new User
-        {
-            Id = SeedIds.Users.InitialAdministrator,
-            FirstName = "Administrador",
-            LastName = "Código Activo",
-            Email = email,
-            Phone = null,
-            PasswordHash = passwordHasher.Hash(configuredPassword),
-            NationalId = SpanishNationalId.FromDniNumber(0),
-            Gender = Gender.Other,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Member,
-            IsAdmin = true,
-            CreatedAt = clock.UtcNow,
-        };
-        context.Users.Add(administrator);
+        context.Users.Add(
+            User.CreateInitialAdministrator(
+                email,
+                passwordHasher.Hash(configuredPassword),
+                clock.UtcNow
+            )
+        );
         await context.SaveChangesAsync(ct);
     }
 }

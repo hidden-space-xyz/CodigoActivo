@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CodigoActivo.API.Contracts;
 using CodigoActivo.Domain.Common;
 
@@ -8,6 +10,19 @@ namespace CodigoActivo.API.Extensions;
 /// </summary>
 public static class ApiErrorResponseExtensions
 {
+    /// <summary>
+    /// Gets the serializer options for error bodies written outside MVC: web defaults with every
+    /// error code written as its name, exactly like the controller responses.
+    /// </summary>
+    public static JsonSerializerOptions SerializerOptions { get; } =
+        new(JsonSerializerDefaults.Web)
+        {
+            Converters =
+            {
+                new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false),
+            },
+        };
+
     /// <summary>
     /// Creates an api error from the validated request.
     /// </summary>
@@ -43,7 +58,7 @@ public static class ApiErrorResponseExtensions
     {
         return kind switch
         {
-            ErrorKind.BadRequest => (StatusCodes.Status400BadRequest, "Bad Request"),
+            ErrorKind.Validation => (StatusCodes.Status400BadRequest, "Bad Request"),
             ErrorKind.Unauthorized => (StatusCodes.Status401Unauthorized, "Unauthorized"),
             ErrorKind.Forbidden => (StatusCodes.Status403Forbidden, "Forbidden"),
             ErrorKind.NotFound => (StatusCodes.Status404NotFound, "Not Found"),

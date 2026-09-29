@@ -1,14 +1,13 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
-using CodigoActivo.Application.Auth;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Options;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -32,7 +31,7 @@ public sealed class SetAdminCommandHandlerTests
     public SetAdminCommandHandlerTests()
     {
         actingAdmin = NewUser(isAdmin: true);
-        actingAdmin.PasswordHash = hasher.Hash(ActingPassword);
+        Persisted.Overwrite(actingAdmin, new { PasswordHash = hasher.Hash(ActingPassword) });
         sut = new SetAdminCommandHandler(
             users,
             PasswordGuards.Create(hasher, uow, clock),
@@ -41,7 +40,7 @@ public sealed class SetAdminCommandHandlerTests
             new AccountSecurityNotifier(
                 emailSender,
                 clock,
-                new ApplicationOptions(),
+                new AccountEmailComposer(new ApplicationOptions(), clock),
                 NullLogger<AccountSecurityNotifier>.Instance
             ),
             NullLogger<SetAdminCommandHandler>.Instance
@@ -103,10 +102,10 @@ public sealed class SetAdminCommandHandlerTests
     {
         var result = await HandleAsync(Guid.NewGuid(), true, currentPassword);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
         await users
             .DidNotReceiveWithAnyArgs()
-            .FindAsync(default!, TestContext.Current.CancellationToken);
+            .GetByIdAsync(default, TestContext.Current.CancellationToken);
         await AssertNotSavedAsync();
     }
 
@@ -118,7 +117,7 @@ public sealed class SetAdminCommandHandlerTests
 
         var result = await HandleAsync(user.Id, true, "wrong-password");
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
         user.IsAdmin.Should().BeFalse();
         actingAdmin.PasswordFailedAttempts.Should().Be(1);
         await AssertNotSavedAsync();
@@ -127,13 +126,13 @@ public sealed class SetAdminCommandHandlerTests
     [Fact]
     public async Task HandleAsyncGrantActingUserWithoutPasswordReturnsBadRequest()
     {
-        actingAdmin.PasswordHash = null;
+        Persisted.Overwrite(actingAdmin, new { PasswordHash = (string?)null });
         var user = NewUser(isAdmin: false);
         users.FindReturns(actingAdmin, user);
 
         var result = await HandleAsync(user.Id, true, ActingPassword);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
         user.IsAdmin.Should().BeFalse();
         await AssertNotSavedAsync();
     }
@@ -146,7 +145,7 @@ public sealed class SetAdminCommandHandlerTests
 
         var result = await HandleAsync(user.Id, true, ActingPassword);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
         user.IsAdmin.Should().BeFalse();
         await AssertNotSavedAsync();
     }
@@ -167,7 +166,7 @@ public sealed class SetAdminCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncRevokeRevokesWithoutPasswordOrCountingAdministrators()
+    public async Task HandleAsyncRevokeRevokesWithoutLoadingTheActingUser()
     {
         var user = NewUser(isAdmin: true);
         users.FindReturns(user);
@@ -176,16 +175,12 @@ public sealed class SetAdminCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.IsAdmin.Should().BeFalse();
-        await users
-            .Received(1)
-            .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>());
+        await users.Received(1).GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await users.Received(1).GetByIdAsync(user.Id, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Kind.Should().Be(EmailKind.SecurityAlert);
         message.ToAddress.Should().Be(user.Email);
-        await users
-            .DidNotReceiveWithAnyArgs()
-            .CountAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]

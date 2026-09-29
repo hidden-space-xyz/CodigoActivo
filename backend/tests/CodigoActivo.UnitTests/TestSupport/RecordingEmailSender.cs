@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
-using CodigoActivo.Domain.Communication;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Infrastructure.Communication;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 

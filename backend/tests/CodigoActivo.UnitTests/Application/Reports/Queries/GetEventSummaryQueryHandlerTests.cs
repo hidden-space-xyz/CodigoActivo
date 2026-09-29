@@ -1,11 +1,9 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
 
@@ -17,28 +15,15 @@ public sealed class GetEventSummaryQueryHandlerTests
     private static readonly Guid GhostRoleId = new("33333333-3333-3333-3333-333333333333");
     private static readonly Guid IdleRoleId = new("44444444-4444-4444-4444-444444444444");
 
-    private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IActivityRoleTypeRepository roleTypes =
-        Substitute.For<IActivityRoleTypeRepository>();
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetEventSummaryQueryHandler sut;
 
     public GetEventSummaryQueryHandlerTests()
     {
-        sut = new GetEventSummaryQueryHandler(
-            events,
-            roleTypes,
-            activities,
-            new FakeQueryExecutor()
-        );
+        sut = new GetEventSummaryQueryHandler(store, new FakeQueryExecutor());
     }
 
-    private void HasRoleTypes(params ActivityRoleType[] list)
-    {
-        roleTypes.Query().Returns(list.AsQueryable());
-    }
-
-    private static ActivityUserRoleAssignment SummaryAsg(
+    private static AssignmentRow SummaryAsg(
         Guid userId,
         Guid roleId,
         Guid statusId,
@@ -55,7 +40,7 @@ public sealed class GetEventSummaryQueryHandlerTests
         };
     }
 
-    private static Activity SummaryActivity(Guid? eventId = null)
+    private static ActivityRow SummaryActivity(Guid? eventId = null)
     {
         return new()
         {
@@ -66,10 +51,10 @@ public sealed class GetEventSummaryQueryHandlerTests
         };
     }
 
-    private static ActivityRoleType Role(
+    private static ActivityRoleTypeRow Role(
         Guid id,
         string name,
-        IEnumerable<ActivityUserRoleAssignment> assignments
+        IEnumerable<AssignmentRow> assignments
     )
     {
         return new()
@@ -84,8 +69,8 @@ public sealed class GetEventSummaryQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
-        events.HasEvents(
-            new Event
+        store.Events.Add(
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = Guid.NewGuid(),
@@ -101,8 +86,8 @@ public sealed class GetEventSummaryQueryHandlerTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        activities.DidNotReceive().QueryAssignments();
-        roleTypes.DidNotReceive().Query();
+        store.ReadsOf<AssignmentRow>().Should().Be(0);
+        store.ReadsOf<ActivityRoleTypeRow>().Should().Be(0);
     }
 
     [Fact]
@@ -122,8 +107,8 @@ public sealed class GetEventSummaryQueryHandlerTests
             SummaryAsg(user1, AlphaRoleId, Confirmed, Guid.NewGuid()),
         };
 
-        events.HasEvents(
-            new Event
+        store.Events.Add(
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = QueriedEventId,
@@ -131,12 +116,12 @@ public sealed class GetEventSummaryQueryHandlerTests
                 Activities = [SummaryActivity(), SummaryActivity()],
             }
         );
-        activities.HasAssignments(assignments);
-        HasRoleTypes(
+        store.Assignments.AddRange(assignments);
+        store.ActivityRoleTypes.AddRange([
             Role(AlphaRoleId, "Alpha", assignments),
             Role(IdleRoleId, "Idle", assignments),
-            Role(BetaRoleId, "Beta", assignments)
-        );
+            Role(BetaRoleId, "Beta", assignments),
+        ]);
 
         var result = await sut.HandleAsync(
             new GetEventSummaryQuery(QueriedEventId),
@@ -166,16 +151,14 @@ public sealed class GetEventSummaryQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNoAssignmentsReturnsZeroCounts()
     {
-        events.HasEvents(
-            new Event
+        store.Events.Add(
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = QueriedEventId,
                 Title = "Vacío",
             }
         );
-        activities.HasAssignments();
-        HasRoleTypes();
 
         var result = await sut.HandleAsync(
             new GetEventSummaryQuery(QueriedEventId),

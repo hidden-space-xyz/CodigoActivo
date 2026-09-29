@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Events.Contracts;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -16,9 +15,9 @@ public sealed record GetEventTermsStateQuery(Guid EventId, Guid UserId)
 /// <summary>
 /// Executes the query to retrieve the current user's terms state for an event.
 /// </summary>
-/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetEventTermsStateQueryHandler(IEventRepository events, IQueryExecutor executor)
+public sealed class GetEventTermsStateQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<GetEventTermsStateQuery, EventTermsStateResponse>
 {
     /// <summary>
@@ -33,9 +32,8 @@ public sealed class GetEventTermsStateQueryHandler(IEventRepository events, IQue
     )
     {
         var documents = await executor.ToListAsync(
-            events
-                .QueryTermsDocuments()
-                .Where(d => d.EventId == query.EventId)
+            readStore
+                .EventTermsDocuments.Where(d => d.EventId == query.EventId)
                 .OrderBy(d => d.DisplayOrder)
                 .Select(d => new
                 {
@@ -53,9 +51,10 @@ public sealed class GetEventTermsStateQueryHandler(IEventRepository events, IQue
         }
 
         var acceptances = await executor.ToListAsync(
-            events
-                .QueryTermsAcceptances()
-                .Where(a => a.EventId == query.EventId && a.UserId == query.UserId)
+            readStore
+                .EventTermsAcceptances.Where(a =>
+                    a.EventId == query.EventId && a.UserId == query.UserId
+                )
                 .Select(a => new
                 {
                     a.TermsDocumentId,

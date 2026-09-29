@@ -1,6 +1,5 @@
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Logging;
 

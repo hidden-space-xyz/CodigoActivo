@@ -1,9 +1,12 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
@@ -26,7 +29,7 @@ public sealed class DeleteActivityCommandHandlerTests
     [Fact]
     public async Task HandleAsyncActivityMissingReturnsNotFound()
     {
-        activities.ActivityFound(null);
+        activities.Finds(null);
 
         var result = await sut.HandleAsync(
             new DeleteActivityCommand(Guid.NewGuid()),
@@ -49,7 +52,7 @@ public sealed class DeleteActivityCommandHandlerTests
     public async Task HandleAsyncActivityExistsInvalidatesActivitiesCache()
     {
         var activity = NewActivity();
-        activities.ActivityFound(activity);
+        activities.Finds(activity);
 
         var result = await sut.HandleAsync(
             new DeleteActivityCommand(activity.Id),

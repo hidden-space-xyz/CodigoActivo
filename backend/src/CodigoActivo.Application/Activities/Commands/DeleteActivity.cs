@@ -1,8 +1,10 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
@@ -37,7 +39,7 @@ public sealed class DeleteActivityCommandHandler(
         CancellationToken ct = default
     )
     {
-        var activity = await activities.FindAsync(a => a.Id == command.ActivityId, ct);
+        var activity = await activities.GetByIdAsync(command.ActivityId, ct);
         if (activity is null)
         {
             return Error.NotFound(ErrorCode.ActivityNotFound);

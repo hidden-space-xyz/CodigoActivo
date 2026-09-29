@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Common;
+using CodigoActivo.Application.Abstractions.Querying;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 
@@ -27,5 +27,10 @@ public sealed class FakeQueryExecutor : IQueryExecutor
     public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> source, CancellationToken ct = default)
     {
         return Task.FromResult(source.FirstOrDefault());
+    }
+
+    public Task<bool> AnyAsync<T>(IQueryable<T> source, CancellationToken ct = default)
+    {
+        return Task.FromResult(source.Any());
     }
 }

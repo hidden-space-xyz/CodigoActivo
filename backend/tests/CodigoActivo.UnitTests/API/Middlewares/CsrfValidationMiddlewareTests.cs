@@ -1,6 +1,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Contracts;
+using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Antiforgery;
@@ -13,8 +14,6 @@ namespace CodigoActivo.UnitTests.API.Middlewares;
 
 public sealed class CsrfValidationMiddlewareTests
 {
-    private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
-
     private readonly IAntiforgery antiforgery = Substitute.For<IAntiforgery>();
     private bool nextCalled;
 
@@ -57,7 +56,7 @@ public sealed class CsrfValidationMiddlewareTests
         context.Response.Body.Position = 0;
         var body = await JsonSerializer.DeserializeAsync<ApiErrorResponse>(
             context.Response.Body,
-            WebJson,
+            ApiErrorResponseExtensions.SerializerOptions,
             TestContext.Current.CancellationToken
         );
         return body!;

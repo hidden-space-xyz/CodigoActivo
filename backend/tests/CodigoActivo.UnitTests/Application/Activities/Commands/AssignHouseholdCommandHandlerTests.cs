@@ -1,13 +1,14 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -20,8 +21,8 @@ public sealed class AssignHouseholdCommandHandlerTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IAssignmentStatusTypeRepository statuses =
-        Substitute.For<IAssignmentStatusTypeRepository>();
+    private readonly IEventTermsAcceptanceRepository termsAcceptances =
+        Substitute.For<IEventTermsAcceptanceRepository>();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
@@ -29,23 +30,15 @@ public sealed class AssignHouseholdCommandHandlerTests
 
     public AssignHouseholdCommandHandlerTests()
     {
-        var executor = new FakeQueryExecutor();
         sut = new AssignHouseholdCommandHandler(
             activities,
             users,
-            new SignupGate(activities, users, executor, clock),
-            new TermsGate(activities, events, executor, clock),
-            new ListAssignmentStatusTypesQueryHandler(statuses, executor, new FakeHybridCache()),
-            executor,
+            new SignupGate(events, users, clock),
+            new TermsGate(events, termsAcceptances, clock),
             clock,
             uow,
             cacheInvalidator
         );
-    }
-
-    private void NoStatusCatalog()
-    {
-        statuses.Query().Returns(new List<AssignmentStatusType>().AsQueryable());
     }
 
     [Fact]
@@ -61,8 +54,29 @@ public sealed class AssignHouseholdCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivityHouseholdAssignmentsRequired);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncActivityMissingReturnsNotFound()
+    {
+        activities.Finds(null);
+
+        var result = await sut.HandleAsync(
+            new AssignHouseholdCommand(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                new AssignHouseholdRequest([new(Guid.NewGuid(), Guid.NewGuid())]),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
+        result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -84,7 +98,7 @@ public sealed class AssignHouseholdCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -122,13 +136,15 @@ public sealed class AssignHouseholdCommandHandlerTests
         var actingUserId = Guid.NewGuid();
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(
-            new User
-            {
-                Id = actingUserId,
-                FirstName = "Ada",
-                LastName = "Parent",
-                UserTypeId = SeedIds.UserTypes.Member,
-            }
+            Persisted.As<User>(
+                new
+                {
+                    Id = actingUserId,
+                    FirstName = "Ada",
+                    LastName = "Parent",
+                    UserTypeId = SeedIds.UserTypes.Member,
+                }
+            )
         );
 
         var result = await sut.HandleAsync(
@@ -141,7 +157,7 @@ public sealed class AssignHouseholdCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -153,7 +169,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
 
         var request = new AssignHouseholdRequest([
@@ -166,14 +182,9 @@ public sealed class AssignHouseholdCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
-        await activities
-            .DidNotReceiveWithAnyArgs()
-            .AddAssignmentAsync(
-                new ActivityUserRoleAssignment(),
-                TestContext.Current.CancellationToken
-            );
+        activity.Assignments.Should().BeEmpty();
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -194,7 +205,7 @@ public sealed class AssignHouseholdCommandHandlerTests
             termsDocumentId: Guid.NewGuid()
         );
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
-        events.TermsAccepted(null);
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignHouseholdCommand(
@@ -206,14 +217,11 @@ public sealed class AssignHouseholdCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -236,9 +244,7 @@ public sealed class AssignHouseholdCommandHandlerTests
             termsDocumentId: termsDocumentId
         );
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
-        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
-        events.TermsAccepted(null);
-        statuses.RequestedStatusNamed("Solicitado");
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignHouseholdCommand(
@@ -254,10 +260,10 @@ public sealed class AssignHouseholdCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().ContainSingle();
-        await events
+        result.Value.Should().Equal(childId);
+        await termsAcceptances
             .Received(1)
-            .AddTermsAcceptanceAsync(
+            .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
                     && a.EventId == eventId
@@ -280,8 +286,6 @@ public sealed class AssignHouseholdCommandHandlerTests
         clock.UtcNow = DuringEarly;
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
-        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
-        statuses.RequestedStatusNamed("Solicitado");
 
         var request = new AssignHouseholdRequest([
             new(actingUserId, SeedIds.ActivityRoleTypes.Leader),
@@ -294,7 +298,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
+        result.Value.Should().Equal(actingUserId, childId);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -307,13 +311,15 @@ public sealed class AssignHouseholdCommandHandlerTests
         clock.UtcNow = DuringEarly;
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.HouseholdUsers(
-            new User
-            {
-                Id = actingUserId,
-                FirstName = "Ada",
-                LastName = "Parent",
-                UserTypeId = SeedIds.UserTypes.Participant,
-            },
+            Persisted.As<User>(
+                new
+                {
+                    Id = actingUserId,
+                    FirstName = "Ada",
+                    LastName = "Parent",
+                    UserTypeId = SeedIds.UserTypes.Participant,
+                }
+            ),
             ParticipantChild(childId, actingUserId)
         );
 
@@ -327,7 +333,7 @@ public sealed class AssignHouseholdCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupEarlyOnly);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -340,10 +346,8 @@ public sealed class AssignHouseholdCommandHandlerTests
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
-        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
-        statuses.RequestedStatusNamed("Solicitado");
 
         var request = new AssignHouseholdRequest([
             new(actingUserId, SeedIds.ActivityRoleTypes.Leader),
@@ -356,26 +360,16 @@ public sealed class AssignHouseholdCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
-        await activities
-            .Received(1)
-            .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a != null
-                    && a.UserId == actingUserId
-                    && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
-                ),
-                Arg.Any<CancellationToken>()
+        result.Value.Should().Equal(actingUserId, childId);
+        activity
+            .Assignments.Should()
+            .ContainSingle(a =>
+                a.UserId == actingUserId && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
             );
-        await activities
-            .Received(1)
-            .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a != null
-                    && a.UserId == childId
-                    && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
-                ),
-                Arg.Any<CancellationToken>()
+        activity
+            .Assignments.Should()
+            .ContainSingle(a =>
+                a.UserId == childId && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await cacheInvalidator
@@ -394,17 +388,9 @@ public sealed class AssignHouseholdCommandHandlerTests
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         var roleId = SeedIds.ActivityRoleTypes.Participant;
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(SocioParent(actingUserId), ParticipantChild(childId, actingUserId));
-        activities
-            .QueryAssignments()
-            .Returns(
-                new List<ActivityUserRoleAssignment>
-                {
-                    new() { UserId = childId, ActivityId = activityId },
-                }.AsQueryable()
-            );
-        NoStatusCatalog();
+        var existing = activity.SignUp(childId, roleId);
 
         var request = new AssignHouseholdRequest([
             new(actingUserId, roleId),
@@ -418,22 +404,18 @@ public sealed class AssignHouseholdCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().ContainSingle();
-        result.Value[0].UserId.Should().Be(actingUserId);
-        result.Value[0].Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
-        result.Value[0].Status.Name.Should().BeEmpty();
-        await activities
-            .Received(1)
-            .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a => a != null && a.UserId == actingUserId),
-                Arg.Any<CancellationToken>()
+        result.Value.Should().Equal(actingUserId);
+        activity
+            .Assignments.Should()
+            .ContainSingle(a =>
+                a.UserId == actingUserId
+                && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Requested
             );
-        await activities
-            .DidNotReceive()
-            .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a => a != null && a.UserId == childId),
-                Arg.Any<CancellationToken>()
-            );
+        activity
+            .Assignments.Should()
+            .ContainSingle(a => a.UserId == childId)
+            .Which.Should()
+            .BeSameAs(existing);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -445,8 +427,6 @@ public sealed class AssignHouseholdCommandHandlerTests
         clock.UtcNow = Now;
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(SocioParent(actingUserId));
-        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
-        statuses.RequestedStatusNamed("Solicitado");
         uow.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>
                 throw new UniqueConstraintViolationException(
@@ -478,8 +458,6 @@ public sealed class AssignHouseholdCommandHandlerTests
         clock.UtcNow = Now;
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.HouseholdUsers(SocioParent(actingUserId));
-        activities.QueryAssignments().Returns(new List<ActivityUserRoleAssignment>().AsQueryable());
-        statuses.RequestedStatusNamed("Solicitado");
         uow.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>
                 throw new UniqueConstraintViolationException(

@@ -1,9 +1,7 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Application.News.Queries;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.News.NewsTestData;
 
@@ -11,19 +9,19 @@ namespace CodigoActivo.UnitTests.Application.News.Queries;
 
 public sealed class ListNewsQueryHandlerTests
 {
-    private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
+    private readonly FakeReadStore store = new();
     private readonly TestClock clock = new();
     private readonly ListNewsQueryHandler sut;
 
     public ListNewsQueryHandlerTests()
     {
-        sut = new ListNewsQueryHandler(news, new FakeQueryExecutor(), clock);
+        sut = new ListNewsQueryHandler(store, new FakeQueryExecutor(), clock);
     }
 
     [Fact]
     public async Task HandleAsyncYearFilterReturnsMatchingYear()
     {
-        news.HasNews(NewNewsItem("Old", year: 2023), NewNewsItem("New", year: 2025));
+        store.News.AddRange([NewNewsItemRow("Old", year: 2023), NewNewsItemRow("New", year: 2025)]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { Year = 2025 }),
@@ -36,7 +34,7 @@ public sealed class ListNewsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncYearOutOfRangeReturnsEmpty()
     {
-        news.HasNews(NewNewsItem("Any", year: 2025));
+        store.News.AddRange([NewNewsItemRow("Any", year: 2025)]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { Year = 0 }),
@@ -50,7 +48,10 @@ public sealed class ListNewsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncYearMaximumSupportedReturnsNewsOfYear9999()
     {
-        news.HasNews(NewNewsItem("Antiguo", year: 2025), NewNewsItem("Futuro", year: 9999));
+        store.News.AddRange([
+            NewNewsItemRow("Antiguo", year: 2025),
+            NewNewsItemRow("Futuro", year: 9999),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { Year = 9999 }),
@@ -63,20 +64,20 @@ public sealed class ListNewsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncCreatedRangeFilterKeepsNewsWithinDayBounds()
     {
-        news.HasNews(
-            NewNewsItem(
+        store.News.AddRange([
+            NewNewsItemRow(
                 "Antes",
                 createdAt: new DateTimeOffset(2024, 5, 9, 23, 59, 0, TimeSpan.Zero)
             ),
-            NewNewsItem(
+            NewNewsItemRow(
                 "Dentro",
                 createdAt: new DateTimeOffset(2024, 5, 10, 12, 0, 0, TimeSpan.Zero)
             ),
-            NewNewsItem(
+            NewNewsItemRow(
                 "Despues",
                 createdAt: new DateTimeOffset(2024, 5, 11, 0, 0, 0, TimeSpan.Zero)
-            )
-        );
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(
@@ -101,16 +102,16 @@ public sealed class ListNewsQueryHandlerTests
             "UTC+02",
             "UTC+02"
         );
-        news.HasNews(
-            NewNewsItem(
+        store.News.AddRange([
+            NewNewsItemRow(
                 "Dentro",
                 createdAt: new DateTimeOffset(2024, 5, 10, 21, 0, 0, TimeSpan.Zero)
             ),
-            NewNewsItem(
+            NewNewsItemRow(
                 "Fuera",
                 createdAt: new DateTimeOffset(2024, 5, 10, 23, 0, 0, TimeSpan.Zero)
-            )
-        );
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { CreatedTo = new DateOnly(2024, 5, 10) }),
@@ -128,7 +129,10 @@ public sealed class ListNewsQueryHandlerTests
         string expected
     )
     {
-        news.HasNews(NewNewsItem("Star", featured: true), NewNewsItem("Plain", featured: false));
+        store.News.AddRange([
+            NewNewsItemRow("Star", featured: true),
+            NewNewsItemRow("Plain", featured: false),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { Featured = featured }),
@@ -141,7 +145,7 @@ public sealed class ListNewsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncTitleSearchIsAccentAndCaseInsensitive()
     {
-        news.HasNews(NewNewsItem("Reunión Ávila"), NewNewsItem("Otra"));
+        store.News.AddRange([NewNewsItemRow("Reunión Ávila"), NewNewsItemRow("Otra")]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { Title = "avila" }),
@@ -154,10 +158,10 @@ public sealed class ListNewsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSubtitleSearchMatchesSubstring()
     {
-        news.HasNews(
-            NewNewsItem("A", subtitle: "primavera"),
-            NewNewsItem("B", subtitle: "invierno")
-        );
+        store.News.AddRange([
+            NewNewsItemRow("A", subtitle: "primavera"),
+            NewNewsItemRow("B", subtitle: "invierno"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { Subtitle = "vera" }),
@@ -170,11 +174,11 @@ public sealed class ListNewsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSearchMatchesTitleOrSubtitle()
     {
-        news.HasNews(
-            NewNewsItem("Inscripciones abiertas", subtitle: "Verano"),
-            NewNewsItem("Novedades", subtitle: "Nuevas inscripciones"),
-            NewNewsItem("Resultados", subtitle: "Torneo")
-        );
+        store.News.AddRange([
+            NewNewsItemRow("Inscripciones abiertas", subtitle: "Verano"),
+            NewNewsItemRow("Novedades", subtitle: "Nuevas inscripciones"),
+            NewNewsItemRow("Resultados", subtitle: "Torneo"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { Search = "INSCRIPCIONES" }),
@@ -190,11 +194,11 @@ public sealed class ListNewsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSearchCombinesWithYearFilter()
     {
-        news.HasNews(
-            NewNewsItem("Reunión anual", year: 2024),
-            NewNewsItem("Reunión de socios", year: 2025),
-            NewNewsItem("Calendario", year: 2025)
-        );
+        store.News.AddRange([
+            NewNewsItemRow("Reunión anual", year: 2024),
+            NewNewsItemRow("Reunión de socios", year: 2025),
+            NewNewsItemRow("Calendario", year: 2025),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { Search = "reunion", Year = 2025 }),
@@ -207,7 +211,11 @@ public sealed class ListNewsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncExplicitTitleSortOrdersAscending()
     {
-        news.HasNews(NewNewsItem("Charlie"), NewNewsItem("Alpha"), NewNewsItem("Bravo"));
+        store.News.AddRange([
+            NewNewsItemRow("Charlie"),
+            NewNewsItemRow("Alpha"),
+            NewNewsItemRow("Bravo"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery { Sort = "title" }),
@@ -220,13 +228,10 @@ public sealed class ListNewsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEqualCreatedAtOrdersByIdTieBreakForStablePagination()
     {
-        var first = NewNewsItem("First");
-        first.Id = new Guid("00000001-0000-0000-0000-000000000000");
-        var second = NewNewsItem("Second");
-        second.Id = new Guid("00000002-0000-0000-0000-000000000000");
-        var third = NewNewsItem("Third");
-        third.Id = new Guid("00000003-0000-0000-0000-000000000000");
-        news.HasNews(third, first, second);
+        var first = NewNewsItemRow("First", id: new Guid("00000001-0000-0000-0000-000000000000"));
+        var second = NewNewsItemRow("Second", id: new Guid("00000002-0000-0000-0000-000000000000"));
+        var third = NewNewsItemRow("Third", id: new Guid("00000003-0000-0000-0000-000000000000"));
+        store.News.AddRange([third, first, second]);
 
         var result = await sut.HandleAsync(
             new ListNewsQuery(new NewsListQuery()),

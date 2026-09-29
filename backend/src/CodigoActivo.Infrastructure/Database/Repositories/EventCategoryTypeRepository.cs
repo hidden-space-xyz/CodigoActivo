@@ -1,14 +1,45 @@
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
+using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 /// <summary>
-/// Persists and retrieves event category type data from the database.
+/// Stores and loads event categories.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 public class EventCategoryTypeRepository(CodigoActivoDbContext context)
-    : Repository<EventCategoryType>(context),
-        IEventCategoryTypeRepository;
+    : AggregateRepository<EventCategoryType>(context),
+        IEventCategoryTypeRepository
+{
+    /// <inheritdoc />
+    public Task<EventCategoryType?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return Set.FirstOrDefaultAsync(categoryType => categoryType.Id == id, ct);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> NameExistsAsync(
+        string name,
+        Guid? exceptId = null,
+        CancellationToken ct = default
+    )
+    {
+        return Set.AnyAsync(
+            categoryType =>
+                categoryType.Name == name
+                && (exceptId == null || categoryType.Id != exceptId.Value),
+            ct
+        );
+    }
+
+    /// <inheritdoc />
+    public Task<int> CountExistingAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken ct = default
+    )
+    {
+        return Set.CountAsync(categoryType => ids.Contains(categoryType.Id), ct);
+    }
+}

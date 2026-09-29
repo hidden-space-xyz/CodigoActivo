@@ -2,11 +2,20 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
+using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Files;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Security;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.Partners;
+using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,7 +30,7 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class DemoDataSeeder(
     CodigoActivoDbContext context,
-    ILocalFileSystemRepository storage,
+    IFileStorage storage,
     IPasswordHasher passwordHasher,
     IClock clock
 )
@@ -106,12 +115,9 @@ public sealed class DemoDataSeeder(
             context.Events.AddRange(graph.Events);
             await context.SaveChangesAsync(ct);
 
-            context.EventCategories.AddRange(graph.EventCategories);
-            context.EventTermsDocuments.AddRange(graph.EventTermsDocuments);
             context.Activities.AddRange(graph.Activities);
             await context.SaveChangesAsync(ct);
 
-            context.ActivityUserRoleAssignments.AddRange(graph.Assignments);
             context.EventRatings.AddRange(graph.Ratings);
             await context.SaveChangesAsync(ct);
 
@@ -140,7 +146,7 @@ public sealed class DemoDataSeeder(
             Convert.ToBase64String(RandomNumberGenerator.GetBytes(DemoPasswordBytes))
         );
         var files = new List<FileEntity>();
-        var users = BuildUsers(now, passwordHash);
+        var users = BuildUsers(now, clock.Today, passwordHash);
         var (categoryTypes, categoryIdByName) = BuildCategoryTypes();
         var termsDocuments = BuildTermsDocuments();
         var schedule = BuildSchedule(clock, now, files, categoryIdByName);
@@ -154,10 +160,7 @@ public sealed class DemoDataSeeder(
             categoryTypes,
             termsDocuments,
             schedule.Events,
-            schedule.EventCategories,
-            schedule.EventTermsDocuments,
             schedule.Activities,
-            schedule.Assignments,
             schedule.Ratings,
             news,
             resources,
@@ -165,37 +168,71 @@ public sealed class DemoDataSeeder(
         );
     }
 
-    private static List<User> BuildUsers(DateTimeOffset now, string passwordHash)
+    private static List<User> BuildUsers(DateTimeOffset now, DateOnly today, string passwordHash)
     {
-        return UserSeeds
-            .Select(
-                (seed, index) =>
-                {
-                    var isChild = seed.Kind is UserKind.Child;
-                    return new User
-                    {
-                        Id = UserId(index),
-                        FirstName = seed.FirstName,
-                        LastName = seed.LastName,
-                        Email = isChild ? null : BuildEmail(seed),
-                        Phone = isChild ? null : BuildPhone(index),
-                        PasswordHash = isChild ? null : passwordHash,
-                        BirthDate = seed.BirthYear is { } year ? BuildBirthDate(index, year) : null,
-                        NationalId = isChild ? null : BuildNationalId(index),
-                        PromotionalConsent = !isChild && index % 3 is not 0,
-                        Gender = seed.Gender,
-                        ParentId = seed.ParentIndex is { } parent ? UserId(parent) : null,
-                        UserStatusTypeId = isChild
-                            ? SeedIds.UserStatusTypes.Dependent
-                            : SeedIds.UserStatusTypes.Active,
-                        UserTypeId = ResolveUserTypeId(seed.Kind),
-                        IsAdmin = false,
-                        LastLoginAt = isChild ? null : now.AddDays(-(index % 9)),
-                        CreatedAt = SpreadCreatedAt(now, index, UserSeeds.Length, 450, 35),
-                    };
-                }
-            )
-            .ToList();
+        var users = new List<User>(UserSeeds.Length);
+        for (var index = 0; index < UserSeeds.Length; index++)
+        {
+            var seed = UserSeeds[index];
+            var createdAt = SpreadCreatedAt(now, index, UserSeeds.Length, 450, 35);
+            users.Add(
+                seed.ParentIndex is { } parent
+                    ? BuildChild(seed, index, users[parent], today, createdAt)
+                    : BuildAdult(seed, index, passwordHash, now, createdAt)
+            );
+        }
+
+        return users;
+    }
+
+    private static User BuildAdult(
+        UserSeed seed,
+        int index,
+        string passwordHash,
+        DateTimeOffset now,
+        DateTimeOffset createdAt
+    )
+    {
+        var adult = User.CreateIndependent(
+            new PersonDetails(
+                seed.FirstName,
+                seed.LastName,
+                seed.Gender,
+                BuildEmail(seed),
+                BuildPhone(index),
+                NationalId: BuildNationalId(index),
+                PromotionalConsent: index % 3 is not 0
+            ),
+            createdAt,
+            UserId(index)
+        ).Value;
+        adult.AssignPassword(passwordHash);
+        adult.Verify(createdAt);
+        adult.ChangeType(ResolveUserTypeId(seed.Kind), createdAt);
+        adult.RegisterLogin(now.AddDays(-(index % 9)));
+        return adult;
+    }
+
+    private static User BuildChild(
+        UserSeed seed,
+        int index,
+        User guardian,
+        DateOnly today,
+        DateTimeOffset createdAt
+    )
+    {
+        return User.CreateDependent(
+            guardian,
+            new PersonDetails(
+                seed.FirstName,
+                seed.LastName,
+                seed.Gender,
+                BirthDate: BuildBirthDate(index, today.Year - seed.Age!.Value)
+            ),
+            today,
+            createdAt,
+            UserId(index)
+        ).Value;
     }
 
     private static (
@@ -206,12 +243,11 @@ public sealed class DemoDataSeeder(
         var categoryTypes = DemoCategories
             .Select(
                 (name, index) =>
-                    new EventCategoryType
-                    {
-                        Id = CategoryId(index),
-                        Name = name,
-                        Color = CategoryColors[index % CategoryColors.Length],
-                    }
+                    EventCategoryType.Create(
+                        name,
+                        CategoryColors[index % CategoryColors.Length],
+                        CategoryId(index)
+                    )
             )
             .ToList();
         return (
@@ -229,12 +265,11 @@ public sealed class DemoDataSeeder(
         return DemoTermsDocuments
             .Select(
                 (seed, index) =>
-                    new TermsDocument
-                    {
-                        Id = TermsDocumentId(index),
-                        Name = seed.Name,
-                        Description = BuildRichText(seed.Description, null, null),
-                    }
+                    TermsDocument.Create(
+                        seed.Name,
+                        BuildRichText(seed.Description, null, null),
+                        TermsDocumentId(index)
+                    )
             )
             .ToList();
     }
@@ -247,16 +282,12 @@ public sealed class DemoDataSeeder(
     )
     {
         var events = new List<Event>(DemoEvents.Length);
-        var eventCategories = new List<EventCategory>();
-        var eventTermsDocuments = new List<EventTermsDocument>();
         var activities = new List<Activity>();
-        var assignments = new List<ActivityUserRoleAssignment>();
         var ratings = new List<EventRating>();
 
         for (var eventIndex = 0; eventIndex < DemoEvents.Length; eventIndex++)
         {
             var seed = DemoEvents[eventIndex];
-            var eventId = Guid.NewGuid();
             var duration = 1 + (eventIndex % 3);
             var start = clock.Today.AddDays((eventIndex - FinishedEventCount) * EventSpacingDays);
             var end = start.AddDays(duration - 1);
@@ -282,48 +313,36 @@ public sealed class DemoDataSeeder(
             var descriptionImageId = NewFile(files, $"evento-{label}-galeria.jpg", now);
             var eventAssignments = new List<ActivityUserRoleAssignment>();
 
-            events.Add(
-                new Event
-                {
-                    Id = eventId,
-                    Title = seed.Title,
-                    Subtitle = seed.Subtitle,
-                    Description = BuildRichText(seed.Description, descriptionImageId, seed.Title),
-                    EventStartsAt = start,
-                    EventEndsAt = end,
-                    EarlySignupStartsAt = earlySignupOpensAt,
-                    SignupStartsAt = signupOpensAt,
-                    SignupEndsAt = signupClosesAt,
-                    Featured = eventIndex is FeaturedEventIndex,
-                    ThumbnailId = NewFile(files, $"evento-{label}-portada.jpg", now),
-                    CreatedAt = eventCreatedAt,
-                    CreatedBy = DemoAuthorId,
-                }
+            var ev = Event.Create(
+                new EventContent(
+                    seed.Title,
+                    seed.Subtitle,
+                    BuildRichText(seed.Description, descriptionImageId, seed.Title),
+                    NewFile(files, $"evento-{label}-portada.jpg", now)
+                ),
+                EventSchedule
+                    .Create(start, end, earlySignupOpensAt, signupOpensAt, signupClosesAt)
+                    .Value,
+                EventCategorySelection
+                    .Create(ResolveCategoryIds(seed.Categories, categoryIdByName))
+                    .Value,
+                EventTermsLinks
+                    .Create([new EventTermsLink(ResolveTermsDocumentId(eventIndex), true)])
+                    .Value,
+                DemoAuthorId,
+                eventCreatedAt
             );
+            if (eventIndex is FeaturedEventIndex)
+            {
+                ev.Feature();
+            }
 
-            eventTermsDocuments.Add(
-                new EventTermsDocument
-                {
-                    EventId = eventId,
-                    TermsDocumentId = ResolveTermsDocumentId(eventIndex),
-                    IsRequired = true,
-                    DisplayOrder = 0,
-                }
-            );
-
-            eventCategories.AddRange(
-                ResolveCategoryIds(seed.Categories, categoryIdByName)
-                    .Select(categoryId => new EventCategory
-                    {
-                        EventId = eventId,
-                        EventCategoryTypeId = categoryId,
-                    })
-            );
+            events.Add(ev);
+            var eventId = ev.Id;
 
             for (var activityIndex = 0; activityIndex < seed.Activities.Length; activityIndex++)
             {
                 var activity = seed.Activities[activityIndex];
-                var activityId = Guid.NewGuid();
                 var globalIndex = (eventIndex * 5) + activityIndex;
                 var activityLabel = (activityIndex + 1).ToString(CultureInfo.InvariantCulture);
                 var activityStart = ToUtc(
@@ -333,38 +352,31 @@ public sealed class DemoDataSeeder(
                     0
                 );
 
-                activities.Add(
-                    new Activity
-                    {
-                        Id = activityId,
-                        Title = activity.Title,
-                        Description = activity.Description,
-                        Location = activity.Location,
-                        ActivityStartsAt = activityStart,
-                        ActivityEndsAt = activityStart.AddMinutes(90),
-                        EventId = eventId,
-                        ActivityModalityTypeId = ResolveModalityId(activity.Modality),
-                        ThumbnailId = NewFile(
-                            files,
-                            $"evento-{label}-actividad-{activityLabel}.jpg",
-                            now
-                        ),
-                        CreatedAt = eventCreatedAt.AddMinutes(activityIndex * 20d),
-                        CreatedBy = DemoAuthorId,
-                        RoleCapacities = [.. BuildRoleCapacities(globalIndex)],
-                    }
+                var created = Activity.Create(
+                    eventId,
+                    new ActivityDetails(
+                        activity.Title,
+                        activity.Description,
+                        activity.Location,
+                        ResolveModalityId(activity.Modality),
+                        NewFile(files, $"evento-{label}-actividad-{activityLabel}.jpg", now)
+                    ),
+                    ActivitySchedule
+                        .Create(
+                            activityStart,
+                            activityStart.AddMinutes(90),
+                            start,
+                            end,
+                            clock.TimeZone
+                        )
+                        .Value,
+                    RoleCapacityPlan.Create([.. BuildRoleCapacities(globalIndex)]).Value,
+                    DemoAuthorId,
+                    eventCreatedAt.AddMinutes(activityIndex * 20d)
                 );
-
-                var activityAssignments = BuildAssignments(
-                        globalIndex,
-                        activityId,
-                        signupOpensAt,
-                        signupClosesAt,
-                        now
-                    )
-                    .ToList();
-                assignments.AddRange(activityAssignments);
-                eventAssignments.AddRange(activityAssignments);
+                SignUp(created, globalIndex, signupOpensAt, signupClosesAt, now);
+                activities.Add(created);
+                eventAssignments.AddRange(created.Assignments);
             }
 
             if (end < clock.Today)
@@ -373,14 +385,7 @@ public sealed class DemoDataSeeder(
             }
         }
 
-        return new DemoSchedule(
-            events,
-            eventCategories,
-            eventTermsDocuments,
-            activities,
-            assignments,
-            ratings
-        );
+        return new DemoSchedule(events, activities, ratings);
     }
 
     private static List<NewsItem> BuildNews(DateTimeOffset now, List<FileEntity> files)
@@ -390,17 +395,22 @@ public sealed class DemoDataSeeder(
                 (seed, index) =>
                 {
                     var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
-                    return new NewsItem
+                    var newsItem = NewsItem.Create(
+                        new NewsItemContent(
+                            seed.Title,
+                            seed.Subtitle,
+                            BuildRichText(seed.Description, null, null),
+                            NewFile(files, $"noticia-{label}-portada.jpg", now)
+                        ),
+                        DemoAuthorId,
+                        now.AddDays(-(index * 6) - 3)
+                    );
+                    if (index is FeaturedNewsItemIndex)
                     {
-                        Id = Guid.NewGuid(),
-                        Title = seed.Title,
-                        Subtitle = seed.Subtitle,
-                        Description = BuildRichText(seed.Description, null, null),
-                        Featured = index is FeaturedNewsItemIndex,
-                        ThumbnailId = NewFile(files, $"noticia-{label}-portada.jpg", now),
-                        CreatedAt = now.AddDays(-(index * 6) - 3),
-                        CreatedBy = DemoAuthorId,
-                    };
+                        newsItem.Feature();
+                    }
+
+                    return newsItem;
                 }
             )
             .ToList();
@@ -412,17 +422,19 @@ public sealed class DemoDataSeeder(
             (seed, index) =>
             {
                 var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
-                return new Resource
-                {
-                    Id = Guid.NewGuid(),
-                    Title = seed.Title,
-                    Subtitle = seed.Subtitle,
-                    Description = BuildRichText(seed.Description, null, null),
-                    ResourceTypeId = SeedIds.ResourceTypes.Internal,
-                    ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
-                    CreatedAt = now.AddDays(-(index * 8) - 5),
-                    CreatedBy = DemoAuthorId,
-                };
+                return Resource.Create(
+                    new ResourceDetails(
+                        seed.Title,
+                        seed.Subtitle,
+                        SeedIds.ResourceTypes.Internal,
+                        NewFile(files, $"recurso-{label}-portada.jpg", now)
+                    ),
+                    ResourceContent
+                        .For(false, BuildRichText(seed.Description, null, null), null)
+                        .Value,
+                    DemoAuthorId,
+                    now.AddDays(-(index * 8) - 5)
+                );
             }
         );
         var externalResources = DemoExternalResources.Select(
@@ -430,17 +442,17 @@ public sealed class DemoDataSeeder(
             {
                 var globalIndex = DemoResources.Length + index;
                 var label = (globalIndex + 1).ToString("D2", CultureInfo.InvariantCulture);
-                return new Resource
-                {
-                    Id = Guid.NewGuid(),
-                    Title = seed.Title,
-                    Subtitle = seed.Subtitle,
-                    Url = seed.Url,
-                    ResourceTypeId = SeedIds.ResourceTypes.External,
-                    ThumbnailId = NewFile(files, $"recurso-{label}-portada.jpg", now),
-                    CreatedAt = now.AddDays(-(globalIndex * 8) - 5),
-                    CreatedBy = DemoAuthorId,
-                };
+                return Resource.Create(
+                    new ResourceDetails(
+                        seed.Title,
+                        seed.Subtitle,
+                        SeedIds.ResourceTypes.External,
+                        NewFile(files, $"recurso-{label}-portada.jpg", now)
+                    ),
+                    ResourceContent.For(true, null, seed.Url).Value,
+                    DemoAuthorId,
+                    now.AddDays(-(globalIndex * 8) - 5)
+                );
             }
         );
         return internalResources.Concat(externalResources).ToList();
@@ -457,17 +469,17 @@ public sealed class DemoDataSeeder(
                 (seed, index) =>
                 {
                     var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
-                    return new Partner
-                    {
-                        Id = Guid.NewGuid(),
-                        Name = seed.Name,
-                        Tier = seed.Tier,
-                        Web = seed.Web,
-                        FromDate = clock.Today.AddMonths(-(6 + (index * 4))),
-                        ThumbnailId = NewFile(files, $"partner-{label}-logo.jpg", now),
-                        CreatedAt = SpreadCreatedAt(now, index, DemoPartners.Length, 720, 30),
-                        CreatedBy = DemoAuthorId,
-                    };
+                    return Partner.Create(
+                        new PartnerDetails(
+                            seed.Name,
+                            clock.Today.AddMonths(-(6 + (index * 4))),
+                            seed.Tier,
+                            seed.Web,
+                            NewFile(files, $"partner-{label}-logo.jpg", now)
+                        ),
+                        DemoAuthorId,
+                        SpreadCreatedAt(now, index, DemoPartners.Length, 720, 30)
+                    );
                 }
             )
             .ToList();
@@ -488,33 +500,20 @@ public sealed class DemoDataSeeder(
 
     private static Guid NewFile(List<FileEntity> files, string name, DateTimeOffset now)
     {
-        var id = Guid.NewGuid();
-        files.Add(
-            new FileEntity
-            {
-                Id = id,
-                Name = name,
-                Extension = "jpg",
-                UploadedAt = now,
-                UploadedBy = DemoAuthorId,
-            }
-        );
-        return id;
+        var file = FileEntity.Upload(name, "jpg", DemoAuthorId, now);
+        files.Add(file);
+        return file.Id;
     }
 
-    private static IEnumerable<ActivityRoleCapacity> BuildRoleCapacities(int globalIndex)
+    private static IEnumerable<RoleCapacity> BuildRoleCapacities(int globalIndex)
     {
         return RoleCapacityPlans[globalIndex % 3]
-            .Select(plan => new ActivityRoleCapacity
-            {
-                ActivityRoleTypeId = plan.RoleTypeId,
-                DesiredCount = plan.DesiredCount,
-            });
+            .Select(plan => new RoleCapacity(plan.RoleTypeId, plan.DesiredCount));
     }
 
-    private static IEnumerable<ActivityUserRoleAssignment> BuildAssignments(
+    private static void SignUp(
+        Activity activity,
         int globalIndex,
-        Guid activityId,
         DateTimeOffset signupOpensAt,
         DateTimeOffset signupClosesAt,
         DateTimeOffset now
@@ -544,14 +543,17 @@ public sealed class DemoDataSeeder(
             var signedUpAt = signupOpensAt
                 .AddDays((globalIndex + slot) % windowDays)
                 .AddHours(slot);
-            yield return new ActivityUserRoleAssignment
+            var userId = UserId(picks[slot].UserIndex);
+            activity.RequestAssignment(
+                userId,
+                picks[slot].RoleTypeId,
+                signedUpAt < now ? signedUpAt : now
+            );
+            var statusId = ResolveAssignmentStatus(globalIndex, slot);
+            if (statusId != SeedIds.AssignmentStatusTypes.Requested)
             {
-                UserId = UserId(picks[slot].UserIndex),
-                ActivityId = activityId,
-                ActivityRoleTypeId = picks[slot].RoleTypeId,
-                AssignmentStatusId = ResolveAssignmentStatus(globalIndex, slot),
-                CreatedAt = signedUpAt < now ? signedUpAt : now,
-            };
+                activity.ChangeAssignmentStatus(userId, statusId);
+            }
         }
     }
 
@@ -582,15 +584,13 @@ public sealed class DemoDataSeeder(
         {
             var seed = DemoRatings[((eventIndex * 3) + slot) % DemoRatings.Length];
             ratings.Add(
-                new EventRating
-                {
-                    Id = Guid.NewGuid(),
-                    EventId = eventId,
-                    Score = seed.Score,
-                    MostLiked = seed.MostLiked,
-                    LeastLiked = seed.LeastLiked,
-                    Suggestions = seed.Suggestions,
-                }
+                EventRating.Submit(
+                    eventId,
+                    seed.Score,
+                    seed.MostLiked,
+                    seed.LeastLiked,
+                    seed.Suggestions
+                )
             );
         }
 
@@ -731,13 +731,7 @@ public sealed class DemoDataSeeder(
 
     private static Guid ResolveUserTypeId(UserKind kind)
     {
-        return kind switch
-        {
-            UserKind.Sponsor => SeedIds.UserTypes.Sponsor,
-            UserKind.Child => SeedIds.UserTypes.Participant,
-            UserKind.Member => SeedIds.UserTypes.Member,
-            _ => SeedIds.UserTypes.Member,
-        };
+        return kind is UserKind.Sponsor ? SeedIds.UserTypes.Sponsor : SeedIds.UserTypes.Member;
     }
 
     private static Guid ResolveModalityId(string modality)
@@ -836,7 +830,7 @@ public sealed class DemoDataSeeder(
         string LastName,
         UserKind Kind,
         Gender Gender,
-        int? BirthYear,
+        int? Age,
         int? ParentIndex
     );
 
@@ -872,10 +866,7 @@ public sealed class DemoDataSeeder(
 
     private sealed record DemoSchedule(
         List<Event> Events,
-        List<EventCategory> EventCategories,
-        List<EventTermsDocument> EventTermsDocuments,
         List<Activity> Activities,
-        List<ActivityUserRoleAssignment> Assignments,
         List<EventRating> Ratings
     );
 
@@ -2520,11 +2511,11 @@ public sealed class DemoDataSeeder(
         new("Rubén", "Márquez Fuentes", UserKind.Sponsor, Gender.Male, null, null),
         new("Laura", "Domínguez Pardo", UserKind.Sponsor, Gender.Female, null, null),
         new("Adrián", "Bautista Nogueira", UserKind.Sponsor, Gender.Male, null, null),
-        new("Mateo", "Serrano Ferrer", UserKind.Child, Gender.Male, 2013, 1),
-        new("Valeria", "Navarro Gil", UserKind.Child, Gender.Female, 2014, 2),
-        new("Hugo", "Molina Ríos", UserKind.Child, Gender.Male, 2012, 3),
-        new("Daniela", "Delgado Soto", UserKind.Child, Gender.Female, 2015, 6),
-        new("Leo", "Ortega Peña", UserKind.Child, Gender.Other, 2016, 4),
+        new("Mateo", "Serrano Ferrer", UserKind.Child, Gender.Male, 13, 1),
+        new("Valeria", "Navarro Gil", UserKind.Child, Gender.Female, 12, 2),
+        new("Hugo", "Molina Ríos", UserKind.Child, Gender.Male, 14, 3),
+        new("Daniela", "Delgado Soto", UserKind.Child, Gender.Female, 11, 6),
+        new("Leo", "Ortega Peña", UserKind.Child, Gender.Other, 10, 4),
     ];
 }
 
@@ -2534,10 +2525,7 @@ internal sealed record DemoGraph(
     List<EventCategoryType> CategoryTypes,
     List<TermsDocument> TermsDocuments,
     List<Event> Events,
-    List<EventCategory> EventCategories,
-    List<EventTermsDocument> EventTermsDocuments,
     List<Activity> Activities,
-    List<ActivityUserRoleAssignment> Assignments,
     List<EventRating> Ratings,
     List<NewsItem> News,
     List<Resource> Resources,

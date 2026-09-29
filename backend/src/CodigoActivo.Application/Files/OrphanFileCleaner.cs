@@ -1,7 +1,9 @@
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.Diagnostics;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Domain.Files;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Files;
@@ -42,7 +44,7 @@ public interface IOrphanFileCleaner
 public sealed class OrphanFileCleaner(
     IFileRepository files,
     IUnitOfWork uow,
-    ILocalFileSystemRepository storage,
+    IFileStorage storage,
     ICacheInvalidator cacheInvalidator,
     ILogger<OrphanFileCleaner> logger
 ) : IOrphanFileCleaner
@@ -57,7 +59,7 @@ public sealed class OrphanFileCleaner(
     {
         try
         {
-            var file = await files.FindAsync(f => f.Id == fileId, ct);
+            var file = await files.GetByIdAsync(fileId, ct);
             if (file is null)
             {
                 return;
@@ -108,7 +110,7 @@ public sealed class OrphanFileCleaner(
                 return;
             }
 
-            var orphans = await files.GetAsync(f => orphanIds.Contains(f.Id), ct);
+            var orphans = await files.ListByIdsAsync(orphanIds, ct);
             if (orphans.Count is 0)
             {
                 return;

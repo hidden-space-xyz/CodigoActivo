@@ -1,13 +1,19 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.EventCategories.Commands;
+using CodigoActivo.Application.EventCategories.Contracts;
+using CodigoActivo.Application.EventCategories.Queries;
 using CodigoActivo.Application.Events.Commands;
+using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Events.Queries;
 using CodigoActivo.Application.Participation.Commands;
+using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Application.Participation.Queries;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
+using CodigoActivo.Application.TermsDocuments.Commands;
+using CodigoActivo.Application.TermsDocuments.Contracts;
+using CodigoActivo.Application.TermsDocuments.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -173,6 +179,7 @@ public class EventsController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an event, or an error response.</returns>
     [HttpPost]
@@ -180,12 +187,14 @@ public class EventsController : ApiControllerBase
     public async Task<ActionResult<EventResponse>> CreateAsync(
         [FromBody] CreateEventRequest request,
         [FromServices] CreateEventCommandHandler handler,
+        [FromServices] GetEventByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToCreated(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new CreateEventCommand(request, UserId), ct),
-            e => $"/api/events/{e.Id}"
+            id => getById.HandleAsync(new GetEventByIdQuery(id), ct),
+            id => $"/api/events/{id}"
         );
     }
 
@@ -195,6 +204,7 @@ public class EventsController : ApiControllerBase
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an event, or an error response.</returns>
     [HttpPut("{eventId:guid}")]
@@ -203,11 +213,13 @@ public class EventsController : ApiControllerBase
         Guid eventId,
         [FromBody] UpdateEventRequest request,
         [FromServices] UpdateEventCommandHandler handler,
+        [FromServices] GetEventByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(
-            await handler.HandleAsync(new UpdateEventCommand(eventId, request, UserId), ct)
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new UpdateEventCommand(eventId, request, UserId), ct),
+            () => getById.HandleAsync(new GetEventByIdQuery(eventId), ct)
         );
     }
 
@@ -234,6 +246,7 @@ public class EventsController : ApiControllerBase
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an event, or an error response.</returns>
     [HttpPatch("{eventId:guid}/feature")]
@@ -241,10 +254,14 @@ public class EventsController : ApiControllerBase
     public async Task<ActionResult<EventResponse>> FeatureAsync(
         Guid eventId,
         [FromServices] SetEventFeaturedCommandHandler handler,
+        [FromServices] GetEventByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new SetEventFeaturedCommand(eventId), ct));
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new SetEventFeaturedCommand(eventId), ct),
+            () => getById.HandleAsync(new GetEventByIdQuery(eventId), ct)
+        );
     }
 
     /// <summary>
@@ -295,6 +312,7 @@ public class EventsController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an event category type, or an error response.</returns>
     [HttpPost("categoryType")]
@@ -302,10 +320,14 @@ public class EventsController : ApiControllerBase
     public async Task<ActionResult<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
         [FromBody] CreateEventCategoryTypeRequest request,
         [FromServices] CreateEventCategoryTypeCommandHandler handler,
+        [FromServices] GetEventCategoryTypeByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new CreateEventCategoryTypeCommand(request), ct));
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new CreateEventCategoryTypeCommand(request), ct),
+            id => getById.HandleAsync(new GetEventCategoryTypeByIdQuery(id), ct)
+        );
     }
 
     /// <summary>
@@ -314,6 +336,7 @@ public class EventsController : ApiControllerBase
     /// <param name="eventCategoryTypeId">Identifier of the event category type.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an event category type, or an error response.</returns>
     [HttpPut("categoryType/{eventCategoryTypeId:guid}")]
@@ -322,14 +345,16 @@ public class EventsController : ApiControllerBase
         Guid eventCategoryTypeId,
         [FromBody] UpdateEventCategoryTypeRequest request,
         [FromServices] UpdateEventCategoryTypeCommandHandler handler,
+        [FromServices] GetEventCategoryTypeByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(
+        return await ToOkAfterAsync(
             await handler.HandleAsync(
                 new UpdateEventCategoryTypeCommand(eventCategoryTypeId, request),
                 ct
-            )
+            ),
+            () => getById.HandleAsync(new GetEventCategoryTypeByIdQuery(eventCategoryTypeId), ct)
         );
     }
 
@@ -358,6 +383,7 @@ public class EventsController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a terms document, or an error response.</returns>
     [HttpPost("termsDocument")]
@@ -365,10 +391,14 @@ public class EventsController : ApiControllerBase
     public async Task<ActionResult<TermsDocumentResponse>> CreateTermsDocumentAsync(
         [FromBody] CreateTermsDocumentRequest request,
         [FromServices] CreateTermsDocumentCommandHandler handler,
+        [FromServices] GetTermsDocumentByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new CreateTermsDocumentCommand(request), ct));
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new CreateTermsDocumentCommand(request), ct),
+            id => getById.HandleAsync(new GetTermsDocumentByIdQuery(id), ct)
+        );
     }
 
     /// <summary>
@@ -377,6 +407,7 @@ public class EventsController : ApiControllerBase
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a terms document, or an error response.</returns>
     [HttpPut("termsDocument/{termsDocumentId:guid}")]
@@ -385,11 +416,13 @@ public class EventsController : ApiControllerBase
         Guid termsDocumentId,
         [FromBody] UpdateTermsDocumentRequest request,
         [FromServices] UpdateTermsDocumentCommandHandler handler,
+        [FromServices] GetTermsDocumentByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(
-            await handler.HandleAsync(new UpdateTermsDocumentCommand(termsDocumentId, request), ct)
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new UpdateTermsDocumentCommand(termsDocumentId, request), ct),
+            () => getById.HandleAsync(new GetTermsDocumentByIdQuery(termsDocumentId), ct)
         );
     }
 

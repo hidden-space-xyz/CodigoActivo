@@ -64,15 +64,35 @@ public sealed class LayerReferenceTests
     }
 
     [Fact]
-    public void InfrastructureAssemblyReferencesNeverIncludeApplication()
+    public void ApiAssemblyReferencesNeverIncludeInfrastructureOrPersistence()
     {
-        var references = ReferencedAssemblyNames(typeof(SmtpEmailSender).Assembly);
+        var references = ReferencedAssemblyNames(typeof(ApiErrorResponseExtensions).Assembly);
 
-        references.Should().NotContain("CodigoActivo.Application");
+        references
+            .Should()
+            .NotContain(name =>
+                name.StartsWith("CodigoActivo.Infrastructure", StringComparison.Ordinal)
+                || name.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal)
+                || name.StartsWith("Npgsql", StringComparison.Ordinal)
+            );
     }
 
     [Fact]
-    public void ControllerSignaturesCodigoActivoTypesComeFromApplicationOrDomainCommon()
+    public void InfrastructureAssemblyReferencesNeverIncludeOuterLayers()
+    {
+        var references = ReferencedAssemblyNames(typeof(SmtpEmailSender).Assembly);
+
+        references.Should().Contain("CodigoActivo.Application");
+        references
+            .Should()
+            .NotContain(name =>
+                name.StartsWith("CodigoActivo.Composition", StringComparison.Ordinal)
+                || name.StartsWith("CodigoActivo.API", StringComparison.Ordinal)
+            );
+    }
+
+    [Fact]
+    public void ControllerSignaturesCodigoActivoTypesComeFromApplicationOrApi()
     {
         var controllers = typeof(ApiErrorResponseExtensions)
             .Assembly.GetTypes()
@@ -143,6 +163,6 @@ public sealed class LayerReferenceTests
     private static bool IsAllowedInControllerSignature(string ns)
     {
         return ns.StartsWith("CodigoActivo.Application", StringComparison.Ordinal)
-            || string.Equals(ns, "CodigoActivo.Domain.Common", StringComparison.Ordinal);
+            || ns.StartsWith("CodigoActivo.API", StringComparison.Ordinal);
     }
 }

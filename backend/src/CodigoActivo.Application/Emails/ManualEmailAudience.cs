@@ -1,6 +1,6 @@
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Emails.Contracts;
 
 namespace CodigoActivo.Application.Emails;
 
@@ -21,7 +21,7 @@ public sealed record ManualEmailAudience(IReadOnlyList<Recipient> Recipients, in
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the audience of the email.</returns>
     public static async Task<ManualEmailAudience> LoadAsync(
-        IQueryable<User> source,
+        IQueryable<UserRow> source,
         IQueryExecutor executor,
         CancellationToken ct
     )
