@@ -1,9 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Application.Resources.Queries;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Resources.ResourceTestData;
 
@@ -11,19 +9,19 @@ namespace CodigoActivo.UnitTests.Application.Resources.Queries;
 
 public sealed class ListResourcesQueryHandlerTests
 {
-    private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
+    private readonly FakeReadStore store = new();
     private readonly TestClock clock = new();
     private readonly ListResourcesQueryHandler sut;
 
     public ListResourcesQueryHandlerTests()
     {
-        sut = new ListResourcesQueryHandler(resources, new FakeQueryExecutor(), clock);
+        sut = new ListResourcesQueryHandler(store, new FakeQueryExecutor(), clock);
     }
 
     [Fact]
     public async Task HandleAsyncTitleFilterWithAccentMatchesCaseAndAccentInsensitively()
     {
-        resources.HasResources(NewResource("Manual Ávila"), NewResource("Otro"));
+        store.Resources.AddRange([NewResourceRow("Manual Ávila"), NewResourceRow("Otro")]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(new ResourceListQuery { Title = "avila" }),
@@ -36,10 +34,10 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSubtitleFilterMatchesSubstring()
     {
-        resources.HasResources(
-            NewResource("A", subtitle: "documentación"),
-            NewResource("B", subtitle: "video")
-        );
+        store.Resources.AddRange([
+            NewResourceRow("A", subtitle: "documentación"),
+            NewResourceRow("B", subtitle: "video"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(new ResourceListQuery { Subtitle = "menta" }),
@@ -52,11 +50,11 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSearchMatchesTitleOrSubtitle()
     {
-        resources.HasResources(
-            NewResource("Guía de Scratch", subtitle: "Primeros pasos"),
-            NewResource("Fichas", subtitle: "Actividades con scratch"),
-            NewResource("Python", subtitle: "Introducción")
-        );
+        store.Resources.AddRange([
+            NewResourceRow("Guía de Scratch", subtitle: "Primeros pasos"),
+            NewResourceRow("Fichas", subtitle: "Actividades con scratch"),
+            NewResourceRow("Python", subtitle: "Introducción"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(new ResourceListQuery { Search = "Scratch" }),
@@ -69,7 +67,11 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncExplicitTitleSortOrdersAscendingByTitle()
     {
-        resources.HasResources(NewResource("Charlie"), NewResource("Alpha"), NewResource("Bravo"));
+        store.Resources.AddRange([
+            NewResourceRow("Charlie"),
+            NewResourceRow("Alpha"),
+            NewResourceRow("Bravo"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(new ResourceListQuery { Sort = "title" }),
@@ -82,11 +84,11 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNoSortSpecifiedDefaultsToCreatedAtDescending()
     {
-        resources.HasResources(
-            NewResource("Old", year: 2022),
-            NewResource("Newest", year: 2026),
-            NewResource("Mid", year: 2024)
-        );
+        store.Resources.AddRange([
+            NewResourceRow("Old", year: 2022),
+            NewResourceRow("Newest", year: 2026),
+            NewResourceRow("Mid", year: 2024),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(new ResourceListQuery()),
@@ -99,8 +101,8 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncResourceTypeIdFilterKeepsResourcesOfThatType()
     {
-        var target = NewResource("Interno");
-        resources.HasResources(target, NewResource("Otro"));
+        var target = NewResourceRow("Interno");
+        store.Resources.AddRange([target, NewResourceRow("Otro")]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(
@@ -115,10 +117,10 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncUrlFilterIsAccentAndCaseInsensitive()
     {
-        resources.HasResources(
-            NewResource("Curso", url: "https://cursos.es/robótica"),
-            NewResource("Otro", url: "https://cursos.es/ajedrez")
-        );
+        store.Resources.AddRange([
+            NewResourceRow("Curso", url: "https://cursos.es/robótica"),
+            NewResourceRow("Otro", url: "https://cursos.es/ajedrez"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(new ResourceListQuery { Url = "ROBOTICA" }),
@@ -131,11 +133,11 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncCreatedRangeFilterKeepsResourcesWithinDayBounds()
     {
-        resources.HasResources(
-            NewResource("Viejo", year: 2022),
-            NewResource("Medio", year: 2024),
-            NewResource("Nuevo", year: 2026)
-        );
+        store.Resources.AddRange([
+            NewResourceRow("Viejo", year: 2022),
+            NewResourceRow("Medio", year: 2024),
+            NewResourceRow("Nuevo", year: 2026),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(
@@ -154,11 +156,11 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByTypeOrdersByTypeName()
     {
-        resources.HasResources(
-            NewResource("Tercero", type: NewResourceType(name: "Video")),
-            NewResource("Primero", type: NewResourceType(name: "Documento")),
-            NewResource("Segundo", type: NewResourceType(name: "Enlace"))
-        );
+        store.Resources.AddRange([
+            NewResourceRow("Tercero", type: NewResourceTypeRow(name: "Video")),
+            NewResourceRow("Primero", type: NewResourceTypeRow(name: "Documento")),
+            NewResourceRow("Segundo", type: NewResourceTypeRow(name: "Enlace")),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(new ResourceListQuery { Sort = "type" }),
@@ -174,11 +176,11 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByUrlDescendingOrdersByUrlDescending()
     {
-        resources.HasResources(
-            NewResource("A", url: "https://a.es"),
-            NewResource("C", url: "https://c.es"),
-            NewResource("B", url: "https://b.es")
-        );
+        store.Resources.AddRange([
+            NewResourceRow("A", url: "https://a.es"),
+            NewResourceRow("C", url: "https://c.es"),
+            NewResourceRow("B", url: "https://b.es"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(new ResourceListQuery { Sort = "-url" }),
@@ -194,9 +196,8 @@ public sealed class ListResourcesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncResourceHasTypeProjectsTypeAndUrl()
     {
-        var resource = NewResource();
-        resource.Url = "https://ejemplo.es/recurso";
-        resources.HasResources(resource);
+        var resource = NewResourceRow(url: "https://ejemplo.es/recurso");
+        store.Resources.Add(resource);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(new ResourceListQuery()),

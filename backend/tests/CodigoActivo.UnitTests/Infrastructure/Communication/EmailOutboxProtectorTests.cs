@@ -1,8 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using AwesomeAssertions;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Infrastructure.Communication;
 using Microsoft.AspNetCore.DataProtection;
 using Xunit;

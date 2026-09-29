@@ -1,41 +1,57 @@
 using System.Globalization;
 using System.Net;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Auth;
-using CodigoActivo.Application.Auth.Commands;
-using CodigoActivo.Application.Auth.Queries;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Emails.Queries;
+using CodigoActivo.Application.EventCategories.Commands;
+using CodigoActivo.Application.EventCategories.Queries;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Events.Queries;
-using CodigoActivo.Application.Extensions;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Application.Files.Queries;
 using CodigoActivo.Application.News.Commands;
 using CodigoActivo.Application.News.Queries;
-using CodigoActivo.Application.Options;
 using CodigoActivo.Application.Participation.Commands;
 using CodigoActivo.Application.Participation.Queries;
 using CodigoActivo.Application.Partners.Commands;
 using CodigoActivo.Application.Partners.Queries;
+using CodigoActivo.Application.Reports;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Application.Resources.Commands;
 using CodigoActivo.Application.Resources.Queries;
 using CodigoActivo.Application.Seo.Queries;
+using CodigoActivo.Application.TermsDocuments.Commands;
+using CodigoActivo.Application.TermsDocuments.Queries;
+using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Queries;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Security;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.Partners;
+using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
@@ -46,7 +62,6 @@ using CodigoActivo.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Npgsql;
 
 namespace CodigoActivo.Composition;
@@ -78,6 +93,7 @@ public static class DependencyInjection
         AddPasswordReset(services, configuration);
         AddPasswordLockout(services, configuration);
         AddTwoFactor(services, configuration);
+        services.AddSingleton(SessionLifetimeConfiguration.Read(configuration));
         AddEmail(services, configuration);
         AddDisposableEmailDomains(services, configuration);
         AddCaching(services);
@@ -107,6 +123,9 @@ public static class DependencyInjection
                     : baseUrl.TrimEnd('/'),
             }
         );
+        services.AddSingleton<IAccountEmailComposer, AccountEmailComposer>();
+        services.AddSingleton<ISignupEmailComposer, SignupEmailComposer>();
+        services.AddSingleton<IManualEmailComposer, ManualEmailComposer>();
     }
 
     private static void AddAccountVerification(
@@ -475,8 +494,15 @@ public static class DependencyInjection
                 )
                 .UseSnakeCaseNamingConvention()
         );
+        services.AddDbContext<CodigoActivoReadDbContext>(options =>
+            options
+                .UseNpgsql(BuildConnectionString(configuration))
+                .UseSnakeCaseNamingConvention()
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+        );
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<CodigoActivoDbContext>());
+        services.AddScoped<IReadStore>(sp => sp.GetRequiredService<CodigoActivoReadDbContext>());
         services.AddSingleton<IQueryExecutor, QueryExecutor>();
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
         services.AddScoped<DatabaseSeeder>();
@@ -508,22 +534,21 @@ public static class DependencyInjection
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IEventRepository, EventRepository>();
         services.AddScoped<IEventRatingRepository, EventRatingRepository>();
+        services.AddScoped<IEventTermsAcceptanceRepository, EventTermsAcceptanceRepository>();
         services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddScoped<IResourceRepository, ResourceRepository>();
-        services.AddScoped<IResourceTypeRepository, ResourceTypeRepository>();
         services.AddScoped<INewsItemRepository, NewsItemRepository>();
         services.AddScoped<IPartnerRepository, PartnerRepository>();
         services.AddScoped<IFileRepository, FileRepository>();
-        services.AddScoped<IUserTypeRepository, UserTypeRepository>();
-        services.AddScoped<IUserStatusTypeRepository, UserStatusTypeRepository>();
-        services.AddScoped<IActivityRoleTypeRepository, ActivityRoleTypeRepository>();
-        services.AddScoped<IAssignmentStatusTypeRepository, AssignmentStatusTypeRepository>();
         services.AddScoped<IEventCategoryTypeRepository, EventCategoryTypeRepository>();
         services.AddScoped<ITermsDocumentRepository, TermsDocumentRepository>();
-        services.AddScoped<IActivityModalityTypeRepository, ActivityModalityTypeRepository>();
-        services.AddScoped<IDashboardRepository, DashboardRepository>();
-        services.AddScoped<IDisposableEmailDomainRepository, DisposableEmailDomainRepository>();
+        services.AddScoped<IDashboardCountsReader, DashboardCountsReader>();
+        services.AddScoped<IDisposableEmailDomainStore, DisposableEmailDomainRepository>();
+        services.AddScoped<IDisposableEmailDomainRepository>(provider =>
+            provider.GetRequiredService<IDisposableEmailDomainStore>()
+        );
         services.AddScoped<IDeletedAccountRepository, DeletedAccountRepository>();
+        services.AddScoped<IAccountErasureStore, AccountErasureStore>();
     }
 
     private static void AddDeletedAccountPurge(IServiceCollection services)
@@ -575,7 +600,7 @@ public static class DependencyInjection
                 : configuredRootPath,
         };
         services.AddSingleton(storageOptions);
-        services.AddSingleton<ILocalFileSystemRepository, LocalFileSystemRepository>();
+        services.AddSingleton<IFileStorage, LocalFileStorage>();
     }
 
     private static void AddApplicationHandlers(IServiceCollection services)
@@ -605,8 +630,7 @@ public static class DependencyInjection
 
     private static void AddSeoHandlers(IServiceCollection services)
     {
-        services.AddScoped<GetSitemapXmlQueryHandler>();
-        services.AddScoped<GetRobotsTxtQueryHandler>();
+        services.AddScoped<GetSitemapEntriesQueryHandler>();
     }
 
     private static void AddNewsHandlers(IServiceCollection services)
@@ -648,7 +672,9 @@ public static class DependencyInjection
         services.AddScoped<GetPastEventYearsQueryHandler>();
         services.AddScoped<GetPastEventCategoryTypesQueryHandler>();
         services.AddScoped<ListEventCategoryTypesQueryHandler>();
+        services.AddScoped<GetEventCategoryTypeByIdQueryHandler>();
         services.AddScoped<ListTermsDocumentsQueryHandler>();
+        services.AddScoped<GetTermsDocumentByIdQueryHandler>();
         services.AddScoped<GetEventTermsStateQueryHandler>();
         services.AddScoped<GetLeaderRosterQueryHandler>();
         services.AddScoped<CreateEventCommandHandler>();
@@ -668,6 +694,8 @@ public static class DependencyInjection
     {
         services.AddScoped<ListActivitiesQueryHandler>();
         services.AddScoped<GetActivityByIdQueryHandler>();
+        services.AddScoped<GetAssignmentQueryHandler>();
+        services.AddScoped<GetAssignmentsQueryHandler>();
         services.AddScoped<ListAssignedActivitiesQueryHandler>();
         services.AddScoped<ListActivityRoleTypesQueryHandler>();
         services.AddScoped<ListAssignmentStatusTypesQueryHandler>();
@@ -701,10 +729,13 @@ public static class DependencyInjection
     {
         services.AddScoped<ListUsersQueryHandler>();
         services.AddScoped<GetUserByIdQueryHandler>();
+        services.AddScoped<IsGuardianOfQueryHandler>();
         services.AddScoped<ListUserStatusTypesQueryHandler>();
         services.AddScoped<ListUserTypesQueryHandler>();
         services.AddScoped<UpdateUserCommandHandler>();
         services.AddScoped<DeleteUserCommandHandler>();
+        services.AddScoped<PurgeDeletedAccountsCommandHandler>();
+        services.AddScoped<AccountEraser>();
         services.AddScoped<SetAdminCommandHandler>();
         services.AddScoped<ChangeUserTypeCommandHandler>();
         services.AddScoped<AddChildCommandHandler>();
@@ -719,6 +750,13 @@ public static class DependencyInjection
     {
         services.AddSingleton<CredentialTimingProtector>();
         services.AddScoped<GetCurrentUserQueryHandler>();
+        services.AddScoped<GetRegistrationQueryHandler>();
+        services.AddScoped<GetSessionIdentityQueryHandler>();
+        services.AddScoped<GetPendingChallengeQueryHandler>();
+        services.AddScoped<StartSessionCommandHandler>();
+        services.AddScoped<EndSessionCommandHandler>();
+        services.AddScoped<RemoveExpiredSessionsCommandHandler>();
+        services.AddScoped<EndLoginChallengeCommandHandler>();
         services.AddScoped<LoginCommandHandler>();
         services.AddScoped<RegisterCommandHandler>();
         services.AddScoped<VerifyUserCommandHandler>();

@@ -1,9 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Partners.Contracts;
 
 namespace CodigoActivo.Application.Partners.Queries;
 
@@ -17,9 +15,9 @@ public sealed record ListPartnersQuery(PartnerListQuery Filters)
 /// <summary>
 /// Executes the query to list partners.
 /// </summary>
-/// <param name="partners">Repository used to persist and retrieve partners.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class ListPartnersQueryHandler(IPartnerRepository partners, IQueryExecutor executor)
+public sealed class ListPartnersQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<ListPartnersQuery, PagedResult<PartnerResponse>>
 {
     private static readonly SortMap<PartnerResponse> Sort = new SortMap<PartnerResponse>()
@@ -50,7 +48,7 @@ public sealed class ListPartnersQueryHandler(IPartnerRepository partners, IQuery
         CancellationToken ct
     )
     {
-        var source = partners.Query().Select(Projections.Partner);
+        var source = readStore.Partners.Select(PartnerProjections.Partner);
 
         if (query.Tier is { } tier)
         {

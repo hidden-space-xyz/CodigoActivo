@@ -1,9 +1,10 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Auth;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -23,12 +24,12 @@ public sealed record DeleteUserCommand(Guid UserId, Guid ActingUserId) : IComman
 /// The initial administrator is never deleted.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="deletedAccounts">Repository that erases the account after copying it.</param>
+/// <param name="accountEraser">Use case that erases the account after copying it.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class DeleteUserCommandHandler(
     IUserRepository users,
-    IDeletedAccountRepository deletedAccounts,
+    AccountEraser accountEraser,
     IClock clock,
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<DeleteUserCommand, Result>
@@ -41,12 +42,13 @@ public sealed class DeleteUserCommandHandler(
     /// <returns>A task whose result indicates success or contains the application error.</returns>
     public async Task<Result> HandleAsync(DeleteUserCommand command, CancellationToken ct = default)
     {
-        if (command.UserId == SeedIds.Users.InitialAdministrator)
+        var deletable = InitialAdministrator.EnsureMayBeDeleted(command.UserId);
+        if (deletable.IsFailure)
         {
-            return Error.Forbidden(ErrorCode.UserDeleteInitialAdminForbidden);
+            return deletable.Error!;
         }
 
-        var user = await users.FindAsync(u => u.Id == command.UserId, ct);
+        var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
             return Error.NotFound(ErrorCode.UserNotFound);
@@ -57,12 +59,8 @@ public sealed class DeleteUserCommandHandler(
             return Error.Forbidden(ErrorCode.UserSelfDeleteRequiresVerification);
         }
 
-        var origin =
-            user.ParentId == command.ActingUserId
-                ? AccountDeletionOrigin.Guardian
-                : AccountDeletionOrigin.Administrator;
-        var erasure = new AccountErasure(origin, command.ActingUserId, clock.UtcNow);
-        if (!await deletedAccounts.EraseAsync(user, erasure, ct))
+        var erasure = AccountErasure.For(user, command.ActingUserId, clock.UtcNow);
+        if (!await accountEraser.EraseAsync(user, erasure, ct))
         {
             return Error.NotFound(ErrorCode.UserNotFound);
         }

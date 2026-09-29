@@ -1,5 +1,5 @@
 using CodigoActivo.API.Extensions;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Users.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -48,11 +48,12 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
             return;
         }
 
-        var users = services.GetRequiredService<IUserRepository>();
-        var isOwnChild = await users.ExistsAsync(
-            u => u.Id == targetUserId && u.ParentId == currentUserId,
-            context.HttpContext.RequestAborted
-        );
+        var isOwnChild = await services
+            .GetRequiredService<IsGuardianOfQueryHandler>()
+            .HandleAsync(
+                new IsGuardianOfQuery(currentUserId, targetUserId),
+                context.HttpContext.RequestAborted
+            );
         if (isOwnChild)
         {
             return;

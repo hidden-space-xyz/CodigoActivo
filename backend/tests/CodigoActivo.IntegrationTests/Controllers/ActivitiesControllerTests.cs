@@ -1,10 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -39,19 +41,21 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Events.Add(
-                new Event
-                {
-                    Id = id,
-                    Title = "Evento",
-                    Subtitle = "Sub",
-                    EventStartsAt = startsAt ?? EventStart,
-                    EventEndsAt = endsAt ?? EventEnd,
-                    SignupStartsAt = SignupStart,
-                    SignupEndsAt = SignupEnd,
-                    ThumbnailId = thumb,
-                    CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = id,
+                        Title = "Evento",
+                        Subtitle = "Sub",
+                        EventStartsAt = startsAt ?? EventStart,
+                        EventEndsAt = endsAt ?? EventEnd,
+                        SignupStartsAt = SignupStart,
+                        SignupEndsAt = SignupEnd,
+                        ThumbnailId = thumb,
+                        CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -72,20 +76,23 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Activities.Add(
-                new Activity
-                {
-                    Id = id,
-                    Title = title,
-                    Description = "Descripcion",
-                    Location = location,
-                    ActivityModalityTypeId = modalityId ?? SeedIds.ActivityModalityTypes.Presencial,
-                    ActivityStartsAt = startsAt ?? ActivityStart,
-                    ActivityEndsAt = endsAt ?? ActivityEnd,
-                    EventId = eventId,
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Activity>(
+                    new
+                    {
+                        Id = id,
+                        Title = title,
+                        Description = "Descripcion",
+                        Location = location,
+                        ActivityModalityTypeId = modalityId
+                            ?? SeedIds.ActivityModalityTypes.Presencial,
+                        ActivityStartsAt = startsAt ?? ActivityStart,
+                        ActivityEndsAt = endsAt ?? ActivityEnd,
+                        EventId = eventId,
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -354,20 +361,24 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.ActivityRoleCapacities.Add(
-                new ActivityRoleCapacity
-                {
-                    ActivityId = id,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
-                    DesiredCount = 1,
-                }
+                Persisted.As<ActivityRoleCapacity>(
+                    new
+                    {
+                        ActivityId = id,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
+                        DesiredCount = 1,
+                    }
+                )
             );
             db.ActivityRoleCapacities.Add(
-                new ActivityRoleCapacity
-                {
-                    ActivityId = id,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                    DesiredCount = 5,
-                }
+                Persisted.As<ActivityRoleCapacity>(
+                    new
+                    {
+                        ActivityId = id,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        DesiredCount = 5,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -427,60 +438,72 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.ActivityRoleCapacities.Add(
-                new ActivityRoleCapacity
-                {
-                    ActivityId = crowded,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                    DesiredCount = 1,
-                }
+                Persisted.As<ActivityRoleCapacity>(
+                    new
+                    {
+                        ActivityId = crowded,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        DesiredCount = 1,
+                    }
+                )
             );
             db.ActivityRoleCapacities.Add(
-                new ActivityRoleCapacity
-                {
-                    ActivityId = crowded,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
-                    DesiredCount = 1,
-                }
+                Persisted.As<ActivityRoleCapacity>(
+                    new
+                    {
+                        ActivityId = crowded,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
+                        DesiredCount = 1,
+                    }
+                )
             );
             db.ActivityRoleCapacities.Add(
-                new ActivityRoleCapacity
-                {
-                    ActivityId = covered,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                    DesiredCount = 2,
-                }
+                Persisted.As<ActivityRoleCapacity>(
+                    new
+                    {
+                        ActivityId = covered,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        DesiredCount = 2,
+                    }
+                )
             );
             foreach (var activityId in new[] { crowded, covered })
             {
                 db.ActivityUserRoleAssignments.Add(
-                    new ActivityUserRoleAssignment
-                    {
-                        UserId = TestSeedData.Users.MemberId,
-                        ActivityId = activityId,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
-                        CreatedAt = SignupStart,
-                    }
+                    Persisted.As<ActivityUserRoleAssignment>(
+                        new
+                        {
+                            UserId = TestSeedData.Users.MemberId,
+                            ActivityId = activityId,
+                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+                            CreatedAt = SignupStart,
+                        }
+                    )
                 );
                 db.ActivityUserRoleAssignments.Add(
-                    new ActivityUserRoleAssignment
-                    {
-                        UserId = TestSeedData.Users.MemberChildId,
-                        ActivityId = activityId,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
-                        CreatedAt = SignupStart,
-                    }
+                    Persisted.As<ActivityUserRoleAssignment>(
+                        new
+                        {
+                            UserId = TestSeedData.Users.MemberChildId,
+                            ActivityId = activityId,
+                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+                            CreatedAt = SignupStart,
+                        }
+                    )
                 );
                 db.ActivityUserRoleAssignments.Add(
-                    new ActivityUserRoleAssignment
-                    {
-                        UserId = TestSeedData.Users.PendingId,
-                        ActivityId = activityId,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Denied,
-                        CreatedAt = SignupStart,
-                    }
+                    Persisted.As<ActivityUserRoleAssignment>(
+                        new
+                        {
+                            UserId = TestSeedData.Users.PendingId,
+                            ActivityId = activityId,
+                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Denied,
+                            CreatedAt = SignupStart,
+                        }
+                    )
                 );
             }
             return Task.CompletedTask;

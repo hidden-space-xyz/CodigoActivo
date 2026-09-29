@@ -1,9 +1,10 @@
-using System.Linq.Expressions;
 using System.Security.Claims;
-using AwesomeAssertions;
 using CodigoActivo.API.Security;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using NSubstitute;
@@ -18,22 +19,20 @@ public sealed class SessionTicketValidatorTests
     private SessionTicketValidator Build()
     {
         return new SessionTicketValidator(
-            null!,
-            sessions,
-            Substitute.For<IUnitOfWork>(),
-            new TestClock(),
-            new SessionLifetimeOptions()
-        );
-    }
-
-    private void RemovedRows(int rows)
-    {
-        sessions
-            .RemoveAsync(
-                Arg.Any<Expression<Func<UserSession, bool>>>(),
-                Arg.Any<CancellationToken>()
+            new StartSessionCommandHandler(
+                Substitute.For<IUserRepository>(),
+                sessions,
+                Substitute.For<IUnitOfWork>(),
+                new TestClock(),
+                new SessionLifetimeOptions()
+            ),
+            new EndSessionCommandHandler(sessions),
+            new GetSessionIdentityQueryHandler(
+                new FakeReadStore(),
+                new FakeQueryExecutor(),
+                new TestClock()
             )
-            .Returns(rows);
+        );
     }
 
     private static ClaimsPrincipal Ticket(Guid userId, string? sessionId)
@@ -52,20 +51,16 @@ public sealed class SessionTicketValidatorTests
     [Fact]
     public async Task EndSessionAsyncRevokesTheRowNamedByTheTicket()
     {
-        RemovedRows(1);
+        var userId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
 
         await Build()
             .EndSessionAsync(
-                Ticket(Guid.NewGuid(), Guid.NewGuid().ToString()),
+                Ticket(userId, sessionId.ToString()),
                 TestContext.Current.CancellationToken
             );
 
-        await sessions
-            .ReceivedWithAnyArgs(1)
-            .RemoveAsync(
-                Arg.Any<Expression<Func<UserSession, bool>>>(),
-                TestContext.Current.CancellationToken
-            );
+        await sessions.Received(1).EndAsync(sessionId, userId, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -73,8 +68,6 @@ public sealed class SessionTicketValidatorTests
     [InlineData("not-a-guid")]
     public async Task EndSessionAsyncTicketWithoutUsableSessionIdTouchesNothing(string? sessionId)
     {
-        RemovedRows(1);
-
         await Build()
             .EndSessionAsync(
                 Ticket(Guid.NewGuid(), sessionId),
@@ -83,24 +76,16 @@ public sealed class SessionTicketValidatorTests
 
         await sessions
             .DidNotReceiveWithAnyArgs()
-            .RemoveAsync(
-                Arg.Any<Expression<Func<UserSession, bool>>>(),
-                TestContext.Current.CancellationToken
-            );
+            .EndAsync(default, default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task EndSessionAsyncWithoutAPrincipalTouchesNothing()
     {
-        RemovedRows(1);
-
         await Build().EndSessionAsync(null, TestContext.Current.CancellationToken);
 
         await sessions
             .DidNotReceiveWithAnyArgs()
-            .RemoveAsync(
-                Arg.Any<Expression<Func<UserSession, bool>>>(),
-                TestContext.Current.CancellationToken
-            );
+            .EndAsync(default, default, TestContext.Current.CancellationToken);
     }
 }

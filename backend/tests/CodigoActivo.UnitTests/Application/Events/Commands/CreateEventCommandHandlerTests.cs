@@ -1,13 +1,15 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
-using CodigoActivo.Application.Events.Queries;
+using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -37,43 +39,15 @@ public sealed class CreateEventCommandHandlerTests
             new EventCategoryChecker(categoryTypes),
             clock,
             uow,
-            cacheInvalidator,
-            new GetEventByIdQueryHandler(events, new FakeQueryExecutor())
+            cacheInvalidator
         );
     }
 
-    private void CaptureCreatedEvents()
+    private async Task<List<Event>> CaptureAddedEventsAsync()
     {
-        var store = new List<Event>();
-        events.Query().Returns(_ => store.AsQueryable());
-        events
-            .When(x => x.AddAsync(Arg.Any<Event>(), Arg.Any<CancellationToken>()))
-            .Do(ci =>
-            {
-                var ev = ci.Arg<Event>();
-                Assert.NotNull(ev);
-                foreach (var category in ev.Categories)
-                {
-                    category.EventCategoryType = new EventCategoryType
-                    {
-                        Id = category.EventCategoryTypeId,
-                        Name = "Talleres",
-                        Color = "#112233",
-                    };
-                }
-
-                foreach (var termsDocument in ev.TermsDocuments)
-                {
-                    termsDocument.TermsDocument = new TermsDocument
-                    {
-                        Id = termsDocument.TermsDocumentId,
-                        Name = "Términos generales",
-                        Description = "{}",
-                    };
-                }
-
-                store.Add(ev);
-            });
+        var added = new List<Event>();
+        await events.AddAsync(Arg.Do<Event>(added.Add), Arg.Any<CancellationToken>());
+        return added;
     }
 
     [Fact]
@@ -82,10 +56,7 @@ public sealed class CreateEventCommandHandlerTests
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
         termsDocuments
-            .CountAsync(
-                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
+            .CountExistingAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(0);
 
         var result = await sut.HandleAsync(
@@ -99,7 +70,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.TermsDocumentNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -127,7 +98,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventTermsDocumentDuplicated);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -140,12 +111,8 @@ public sealed class CreateEventCommandHandlerTests
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
         termsDocuments
-            .CountAsync(
-                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
+            .CountExistingAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(1);
-        CaptureCreatedEvents();
 
         var result = await sut.HandleAsync(
             new CreateEventCommand(
@@ -228,7 +195,7 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventScheduleRequired);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -248,7 +215,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -320,7 +287,7 @@ public sealed class CreateEventCommandHandlerTests
     {
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
-        CaptureCreatedEvents();
+        var added = await CaptureAddedEventsAsync();
 
         var request = CreateReq(
             earlySignupStart: new DateTimeOffset(2026, 6, 20, 12, 0, 0, TimeSpan.FromHours(2)),
@@ -334,9 +301,11 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result
-            .Value.EarlySignupStartsAt.Should()
-            .Be(new DateTimeOffset(2026, 6, 20, 10, 0, 0, TimeSpan.Zero));
+        added
+            .Should()
+            .ContainSingle()
+            .Which.EarlySignupStartsAt.Should()
+            .BeExactly(new DateTimeOffset(2026, 6, 20, 10, 0, 0, TimeSpan.Zero));
     }
 
     [Fact]
@@ -350,7 +319,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventThumbnailNotFound);
         await events
             .DidNotReceiveWithAnyArgs()
@@ -370,7 +339,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventCategoriesRequired);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -387,7 +356,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventCategoriesRequired);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -405,7 +374,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -420,7 +389,7 @@ public sealed class CreateEventCommandHandlerTests
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
-        CaptureCreatedEvents();
+        var added = await CaptureAddedEventsAsync();
 
         var request = CreateReq(categoryTypeIds: [categoryId], thumbnailId: thumbnailId);
 
@@ -430,27 +399,18 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Title.Should().Be("Hackathon");
-        result.Value.Subtitle.Should().Be("Innovación");
-        result.Value.CreatedBy.Should().Be(caller);
-        result.Value.CreatedAt.Should().Be(clock.UtcNow);
-        result.Value.ThumbnailId.Should().Be(thumbnailId);
-        result
-            .Value.Categories.Should()
+        var created = added.Should().ContainSingle().Which;
+        result.Value.Should().Be(created.Id);
+        created.Title.Should().Be("Hackathon");
+        created.Subtitle.Should().Be("Innovación");
+        created.CreatedBy.Should().Be(caller);
+        created.CreatedAt.Should().Be(clock.UtcNow);
+        created.ThumbnailId.Should().Be(thumbnailId);
+        created
+            .Categories.Should()
             .ContainSingle()
-            .Which.CategoryTypeId.Should()
+            .Which.EventCategoryTypeId.Should()
             .Be(categoryId);
-        await events
-            .Received(1)
-            .AddAsync(
-                Arg.Is<Event>(e =>
-                    e != null
-                    && e.Title == "Hackathon"
-                    && e.Subtitle == "Innovación"
-                    && e.CreatedBy == caller
-                ),
-                Arg.Any<CancellationToken>()
-            );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await cacheInvalidator
             .Received(1)
@@ -467,7 +427,7 @@ public sealed class CreateEventCommandHandlerTests
         var categoryId = Guid.NewGuid();
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
-        CaptureCreatedEvents();
+        var added = await CaptureAddedEventsAsync();
 
         var request = CreateReq(categoryTypeIds: [categoryId, categoryId]);
 
@@ -477,17 +437,13 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result
-            .Value.Categories.Should()
+        added
+            .Should()
             .ContainSingle()
-            .Which.CategoryTypeId.Should()
+            .Which.Categories.Should()
+            .ContainSingle()
+            .Which.EventCategoryTypeId.Should()
             .Be(categoryId);
-        await events
-            .Received(1)
-            .AddAsync(
-                Arg.Is<Event>(e => e != null && e.Categories.Count == 1),
-                Arg.Any<CancellationToken>()
-            );
     }
 
     [Fact]
@@ -495,7 +451,6 @@ public sealed class CreateEventCommandHandlerTests
     {
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
-        CaptureCreatedEvents();
 
         var request = CreateReq(
             eventStart: new DateOnly(2026, 8, 1),

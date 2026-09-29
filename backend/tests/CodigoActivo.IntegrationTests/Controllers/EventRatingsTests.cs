@@ -1,9 +1,12 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Participation.Contracts;
+using CodigoActivo.Application.Reports.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -49,60 +52,68 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         {
             db.Files.AddRange(Thumbnail(EventThumbnailId), Thumbnail(ActivityThumbnailId));
             db.Events.Add(
-                new Event
-                {
-                    Id = EventId,
-                    Title = "Jornada de puertas abiertas",
-                    Subtitle = "Edición 2026",
-                    Description = "{}",
-                    EventStartsAt = startsAt,
-                    EventEndsAt = endsAt,
-                    SignupStartsAt = At,
-                    SignupEndsAt = At,
-                    ThumbnailId = EventThumbnailId,
-                    CreatedAt = At,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = EventId,
+                        Title = "Jornada de puertas abiertas",
+                        Subtitle = "Edición 2026",
+                        Description = "{}",
+                        EventStartsAt = startsAt,
+                        EventEndsAt = endsAt,
+                        SignupStartsAt = At,
+                        SignupEndsAt = At,
+                        ThumbnailId = EventThumbnailId,
+                        CreatedAt = At,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.Activities.Add(
-                new Activity
-                {
-                    Id = ActivityId,
-                    Title = "Taller",
-                    Description = "Descripción",
-                    Location = "Sala",
-                    ActivityStartsAt = At,
-                    ActivityEndsAt = At.AddHours(2),
-                    EventId = EventId,
-                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                    ThumbnailId = ActivityThumbnailId,
-                    CreatedAt = At,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Activity>(
+                    new
+                    {
+                        Id = ActivityId,
+                        Title = "Taller",
+                        Description = "Descripción",
+                        Location = "Sala",
+                        ActivityStartsAt = At,
+                        ActivityEndsAt = At.AddHours(2),
+                        EventId = EventId,
+                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        ThumbnailId = ActivityThumbnailId,
+                        CreatedAt = At,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             if (assignmentStatusId is { } statusId)
             {
                 db.ActivityUserRoleAssignments.Add(
-                    new ActivityUserRoleAssignment
-                    {
-                        UserId = TestSeedData.Users.MemberId,
-                        ActivityId = ActivityId,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                        AssignmentStatusId = statusId,
-                    }
+                    Persisted.As<ActivityUserRoleAssignment>(
+                        new
+                        {
+                            UserId = TestSeedData.Users.MemberId,
+                            ActivityId = ActivityId,
+                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                            AssignmentStatusId = statusId,
+                        }
+                    )
                 );
             }
 
             if (childAssignmentStatusId is { } childStatusId)
             {
                 db.ActivityUserRoleAssignments.Add(
-                    new ActivityUserRoleAssignment
-                    {
-                        UserId = TestSeedData.Users.MemberChildId,
-                        ActivityId = ActivityId,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                        AssignmentStatusId = childStatusId,
-                    }
+                    Persisted.As<ActivityUserRoleAssignment>(
+                        new
+                        {
+                            UserId = TestSeedData.Users.MemberChildId,
+                            ActivityId = ActivityId,
+                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                            AssignmentStatusId = childStatusId,
+                        }
+                    )
                 );
             }
 
@@ -112,14 +123,16 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
 
     private static FileEntity Thumbnail(Guid id)
     {
-        return new()
-        {
-            Id = id,
-            Name = "thumb",
-            Extension = "png",
-            UploadedAt = At,
-            UploadedBy = TestSeedData.Users.AdminId,
-        };
+        return Persisted.As<FileEntity>(
+            new
+            {
+                Id = id,
+                Name = "thumb",
+                Extension = "png",
+                UploadedAt = At,
+                UploadedBy = TestSeedData.Users.AdminId,
+            }
+        );
     }
 
     [Fact]
@@ -328,12 +341,14 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.Add(
-                new EventRating
-                {
-                    EventId = EventId,
-                    Score = 3,
-                    MostLiked = "El taller",
-                }
+                Persisted.As<EventRating>(
+                    new
+                    {
+                        EventId = EventId,
+                        Score = 3,
+                        MostLiked = "El taller",
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -365,9 +380,9 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.AddRange(
-                new EventRating { EventId = EventId, Score = 1 },
-                new EventRating { EventId = EventId, Score = 5 },
-                new EventRating { EventId = EventId, Score = 3 }
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 1 }),
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 }),
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 3 })
             );
             return Task.CompletedTask;
         });
@@ -387,9 +402,9 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.AddRange(
-                new EventRating { EventId = EventId, Score = 1 },
-                new EventRating { EventId = EventId, Score = 5 },
-                new EventRating { EventId = EventId, Score = 3 }
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 1 }),
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 }),
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 3 })
             );
             return Task.CompletedTask;
         });
@@ -468,8 +483,8 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.AddRange(
-                new EventRating { EventId = EventId, Score = 5 },
-                new EventRating { EventId = EventId, Score = 2 }
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 }),
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 2 })
             );
             return Task.CompletedTask;
         });

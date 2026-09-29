@@ -1,6 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Composition;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using Microsoft.Extensions.Configuration;

@@ -1,6 +1,8 @@
 using System.Text;
+using CodigoActivo.API.Caching;
 using CodigoActivo.API.Controllers.Abstractions;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.API.Seo;
+using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Seo.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +25,7 @@ public class SeoController : ApiControllerBase
     /// Executes the sitemap endpoint for seo.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="application">Options that carry the public base URL of the site.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpGet("sitemap.xml")]
@@ -30,13 +33,17 @@ public class SeoController : ApiControllerBase
     [AllowAnonymous]
     [OutputCache(PolicyName = OutputCachePolicies.Seo)]
     public async Task<IActionResult> SitemapAsync(
-        [FromServices] GetSitemapXmlQueryHandler handler,
+        [FromServices] GetSitemapEntriesQueryHandler handler,
+        [FromServices] ApplicationOptions application,
         CancellationToken ct
     )
     {
         SetPublicCacheControl();
         return Content(
-            await handler.HandleAsync(new GetSitemapXmlQuery(), ct),
+            SeoDocuments.SitemapXml(
+                application.BaseUrl,
+                await handler.HandleAsync(new GetSitemapEntriesQuery(), ct)
+            ),
             "application/xml",
             Encoding.UTF8
         );
@@ -45,24 +52,16 @@ public class SeoController : ApiControllerBase
     /// <summary>
     /// Executes the robots endpoint for seo.
     /// </summary>
-    /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="application">Options that carry the public base URL of the site.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpGet("robots.txt")]
     [HttpHead("robots.txt")]
     [AllowAnonymous]
     [OutputCache(PolicyName = OutputCachePolicies.Seo)]
-    public async Task<IActionResult> RobotsAsync(
-        [FromServices] GetRobotsTxtQueryHandler handler,
-        CancellationToken ct
-    )
+    public IActionResult Robots([FromServices] ApplicationOptions application)
     {
         SetPublicCacheControl();
-        return Content(
-            await handler.HandleAsync(new GetRobotsTxtQuery(), ct),
-            "text/plain",
-            Encoding.UTF8
-        );
+        return Content(SeoDocuments.RobotsTxt(application.BaseUrl), "text/plain", Encoding.UTF8);
     }
 
     private void SetPublicCacheControl()

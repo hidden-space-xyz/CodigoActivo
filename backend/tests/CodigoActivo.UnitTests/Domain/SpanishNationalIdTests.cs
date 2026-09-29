@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;

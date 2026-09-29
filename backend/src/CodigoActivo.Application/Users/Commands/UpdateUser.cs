@@ -1,11 +1,12 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Auth;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Users.Queries;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -16,7 +17,7 @@ namespace CodigoActivo.Application.Users.Commands;
 /// <param name="ActingUserId">Identifier of the acting user.</param>
 /// <param name="Request">Validated client request data.</param>
 public sealed record UpdateUserCommand(Guid UserId, Guid ActingUserId, UpdateUserRequest Request)
-    : ICommand<Result<UserResponse>>;
+    : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the user.
@@ -26,7 +27,6 @@ public sealed record UpdateUserCommand(Guid UserId, Guid ActingUserId, UpdateUse
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
-/// <param name="getById">Handler used to retrieve user by identifier.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 /// <param name="disposableEmails">Checker that refuses addresses of disposable email providers.</param>
 public sealed class UpdateUserCommandHandler(
@@ -35,10 +35,9 @@ public sealed class UpdateUserCommandHandler(
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator,
-    GetUserByIdQueryHandler getById,
     AccountSecurityNotifier securityNotifier,
     DisposableEmailChecker disposableEmails
-) : ICommandHandler<UpdateUserCommand, Result<UserResponse>>
+) : ICommandHandler<UpdateUserCommand, Result>
 {
     /// <summary>
     /// Handles the request to update the user. <see cref="User.PlanProfileChange"/> decides which
@@ -54,15 +53,12 @@ public sealed class UpdateUserCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a user on success, or an application error on failure.</returns>
-    public async Task<Result<UserResponse>> HandleAsync(
-        UpdateUserCommand command,
-        CancellationToken ct = default
-    )
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    public async Task<Result> HandleAsync(UpdateUserCommand command, CancellationToken ct = default)
     {
         var request = command.Request;
 
-        var user = await users.FindAsync(u => u.Id == command.UserId, ct);
+        var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
             return Error.NotFound(ErrorCode.UserNotFound);
@@ -94,12 +90,12 @@ public sealed class UpdateUserCommandHandler(
             && await disposableEmails.IsDisposableAsync(newEmail, ct)
         )
         {
-            return Error.BadRequest(ErrorCode.DisposableEmailNotAllowed);
+            return Error.Validation(ErrorCode.DisposableEmailNotAllowed);
         }
 
         if (change.ReplacesContact && !await VerifyActingPasswordAsync(command, ct))
         {
-            return Error.BadRequest(ErrorCode.UserCurrentPasswordIncorrect);
+            return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
         if (change.Email is { } email && await users.EmailExistsAsync(email, command.UserId, ct))
@@ -123,7 +119,7 @@ public sealed class UpdateUserCommandHandler(
             );
         }
 
-        return await getById.HandleAsync(new GetUserByIdQuery(command.UserId), ct);
+        return Result.Success();
     }
 
     private async Task<bool> VerifyActingPasswordAsync(
@@ -137,7 +133,7 @@ public sealed class UpdateUserCommandHandler(
             return false;
         }
 
-        var actingUser = await users.FindAsync(u => u.Id == command.ActingUserId, ct);
+        var actingUser = await users.GetByIdAsync(command.ActingUserId, ct);
         return await passwordAttempts.VerifyReauthenticationAsync(actingUser, password, ct);
     }
 }

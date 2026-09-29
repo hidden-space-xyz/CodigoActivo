@@ -1,8 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Partners.Queries;
 
@@ -15,9 +14,9 @@ public sealed record GetPartnerByIdQuery(Guid PartnerId) : IQuery<Result<Partner
 /// <summary>
 /// Executes the query to retrieve partner by identifier.
 /// </summary>
-/// <param name="partners">Repository used to persist and retrieve partners.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetPartnerByIdQueryHandler(IPartnerRepository partners, IQueryExecutor executor)
+public sealed class GetPartnerByIdQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<GetPartnerByIdQuery, Result<PartnerResponse>>
 {
     /// <summary>
@@ -32,7 +31,9 @@ public sealed class GetPartnerByIdQueryHandler(IPartnerRepository partners, IQue
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            partners.Query().Where(p => p.Id == query.PartnerId).Select(Projections.Partner),
+            readStore
+                .Partners.Where(p => p.Id == query.PartnerId)
+                .Select(PartnerProjections.Partner),
             ct
         );
         return response is null ? Error.NotFound(ErrorCode.PartnerNotFound) : response;

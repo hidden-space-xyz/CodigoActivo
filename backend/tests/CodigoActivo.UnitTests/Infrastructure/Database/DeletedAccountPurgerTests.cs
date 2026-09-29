@@ -1,5 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +31,8 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     {
         provider = new ServiceCollection()
             .AddScoped<IDeletedAccountRepository>(_ => deletedAccounts)
+            .AddSingleton<IClock>(clock)
+            .AddScoped<PurgeDeletedAccountsCommandHandler>()
             .BuildServiceProvider();
     }
 
@@ -41,7 +45,6 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     {
         return new DeletedAccountPurger(
             provider.GetRequiredService<IServiceScopeFactory>(),
-            clock,
             options ?? new DeletedAccountPurgeOptions(),
             logger
         );
@@ -50,7 +53,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     private void PurgesAndSignals(TaskCompletionSource signal, int purged)
     {
         deletedAccounts
-            .PurgeAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .RemoveDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
                 signal.TrySetResult();
@@ -62,7 +65,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     public async Task PurgeAsyncPurgesCopiesDeletedTwoYearsBeforeTheCurrentClockTime()
     {
         deletedAccounts
-            .PurgeAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .RemoveDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(4);
 
         var purged = await Build().PurgeAsync(TestContext.Current.CancellationToken);
@@ -70,7 +73,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
         purged.Should().Be(4);
         await deletedAccounts
             .Received(1)
-            .PurgeAsync(clock.UtcNow.AddYears(-2), Arg.Any<CancellationToken>());
+            .RemoveDeletedUpToAsync(clock.UtcNow.AddYears(-2), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -92,7 +95,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     {
         var signal = new TaskCompletionSource();
         deletedAccounts
-            .PurgeAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .RemoveDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>
             {
                 signal.TrySetResult();
@@ -128,7 +131,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
         purger.ExecuteTask.IsFaulted.Should().BeFalse();
         await deletedAccounts
             .DidNotReceiveWithAnyArgs()
-            .PurgeAsync(default, TestContext.Current.CancellationToken);
+            .RemoveDeletedUpToAsync(default, TestContext.Current.CancellationToken);
         logger.Entries.Should().BeEmpty();
     }
 }

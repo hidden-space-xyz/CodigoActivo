@@ -73,7 +73,7 @@ dotnet test tests/CodigoActivo.UnitTests
 dotnet test tests/CodigoActivo.IntegrationTests
 dotnet test tests/CodigoActivo.UnitTests --filter "FullyQualifiedName~ClassName.MethodName"
 
-dotnet ef migrations add <Name> --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.API
+dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.API
 ```
 
 Integration tests require Docker unless `CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty, disposable
@@ -126,16 +126,19 @@ The five required steps are documented once, in
 - Keep project dependencies in the direction documented in [ARCHITECTURE.md](ARCHITECTURE.md).
 - Put one command or query and its sealed handler in each use-case file. Controllers inject handlers; they do
   not contain business logic.
-- Queries are no-tracking and do not mutate, commit, invalidate caches or send email. Commands commit through
+- Keep business rules in the domain: entities have private setters, factories and behavior methods, and
+  handlers only load, call the domain, persist and run the effects after the commit.
+- Queries read through `IReadStore` and do not mutate, commit, invalidate caches or send email. Commands load
+  aggregates through repositories, return `Result` or `Result<Guid>` without calling queries, commit through
   `IUnitOfWork` and invalidate caches after the commit.
 - Never access `DateTime.Now` or `DateTime.UtcNow`; inject `IClock`.
 - Do not add `Version` attributes to `PackageReference`; versions are centralized in
   `backend/Directory.Packages.props`.
 - Account for PostgreSQL snake-case naming in raw SQL.
-- Put wire request and response records in `Application/DTOs`, binding query types in
-  `Application/Querying`, and configuration types outside Domain.
+- Organize each layer by feature: wire request and response records go in the feature's `Contracts/`, shared
+  binding primitives in `Application/Common/Querying`, and configuration types outside Domain.
 - User-facing backend text belongs in
-  `backend/src/CodigoActivo.Application/Resources/Localization/AppStrings.resx`. Log messages, diagnostic
+  `backend/src/CodigoActivo.Application/Common/Localization/AppStrings.resx`. Log messages, diagnostic
   exceptions and seeded content are not UI text.
 - Declare every log event with `[LoggerMessage]` in the layer's `*Log` class (`SecurityLog`, `ApplicationLog`,
   `InfrastructureLog`, `ApiLog`); `CA1848` is an error. Use only the placeholder types the

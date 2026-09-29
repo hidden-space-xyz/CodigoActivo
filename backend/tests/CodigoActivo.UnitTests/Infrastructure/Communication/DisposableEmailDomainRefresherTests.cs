@@ -1,6 +1,5 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +16,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
     private readonly FakeDisposableEmailDomainRepository repository = new();
     private readonly RecordingLogger<DisposableEmailDomainRefresher> logger = new();
     private readonly List<IDisposable> owned = [];
-    private IDisposableEmailDomainRepository storedIn;
+    private IDisposableEmailDomainStore storedIn;
 
     public DisposableEmailDomainRefresherTests()
     {
@@ -208,7 +207,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
     [Fact]
     public async Task ExecuteAsyncStoreFailureIsLoggedAndNeverFaultsTheHost()
     {
-        var failing = Substitute.For<IDisposableEmailDomainRepository>();
+        var failing = Substitute.For<IDisposableEmailDomainStore>();
         var attempts = 0;
         failing
             .ReplaceAsync(Arg.Any<IReadOnlySet<string>>(), Arg.Any<CancellationToken>())

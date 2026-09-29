@@ -1,11 +1,13 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Resources;
 
 namespace CodigoActivo.Application.Resources.Commands;
 
@@ -15,105 +17,77 @@ namespace CodigoActivo.Application.Resources.Commands;
 /// <param name="Request">Validated client request data.</param>
 /// <param name="UserId">Identifier of the user.</param>
 public sealed record CreateResourceCommand(CreateResourceRequest Request, Guid UserId)
-    : ICommand<Result<ResourceResponse>>;
+    : ICommand<Result<Guid>>;
 
 /// <summary>
 /// Executes the command to create a resource.
 /// </summary>
 /// <param name="resources">Repository used to persist and retrieve resources.</param>
-/// <param name="resourceTypes">Repository used to persist and retrieve resource types.</param>
+/// <param name="readStore">Read side used to check the resource type catalog.</param>
+/// <param name="executor">Executor of the read-side queries.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class CreateResourceCommandHandler(
     IResourceRepository resources,
-    IResourceTypeRepository resourceTypes,
+    IReadStore readStore,
+    IQueryExecutor executor,
     IFileRepository files,
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator
-) : ICommandHandler<CreateResourceCommand, Result<ResourceResponse>>
+) : ICommandHandler<CreateResourceCommand, Result<Guid>>
 {
     /// <summary>
     /// Handles the request to create a resource.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a resource on success, or an application error on failure.</returns>
-    public async Task<Result<ResourceResponse>> HandleAsync(
+    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    public async Task<Result<Guid>> HandleAsync(
         CreateResourceCommand command,
         CancellationToken ct = default
     )
     {
         var request = command.Request;
 
-        var type = await resourceTypes.FindAsync(t => t.Id == request.ResourceTypeId, ct);
-        if (type is null)
+        var isExternal = await executor.FirstOrDefaultAsync(
+            readStore
+                .ResourceTypes.Where(type => type.Id == request.ResourceTypeId)
+                .Select(type => (bool?)type.IsExternal),
+            ct
+        );
+        if (isExternal is null)
         {
-            return Error.BadRequest(ErrorCode.ResourceTypeNotFound);
+            return Error.Validation(ErrorCode.ResourceTypeNotFound);
         }
 
-        var content = ResolveContent(type, request.Description, request.Url);
+        var content = ResourceContent.For(isExternal.Value, request.Description, request.Url);
         if (content.IsFailure)
         {
             return content.Error!;
         }
 
-        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        if (!await files.ExistsAsync(request.ThumbnailId, ct))
         {
-            return Error.BadRequest(ErrorCode.ResourceThumbnailNotFound);
+            return Error.Validation(ErrorCode.ResourceThumbnailNotFound);
         }
 
-        var resource = new Resource
-        {
-            Title = request.Title.Trim(),
-            Subtitle = request.Subtitle.Trim(),
-            Description = content.Value.Description,
-            Url = content.Value.Url,
-            ResourceTypeId = type.Id,
-            ResourceType = type,
-            ThumbnailId = request.ThumbnailId,
-            CreatedAt = clock.UtcNow,
-            CreatedBy = command.UserId,
-        };
+        var resource = Resource.Create(
+            new ResourceDetails(
+                request.Title,
+                request.Subtitle,
+                request.ResourceTypeId,
+                request.ThumbnailId
+            ),
+            content.Value,
+            command.UserId,
+            clock.UtcNow
+        );
         await resources.AddAsync(resource, ct);
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Resources);
-        return resource.ToResponse();
-    }
-
-    private static Result<(string Description, string? Url)> ResolveContent(
-        ResourceType type,
-        string? description,
-        string? url
-    )
-    {
-        if (type.IsExternal)
-        {
-            if (!RichTextDocument.IsEmpty(description))
-            {
-                return Error.BadRequest(ErrorCode.ResourceDescriptionNotAllowed);
-            }
-
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                return Error.BadRequest(ErrorCode.ResourceUrlRequired);
-            }
-
-            return ("{}", url.Trim());
-        }
-
-        if (!string.IsNullOrWhiteSpace(url))
-        {
-            return Error.BadRequest(ErrorCode.ResourceUrlNotAllowed);
-        }
-
-        if (RichTextDocument.IsEmpty(description))
-        {
-            return Error.BadRequest(ErrorCode.ResourceDescriptionRequired);
-        }
-
-        return (description!, null);
+        return resource.Id;
     }
 }

@@ -1,7 +1,7 @@
-using System.Globalization;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.Options;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -37,8 +37,7 @@ internal static class ApiSecurityConfiguration
 
     private static void AddAuthentication(WebApplicationBuilder builder)
     {
-        var session = ReadSessionLifetime(builder.Configuration);
-        builder.Services.AddSingleton(session);
+        var session = SessionLifetimeConfiguration.Read(builder.Configuration);
 
         builder
             .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -103,27 +102,6 @@ internal static class ApiSecurityConfiguration
             .Configure<TwoFactorOptions>(
                 (options, twoFactor) => options.ExpireTimeSpan = twoFactor.ChallengeLifetime
             );
-    }
-
-    private static SessionLifetimeOptions ReadSessionLifetime(ConfigurationManager configuration)
-    {
-        var configured = double.TryParse(
-            configuration["Auth:ExpireHours"],
-            NumberStyles.Float,
-            CultureInfo.InvariantCulture,
-            out var hours
-        );
-
-        return new SessionLifetimeOptions
-        {
-            Lifetime =
-                configured
-                && double.IsFinite(hours)
-                && hours > 0
-                && hours < TimeSpan.MaxValue.TotalHours
-                    ? TimeSpan.FromHours(hours)
-                    : SessionLifetimeOptions.DefaultLifetime,
-        };
     }
 
     private static void AddAuthorization(IServiceCollection services)

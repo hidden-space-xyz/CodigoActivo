@@ -1,8 +1,8 @@
 using System.Data.Common;
 using System.Text;
 using AwesomeAssertions;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.IntegrationTests.Infrastructure;
@@ -74,14 +74,16 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var callerContext = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
-        var staged = new FileEntity
-        {
-            Id = Guid.NewGuid(),
-            Name = "never-committed",
-            Extension = "png",
-            UploadedAt = Factory.Clock.UtcNow,
-            UploadedBy = TestSeedData.Users.AdminId,
-        };
+        var staged = Persisted.As<FileEntity>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Name = "never-committed",
+                Extension = "png",
+                UploadedAt = Factory.Clock.UtcNow,
+                UploadedBy = TestSeedData.Users.AdminId,
+            }
+        );
         callerContext.Files.Add(staged);
 
         var queued = await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);

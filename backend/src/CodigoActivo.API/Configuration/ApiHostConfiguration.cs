@@ -1,8 +1,5 @@
 using CodigoActivo.API.Security;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
-using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using CodigoActivo.Composition;
 
 namespace CodigoActivo.API.Configuration;
 
@@ -45,59 +42,11 @@ internal static class ApiHostConfiguration
 
     private static void ConfigureDataProtection(WebApplicationBuilder builder)
     {
-        var dataProtection = builder
-            .Services.AddDataProtection()
-            .SetApplicationName("CodigoActivo");
-
-        ProtectPayloadsWithAesGcm(dataProtection);
-
-        if (!builder.Environment.IsProduction())
-        {
-            return;
-        }
-
-        ProtectKeysWithEd25519Certificate(
-            builder.Services,
-            dataProtection,
-            new DirectoryInfo("/home/app/.aspnet/DataProtection-Keys"),
-            builder.Configuration["DATA_PROTECTION_CERTIFICATE_PASSWORD"]!
+        var production = builder.Environment.IsProduction();
+        builder.Services.AddCodigoActivoDataProtection(
+            protectKeysAtRest: production,
+            production ? builder.Configuration["DATA_PROTECTION_CERTIFICATE_PASSWORD"] : null
         );
-    }
-
-    internal static void ProtectPayloadsWithAesGcm(IDataProtectionBuilder dataProtection)
-    {
-        ArgumentNullException.ThrowIfNull(dataProtection);
-
-        dataProtection.UseCryptographicAlgorithms(
-            new AuthenticatedEncryptorConfiguration
-            {
-                EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
-                ValidationAlgorithm = ValidationAlgorithm.HMACSHA512,
-            }
-        );
-    }
-
-    internal static Ed25519CertificateStore ProtectKeysWithEd25519Certificate(
-        IServiceCollection services,
-        IDataProtectionBuilder dataProtection,
-        DirectoryInfo keysDirectory,
-        string certificatePassword
-    )
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(dataProtection);
-
-        var certificateStore = Ed25519CertificateStore.LoadOrCreate(
-            keysDirectory,
-            certificatePassword
-        );
-
-        services.AddSingleton(certificateStore);
-        dataProtection.PersistKeysToFileSystem(keysDirectory);
-        services.Configure<KeyManagementOptions>(options =>
-            options.XmlEncryptor = new Ed25519AesGcmXmlEncryptor(certificateStore)
-        );
-        return certificateStore;
     }
 
     private static void ConfigureKestrel(WebApplicationBuilder builder)

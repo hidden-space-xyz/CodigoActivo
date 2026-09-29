@@ -76,7 +76,7 @@ internal static class ApiServiceConfiguration
                 options.InvalidModelStateResponseFactory = context =>
                 {
                     var (statusCode, body) = ApiErrorResponseExtensions.Create(
-                        Error.BadRequest(ErrorCode.RequestValidationFailed),
+                        Error.Validation(ErrorCode.RequestValidationFailed),
                         context.HttpContext
                     );
                     return new ObjectResult(body) { StatusCode = statusCode };

@@ -1,11 +1,10 @@
 using System.Linq.Expressions;
-using CodigoActivo.Application.Diagnostics;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Options;
-using CodigoActivo.Application.Resources.Localization;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Application.Common.Localization;
+using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Emails;
@@ -25,12 +24,12 @@ public sealed record Recipient(string? Email, string FirstName, bool Promotional
 /// </summary>
 /// <param name="outbox">Outbox the batch is stored in for background delivery.</param>
 /// <param name="options">Configuration values used by the component.</param>
-/// <param name="application">The application value.</param>
+/// <param name="composer">Composer that renders the batch.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ManualEmailDispatcher(
     IEmailOutbox outbox,
     ManualEmailOptions options,
-    ApplicationOptions application,
+    IManualEmailComposer composer,
     ILogger<ManualEmailDispatcher> logger
 )
 {
@@ -39,7 +38,7 @@ public sealed class ManualEmailDispatcher(
     /// <summary>
     /// Gets the to recipient value.
     /// </summary>
-    public static Expression<Func<User, Recipient>> ToRecipient { get; } =
+    public static Expression<Func<UserRow, Recipient>> ToRecipient { get; } =
         u => new Recipient(u.Email, u.FirstName, u.PromotionalConsent);
 
     /// <summary>
@@ -50,8 +49,8 @@ public sealed class ManualEmailDispatcher(
     /// <param name="request">Validated client request data.</param>
     /// <param name="attachments">The attachments value.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a send email on success, or an application error on failure.</returns>
-    public async Task<Result<SendEmailResultResponse>> DispatchAsync(
+    /// <returns>A task whose result contains the dispatch counts on success, or an application error on failure.</returns>
+    public async Task<Result<EmailDispatch>> DispatchAsync(
         IReadOnlyList<Recipient> recipients,
         int skipped,
         SendEmailRequest request,
@@ -65,13 +64,9 @@ public sealed class ManualEmailDispatcher(
             return buffered.Error!;
         }
 
-        var content = ManualEmail.Render(
+        var batch = composer.Compose(
             request.Subject.Trim(),
             request.Body.Trim(),
-            application.BaseUrl.TrimEnd('/')
-        );
-        var batch = ManualEmail.Create(
-            content,
             [.. recipients.Select(r => new EmailRecipient(r.Email!, r.FirstName))],
             buffered.Value
         );
@@ -84,16 +79,16 @@ public sealed class ManualEmailDispatcher(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.ManualEmailQueueFailed(batch.Recipients.Count, ex);
-            return Error.BadRequest(ErrorCode.EmailSendFailed);
+            return Error.Validation(ErrorCode.EmailSendFailed);
         }
 
         if (!queued)
         {
             logger.ManualEmailOutboxFull(batch.Recipients.Count);
-            return Error.BadRequest(ErrorCode.EmailSendFailed);
+            return Error.Validation(ErrorCode.EmailSendFailed);
         }
 
-        return new SendEmailResultResponse(batch.Recipients.Count, skipped);
+        return new EmailDispatch(batch.Recipients.Count, skipped);
     }
 
     private async Task<Result<IReadOnlyList<EmailAttachment>>> BufferAsync(
@@ -108,12 +103,12 @@ public sealed class ManualEmailDispatcher(
 
         if (uploads.Count > options.MaxAttachments)
         {
-            return Error.BadRequest(ErrorCode.EmailTooManyAttachments);
+            return Error.Validation(ErrorCode.EmailTooManyAttachments);
         }
 
         if (uploads.Sum(u => u.Length) > options.MaxAttachmentsBytes)
         {
-            return Error.BadRequest(ErrorCode.EmailAttachmentsTooLarge);
+            return Error.Validation(ErrorCode.EmailAttachmentsTooLarge);
         }
 
         var buffered = new List<EmailAttachment>(uploads.Count);
@@ -121,7 +116,7 @@ public sealed class ManualEmailDispatcher(
         {
             if (upload.Length <= 0)
             {
-                return Error.BadRequest(ErrorCode.EmailAttachmentEmpty);
+                return Error.Validation(ErrorCode.EmailAttachmentEmpty);
             }
 
             var content = new byte[upload.Length];

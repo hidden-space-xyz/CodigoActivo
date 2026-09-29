@@ -1,15 +1,15 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Options;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -21,11 +21,7 @@ namespace CodigoActivo.UnitTests.Application.Activities.Commands;
 public sealed class ChangeAssignmentStatusCommandHandlerTests
 {
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IAssignmentStatusTypeRepository statuses =
-        Substitute.For<IAssignmentStatusTypeRepository>();
-    private readonly IActivityRoleTypeRepository roleTypes =
-        Substitute.For<IActivityRoleTypeRepository>();
+    private readonly FakeReadStore readStore = new();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
@@ -34,18 +30,18 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
 
     public ChangeAssignmentStatusCommandHandlerTests()
     {
-        var executor = new FakeQueryExecutor();
         sut = new ChangeAssignmentStatusCommandHandler(
             activities,
-            statuses,
+            readStore,
+            new FakeQueryExecutor(),
             new ActivitySignupNotifier(
-                activities,
-                users,
-                executor,
-                clock,
+                readStore,
+                new FakeQueryExecutor(),
                 emailSender,
-                new ApplicationOptions { BaseUrl = "https://app.test" },
-                new ListActivityRoleTypesQueryHandler(roleTypes, executor, new FakeHybridCache()),
+                new SignupEmailComposer(
+                    new ApplicationOptions { BaseUrl = "https://app.test" },
+                    clock
+                ),
                 NullLogger<ActivitySignupNotifier>.Instance
             ),
             uow,
@@ -53,32 +49,37 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
         );
     }
 
-    private void StatusFound(Guid id, string name)
+    private void StatusExists(Guid id)
     {
-        statuses
-            .FindAsync(
-                Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(
-                new AssignmentStatusType
-                {
-                    Description = "Descripción de prueba",
-                    Id = id,
-                    Name = name,
-                    Color = "#0f0",
-                }
-            );
+        readStore.AssignmentStatusTypes.Add(
+            new AssignmentStatusTypeRow
+            {
+                Id = id,
+                Name = "Estado",
+                Description = "d",
+                Color = "#000",
+            }
+        );
+    }
+
+    private Activity SignedUpActivity(Guid userId, Guid? roleTypeId = null, Guid? statusId = null)
+    {
+        var activity = NewActivity();
+        activity.SignUp(userId, roleTypeId, statusId);
+        activities.Finds(activity);
+        readStore.Activities.Add(SignupActivityRow(activity.Id));
+        return activity;
     }
 
     [Fact]
     public async Task HandleAsyncAssignmentMissingReturnsNotFound()
     {
-        activities.ExistingAssignment(null);
+        var activity = NewActivity();
+        activities.Finds(activity);
 
         var result = await sut.HandleAsync(
             new ChangeAssignmentStatusCommand(
-                Guid.NewGuid(),
+                activity.Id,
                 Guid.NewGuid(),
                 new ChangeAssignmentStatusRequest(Guid.NewGuid())
             ),
@@ -94,19 +95,13 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     [Fact]
     public async Task HandleAsyncStatusMissingReturnsAssignmentStatusTypeNotFound()
     {
-        activities.ExistingAssignment(Assignment(Guid.NewGuid(), Guid.NewGuid()));
-        AssignmentStatusType? missingStatus = null;
-        statuses
-            .FindAsync(
-                Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(missingStatus);
+        var userId = Guid.NewGuid();
+        var activity = SignedUpActivity(userId);
 
         var result = await sut.HandleAsync(
             new ChangeAssignmentStatusCommand(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
+                activity.Id,
+                userId,
                 new ChangeAssignmentStatusRequest(Guid.NewGuid())
             ),
             TestContext.Current.CancellationToken
@@ -121,29 +116,15 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     [Fact]
     public async Task HandleAsyncValidRequestUpdatesStatusPersistsAndInvalidatesCache()
     {
-        var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var statusId = Guid.NewGuid();
-        var assignment = Assignment(userId, activityId);
-        activities.ExistingAssignment(assignment);
-        statuses
-            .FindAsync(
-                Arg.Any<Expression<Func<AssignmentStatusType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(
-                new AssignmentStatusType
-                {
-                    Description = "Descripción de prueba",
-                    Id = statusId,
-                    Name = "Confirmado",
-                    Color = "#0f0",
-                }
-            );
+        var activity = SignedUpActivity(userId);
+        var assignment = activity.AssignmentOf(userId)!;
+        StatusExists(statusId);
 
         var result = await sut.HandleAsync(
             new ChangeAssignmentStatusCommand(
-                activityId,
+                activity.Id,
                 userId,
                 new ChangeAssignmentStatusRequest(statusId)
             ),
@@ -152,9 +133,6 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         assignment.AssignmentStatusId.Should().Be(statusId);
-        result.Value.Status.Id.Should().Be(statusId);
-        result.Value.Status.Name.Should().Be("Confirmado");
-        result.Value.RoleTypeName.Should().BeNull();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await cacheInvalidator
             .Received(1)
@@ -168,25 +146,20 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     [Fact]
     public async Task HandleAsyncConfirmedSendsDecisionEmailToTheUser()
     {
-        var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
-        users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        roleTypes.CatalogRoles();
-        activities.ExistingAssignment(
-            Assignment(
-                userId,
-                activityId,
-                roleTypeId: SeedIds.ActivityRoleTypes.Volunteer,
-                statusId: SeedIds.AssignmentStatusTypes.Requested
-            )
+        var activity = SignedUpActivity(
+            userId,
+            roleTypeId: SeedIds.ActivityRoleTypes.Volunteer,
+            statusId: SeedIds.AssignmentStatusTypes.Requested
         );
-        StatusFound(SeedIds.AssignmentStatusTypes.Confirmed, "Confirmado");
+        readStore.TargetUser(userId, SeedIds.UserTypes.Participant);
+        readStore.CatalogRoles();
+        StatusExists(SeedIds.AssignmentStatusTypes.Confirmed);
 
         await sut.HandleAsync(
             new ChangeAssignmentStatusCommand(
-                activityId,
+                activity.Id,
                 userId,
                 new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Confirmed)
             ),
@@ -206,25 +179,20 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     [Fact]
     public async Task HandleAsyncDeniedSendsDecisionEmailNamingTheDependentMinor()
     {
-        var activityId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
-        users.TargetChildOf(childId, SeedIds.UserTypes.Member);
-        roleTypes.CatalogRoles();
-        activities.ExistingAssignment(
-            Assignment(
-                childId,
-                activityId,
-                roleTypeId: SeedIds.ActivityRoleTypes.Participant,
-                statusId: SeedIds.AssignmentStatusTypes.Requested
-            )
+        var activity = SignedUpActivity(
+            childId,
+            roleTypeId: SeedIds.ActivityRoleTypes.Participant,
+            statusId: SeedIds.AssignmentStatusTypes.Requested
         );
-        StatusFound(SeedIds.AssignmentStatusTypes.Denied, "Denegado");
+        readStore.TargetChildOf(childId, SeedIds.UserTypes.Member);
+        readStore.CatalogRoles();
+        StatusExists(SeedIds.AssignmentStatusTypes.Denied);
 
         await sut.HandleAsync(
             new ChangeAssignmentStatusCommand(
-                activityId,
+                activity.Id,
                 childId,
                 new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Denied)
             ),
@@ -240,25 +208,22 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     [Fact]
     public async Task HandleAsyncEmailDeliveryFailsStillPersistsTheStatusChange()
     {
-        var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
-        users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        roleTypes.CatalogRoles();
-        var assignment = Assignment(
+        var activity = SignedUpActivity(
             userId,
-            activityId,
             roleTypeId: SeedIds.ActivityRoleTypes.Volunteer,
             statusId: SeedIds.AssignmentStatusTypes.Requested
         );
-        activities.ExistingAssignment(assignment);
-        StatusFound(SeedIds.AssignmentStatusTypes.Confirmed, "Confirmado");
+        var assignment = activity.AssignmentOf(userId)!;
+        readStore.TargetUser(userId, SeedIds.UserTypes.Participant);
+        readStore.CatalogRoles();
+        StatusExists(SeedIds.AssignmentStatusTypes.Confirmed);
         emailSender.ThrowOnSend = new InvalidOperationException("smtp is down");
 
         var result = await sut.HandleAsync(
             new ChangeAssignmentStatusCommand(
-                activityId,
+                activity.Id,
                 userId,
                 new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Confirmed)
             ),
@@ -273,20 +238,16 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     [Fact]
     public async Task HandleAsyncSameStatusReappliedDoesNotSendEmail()
     {
-        var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
-        users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        roleTypes.CatalogRoles();
-        activities.ExistingAssignment(
-            Assignment(userId, activityId, statusId: SeedIds.AssignmentStatusTypes.Confirmed)
-        );
-        StatusFound(SeedIds.AssignmentStatusTypes.Confirmed, "Confirmado");
+        var activity = SignedUpActivity(userId, statusId: SeedIds.AssignmentStatusTypes.Confirmed);
+        readStore.TargetUser(userId, SeedIds.UserTypes.Participant);
+        readStore.CatalogRoles();
+        StatusExists(SeedIds.AssignmentStatusTypes.Confirmed);
 
         await sut.HandleAsync(
             new ChangeAssignmentStatusCommand(
-                activityId,
+                activity.Id,
                 userId,
                 new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Confirmed)
             ),
@@ -299,20 +260,16 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     [Fact]
     public async Task HandleAsyncMovedBackToRequestedDoesNotSendEmail()
     {
-        var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(activityId, OpenStart, OpenEnd);
-        users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        roleTypes.CatalogRoles();
-        activities.ExistingAssignment(
-            Assignment(userId, activityId, statusId: SeedIds.AssignmentStatusTypes.Confirmed)
-        );
-        StatusFound(SeedIds.AssignmentStatusTypes.Requested, "Solicitado");
+        var activity = SignedUpActivity(userId, statusId: SeedIds.AssignmentStatusTypes.Confirmed);
+        readStore.TargetUser(userId, SeedIds.UserTypes.Participant);
+        readStore.CatalogRoles();
+        StatusExists(SeedIds.AssignmentStatusTypes.Requested);
 
         await sut.HandleAsync(
             new ChangeAssignmentStatusCommand(
-                activityId,
+                activity.Id,
                 userId,
                 new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Requested)
             ),

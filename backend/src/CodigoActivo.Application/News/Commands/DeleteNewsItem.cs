@@ -1,9 +1,10 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.News;
 
 namespace CodigoActivo.Application.News.Commands;
 
@@ -38,7 +39,7 @@ public sealed class DeleteNewsItemCommandHandler(
         CancellationToken ct = default
     )
     {
-        var newsItem = await news.FindAsync(a => a.Id == command.NewsItemId, ct);
+        var newsItem = await news.GetByIdAsync(command.NewsItemId, ct);
         if (newsItem is null)
         {
             return Error.NotFound(ErrorCode.NewsItemNotFound);

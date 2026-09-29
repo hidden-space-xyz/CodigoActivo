@@ -1,13 +1,14 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -20,8 +21,8 @@ public sealed class AssignActivityCommandHandlerTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IAssignmentStatusTypeRepository statuses =
-        Substitute.For<IAssignmentStatusTypeRepository>();
+    private readonly IEventTermsAcceptanceRepository termsAcceptances =
+        Substitute.For<IEventTermsAcceptanceRepository>();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
@@ -29,31 +30,21 @@ public sealed class AssignActivityCommandHandlerTests
 
     public AssignActivityCommandHandlerTests()
     {
-        var executor = new FakeQueryExecutor();
         sut = new AssignActivityCommandHandler(
             activities,
             users,
-            new SignupGate(activities, users, executor, clock),
-            new TermsGate(activities, events, executor, clock),
-            new ListAssignmentStatusTypesQueryHandler(statuses, executor, new FakeHybridCache()),
-            executor,
+            new SignupGate(events, users, clock),
+            new TermsGate(events, termsAcceptances, clock),
             clock,
             uow,
             cacheInvalidator
         );
     }
 
-    private void AssignmentExists(bool exists)
-    {
-        activities
-            .AssignmentExistsAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(exists);
-    }
-
     [Fact]
     public async Task HandleAsyncActivityWindowMissingReturnsNotFound()
     {
-        activities.Query().Returns(new List<Activity>().AsQueryable());
+        activities.Finds(null);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -90,7 +81,7 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -127,10 +118,8 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -144,16 +133,10 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
-        await activities
-            .Received(1)
-            .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a != null
-                    && a.UserId == userId
-                    && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer
-                ),
-                Arg.Any<CancellationToken>()
+        activity
+            .Assignments.Should()
+            .ContainSingle(a =>
+                a.UserId == userId && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -164,10 +147,8 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Member);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -181,16 +162,10 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
-        await activities
-            .Received(1)
-            .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a != null
-                    && a.UserId == userId
-                    && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
-                ),
-                Arg.Any<CancellationToken>()
+        activity
+            .Assignments.Should()
+            .ContainSingle(a =>
+                a.UserId == userId && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -203,8 +178,6 @@ public sealed class AssignActivityCommandHandlerTests
         clock.UtcNow = Now;
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Member);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
         uow.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>
                 throw new UniqueConstraintViolationException(
@@ -237,8 +210,6 @@ public sealed class AssignActivityCommandHandlerTests
         clock.UtcNow = Now;
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Member);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
         uow.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>
                 throw new UniqueConstraintViolationException(
@@ -282,7 +253,7 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -308,7 +279,7 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -334,7 +305,7 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivityRoleNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -346,9 +317,9 @@ public sealed class AssignActivityCommandHandlerTests
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(true);
+        var existing = activity.SignUp(userId, SeedIds.ActivityRoleTypes.Participant);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -363,26 +334,19 @@ public sealed class AssignActivityCommandHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
         result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentAlreadyExists);
-        await activities
-            .DidNotReceiveWithAnyArgs()
-            .AddAssignmentAsync(
-                new ActivityUserRoleAssignment(),
-                TestContext.Current.CancellationToken
-            );
+        activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(existing);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestAsAdminPersistsReturnsRequestedStatusAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestAsAdminPersistsRequestedStatusAndInvalidatesCache()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var roleId = SeedIds.ActivityRoleTypes.Participant;
-        activities.HasActivityWindow(events, activityId, PastStart, PastEnd);
+        var activity = activities.HasActivityWindow(events, activityId, PastStart, PastEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -396,24 +360,16 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.UserId.Should().Be(userId);
-        result.Value.ActivityId.Should().Be(activityId);
-        result.Value.RoleTypeId.Should().Be(roleId);
-        result.Value.Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
-        result.Value.Status.Name.Should().Be("Solicitado");
-        await activities
-            .Received(1)
-            .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a =>
-                    MatchesAssignment(
-                        a,
-                        userId,
-                        activityId,
-                        roleId,
-                        SeedIds.AssignmentStatusTypes.Requested
-                    )
-                ),
-                Arg.Any<CancellationToken>()
+        activity
+            .Assignments.Should()
+            .ContainSingle(a =>
+                MatchesAssignment(
+                    a,
+                    userId,
+                    activityId,
+                    roleId,
+                    SeedIds.AssignmentStatusTypes.Requested
+                )
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await cacheInvalidator
@@ -434,10 +390,8 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = OpenStart;
 
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -451,14 +405,9 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await activities
-            .Received(1)
-            .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a != null && a.UserId == userId && a.ActivityId == activityId
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        activity
+            .Assignments.Should()
+            .ContainSingle(a => a.UserId == userId && a.ActivityId == activityId);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -471,10 +420,8 @@ public sealed class AssignActivityCommandHandlerTests
 
         clock.UtcNow = OpenEnd;
 
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -488,14 +435,9 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await activities
-            .Received(1)
-            .AddAssignmentAsync(
-                Arg.Is<ActivityUserRoleAssignment>(a =>
-                    a != null && a.UserId == userId && a.ActivityId == activityId
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        activity
+            .Assignments.Should()
+            .ContainSingle(a => a.UserId == userId && a.ActivityId == activityId);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -509,8 +451,6 @@ public sealed class AssignActivityCommandHandlerTests
 
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.TargetUser(userId, SeedIds.UserTypes.Member);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -537,8 +477,6 @@ public sealed class AssignActivityCommandHandlerTests
 
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.TargetUser(userId, SeedIds.UserTypes.Sponsor);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -577,7 +515,7 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupEarlyOnly);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -593,8 +531,6 @@ public sealed class AssignActivityCommandHandlerTests
 
         activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
         users.TargetChildOf(childId, SeedIds.UserTypes.Member);
-        AssignmentExists(false);
-        statuses.RequestedStatusNamed("Solicitado");
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -633,7 +569,7 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupEarlyOnly);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -661,7 +597,7 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -689,7 +625,7 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivitySignupClosed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -710,8 +646,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: Guid.NewGuid()
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.TermsAccepted(null);
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -724,14 +659,11 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -753,9 +685,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: termsDocumentId
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.TermsAccepted(null);
-        statuses.RequestedStatusNamed("Solicitado");
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -772,9 +702,9 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await events
+        await termsAcceptances
             .Received(1)
-            .AddTermsAcceptanceAsync(
+            .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
                     && a.EventId == eventId
@@ -804,9 +734,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: termsDocumentId
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.TermsAccepted(termsDocumentId);
-        statuses.RequestedStatusNamed("Solicitado");
+        termsAcceptances.TermsAccepted(termsDocumentId);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -820,12 +748,9 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -843,8 +768,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: Guid.NewGuid()
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.TermsAccepted(null);
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -857,7 +781,7 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -880,9 +804,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: termsDocumentId
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.TermsAccepted(null);
-        statuses.RequestedStatusNamed("Solicitado");
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -899,9 +821,9 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await events
+        await termsAcceptances
             .Received(1)
-            .AddTermsAcceptanceAsync(
+            .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
                     && a.EventId == eventId
@@ -931,9 +853,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: termsDocumentId
         );
         users.HouseholdUsers(ParticipantChild(childId, parentId));
-        AssignmentExists(false);
-        events.TermsAccepted(null);
-        statuses.RequestedStatusNamed("Solicitado");
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -950,9 +870,9 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await events
+        await termsAcceptances
             .Received(1)
-            .AddTermsAcceptanceAsync(
+            .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null && a.EventId == eventId && a.UserId == parentId
                 ),
@@ -976,9 +896,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: Guid.NewGuid()
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.TermsAccepted(null);
-        statuses.RequestedStatusNamed("Solicitado");
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -992,12 +910,9 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -1017,15 +932,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: termsDocumentId
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.HasTermsDecisions(
-            new EventTermsAcceptance
-            {
-                TermsDocumentId = termsDocumentId,
-                Accepted = false,
-                DecidedAt = Now.AddDays(-1),
-            }
-        );
+        termsAcceptances.HasTermsDecisions(StoredDecision(termsDocumentId, false, Now.AddDays(-1)));
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -1038,14 +945,11 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -1066,8 +970,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: termsDocumentId
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.TermsAccepted(null);
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -1083,19 +986,16 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result
             .Error.Code.Should()
             .Be(
                 ErrorCode.EventTermsAcceptanceRequired,
                 "rejecting a required document must not be stored as a permanent, unrecoverable decision"
             );
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -1116,8 +1016,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: termsDocumentId
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.TermsAccepted(null);
+        termsAcceptances.TermsAccepted(null);
 
         var rejected = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -1133,8 +1032,6 @@ public sealed class AssignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
         rejected.Error!.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
-
-        statuses.RequestedStatusNamed("Solicitado");
 
         var accepted = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -1155,9 +1052,9 @@ public sealed class AssignActivityCommandHandlerTests
             .BeTrue(
                 "a mistaken rejection of a required document must not permanently lock the user out of the event"
             );
-        await events
+        await termsAcceptances
             .Received(1)
-            .AddTermsAcceptanceAsync(
+            .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null && a.TermsDocumentId == termsDocumentId && a.Accepted
                 ),
@@ -1184,9 +1081,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsRequired: false
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        events.TermsAccepted(null);
-        statuses.RequestedStatusNamed("Solicitado");
+        termsAcceptances.TermsAccepted(null);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -1207,9 +1102,9 @@ public sealed class AssignActivityCommandHandlerTests
             .BeTrue(
                 "an optional document never blocks the signup, regardless of the user's decision"
             );
-        await events
+        await termsAcceptances
             .Received(1)
-            .AddTermsAcceptanceAsync(
+            .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
                     && a.EventId == eventId
@@ -1240,15 +1135,8 @@ public sealed class AssignActivityCommandHandlerTests
             termsRequired: false
         );
         users.TargetUser(userId, SeedIds.UserTypes.Participant);
-        AssignmentExists(false);
-        var stored = new EventTermsAcceptance
-        {
-            TermsDocumentId = termsDocumentId,
-            Accepted = false,
-            DecidedAt = Now.AddDays(-1),
-        };
-        events.HasTermsDecisions(stored);
-        statuses.RequestedStatusNamed("Solicitado");
+        var stored = StoredDecision(termsDocumentId, false, Now.AddDays(-1));
+        termsAcceptances.HasTermsDecisions(stored);
 
         var result = await sut.HandleAsync(
             new AssignActivityCommand(
@@ -1271,12 +1159,9 @@ public sealed class AssignActivityCommandHandlerTests
                 "a rejection is revisable: a later acceptance overwrites the stored row in place"
             );
         stored.DecidedAt.Should().Be(Now);
-        await events
+        await termsAcceptances
             .DidNotReceiveWithAnyArgs()
-            .AddTermsAcceptanceAsync(
-                new EventTermsAcceptance(),
-                TestContext.Current.CancellationToken
-            );
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

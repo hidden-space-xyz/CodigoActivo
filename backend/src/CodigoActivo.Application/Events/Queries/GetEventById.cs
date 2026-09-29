@@ -1,8 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -15,9 +14,9 @@ public sealed record GetEventByIdQuery(Guid EventId) : IQuery<Result<EventRespon
 /// <summary>
 /// Executes the query to retrieve event by identifier.
 /// </summary>
-/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetEventByIdQueryHandler(IEventRepository events, IQueryExecutor executor)
+public sealed class GetEventByIdQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<GetEventByIdQuery, Result<EventResponse>>
 {
     /// <summary>
@@ -32,7 +31,7 @@ public sealed class GetEventByIdQueryHandler(IEventRepository events, IQueryExec
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            events.Query().Where(e => e.Id == query.EventId).Select(Projections.Event),
+            readStore.Events.Where(e => e.Id == query.EventId).Select(EventProjections.Event),
             ct
         );
         return response is null ? Error.NotFound(ErrorCode.EventNotFound) : response;

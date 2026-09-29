@@ -1,0 +1,77 @@
+using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
+
+namespace CodigoActivo.Application.Accounts.Commands;
+
+/// <summary>
+/// Carries the input required to reset password.
+/// </summary>
+/// <param name="UserId">Identifier of the user.</param>
+/// <param name="Request">Validated client request data.</param>
+public sealed record ResetPasswordCommand(Guid UserId, ResetPasswordRequest Request)
+    : ICommand<Result>;
+
+/// <summary>
+/// Executes the command to reset password.
+/// </summary>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="hasher">The hasher value.</param>
+/// <param name="otpValidator">The otp validator value.</param>
+/// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
+/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
+public sealed class ResetPasswordCommandHandler(
+    IUserRepository users,
+    IUnitOfWork uow,
+    IClock clock,
+    IPasswordHasher hasher,
+    OtpValidator otpValidator,
+    IUserSessionRepository sessions,
+    AccountSecurityNotifier securityNotifier
+) : ICommandHandler<ResetPasswordCommand, Result>
+{
+    /// <summary>
+    /// Handles the request to reset password.
+    /// </summary>
+    /// <param name="command">Command containing the operation input.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    public async Task<Result> HandleAsync(
+        ResetPasswordCommand command,
+        CancellationToken ct = default
+    )
+    {
+        var request = command.Request;
+
+        var user = await users.GetByIdAsync(command.UserId, ct);
+        if (user is null)
+        {
+            return Error.NotFound(ErrorCode.UserNotFound);
+        }
+
+        if (
+            user.IsBlocked
+            || user.IsDependent
+            || !otpValidator.IsCodeValid(
+                request.Otp,
+                user.UsablePasswordResetCodeHash(clock.UtcNow)
+            )
+        )
+        {
+            return Error.Validation(ErrorCode.PasswordResetInvalidOrExpired);
+        }
+
+        user.ResetPassword(hasher.Hash(request.NewPassword), clock.UtcNow);
+        await uow.SaveChangesAsync(ct);
+        await sessions.EndAllAsync(user.Id, ct);
+        await securityNotifier.NotifyAsync(user, AccountSecurityChange.PasswordReset, ct);
+
+        return Result.Success();
+    }
+}

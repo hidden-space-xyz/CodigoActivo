@@ -1,5 +1,4 @@
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,13 +11,11 @@ namespace CodigoActivo.Infrastructure.Database;
 /// the ticket validator and dropped when the same user logs in again; this worker also clears the
 /// rows of accounts that never come back, so the table does not grow without bound.
 /// </summary>
-/// <param name="scopes">Scope factory used to resolve the scoped repository of each run.</param>
-/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="scopes">Scope factory used to resolve the use case of each run.</param>
 /// <param name="options">Configuration values used by the component.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ExpiredSessionCleaner(
     IServiceScopeFactory scopes,
-    IClock clock,
     SessionCleanupOptions options,
     ILogger<ExpiredSessionCleaner> logger
 ) : BackgroundService
@@ -31,9 +28,9 @@ public sealed class ExpiredSessionCleaner(
     public async Task<int> PurgeAsync(CancellationToken ct = default)
     {
         await using var scope = scopes.CreateAsyncScope();
-        var sessions = scope.ServiceProvider.GetRequiredService<IUserSessionRepository>();
-        var now = clock.UtcNow;
-        return await sessions.RemoveAsync(session => session.ExpiresAt <= now, ct);
+        var cleanup =
+            scope.ServiceProvider.GetRequiredService<RemoveExpiredSessionsCommandHandler>();
+        return await cleanup.HandleAsync(new RemoveExpiredSessionsCommand(), ct);
     }
 
     /// <summary>

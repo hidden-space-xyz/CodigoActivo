@@ -1,10 +1,8 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
-using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Emails.EmailTestData;
 
@@ -12,7 +10,7 @@ namespace CodigoActivo.UnitTests.Application.Emails.Commands;
 
 public sealed class SendEmailToUserCommandHandlerTests
 {
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly FakeReadStore store = new();
     private readonly RecordingEmailOutbox outbox = new();
     private readonly ManualEmailOptions options = new();
     private readonly SendEmailToUserCommandHandler sut;
@@ -20,7 +18,7 @@ public sealed class SendEmailToUserCommandHandlerTests
     public SendEmailToUserCommandHandlerTests()
     {
         sut = new SendEmailToUserCommandHandler(
-            users,
+            store,
             new FakeQueryExecutor(),
             NewDispatcher(outbox, options)
         );
@@ -29,23 +27,23 @@ public sealed class SendEmailToUserCommandHandlerTests
     [Fact]
     public async Task HandleAsyncUserWithoutEmailReturnsRecipientWithoutAddress()
     {
-        var parent = NewUser("Marta", "marta@test.local");
-        var child = NewUser("Mateo", null, parent);
-        users.HasUsers(parent, child);
+        var parent = NewUserRow("Marta", "marta@test.local");
+        var child = NewUserRow("Mateo", null, parent);
+        store.Users.AddRange([parent, child]);
 
         var result = await sut.HandleAsync(
             new SendEmailToUserCommand(child.Id, Request(), []),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.EmailRecipientWithoutAddress);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailRecipientWithoutAddress);
         outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]
     public async Task HandleAsyncUnknownUserReturnsNotFound()
     {
-        users.HasUsers(NewUser("Ana", "ana@test.local"));
+        store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         var result = await sut.HandleAsync(
             new SendEmailToUserCommand(Guid.NewGuid(), Request(), []),
@@ -58,8 +56,8 @@ public sealed class SendEmailToUserCommandHandlerTests
     [Fact]
     public async Task HandleAsyncKnownUserSendsExactlyOneMessage()
     {
-        var ana = NewUser("Ana", "ana@test.local");
-        users.HasUsers(ana, NewUser("Berto", "berto@test.local"));
+        var ana = NewUserRow("Ana", "ana@test.local");
+        store.Users.AddRange([ana, NewUserRow("Berto", "berto@test.local")]);
 
         var result = await sut.HandleAsync(
             new SendEmailToUserCommand(ana.Id, Request(body: "Nos vemos el sábado"), []),

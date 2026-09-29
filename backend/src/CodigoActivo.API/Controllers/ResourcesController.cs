@@ -1,11 +1,10 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Resources.Commands;
+using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Application.Resources.Queries;
-using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -78,6 +77,7 @@ public class ResourcesController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a resource, or an error response.</returns>
     [HttpPost]
@@ -85,12 +85,14 @@ public class ResourcesController : ApiControllerBase
     public async Task<ActionResult<ResourceResponse>> CreateAsync(
         [FromBody] CreateResourceRequest request,
         [FromServices] CreateResourceCommandHandler handler,
+        [FromServices] GetResourceByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToCreated(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new CreateResourceCommand(request, UserId), ct),
-            r => $"/api/resources/{r.Id}"
+            id => getById.HandleAsync(new GetResourceByIdQuery(id), ct),
+            id => $"/api/resources/{id}"
         );
     }
 
@@ -100,6 +102,7 @@ public class ResourcesController : ApiControllerBase
     /// <param name="resourceId">Identifier of the resource.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a resource, or an error response.</returns>
     [HttpPut("{resourceId:guid}")]
@@ -108,11 +111,13 @@ public class ResourcesController : ApiControllerBase
         Guid resourceId,
         [FromBody] UpdateResourceRequest request,
         [FromServices] UpdateResourceCommandHandler handler,
+        [FromServices] GetResourceByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(
-            await handler.HandleAsync(new UpdateResourceCommand(resourceId, request, UserId), ct)
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new UpdateResourceCommand(resourceId, request, UserId), ct),
+            () => getById.HandleAsync(new GetResourceByIdQuery(resourceId), ct)
         );
     }
 

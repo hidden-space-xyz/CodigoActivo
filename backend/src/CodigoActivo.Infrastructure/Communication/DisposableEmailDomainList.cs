@@ -1,7 +1,7 @@
 using System.Collections.Frozen;
 using System.Text;
 using System.Text.RegularExpressions;
-using CodigoActivo.Domain.Communication;
+using CodigoActivo.Application.Accounts;
 
 namespace CodigoActivo.Infrastructure.Communication;
 

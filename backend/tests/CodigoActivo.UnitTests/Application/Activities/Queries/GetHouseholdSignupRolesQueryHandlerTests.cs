@@ -1,11 +1,9 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
 
@@ -13,18 +11,16 @@ namespace CodigoActivo.UnitTests.Application.Activities.Queries;
 
 public sealed class GetHouseholdSignupRolesQueryHandlerTests
 {
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IActivityRoleTypeRepository roleTypes =
-        Substitute.For<IActivityRoleTypeRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetHouseholdSignupRolesQueryHandler sut;
 
     public GetHouseholdSignupRolesQueryHandlerTests()
     {
         var executor = new FakeQueryExecutor();
         sut = new GetHouseholdSignupRolesQueryHandler(
-            users,
+            store,
             executor,
-            new ListActivityRoleTypesQueryHandler(roleTypes, executor, new FakeHybridCache())
+            new ListActivityRoleTypesQueryHandler(store, executor, new FakeHybridCache())
         );
     }
 
@@ -33,18 +29,18 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
     {
         var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
-        users.HouseholdUsers(
-            SocioParent(actingUserId),
-            ParticipantChild(childId, actingUserId),
-            new User
+        store.Users.AddRange([
+            SocioParentRow(actingUserId),
+            ParticipantChildRow(childId, actingUserId),
+            new UserRow
             {
                 Id = Guid.NewGuid(),
                 FirstName = "Stranger",
                 LastName = "Socio",
                 UserTypeId = SeedIds.UserTypes.Member,
-            }
-        );
-        roleTypes.CatalogRoles();
+            },
+        ]);
+        store.ActivityRoleTypes.AddRange(CatalogRoleRows());
 
         var result = await sut.HandleAsync(
             new GetHouseholdSignupRolesQuery(actingUserId),
@@ -73,8 +69,8 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
     public async Task HandleAsyncParticipantTypeUserWithoutChildrenReturnsParticipantAndVolunteerOnly()
     {
         var actingUserId = Guid.NewGuid();
-        users.HouseholdUsers(
-            new User
+        store.Users.Add(
+            new UserRow
             {
                 Id = actingUserId,
                 FirstName = "Solo",
@@ -82,7 +78,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
                 UserTypeId = SeedIds.UserTypes.Participant,
             }
         );
-        roleTypes.CatalogRoles();
+        store.ActivityRoleTypes.AddRange(CatalogRoleRows());
 
         var result = await sut.HandleAsync(
             new GetHouseholdSignupRolesQuery(actingUserId),

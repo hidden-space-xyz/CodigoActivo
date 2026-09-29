@@ -1,10 +1,12 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Resources.Commands;
+using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Resources;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -15,8 +17,7 @@ namespace CodigoActivo.UnitTests.Application.Resources.Commands;
 public sealed class CreateResourceCommandHandlerTests
 {
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
-    private readonly IResourceTypeRepository resourceTypes =
-        Substitute.For<IResourceTypeRepository>();
+    private readonly FakeReadStore readStore = new();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
@@ -27,7 +28,8 @@ public sealed class CreateResourceCommandHandlerTests
     {
         sut = new CreateResourceCommandHandler(
             resources,
-            resourceTypes,
+            readStore,
+            new FakeQueryExecutor(),
             files,
             clock,
             uow,
@@ -35,10 +37,17 @@ public sealed class CreateResourceCommandHandlerTests
         );
     }
 
+    private async Task<List<Resource>> CaptureAddedResourcesAsync()
+    {
+        var added = new List<Resource>();
+        await resources.AddAsync(Arg.Do<Resource>(added.Add), Arg.Any<CancellationToken>());
+        return added;
+    }
+
     [Fact]
     public async Task HandleAsyncResourceTypeMissingReturnsBadRequestAndDoesNotPersist()
     {
-        resourceTypes.TypeMissing();
+        readStore.TypeMissing();
         var request = new CreateResourceRequest(
             "Title",
             "Subtitle",
@@ -54,7 +63,7 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceTypeNotFound);
         await resources
             .DidNotReceiveWithAnyArgs()
@@ -66,7 +75,7 @@ public sealed class CreateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncInternalWithUrlReturnsBadRequest()
     {
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         var request = new CreateResourceRequest(
             "Title",
             "Subtitle",
@@ -81,7 +90,7 @@ public sealed class CreateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceUrlNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -94,7 +103,7 @@ public sealed class CreateResourceCommandHandlerTests
     [InlineData(EmptyRichText)]
     public async Task HandleAsyncInternalWithEmptyDescriptionReturnsBadRequest(string? description)
     {
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         var request = new CreateResourceRequest(
             "Title",
             "Subtitle",
@@ -109,7 +118,7 @@ public sealed class CreateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceDescriptionRequired);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -118,7 +127,7 @@ public sealed class CreateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncExternalWithDescriptionReturnsBadRequest()
     {
-        var type = resourceTypes.TypeExists(isExternal: true);
+        var type = readStore.TypeExists(isExternal: true);
         var request = new CreateResourceRequest(
             "Title",
             "Subtitle",
@@ -133,7 +142,7 @@ public sealed class CreateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceDescriptionNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -142,7 +151,7 @@ public sealed class CreateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncExternalWithoutUrlReturnsBadRequest()
     {
-        var type = resourceTypes.TypeExists(isExternal: true);
+        var type = readStore.TypeExists(isExternal: true);
         var request = new CreateResourceRequest(
             "Title",
             "Subtitle",
@@ -157,7 +166,7 @@ public sealed class CreateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceUrlRequired);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -166,7 +175,7 @@ public sealed class CreateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncThumbnailMissingReturnsBadRequestAndDoesNotPersist()
     {
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         files.ThumbnailExists(false);
         var request = new CreateResourceRequest(
             "Title",
@@ -183,7 +192,7 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
         await resources
             .DidNotReceiveWithAnyArgs()
@@ -195,11 +204,12 @@ public sealed class CreateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncValidInternalRequestPersistsTrimmedResourceAndInvalidatesCache()
     {
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         files.ThumbnailExists(true);
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
+        var added = await CaptureAddedResourcesAsync();
         var request = new CreateResourceRequest(
             "  Title  ",
             "  Subtitle  ",
@@ -215,26 +225,16 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Title.Should().Be("Title");
-        result.Value.Subtitle.Should().Be("Subtitle");
-        result.Value.Description.Should().Be(SomeRichText);
-        result.Value.Url.Should().BeNull();
-        result.Value.Type.Id.Should().Be(type.Id);
-        result.Value.Type.IsExternal.Should().BeFalse();
-        result.Value.ThumbnailId.Should().Be(thumbnailId);
-        result.Value.CreatedBy.Should().Be(caller);
-        result.Value.CreatedAt.Should().Be(clock.UtcNow);
-        await resources
-            .Received(1)
-            .AddAsync(
-                Arg.Is<Resource>(r =>
-                    r != null
-                    && r.Title == "Title"
-                    && r.Subtitle == "Subtitle"
-                    && r.CreatedBy == caller
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        var created = added.Should().ContainSingle().Which;
+        result.Value.Should().Be(created.Id);
+        created.Title.Should().Be("Title");
+        created.Subtitle.Should().Be("Subtitle");
+        created.Description.Should().Be(SomeRichText);
+        created.Url.Should().BeNull();
+        created.ResourceTypeId.Should().Be(type.Id);
+        created.ThumbnailId.Should().Be(thumbnailId);
+        created.CreatedBy.Should().Be(caller);
+        created.CreatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await cacheInvalidator
             .Received(1)
@@ -248,8 +248,9 @@ public sealed class CreateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncValidExternalRequestPersistsTrimmedUrlAndEmptyDescription()
     {
-        var type = resourceTypes.TypeExists(isExternal: true);
+        var type = readStore.TypeExists(isExternal: true);
         files.ThumbnailExists(true);
+        var added = await CaptureAddedResourcesAsync();
         var request = new CreateResourceRequest(
             "Title",
             "Subtitle",
@@ -265,16 +266,10 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Url.Should().Be("https://ejemplo.es/curso");
-        result.Value.Description.Should().Be("{}");
-        result.Value.Type.IsExternal.Should().BeTrue();
-        await resources
-            .Received(1)
-            .AddAsync(
-                Arg.Is<Resource>(r =>
-                    r != null && r.Url == "https://ejemplo.es/curso" && r.Description == "{}"
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        var created = added.Should().ContainSingle().Which;
+        result.Value.Should().Be(created.Id);
+        created.Url.Should().Be("https://ejemplo.es/curso");
+        created.Description.Should().Be("{}");
+        created.ResourceTypeId.Should().Be(type.Id);
     }
 }

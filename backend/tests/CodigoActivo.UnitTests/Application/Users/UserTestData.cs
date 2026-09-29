@@ -1,7 +1,6 @@
-using System.Linq.Expressions;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 
@@ -25,12 +24,53 @@ internal static class UserTestData
         bool isAdmin = false,
         Guid? typeId = null,
         Guid? statusId = null,
-        string typeName = "Socio",
-        string statusName = "Active",
         string? passwordHash = null,
         string? nationalId = AdultNationalId
     )
     {
+        return Persisted.As<User>(
+            new
+            {
+                Id = id ?? Guid.NewGuid(),
+                FirstName = first,
+                LastName = last,
+                Email = email,
+                Phone = phone,
+                PasswordHash = passwordHash,
+                BirthDate = dob ?? (parentId is null ? null : MinorDob),
+                NationalId = parentId is null ? nationalId : null,
+                Gender = Gender.Male,
+                ParentId = parentId,
+                UserStatusTypeId = statusId ?? Guid.NewGuid(),
+                IsAdmin = isAdmin,
+                UserTypeId = typeId ?? Guid.NewGuid(),
+                CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            }
+        );
+    }
+
+    public static UserRow NewUserRow(
+        string first = "Ana",
+        string last = "Lopez",
+        Guid? id = null,
+        Guid? parentId = null,
+        DateOnly? dob = null,
+        string? email = "ana@test.com",
+        string? phone = "555-0100",
+        bool isAdmin = false,
+        Guid? typeId = null,
+        Guid? statusId = null,
+        string typeName = "Socio",
+        string statusName = "Active",
+        string? passwordHash = null,
+        string? nationalId = AdultNationalId,
+        bool promotionalConsent = false,
+        UserRow? parent = null
+    )
+    {
+        var guardianId = parentId ?? parent?.Id;
+        var userStatusTypeId = statusId ?? Guid.NewGuid();
+        var userTypeId = typeId ?? Guid.NewGuid();
         return new()
         {
             Id = id ?? Guid.NewGuid(),
@@ -39,30 +79,35 @@ internal static class UserTestData
             Email = email,
             Phone = phone,
             PasswordHash = passwordHash,
-            BirthDate = dob ?? (parentId is null ? null : MinorDob),
-            NationalId = parentId is null ? nationalId : null,
+            BirthDate = dob ?? (guardianId is null ? null : MinorDob),
+            NationalId = guardianId is null ? nationalId : null,
+            PromotionalConsent = promotionalConsent,
             Gender = Gender.Male,
-            ParentId = parentId,
-            UserStatusTypeId = statusId ?? Guid.NewGuid(),
-            UserStatusType = new UserStatusType
+            ParentId = guardianId,
+            Parent = parent,
+            UserStatusTypeId = userStatusTypeId,
+            UserStatusType = new UserStatusTypeRow
             {
+                Id = userStatusTypeId,
                 Name = statusName,
                 Color = "#111",
                 Description = "",
             },
             IsAdmin = isAdmin,
-            UserTypeId = typeId ?? Guid.NewGuid(),
-            UserType = new UserType
+            UserTypeId = userTypeId,
+            UserType = new UserTypeRow
             {
+                Id = userTypeId,
                 Name = typeName,
                 Color = "#111",
                 Description = "",
             },
+            TwoFactorMethod = TwoFactorMethod.Email,
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
     }
 
-    public static UserType NewUserType(string name)
+    public static UserTypeRow NewUserTypeRow(string name)
     {
         return new()
         {
@@ -73,7 +118,7 @@ internal static class UserTestData
         };
     }
 
-    public static UserStatusType NewStatusType(string name)
+    public static UserStatusTypeRow NewStatusTypeRow(string name)
     {
         return new()
         {
@@ -105,24 +150,6 @@ internal static class UserTestData
             && user.CreatedAt == createdAt;
     }
 
-    public static void HasUsers(this IUserRepository users, params User[] items)
-    {
-        users.Query().Returns(items.AsQueryable());
-    }
-
-    public static void HasUserTypes(this IUserTypeRepository userTypes, params UserType[] items)
-    {
-        userTypes.Query().Returns(items.AsQueryable());
-    }
-
-    public static void HasStatusTypes(
-        this IUserStatusTypeRepository userStatusTypes,
-        params UserStatusType[] items
-    )
-    {
-        userStatusTypes.Query().Returns(items.AsQueryable());
-    }
-
     public static void FindReturns(this IUserRepository users, params User?[]? sequence)
     {
         if (sequence is null || sequence.Length is 0)
@@ -131,8 +158,9 @@ internal static class UserTestData
             return;
         }
 
+        users.Finds(sequence[0]);
         users
-            .FindAsync(Arg.Any<Expression<Func<User, bool>>>(), Arg.Any<CancellationToken>())
+            .GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(sequence[0], [.. sequence.Skip(1)]);
     }
 }

@@ -1,10 +1,12 @@
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Application.Participation.Queries;
-using CodigoActivo.Application.Users.Commands;
-using CodigoActivo.Application.Users.Queries;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;

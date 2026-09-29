@@ -1,7 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -16,12 +16,10 @@ public sealed record VerifyTimeOverlapsQuery(Guid ActivityId, Guid UserId)
 /// <summary>
 /// Executes the query to verify time overlaps.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class VerifyTimeOverlapsQueryHandler(
-    IActivityRepository activities,
-    IQueryExecutor executor
-) : IQueryHandler<VerifyTimeOverlapsQuery, Result<TimeOverlapResponse>>
+public sealed class VerifyTimeOverlapsQueryHandler(IReadStore readStore, IQueryExecutor executor)
+    : IQueryHandler<VerifyTimeOverlapsQuery, Result<TimeOverlapResponse>>
 {
     /// <summary>
     /// Handles the request to verify time overlaps.
@@ -35,9 +33,8 @@ public sealed class VerifyTimeOverlapsQueryHandler(
     )
     {
         var target = await executor.FirstOrDefaultAsync(
-            activities
-                .Query()
-                .Where(a => a.Id == query.ActivityId)
+            readStore
+                .Activities.Where(a => a.Id == query.ActivityId)
                 .Select(a => new { a.ActivityStartsAt, a.ActivityEndsAt }),
             ct
         );
@@ -47,9 +44,8 @@ public sealed class VerifyTimeOverlapsQueryHandler(
         }
 
         var overlaps = await executor.ToListAsync(
-            activities
-                .QueryAssignments()
-                .Where(x =>
+            readStore
+                .Assignments.Where(x =>
                     x.UserId == query.UserId
                     && x.ActivityId != query.ActivityId
                     && x.Activity.ActivityStartsAt < target.ActivityEndsAt

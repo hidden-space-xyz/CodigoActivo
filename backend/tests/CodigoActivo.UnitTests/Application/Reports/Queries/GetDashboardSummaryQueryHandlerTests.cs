@@ -1,8 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Reports;
+using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -11,7 +10,7 @@ namespace CodigoActivo.UnitTests.Application.Reports.Queries;
 
 public sealed class GetDashboardSummaryQueryHandlerTests
 {
-    private readonly IDashboardRepository dashboard = Substitute.For<IDashboardRepository>();
+    private readonly IDashboardCountsReader dashboard = Substitute.For<IDashboardCountsReader>();
     private readonly GetDashboardSummaryQueryHandler sut;
 
     public GetDashboardSummaryQueryHandlerTests()

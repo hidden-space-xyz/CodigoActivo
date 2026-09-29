@@ -1,11 +1,10 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
-using CodigoActivo.Application.Options;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -17,8 +16,7 @@ public sealed class CreateFileCommandHandlerTests
 {
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ILocalFileSystemRepository storage =
-        Substitute.For<ILocalFileSystemRepository>();
+    private readonly IFileStorage storage = Substitute.For<IFileStorage>();
     private readonly TestClock clock = new();
     private readonly FileUploadOptions options = new();
     private readonly CreateFileCommandHandler sut;
@@ -34,17 +32,11 @@ public sealed class CreateFileCommandHandlerTests
         );
     }
 
-    private static bool IsUploadedAvatar(FileEntity? file, Guid caller, DateTimeOffset uploadedAt)
+    private async Task<List<FileEntity>> CaptureAddedFilesAsync()
     {
-        if (file is null)
-        {
-            return false;
-        }
-
-        var isAvatarPng =
-            string.Equals(file.Name, "avatar.png", StringComparison.Ordinal)
-            && string.Equals(file.Extension, "png", StringComparison.Ordinal);
-        return isAvatarPng && file.UploadedBy == caller && file.UploadedAt == uploadedAt;
+        var added = new List<FileEntity>();
+        await files.AddAsync(Arg.Do<FileEntity>(added.Add), Arg.Any<CancellationToken>());
+        return added;
     }
 
     [Fact]
@@ -55,7 +47,7 @@ public sealed class CreateFileCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadMissing);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadMissing);
         await AssertNothingPersistedAsync();
     }
 
@@ -70,7 +62,7 @@ public sealed class CreateFileCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadEmpty);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadEmpty);
         await AssertNothingPersistedAsync();
     }
 
@@ -85,7 +77,7 @@ public sealed class CreateFileCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadTooLarge);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadTooLarge);
         await AssertNothingPersistedAsync();
     }
 
@@ -95,6 +87,7 @@ public sealed class CreateFileCommandHandlerTests
         options.MaxSizeBytes = 32;
         var content = PngStream();
         var upload = new FileUpload(content, "exact.png", 32);
+        var added = await CaptureAddedFilesAsync();
 
         var result = await sut.HandleAsync(
             new CreateFileCommand(upload, Guid.NewGuid()),
@@ -102,10 +95,12 @@ public sealed class CreateFileCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Extension.Should().Be("png");
+        var created = added.Should().ContainSingle().Which;
+        result.Value.Should().Be(created.Id);
+        created.Extension.Should().Be("png");
         await storage
             .Received(1)
-            .SaveAsync($"{result.Value.Id}.png", content, Arg.Any<CancellationToken>());
+            .SaveAsync($"{result.Value}.png", content, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -119,7 +114,7 @@ public sealed class CreateFileCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadStreamNotSeekable);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadStreamNotSeekable);
         await AssertNothingPersistedAsync();
     }
 
@@ -133,7 +128,7 @@ public sealed class CreateFileCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.FileUploadUnsupportedFormat);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadUnsupportedFormat);
         await AssertNothingPersistedAsync();
         await storage
             .DidNotReceiveWithAnyArgs()
@@ -141,12 +136,13 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncValidUploadSavesContentPersistsEntityAndReturnsResponse()
+    public async Task HandleAsyncValidUploadSavesContentPersistsEntityAndReturnsId()
     {
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         var content = PngStream();
         var upload = new FileUpload(content, "  C:\\folder\\avatar.png  ", 32);
+        var added = await CaptureAddedFilesAsync();
 
         var result = await sut.HandleAsync(
             new CreateFileCommand(upload, caller),
@@ -154,20 +150,16 @@ public sealed class CreateFileCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Name.Should().Be("avatar.png");
-        result.Value.Extension.Should().Be("png");
-        result.Value.UploadedBy.Should().Be(caller);
-        result.Value.UploadedAt.Should().Be(clock.UtcNow);
+        var created = added.Should().ContainSingle().Which;
+        result.Value.Should().Be(created.Id);
+        created.Name.Should().Be("avatar.png");
+        created.Extension.Should().Be("png");
+        created.UploadedBy.Should().Be(caller);
+        created.UploadedAt.Should().Be(clock.UtcNow);
 
         await storage
             .Received(1)
-            .SaveAsync($"{result.Value.Id}.png", content, Arg.Any<CancellationToken>());
-        await files
-            .Received(1)
-            .AddAsync(
-                Arg.Is<FileEntity>(f => IsUploadedAvatar(f, caller, clock.UtcNow)),
-                Arg.Any<CancellationToken>()
-            );
+            .SaveAsync($"{created.Id}.png", content, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -175,6 +167,7 @@ public sealed class CreateFileCommandHandlerTests
     public async Task HandleAsyncBlankFilenameDefaultsNameToFile()
     {
         var upload = new FileUpload(PngStream(), "   ", 32);
+        var added = await CaptureAddedFilesAsync();
 
         var result = await sut.HandleAsync(
             new CreateFileCommand(upload, Guid.NewGuid()),
@@ -182,7 +175,7 @@ public sealed class CreateFileCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Name.Should().Be("file");
+        added.Should().ContainSingle().Which.Name.Should().Be("file");
     }
 
     [Fact]
@@ -190,6 +183,7 @@ public sealed class CreateFileCommandHandlerTests
     {
         var longName = new string('a', 300);
         var upload = new FileUpload(PngStream(), longName, 32);
+        var added = await CaptureAddedFilesAsync();
 
         var result = await sut.HandleAsync(
             new CreateFileCommand(upload, Guid.NewGuid()),
@@ -197,8 +191,9 @@ public sealed class CreateFileCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Name.Should().HaveLength(260);
-        result.Value.Name.Should().Be(new string('a', 260));
+        var name = added.Should().ContainSingle().Which.Name;
+        name.Should().HaveLength(260);
+        name.Should().Be(new string('a', 260));
     }
 
     [Fact]

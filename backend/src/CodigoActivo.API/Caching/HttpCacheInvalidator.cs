@@ -1,4 +1,4 @@
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Caching;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.Extensions.Caching.Hybrid;
 

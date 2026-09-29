@@ -1,10 +1,12 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.News.Commands;
+using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -37,7 +39,7 @@ public sealed class CreateNewsItemCommandHandlerTests
         );
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.NewsItemThumbnailNotFound);
         await news.DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<NewsItem>(), TestContext.Current.CancellationToken);
@@ -52,6 +54,8 @@ public sealed class CreateNewsItemCommandHandlerTests
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
+        var added = new List<NewsItem>();
+        await news.AddAsync(Arg.Do<NewsItem>(added.Add), Arg.Any<CancellationToken>());
         var request = new CreateNewsItemRequest(
             "  Title  ",
             "  Subtitle  ",
@@ -65,22 +69,14 @@ public sealed class CreateNewsItemCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Title.Should().Be("Title");
-        result.Value.Subtitle.Should().Be("Subtitle");
-        result.Value.Description.Should().Be("{\"x\":1}");
-        result.Value.ThumbnailId.Should().Be(thumbnailId);
-        result.Value.CreatedBy.Should().Be(caller);
-        result.Value.CreatedAt.Should().Be(clock.UtcNow);
-        await news.Received(1)
-            .AddAsync(
-                Arg.Is<NewsItem>(a =>
-                    a != null
-                    && a.Title == "Title"
-                    && a.Subtitle == "Subtitle"
-                    && a.CreatedBy == caller
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        var created = added.Should().ContainSingle().Which;
+        result.Value.Should().Be(created.Id);
+        created.Title.Should().Be("Title");
+        created.Subtitle.Should().Be("Subtitle");
+        created.Description.Should().Be("{\"x\":1}");
+        created.ThumbnailId.Should().Be(thumbnailId);
+        created.CreatedBy.Should().Be(caller);
+        created.CreatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         await cacheInvalidator
             .Received(1)

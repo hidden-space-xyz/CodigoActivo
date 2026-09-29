@@ -1,10 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Activities;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Reports.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -17,14 +16,10 @@ public sealed record GetEventRosterQuery(Guid EventId) : IQuery<Result<EventRost
 /// <summary>
 /// Executes the query to retrieve event roster.
 /// </summary>
-/// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetEventRosterQueryHandler(
-    IEventRepository events,
-    IActivityRepository activities,
-    IQueryExecutor executor
-) : IQueryHandler<GetEventRosterQuery, Result<EventRosterResponse>>
+public sealed class GetEventRosterQueryHandler(IReadStore readStore, IQueryExecutor executor)
+    : IQueryHandler<GetEventRosterQuery, Result<EventRosterResponse>>
 {
     /// <summary>
     /// Handles the request to retrieve event roster.
@@ -45,9 +40,8 @@ public sealed class GetEventRosterQueryHandler(
         }
 
         var rows = await executor.ToListAsync(
-            activities
-                .QueryAssignments()
-                .Where(a =>
+            readStore
+                .Assignments.Where(a =>
                     a.Activity.EventId == eventId
                     && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
                 )
@@ -121,7 +115,9 @@ public sealed class GetEventRosterQueryHandler(
     private Task<EventHeader?> GetEventHeaderAsync(Guid eventId, CancellationToken ct)
     {
         return executor.FirstOrDefaultAsync(
-            events.Query().Where(e => e.Id == eventId).Select(e => new EventHeader(e.Id, e.Title)),
+            readStore
+                .Events.Where(e => e.Id == eventId)
+                .Select(e => new EventHeader(e.Id, e.Title)),
             ct
         );
     }

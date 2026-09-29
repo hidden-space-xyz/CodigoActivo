@@ -1,10 +1,14 @@
 using System.Net;
 using System.Text.Json;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -39,88 +43,104 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                new FileEntity
-                {
-                    Id = ThumbnailId,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = SeededAt,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<FileEntity>(
+                    new
+                    {
+                        Id = ThumbnailId,
+                        Name = "thumb",
+                        Extension = "png",
+                        UploadedAt = SeededAt,
+                        UploadedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.TermsDocuments.Add(
-                new TermsDocument
-                {
-                    Id = TermsDocumentId,
-                    Name = "Condiciones 2026",
-                    Description = "{}",
-                }
+                Persisted.As<TermsDocument>(
+                    new
+                    {
+                        Id = TermsDocumentId,
+                        Name = "Condiciones 2026",
+                        Description = "{}",
+                    }
+                )
             );
             db.Events.Add(
-                new Event
-                {
-                    Id = EventId,
-                    Title = "Evento",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    EventStartsAt = new DateOnly(2026, 6, 1),
-                    EventEndsAt = new DateOnly(2026, 6, 2),
-                    SignupStartsAt = SeededAt,
-                    SignupEndsAt = SeededAt.AddDays(10),
-                    ThumbnailId = ThumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = EventId,
+                        Title = "Evento",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        EventStartsAt = new DateOnly(2026, 6, 1),
+                        EventEndsAt = new DateOnly(2026, 6, 2),
+                        SignupStartsAt = SeededAt,
+                        SignupEndsAt = SeededAt.AddDays(10),
+                        ThumbnailId = ThumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.Activities.Add(
-                new Activity
-                {
-                    Id = ActivityId,
-                    Title = "Taller",
-                    Description = "Descripción",
-                    Location = "Sala",
-                    ActivityStartsAt = new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
-                    ActivityEndsAt = new DateTimeOffset(2026, 6, 1, 12, 0, 0, TimeSpan.Zero),
-                    EventId = EventId,
-                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                    ThumbnailId = ThumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Activity>(
+                    new
+                    {
+                        Id = ActivityId,
+                        Title = "Taller",
+                        Description = "Descripción",
+                        Location = "Sala",
+                        ActivityStartsAt = new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
+                        ActivityEndsAt = new DateTimeOffset(2026, 6, 1, 12, 0, 0, TimeSpan.Zero),
+                        EventId = EventId,
+                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        ThumbnailId = ThumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.ActivityUserRoleAssignments.AddRange(
-                new ActivityUserRoleAssignment
-                {
-                    UserId = TestSeedData.Users.MemberId,
-                    ActivityId = ActivityId,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
-                    AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
-                },
-                new ActivityUserRoleAssignment
-                {
-                    UserId = TestSeedData.Users.MemberChildId,
-                    ActivityId = ActivityId,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                    AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
-                }
+                Persisted.As<ActivityUserRoleAssignment>(
+                    new
+                    {
+                        UserId = TestSeedData.Users.MemberId,
+                        ActivityId = ActivityId,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
+                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+                    }
+                ),
+                Persisted.As<ActivityUserRoleAssignment>(
+                    new
+                    {
+                        UserId = TestSeedData.Users.MemberChildId,
+                        ActivityId = ActivityId,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+                    }
+                )
             );
             db.EventRatings.Add(
-                new EventRating
-                {
-                    EventId = EventId,
-                    Score = 5,
-                    MostLiked = "El ambiente",
-                }
+                Persisted.As<EventRating>(
+                    new
+                    {
+                        EventId = EventId,
+                        Score = 5,
+                        MostLiked = "El ambiente",
+                    }
+                )
             );
             db.EventTermsAcceptances.Add(
-                new EventTermsAcceptance
-                {
-                    EventId = EventId,
-                    UserId = TestSeedData.Users.MemberId,
-                    TermsDocumentId = TermsDocumentId,
-                    Accepted = true,
-                    DecidedAt = SeededAt,
-                }
+                Persisted.As<EventTermsAcceptance>(
+                    new
+                    {
+                        EventId = EventId,
+                        UserId = TestSeedData.Users.MemberId,
+                        TermsDocumentId = TermsDocumentId,
+                        Accepted = true,
+                        DecidedAt = SeededAt,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -131,8 +151,14 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(async db =>
         {
             var user = await db.Users.FindAsync([userId], Ct);
-            user!.TwoFactorMethod = TwoFactorMethod.Authenticator;
-            user.AuthenticatorKey = FakeSecretProtector.Prefix + Secret;
+            Persisted.Overwrite(
+                user!,
+                new
+                {
+                    TwoFactorMethod = TwoFactorMethod.Authenticator,
+                    AuthenticatorKey = FakeSecretProtector.Prefix + Secret,
+                }
+            );
         });
     }
 
@@ -158,7 +184,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(async db =>
         {
             var member = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
-            member!.IsAdmin = true;
+            Persisted.Overwrite(member!, new { IsAdmin = true });
         });
     }
 
@@ -405,26 +431,30 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                new FileEntity
-                {
-                    Id = ThumbnailId,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = SeededAt,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<FileEntity>(
+                    new
+                    {
+                        Id = ThumbnailId,
+                        Name = "thumb",
+                        Extension = "png",
+                        UploadedAt = SeededAt,
+                        UploadedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.News.Add(
-                new NewsItem
-                {
-                    Id = newsItemId,
-                    Title = "Nota",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    ThumbnailId = ThumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.MemberId,
-                }
+                Persisted.As<NewsItem>(
+                    new
+                    {
+                        Id = newsItemId,
+                        Title = "Nota",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        ThumbnailId = ThumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.MemberId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -447,27 +477,31 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                new FileEntity
-                {
-                    Id = ThumbnailId,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = SeededAt,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<FileEntity>(
+                    new
+                    {
+                        Id = ThumbnailId,
+                        Name = "thumb",
+                        Extension = "png",
+                        UploadedAt = SeededAt,
+                        UploadedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.News.Add(
-                new NewsItem
-                {
-                    Id = newsItemId,
-                    Title = "Nota",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    ThumbnailId = ThumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.MemberId,
-                    UpdatedBy = TestSeedData.Users.MemberId,
-                }
+                Persisted.As<NewsItem>(
+                    new
+                    {
+                        Id = newsItemId,
+                        Title = "Nota",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        ThumbnailId = ThumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.MemberId,
+                        UpdatedBy = TestSeedData.Users.MemberId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });

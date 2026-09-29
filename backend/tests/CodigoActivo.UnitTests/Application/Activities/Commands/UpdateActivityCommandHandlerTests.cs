@@ -1,14 +1,15 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -22,10 +23,7 @@ public sealed class UpdateActivityCommandHandlerTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
     private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
-    private readonly IActivityModalityTypeRepository modalityTypes =
-        Substitute.For<IActivityModalityTypeRepository>();
-    private readonly IActivityRoleTypeRepository roleTypes =
-        Substitute.For<IActivityRoleTypeRepository>();
+    private readonly FakeReadStore readStore = new();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
@@ -33,21 +31,21 @@ public sealed class UpdateActivityCommandHandlerTests
 
     public UpdateActivityCommandHandlerTests()
     {
-        var executor = new FakeQueryExecutor();
         sut = new UpdateActivityCommandHandler(
             activities,
-            new ActivityValidator(events, files, modalityTypes, roleTypes, executor, clock),
+            new ActivityValidator(events, files, readStore, new FakeQueryExecutor(), clock),
             orphanCleaner,
             clock,
             uow,
-            cacheInvalidator,
-            new GetActivityByIdQueryHandler(activities, executor)
+            cacheInvalidator
         );
     }
 
     private void EventExistsFor(Activity activity)
     {
-        events.HasEvents(NewEvent(id: activity.EventId));
+        events
+            .GetByIdAsync(activity.EventId, Arg.Any<CancellationToken>())
+            .Returns(NewEvent(id: activity.EventId));
     }
 
     private static UpdateActivityRequest UpdateRequest(
@@ -62,7 +60,7 @@ public sealed class UpdateActivityCommandHandlerTests
             title,
             "{}",
             "  Sala  ",
-            Guid.NewGuid(),
+            RequestedModalityId,
             startsAt ?? new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
             endsAt ?? new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
             thumbnailId ?? Guid.NewGuid(),
@@ -73,7 +71,7 @@ public sealed class UpdateActivityCommandHandlerTests
     [Fact]
     public async Task HandleAsyncActivityMissingReturnsNotFound()
     {
-        activities.ActivityFound(null);
+        activities.Finds(null);
 
         var result = await sut.HandleAsync(
             new UpdateActivityCommand(Guid.NewGuid(), UpdateRequest(), Guid.NewGuid()),
@@ -90,8 +88,8 @@ public sealed class UpdateActivityCommandHandlerTests
     public async Task HandleAsyncParentEventMissingReturnsEventNotFound()
     {
         var activity = NewActivity();
-        activities.ActivityFound(activity);
-        events.HasEvents();
+        activities.Finds(activity);
+        events.Finds(null);
 
         var result = await sut.HandleAsync(
             new UpdateActivityCommand(activity.Id, UpdateRequest(), Guid.NewGuid()),
@@ -108,7 +106,7 @@ public sealed class UpdateActivityCommandHandlerTests
     public async Task HandleAsyncStartMissingReturnsScheduleRequired()
     {
         var activity = NewActivity();
-        activities.ActivityFound(activity);
+        activities.Finds(activity);
         EventExistsFor(activity);
 
         var request = new UpdateActivityRequest(
@@ -127,7 +125,7 @@ public sealed class UpdateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ActivityScheduleRequired);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -137,7 +135,7 @@ public sealed class UpdateActivityCommandHandlerTests
     public async Task HandleAsyncThumbnailMissingReturnsThumbnailNotFound()
     {
         var activity = NewActivity();
-        activities.ActivityFound(activity);
+        activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(false);
 
@@ -155,10 +153,10 @@ public sealed class UpdateActivityCommandHandlerTests
     public async Task HandleAsyncModalityMissingReturnsModalityTypeNotFound()
     {
         var activity = NewActivity();
-        activities.ActivityFound(activity);
+        activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        modalityTypes.ModalityExists(false);
+        readStore.ModalityExists(false);
 
         var result = await sut.HandleAsync(
             new UpdateActivityCommand(activity.Id, UpdateRequest(), Guid.NewGuid()),
@@ -174,17 +172,14 @@ public sealed class UpdateActivityCommandHandlerTests
     public async Task HandleAsyncValidRequestMutatesPersistsAndInvalidatesCache()
     {
         var eventId = Guid.NewGuid();
-        var activityId = Guid.NewGuid();
         var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
-        var activity = NewActivity(title: "Old", id: activityId, eventId: eventId);
-
-        var stored = new List<Activity> { activity };
-        activities.Query().Returns(_ => stored.AsQueryable());
-        activities.ActivityFound(activity);
+        var activity = NewActivity(title: "Old", eventId: eventId);
+        var activityId = activity.Id;
+        activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        modalityTypes.ModalityExists(true);
+        readStore.ModalityExists(true);
 
         var result = await sut.HandleAsync(
             new UpdateActivityCommand(activityId, UpdateRequest(title: "  New  "), caller),
@@ -192,7 +187,6 @@ public sealed class UpdateActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Title.Should().Be("New");
         activity.Title.Should().Be("New");
         activity.UpdatedBy.Should().Be(caller);
         activity.UpdatedAt.Should().Be(clock.UtcNow);
@@ -209,18 +203,18 @@ public sealed class UpdateActivityCommandHandlerTests
     [Fact]
     public async Task HandleAsyncWithRoleCapacitiesSyncsCollection()
     {
-        var activity = NewActivity();
-        activity.RoleCapacities =
-        [
-            Capacity(activity.Id, SeedIds.ActivityRoleTypes.Participant, 5),
-            Capacity(activity.Id, SeedIds.ActivityRoleTypes.Leader, 1),
-        ];
-        activities.HasActivities(activity);
-        activities.ActivityFound(activity);
+        var activity = NewActivity(
+            capacities:
+            [
+                new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 5),
+                new RoleCapacity(SeedIds.ActivityRoleTypes.Leader, 1),
+            ]
+        );
+        activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        modalityTypes.ModalityExists(true);
-        roleTypes.HasRoleCatalog();
+        readStore.ModalityExists(true);
+        readStore.CatalogRoles();
 
         var result = await sut.HandleAsync(
             new UpdateActivityCommand(
@@ -255,13 +249,13 @@ public sealed class UpdateActivityCommandHandlerTests
     [Fact]
     public async Task HandleAsyncNullRoleCapacitiesClearsExisting()
     {
-        var activity = NewActivity();
-        activity.RoleCapacities = [Capacity(activity.Id, SeedIds.ActivityRoleTypes.Participant, 5)];
-        activities.HasActivities(activity);
-        activities.ActivityFound(activity);
+        var activity = NewActivity(
+            capacities: [new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 5)]
+        );
+        activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        modalityTypes.ModalityExists(true);
+        readStore.ModalityExists(true);
 
         var result = await sut.HandleAsync(
             new UpdateActivityCommand(activity.Id, UpdateRequest(), Guid.NewGuid()),
@@ -277,11 +271,10 @@ public sealed class UpdateActivityCommandHandlerTests
     {
         var activity = NewActivity();
         var previousThumbnailId = activity.ThumbnailId;
-        activities.HasActivities(activity);
-        activities.ActivityFound(activity);
+        activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        modalityTypes.ModalityExists(true);
+        readStore.ModalityExists(true);
 
         var result = await sut.HandleAsync(
             new UpdateActivityCommand(
@@ -302,11 +295,10 @@ public sealed class UpdateActivityCommandHandlerTests
     public async Task HandleAsyncKeepingSameThumbnailDoesNotCleanUp()
     {
         var activity = NewActivity();
-        activities.HasActivities(activity);
-        activities.ActivityFound(activity);
+        activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        modalityTypes.ModalityExists(true);
+        readStore.ModalityExists(true);
 
         var result = await sut.HandleAsync(
             new UpdateActivityCommand(

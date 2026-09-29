@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Communication;
+using CodigoActivo.Application.Abstractions.Email;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 

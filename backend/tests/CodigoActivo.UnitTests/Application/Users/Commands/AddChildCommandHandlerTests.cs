@@ -1,11 +1,11 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Users.Commands;
-using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -23,13 +23,7 @@ public sealed class AddChildCommandHandlerTests
 
     public AddChildCommandHandlerTests()
     {
-        sut = new AddChildCommandHandler(
-            users,
-            clock,
-            uow,
-            cacheInvalidator,
-            new GetUserByIdQueryHandler(users, new FakeQueryExecutor())
-        );
+        sut = new AddChildCommandHandler(users, clock, uow, cacheInvalidator);
     }
 
     private Task<int> AssertNotSavedAsync()
@@ -38,35 +32,11 @@ public sealed class AddChildCommandHandlerTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private void CaptureAddedUsers(User? parent = null)
+    private async Task<List<User>> CaptureAddedUsersAsync()
     {
-        var store = new List<User>();
-        users.Query().Returns(_ => store.AsQueryable());
-        users
-            .When(x => x.AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>()))
-            .Do(ci =>
-            {
-                var user = ci.Arg<User>();
-                Assert.NotNull(user);
-                user.UserStatusType = new UserStatusType
-                {
-                    Description = "Descripción de prueba",
-                    Name = "Dependiente",
-                    Color = "#111",
-                };
-                user.UserType = new UserType
-                {
-                    Description = "Descripción de prueba",
-                    Name = "Participante",
-                    Color = "#111",
-                };
-                if (parent is not null && user.ParentId == parent.Id)
-                {
-                    user.Parent = parent;
-                }
-
-                store.Add(user);
-            });
+        var added = new List<User>();
+        await users.AddAsync(Arg.Do<User>(added.Add), Arg.Any<CancellationToken>());
+        return added;
     }
 
     [Fact]
@@ -95,7 +65,7 @@ public sealed class AddChildCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserChildBirthDateNotMinor);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserChildBirthDateNotMinor);
         await AssertNotSavedAsync();
     }
 
@@ -105,7 +75,7 @@ public sealed class AddChildCommandHandlerTests
         var parentId = Guid.NewGuid();
         var parent = NewUser(id: parentId);
         users.FindReturns(parent);
-        CaptureAddedUsers(parent);
+        var added = await CaptureAddedUsersAsync();
         clock.UtcNow = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero);
         var request = new RegisterMinorRequest("  Kid  ", "  Doe  ", MinorDob, Gender.Female);
 
@@ -115,15 +85,11 @@ public sealed class AddChildCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.FirstName.Should().Be("Kid");
-        result.Value.ParentId.Should().Be(parentId);
-        result.Value.ParentName.Should().Be("Ana Lopez");
-        result.Value.Type.Should().NotBeNull();
-        result.Value.Type.Name.Should().Be("Participante");
-        result.Value.DependentCount.Should().Be(0);
-        result.Value.BirthDate.Should().Be(MinorDob);
-        result.Value.NationalId.Should().BeNull();
-        result.Value.PromotionalConsent.Should().BeFalse();
+        var child = added.Should().ContainSingle().Which;
+        result.Value.Should().Be(child.Id);
+        child.BirthDate.Should().Be(MinorDob);
+        child.NationalId.Should().BeNull();
+        child.PromotionalConsent.Should().BeFalse();
         await users
             .Received(1)
             .AddAsync(

@@ -1,10 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Resources;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -29,20 +30,23 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Resources.Add(
-                new Resource
-                {
-                    Id = id,
-                    Title = title,
-                    Subtitle = subtitle,
-                    Description = url is null ? Description : "{}",
-                    Url = url,
-                    ResourceTypeId = url is null
-                        ? SeedIds.ResourceTypes.Internal
-                        : SeedIds.ResourceTypes.External,
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = createdAt ?? new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Resource>(
+                    new
+                    {
+                        Id = id,
+                        Title = title,
+                        Subtitle = subtitle,
+                        Description = url is null ? Description : "{}",
+                        Url = url,
+                        ResourceTypeId = url is null
+                            ? SeedIds.ResourceTypes.Internal
+                            : SeedIds.ResourceTypes.External,
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = createdAt
+                            ?? new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });

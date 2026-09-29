@@ -1,10 +1,12 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Files;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -27,7 +29,6 @@ public sealed class DeleteEventCommandHandlerTests
             events,
             activities,
             orphanCleaner,
-            new FakeQueryExecutor(),
             uow,
             cacheInvalidator
         );
@@ -64,38 +65,13 @@ public sealed class DeleteEventCommandHandlerTests
         var ev = NewEvent();
         events.Finds(ev);
         var sharedActivityThumbnailId = Guid.NewGuid();
-        var foreignActivity = new Activity
-        {
-            Title = "Actividad de prueba",
-            Location = "Sala principal",
-            Description = "Descripción de la actividad",
-            EventId = Guid.NewGuid(),
-            ThumbnailId = Guid.NewGuid(),
-        };
+        var foreignThumbnailId = Guid.NewGuid();
         activities
-            .Query()
-            .Returns(
-                new[]
-                {
-                    new Activity
-                    {
-                        Title = "Actividad de prueba",
-                        Location = "Sala principal",
-                        Description = "Descripción de la actividad",
-                        EventId = ev.Id,
-                        ThumbnailId = sharedActivityThumbnailId,
-                    },
-                    new Activity
-                    {
-                        Title = "Actividad de prueba",
-                        Location = "Sala principal",
-                        Description = "Descripción de la actividad",
-                        EventId = ev.Id,
-                        ThumbnailId = sharedActivityThumbnailId,
-                    },
-                    foreignActivity,
-                }.AsQueryable()
-            );
+            .ListThumbnailIdsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns([foreignThumbnailId]);
+        activities
+            .ListThumbnailIdsAsync(ev.Id, Arg.Any<CancellationToken>())
+            .Returns([sharedActivityThumbnailId, sharedActivityThumbnailId]);
 
         var result = await sut.HandleAsync(
             new DeleteEventCommand(ev.Id),
@@ -113,7 +89,7 @@ public sealed class DeleteEventCommandHandlerTests
                         ids,
                         ev.ThumbnailId,
                         sharedActivityThumbnailId,
-                        foreignActivity.ThumbnailId
+                        foreignThumbnailId
                     )
                 ),
                 Arg.Any<CancellationToken>()
@@ -149,11 +125,10 @@ public sealed class DeleteEventCommandHandlerTests
     [Fact]
     public async Task HandleAsyncImagesEmbeddedInDescriptionCleansThemUp()
     {
-        var ev = NewEvent();
         var embeddedId = Guid.NewGuid();
-        ev.Description = $"{{\"img\":\"/api/files/{embeddedId}/content\"}}";
+        var ev = NewEvent(description: $"{{\"img\":\"/api/files/{embeddedId}/content\"}}");
         events.Finds(ev);
-        activities.Query().Returns(Array.Empty<Activity>().AsQueryable());
+        activities.ListThumbnailIdsAsync(ev.Id, Arg.Any<CancellationToken>()).Returns([]);
 
         var result = await sut.HandleAsync(
             new DeleteEventCommand(ev.Id),

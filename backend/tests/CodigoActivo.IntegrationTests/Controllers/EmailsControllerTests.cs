@@ -2,10 +2,11 @@ using System.Net;
 using System.Text;
 using AwesomeAssertions;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Emails.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -29,48 +30,54 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                new FileEntity
-                {
-                    Id = ThumbnailId,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = At,
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<FileEntity>(
+                    new
+                    {
+                        Id = ThumbnailId,
+                        Name = "thumb",
+                        Extension = "png",
+                        UploadedAt = At,
+                        UploadedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
 
             db.Events.Add(
-                new Event
-                {
-                    Id = EventId,
-                    Title = "Jornada de Puertas Abiertas",
-                    Subtitle = "Edición 2026",
-                    Description = "{}",
-                    EventStartsAt = new DateOnly(2026, 5, 1),
-                    EventEndsAt = new DateOnly(2026, 5, 2),
-                    SignupStartsAt = At,
-                    SignupEndsAt = At,
-                    ThumbnailId = ThumbnailId,
-                    CreatedAt = At,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = EventId,
+                        Title = "Jornada de Puertas Abiertas",
+                        Subtitle = "Edición 2026",
+                        Description = "{}",
+                        EventStartsAt = new DateOnly(2026, 5, 1),
+                        EventEndsAt = new DateOnly(2026, 5, 2),
+                        SignupStartsAt = At,
+                        SignupEndsAt = At,
+                        ThumbnailId = ThumbnailId,
+                        CreatedAt = At,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
 
             db.Activities.Add(
-                new Activity
-                {
-                    Id = ActivityId,
-                    Title = "Taller",
-                    Description = "desc",
-                    Location = "Sala",
-                    ActivityStartsAt = At,
-                    ActivityEndsAt = At.AddHours(2),
-                    EventId = EventId,
-                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                    ThumbnailId = ThumbnailId,
-                    CreatedAt = At,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Activity>(
+                    new
+                    {
+                        Id = ActivityId,
+                        Title = "Taller",
+                        Description = "desc",
+                        Location = "Sala",
+                        ActivityStartsAt = At,
+                        ActivityEndsAt = At.AddHours(2),
+                        EventId = EventId,
+                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        ThumbnailId = ThumbnailId,
+                        CreatedAt = At,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
 
             db.ActivityUserRoleAssignments.AddRange(
@@ -88,14 +95,16 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
 
     private static ActivityUserRoleAssignment Assignment(Guid userId, Guid statusId)
     {
-        return new()
-        {
-            ActivityId = ActivityId,
-            UserId = userId,
-            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-            AssignmentStatusId = statusId,
-            CreatedAt = At,
-        };
+        return Persisted.As<ActivityUserRoleAssignment>(
+            new
+            {
+                ActivityId = ActivityId,
+                UserId = userId,
+                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                AssignmentStatusId = statusId,
+                CreatedAt = At,
+            }
+        );
     }
 
     private static async Task<SendEmailResultResponse> ReadResultAsync(HttpResponseMessage response)

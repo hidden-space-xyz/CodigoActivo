@@ -1,4 +1,5 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,26 +27,26 @@ public class ActivityUserRoleAssignmentConfiguration
         builder.HasIndex(x => new { x.UserId, x.ActivityId }).IsUnique();
 
         builder
-            .HasOne(x => x.User)
-            .WithMany(u => u.Assignments)
+            .HasOne<User>()
+            .WithMany()
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasOne(x => x.Activity)
+            .HasOne<Activity>()
             .WithMany(a => a.Assignments)
             .HasForeignKey(x => x.ActivityId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasOne(x => x.ActivityRoleType)
-            .WithMany(t => t.Assignments)
+            .HasOne<ActivityRoleType>()
+            .WithMany()
             .HasForeignKey(x => x.ActivityRoleTypeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne(x => x.AssignmentStatus)
-            .WithMany(s => s.Assignments)
+            .HasOne<AssignmentStatusType>()
+            .WithMany()
             .HasForeignKey(x => x.AssignmentStatusId)
             .OnDelete(DeleteBehavior.Restrict);
     }

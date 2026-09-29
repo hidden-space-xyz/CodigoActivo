@@ -1,4 +1,6 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -25,13 +27,13 @@ public class ResourceConfiguration : IEntityTypeConfiguration<Resource>
         builder.HasIndex(r => r.CreatedAt);
 
         builder
-            .HasOne(r => r.ResourceType)
-            .WithMany(t => t.Resources)
+            .HasOne<ResourceType>()
+            .WithMany()
             .HasForeignKey(r => r.ResourceTypeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne(r => r.Thumbnail)
+            .HasOne<FileEntity>()
             .WithMany()
             .HasForeignKey(r => r.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

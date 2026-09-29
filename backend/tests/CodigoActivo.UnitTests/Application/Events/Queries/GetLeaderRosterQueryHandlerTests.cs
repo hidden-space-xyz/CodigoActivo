@@ -1,12 +1,10 @@
 using System.Text.Json;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Events.Queries;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Events.Queries;
@@ -23,49 +21,56 @@ public sealed class GetLeaderRosterQueryHandlerTests
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset SignedUp = new(2026, 6, 1, 9, 30, 0, TimeSpan.Zero);
 
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly FakeReadStore store = new();
     private readonly TestClock clock = new(Now, new DateOnly(2026, 7, 4));
-    private readonly User caller = NewUser("Marta");
+    private readonly UserRow caller = NewUser("Marta");
     private readonly GetLeaderRosterQueryHandler sut;
 
     public GetLeaderRosterQueryHandlerTests()
     {
-        sut = new GetLeaderRosterQueryHandler(activities, new FakeQueryExecutor(), clock);
+        sut = new GetLeaderRosterQueryHandler(store, new FakeQueryExecutor(), clock);
     }
 
-    private static User NewUser(string firstName, User? guardian = null)
+    private static UserRow NewUser(string firstName, UserRow? guardian = null)
     {
-        var user = new User
+        if (guardian is not null)
+        {
+            return NewDependent(firstName, guardian, new DateOnly(2015, 5, 5));
+        }
+
+        return new UserRow
+        {
+            Id = Guid.NewGuid(),
+            FirstName = firstName,
+            LastName = firstName + " Apellido",
+            Email = firstName.ToLowerInvariant() + "@test.local",
+            Phone = "600-" + firstName,
+            SecondaryPhone = "699-" + firstName,
+            NationalId = "DNI-" + firstName,
+        };
+    }
+
+    private static UserRow NewDependent(string firstName, UserRow guardian, DateOnly? birthDate)
+    {
+        return new UserRow
         {
             Id = Guid.NewGuid(),
             FirstName = firstName,
             LastName = firstName + " Apellido",
             Parent = guardian,
-            ParentId = guardian?.Id,
+            ParentId = guardian.Id,
+            BirthDate = birthDate,
         };
-        if (guardian is null)
-        {
-            user.Email = firstName.ToLowerInvariant() + "@test.local";
-            user.Phone = "600-" + firstName;
-            user.SecondaryPhone = "699-" + firstName;
-            user.NationalId = "DNI-" + firstName;
-        }
-        else
-        {
-            user.BirthDate = new DateOnly(2015, 5, 5);
-        }
-
-        return user;
     }
 
-    private static Activity NewActivity(
+    private static ActivityRow NewActivity(
         string title,
         DateTimeOffset? startsAt = null,
         Guid? eventId = null
     )
     {
         var start = startsAt ?? Now.AddDays(6);
-        return new Activity
+        return new ActivityRow
         {
             Id = Guid.NewGuid(),
             Title = title,
@@ -77,22 +82,22 @@ public sealed class GetLeaderRosterQueryHandlerTests
         };
     }
 
-    private static ActivityUserRoleAssignment Asg(
-        User user,
-        Activity activity,
+    private static AssignmentRow Asg(
+        UserRow user,
+        ActivityRow activity,
         Guid roleTypeId,
         Guid statusId,
         string? roleName = null
     )
     {
-        return new ActivityUserRoleAssignment
+        return new AssignmentRow
         {
             UserId = user.Id,
             User = user,
             ActivityId = activity.Id,
             Activity = activity,
             ActivityRoleTypeId = roleTypeId,
-            ActivityRoleType = new ActivityRoleType
+            ActivityRoleType = new ActivityRoleTypeRow
             {
                 Id = roleTypeId,
                 Name = roleName ?? RoleName(roleTypeId),
@@ -110,9 +115,9 @@ public sealed class GetLeaderRosterQueryHandlerTests
             : "Participante";
     }
 
-    private void HasAssignments(params ActivityUserRoleAssignment[] assignments)
+    private void HasAssignments(params AssignmentRow[] assignments)
     {
-        activities.QueryAssignments().Returns(_ => assignments.AsQueryable());
+        store.Assignments.AddRange(assignments);
     }
 
     private Task<IReadOnlyList<LeaderRosterActivityResponse>> HandleAsync(Guid? eventId = null)
@@ -161,7 +166,7 @@ public sealed class GetLeaderRosterQueryHandlerTests
         var roster = await HandleAsync();
 
         roster.Should().BeEmpty();
-        activities.Received(1).QueryAssignments();
+        store.ReadsOf<AssignmentRow>().Should().Be(1);
     }
 
     [Fact]
@@ -299,8 +304,7 @@ public sealed class GetLeaderRosterQueryHandlerTests
     public async Task HandleAsyncDependentWithoutBirthDateHasNoAge()
     {
         var activity = NewActivity("Taller");
-        var child = NewUser("Nora", NewUser("Gabriela"));
-        child.BirthDate = null;
+        var child = NewDependent("Nora", NewUser("Gabriela"), birthDate: null);
         HasAssignments(
             Asg(caller, activity, Leader, Confirmed),
             Asg(child, activity, Participant, Confirmed)
@@ -318,8 +322,7 @@ public sealed class GetLeaderRosterQueryHandlerTests
             "Taller",
             new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero)
         );
-        var child = NewUser("Nora", NewUser("Gabriela"));
-        child.BirthDate = new DateOnly(2012, 7, 8);
+        var child = NewDependent("Nora", NewUser("Gabriela"), new DateOnly(2012, 7, 8));
         HasAssignments(
             Asg(caller, activity, Leader, Confirmed),
             Asg(child, activity, Participant, Confirmed)
@@ -348,8 +351,7 @@ public sealed class GetLeaderRosterQueryHandlerTests
             "Taller",
             new DateTimeOffset(2026, 7, 7, 23, 0, 0, TimeSpan.Zero)
         );
-        var child = NewUser("Nora", NewUser("Gabriela"));
-        child.BirthDate = new DateOnly(2012, 7, 8);
+        var child = NewDependent("Nora", NewUser("Gabriela"), new DateOnly(2012, 7, 8));
         HasAssignments(
             Asg(caller, activity, Leader, Confirmed),
             Asg(child, activity, Participant, Confirmed)

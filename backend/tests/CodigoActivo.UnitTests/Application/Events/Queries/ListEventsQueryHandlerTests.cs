@@ -1,10 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Events.Queries;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
 
@@ -12,19 +9,19 @@ namespace CodigoActivo.UnitTests.Application.Events.Queries;
 
 public sealed class ListEventsQueryHandlerTests
 {
-    private readonly IEventRepository events = Substitute.For<IEventRepository>();
+    private readonly FakeReadStore store = new();
     private readonly TestClock clock = new();
     private readonly ListEventsQueryHandler sut;
 
     public ListEventsQueryHandlerTests()
     {
-        sut = new ListEventsQueryHandler(events, new FakeQueryExecutor(), clock);
+        sut = new ListEventsQueryHandler(store, new FakeQueryExecutor(), clock);
     }
 
     [Fact]
     public async Task HandleAsyncNoScopeProjectsAndPagesAll()
     {
-        events.HasEvents(NewEvent("A"), NewEvent("B"));
+        store.Events.AddRange([NewEventRow("A"), NewEventRow("B")]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Page = 1, PageSize = 10 }),
@@ -45,10 +42,14 @@ public sealed class ListEventsQueryHandlerTests
     )
     {
         clock.Today = new DateOnly(2026, 7, 4);
-        events.HasEvents(
-            NewEvent("Past", starts: new DateOnly(2026, 1, 1), ends: new DateOnly(2026, 1, 2)),
-            NewEvent("Upcoming", starts: new DateOnly(2026, 8, 1), ends: new DateOnly(2026, 8, 2))
-        );
+        store.Events.AddRange([
+            NewEventRow("Past", starts: new DateOnly(2026, 1, 1), ends: new DateOnly(2026, 1, 2)),
+            NewEventRow(
+                "Upcoming",
+                starts: new DateOnly(2026, 8, 1),
+                ends: new DateOnly(2026, 8, 2)
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Scope = scope }),
@@ -61,10 +62,10 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncYearFilterKeepsMatchingYear()
     {
-        events.HasEvents(
-            NewEvent("Y2025", starts: new DateOnly(2025, 5, 1), ends: new DateOnly(2025, 5, 2)),
-            NewEvent("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2))
-        );
+        store.Events.AddRange([
+            NewEventRow("Y2025", starts: new DateOnly(2025, 5, 1), ends: new DateOnly(2025, 5, 2)),
+            NewEventRow("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2)),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Year = 2025 }),
@@ -77,9 +78,9 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncYearOutOfRangeReturnsEmpty()
     {
-        events.HasEvents(
-            NewEvent("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2))
-        );
+        store.Events.AddRange([
+            NewEventRow("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2)),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Year = 0 }),
@@ -93,10 +94,14 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncYearMaximumSupportedReturnsEventsOfYear9999()
     {
-        events.HasEvents(
-            NewEvent("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2)),
-            NewEvent("Y9999", starts: new DateOnly(9999, 6, 15), ends: new DateOnly(9999, 6, 16))
-        );
+        store.Events.AddRange([
+            NewEventRow("Y2026", starts: new DateOnly(2026, 5, 1), ends: new DateOnly(2026, 5, 2)),
+            NewEventRow(
+                "Y9999",
+                starts: new DateOnly(9999, 6, 15),
+                ends: new DateOnly(9999, 6, 16)
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Year = 9999 }),
@@ -110,10 +115,10 @@ public sealed class ListEventsQueryHandlerTests
     public async Task HandleAsyncCategoryTypeIdFilterKeepsEventsWithMatchingCategory()
     {
         var categoryId = Guid.NewGuid();
-        events.HasEvents(
-            WithCategory(NewEvent("Con"), categoryId, "Talleres"),
-            WithCategory(NewEvent("Sin"), Guid.NewGuid(), "Charlas")
-        );
+        store.Events.AddRange([
+            WithCategory(NewEventRow("Con"), categoryId, "Talleres"),
+            WithCategory(NewEventRow("Sin"), Guid.NewGuid(), "Charlas"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { CategoryTypeId = categoryId }),
@@ -126,12 +131,24 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEventDateRangeFilterKeepsEventsOverlappingRange()
     {
-        events.HasEvents(
-            NewEvent("Antes", starts: new DateOnly(2026, 3, 1), ends: new DateOnly(2026, 3, 2)),
-            NewEvent("Solapa", starts: new DateOnly(2026, 4, 28), ends: new DateOnly(2026, 5, 2)),
-            NewEvent("Dentro", starts: new DateOnly(2026, 5, 10), ends: new DateOnly(2026, 5, 11)),
-            NewEvent("Despues", starts: new DateOnly(2026, 6, 1), ends: new DateOnly(2026, 6, 2))
-        );
+        store.Events.AddRange([
+            NewEventRow("Antes", starts: new DateOnly(2026, 3, 1), ends: new DateOnly(2026, 3, 2)),
+            NewEventRow(
+                "Solapa",
+                starts: new DateOnly(2026, 4, 28),
+                ends: new DateOnly(2026, 5, 2)
+            ),
+            NewEventRow(
+                "Dentro",
+                starts: new DateOnly(2026, 5, 10),
+                ends: new DateOnly(2026, 5, 11)
+            ),
+            NewEventRow(
+                "Despues",
+                starts: new DateOnly(2026, 6, 1),
+                ends: new DateOnly(2026, 6, 2)
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(
@@ -156,13 +173,16 @@ public sealed class ListEventsQueryHandlerTests
             "UTC+02",
             "UTC+02"
         );
-        events.HasEvents(
-            NewEvent(
+        store.Events.AddRange([
+            NewEventRow(
                 "EnLimite",
                 signupEnd: new DateTimeOffset(2026, 7, 19, 23, 0, 0, TimeSpan.Zero)
             ),
-            NewEvent("Cerrado", signupEnd: new DateTimeOffset(2026, 7, 19, 21, 0, 0, TimeSpan.Zero))
-        );
+            NewEventRow(
+                "Cerrado",
+                signupEnd: new DateTimeOffset(2026, 7, 19, 21, 0, 0, TimeSpan.Zero)
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { SignupFrom = new DateOnly(2026, 7, 20) }),
@@ -175,13 +195,16 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSignupToFilterExcludesSignupsStartingAfterDayEnd()
     {
-        events.HasEvents(
-            NewEvent(
+        store.Events.AddRange([
+            NewEventRow(
                 "Abierto",
                 signupStart: new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero)
             ),
-            NewEvent("Futuro", signupStart: new DateTimeOffset(2026, 7, 11, 0, 0, 0, TimeSpan.Zero))
-        );
+            NewEventRow(
+                "Futuro",
+                signupStart: new DateTimeOffset(2026, 7, 11, 0, 0, 0, TimeSpan.Zero)
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { SignupTo = new DateOnly(2026, 7, 10) }),
@@ -194,17 +217,20 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortBySignupStartsAtOrdersBySignupStart()
     {
-        events.HasEvents(
-            NewEvent(
+        store.Events.AddRange([
+            NewEventRow(
                 "Tercero",
                 signupStart: new DateTimeOffset(2026, 7, 3, 0, 0, 0, TimeSpan.Zero)
             ),
-            NewEvent(
+            NewEventRow(
                 "Primero",
                 signupStart: new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero)
             ),
-            NewEvent("Segundo", signupStart: new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero))
-        );
+            NewEventRow(
+                "Segundo",
+                signupStart: new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero)
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Sort = "signupStartsAt" }),
@@ -217,11 +243,20 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortBySignupEndsAtDescendingOrdersBySignupEndDescending()
     {
-        events.HasEvents(
-            NewEvent("Medio", signupEnd: new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)),
-            NewEvent("Ultimo", signupEnd: new DateTimeOffset(2026, 7, 25, 0, 0, 0, TimeSpan.Zero)),
-            NewEvent("Primero", signupEnd: new DateTimeOffset(2026, 7, 15, 0, 0, 0, TimeSpan.Zero))
-        );
+        store.Events.AddRange([
+            NewEventRow(
+                "Medio",
+                signupEnd: new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)
+            ),
+            NewEventRow(
+                "Ultimo",
+                signupEnd: new DateTimeOffset(2026, 7, 25, 0, 0, 0, TimeSpan.Zero)
+            ),
+            NewEventRow(
+                "Primero",
+                signupEnd: new DateTimeOffset(2026, 7, 15, 0, 0, 0, TimeSpan.Zero)
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Sort = "-signupEndsAt" }),
@@ -234,11 +269,11 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByCategoriesOrdersByMinimumCategoryName()
     {
-        var second = WithCategory(NewEvent("Segundo"), Guid.NewGuid(), "Charlas");
+        var second = WithCategory(NewEventRow("Segundo"), Guid.NewGuid(), "Charlas");
         WithCategory(second, Guid.NewGuid(), "Zumba");
-        var first = WithCategory(NewEvent("Primero"), Guid.NewGuid(), "Ajedrez");
-        var third = WithCategory(NewEvent("Tercero"), Guid.NewGuid(), "Mercadillo");
-        events.HasEvents(second, first, third);
+        var first = WithCategory(NewEventRow("Primero"), Guid.NewGuid(), "Ajedrez");
+        var third = WithCategory(NewEventRow("Tercero"), Guid.NewGuid(), "Mercadillo");
+        store.Events.AddRange([second, first, third]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Sort = "categories" }),
@@ -251,7 +286,10 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncFeaturedFilterKeepsFeaturedOnly()
     {
-        events.HasEvents(NewEvent("Plain", featured: false), NewEvent("Star", featured: true));
+        store.Events.AddRange([
+            NewEventRow("Plain", featured: false),
+            NewEventRow("Star", featured: true),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Featured = true }),
@@ -264,7 +302,7 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncTitleSearchIsAccentAndCaseInsensitive()
     {
-        events.HasEvents(NewEvent("Festival Ávila"), NewEvent("Concierto"));
+        store.Events.AddRange([NewEventRow("Festival Ávila"), NewEventRow("Concierto")]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Title = "avila" }),
@@ -277,10 +315,10 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSubtitleSearchMatchesSubstring()
     {
-        events.HasEvents(
-            NewEvent("A", subtitle: "Talleres de robótica"),
-            NewEvent("B", subtitle: "Charlas")
-        );
+        store.Events.AddRange([
+            NewEventRow("A", subtitle: "Talleres de robótica"),
+            NewEventRow("B", subtitle: "Charlas"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Subtitle = "robotica" }),
@@ -293,11 +331,11 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSearchMatchesTitleOrSubtitle()
     {
-        events.HasEvents(
-            NewEvent("Robótica creativa", subtitle: "Taller"),
-            NewEvent("Campus", subtitle: "Talleres de robótica"),
-            NewEvent("Ajedrez", subtitle: "Torneo")
-        );
+        store.Events.AddRange([
+            NewEventRow("Robótica creativa", subtitle: "Taller"),
+            NewEventRow("Campus", subtitle: "Talleres de robótica"),
+            NewEventRow("Ajedrez", subtitle: "Torneo"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Search = " ROBOTICA " }),
@@ -311,9 +349,9 @@ public sealed class ListEventsQueryHandlerTests
     public async Task HandleAsyncSearchCombinesWithYearAndCategoryFilters()
     {
         var categoryId = Guid.NewGuid();
-        events.HasEvents(
+        store.Events.AddRange([
             WithCategory(
-                NewEvent(
+                NewEventRow(
                     "Robótica 2025",
                     starts: new DateOnly(2025, 5, 1),
                     ends: new DateOnly(2025, 5, 2)
@@ -322,7 +360,7 @@ public sealed class ListEventsQueryHandlerTests
                 "Talleres"
             ),
             WithCategory(
-                NewEvent(
+                NewEventRow(
                     "Robótica 2024",
                     starts: new DateOnly(2024, 5, 1),
                     ends: new DateOnly(2024, 5, 2)
@@ -331,15 +369,15 @@ public sealed class ListEventsQueryHandlerTests
                 "Talleres"
             ),
             WithCategory(
-                NewEvent(
+                NewEventRow(
                     "Robótica charla",
                     starts: new DateOnly(2025, 6, 1),
                     ends: new DateOnly(2025, 6, 2)
                 ),
                 Guid.NewGuid(),
                 "Charlas"
-            )
-        );
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(
@@ -359,7 +397,7 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncDescendingTitleSortOrdersResults()
     {
-        events.HasEvents(NewEvent("Alpha"), NewEvent("Zeta"), NewEvent("Mint"));
+        store.Events.AddRange([NewEventRow("Alpha"), NewEventRow("Zeta"), NewEventRow("Mint")]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(new EventListQuery { Sort = "-title" }),
@@ -372,7 +410,7 @@ public sealed class ListEventsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSecondPageSkipsFirstPageItems()
     {
-        events.HasEvents(NewEvent("Alpha"), NewEvent("Mint"), NewEvent("Zeta"));
+        store.Events.AddRange([NewEventRow("Alpha"), NewEventRow("Mint"), NewEventRow("Zeta")]);
 
         var result = await sut.HandleAsync(
             new ListEventsQuery(

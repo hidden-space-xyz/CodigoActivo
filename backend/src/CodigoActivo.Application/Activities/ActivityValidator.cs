@@ -1,24 +1,27 @@
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Activities;
 
 /// <summary>
-/// Validates activity input before it is processed.
+/// Validates activity input before it is processed: the rules of the schedule and the role
+/// capacities belong to the domain, and this collaborator adds the checks that need other
+/// aggregates (the event, the thumbnail and the catalogs).
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
-/// <param name="modalityTypes">Repository used to persist and retrieve modality types.</param>
-/// <param name="roleTypes">Repository used to persist and retrieve role types.</param>
-/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="readStore">Read side used to check the modality and role catalogs.</param>
+/// <param name="executor">Executor of the read-side queries.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ActivityValidator(
     IEventRepository events,
     IFileRepository files,
-    IActivityModalityTypeRepository modalityTypes,
-    IActivityRoleTypeRepository roleTypes,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 )
@@ -33,152 +36,73 @@ public sealed class ActivityValidator(
         CancellationToken ct
     )
     {
-        var eventDates = await GetEventDatesAsync(eventId, ct);
-        if (eventDates is null)
+        var ev = await events.GetByIdAsync(eventId, ct);
+        if (ev is null)
         {
             return Error.NotFound(ErrorCode.EventNotFound);
         }
 
-        var schedule = ValidateActivitySchedule(eventDates, startsAt, endsAt);
+        var schedule = ActivitySchedule.Create(
+            startsAt,
+            endsAt,
+            ev.EventStartsAt,
+            ev.EventEndsAt,
+            clock.TimeZone
+        );
         if (schedule.IsFailure)
         {
             return schedule.Error!;
         }
 
-        if (!await files.ExistsAsync(f => f.Id == thumbnailId, ct))
+        if (!await files.ExistsAsync(thumbnailId, ct))
         {
-            return Error.BadRequest(ErrorCode.ActivityThumbnailNotFound);
+            return Error.Validation(ErrorCode.ActivityThumbnailNotFound);
         }
 
-        if (!await modalityTypes.ExistsAsync(m => m.Id == modalityTypeId, ct))
+        if (
+            !await executor.AnyAsync(
+                readStore.ActivityModalityTypes.Where(type => type.Id == modalityTypeId),
+                ct
+            )
+        )
         {
-            return Error.BadRequest(ErrorCode.ActivityModalityTypeNotFound);
+            return Error.Validation(ErrorCode.ActivityModalityTypeNotFound);
         }
 
-        var capacities = await ValidateRoleCapacitiesAsync(roleCapacities, ct);
-        if (capacities.Error is { } capacityError)
+        var capacities = RoleCapacityPlan.Create(
+            roleCapacities
+                ?.Select(item => new RoleCapacity(
+                    item.ActivityRoleTypeId,
+                    item.DesiredCount!.Value
+                ))
+                .ToList()
+        );
+        if (capacities.IsFailure)
         {
-            return capacityError;
+            return capacities.Error!;
+        }
+
+        var roleIds = capacities.Value.Items.Select(item => item.ActivityRoleTypeId).ToList();
+        if (
+            roleIds.Count > 0
+            && (
+                await executor.ToListAsync(
+                    readStore
+                        .ActivityRoleTypes.Where(type => roleIds.Contains(type.Id))
+                        .Select(type => type.Id),
+                    ct
+                )
+            ).Count != roleIds.Count
+        )
+        {
+            return Error.Validation(ErrorCode.ActivityRoleTypeNotFound);
         }
 
         return new ValidatedActivity(schedule.Value, capacities.Value);
     }
 
-    internal static void SyncRoleCapacities(Activity activity, List<RoleCapacityItem> desired)
-    {
-        var desiredByRole = desired.ToDictionary(
-            item => item.RoleTypeId,
-            item => item.DesiredCount
-        );
-
-        var removed = activity.RoleCapacities.Where(capacity =>
-            !desiredByRole.ContainsKey(capacity.ActivityRoleTypeId)
-        );
-        foreach (var existing in removed.ToList())
-        {
-            activity.RoleCapacities.Remove(existing);
-        }
-
-        foreach (var (roleTypeId, desiredCount) in desiredByRole)
-        {
-            var existing = activity.RoleCapacities.FirstOrDefault(capacity =>
-                capacity.ActivityRoleTypeId == roleTypeId
-            );
-            if (existing is null)
-            {
-                activity.RoleCapacities.Add(
-                    new ActivityRoleCapacity
-                    {
-                        ActivityId = activity.Id,
-                        ActivityRoleTypeId = roleTypeId,
-                        DesiredCount = desiredCount,
-                    }
-                );
-            }
-            else
-            {
-                existing.DesiredCount = desiredCount;
-            }
-        }
-    }
-
-    private async Task<Result<List<RoleCapacityItem>>> ValidateRoleCapacitiesAsync(
-        IReadOnlyList<ActivityRoleCapacityRequest>? requests,
-        CancellationToken ct
-    )
-    {
-        if (requests is null || requests.Count is 0)
-        {
-            return new List<RoleCapacityItem>();
-        }
-
-        if (requests.Select(item => item.ActivityRoleTypeId).ToHashSet().Count != requests.Count)
-        {
-            return Error.BadRequest(ErrorCode.ActivityRoleCapacityDuplicated);
-        }
-
-        var roleIds = requests.Select(item => item.ActivityRoleTypeId).ToList();
-        var knownCount = await roleTypes.CountAsync(role => roleIds.Contains(role.Id), ct);
-        return knownCount != roleIds.Count
-            ? (Result<List<RoleCapacityItem>>)Error.BadRequest(ErrorCode.ActivityRoleTypeNotFound)
-            : (Result<List<RoleCapacityItem>>)
-                requests
-                    .Select(item => new RoleCapacityItem(
-                        item.ActivityRoleTypeId,
-                        item.DesiredCount!.Value
-                    ))
-                    .ToList();
-    }
-
-    private Task<EventDates?> GetEventDatesAsync(Guid eventId, CancellationToken ct)
-    {
-        return executor.FirstOrDefaultAsync(
-            events
-                .Query()
-                .Where(e => e.Id == eventId)
-                .Select(e => new EventDates(e.EventStartsAt, e.EventEndsAt)),
-            ct
-        );
-    }
-
-    private Result<ActivitySchedule> ValidateActivitySchedule(
-        EventDates eventDates,
-        DateTimeOffset? startsAt,
-        DateTimeOffset? endsAt
-    )
-    {
-        if (startsAt is not { } start || endsAt is not { } end)
-        {
-            return Error.BadRequest(ErrorCode.ActivityScheduleRequired);
-        }
-
-        if (end <= start)
-        {
-            return Error.BadRequest(ErrorCode.ActivityScheduleInvalidRange);
-        }
-
-        var startDate = DateOnly.FromDateTime(
-            TimeZoneInfo.ConvertTime(start, clock.TimeZone).DateTime
-        );
-        var endDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(end, clock.TimeZone).DateTime);
-        return startDate < eventDates.StartsAt || endDate > eventDates.EndsAt
-            ? (Result<ActivitySchedule>)
-                Error.BadRequest(ErrorCode.ActivityScheduleOutsideEventRange)
-            : (Result<ActivitySchedule>)
-                new ActivitySchedule(start.ToUniversalTime(), end.ToUniversalTime());
-    }
-
-    internal readonly record struct ActivitySchedule(
-        DateTimeOffset StartsAt,
-        DateTimeOffset EndsAt
-    );
-
     internal readonly record struct ValidatedActivity(
         ActivitySchedule Schedule,
-        List<RoleCapacityItem> Capacities
+        RoleCapacityPlan Capacities
     );
-
-    internal readonly record struct RoleCapacityItem(Guid RoleTypeId, int DesiredCount);
-
-    private sealed record EventDates(DateOnly StartsAt, DateOnly EndsAt);
 }

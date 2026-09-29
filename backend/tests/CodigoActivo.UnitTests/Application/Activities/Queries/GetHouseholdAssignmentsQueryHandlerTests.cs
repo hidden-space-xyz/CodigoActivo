@@ -1,9 +1,7 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
 
@@ -11,15 +9,15 @@ namespace CodigoActivo.UnitTests.Application.Activities.Queries;
 
 public sealed class GetHouseholdAssignmentsQueryHandlerTests
 {
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetHouseholdAssignmentsQueryHandler sut;
 
     public GetHouseholdAssignmentsQueryHandlerTests()
     {
-        sut = new GetHouseholdAssignmentsQueryHandler(activities, new FakeQueryExecutor());
+        sut = new GetHouseholdAssignmentsQueryHandler(store, new FakeQueryExecutor());
     }
 
-    private static User HouseholdUser(
+    private static UserRow HouseholdUser(
         Guid id,
         string firstName,
         string lastName,
@@ -35,26 +33,30 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
         };
     }
 
-    private static ActivityUserRoleAssignment HouseholdAssignment(
-        User user,
+    private static AssignmentRow HouseholdAssignment(
+        UserRow user,
         Guid eventId,
         int startHour = 10,
         string roleName = "Participante",
         string statusName = "Solicitado"
     )
     {
-        var activity = OverlapActivity(Guid.NewGuid(), startHour, startHour + 1);
-        activity.EventId = eventId;
-        return new ActivityUserRoleAssignment
+        var activity = OverlapActivityRow(
+            Guid.NewGuid(),
+            startHour,
+            startHour + 1,
+            eventId: eventId
+        );
+        return new AssignmentRow
         {
             UserId = user.Id,
             User = user,
             ActivityId = activity.Id,
             Activity = activity,
             ActivityRoleTypeId = Guid.NewGuid(),
-            ActivityRoleType = new ActivityRoleType { Name = roleName, Description = "d" },
+            ActivityRoleType = new ActivityRoleTypeRow { Name = roleName, Description = "d" },
             AssignmentStatusId = Guid.NewGuid(),
-            AssignmentStatus = new AssignmentStatusType
+            AssignmentStatus = new AssignmentStatusTypeRow
             {
                 Description = "Descripción de prueba",
                 Name = statusName,
@@ -70,10 +72,10 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
         var eventId = Guid.NewGuid();
         var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
         var child = HouseholdUser(Guid.NewGuid(), "Ana", "Kid", actingUserId);
-        activities.HasAssignments(
+        store.Assignments.AddRange([
             HouseholdAssignment(parent, eventId, roleName: "Líder", statusName: "Confirmado"),
-            HouseholdAssignment(child, eventId)
-        );
+            HouseholdAssignment(child, eventId),
+        ]);
 
         var result = await sut.HandleAsync(
             new GetHouseholdAssignmentsQuery(actingUserId, eventId),
@@ -100,7 +102,7 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
         var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
         var late = HouseholdAssignment(parent, eventId, startHour: 15);
         var early = HouseholdAssignment(parent, eventId, startHour: 9);
-        activities.HasAssignments(late, early);
+        store.Assignments.AddRange([late, early]);
 
         var result = await sut.HandleAsync(
             new GetHouseholdAssignmentsQuery(actingUserId, eventId),
@@ -118,11 +120,11 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
         var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
         var stranger = HouseholdUser(Guid.NewGuid(), "Bob", "Stranger");
         var mine = HouseholdAssignment(parent, eventId);
-        activities.HasAssignments(
+        store.Assignments.AddRange([
             mine,
             HouseholdAssignment(parent, Guid.NewGuid()),
-            HouseholdAssignment(stranger, eventId)
-        );
+            HouseholdAssignment(stranger, eventId),
+        ]);
 
         var result = await sut.HandleAsync(
             new GetHouseholdAssignmentsQuery(actingUserId, eventId),

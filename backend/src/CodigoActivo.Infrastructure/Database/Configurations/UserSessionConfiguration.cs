@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -23,7 +23,7 @@ public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSess
         builder.HasIndex(s => s.UserId);
 
         builder
-            .HasOne(s => s.User)
+            .HasOne<User>()
             .WithMany()
             .HasForeignKey(s => s.UserId)
             .OnDelete(DeleteBehavior.Cascade);

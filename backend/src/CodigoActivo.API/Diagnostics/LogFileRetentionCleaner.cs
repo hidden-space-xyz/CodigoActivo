@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using CodigoActivo.API.Configuration;
-using CodigoActivo.Domain.Common;
+using CodigoActivo.Application.Abstractions.Time;
 
 namespace CodigoActivo.API.Diagnostics;
 

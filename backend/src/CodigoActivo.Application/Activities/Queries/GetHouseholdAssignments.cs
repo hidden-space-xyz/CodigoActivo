@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -16,10 +15,10 @@ public sealed record GetHouseholdAssignmentsQuery(Guid ActingUserId, Guid EventI
 /// <summary>
 /// Executes the query to retrieve household assignments.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class GetHouseholdAssignmentsQueryHandler(
-    IActivityRepository activities,
+    IReadStore readStore,
     IQueryExecutor executor
 ) : IQueryHandler<GetHouseholdAssignmentsQuery, IReadOnlyList<HouseholdMemberAssignmentResponse>>
 {
@@ -35,9 +34,8 @@ public sealed class GetHouseholdAssignmentsQueryHandler(
     )
     {
         return await executor.ToListAsync(
-            activities
-                .QueryAssignments()
-                .Where(x =>
+            readStore
+                .Assignments.Where(x =>
                     x.Activity.EventId == query.EventId
                     && (x.UserId == query.ActingUserId || x.User.ParentId == query.ActingUserId)
                 )

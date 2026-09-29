@@ -1,11 +1,12 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
@@ -23,7 +24,7 @@ public sealed record AssignActivityCommand(
     Guid ActingUserId,
     AssignRequest Request,
     bool IsAdmin
-) : ICommand<Result<AssignmentResponse>>;
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to assign activity.
@@ -32,8 +33,6 @@ public sealed record AssignActivityCommand(
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="signupGate">The signup gate value.</param>
 /// <param name="termsGate">The terms gate value.</param>
-/// <param name="statusTypes">Handler used to list assignment status types.</param>
-/// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
@@ -42,26 +41,30 @@ public sealed class AssignActivityCommandHandler(
     IUserRepository users,
     SignupGate signupGate,
     TermsGate termsGate,
-    ListAssignmentStatusTypesQueryHandler statusTypes,
-    IQueryExecutor executor,
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator
-) : ICommandHandler<AssignActivityCommand, Result<AssignmentResponse>>
+) : ICommandHandler<AssignActivityCommand, Result>
 {
     /// <summary>
     /// Handles the request to assign activity.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an assignment on success, or an application error on failure.</returns>
-    public async Task<Result<AssignmentResponse>> HandleAsync(
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    public async Task<Result> HandleAsync(
         AssignActivityCommand command,
         CancellationToken ct = default
     )
     {
+        var activity = await activities.GetByIdAsync(command.ActivityId, ct);
+        if (activity is null)
+        {
+            return Error.NotFound(ErrorCode.ActivityNotFound);
+        }
+
         var signup = await signupGate.EnsureSignupOpenAsync(
-            command.ActivityId,
+            activity,
             [command.UserId],
             command.IsAdmin,
             ct
@@ -71,21 +74,18 @@ public sealed class AssignActivityCommandHandler(
             return signup.Error!;
         }
 
-        var userTypeId = await executor.FirstOrDefaultAsync(
-            users.Query().Where(u => u.Id == command.UserId).Select(u => (Guid?)u.UserTypeId),
-            ct
-        );
-        if (userTypeId is null)
+        var user = await users.GetByIdAsync(command.UserId, ct);
+        if (user is null)
         {
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        if (!SignupPolicy.IsSignupRoleAllowed(userTypeId.Value, command.Request.ActivityRoleTypeId))
+        if (!SignupRoles.Allows(user.UserTypeId, command.Request.ActivityRoleTypeId))
         {
-            return Error.BadRequest(ErrorCode.ActivityRoleNotAllowed);
+            return Error.Validation(ErrorCode.ActivityRoleNotAllowed);
         }
 
-        if (await activities.AssignmentExistsAsync(command.UserId, command.ActivityId, ct))
+        if (activity.AssignmentOf(command.UserId) is not null)
         {
             return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
         }
@@ -93,7 +93,7 @@ public sealed class AssignActivityCommandHandler(
         if (!command.IsAdmin || command.ActingUserId == command.UserId)
         {
             var terms = await termsGate.EnsureDecidedAsync(
-                command.ActivityId,
+                activity.EventId,
                 command.ActingUserId,
                 command.Request.TermsDecisions,
                 ct
@@ -104,15 +104,16 @@ public sealed class AssignActivityCommandHandler(
             }
         }
 
-        var assignment = new ActivityUserRoleAssignment
+        var assigned = activity.RequestAssignment(
+            command.UserId,
+            command.Request.ActivityRoleTypeId,
+            clock.UtcNow
+        );
+        if (assigned.IsFailure)
         {
-            UserId = command.UserId,
-            ActivityId = command.ActivityId,
-            ActivityRoleTypeId = command.Request.ActivityRoleTypeId,
-            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
-            CreatedAt = clock.UtcNow,
-        };
-        await activities.AddAssignmentAsync(assignment, ct);
+            return assigned.Error!;
+        }
+
         try
         {
             await uow.SaveChangesAsync(ct);
@@ -124,25 +125,6 @@ public sealed class AssignActivityCommandHandler(
         }
 
         await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
-
-        var requestedStatus = await GetRequestedStatusAsync(ct);
-        return new AssignmentResponse(
-            command.UserId,
-            command.ActivityId,
-            command.Request.ActivityRoleTypeId,
-            null,
-            requestedStatus
-        );
-    }
-
-    private async Task<AssignmentStatusResponse> GetRequestedStatusAsync(CancellationToken ct)
-    {
-        var status = (
-            await statusTypes.HandleAsync(new ListAssignmentStatusTypesQuery(), ct)
-        ).FirstOrDefault(s => s.Id == SeedIds.AssignmentStatusTypes.Requested);
-        return new AssignmentStatusResponse(
-            SeedIds.AssignmentStatusTypes.Requested,
-            status?.Name ?? string.Empty
-        );
+        return Result.Success();
     }
 }

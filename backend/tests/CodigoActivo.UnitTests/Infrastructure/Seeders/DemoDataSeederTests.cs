@@ -1,8 +1,10 @@
 using System.Text.Json;
 using AwesomeAssertions;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Application.Files;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
@@ -22,6 +24,15 @@ public sealed class DemoDataSeederTests
     {
         graph = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher());
     }
+
+    private List<ActivityUserRoleAssignment> Assignments =>
+        [.. graph.Activities.SelectMany(activity => activity.Assignments)];
+
+    private List<EventTermsDocument> EventTermsDocuments =>
+        [.. graph.Events.SelectMany(ev => ev.TermsDocuments)];
+
+    private List<EventCategory> EventCategories =>
+        [.. graph.Events.SelectMany(ev => ev.Categories)];
 
     [Fact]
     public void BuildGraphAdultsGetARandomThrowawayPasswordThatChangesEveryRun()
@@ -55,7 +66,7 @@ public sealed class DemoDataSeederTests
         graph.Users.Should().HaveCount(25);
         graph.Events.Should().HaveCount(20);
         graph.Activities.Should().HaveCount(100);
-        graph.Assignments.Should().HaveCount(500);
+        Assignments.Should().HaveCount(500);
         graph.Ratings.Should().HaveCount(36);
         graph.News.Should().HaveCount(10);
         graph.Resources.Should().HaveCount(20);
@@ -132,8 +143,8 @@ public sealed class DemoDataSeederTests
         var eventByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
         var eventsById = graph.Events.ToDictionary(e => e.Id);
 
-        graph
-            .Assignments.Should()
+        Assignments
+            .Should()
             .AllSatisfy(assignment =>
             {
                 var ev = eventsById[eventByActivity[assignment.ActivityId]];
@@ -148,15 +159,15 @@ public sealed class DemoDataSeederTests
     {
         var termsDocumentIds = graph.TermsDocuments.Select(t => t.Id).ToHashSet();
         var eventIds = graph.Events.Select(e => e.Id).ToHashSet();
-        var referencedIds = graph.EventTermsDocuments.Select(d => d.TermsDocumentId).ToHashSet();
+        var referencedIds = EventTermsDocuments.Select(d => d.TermsDocumentId).ToHashSet();
 
         graph.TermsDocuments.Select(t => t.Name).Should().OnlyHaveUniqueItems();
-        graph
-            .EventTermsDocuments.Select(d => d.EventId)
+        EventTermsDocuments
+            .Select(d => d.EventId)
             .ToHashSet()
             .Should()
             .BeEquivalentTo(eventIds, "every event links exactly one seeded terms document");
-        graph.EventTermsDocuments.Should().OnlyContain(d => d.IsRequired);
+        EventTermsDocuments.Should().OnlyContain(d => d.IsRequired);
         referencedIds.Should().BeEquivalentTo(termsDocumentIds);
     }
 
@@ -164,12 +175,10 @@ public sealed class DemoDataSeederTests
     public void BuildGraphDefaultEachEventReferencesExistingCategory()
     {
         var categoryIds = graph.CategoryTypes.Select(c => c.Id).ToHashSet();
-        var linkedEventIds = graph.EventCategories.Select(x => x.EventId).ToHashSet();
+        var linkedEventIds = EventCategories.Select(x => x.EventId).ToHashSet();
 
         graph.Events.Should().OnlyContain(ev => linkedEventIds.Contains(ev.Id));
-        graph
-            .EventCategories.Should()
-            .OnlyContain(x => categoryIds.Contains(x.EventCategoryTypeId));
+        EventCategories.Should().OnlyContain(x => categoryIds.Contains(x.EventCategoryTypeId));
     }
 
     [Fact]
@@ -191,7 +200,7 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultEachActivityHasFiveDistinctUsers()
     {
-        var byActivity = graph.Assignments.GroupBy(x => x.ActivityId).ToList();
+        var byActivity = Assignments.GroupBy(x => x.ActivityId).ToList();
 
         byActivity.Should().HaveSameCount(graph.Activities);
         byActivity
@@ -202,7 +211,7 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultEachActivityHasExactlyOneLeader()
     {
-        var byActivity = graph.Assignments.GroupBy(x => x.ActivityId).ToList();
+        var byActivity = Assignments.GroupBy(x => x.ActivityId).ToList();
 
         byActivity
             .Should()
@@ -223,7 +232,7 @@ public sealed class DemoDataSeederTests
             SeedIds.ActivityRoleTypes.Participant,
         };
 
-        graph.Assignments.Should().OnlyContain(x => catalog.Contains(x.ActivityRoleTypeId));
+        Assignments.Should().OnlyContain(x => catalog.Contains(x.ActivityRoleTypeId));
     }
 
     [Fact]
@@ -234,8 +243,8 @@ public sealed class DemoDataSeederTests
             .Select(u => u.Id)
             .ToHashSet();
 
-        var leaders = graph
-            .Assignments.Where(x => x.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader)
+        var leaders = Assignments
+            .Where(x => x.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader)
             .ToList();
 
         leaders.Should().NotBeEmpty();
@@ -247,11 +256,11 @@ public sealed class DemoDataSeederTests
     {
         var userIds = graph.Users.Select(u => u.Id).ToHashSet();
 
-        graph
-            .Assignments.Select(x => (x.UserId, x.ActivityId, x.ActivityRoleTypeId))
+        Assignments
+            .Select(x => (x.UserId, x.ActivityId, x.ActivityRoleTypeId))
             .Should()
             .OnlyHaveUniqueItems();
-        graph.Assignments.Should().OnlyContain(x => userIds.Contains(x.UserId));
+        Assignments.Should().OnlyContain(x => userIds.Contains(x.UserId));
     }
 
     [Fact]
@@ -283,8 +292,8 @@ public sealed class DemoDataSeederTests
     {
         var overSubscribed = graph.Activities.Where(activity =>
             activity.RoleCapacities.Any(capacity =>
-                graph
-                    .Assignments.Where(x =>
+                Assignments
+                    .Where(x =>
                         x.ActivityId == activity.Id
                         && x.ActivityRoleTypeId == capacity.ActivityRoleTypeId
                         && x.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
@@ -335,6 +344,52 @@ public sealed class DemoDataSeederTests
         adults.Select(u => u.NationalId).Should().OnlyHaveUniqueItems();
         adults.Should().Contain(u => u.PromotionalConsent);
         adults.Should().Contain(u => !u.PromotionalConsent);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultAdultsAreVerifiedMembersOrSponsorsThatCanSignIn()
+    {
+        var adults = graph.Users.Where(u => u.ParentId is null).ToList();
+
+        adults.Should().NotBeEmpty();
+        adults
+            .Should()
+            .AllSatisfy(adult =>
+            {
+                adult.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
+                adult.CanSignIn.Should().BeTrue();
+                adult.OtpCodeHash.Should().BeNull();
+                adult.LastLoginAt.Should().NotBeNull().And.BeOnOrBefore(clock.UtcNow);
+            });
+        adults
+            .Select(u => u.UserTypeId)
+            .Distinct()
+            .Should()
+            .BeEquivalentTo([SeedIds.UserTypes.Member, SeedIds.UserTypes.Sponsor]);
+    }
+
+    [Fact]
+    public void BuildGraphAnotherDayChildrenAreStillMinorsOnThatDay()
+    {
+        var later = new TestClock(
+            new DateTimeOffset(2040, 3, 15, 10, 0, 0, TimeSpan.Zero),
+            new DateOnly(2040, 3, 15)
+        );
+
+        var children = DemoDataSeeder
+            .BuildGraph(later, new FakePasswordHasher())
+            .Users.Where(u => u.ParentId is not null)
+            .ToList();
+
+        children.Should().NotBeEmpty();
+        children
+            .Should()
+            .AllSatisfy(child =>
+            {
+                child.BirthDate.Should().NotBeNull();
+                child.BirthDate!.Value.IsMinor(later.Today).Should().BeTrue();
+                child.BirthDate.Value.AgeOn(later.Today).Should().BeInRange(9, 14);
+            });
     }
 
     [Fact]

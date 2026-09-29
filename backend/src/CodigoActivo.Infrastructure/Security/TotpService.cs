@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Security;
+using CodigoActivo.Application.Abstractions.Security;
 using OtpNet;
 
 namespace CodigoActivo.Infrastructure.Security;

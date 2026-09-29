@@ -1,6 +1,5 @@
 using System.Text;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Abstractions.Email;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace CodigoActivo.Infrastructure.Communication;

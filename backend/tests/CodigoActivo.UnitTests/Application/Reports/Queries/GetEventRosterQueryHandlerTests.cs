@@ -1,11 +1,8 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
 
@@ -13,16 +10,15 @@ namespace CodigoActivo.UnitTests.Application.Reports.Queries;
 
 public sealed class GetEventRosterQueryHandlerTests
 {
-    private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetEventRosterQueryHandler sut;
 
     public GetEventRosterQueryHandlerTests()
     {
-        sut = new GetEventRosterQueryHandler(events, activities, new FakeQueryExecutor());
+        sut = new GetEventRosterQueryHandler(store, new FakeQueryExecutor());
     }
 
-    private static Activity RosterActivity(
+    private static ActivityRow RosterActivity(
         string title,
         DateTimeOffset startsAt,
         Guid? eventId = null
@@ -40,23 +36,23 @@ public sealed class GetEventRosterQueryHandlerTests
         };
     }
 
-    private static ActivityUserRoleAssignment RosterAsg(
-        User user,
-        Activity activity,
+    private static AssignmentRow RosterAsg(
+        UserRow user,
+        ActivityRow activity,
         Guid statusId,
         Guid? roleTypeId = null,
         string roleName = "Participante"
     )
     {
         var roleId = roleTypeId ?? SeedIds.ActivityRoleTypes.Participant;
-        return new ActivityUserRoleAssignment
+        return new AssignmentRow
         {
             UserId = user.Id,
             User = user,
             ActivityId = activity.Id,
             Activity = activity,
             ActivityRoleTypeId = roleId,
-            ActivityRoleType = new ActivityRoleType
+            ActivityRoleType = new ActivityRoleTypeRow
             {
                 Description = "Descripción de prueba",
                 Id = roleId,
@@ -69,8 +65,6 @@ public sealed class GetEventRosterQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
-        events.HasEvents();
-
         var result = await sut.HandleAsync(
             new GetEventRosterQuery(QueriedEventId),
             TestContext.Current.CancellationToken
@@ -79,7 +73,7 @@ public sealed class GetEventRosterQueryHandlerTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        activities.DidNotReceive().QueryAssignments();
+        store.ReadsOf<AssignmentRow>().Should().Be(0);
     }
 
     [Fact]
@@ -89,31 +83,33 @@ public sealed class GetEventRosterQueryHandlerTests
         var charla = RosterActivity("Charla", When.AddHours(2));
         var foreignActivity = RosterActivity("Ajena", When, eventId: Guid.NewGuid());
 
-        var parent = NewUser("Marta");
-        var child = NewUser("Zoe", parent);
-        child.Email = null;
-        child.Phone = null;
-        child.BirthDate = new DateOnly(2016, 3, 2);
-        var adult = NewUser("Ada");
-        var requestedUser = NewUser("Rita");
-        var deniedUser = NewUser("Dario");
+        var parent = NewUserRow("Marta");
+        var child = NewUserRow(
+            "Zoe",
+            parent,
+            birthDate: new DateOnly(2016, 3, 2),
+            withContact: false
+        );
+        var adult = NewUserRow("Ada");
+        var requestedUser = NewUserRow("Rita");
+        var deniedUser = NewUserRow("Dario");
 
-        events.HasEvents(
-            new Event
+        store.Events.Add(
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = QueriedEventId,
                 Title = "Feria",
             }
         );
-        activities.HasAssignments(
+        store.Assignments.AddRange([
             RosterAsg(adult, charla, Confirmed),
             RosterAsg(adult, taller, Confirmed),
             RosterAsg(child, taller, Confirmed),
             RosterAsg(requestedUser, taller, Requested),
             RosterAsg(deniedUser, taller, Denied),
-            RosterAsg(adult, foreignActivity, Confirmed)
-        );
+            RosterAsg(adult, foreignActivity, Confirmed),
+        ]);
 
         var result = await sut.HandleAsync(
             new GetEventRosterQuery(QueriedEventId),
@@ -159,30 +155,26 @@ public sealed class GetEventRosterQueryHandlerTests
     {
         var taller = RosterActivity("Taller", When);
 
-        var bruno = NewUser("Bruno");
-        bruno.LastName = "Zeta";
-        var ana = NewUser("Ana");
-        ana.LastName = "Zeta";
-        var zoe = NewUser("Zoe");
-        zoe.LastName = "Alfa";
-        var vera = NewUser("Vera");
-        vera.LastName = "Alfa";
+        var bruno = NewUserRow("Bruno", lastName: "Zeta");
+        var ana = NewUserRow("Ana", lastName: "Zeta");
+        var zoe = NewUserRow("Zoe", lastName: "Alfa");
+        var vera = NewUserRow("Vera", lastName: "Alfa");
 
-        events.HasEvents(
-            new Event
+        store.Events.Add(
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = QueriedEventId,
                 Title = "Feria",
             }
         );
-        activities.HasAssignments(
+        store.Assignments.AddRange([
             RosterAsg(bruno, taller, Confirmed),
             RosterAsg(bruno, taller, Confirmed, SeedIds.ActivityRoleTypes.Leader, "Líder"),
             RosterAsg(vera, taller, Confirmed, SeedIds.ActivityRoleTypes.Volunteer, "Voluntario"),
             RosterAsg(zoe, taller, Confirmed),
-            RosterAsg(ana, taller, Confirmed)
-        );
+            RosterAsg(ana, taller, Confirmed),
+        ]);
 
         var result = await sut.HandleAsync(
             new GetEventRosterQuery(QueriedEventId),
@@ -202,15 +194,14 @@ public sealed class GetEventRosterQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNoConfirmedAssignmentsReturnsEmptyActivities()
     {
-        events.HasEvents(
-            new Event
+        store.Events.Add(
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = QueriedEventId,
                 Title = "Feria",
             }
         );
-        activities.HasAssignments();
 
         var result = await sut.HandleAsync(
             new GetEventRosterQuery(QueriedEventId),

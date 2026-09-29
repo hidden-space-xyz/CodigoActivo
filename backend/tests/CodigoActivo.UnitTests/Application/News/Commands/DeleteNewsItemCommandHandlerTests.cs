@@ -1,9 +1,11 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.News.Commands;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.News;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -50,9 +52,8 @@ public sealed class DeleteNewsItemCommandHandlerTests
     [Fact]
     public async Task HandleAsyncImagesEmbeddedInDescriptionCleansUpAndInvalidatesCache()
     {
-        var newsItem = NewNewsItem();
         var embeddedId = Guid.NewGuid();
-        newsItem.Description = $"{{\"img\":\"/api/files/{embeddedId}/content\"}}";
+        var newsItem = NewNewsItem(description: $"{{\"img\":\"/api/files/{embeddedId}/content\"}}");
         news.Finds(newsItem);
 
         var result = await sut.HandleAsync(

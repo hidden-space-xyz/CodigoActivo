@@ -1,9 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Events.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
 
@@ -11,19 +9,19 @@ namespace CodigoActivo.UnitTests.Application.Events.Queries;
 
 public sealed class GetEventByIdQueryHandlerTests
 {
-    private readonly IEventRepository events = Substitute.For<IEventRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetEventByIdQueryHandler sut;
 
     public GetEventByIdQueryHandlerTests()
     {
-        sut = new GetEventByIdQueryHandler(events, new FakeQueryExecutor());
+        sut = new GetEventByIdQueryHandler(store, new FakeQueryExecutor());
     }
 
     [Fact]
     public async Task HandleAsyncEventExistsReturnsEvent()
     {
-        var ev = NewEvent();
-        events.HasEvents(ev);
+        var ev = NewEventRow();
+        store.Events.Add(ev);
 
         var result = await sut.HandleAsync(
             new GetEventByIdQuery(ev.Id),
@@ -37,8 +35,6 @@ public sealed class GetEventByIdQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
-        events.HasEvents();
-
         var result = await sut.HandleAsync(
             new GetEventByIdQuery(Guid.NewGuid()),
             TestContext.Current.CancellationToken

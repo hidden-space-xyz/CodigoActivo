@@ -1,6 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -12,11 +12,11 @@ public sealed record GetPastEventYearsQuery : IQuery<IReadOnlyList<int>>;
 /// <summary>
 /// Executes the query to retrieve past event years.
 /// </summary>
-/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class GetPastEventYearsQueryHandler(
-    IEventRepository events,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<GetPastEventYearsQuery, IReadOnlyList<int>>
@@ -39,9 +39,8 @@ public sealed class GetPastEventYearsQueryHandler(
     {
         var today = clock.Today;
         return executor.ToListAsync(
-            events
-                .Query()
-                .Where(e => e.EventEndsAt < today)
+            readStore
+                .Events.Where(e => e.EventEndsAt < today)
                 .Select(e => e.EventStartsAt.Year)
                 .Distinct()
                 .OrderByDescending(year => year),

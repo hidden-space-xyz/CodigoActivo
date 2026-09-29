@@ -1,8 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.News.Queries;
 
@@ -15,9 +14,9 @@ public sealed record GetNewsItemByIdQuery(Guid NewsItemId) : IQuery<Result<NewsI
 /// <summary>
 /// Executes the query to retrieve news item by identifier.
 /// </summary>
-/// <param name="news">Repository used to persist and retrieve news items.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetNewsItemByIdQueryHandler(INewsItemRepository news, IQueryExecutor executor)
+public sealed class GetNewsItemByIdQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<GetNewsItemByIdQuery, Result<NewsItemResponse>>
 {
     /// <summary>
@@ -32,7 +31,7 @@ public sealed class GetNewsItemByIdQueryHandler(INewsItemRepository news, IQuery
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            news.Query().Where(a => a.Id == query.NewsItemId).Select(Projections.NewsItem),
+            readStore.News.Where(a => a.Id == query.NewsItemId).Select(NewsProjections.NewsItem),
             ct
         );
         return response is null ? Error.NotFound(ErrorCode.NewsItemNotFound) : response;

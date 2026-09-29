@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Extensions;
+using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Storage;
 
 namespace CodigoActivo.Application.Files.Queries;
 
@@ -18,7 +17,7 @@ public sealed record GetFileContentQuery(Guid FileId) : IQuery<Result<FileConten
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
 public sealed class GetFileContentQueryHandler(
     GetFileByIdQueryHandler getById,
-    ILocalFileSystemRepository storage
+    IFileStorage storage
 ) : IQueryHandler<GetFileContentQuery, Result<FileContent>>
 {
     private const string FallbackContentType = "application/octet-stream";

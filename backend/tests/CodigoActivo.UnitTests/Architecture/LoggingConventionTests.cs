@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Auth;
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Communication;

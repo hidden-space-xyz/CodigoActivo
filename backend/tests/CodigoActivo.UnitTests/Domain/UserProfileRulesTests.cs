@@ -1,8 +1,7 @@
 using System.Globalization;
 using AwesomeAssertions;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
@@ -133,8 +132,8 @@ public sealed class UserProfileRulesTests
         var created = User.CreateIndependent(details, Now);
         var planned = stored.PlanProfileChange(details, guardianId: null, Today);
 
-        created.ShouldFail(ErrorKind.BadRequest, expected);
-        planned.ShouldFail(ErrorKind.BadRequest, expected);
+        created.ShouldFail(ErrorKind.Validation, expected);
+        planned.ShouldFail(ErrorKind.Validation, expected);
     }
 
     [Fact]
@@ -142,7 +141,7 @@ public sealed class UserProfileRulesTests
     {
         var result = User.CreateIndependent(AdultDetails(birthDate: AdultDob), Now);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserBirthDateNotAllowedForAdult);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserBirthDateNotAllowedForAdult);
     }
 
     [Fact]
@@ -203,7 +202,7 @@ public sealed class UserProfileRulesTests
             Now
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, expected);
+        result.ShouldFail(ErrorKind.Validation, expected);
     }
 
     [Fact]
@@ -213,7 +212,7 @@ public sealed class UserProfileRulesTests
 
         var result = User.CreateDependent(dependent, ChildDetails(MinorDob), Today, Now);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentIsMinor);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserParentIsMinor);
     }
 
     [Fact]
@@ -281,9 +280,15 @@ public sealed class UserProfileRulesTests
     public void PlanProfileChangeIndependentAccountWithoutContactGainingOneReplacesIt()
     {
         var account = StoredAdult();
-        account.Email = null;
-        account.Phone = null;
-        account.SecondaryPhone = null;
+        Persisted.Overwrite(
+            account,
+            new
+            {
+                Email = (string?)null,
+                Phone = (string?)null,
+                SecondaryPhone = (string?)null,
+            }
+        );
 
         var change = account.PlanProfileChange(AdultDetails(), null, Today).Value;
 
@@ -302,7 +307,7 @@ public sealed class UserProfileRulesTests
             Today
         );
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserBirthDateNotAllowedForAdult);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserBirthDateNotAllowedForAdult);
     }
 
     [Fact]
@@ -312,7 +317,7 @@ public sealed class UserProfileRulesTests
 
         var result = account.PlanProfileChange(AdultDetails(), Guid.NewGuid(), Today);
 
-        result.ShouldFail(ErrorKind.BadRequest, ErrorCode.UserParentNotAllowedForAdult);
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserParentNotAllowedForAdult);
     }
 
     [Fact]
@@ -371,7 +376,7 @@ public sealed class UserProfileRulesTests
 
         if (expected is { } code)
         {
-            result.ShouldFail(ErrorKind.BadRequest, code);
+            result.ShouldFail(ErrorKind.Validation, code);
             return;
         }
 

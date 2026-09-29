@@ -1,8 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -15,16 +14,10 @@ public sealed record GetEventSummaryQuery(Guid EventId) : IQuery<Result<EventSum
 /// <summary>
 /// Executes the query to retrieve event summary.
 /// </summary>
-/// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="roleTypes">Repository used to persist and retrieve role types.</param>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetEventSummaryQueryHandler(
-    IEventRepository events,
-    IActivityRoleTypeRepository roleTypes,
-    IActivityRepository activities,
-    IQueryExecutor executor
-) : IQueryHandler<GetEventSummaryQuery, Result<EventSummaryResponse>>
+public sealed class GetEventSummaryQueryHandler(IReadStore readStore, IQueryExecutor executor)
+    : IQueryHandler<GetEventSummaryQuery, Result<EventSummaryResponse>>
 {
     /// <summary>
     /// Handles the request to retrieve event summary.
@@ -39,9 +32,8 @@ public sealed class GetEventSummaryQueryHandler(
     {
         var eventId = query.EventId;
         var ev = await executor.FirstOrDefaultAsync(
-            events
-                .Query()
-                .Where(e => e.Id == eventId)
+            readStore
+                .Events.Where(e => e.Id == eventId)
                 .Select(e => new
                 {
                     e.Id,
@@ -58,9 +50,8 @@ public sealed class GetEventSummaryQueryHandler(
         }
 
         var stats = await executor.FirstOrDefaultAsync(
-            activities
-                .QueryAssignments()
-                .Where(a => a.Activity.EventId == eventId)
+            readStore
+                .Assignments.Where(a => a.Activity.EventId == eventId)
                 .GroupBy(a => 1)
                 .Select(g => new
                 {
@@ -80,9 +71,8 @@ public sealed class GetEventSummaryQueryHandler(
         );
 
         var roleTypeBreakdown = await executor.ToListAsync(
-            roleTypes
-                .Query()
-                .OrderBy(role => role.Name)
+            readStore
+                .ActivityRoleTypes.OrderBy(role => role.Name)
                 .Select(role => new EventRoleTypeSummaryResponse(
                     role.Id,
                     role.Name,

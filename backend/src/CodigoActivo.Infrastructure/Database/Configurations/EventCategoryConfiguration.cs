@@ -1,4 +1,5 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -18,14 +19,14 @@ public sealed class EventCategoryConfiguration : IEntityTypeConfiguration<EventC
         builder.HasKey(x => new { x.EventId, x.EventCategoryTypeId });
 
         builder
-            .HasOne(x => x.Event)
+            .HasOne<Event>()
             .WithMany(e => e.Categories)
             .HasForeignKey(x => x.EventId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasOne(x => x.EventCategoryType)
-            .WithMany(t => t.Events)
+            .HasOne<EventCategoryType>()
+            .WithMany()
             .HasForeignKey(x => x.EventCategoryTypeId)
             .OnDelete(DeleteBehavior.Cascade);
     }

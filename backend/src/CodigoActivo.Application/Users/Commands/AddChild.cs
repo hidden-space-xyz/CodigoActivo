@@ -1,10 +1,11 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Users.Queries;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -14,7 +15,7 @@ namespace CodigoActivo.Application.Users.Commands;
 /// <param name="ParentId">Identifier of the parent.</param>
 /// <param name="Request">Validated client request data.</param>
 public sealed record AddChildCommand(Guid ParentId, RegisterMinorRequest Request)
-    : ICommand<Result<UserResponse>>;
+    : ICommand<Result<Guid>>;
 
 /// <summary>
 /// Executes the command to add a child.
@@ -23,29 +24,27 @@ public sealed record AddChildCommand(Guid ParentId, RegisterMinorRequest Request
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
-/// <param name="getById">Handler used to retrieve user by identifier.</param>
 public sealed class AddChildCommandHandler(
     IUserRepository users,
     IClock clock,
     IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator,
-    GetUserByIdQueryHandler getById
-) : ICommandHandler<AddChildCommand, Result<UserResponse>>
+    ICacheInvalidator cacheInvalidator
+) : ICommandHandler<AddChildCommand, Result<Guid>>
 {
     /// <summary>
     /// Handles the request to add a child.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a user on success, or an application error on failure.</returns>
-    public async Task<Result<UserResponse>> HandleAsync(
+    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    public async Task<Result<Guid>> HandleAsync(
         AddChildCommand command,
         CancellationToken ct = default
     )
     {
         var request = command.Request;
 
-        var parent = await users.FindAsync(u => u.Id == command.ParentId, ct);
+        var parent = await users.GetByIdAsync(command.ParentId, ct);
         if (parent is null)
         {
             return Error.NotFound(ErrorCode.ParentUserNotFound);
@@ -71,6 +70,6 @@ public sealed class AddChildCommandHandler(
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
-        return await getById.HandleAsync(new GetUserByIdQuery(child.Value.Id), ct);
+        return child.Value.Id;
     }
 }

@@ -1,9 +1,10 @@
-using System.Linq.Expressions;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
-using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Activities;
 
@@ -39,21 +40,53 @@ internal static class ActivityTestData
         TimeSpan.Zero
     );
 
+    public static readonly Guid RequestedModalityId = SeedIds.ActivityModalityTypes.Presencial;
+
+    private static readonly DateOnly EventStartsAt = new(2026, 7, 1);
+    private static readonly DateOnly EventEndsAt = new(2026, 7, 31);
+    private static readonly DateTimeOffset SignedUpAt = new(2026, 6, 15, 9, 0, 0, TimeSpan.Zero);
+
     public static Event NewEvent(Guid? id = null)
     {
-        return new()
-        {
-            Id = id ?? Guid.NewGuid(),
-            Title = "Feria",
-            Subtitle = "s",
-            EventStartsAt = new DateOnly(2026, 7, 1),
-            EventEndsAt = new DateOnly(2026, 7, 31),
-            SignupStartsAt = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero),
-            SignupEndsAt = new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero),
-        };
+        return Persisted.As<Event>(
+            new
+            {
+                Id = id ?? Guid.NewGuid(),
+                Title = "Feria",
+                Subtitle = "s",
+                EventStartsAt,
+                EventEndsAt,
+                SignupStartsAt = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero),
+                SignupEndsAt = new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero),
+            }
+        );
     }
 
     public static Activity NewActivity(
+        string title = "Taller",
+        Guid? eventId = null,
+        IReadOnlyList<RoleCapacity>? capacities = null
+    )
+    {
+        return Activity.Create(
+            eventId ?? Guid.NewGuid(),
+            new ActivityDetails(title, "{}", "Sala", Guid.NewGuid(), Guid.NewGuid()),
+            ActivitySchedule
+                .Create(
+                    new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
+                    EventStartsAt,
+                    EventEndsAt,
+                    TimeZoneInfo.Utc
+                )
+                .Value,
+            RoleCapacityPlan.Create(capacities).Value,
+            Guid.NewGuid(),
+            new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        );
+    }
+
+    public static ActivityRow NewActivityRow(
         string title = "Taller",
         Guid? id = null,
         Guid? eventId = null,
@@ -64,6 +97,7 @@ internal static class ActivityTestData
         DateTimeOffset? endsAt = null
     )
     {
+        var modalityTypeId = modalityId ?? Guid.NewGuid();
         return new()
         {
             Id = id ?? Guid.NewGuid(),
@@ -73,15 +107,19 @@ internal static class ActivityTestData
             ActivityStartsAt = startsAt ?? new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
             ActivityEndsAt = endsAt ?? new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
             EventId = eventId ?? Guid.NewGuid(),
-            ActivityModalityTypeId = modalityId ?? Guid.NewGuid(),
-            ActivityModalityType = new ActivityModalityType { Name = modalityName },
+            ActivityModalityTypeId = modalityTypeId,
+            ActivityModalityType = new ActivityModalityTypeRow
+            {
+                Id = modalityTypeId,
+                Name = modalityName,
+            },
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             CreatedBy = Guid.NewGuid(),
         };
     }
 
-    public static ActivityRoleCapacity Capacity(Guid activityId, Guid roleTypeId, int desiredCount)
+    public static RoleCapacityRow CapacityRow(Guid activityId, Guid roleTypeId, int desiredCount)
     {
         return new()
         {
@@ -92,6 +130,20 @@ internal static class ActivityTestData
     }
 
     public static User SocioParent(Guid id)
+    {
+        return Persisted.As<User>(
+            new
+            {
+                Id = id,
+                FirstName = "Ada",
+                LastName = "Parent",
+                Email = "ada@parent.test",
+                UserTypeId = SeedIds.UserTypes.Member,
+            }
+        );
+    }
+
+    public static UserRow SocioParentRow(Guid id)
     {
         return new()
         {
@@ -105,6 +157,20 @@ internal static class ActivityTestData
 
     public static User ParticipantChild(Guid id, Guid parentId)
     {
+        return Persisted.As<User>(
+            new
+            {
+                Id = id,
+                FirstName = "Kid",
+                LastName = "One",
+                ParentId = parentId,
+                UserTypeId = SeedIds.UserTypes.Participant,
+            }
+        );
+    }
+
+    public static UserRow ParticipantChildRow(Guid id, Guid parentId)
+    {
         return new()
         {
             Id = id,
@@ -115,23 +181,52 @@ internal static class ActivityTestData
         };
     }
 
-    public static ActivityUserRoleAssignment Assignment(
+    public static ActivityUserRoleAssignment SignUp(
+        this Activity activity,
         Guid userId,
-        Guid activityId,
-        ActivityRoleType? role = null,
-        AssignmentStatusType? status = null,
         Guid? roleTypeId = null,
         Guid? statusId = null
     )
     {
+        activity.RequestAssignment(userId, roleTypeId ?? Guid.NewGuid(), SignedUpAt);
+        if (statusId is { } status)
+        {
+            activity.ChangeAssignmentStatus(userId, status);
+        }
+
+        return activity.AssignmentOf(userId)!;
+    }
+
+    public static AssignmentRow NewAssignmentRow(
+        Guid userId,
+        Guid activityId,
+        Guid? roleTypeId = null,
+        string roleName = "Participante",
+        Guid? statusId = null,
+        string statusName = "Solicitada"
+    )
+    {
+        var resolvedRoleTypeId = roleTypeId ?? Guid.NewGuid();
+        var resolvedStatusId = statusId ?? Guid.NewGuid();
         return new()
         {
             UserId = userId,
             ActivityId = activityId,
-            ActivityRoleTypeId = roleTypeId ?? Guid.NewGuid(),
-            ActivityRoleType = role!,
-            AssignmentStatusId = statusId ?? Guid.NewGuid(),
-            AssignmentStatus = status!,
+            ActivityRoleTypeId = resolvedRoleTypeId,
+            ActivityRoleType = new ActivityRoleTypeRow
+            {
+                Id = resolvedRoleTypeId,
+                Name = roleName,
+                Description = "d",
+            },
+            AssignmentStatusId = resolvedStatusId,
+            AssignmentStatus = new AssignmentStatusTypeRow
+            {
+                Id = resolvedStatusId,
+                Name = statusName,
+                Description = "d",
+                Color = "#000",
+            },
         };
     }
 
@@ -154,11 +249,12 @@ internal static class ActivityTestData
             && assignment.AssignmentStatusId == statusId;
     }
 
-    public static Activity OverlapActivity(
+    public static ActivityRow OverlapActivityRow(
         Guid id,
         int startHour,
         int endHour,
-        string title = "Act"
+        string title = "Act",
+        Guid? eventId = null
     )
     {
         return new()
@@ -169,44 +265,244 @@ internal static class ActivityTestData
             Location = "l",
             ActivityStartsAt = new DateTimeOffset(2026, 7, 10, startHour, 0, 0, TimeSpan.Zero),
             ActivityEndsAt = new DateTimeOffset(2026, 7, 10, endHour, 0, 0, TimeSpan.Zero),
+            EventId = eventId ?? Guid.Empty,
         };
     }
 
-    public static void HasActivities(this IActivityRepository activities, params Activity[] items)
+    public static void ModalityExists(this FakeReadStore readStore, bool exists)
     {
-        activities.Query().Returns(items.AsQueryable());
+        readStore.ActivityModalityTypes.Add(
+            new ActivityModalityTypeRow
+            {
+                Id = exists ? RequestedModalityId : SeedIds.ActivityModalityTypes.Online,
+                Name = exists ? "Presencial" : "Online",
+            }
+        );
     }
 
-    public static void HasAssignments(
+    public static Activity HasActivityWindow(
         this IActivityRepository activities,
-        params ActivityUserRoleAssignment[] assignments
+        IEventRepository events,
+        Guid activityId,
+        DateTimeOffset signupStart,
+        DateTimeOffset signupEnd,
+        DateTimeOffset? earlySignupStart = null,
+        Guid? eventId = null,
+        Guid? termsDocumentId = null,
+        bool termsRequired = true
     )
     {
-        activities.QueryAssignments().Returns(assignments.AsQueryable());
-    }
-
-    public static void HasEvents(this IEventRepository events, params Event[] items)
-    {
-        events.Query().Returns(items.AsQueryable());
-    }
-
-    public static void ModalityExists(
-        this IActivityModalityTypeRepository modalityTypes,
-        bool exists
-    )
-    {
-        modalityTypes
-            .ExistsAsync(
-                Arg.Any<Expression<Func<ActivityModalityType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(exists);
-    }
-
-    public static void HasRoleCatalog(this IActivityRoleTypeRepository roleTypes)
-    {
-        var catalog = new List<ActivityRoleType>
+        var resolvedEventId = eventId ?? Guid.NewGuid();
+        var termsDocuments = new List<EventTermsDocument>();
+        if (termsDocumentId is { } termsId)
         {
+            termsDocuments.Add(
+                Persisted.As<EventTermsDocument>(
+                    new
+                    {
+                        EventId = resolvedEventId,
+                        TermsDocumentId = termsId,
+                        IsRequired = termsRequired,
+                        DisplayOrder = 0,
+                    }
+                )
+            );
+        }
+
+        events
+            .GetByIdAsync(resolvedEventId, Arg.Any<CancellationToken>())
+            .Returns(
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = resolvedEventId,
+                        Title = "e",
+                        Subtitle = "s",
+                        EventStartsAt,
+                        EventEndsAt,
+                        EarlySignupStartsAt = earlySignupStart,
+                        SignupStartsAt = signupStart,
+                        SignupEndsAt = signupEnd,
+                        TermsDocuments = termsDocuments,
+                    }
+                )
+            );
+
+        var activity = Persisted.As<Activity>(
+            new
+            {
+                Id = activityId,
+                Title = "Taller de robótica",
+                Description = "Descripción de la actividad",
+                Location = "Sala A",
+                ActivityStartsAt,
+                ActivityEndsAt,
+                EventId = resolvedEventId,
+            }
+        );
+        activities.GetByIdAsync(activityId, Arg.Any<CancellationToken>()).Returns(activity);
+        return activity;
+    }
+
+    public static EventTermsAcceptance StoredDecision(
+        Guid termsDocumentId,
+        bool accepted,
+        DateTimeOffset decidedAt
+    )
+    {
+        return EventTermsAcceptance.Record(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            termsDocumentId,
+            accepted,
+            decidedAt
+        );
+    }
+
+    public static void TermsAccepted(
+        this IEventTermsAcceptanceRepository termsAcceptances,
+        Guid? acceptedTermsDocumentId
+    )
+    {
+        if (acceptedTermsDocumentId is { } termsDocumentId)
+        {
+            termsAcceptances.HasTermsDecisions(StoredDecision(termsDocumentId, true, SignedUpAt));
+        }
+        else
+        {
+            termsAcceptances.HasTermsDecisions();
+        }
+    }
+
+    public static void HasTermsDecisions(
+        this IEventTermsAcceptanceRepository termsAcceptances,
+        params EventTermsAcceptance[] acceptances
+    )
+    {
+        termsAcceptances
+            .ListAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(acceptances);
+    }
+
+    public static void TargetUser(this IUserRepository users, Guid userId, Guid userTypeId)
+    {
+        users.HouseholdUsers(
+            Persisted.As<User>(
+                new
+                {
+                    Id = userId,
+                    FirstName = "Test",
+                    LastName = "User",
+                    Email = "test@user.test",
+                    UserTypeId = userTypeId,
+                }
+            )
+        );
+    }
+
+    public static void TargetChildOf(
+        this IUserRepository users,
+        Guid childId,
+        Guid parentUserTypeId
+    )
+    {
+        var parentId = Guid.NewGuid();
+        users.HouseholdUsers(
+            ParticipantChild(childId, parentId),
+            Persisted.As<User>(
+                new
+                {
+                    Id = parentId,
+                    FirstName = "Ada",
+                    LastName = "Parent",
+                    Email = "ada@parent.test",
+                    UserTypeId = parentUserTypeId,
+                }
+            )
+        );
+    }
+
+    public static void HouseholdUsers(this IUserRepository users, params User[] members)
+    {
+        users
+            .GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(ci => members.FirstOrDefault(member => member.Id == ci.ArgAt<Guid>(0)));
+        users
+            .ListByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(ci =>
+            {
+                var ids = ci.ArgAt<IReadOnlyCollection<Guid>>(0);
+                IReadOnlyList<User> found = [.. members.Where(member => ids.Contains(member.Id))];
+                return found;
+            });
+    }
+
+    public static ActivityRow SignupActivityRow(Guid activityId)
+    {
+        var eventId = Guid.NewGuid();
+        return new()
+        {
+            Id = activityId,
+            Title = "Taller de robótica",
+            Description = "Descripción de la actividad",
+            Location = "Sala A",
+            ActivityStartsAt = ActivityStartsAt,
+            ActivityEndsAt = ActivityEndsAt,
+            EventId = eventId,
+            Event = new EventRow
+            {
+                Id = eventId,
+                Title = "e",
+                Subtitle = "s",
+            },
+        };
+    }
+
+    public static void TargetUser(this FakeReadStore readStore, Guid userId, Guid userTypeId)
+    {
+        readStore.Users.Add(
+            new UserRow
+            {
+                Id = userId,
+                FirstName = "Test",
+                LastName = "User",
+                Email = "test@user.test",
+                UserTypeId = userTypeId,
+            }
+        );
+    }
+
+    public static void TargetChildOf(
+        this FakeReadStore readStore,
+        Guid childId,
+        Guid parentUserTypeId
+    )
+    {
+        var parentId = Guid.NewGuid();
+        readStore.Users.Add(
+            new UserRow
+            {
+                Id = childId,
+                FirstName = "Kid",
+                LastName = "One",
+                ParentId = parentId,
+                UserTypeId = SeedIds.UserTypes.Participant,
+                Parent = new UserRow
+                {
+                    Id = parentId,
+                    FirstName = "Ada",
+                    LastName = "Parent",
+                    Email = "ada@parent.test",
+                    UserTypeId = parentUserTypeId,
+                },
+            }
+        );
+    }
+
+    public static List<ActivityRoleTypeRow> CatalogRoleRows()
+    {
+        return
+        [
             new()
             {
                 Id = SeedIds.ActivityRoleTypes.Leader,
@@ -225,266 +521,11 @@ internal static class ActivityTestData
                 Name = "Participante",
                 Description = "d",
             },
-        };
-        roleTypes
-            .CountAsync(
-                Arg.Any<Expression<Func<ActivityRoleType, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(ci =>
-            {
-                var predicate = ci.Arg<Expression<Func<ActivityRoleType, bool>>>();
-                Assert.NotNull(predicate);
-                return catalog.Count(predicate.Compile().Invoke);
-            });
-    }
-
-    public static void ActivityFound(this IActivityRepository activities, Activity? activity)
-    {
-        activities
-            .FindAsync(Arg.Any<Expression<Func<Activity, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(activity);
-        activities
-            .FindWithRoleCapacitiesAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(activity);
-    }
-
-    /// <summary>
-    /// Configures an activity window for handlers that never consult terms documents (change
-    /// status, unassign). Use the overload that also takes an <see cref="IEventRepository"/> for
-    /// handlers that go through <c>TermsGate</c>.
-    /// </summary>
-    public static void HasActivityWindow(
-        this IActivityRepository activities,
-        Guid activityId,
-        DateTimeOffset signupStart,
-        DateTimeOffset signupEnd,
-        DateTimeOffset? earlySignupStart = null,
-        Guid? eventId = null
-    )
-    {
-        activities
-            .Query()
-            .Returns(
-                BuildActivityWindow(
-                        activityId,
-                        signupStart,
-                        signupEnd,
-                        earlySignupStart,
-                        eventId ?? Guid.Empty
-                    )
-                    .AsQueryable()
-            );
-    }
-
-    /// <summary>
-    /// Configures an activity window and the terms documents linked to its event, for handlers
-    /// that go through <c>TermsGate</c> (assign, assign household).
-    /// </summary>
-    public static void HasActivityWindow(
-        this IActivityRepository activities,
-        IEventRepository events,
-        Guid activityId,
-        DateTimeOffset signupStart,
-        DateTimeOffset signupEnd,
-        DateTimeOffset? earlySignupStart = null,
-        Guid? eventId = null,
-        Guid? termsDocumentId = null,
-        bool termsRequired = true
-    )
-    {
-        var resolvedEventId = eventId ?? Guid.Empty;
-        activities
-            .Query()
-            .Returns(
-                BuildActivityWindow(
-                        activityId,
-                        signupStart,
-                        signupEnd,
-                        earlySignupStart,
-                        resolvedEventId
-                    )
-                    .AsQueryable()
-            );
-
-        var documents = termsDocumentId is { } termsId
-            ? new List<EventTermsDocument>
-            {
-                new()
-                {
-                    EventId = resolvedEventId,
-                    TermsDocumentId = termsId,
-                    IsRequired = termsRequired,
-                    DisplayOrder = 0,
-                },
-            }
-            : [];
-        events.QueryTermsDocuments().Returns(documents.AsQueryable());
-    }
-
-    private static List<Activity> BuildActivityWindow(
-        Guid activityId,
-        DateTimeOffset signupStart,
-        DateTimeOffset signupEnd,
-        DateTimeOffset? earlySignupStart,
-        Guid eventId
-    )
-    {
-        return
-        [
-            new Activity
-            {
-                Description = "Descripción de la actividad",
-                Id = activityId,
-                Title = "Taller de robótica",
-                Location = "Sala A",
-                ActivityStartsAt = ActivityStartsAt,
-                ActivityEndsAt = ActivityEndsAt,
-                EventId = eventId,
-                Event = new Event
-                {
-                    Title = "e",
-                    Subtitle = "s",
-                    EarlySignupStartsAt = earlySignupStart,
-                    SignupStartsAt = signupStart,
-                    SignupEndsAt = signupEnd,
-                },
-            },
         ];
     }
 
-    public static void TermsAccepted(this IEventRepository events, Guid? acceptedTermsDocumentId)
+    public static void CatalogRoles(this FakeReadStore readStore)
     {
-        events
-            .ListTermsAcceptancesAsync(
-                Arg.Any<Guid>(),
-                Arg.Any<Guid>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(
-                acceptedTermsDocumentId is { } termsDocumentId
-                    ? new List<EventTermsAcceptance>
-                    {
-                        new() { TermsDocumentId = termsDocumentId, Accepted = true },
-                    }
-                    : []
-            );
-    }
-
-    public static void HasTermsDecisions(
-        this IEventRepository events,
-        params EventTermsAcceptance[] acceptances
-    )
-    {
-        events
-            .ListTermsAcceptancesAsync(
-                Arg.Any<Guid>(),
-                Arg.Any<Guid>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(acceptances.ToList());
-    }
-
-    public static void TargetUser(this IUserRepository users, Guid userId, Guid userTypeId)
-    {
-        users
-            .Query()
-            .Returns(
-                new List<User>
-                {
-                    new()
-                    {
-                        Id = userId,
-                        FirstName = "Test",
-                        LastName = "User",
-                        Email = "test@user.test",
-                        UserTypeId = userTypeId,
-                    },
-                }.AsQueryable()
-            );
-    }
-
-    public static void TargetChildOf(
-        this IUserRepository users,
-        Guid childId,
-        Guid parentUserTypeId
-    )
-    {
-        var parentId = Guid.NewGuid();
-        var child = ParticipantChild(childId, parentId);
-        child.Parent = new User
-        {
-            Id = parentId,
-            FirstName = "Ada",
-            LastName = "Parent",
-            Email = "ada@parent.test",
-            UserTypeId = parentUserTypeId,
-        };
-        users.Query().Returns(new List<User> { child }.AsQueryable());
-    }
-
-    public static void HouseholdUsers(this IUserRepository users, params User[] members)
-    {
-        users.Query().Returns(members.AsQueryable());
-    }
-
-    public static void CatalogRoles(this IActivityRoleTypeRepository roleTypes)
-    {
-        roleTypes
-            .Query()
-            .Returns(
-                new List<ActivityRoleType>
-                {
-                    new()
-                    {
-                        Id = SeedIds.ActivityRoleTypes.Leader,
-                        Name = "Líder",
-                        Description = "d",
-                    },
-                    new()
-                    {
-                        Id = SeedIds.ActivityRoleTypes.Volunteer,
-                        Name = "Voluntario",
-                        Description = "d",
-                    },
-                    new()
-                    {
-                        Id = SeedIds.ActivityRoleTypes.Participant,
-                        Name = "Participante",
-                        Description = "d",
-                    },
-                }.AsQueryable()
-            );
-    }
-
-    public static void ExistingAssignment(
-        this IActivityRepository activities,
-        ActivityUserRoleAssignment? assignment
-    )
-    {
-        activities
-            .GetAssignmentAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(assignment);
-    }
-
-    public static void RequestedStatusNamed(
-        this IAssignmentStatusTypeRepository statuses,
-        string name
-    )
-    {
-        statuses
-            .Query()
-            .Returns(
-                new List<AssignmentStatusType>
-                {
-                    new()
-                    {
-                        Description = "Descripción de prueba",
-                        Id = SeedIds.AssignmentStatusTypes.Requested,
-                        Name = name,
-                        Color = "#000",
-                    },
-                }.AsQueryable()
-            );
+        readStore.ActivityRoleTypes.AddRange(CatalogRoleRows());
     }
 }

@@ -1,10 +1,10 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.API.Security;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -60,9 +60,15 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         return Factory.SeedAsync(async db =>
         {
             var user = await db.Users.FindAsync([userId], Ct);
-            user!.TwoFactorMethod = TwoFactorMethod.Authenticator;
-            user.AuthenticatorKey = FakeSecretProtector.Prefix + secret;
-            user.AuthenticatorLastUsedStep = lastUsedStep;
+            Persisted.Overwrite(
+                user!,
+                new
+                {
+                    TwoFactorMethod = TwoFactorMethod.Authenticator,
+                    AuthenticatorKey = FakeSecretProtector.Prefix + secret,
+                    AuthenticatorLastUsedStep = lastUsedStep,
+                }
+            );
         });
     }
 
@@ -318,7 +324,10 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         await Factory.SeedAsync(async db =>
         {
             var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
-            user!.PasswordHash = FakePasswordHasher.Prefix + "A-Different-Password";
+            Persisted.Overwrite(
+                user!,
+                new { PasswordHash = FakePasswordHasher.Prefix + "A-Different-Password" }
+            );
         });
 
         var response = await PresentAsync(client, code);
@@ -334,7 +343,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         await Factory.SeedAsync(async db =>
         {
             var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
-            user!.UserStatusTypeId = SeedIds.UserStatusTypes.Blocked;
+            Persisted.Overwrite(user!, new { UserStatusTypeId = SeedIds.UserStatusTypes.Blocked });
         });
 
         var response = await PresentAsync(client, code);

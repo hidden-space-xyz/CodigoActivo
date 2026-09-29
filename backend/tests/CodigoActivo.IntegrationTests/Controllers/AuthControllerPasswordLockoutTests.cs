@@ -1,10 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;

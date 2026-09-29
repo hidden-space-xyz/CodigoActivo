@@ -1,11 +1,12 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Application.Users.Queries;
-using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -94,6 +95,7 @@ public class UsersController : ApiControllerBase
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPut("{userId:guid}")]
@@ -103,10 +105,14 @@ public class UsersController : ApiControllerBase
         Guid userId,
         [FromBody] UpdateUserRequest request,
         [FromServices] UpdateUserCommandHandler handler,
+        [FromServices] GetUserByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new UpdateUserCommand(userId, UserId, request), ct));
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new UpdateUserCommand(userId, UserId, request), ct),
+            () => getById.HandleAsync(new GetUserByIdQuery(userId), ct)
+        );
     }
 
     /// <summary>
@@ -183,6 +189,7 @@ public class UsersController : ApiControllerBase
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPost("{userId:guid}/children")]
@@ -191,10 +198,14 @@ public class UsersController : ApiControllerBase
         Guid userId,
         [FromBody] RegisterMinorRequest request,
         [FromServices] AddChildCommandHandler handler,
+        [FromServices] GetUserByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new AddChildCommand(userId, request), ct));
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new AddChildCommand(userId, request), ct),
+            id => getById.HandleAsync(new GetUserByIdQuery(id), ct)
+        );
     }
 
     /// <summary>
@@ -226,6 +237,7 @@ public class UsersController : ApiControllerBase
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="userTypeId">Identifier of the user type.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPatch("{userId:guid}/change-type")]
@@ -234,9 +246,13 @@ public class UsersController : ApiControllerBase
         Guid userId,
         [FromQuery] Guid userTypeId,
         [FromServices] ChangeUserTypeCommandHandler handler,
+        [FromServices] GetUserByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new ChangeUserTypeCommand(userId, userTypeId), ct));
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new ChangeUserTypeCommand(userId, userTypeId), ct),
+            () => getById.HandleAsync(new GetUserByIdQuery(userId), ct)
+        );
     }
 }

@@ -1,5 +1,5 @@
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
@@ -49,80 +49,90 @@ public static class TestSeedData
         CancellationToken ct = default
     )
     {
-        var admin = new User
-        {
-            Id = Users.AdminId,
-            FirstName = "Ada",
-            LastName = "Admin",
-            Email = AdminEmail,
-            Phone = "+34600000001",
-            PasswordHash = PasswordHash,
-            NationalId = AdminNationalId,
-            Gender = Gender.Female,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Member,
-            IsAdmin = true,
-            CreatedAt = SeededAt,
-        };
+        var admin = Persisted.As<User>(
+            new
+            {
+                Id = Users.AdminId,
+                FirstName = "Ada",
+                LastName = "Admin",
+                Email = AdminEmail,
+                Phone = "+34600000001",
+                PasswordHash = PasswordHash,
+                NationalId = AdminNationalId,
+                Gender = Gender.Female,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                UserTypeId = SeedIds.UserTypes.Member,
+                IsAdmin = true,
+                CreatedAt = SeededAt,
+            }
+        );
 
-        var member = new User
-        {
-            Id = Users.MemberId,
-            FirstName = "Marta",
-            LastName = "Miembro",
-            Email = MemberEmail,
-            Phone = "+34600000002",
-            PasswordHash = PasswordHash,
-            NationalId = MemberNationalId,
-            PromotionalConsent = true,
-            Gender = Gender.Female,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Member,
-            CreatedAt = SeededAt,
-        };
+        var member = Persisted.As<User>(
+            new
+            {
+                Id = Users.MemberId,
+                FirstName = "Marta",
+                LastName = "Miembro",
+                Email = MemberEmail,
+                Phone = "+34600000002",
+                PasswordHash = PasswordHash,
+                NationalId = MemberNationalId,
+                PromotionalConsent = true,
+                Gender = Gender.Female,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                UserTypeId = SeedIds.UserTypes.Member,
+                CreatedAt = SeededAt,
+            }
+        );
 
-        var child = new User
-        {
-            Id = Users.MemberChildId,
-            FirstName = "Mateo",
-            LastName = "Miembro",
-            BirthDate = new DateOnly(2015, 5, 5),
-            Gender = Gender.Male,
-            ParentId = Users.MemberId,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-            UserTypeId = SeedIds.UserTypes.Participant,
-            CreatedAt = SeededAt,
-        };
+        var child = Persisted.As<User>(
+            new
+            {
+                Id = Users.MemberChildId,
+                FirstName = "Mateo",
+                LastName = "Miembro",
+                BirthDate = new DateOnly(2015, 5, 5),
+                Gender = Gender.Male,
+                ParentId = Users.MemberId,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
+                UserTypeId = SeedIds.UserTypes.Participant,
+                CreatedAt = SeededAt,
+            }
+        );
 
-        var pending = new User
-        {
-            Id = Users.PendingId,
-            FirstName = "Pedro",
-            LastName = "Pendiente",
-            Email = PendingEmail,
-            Phone = "+34600000003",
-            PasswordHash = PasswordHash,
-            NationalId = PendingNationalId,
-            Gender = Gender.Male,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
-            UserTypeId = SeedIds.UserTypes.Member,
-            CreatedAt = SeededAt,
-        };
+        var pending = Persisted.As<User>(
+            new
+            {
+                Id = Users.PendingId,
+                FirstName = "Pedro",
+                LastName = "Pendiente",
+                Email = PendingEmail,
+                Phone = "+34600000003",
+                PasswordHash = PasswordHash,
+                NationalId = PendingNationalId,
+                Gender = Gender.Male,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
+                UserTypeId = SeedIds.UserTypes.Member,
+                CreatedAt = SeededAt,
+            }
+        );
 
-        var blocked = new User
-        {
-            Id = Users.BlockedId,
-            FirstName = "Bruno",
-            LastName = "Bloqueado",
-            Email = BlockedEmail,
-            Phone = "+34600000004",
-            PasswordHash = PasswordHash,
-            NationalId = BlockedNationalId,
-            Gender = Gender.Other,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Blocked,
-            UserTypeId = SeedIds.UserTypes.Member,
-            CreatedAt = SeededAt,
-        };
+        var blocked = Persisted.As<User>(
+            new
+            {
+                Id = Users.BlockedId,
+                FirstName = "Bruno",
+                LastName = "Bloqueado",
+                Email = BlockedEmail,
+                Phone = "+34600000004",
+                PasswordHash = PasswordHash,
+                NationalId = BlockedNationalId,
+                Gender = Gender.Other,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Blocked,
+                UserTypeId = SeedIds.UserTypes.Member,
+                CreatedAt = SeededAt,
+            }
+        );
 
         db.Users.AddRange(admin, member, child, pending, blocked);
 

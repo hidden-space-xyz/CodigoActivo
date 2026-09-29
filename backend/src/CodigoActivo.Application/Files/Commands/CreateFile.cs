@@ -1,10 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Files.Commands;
 
@@ -13,8 +12,7 @@ namespace CodigoActivo.Application.Files.Commands;
 /// </summary>
 /// <param name="Upload">The upload value.</param>
 /// <param name="UserId">Identifier of the user.</param>
-public sealed record CreateFileCommand(FileUpload? Upload, Guid UserId)
-    : ICommand<Result<FileResponse>>;
+public sealed record CreateFileCommand(FileUpload? Upload, Guid UserId) : ICommand<Result<Guid>>;
 
 /// <summary>
 /// Executes the command to create a file.
@@ -27,18 +25,18 @@ public sealed record CreateFileCommand(FileUpload? Upload, Guid UserId)
 public sealed class CreateFileCommandHandler(
     IFileRepository files,
     IUnitOfWork uow,
-    ILocalFileSystemRepository storage,
+    IFileStorage storage,
     IClock clock,
     FileUploadValidator validator
-) : ICommandHandler<CreateFileCommand, Result<FileResponse>>
+) : ICommandHandler<CreateFileCommand, Result<Guid>>
 {
     /// <summary>
     /// Handles the request to create a file.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a file on success, or an application error on failure.</returns>
-    public async Task<Result<FileResponse>> HandleAsync(
+    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    public async Task<Result<Guid>> HandleAsync(
         CreateFileCommand command,
         CancellationToken ct = default
     )
@@ -52,13 +50,12 @@ public sealed class CreateFileCommandHandler(
         }
 
         var format = detection.Value;
-        var file = new FileEntity
-        {
-            Name = FileNaming.SanitizeName(upload!.FileName),
-            Extension = format.Extension,
-            UploadedAt = clock.UtcNow,
-            UploadedBy = command.UserId,
-        };
+        var file = FileEntity.Upload(
+            FileNaming.SanitizeName(upload!.FileName),
+            format.Extension,
+            command.UserId,
+            clock.UtcNow
+        );
 
         var storedName = FileNaming.StoredName(file.Id, file.Extension);
         await storage.SaveAsync(storedName, upload.Content, ct);
@@ -74,6 +71,6 @@ public sealed class CreateFileCommandHandler(
             throw;
         }
 
-        return file.ToResponse();
+        return file.Id;
     }
 }

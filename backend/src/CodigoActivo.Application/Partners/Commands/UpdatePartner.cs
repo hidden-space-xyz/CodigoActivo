@@ -1,10 +1,13 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Partners;
 
 namespace CodigoActivo.Application.Partners.Commands;
 
@@ -15,7 +18,7 @@ namespace CodigoActivo.Application.Partners.Commands;
 /// <param name="Request">Validated client request data.</param>
 /// <param name="UserId">Identifier of the user.</param>
 public sealed record UpdatePartnerCommand(Guid PartnerId, UpdatePartnerRequest Request, Guid UserId)
-    : ICommand<Result<PartnerResponse>>;
+    : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the partner.
@@ -33,41 +36,45 @@ public sealed class UpdatePartnerCommandHandler(
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator
-) : ICommandHandler<UpdatePartnerCommand, Result<PartnerResponse>>
+) : ICommandHandler<UpdatePartnerCommand, Result>
 {
     /// <summary>
     /// Handles the request to update the partner.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a partner on success, or an application error on failure.</returns>
-    public async Task<Result<PartnerResponse>> HandleAsync(
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    public async Task<Result> HandleAsync(
         UpdatePartnerCommand command,
         CancellationToken ct = default
     )
     {
         var request = command.Request;
 
-        var partner = await partners.FindAsync(p => p.Id == command.PartnerId, ct);
+        var partner = await partners.GetByIdAsync(command.PartnerId, ct);
         if (partner is null)
         {
             return Error.NotFound(ErrorCode.PartnerNotFound);
         }
 
-        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        if (!await files.ExistsAsync(request.ThumbnailId, ct))
         {
-            return Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
+            return Error.Validation(ErrorCode.PartnerThumbnailNotFound);
         }
 
         var previousThumbnailId = partner.ThumbnailId;
 
-        partner.Name = request.Name.Trim();
-        partner.FromDate = request.FromDate!.Value;
-        partner.Tier = request.Tier;
-        partner.Web = request.Website.NormalizeOrNull();
-        partner.ThumbnailId = request.ThumbnailId;
-        partner.UpdatedAt = clock.UtcNow;
-        partner.UpdatedBy = command.UserId;
+        partner.Update(
+            new PartnerDetails(
+                request.Name,
+                request.FromDate!.Value,
+                request.Tier,
+                request.Website,
+                request.ThumbnailId
+            ),
+            command.UserId,
+            clock.UtcNow
+        );
 
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Partners);
@@ -77,6 +84,6 @@ public sealed class UpdatePartnerCommandHandler(
             await orphanCleaner.DeleteIfOrphanedAsync(previousThumbnailId, ct);
         }
 
-        return partner.ToResponse();
+        return Result.Success();
     }
 }

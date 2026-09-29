@@ -1,10 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.API.Contracts;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -735,7 +737,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
-            user!.UserStatusTypeId = SeedIds.UserStatusTypes.Blocked;
+            Persisted.Overwrite(user!, new { UserStatusTypeId = SeedIds.UserStatusTypes.Blocked });
         });
 
         var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
@@ -750,7 +752,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var admin = await db.Users.FindAsync([TestSeedData.Users.AdminId], Ct);
-            admin!.IsAdmin = false;
+            Persisted.Overwrite(admin!, new { IsAdmin = false });
         });
 
         var response = await client.GetAsync(TestUri.Rel("/api/users/types"), Ct);
@@ -765,7 +767,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
-            user!.PasswordHash = FakePasswordHasher.Prefix + "A-Different-Password";
+            Persisted.Overwrite(
+                user!,
+                new { PasswordHash = FakePasswordHasher.Prefix + "A-Different-Password" }
+            );
         });
 
         var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);

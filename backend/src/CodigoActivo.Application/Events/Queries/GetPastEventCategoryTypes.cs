@@ -1,8 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.EventCategories;
+using CodigoActivo.Application.EventCategories.Contracts;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -15,11 +15,11 @@ public sealed record GetPastEventCategoryTypesQuery
 /// <summary>
 /// Executes the query to retrieve the category types assigned to past events.
 /// </summary>
-/// <param name="categoryTypes">Repository used to persist and retrieve category types.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class GetPastEventCategoryTypesQueryHandler(
-    IEventCategoryTypeRepository categoryTypes,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<GetPastEventCategoryTypesQuery, IReadOnlyList<EventCategoryTypeResponse>>
@@ -42,12 +42,11 @@ public sealed class GetPastEventCategoryTypesQueryHandler(
     {
         var today = clock.Today;
         return executor.ToListAsync(
-            categoryTypes
-                .Query()
-                .Where(c => c.Events.Any(ec => ec.Event.EventEndsAt < today))
+            readStore
+                .EventCategoryTypes.Where(c => c.Events.Any(ec => ec.Event.EventEndsAt < today))
                 .OrderBy(c => c.Name)
                 .ThenBy(c => c.Id)
-                .Select(Projections.EventCategoryType),
+                .Select(EventCategoryProjections.EventCategoryType),
             ct
         );
     }

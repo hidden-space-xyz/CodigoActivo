@@ -1,4 +1,6 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -24,13 +26,13 @@ public sealed class EventTermsAcceptanceConfiguration
         });
 
         builder
-            .HasOne(x => x.Event)
+            .HasOne<Event>()
             .WithMany()
             .HasForeignKey(x => x.EventId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasOne(x => x.User)
+            .HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);

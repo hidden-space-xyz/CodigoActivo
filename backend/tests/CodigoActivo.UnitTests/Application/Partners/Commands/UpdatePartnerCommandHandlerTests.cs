@@ -1,10 +1,13 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Partners.Commands;
+using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Partners;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;

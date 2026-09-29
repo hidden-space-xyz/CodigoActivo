@@ -1,11 +1,10 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.News.Commands;
+using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Application.News.Queries;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -79,6 +78,7 @@ public class NewsController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a news item, or an error response.</returns>
     [HttpPost]
@@ -86,12 +86,14 @@ public class NewsController : ApiControllerBase
     public async Task<ActionResult<NewsItemResponse>> CreateAsync(
         [FromBody] CreateNewsItemRequest request,
         [FromServices] CreateNewsItemCommandHandler handler,
+        [FromServices] GetNewsItemByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToCreated(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new CreateNewsItemCommand(request, UserId), ct),
-            a => $"/api/news/{a.Id}"
+            id => getById.HandleAsync(new GetNewsItemByIdQuery(id), ct),
+            id => $"/api/news/{id}"
         );
     }
 
@@ -101,6 +103,7 @@ public class NewsController : ApiControllerBase
     /// <param name="newsItemId">Identifier of the news item.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a news item, or an error response.</returns>
     [HttpPut("{newsItemId:guid}")]
@@ -109,11 +112,13 @@ public class NewsController : ApiControllerBase
         Guid newsItemId,
         [FromBody] UpdateNewsItemRequest request,
         [FromServices] UpdateNewsItemCommandHandler handler,
+        [FromServices] GetNewsItemByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(
-            await handler.HandleAsync(new UpdateNewsItemCommand(newsItemId, request, UserId), ct)
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new UpdateNewsItemCommand(newsItemId, request, UserId), ct),
+            () => getById.HandleAsync(new GetNewsItemByIdQuery(newsItemId), ct)
         );
     }
 
@@ -140,6 +145,7 @@ public class NewsController : ApiControllerBase
     /// </summary>
     /// <param name="newsItemId">Identifier of the news item.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a news item, or an error response.</returns>
     [HttpPatch("{newsItemId:guid}/feature")]
@@ -147,9 +153,13 @@ public class NewsController : ApiControllerBase
     public async Task<ActionResult<NewsItemResponse>> FeatureAsync(
         Guid newsItemId,
         [FromServices] SetNewsItemFeaturedCommandHandler handler,
+        [FromServices] GetNewsItemByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new SetNewsItemFeaturedCommand(newsItemId), ct));
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new SetNewsItemFeaturedCommand(newsItemId), ct),
+            () => getById.HandleAsync(new GetNewsItemByIdQuery(newsItemId), ct)
+        );
     }
 }

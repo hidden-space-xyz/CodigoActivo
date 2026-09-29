@@ -1,7 +1,7 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +24,8 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
     {
         provider = new ServiceCollection()
             .AddScoped<IUserSessionRepository>(_ => sessions)
+            .AddSingleton<IClock>(clock)
+            .AddScoped<RemoveExpiredSessionsCommandHandler>()
             .BuildServiceProvider();
     }
 
@@ -36,29 +38,17 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
     {
         return new ExpiredSessionCleaner(
             provider.GetRequiredService<IServiceScopeFactory>(),
-            clock,
             options ?? new SessionCleanupOptions(),
             logger
         );
     }
 
-    private Expression<Func<UserSession, bool>> CapturedPredicate()
-    {
-        var calls = sessions
-            .ReceivedCalls()
-            .Where(call =>
-                string.Equals(call.GetMethodInfo().Name, "RemoveAsync", StringComparison.Ordinal)
-            )
-            .ToList();
-        calls.Should().ContainSingle();
-        return (Expression<Func<UserSession, bool>>)calls[0].GetArguments()[0]!;
-    }
-
     private void RemovesAndSignals(TaskCompletionSource signal, int removed)
     {
         sessions
-            .RemoveAsync(
-                Arg.Any<Expression<Func<UserSession, bool>>>(),
+            .RemoveExpiredAsync(
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<Guid?>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(_ =>
@@ -69,11 +59,12 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
     }
 
     [Fact]
-    public async Task PurgeAsyncDeletesOnlyRowsExpiredAtTheCurrentClockTime()
+    public async Task PurgeAsyncRemovesEverySessionExpiredAtTheCurrentClockTime()
     {
         sessions
-            .RemoveAsync(
-                Arg.Any<Expression<Func<UserSession, bool>>>(),
+            .RemoveExpiredAsync(
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<Guid?>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(3);
@@ -81,10 +72,9 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         var removed = await Build().PurgeAsync(TestContext.Current.CancellationToken);
 
         removed.Should().Be(3);
-        var matches = CapturedPredicate().Compile();
-        matches(new UserSession { ExpiresAt = clock.UtcNow.AddSeconds(-1) }).Should().BeTrue();
-        matches(new UserSession { ExpiresAt = clock.UtcNow }).Should().BeTrue();
-        matches(new UserSession { ExpiresAt = clock.UtcNow.AddSeconds(1) }).Should().BeFalse();
+        await sessions
+            .Received(1)
+            .RemoveExpiredAsync(clock.UtcNow, null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -132,8 +122,9 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
     {
         var signal = new TaskCompletionSource();
         sessions
-            .RemoveAsync(
-                Arg.Any<Expression<Func<UserSession, bool>>>(),
+            .RemoveExpiredAsync(
+                Arg.Any<DateTimeOffset>(),
+                Arg.Any<Guid?>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns<Task<int>>(_ =>
@@ -177,10 +168,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         cleaner.ExecuteTask.IsFaulted.Should().BeFalse();
         await sessions
             .DidNotReceiveWithAnyArgs()
-            .RemoveAsync(
-                Arg.Any<Expression<Func<UserSession, bool>>>(),
-                TestContext.Current.CancellationToken
-            );
+            .RemoveExpiredAsync(default, default, TestContext.Current.CancellationToken);
         logger.Entries.Should().BeEmpty();
     }
 }

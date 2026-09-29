@@ -1,4 +1,5 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDocuments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -18,13 +19,13 @@ public sealed class EventTermsDocumentConfiguration : IEntityTypeConfiguration<E
         builder.HasKey(x => new { x.EventId, x.TermsDocumentId });
 
         builder
-            .HasOne(x => x.Event)
+            .HasOne<Event>()
             .WithMany(e => e.TermsDocuments)
             .HasForeignKey(x => x.EventId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasOne(x => x.TermsDocument)
+            .HasOne<TermsDocument>()
             .WithMany()
             .HasForeignKey(x => x.TermsDocumentId)
             .OnDelete(DeleteBehavior.Restrict);

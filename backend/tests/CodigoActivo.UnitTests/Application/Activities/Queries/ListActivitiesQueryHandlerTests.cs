@@ -1,9 +1,7 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
 
@@ -11,20 +9,23 @@ namespace CodigoActivo.UnitTests.Application.Activities.Queries;
 
 public sealed class ListActivitiesQueryHandlerTests
 {
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly FakeReadStore store = new();
     private readonly TestClock clock = new();
     private readonly ListActivitiesQueryHandler sut;
 
     public ListActivitiesQueryHandlerTests()
     {
-        sut = new ListActivitiesQueryHandler(activities, new FakeQueryExecutor(), clock);
+        sut = new ListActivitiesQueryHandler(store, new FakeQueryExecutor(), clock);
     }
 
     [Fact]
     public async Task HandleAsyncEventIdFilterReturnsMatchingActivity()
     {
         var eventId = Guid.NewGuid();
-        activities.HasActivities(NewActivity("Mine", eventId: eventId), NewActivity("Other"));
+        store.Activities.AddRange([
+            NewActivityRow("Mine", eventId: eventId),
+            NewActivityRow("Other"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListActivitiesQuery(new ActivityListQuery { EventId = eventId }),
@@ -37,7 +38,7 @@ public sealed class ListActivitiesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncTitleSearchIsAccentAndCaseInsensitive()
     {
-        activities.HasActivities(NewActivity("Reunión Ávila"), NewActivity("Banco"));
+        store.Activities.AddRange([NewActivityRow("Reunión Ávila"), NewActivityRow("Banco")]);
 
         var result = await sut.HandleAsync(
             new ListActivitiesQuery(new ActivityListQuery { Title = "avila" }),
@@ -50,7 +51,11 @@ public sealed class ListActivitiesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncExplicitDescendingSortOrdersDescending()
     {
-        activities.HasActivities(NewActivity("Alpha"), NewActivity("Zeta"), NewActivity("Mint"));
+        store.Activities.AddRange([
+            NewActivityRow("Alpha"),
+            NewActivityRow("Zeta"),
+            NewActivityRow("Mint"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListActivitiesQuery(new ActivityListQuery { Sort = "-title" }),
@@ -64,10 +69,10 @@ public sealed class ListActivitiesQueryHandlerTests
     public async Task HandleAsyncModalityTypeIdFilterReturnsMatchingActivity()
     {
         var modalityId = Guid.NewGuid();
-        activities.HasActivities(
-            NewActivity("En sala", modalityId: modalityId),
-            NewActivity("En remoto", modalityName: "Online")
-        );
+        store.Activities.AddRange([
+            NewActivityRow("En sala", modalityId: modalityId),
+            NewActivityRow("En remoto", modalityName: "Online"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListActivitiesQuery(new ActivityListQuery { ModalityTypeId = modalityId }),
@@ -82,11 +87,11 @@ public sealed class ListActivitiesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByModalityNameOrdersByModalityName()
     {
-        activities.HasActivities(
-            NewActivity("Tercera", modalityName: "Presencial"),
-            NewActivity("Primera", modalityName: "Híbrida"),
-            NewActivity("Segunda", modalityName: "Online")
-        );
+        store.Activities.AddRange([
+            NewActivityRow("Tercera", modalityName: "Presencial"),
+            NewActivityRow("Primera", modalityName: "Híbrida"),
+            NewActivityRow("Segunda", modalityName: "Online"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListActivitiesQuery(new ActivityListQuery { Sort = "modalityName" }),
@@ -102,10 +107,10 @@ public sealed class ListActivitiesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncLocationSearchIsAccentAndCaseInsensitive()
     {
-        activities.HasActivities(
-            NewActivity("Con acento", location: "Salón Ávila"),
-            NewActivity("Otra", location: "Patio")
-        );
+        store.Activities.AddRange([
+            NewActivityRow("Con acento", location: "Salón Ávila"),
+            NewActivityRow("Otra", location: "Patio"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListActivitiesQuery(new ActivityListQuery { Location = "avila" }),
@@ -118,23 +123,23 @@ public sealed class ListActivitiesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncActivityDateRangeFilterKeepsActivitiesOverlappingRange()
     {
-        activities.HasActivities(
-            NewActivity(
+        store.Activities.AddRange([
+            NewActivityRow(
                 "Antes",
                 startsAt: new DateTimeOffset(2026, 7, 5, 10, 0, 0, TimeSpan.Zero),
                 endsAt: new DateTimeOffset(2026, 7, 5, 12, 0, 0, TimeSpan.Zero)
             ),
-            NewActivity(
+            NewActivityRow(
                 "Dentro",
                 startsAt: new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
                 endsAt: new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero)
             ),
-            NewActivity(
+            NewActivityRow(
                 "Despues",
                 startsAt: new DateTimeOffset(2026, 7, 20, 10, 0, 0, TimeSpan.Zero),
                 endsAt: new DateTimeOffset(2026, 7, 20, 12, 0, 0, TimeSpan.Zero)
-            )
-        );
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListActivitiesQuery(
@@ -159,18 +164,18 @@ public sealed class ListActivitiesQueryHandlerTests
             "UTC+02",
             "UTC+02"
         );
-        activities.HasActivities(
-            NewActivity(
+        store.Activities.AddRange([
+            NewActivityRow(
                 "Madrugada",
                 startsAt: new DateTimeOffset(2026, 7, 9, 22, 30, 0, TimeSpan.Zero),
                 endsAt: new DateTimeOffset(2026, 7, 9, 23, 0, 0, TimeSpan.Zero)
             ),
-            NewActivity(
+            NewActivityRow(
                 "Anterior",
                 startsAt: new DateTimeOffset(2026, 7, 9, 20, 0, 0, TimeSpan.Zero),
                 endsAt: new DateTimeOffset(2026, 7, 9, 21, 0, 0, TimeSpan.Zero)
-            )
-        );
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListActivitiesQuery(
@@ -185,11 +190,11 @@ public sealed class ListActivitiesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByLocationOrdersByLocation()
     {
-        activities.HasActivities(
-            NewActivity("Ultima", location: "Zaguán"),
-            NewActivity("Primera", location: "Aula"),
-            NewActivity("Segunda", location: "Mercado")
-        );
+        store.Activities.AddRange([
+            NewActivityRow("Ultima", location: "Zaguán"),
+            NewActivityRow("Primera", location: "Aula"),
+            NewActivityRow("Segunda", location: "Mercado"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListActivitiesQuery(new ActivityListQuery { Sort = "location" }),

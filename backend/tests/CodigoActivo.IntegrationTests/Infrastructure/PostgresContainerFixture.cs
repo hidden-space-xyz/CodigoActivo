@@ -110,6 +110,16 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
         );
     }
 
+    public CodigoActivoReadDbContext CreateReadContext()
+    {
+        return new CodigoActivoReadDbContext(
+            new DbContextOptionsBuilder<CodigoActivoReadDbContext>()
+                .UseNpgsql(ConnectionString)
+                .UseSnakeCaseNamingConvention()
+                .Options
+        );
+    }
+
     private async Task MigrateSchemaOnceAsync()
     {
         var options = new DbContextOptionsBuilder<CodigoActivoDbContext>()

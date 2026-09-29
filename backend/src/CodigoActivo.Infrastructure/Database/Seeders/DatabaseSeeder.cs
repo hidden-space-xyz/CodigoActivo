@@ -1,6 +1,7 @@
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Entities.Abstractions;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,42 +33,34 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
     {
         var seed = new[]
         {
-            new UserStatusType
-            {
-                Id = SeedIds.UserStatusTypes.Pending,
-                Name = "Pendiente",
-                Color = "#6B7280",
-                Description =
-                    "Cuenta registrada que aún no ha completado el proceso de verificación. "
+            UserStatusType.Create(
+                SeedIds.UserStatusTypes.Pending,
+                "Pendiente",
+                "Cuenta registrada que aún no ha completado el proceso de verificación. "
                     + "No puede acceder a las funciones de la plataforma hasta que un administrador la apruebe.",
-            },
-            new UserStatusType
-            {
-                Id = SeedIds.UserStatusTypes.Active,
-                Name = "Activo",
-                Color = "#22C55E",
-                Description =
-                    "Cuenta verificada y habilitada. Tiene acceso completo a las funcionalidades "
+                "#6B7280"
+            ),
+            UserStatusType.Create(
+                SeedIds.UserStatusTypes.Active,
+                "Activo",
+                "Cuenta verificada y habilitada. Tiene acceso completo a las funcionalidades "
                     + "correspondientes a su tipo de usuario.",
-            },
-            new UserStatusType
-            {
-                Id = SeedIds.UserStatusTypes.Blocked,
-                Name = "Bloqueado",
-                Color = "#EF4444",
-                Description =
-                    "Cuenta suspendida por un administrador. El acceso queda restringido hasta que "
+                "#22C55E"
+            ),
+            UserStatusType.Create(
+                SeedIds.UserStatusTypes.Blocked,
+                "Bloqueado",
+                "Cuenta suspendida por un administrador. El acceso queda restringido hasta que "
                     + "se restablezca manualmente.",
-            },
-            new UserStatusType
-            {
-                Id = SeedIds.UserStatusTypes.Dependent,
-                Name = "Dependiente",
-                Color = "#3B82F6",
-                Description =
-                    "Cuenta vinculada a un tutor o cuenta principal. No puede iniciar sesión por sí "
+                "#EF4444"
+            ),
+            UserStatusType.Create(
+                SeedIds.UserStatusTypes.Dependent,
+                "Dependiente",
+                "Cuenta vinculada a un tutor o cuenta principal. No puede iniciar sesión por sí "
                     + "misma y se gestiona a través de la cuenta responsable.",
-            },
+                "#3B82F6"
+            ),
         };
         await AddMissingAsync(context.UserStatusTypes, seed, ct);
     }
@@ -76,33 +69,27 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
     {
         var seed = new[]
         {
-            new UserType
-            {
-                Id = SeedIds.UserTypes.Member,
-                Name = "Socio",
-                Color = "#EF4444",
-                Description =
-                    "Integrante registrado de la organización. Apoya a la asociación de forma "
+            UserType.Create(
+                SeedIds.UserTypes.Member,
+                "Socio",
+                "Integrante registrado de la organización. Apoya a la asociación de forma "
                     + "continua, participa en sus actividades y accede a las secciones reservadas a socios.",
-            },
-            new UserType
-            {
-                Id = SeedIds.UserTypes.Sponsor,
-                Name = "Patrocinador",
-                Color = "#EAB308",
-                Description =
-                    "Persona o entidad que respalda a la asociación aportando recursos o "
+                "#EF4444"
+            ),
+            UserType.Create(
+                SeedIds.UserTypes.Sponsor,
+                "Patrocinador",
+                "Persona o entidad que respalda a la asociación aportando recursos o "
                     + "financiación para que sus actividades sean posibles.",
-            },
-            new UserType
-            {
-                Id = SeedIds.UserTypes.Participant,
-                Name = "Participante",
-                Color = "#3B82F6",
-                Description =
-                    "Persona que se inscribe y asiste a los eventos y actividades para aprender y "
+                "#EAB308"
+            ),
+            UserType.Create(
+                SeedIds.UserTypes.Participant,
+                "Participante",
+                "Persona que se inscribe y asiste a los eventos y actividades para aprender y "
                     + "disfrutar, sin asumir un rol organizativo.",
-            },
+                "#3B82F6"
+            ),
         };
         await AddMissingAsync(context.UserTypes, seed, ct);
     }
@@ -111,28 +98,22 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
     {
         var seed = new[]
         {
-            new ActivityRoleType
-            {
-                Id = SeedIds.ActivityRoleTypes.Leader,
-                Name = "Líder",
-                Description =
-                    "Responsable de coordinar la actividad. Dirige al equipo, organiza las tareas "
-                    + "y vela por el cumplimiento de los objetivos.",
-            },
-            new ActivityRoleType
-            {
-                Id = SeedIds.ActivityRoleTypes.Volunteer,
-                Name = "Voluntario",
-                Description =
-                    "Echa una mano de forma desinteresada durante la actividad, asumiendo tareas de soporte para su correcto desarrollo.",
-            },
-            new ActivityRoleType
-            {
-                Id = SeedIds.ActivityRoleTypes.Participant,
-                Name = "Participante",
-                Description =
-                    "Asiste a la actividad como público o beneficiario, sin responsabilidades de organización.",
-            },
+            ActivityRoleType.Create(
+                SeedIds.ActivityRoleTypes.Leader,
+                "Líder",
+                "Responsable de coordinar la actividad. Dirige al equipo, organiza las tareas "
+                    + "y vela por el cumplimiento de los objetivos."
+            ),
+            ActivityRoleType.Create(
+                SeedIds.ActivityRoleTypes.Volunteer,
+                "Voluntario",
+                "Echa una mano de forma desinteresada durante la actividad, asumiendo tareas de soporte para su correcto desarrollo."
+            ),
+            ActivityRoleType.Create(
+                SeedIds.ActivityRoleTypes.Participant,
+                "Participante",
+                "Asiste a la actividad como público o beneficiario, sin responsabilidades de organización."
+            ),
         };
         await AddMissingAsync(context.ActivityRoleTypes, seed, ct);
     }
@@ -141,33 +122,27 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
     {
         var seed = new[]
         {
-            new AssignmentStatusType
-            {
-                Id = SeedIds.AssignmentStatusTypes.Requested,
-                Name = "Solicitada",
-                Color = "#6B7280",
-                Description =
-                    "La asignación ha sido solicitada y está pendiente de revisión por parte de un "
+            AssignmentStatusType.Create(
+                SeedIds.AssignmentStatusTypes.Requested,
+                "Solicitada",
+                "La asignación ha sido solicitada y está pendiente de revisión por parte de un "
                     + "responsable.",
-            },
-            new AssignmentStatusType
-            {
-                Id = SeedIds.AssignmentStatusTypes.Confirmed,
-                Name = "Confirmada",
-                Color = "#22C55E",
-                Description =
-                    "La asignación ha sido revisada y aprobada. La persona queda oficialmente "
+                "#6B7280"
+            ),
+            AssignmentStatusType.Create(
+                SeedIds.AssignmentStatusTypes.Confirmed,
+                "Confirmada",
+                "La asignación ha sido revisada y aprobada. La persona queda oficialmente "
                     + "asignada a la actividad.",
-            },
-            new AssignmentStatusType
-            {
-                Id = SeedIds.AssignmentStatusTypes.Denied,
-                Name = "Rechazada",
-                Color = "#EF4444",
-                Description =
-                    "La asignación ha sido revisada y rechazada. La persona no participará en la "
+                "#22C55E"
+            ),
+            AssignmentStatusType.Create(
+                SeedIds.AssignmentStatusTypes.Denied,
+                "Rechazada",
+                "La asignación ha sido revisada y rechazada. La persona no participará en la "
                     + "actividad bajo este rol.",
-            },
+                "#EF4444"
+            ),
         };
         await AddMissingAsync(context.AssignmentStatusTypes, seed, ct);
     }
@@ -176,12 +151,8 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
     {
         var seed = new[]
         {
-            new ActivityModalityType
-            {
-                Id = SeedIds.ActivityModalityTypes.Presencial,
-                Name = "Presencial",
-            },
-            new ActivityModalityType { Id = SeedIds.ActivityModalityTypes.Online, Name = "Online" },
+            ActivityModalityType.Create(SeedIds.ActivityModalityTypes.Presencial, "Presencial"),
+            ActivityModalityType.Create(SeedIds.ActivityModalityTypes.Online, "Online"),
         };
         await AddMissingAsync(context.ActivityModalityTypes, seed, ct);
     }
@@ -190,26 +161,22 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
     {
         var seed = new[]
         {
-            new ResourceType
-            {
-                Id = SeedIds.ResourceTypes.Internal,
-                Name = "Interno",
-                Color = "#3B82F6",
-                IsExternal = false,
-                Description =
-                    "Material propio alojado en la plataforma. Incluye una descripción completa "
+            ResourceType.Create(
+                SeedIds.ResourceTypes.Internal,
+                "Interno",
+                "Material propio alojado en la plataforma. Incluye una descripción completa "
                     + "que se consulta desde la propia web.",
-            },
-            new ResourceType
-            {
-                Id = SeedIds.ResourceTypes.External,
-                Name = "Externo",
-                Color = "#F97316",
-                IsExternal = true,
-                Description =
-                    "Material publicado en otro sitio web. Al abrirlo se redirige directamente "
+                "#3B82F6",
+                false
+            ),
+            ResourceType.Create(
+                SeedIds.ResourceTypes.External,
+                "Externo",
+                "Material publicado en otro sitio web. Al abrirlo se redirige directamente "
                     + "al enlace original.",
-            },
+                "#F97316",
+                true
+            ),
         };
         await AddMissingAsync(context.ResourceTypes, seed, ct);
     }

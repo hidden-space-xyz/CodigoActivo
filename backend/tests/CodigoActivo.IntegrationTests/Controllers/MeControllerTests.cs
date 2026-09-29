@@ -1,8 +1,10 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Participation.Contracts;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -15,14 +17,16 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
 
     private static FileEntity Thumbnail(Guid id)
     {
-        return new()
-        {
-            Id = id,
-            Name = "thumb",
-            Extension = "png",
-            UploadedAt = SeededAt,
-            UploadedBy = TestSeedData.Users.AdminId,
-        };
+        return Persisted.As<FileEntity>(
+            new
+            {
+                Id = id,
+                Name = "thumb",
+                Extension = "png",
+                UploadedAt = SeededAt,
+                UploadedBy = TestSeedData.Users.AdminId,
+            }
+        );
     }
 
     private async Task<Guid> SeedAssignmentAsync(
@@ -43,57 +47,64 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         {
             db.Files.AddRange(Thumbnail(eventThumbnailId), Thumbnail(activityThumbnailId));
             db.Events.Add(
-                new Event
-                {
-                    Id = eventId,
-                    Title = "Evento",
-                    Subtitle = "Sub",
-                    Description = "{}",
-                    EventStartsAt = eventStartsAt ?? new DateOnly(2026, 2, 1),
-                    EventEndsAt = eventEndsAt ?? new DateOnly(2026, 2, 2),
-                    SignupStartsAt = SeededAt,
-                    SignupEndsAt = SeededAt.AddDays(10),
-                    ThumbnailId = eventThumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = eventId,
+                        Title = "Evento",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        EventStartsAt = eventStartsAt ?? new DateOnly(2026, 2, 1),
+                        EventEndsAt = eventEndsAt ?? new DateOnly(2026, 2, 2),
+                        SignupStartsAt = SeededAt,
+                        SignupEndsAt = SeededAt.AddDays(10),
+                        ThumbnailId = eventThumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.Activities.Add(
-                new Activity
-                {
-                    Id = activityId,
-                    Title = activityTitle,
-                    Description = "Descripción",
-                    Location = "Sala",
-                    ActivityStartsAt = activityStartsAt,
-                    ActivityEndsAt = activityStartsAt.AddHours(2),
-                    EventId = eventId,
-                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                    ThumbnailId = activityThumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Activity>(
+                    new
+                    {
+                        Id = activityId,
+                        Title = activityTitle,
+                        Description = "Descripción",
+                        Location = "Sala",
+                        ActivityStartsAt = activityStartsAt,
+                        ActivityEndsAt = activityStartsAt.AddHours(2),
+                        EventId = eventId,
+                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        ThumbnailId = activityThumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.ActivityUserRoleAssignments.Add(
-                new ActivityUserRoleAssignment
-                {
-                    UserId = userId,
-                    ActivityId = activityId,
-                    ActivityRoleTypeId = roleTypeId,
-                    AssignmentStatusId = statusId,
-                }
+                Persisted.As<ActivityUserRoleAssignment>(
+                    new
+                    {
+                        UserId = userId,
+                        ActivityId = activityId,
+                        ActivityRoleTypeId = roleTypeId,
+                        AssignmentStatusId = statusId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
         return eventId;
     }
 
-    private static async Task<List<Application.DTOs.AssignedActivityResponse>> ReadAssignedAsync(
-        HttpResponseMessage response
-    )
+    private static async Task<
+        List<Application.Activities.Contracts.AssignedActivityResponse>
+    > ReadAssignedAsync(HttpResponseMessage response)
     {
-        return await response.ReadJsonAsync<List<Application.DTOs.AssignedActivityResponse>>(Ct)
-            ?? [];
+        return await response.ReadJsonAsync<
+                List<Application.Activities.Contracts.AssignedActivityResponse>
+            >(Ct) ?? [];
     }
 
     [Fact]
@@ -339,29 +350,33 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         {
             db.Files.Add(Thumbnail(thumbnailId));
             db.Activities.Add(
-                new Activity
-                {
-                    Id = activityId,
-                    Title = activityTitle,
-                    Description = "Descripción",
-                    Location = "Sala",
-                    ActivityStartsAt = new DateTimeOffset(2026, 6, 1, 16, 0, 0, TimeSpan.Zero),
-                    ActivityEndsAt = new DateTimeOffset(2026, 6, 1, 18, 0, 0, TimeSpan.Zero),
-                    EventId = eventId,
-                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Activity>(
+                    new
+                    {
+                        Id = activityId,
+                        Title = activityTitle,
+                        Description = "Descripción",
+                        Location = "Sala",
+                        ActivityStartsAt = new DateTimeOffset(2026, 6, 1, 16, 0, 0, TimeSpan.Zero),
+                        ActivityEndsAt = new DateTimeOffset(2026, 6, 1, 18, 0, 0, TimeSpan.Zero),
+                        EventId = eventId,
+                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             db.ActivityUserRoleAssignments.Add(
-                new ActivityUserRoleAssignment
-                {
-                    UserId = userId,
-                    ActivityId = activityId,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                    AssignmentStatusId = statusId,
-                }
+                Persisted.As<ActivityUserRoleAssignment>(
+                    new
+                    {
+                        UserId = userId,
+                        ActivityId = activityId,
+                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        AssignmentStatusId = statusId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -553,12 +568,14 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.Add(
-                new EventRating
-                {
-                    EventId = eventId,
-                    Score = 4,
-                    MostLiked = "El ambiente",
-                }
+                Persisted.As<EventRating>(
+                    new
+                    {
+                        EventId = eventId,
+                        Score = 4,
+                        MostLiked = "El ambiente",
+                    }
+                )
             );
             return Task.CompletedTask;
         });

@@ -40,7 +40,7 @@ public sealed class CommonTests
     public static TheoryData<Func<ErrorCode, Error>, ErrorKind> ErrorFactories =>
         new()
         {
-            { Error.BadRequest, ErrorKind.BadRequest },
+            { Error.Validation, ErrorKind.Validation },
             { Error.NotFound, ErrorKind.NotFound },
             { Error.Forbidden, ErrorKind.Forbidden },
             { Error.Unauthorized, ErrorKind.Unauthorized },

@@ -1,14 +1,10 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
-using CodigoActivo.Application.Options;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Emails.EmailTestData;
 
@@ -18,57 +14,56 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
 {
     private static readonly Guid EventId = new("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IEventRepository events = Substitute.For<IEventRepository>();
+    private readonly FakeReadStore store = new();
     private readonly RecordingEmailOutbox outbox = new();
     private readonly ManualEmailOptions options = new();
     private readonly SendEmailToEventAttendeesCommandHandler sut;
 
     public SendEmailToEventAttendeesCommandHandlerTests()
     {
-        events
-            .ExistsAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        store.Events.Add(new EventRow { Id = EventId });
 
         sut = new SendEmailToEventAttendeesCommandHandler(
-            users,
-            events,
+            store,
             new FakeQueryExecutor(),
             options,
             NewDispatcher(outbox, options)
         );
     }
 
-    private static User NewAttendee(string first, string? email, params Guid[] statusIds)
+    private static UserRow NewAttendee(string first, string? email, params Guid[] statusIds)
     {
-        var user = NewUser(first, email);
-        user.Assignments =
-        [
-            .. statusIds.Select(statusId => new ActivityUserRoleAssignment
-            {
-                UserId = user.Id,
-                ActivityId = Guid.NewGuid(),
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                AssignmentStatusId = statusId,
-                Activity = new Activity
+        var user = NewUserRow(first, email);
+        foreach (var statusId in statusIds)
+        {
+            user.Assignments.Add(
+                new AssignmentRow
                 {
-                    Title = "Actividad de prueba",
-                    Description = "Descripción de la actividad",
-                    Location = "Sala principal",
-                    EventId = EventId,
-                },
-            }),
-        ];
+                    UserId = user.Id,
+                    ActivityId = Guid.NewGuid(),
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    AssignmentStatusId = statusId,
+                    Activity = new ActivityRow
+                    {
+                        Title = "Actividad de prueba",
+                        Description = "Descripción de la actividad",
+                        Location = "Sala principal",
+                        EventId = EventId,
+                    },
+                }
+            );
+        }
+
         return user;
     }
 
     [Fact]
     public async Task HandleAsyncStatusFilterOnlyMailsMatchingAttendees()
     {
-        users.HasUsers(
+        store.Users.AddRange([
             NewAttendee("Ana", "ana@test.local", SeedIds.AssignmentStatusTypes.Confirmed),
-            NewAttendee("Berto", "berto@test.local", SeedIds.AssignmentStatusTypes.Requested)
-        );
+            NewAttendee("Berto", "berto@test.local", SeedIds.AssignmentStatusTypes.Requested),
+        ]);
 
         var result = await sut.HandleAsync(
             new SendEmailToEventAttendeesCommand(
@@ -87,9 +82,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
     [Fact]
     public async Task HandleAsyncUnknownEventReturnsNotFound()
     {
-        events
-            .ExistsAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        store.Events.Clear();
 
         var result = await sut.HandleAsync(
             new SendEmailToEventAttendeesCommand(

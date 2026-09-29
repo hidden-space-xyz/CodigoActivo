@@ -1,6 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
@@ -33,17 +33,21 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     {
         await using var db = postgres.CreateContext();
         db.Users.AddRange(
-            firstNames.Select(firstName => new User
-            {
-                Id = Guid.NewGuid(),
-                FirstName = firstName,
-                LastName = "Paginated",
-                BirthDate = new DateOnly(1990, 1, 1),
-                Gender = Gender.Other,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                UserTypeId = SeedIds.UserTypes.Member,
-                CreatedAt = Fixed,
-            })
+            firstNames.Select(firstName =>
+                Persisted.As<User>(
+                    new
+                    {
+                        Id = Guid.NewGuid(),
+                        FirstName = firstName,
+                        LastName = "Paginated",
+                        BirthDate = new DateOnly(1990, 1, 1),
+                        Gender = Gender.Other,
+                        UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                        UserTypeId = SeedIds.UserTypes.Member,
+                        CreatedAt = Fixed,
+                    }
+                )
+            )
         );
 
         await db.SaveChangesAsync(Ct);

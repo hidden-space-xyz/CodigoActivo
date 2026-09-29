@@ -1,14 +1,10 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Emails.Queries;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Emails.EmailTestData;
 
@@ -18,42 +14,34 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
 {
     private static readonly Guid EventId = new("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IEventRepository events = Substitute.For<IEventRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetEventAttendeesEmailAudienceQueryHandler sut;
 
     public GetEventAttendeesEmailAudienceQueryHandlerTests()
     {
-        events
-            .ExistsAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        store.Events.Add(new EventRow { Id = EventId });
 
-        sut = new GetEventAttendeesEmailAudienceQueryHandler(
-            users,
-            events,
-            new FakeQueryExecutor()
-        );
+        sut = new GetEventAttendeesEmailAudienceQueryHandler(store, new FakeQueryExecutor());
     }
 
-    private static User NewAttendee(User user, Guid eventId, Guid statusId)
+    private static UserRow NewAttendee(UserRow user, Guid eventId, Guid statusId)
     {
-        user.Assignments =
-        [
-            new ActivityUserRoleAssignment
+        user.Assignments.Add(
+            new AssignmentRow
             {
                 UserId = user.Id,
                 ActivityId = Guid.NewGuid(),
                 ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
                 AssignmentStatusId = statusId,
-                Activity = new Activity
+                Activity = new ActivityRow
                 {
                     Title = "Actividad de prueba",
                     Description = "Descripción de la actividad",
                     Location = "Sala principal",
                     EventId = eventId,
                 },
-            },
-        ];
+            }
+        );
         return user;
     }
 
@@ -61,16 +49,16 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
     public async Task HandleAsyncAttendeesOfTheEventAreCountedWithTheirConsent()
     {
         var confirmed = SeedIds.AssignmentStatusTypes.Confirmed;
-        users.HasUsers(
+        store.Users.AddRange([
             NewAttendee(
-                NewUser("Ana", "ana@test.local", promotionalConsent: true),
+                NewUserRow("Ana", "ana@test.local", promotionalConsent: true),
                 EventId,
                 confirmed
             ),
-            NewAttendee(NewUser("Berto", "berto@test.local"), EventId, confirmed),
-            NewAttendee(NewUser("Carla", "carla@test.local"), Guid.NewGuid(), confirmed),
-            NewAttendee(NewUser("Sin correo", null), EventId, confirmed)
-        );
+            NewAttendee(NewUserRow("Berto", "berto@test.local"), EventId, confirmed),
+            NewAttendee(NewUserRow("Carla", "carla@test.local"), Guid.NewGuid(), confirmed),
+            NewAttendee(NewUserRow("Sin correo", null), EventId, confirmed),
+        ]);
 
         var result = await sut.HandleAsync(
             new GetEventAttendeesEmailAudienceQuery(EventId, new EventAttendeeListQuery()),
@@ -84,18 +72,18 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
     [Fact]
     public async Task HandleAsyncStatusFilterNarrowsTheAudienceLikeTheSendEndpoint()
     {
-        users.HasUsers(
+        store.Users.AddRange([
             NewAttendee(
-                NewUser("Ana", "ana@test.local", promotionalConsent: true),
+                NewUserRow("Ana", "ana@test.local", promotionalConsent: true),
                 EventId,
                 SeedIds.AssignmentStatusTypes.Confirmed
             ),
             NewAttendee(
-                NewUser("Berto", "berto@test.local"),
+                NewUserRow("Berto", "berto@test.local"),
                 EventId,
                 SeedIds.AssignmentStatusTypes.Requested
-            )
-        );
+            ),
+        ]);
 
         var result = await sut.HandleAsync(
             new GetEventAttendeesEmailAudienceQuery(
@@ -112,9 +100,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
     [Fact]
     public async Task HandleAsyncUnknownEventReturnsNotFound()
     {
-        events
-            .ExistsAsync(Arg.Any<Expression<Func<Event, bool>>>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        store.Events.Clear();
 
         var result = await sut.HandleAsync(
             new GetEventAttendeesEmailAudienceQuery(EventId, new EventAttendeeListQuery()),
@@ -122,6 +108,6 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ErrorCode.EventNotFound);
-        users.DidNotReceive().Query();
+        store.ReadsOf<UserRow>().Should().Be(0);
     }
 }

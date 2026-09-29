@@ -1,4 +1,7 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,19 +29,19 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
         builder.HasIndex(a => new { a.EventId, a.ActivityStartsAt });
 
         builder
-            .HasOne(a => a.Event)
-            .WithMany(e => e.Activities)
+            .HasOne<Event>()
+            .WithMany()
             .HasForeignKey(a => a.EventId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasOne(a => a.ActivityModalityType)
-            .WithMany(t => t.Activities)
+            .HasOne<ActivityModalityType>()
+            .WithMany()
             .HasForeignKey(a => a.ActivityModalityTypeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne(a => a.Thumbnail)
+            .HasOne<FileEntity>()
             .WithMany()
             .HasForeignKey(a => a.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

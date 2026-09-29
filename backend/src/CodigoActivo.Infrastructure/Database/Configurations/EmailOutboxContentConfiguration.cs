@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Infrastructure.Communication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

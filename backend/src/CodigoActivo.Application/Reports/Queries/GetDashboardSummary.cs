@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Reports.Contracts;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Reports.Queries;
@@ -14,10 +13,10 @@ public sealed record GetDashboardSummaryQuery : IQuery<DashboardSummaryResponse>
 /// <summary>
 /// Executes the query to retrieve dashboard summary.
 /// </summary>
-/// <param name="dashboard">Repository used to persist and retrieve dashboard.</param>
+/// <param name="dashboard">Reader of the dashboard totals.</param>
 /// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class GetDashboardSummaryQueryHandler(
-    IDashboardRepository dashboard,
+    IDashboardCountsReader dashboard,
     HybridCache cache
 ) : IQueryHandler<GetDashboardSummaryQuery, DashboardSummaryResponse>
 {

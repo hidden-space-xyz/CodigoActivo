@@ -1,10 +1,11 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Files.Commands;
 
@@ -13,8 +14,7 @@ namespace CodigoActivo.Application.Files.Commands;
 /// </summary>
 /// <param name="FileId">Identifier of the file.</param>
 /// <param name="Upload">The upload value.</param>
-public sealed record UpdateFileCommand(Guid FileId, FileUpload? Upload)
-    : ICommand<Result<FileResponse>>;
+public sealed record UpdateFileCommand(Guid FileId, FileUpload? Upload) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the file.
@@ -28,26 +28,23 @@ public sealed record UpdateFileCommand(Guid FileId, FileUpload? Upload)
 public sealed class UpdateFileCommandHandler(
     IFileRepository files,
     IUnitOfWork uow,
-    ILocalFileSystemRepository storage,
+    IFileStorage storage,
     IClock clock,
     FileUploadValidator validator,
     ICacheInvalidator cacheInvalidator
-) : ICommandHandler<UpdateFileCommand, Result<FileResponse>>
+) : ICommandHandler<UpdateFileCommand, Result>
 {
     /// <summary>
     /// Handles the request to update the file.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a file on success, or an application error on failure.</returns>
-    public async Task<Result<FileResponse>> HandleAsync(
-        UpdateFileCommand command,
-        CancellationToken ct = default
-    )
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    public async Task<Result> HandleAsync(UpdateFileCommand command, CancellationToken ct = default)
     {
         var upload = command.Upload;
 
-        var file = await files.FindAsync(f => f.Id == command.FileId, ct);
+        var file = await files.GetByIdAsync(command.FileId, ct);
         if (file is null)
         {
             return Error.NotFound(ErrorCode.FileNotFound);
@@ -70,9 +67,7 @@ public sealed class UpdateFileCommandHandler(
 
         await storage.SaveAsync(newStoredName, upload!.Content, ct);
 
-        file.Name = FileNaming.SanitizeName(upload.FileName);
-        file.Extension = format.Extension;
-        file.UploadedAt = clock.UtcNow;
+        file.Replace(FileNaming.SanitizeName(upload.FileName), format.Extension, clock.UtcNow);
 
         try
         {
@@ -94,6 +89,6 @@ public sealed class UpdateFileCommandHandler(
         }
 
         await cacheInvalidator.InvalidateAsync(CacheTags.Files);
-        return file.ToResponse();
+        return Result.Success();
     }
 }

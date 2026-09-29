@@ -1,9 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.News.Contracts;
 
 namespace CodigoActivo.Application.News.Queries;
 
@@ -17,11 +16,11 @@ public sealed record ListNewsQuery(NewsListQuery Filters)
 /// <summary>
 /// Executes the query to list news items.
 /// </summary>
-/// <param name="news">Repository used to persist and retrieve news items.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ListNewsQueryHandler(
-    INewsItemRepository news,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<ListNewsQuery, PagedResult<NewsListItemResponse>>
@@ -53,7 +52,7 @@ public sealed class ListNewsQueryHandler(
         CancellationToken ct
     )
     {
-        var source = news.Query().Select(Projections.NewsListItem);
+        var source = readStore.News.Select(NewsProjections.NewsListItem);
 
         if (query.Year is { } year)
         {

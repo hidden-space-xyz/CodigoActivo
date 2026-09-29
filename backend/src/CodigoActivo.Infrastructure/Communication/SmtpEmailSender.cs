@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Communication;
+using CodigoActivo.Application.Abstractions.Email;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;

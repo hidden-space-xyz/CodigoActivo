@@ -1,11 +1,7 @@
-using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Diagnostics;
-using CodigoActivo.Application.Emails;
-using CodigoActivo.Application.Options;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Domain.Activities;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Activities;
@@ -13,27 +9,19 @@ namespace CodigoActivo.Application.Activities;
 /// <summary>
 /// Builds and sends notifications for activity signup.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="readStore">Read side used to describe the activity and reach the participant.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="emailSender">The email sender value.</param>
-/// <param name="application">The application value.</param>
-/// <param name="roleTypesQuery">Handler used to list activity role types.</param>
+/// <param name="composer">Composer that renders the decision messages.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ActivitySignupNotifier(
-    IActivityRepository activities,
-    IUserRepository users,
+    IReadStore readStore,
     IQueryExecutor executor,
-    IClock clock,
     IEmailSender emailSender,
-    ApplicationOptions application,
-    ListActivityRoleTypesQueryHandler roleTypesQuery,
+    ISignupEmailComposer composer,
     ILogger<ActivitySignupNotifier> logger
 )
 {
-    private const string EventPath = "/events";
-
     /// <summary>
     /// Notifies the affected users about decision.
     /// </summary>
@@ -53,8 +41,8 @@ public sealed class ActivitySignupNotifier(
     {
         try
         {
-            var details = await GetEmailDetailsAsync(activityId, ct);
-            if (details is null)
+            var activity = await GetSignupActivityAsync(activityId, ct);
+            if (activity is null)
             {
                 return;
             }
@@ -69,25 +57,18 @@ public sealed class ActivitySignupNotifier(
             }
 
             var participantName = recipient.IsGuardian ? contact.FullName : null;
-            var message =
-                statusId == SeedIds.AssignmentStatusTypes.Confirmed
-                    ? ActivitySignupDecisionEmail.Confirmed(
-                        recipient.Address,
-                        recipient.Name,
-                        participantName,
-                        (await GetRoleNamesAsync(ct)).GetValueOrDefault(roleTypeId),
-                        details,
-                        clock.TimeZone,
-                        BuildSiteUrl()
-                    )
-                    : ActivitySignupDecisionEmail.Denied(
-                        recipient.Address,
-                        recipient.Name,
-                        participantName,
-                        details,
-                        clock.TimeZone,
-                        BuildSiteUrl()
-                    );
+            var message = AssignmentDecisions.IsConfirmation(statusId)
+                ? composer.Confirmed(
+                    new EmailRecipient(recipient.Address, recipient.Name),
+                    participantName,
+                    (await GetRoleNamesAsync(ct)).GetValueOrDefault(roleTypeId),
+                    activity
+                )
+                : composer.Denied(
+                    new EmailRecipient(recipient.Address, recipient.Name),
+                    participantName,
+                    activity
+                );
 
             await emailSender.SendAsync(message, ct);
         }
@@ -101,16 +82,15 @@ public sealed class ActivitySignupNotifier(
         }
     }
 
-    private async Task<ActivityEmailDetails?> GetEmailDetailsAsync(
+    private async Task<SignupActivity?> GetSignupActivityAsync(
         Guid activityId,
         CancellationToken ct
     )
     {
-        var data = await executor.FirstOrDefaultAsync(
-            activities
-                .Query()
-                .Where(a => a.Id == activityId)
-                .Select(a => new ActivityEmailData(
+        return await executor.FirstOrDefaultAsync(
+            readStore
+                .Activities.Where(a => a.Id == activityId)
+                .Select(a => new SignupActivity(
                     a.Title,
                     a.Event.Title,
                     a.EventId,
@@ -120,17 +100,6 @@ public sealed class ActivitySignupNotifier(
                 )),
             ct
         );
-
-        return data is null
-            ? null
-            : new ActivityEmailDetails(
-                data.ActivityTitle,
-                data.EventTitle,
-                data.Location,
-                data.StartsAt,
-                data.EndsAt,
-                BuildUrl($"{EventPath}/{data.EventId}")
-            );
     }
 
     private async Task<Dictionary<Guid, UserContact>> GetContactsAsync(
@@ -139,9 +108,8 @@ public sealed class ActivitySignupNotifier(
     )
     {
         var contacts = await executor.ToListAsync(
-            users
-                .Query()
-                .Where(u => userIds.Contains(u.Id))
+            readStore
+                .Users.Where(u => userIds.Contains(u.Id))
                 .Select(u => new UserContact(
                     u.Id,
                     u.FirstName,
@@ -158,7 +126,10 @@ public sealed class ActivitySignupNotifier(
 
     private async Task<Dictionary<Guid, string>> GetRoleNamesAsync(CancellationToken ct)
     {
-        var roles = await roleTypesQuery.HandleAsync(new ListActivityRoleTypesQuery(), ct);
+        var roles = await executor.ToListAsync(
+            readStore.ActivityRoleTypes.Select(role => new { role.Id, role.Name }),
+            ct
+        );
         return roles.ToDictionary(role => role.Id, role => role.Name);
     }
 
@@ -177,25 +148,6 @@ public sealed class ActivitySignupNotifier(
             _ => null,
         };
     }
-
-    private string BuildSiteUrl()
-    {
-        return application.BaseUrl.TrimEnd('/');
-    }
-
-    private string BuildUrl(string path)
-    {
-        return $"{BuildSiteUrl()}{path}";
-    }
-
-    private sealed record ActivityEmailData(
-        string ActivityTitle,
-        string EventTitle,
-        Guid EventId,
-        string Location,
-        DateTimeOffset StartsAt,
-        DateTimeOffset EndsAt
-    );
 
     private sealed record UserContact(
         Guid Id,

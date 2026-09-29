@@ -1,11 +1,8 @@
-using System.Text.Json.Serialization;
-
 namespace CodigoActivo.Domain.Common;
 
 /// <summary>
 /// Identifies the supported error code values.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter<ErrorCode>))]
 public enum ErrorCode
 {
     /// <summary>

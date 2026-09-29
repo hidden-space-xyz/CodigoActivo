@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Security;
+using CodigoActivo.Application.Abstractions.Security;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace CodigoActivo.Infrastructure.Security;

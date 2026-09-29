@@ -1,9 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -26,17 +28,19 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.News.Add(
-                new NewsItem
-                {
-                    Id = id,
-                    Title = title,
-                    Subtitle = subtitle,
-                    Description = Description,
-                    Featured = featured,
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<NewsItem>(
+                    new
+                    {
+                        Id = id,
+                        Title = title,
+                        Subtitle = subtitle,
+                        Description = Description,
+                        Featured = featured,
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });
@@ -226,6 +230,24 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task FeatureAsAdminLeavesOnlyTheChosenNewsItemFeaturedWithoutAnEdit()
+    {
+        var previousId = await SeedNewsItemAsync("Anterior", featured: true);
+        var chosenId = await SeedNewsItemAsync("Elegida");
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync($"/api/news/{chosenId}/feature", ct: Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var chosen = await FindAsync<NewsItem>(chosenId);
+        var previous = await FindAsync<NewsItem>(previousId);
+        chosen!.Featured.Should().BeTrue();
+        previous!.Featured.Should().BeFalse();
+        chosen.UpdatedAt.Should().BeNull();
+        previous.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
     public async Task FeatureNewsItemMissingReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
@@ -280,15 +302,17 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
 
     private static NewsItem NewSharedThumbnailNewsItem(Guid id, string title, Guid thumbnailId)
     {
-        return new()
-        {
-            Id = id,
-            Title = title,
-            Subtitle = "Sub",
-            Description = Description,
-            ThumbnailId = thumbnailId,
-            CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            CreatedBy = TestSeedData.Users.AdminId,
-        };
+        return Persisted.As<NewsItem>(
+            new
+            {
+                Id = id,
+                Title = title,
+                Subtitle = "Sub",
+                Description = Description,
+                ThumbnailId = thumbnailId,
+                CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                CreatedBy = TestSeedData.Users.AdminId,
+            }
+        );
     }
 }

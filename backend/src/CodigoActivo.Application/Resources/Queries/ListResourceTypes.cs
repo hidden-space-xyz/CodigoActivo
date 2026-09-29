@@ -1,9 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Resources.Contracts;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Resources.Queries;
@@ -16,11 +14,11 @@ public sealed record ListResourceTypesQuery : IQuery<IReadOnlyList<ResourceTypeR
 /// <summary>
 /// Executes the query to list resource types.
 /// </summary>
-/// <param name="resourceTypes">Repository used to persist and retrieve resource types.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListResourceTypesQueryHandler(
-    IResourceTypeRepository resourceTypes,
+    IReadStore readStore,
     IQueryExecutor executor,
     HybridCache cache
 ) : IQueryHandler<ListResourceTypesQuery, IReadOnlyList<ResourceTypeResponse>>
@@ -39,7 +37,10 @@ public sealed class ListResourceTypesQueryHandler(
         return cache.GetCatalogAsync(
             executor,
             "resources:types",
-            () => resourceTypes.Query().OrderBy(type => type.Name).Select(Projections.ResourceType),
+            () =>
+                readStore
+                    .ResourceTypes.OrderBy(type => type.Name)
+                    .Select(ResourceProjections.ResourceType),
             ct
         );
     }

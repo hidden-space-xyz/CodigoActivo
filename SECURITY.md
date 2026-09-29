@@ -133,9 +133,10 @@ time, every terms decision (accepted or rejected) of the household — or the gu
 events — with each document's text as it stood at deletion (documents are not versioned), and who asked
 for the deletion. It never holds password or code hashes, authenticator secrets, the login challenge,
 lockout counters or sessions. Nothing in the application reads the table: the data is plain JSON protected
-only by database access. `DeletedAccountPurger` deletes each copy two years after `deleted_at`, checking
-30 seconds after startup and then hourly. `DeletedAccountGuard` refuses any commit that deletes the initial
-administrator, deletes a user without its copy or changes a stored copy, and `RemoveAsync` on users throws.
+only by database access. The `DeletedAccountPurger` hosted service runs `PurgeDeletedAccounts`, which deletes
+each copy two years after `deleted_at`, 30 seconds after startup and then hourly. Users are deleted only
+through `AccountEraser`, and `DeletedAccountGuard` refuses any commit that deletes the initial administrator,
+deletes a user without its copy or changes a stored copy.
 The SPA only tells users that they and their minors lose access and cannot recover the account; the privacy
 policy must state the two-year retention.
 

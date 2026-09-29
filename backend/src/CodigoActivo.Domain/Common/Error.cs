@@ -6,9 +6,9 @@ namespace CodigoActivo.Domain.Common;
 public enum ErrorKind
 {
     /// <summary>
-    /// Selects the bad request option.
+    /// The request breaks a business rule or carries invalid data.
     /// </summary>
-    BadRequest = 0,
+    Validation = 0,
 
     /// <summary>
     /// Selects the not found option.
@@ -39,13 +39,13 @@ public enum ErrorKind
 public sealed record Error(ErrorKind Kind, ErrorCode Code)
 {
     /// <summary>
-    /// Creates an application error with the bad request classification.
+    /// Creates an application error with the validation classification.
     /// </summary>
     /// <param name="code">The code value.</param>
     /// <returns>The resulting error value.</returns>
-    public static Error BadRequest(ErrorCode code)
+    public static Error Validation(ErrorCode code)
     {
-        return new Error(ErrorKind.BadRequest, code);
+        return new Error(ErrorKind.Validation, code);
     }
 
     /// <summary>

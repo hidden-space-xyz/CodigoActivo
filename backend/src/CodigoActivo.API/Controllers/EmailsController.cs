@@ -2,12 +2,13 @@ using System.ComponentModel.DataAnnotations;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
+using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Emails.Queries;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Application.Validation;
+using CodigoActivo.Application.Reports.Contracts;
+using CodigoActivo.Application.Users.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -56,7 +57,8 @@ public class EmailsController : ApiControllerBase
                     ToAttachments(attachments)
                 ),
                 ct
-            )
+            ),
+            ToResponse
         );
     }
 
@@ -96,7 +98,8 @@ public class EmailsController : ApiControllerBase
                     ToAttachments(attachments)
                 ),
                 ct
-            )
+            ),
+            ToResponse
         );
     }
 
@@ -139,7 +142,8 @@ public class EmailsController : ApiControllerBase
                     ToAttachments(attachments)
                 ),
                 ct
-            )
+            ),
+            ToResponse
         );
     }
 
@@ -182,6 +186,11 @@ public class EmailsController : ApiControllerBase
         return ToOk(
             await handler.HandleAsync(new GetEventAttendeesEmailAudienceQuery(eventId, query), ct)
         );
+    }
+
+    private static SendEmailResultResponse ToResponse(EmailDispatch dispatch)
+    {
+        return new SendEmailResultResponse(dispatch.Queued, dispatch.Skipped);
     }
 
     private static List<EmailAttachmentUpload> ToAttachments(IEnumerable<IFormFile>? files)

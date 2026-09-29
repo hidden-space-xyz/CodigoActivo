@@ -1,7 +1,10 @@
 using AwesomeAssertions;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -28,45 +31,51 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
 
         db.Users.Add(NewUser(UserId, UserEmail));
         db.Files.Add(
-            new FileEntity
-            {
-                Id = FileId,
-                Name = "thumb",
-                Extension = "png",
-                UploadedAt = Fixed,
-                UploadedBy = UserId,
-            }
+            Persisted.As<FileEntity>(
+                new
+                {
+                    Id = FileId,
+                    Name = "thumb",
+                    Extension = "png",
+                    UploadedAt = Fixed,
+                    UploadedBy = UserId,
+                }
+            )
         );
         db.Events.Add(
-            new Event
-            {
-                Id = EventId,
-                Title = "Evento",
-                Subtitle = "Sub",
-                EventStartsAt = new DateOnly(2026, 7, 1),
-                EventEndsAt = new DateOnly(2026, 7, 2),
-                SignupStartsAt = Fixed,
-                SignupEndsAt = Fixed.AddDays(30),
-                ThumbnailId = FileId,
-                CreatedAt = Fixed,
-                CreatedBy = UserId,
-            }
+            Persisted.As<Event>(
+                new
+                {
+                    Id = EventId,
+                    Title = "Evento",
+                    Subtitle = "Sub",
+                    EventStartsAt = new DateOnly(2026, 7, 1),
+                    EventEndsAt = new DateOnly(2026, 7, 2),
+                    SignupStartsAt = Fixed,
+                    SignupEndsAt = Fixed.AddDays(30),
+                    ThumbnailId = FileId,
+                    CreatedAt = Fixed,
+                    CreatedBy = UserId,
+                }
+            )
         );
         db.Activities.Add(
-            new Activity
-            {
-                Id = ActivityId,
-                Title = "Actividad",
-                Description = "Descripción",
-                Location = "Sala",
-                ActivityStartsAt = Fixed.AddDays(40),
-                ActivityEndsAt = Fixed.AddDays(40).AddHours(2),
-                EventId = EventId,
-                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-                ThumbnailId = FileId,
-                CreatedAt = Fixed,
-                CreatedBy = UserId,
-            }
+            Persisted.As<Activity>(
+                new
+                {
+                    Id = ActivityId,
+                    Title = "Actividad",
+                    Description = "Descripción",
+                    Location = "Sala",
+                    ActivityStartsAt = Fixed.AddDays(40),
+                    ActivityEndsAt = Fixed.AddDays(40).AddHours(2),
+                    EventId = EventId,
+                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                    ThumbnailId = FileId,
+                    CreatedAt = Fixed,
+                    CreatedBy = UserId,
+                }
+            )
         );
         db.ActivityUserRoleAssignments.Add(
             Assignment(ActivityId, SeedIds.ActivityRoleTypes.Participant)
@@ -81,29 +90,33 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
 
     private static User NewUser(Guid id, string email)
     {
-        return new User
-        {
-            Id = id,
-            FirstName = "Unidad",
-            LastName = "De Trabajo",
-            Email = email,
-            Gender = Gender.Other,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Member,
-            CreatedAt = Fixed,
-        };
+        return Persisted.As<User>(
+            new
+            {
+                Id = id,
+                FirstName = "Unidad",
+                LastName = "De Trabajo",
+                Email = email,
+                Gender = Gender.Other,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                UserTypeId = SeedIds.UserTypes.Member,
+                CreatedAt = Fixed,
+            }
+        );
     }
 
     private static ActivityUserRoleAssignment Assignment(Guid activityId, Guid roleTypeId)
     {
-        return new ActivityUserRoleAssignment
-        {
-            UserId = UserId,
-            ActivityId = activityId,
-            ActivityRoleTypeId = roleTypeId,
-            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
-            CreatedAt = Fixed,
-        };
+        return Persisted.As<ActivityUserRoleAssignment>(
+            new
+            {
+                UserId = UserId,
+                ActivityId = activityId,
+                ActivityRoleTypeId = roleTypeId,
+                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+                CreatedAt = Fixed,
+            }
+        );
     }
 
     [Fact]

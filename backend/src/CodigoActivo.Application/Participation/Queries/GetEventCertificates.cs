@@ -1,10 +1,10 @@
 using System.Globalization;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
@@ -18,11 +18,11 @@ public sealed record GetEventCertificatesQuery(Guid UserId)
 /// <summary>
 /// Executes the query to retrieve event certificates.
 /// </summary>
-/// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class GetEventCertificatesQueryHandler(
-    IActivityRepository activities,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<GetEventCertificatesQuery, IReadOnlyList<EventCertificateResponse>>
@@ -46,9 +46,8 @@ public sealed class GetEventCertificatesQueryHandler(
         var today = clock.Today;
 
         var rows = await executor.ToListAsync(
-            activities
-                .QueryAssignments()
-                .Where(a =>
+            readStore
+                .Assignments.Where(a =>
                     (a.UserId == userId || a.User.ParentId == userId)
                     && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
                     && a.Activity.Event.EventEndsAt < today

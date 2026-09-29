@@ -1,6 +1,7 @@
 using System.Net;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Users.Contracts;
+using CodigoActivo.Domain.Files;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -119,14 +120,16 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                new FileEntity
-                {
-                    Id = id,
-                    Name = "thumb",
-                    Extension = "png",
-                    UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    UploadedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<FileEntity>(
+                    new
+                    {
+                        Id = id,
+                        Name = "thumb",
+                        Extension = "png",
+                        UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                        UploadedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });

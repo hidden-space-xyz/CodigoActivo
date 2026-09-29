@@ -1,9 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
 
@@ -11,19 +9,19 @@ namespace CodigoActivo.UnitTests.Application.Users.Queries;
 
 public sealed class GetUserByIdQueryHandlerTests
 {
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetUserByIdQueryHandler sut;
 
     public GetUserByIdQueryHandlerTests()
     {
-        sut = new GetUserByIdQueryHandler(users, new FakeQueryExecutor());
+        sut = new GetUserByIdQueryHandler(store, new FakeQueryExecutor());
     }
 
     [Fact]
     public async Task HandleAsyncUserExistsReturnsUser()
     {
-        var user = NewUser();
-        users.HasUsers(user);
+        var user = NewUserRow();
+        store.Users.Add(user);
 
         var result = await sut.HandleAsync(
             new GetUserByIdQuery(user.Id),
@@ -39,8 +37,6 @@ public sealed class GetUserByIdQueryHandlerTests
     [Fact]
     public async Task HandleAsyncUserMissingReturnsNotFound()
     {
-        users.HasUsers();
-
         var result = await sut.HandleAsync(
             new GetUserByIdQuery(Guid.NewGuid()),
             TestContext.Current.CancellationToken

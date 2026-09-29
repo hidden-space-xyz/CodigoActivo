@@ -1,6 +1,18 @@
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.Partners;
+using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace CodigoActivo.Infrastructure.Database.Context;
@@ -149,6 +161,13 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// </summary>
     public DbSet<DeletedAccount> DeletedAccounts => Set<DeletedAccount>();
 
+    /// <summary>
+    /// Attempts made when PostgreSQL resolves a deadlock by aborting a transaction, which happens
+    /// when a concurrent transaction takes the same row locks in the opposite order, as a signup of
+    /// a household being erased does.
+    /// </summary>
+    internal const int MaxTransactionAttempts = 3;
+
     async Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken ct)
     {
         try
@@ -162,6 +181,71 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
         {
             throw new UniqueConstraintViolationException(EntityTypeOf(violation.TableName), ex);
         }
+    }
+
+    async Task<T> IUnitOfWork.ExecuteInTransactionAsync<T>(
+        Func<CancellationToken, Task<T>> work,
+        CancellationToken ct
+    )
+    {
+        ArgumentNullException.ThrowIfNull(work);
+
+        if (Database.CurrentTransaction is not null)
+        {
+            return await work(ct);
+        }
+
+        for (var attempt = 1; ; attempt++)
+        {
+            var tracked = ChangeTracker
+                .Entries()
+                .Select(entry => entry.Entity)
+                .ToHashSet(ReferenceEqualityComparer.Instance);
+            await using var transaction = await Database.BeginTransactionAsync(ct);
+            try
+            {
+                var result = await work(ct);
+                await transaction.CommitAsync(ct);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                DetachAddedSince(tracked);
+                if (attempt >= MaxTransactionAttempts || !IsDeadlock(ex))
+                {
+                    throw;
+                }
+
+                this.GetService<ILoggerFactory>()
+                    .CreateLogger<CodigoActivoDbContext>()
+                    .TransactionDeadlockRetried(attempt);
+            }
+        }
+    }
+
+    private void DetachAddedSince(HashSet<object> tracked)
+    {
+        var added = ChangeTracker
+            .Entries()
+            .Where(entry => entry.State is EntityState.Added && !tracked.Contains(entry.Entity))
+            .ToList();
+        foreach (var entry in added)
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+
+    private static bool IsDeadlock(Exception? exception)
+    {
+        for (; exception is not null; exception = exception.InnerException)
+        {
+            if (exception is PostgresException { SqlState: PostgresErrorCodes.DeadlockDetected })
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private Type? EntityTypeOf(string? tableName)

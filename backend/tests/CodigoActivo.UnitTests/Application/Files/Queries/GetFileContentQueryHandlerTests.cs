@@ -1,8 +1,7 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Files.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -12,21 +11,21 @@ namespace CodigoActivo.UnitTests.Application.Files.Queries;
 
 public sealed class GetFileContentQueryHandlerTests
 {
-    private readonly IFileRepository files = Substitute.For<IFileRepository>();
-    private readonly ILocalFileSystemRepository storage =
-        Substitute.For<ILocalFileSystemRepository>();
+    private readonly FakeReadStore store = new();
+    private readonly IFileStorage storage = Substitute.For<IFileStorage>();
     private readonly GetFileContentQueryHandler sut;
 
     public GetFileContentQueryHandlerTests()
     {
-        sut = new GetFileContentQueryHandler(new GetFileByIdQueryHandler(files), storage);
+        sut = new GetFileContentQueryHandler(
+            new GetFileByIdQueryHandler(store, new FakeQueryExecutor()),
+            storage
+        );
     }
 
     [Fact]
     public async Task HandleAsyncMetadataMissingReturnsNotFound()
     {
-        files.FileMissing();
-
         var result = await sut.HandleAsync(
             new GetFileContentQuery(Guid.NewGuid()),
             TestContext.Current.CancellationToken
@@ -41,8 +40,8 @@ public sealed class GetFileContentQueryHandlerTests
     [Fact]
     public async Task HandleAsyncKnownSignatureReturnsDetectedContentTypeAndRewindsStream()
     {
-        var file = NewFile(name: "avatar.png");
-        files.FileFound(file);
+        var file = NewFileRow(name: "avatar.png");
+        store.Files.Add(file);
         var stream = PngStream();
         storage.OpenReadAsync($"{file.Id}.png", Arg.Any<CancellationToken>()).Returns(stream);
 
@@ -61,8 +60,8 @@ public sealed class GetFileContentQueryHandlerTests
     [Fact]
     public async Task HandleAsyncUnknownBytesFallsBackToOctetStream()
     {
-        var file = NewFile();
-        files.FileFound(file);
+        var file = NewFileRow();
+        store.Files.Add(file);
         storage
             .OpenReadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(JunkStream());

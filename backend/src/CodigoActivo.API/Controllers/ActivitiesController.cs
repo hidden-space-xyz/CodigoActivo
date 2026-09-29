@@ -1,11 +1,10 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Commands;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
+using CodigoActivo.Application.Common.Caching;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -169,6 +168,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the created activity.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an activity, or an error response.</returns>
     [HttpPost("{eventId:guid}")]
@@ -177,12 +177,14 @@ public class ActivitiesController : ApiControllerBase
         Guid eventId,
         [FromBody] CreateActivityRequest request,
         [FromServices] CreateActivityCommandHandler handler,
+        [FromServices] GetActivityByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToCreated(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new CreateActivityCommand(eventId, request, UserId), ct),
-            a => $"/api/activities/{a.Id}"
+            id => getById.HandleAsync(new GetActivityByIdQuery(id), ct),
+            id => $"/api/activities/{id}"
         );
     }
 
@@ -192,6 +194,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the updated activity.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an activity, or an error response.</returns>
     [HttpPut("{activityId:guid}")]
@@ -200,11 +203,13 @@ public class ActivitiesController : ApiControllerBase
         Guid activityId,
         [FromBody] UpdateActivityRequest request,
         [FromServices] UpdateActivityCommandHandler handler,
+        [FromServices] GetActivityByIdQueryHandler getById,
         CancellationToken ct
     )
     {
-        return ToOk(
-            await handler.HandleAsync(new UpdateActivityCommand(activityId, request, UserId), ct)
+        return await ToOkAfterAsync(
+            await handler.HandleAsync(new UpdateActivityCommand(activityId, request, UserId), ct),
+            () => getById.HandleAsync(new GetActivityByIdQuery(activityId), ct)
         );
     }
 
@@ -233,6 +238,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getAssignment">Query handler that reads the resulting assignment.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an assignment, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/assign")]
@@ -242,14 +248,16 @@ public class ActivitiesController : ApiControllerBase
         Guid userId,
         [FromBody] AssignRequest request,
         [FromServices] AssignActivityCommandHandler handler,
+        [FromServices] GetAssignmentQueryHandler getAssignment,
         CancellationToken ct
     )
     {
-        return ToOk(
+        return await ToOkAfterAsync(
             await handler.HandleAsync(
                 new AssignActivityCommand(activityId, userId, UserId, request, IsAdmin),
                 ct
-            )
+            ),
+            () => getAssignment.HandleAsync(new GetAssignmentQuery(activityId, userId), ct)
         );
     }
 
@@ -259,6 +267,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getAssignments">Query handler that reads the created assignments.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an assignment, or an error response.</returns>
     [HttpPost("{activityId:guid}/assign-household")]
@@ -267,14 +276,16 @@ public class ActivitiesController : ApiControllerBase
         Guid activityId,
         [FromBody] AssignHouseholdRequest request,
         [FromServices] AssignHouseholdCommandHandler handler,
+        [FromServices] GetAssignmentsQueryHandler getAssignments,
         CancellationToken ct
     )
     {
-        return ToOk(
+        return await ToOkListAfterAsync(
             await handler.HandleAsync(
                 new AssignHouseholdCommand(activityId, UserId, request, IsAdmin),
                 ct
-            )
+            ),
+            userIds => getAssignments.HandleAsync(new GetAssignmentsQuery(activityId, userIds), ct)
         );
     }
 
@@ -307,6 +318,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getAssignment">Query handler that reads the resulting assignment.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an assignment, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/change-status")]
@@ -316,14 +328,16 @@ public class ActivitiesController : ApiControllerBase
         Guid userId,
         [FromBody] ChangeAssignmentStatusRequest request,
         [FromServices] ChangeAssignmentStatusCommandHandler handler,
+        [FromServices] GetAssignmentQueryHandler getAssignment,
         CancellationToken ct
     )
     {
-        return ToOk(
+        return await ToOkAfterAsync(
             await handler.HandleAsync(
                 new ChangeAssignmentStatusCommand(activityId, userId, request),
                 ct
-            )
+            ),
+            () => getAssignment.HandleAsync(new GetAssignmentQuery(activityId, userId), ct)
         );
     }
 
@@ -334,6 +348,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getAssignment">Query handler that reads the resulting assignment.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an assignment, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/change-role")]
@@ -343,14 +358,16 @@ public class ActivitiesController : ApiControllerBase
         Guid userId,
         [FromBody] ChangeAssignmentRoleRequest request,
         [FromServices] ChangeAssignmentRoleCommandHandler handler,
+        [FromServices] GetAssignmentQueryHandler getAssignment,
         CancellationToken ct
     )
     {
-        return ToOk(
+        return await ToOkAfterAsync(
             await handler.HandleAsync(
                 new ChangeAssignmentRoleCommand(activityId, userId, request),
                 ct
-            )
+            ),
+            () => getAssignment.HandleAsync(new GetAssignmentQuery(activityId, userId), ct)
         );
     }
 }

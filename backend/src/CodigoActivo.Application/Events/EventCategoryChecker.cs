@@ -1,34 +1,36 @@
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Events;
 
 /// <summary>
-/// Checks event category references against domain rules.
+/// Checks the categories chosen for an event: the event requires at least one, and each must be
+/// a stored category type.
 /// </summary>
 /// <param name="categoryTypes">Repository used to persist and retrieve category types.</param>
 public sealed class EventCategoryChecker(IEventCategoryTypeRepository categoryTypes)
 {
     /// <summary>
-    /// Ensures that categories satisfies the required business rules.
+    /// Checks the chosen categories.
     /// </summary>
     /// <param name="categoryTypeIds">Identifiers of the category type items.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
-    public async Task<Result> EnsureCategoriesAsync(
+    /// <returns>A task whose result contains the selection, or the error of the first broken rule.</returns>
+    public async Task<Result<EventCategorySelection>> EnsureCategoriesAsync(
         IReadOnlyList<Guid>? categoryTypeIds,
         CancellationToken ct = default
     )
     {
-        if (categoryTypeIds is null || categoryTypeIds.Count is 0)
+        var selection = EventCategorySelection.Create(categoryTypeIds);
+        if (selection.IsFailure)
         {
-            return Error.BadRequest(ErrorCode.EventCategoriesRequired);
+            return selection;
         }
 
-        var distinct = categoryTypeIds.Distinct().ToList();
-        var existing = await categoryTypes.CountAsync(c => distinct.Contains(c.Id), ct);
-        return existing != distinct.Count
-            ? (Result)Error.BadRequest(ErrorCode.EventCategoryTypeNotFound)
-            : Result.Success();
+        var ids = selection.Value.CategoryTypeIds;
+        return await categoryTypes.CountExistingAsync(ids, ct) != ids.Count
+            ? Error.Validation(ErrorCode.EventCategoryTypeNotFound)
+            : selection;
     }
 }

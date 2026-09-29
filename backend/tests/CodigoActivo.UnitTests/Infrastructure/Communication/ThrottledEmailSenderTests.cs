@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-using CodigoActivo.Domain.Communication;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;

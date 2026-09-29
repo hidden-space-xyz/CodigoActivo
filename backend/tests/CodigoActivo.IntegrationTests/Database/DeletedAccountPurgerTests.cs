@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +16,6 @@ public sealed class DeletedAccountPurgerTests(CodigoActivoWebAppFactory factory)
     {
         return new DeletedAccountPurger(
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
-            Factory.Clock,
             new DeletedAccountPurgeOptions(),
             NullLogger<DeletedAccountPurger>.Instance
         );
@@ -35,12 +34,12 @@ public sealed class DeletedAccountPurgerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.DeletedAccounts.AddRange(
-                new DeletedAccount { Id = erasedToday, DeletedAt = Factory.Clock.UtcNow },
-                new DeletedAccount
-                {
-                    Id = erasedLongAgo,
-                    DeletedAt = Factory.Clock.UtcNow.AddYears(-3),
-                }
+                Persisted.As<DeletedAccount>(
+                    new { Id = erasedToday, DeletedAt = Factory.Clock.UtcNow }
+                ),
+                Persisted.As<DeletedAccount>(
+                    new { Id = erasedLongAgo, DeletedAt = Factory.Clock.UtcNow.AddYears(-3) }
+                )
             );
             return Task.CompletedTask;
         });

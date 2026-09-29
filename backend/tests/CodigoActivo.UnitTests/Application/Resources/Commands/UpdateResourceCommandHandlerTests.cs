@@ -1,12 +1,13 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Resources.Commands;
+using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Resources;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -17,8 +18,7 @@ namespace CodigoActivo.UnitTests.Application.Resources.Commands;
 public sealed class UpdateResourceCommandHandlerTests
 {
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
-    private readonly IResourceTypeRepository resourceTypes =
-        Substitute.For<IResourceTypeRepository>();
+    private readonly FakeReadStore readStore = new();
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
     private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
     private readonly TestClock clock = new();
@@ -30,7 +30,8 @@ public sealed class UpdateResourceCommandHandlerTests
     {
         sut = new UpdateResourceCommandHandler(
             resources,
-            resourceTypes,
+            readStore,
+            new FakeQueryExecutor(),
             files,
             orphanCleaner,
             clock,
@@ -61,10 +62,7 @@ public sealed class UpdateResourceCommandHandlerTests
         result.Error.Code.Should().Be(ErrorCode.ResourceNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(
-                Arg.Any<Expression<Func<FileEntity, bool>>>(),
-                TestContext.Current.CancellationToken
-            );
+            .ExistsAsync(Arg.Any<Guid>(), TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -74,7 +72,7 @@ public sealed class UpdateResourceCommandHandlerTests
     {
         var resource = NewResource();
         resources.Finds(resource);
-        resourceTypes.TypeMissing();
+        readStore.TypeMissing();
         var request = new UpdateResourceRequest(
             "Title",
             "Subtitle",
@@ -89,7 +87,7 @@ public sealed class UpdateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceTypeNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -100,7 +98,7 @@ public sealed class UpdateResourceCommandHandlerTests
     {
         var resource = NewResource();
         resources.Finds(resource);
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         var request = new UpdateResourceRequest(
             "Title",
             "Subtitle",
@@ -115,7 +113,7 @@ public sealed class UpdateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceUrlNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -126,7 +124,7 @@ public sealed class UpdateResourceCommandHandlerTests
     {
         var resource = NewResource();
         resources.Finds(resource);
-        var type = resourceTypes.TypeExists(isExternal: true);
+        var type = readStore.TypeExists(isExternal: true);
         var request = new UpdateResourceRequest(
             "Title",
             "Subtitle",
@@ -141,7 +139,7 @@ public sealed class UpdateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceDescriptionNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -152,7 +150,7 @@ public sealed class UpdateResourceCommandHandlerTests
     {
         var resource = NewResource();
         resources.Finds(resource);
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         files.ThumbnailExists(false);
         var request = new UpdateResourceRequest(
             "Title",
@@ -168,7 +166,7 @@ public sealed class UpdateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -179,7 +177,7 @@ public sealed class UpdateResourceCommandHandlerTests
     {
         var resource = NewResource("Old", "OldSub");
         resources.Finds(resource);
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         files.ThumbnailExists(true);
         var caller = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
@@ -221,12 +219,12 @@ public sealed class UpdateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncSwitchToExternalClearsDescriptionAndCleansEmbeddedImages()
     {
-        var resource = NewResource();
         var embeddedId = Guid.NewGuid();
-        resource.Description =
-            $"{{\"text\":\"cuerpo\",\"img\":\"/api/files/{embeddedId}/content\"}}";
+        var resource = NewResource(
+            description: $"{{\"text\":\"cuerpo\",\"img\":\"/api/files/{embeddedId}/content\"}}"
+        );
         resources.Finds(resource);
-        var type = resourceTypes.TypeExists(isExternal: true);
+        var type = readStore.TypeExists(isExternal: true);
         files.ThumbnailExists(true);
         var request = new UpdateResourceRequest(
             "Title",
@@ -257,11 +255,9 @@ public sealed class UpdateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncSwitchToInternalClearsUrl()
     {
-        var resource = NewResource();
-        resource.Description = "{}";
-        resource.Url = "https://ejemplo.es/antiguo";
+        var resource = NewResource(url: "https://ejemplo.es/antiguo", description: "{}");
         resources.Finds(resource);
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         files.ThumbnailExists(true);
         var request = new UpdateResourceRequest(
             "Title",
@@ -288,7 +284,7 @@ public sealed class UpdateResourceCommandHandlerTests
         var resource = NewResource();
         var previousThumbnailId = resource.ThumbnailId;
         resources.Finds(resource);
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         files.ThumbnailExists(true);
         var request = new UpdateResourceRequest(
             "Title",
@@ -318,10 +314,9 @@ public sealed class UpdateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncThumbnailUnchangedDoesNotCleanUpThumbnail()
     {
-        var resource = NewResource();
-        resource.Description = SomeRichText;
+        var resource = NewResource(description: SomeRichText);
         resources.Finds(resource);
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         files.ThumbnailExists(true);
         var request = new UpdateResourceRequest(
             "Title",
@@ -349,13 +344,13 @@ public sealed class UpdateResourceCommandHandlerTests
     [Fact]
     public async Task HandleAsyncImageRemovedFromDescriptionCleansUpRemovedImageOnly()
     {
-        var resource = NewResource();
         var removedId = Guid.NewGuid();
         var keptId = Guid.NewGuid();
-        resource.Description =
-            $"{{\"text\":\"cuerpo\",\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
+        var resource = NewResource(
+            description: $"{{\"text\":\"cuerpo\",\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}"
+        );
         resources.Finds(resource);
-        var type = resourceTypes.TypeExists();
+        var type = readStore.TypeExists();
         files.ThumbnailExists(true);
         var request = new UpdateResourceRequest(
             "Title",

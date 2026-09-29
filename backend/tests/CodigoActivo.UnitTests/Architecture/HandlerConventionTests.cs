@@ -1,8 +1,10 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Infrastructure.Communication;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Architecture;
@@ -172,5 +174,77 @@ public sealed class HandlerConventionTests
             .ToList();
 
         offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void QueryHandlersConstructorsNeverDependOnRepositoriesOrDomainTypes()
+    {
+        var domain = typeof(Result).Assembly;
+
+        var offenders = HandlerImplementations()
+            .Where(entry => !IsCommandContract(entry.Contract))
+            .SelectMany(entry =>
+                entry
+                    .Handler.GetConstructors()
+                    .SelectMany(constructor => constructor.GetParameters())
+                    .Where(parameter =>
+                        parameter.ParameterType.Assembly == domain
+                        || parameter.ParameterType.Name.EndsWith(
+                            "Repository",
+                            StringComparison.Ordinal
+                        )
+                    )
+                    .Select(parameter => $"{entry.Handler.Name}({parameter.ParameterType.Name})")
+            )
+            .ToList();
+
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void QueryHandlersAlwaysAreOnlyInjectedIntoOtherQueryHandlers()
+    {
+        var queryHandlers = HandlerImplementations()
+            .Where(entry => !IsCommandContract(entry.Contract))
+            .Select(entry => entry.Handler)
+            .ToHashSet();
+
+        var offenders = typeof(IQuery<>)
+            .Assembly.GetTypes()
+            .Where(type =>
+                type is { IsClass: true, IsAbstract: false } && !queryHandlers.Contains(type)
+            )
+            .Where(type =>
+                type.GetConstructors()
+                    .SelectMany(constructor => constructor.GetParameters())
+                    .Any(parameter => queryHandlers.Contains(parameter.ParameterType))
+            )
+            .Select(type => type.Name)
+            .ToList();
+
+        queryHandlers.Should().NotBeEmpty();
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void CommandResultsNeverCarryResponseContracts()
+    {
+        var offenders = HandlerImplementations()
+            .Where(entry => IsCommandContract(entry.Contract))
+            .Where(entry => CarriesResponseContract(entry.Contract.GetGenericArguments()[1]))
+            .Select(entry => entry.Handler.Name)
+            .ToList();
+
+        offenders.Should().BeEmpty();
+    }
+
+    private static bool CarriesResponseContract(Type type)
+    {
+        if (type.Name.EndsWith("Response", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return type.IsGenericType && type.GetGenericArguments().Any(CarriesResponseContract);
     }
 }

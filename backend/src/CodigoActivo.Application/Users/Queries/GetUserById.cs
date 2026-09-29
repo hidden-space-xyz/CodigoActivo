@@ -1,8 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Users.Queries;
 
@@ -15,9 +14,9 @@ public sealed record GetUserByIdQuery(Guid UserId) : IQuery<Result<UserResponse>
 /// <summary>
 /// Executes the query to retrieve user by identifier.
 /// </summary>
-/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetUserByIdQueryHandler(IUserRepository users, IQueryExecutor executor)
+public sealed class GetUserByIdQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<GetUserByIdQuery, Result<UserResponse>>
 {
     /// <summary>
@@ -32,7 +31,7 @@ public sealed class GetUserByIdQueryHandler(IUserRepository users, IQueryExecuto
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            users.Query().Where(u => u.Id == query.UserId).Select(Projections.UserWithType),
+            readStore.Users.Where(u => u.Id == query.UserId).Select(UserProjections.UserWithType),
             ct
         );
         return response is null

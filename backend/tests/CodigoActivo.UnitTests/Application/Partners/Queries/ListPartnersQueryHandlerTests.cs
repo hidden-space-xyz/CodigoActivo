@@ -1,9 +1,7 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Application.Partners.Queries;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Partners.PartnerTestData;
 
@@ -11,18 +9,18 @@ namespace CodigoActivo.UnitTests.Application.Partners.Queries;
 
 public sealed class ListPartnersQueryHandlerTests
 {
-    private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
+    private readonly FakeReadStore store = new();
     private readonly ListPartnersQueryHandler sut;
 
     public ListPartnersQueryHandlerTests()
     {
-        sut = new ListPartnersQueryHandler(partners, new FakeQueryExecutor());
+        sut = new ListPartnersQueryHandler(store, new FakeQueryExecutor());
     }
 
     [Fact]
     public async Task HandleAsyncTierFilterReturnsMatchingTier()
     {
-        partners.HasPartners(NewPartner("Gold", tier: 1), NewPartner("Silver", tier: 2));
+        store.Partners.AddRange([NewPartnerRow("Gold", tier: 1), NewPartnerRow("Silver", tier: 2)]);
 
         var result = await sut.HandleAsync(
             new ListPartnersQuery(new PartnerListQuery { Tier = 2 }),
@@ -35,12 +33,12 @@ public sealed class ListPartnersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncFromDateRangeFilterKeepsPartnersWithinInclusiveBounds()
     {
-        partners.HasPartners(
-            NewPartner("Antes", fromDate: new DateOnly(2019, 12, 31)),
-            NewPartner("Inicio", fromDate: new DateOnly(2020, 1, 1)),
-            NewPartner("Fin", fromDate: new DateOnly(2023, 6, 30)),
-            NewPartner("Despues", fromDate: new DateOnly(2023, 7, 1))
-        );
+        store.Partners.AddRange([
+            NewPartnerRow("Antes", fromDate: new DateOnly(2019, 12, 31)),
+            NewPartnerRow("Inicio", fromDate: new DateOnly(2020, 1, 1)),
+            NewPartnerRow("Fin", fromDate: new DateOnly(2023, 6, 30)),
+            NewPartnerRow("Despues", fromDate: new DateOnly(2023, 7, 1)),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListPartnersQuery(
@@ -59,10 +57,10 @@ public sealed class ListPartnersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncFromDateFromFilterExcludesEarlierPartners()
     {
-        partners.HasPartners(
-            NewPartner("Viejo", fromDate: new DateOnly(2018, 5, 5)),
-            NewPartner("Nuevo", fromDate: new DateOnly(2024, 5, 5))
-        );
+        store.Partners.AddRange([
+            NewPartnerRow("Viejo", fromDate: new DateOnly(2018, 5, 5)),
+            NewPartnerRow("Nuevo", fromDate: new DateOnly(2024, 5, 5)),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListPartnersQuery(new PartnerListQuery { FromDateFrom = new DateOnly(2020, 1, 1) }),
@@ -75,7 +73,7 @@ public sealed class ListPartnersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNameSearchIsAccentAndCaseInsensitive()
     {
-        partners.HasPartners(NewPartner("Fundación Ávila"), NewPartner("Banco"));
+        store.Partners.AddRange([NewPartnerRow("Fundación Ávila"), NewPartnerRow("Banco")]);
 
         var result = await sut.HandleAsync(
             new ListPartnersQuery(new PartnerListQuery { Name = "avila" }),
@@ -88,10 +86,10 @@ public sealed class ListPartnersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncWebsiteSearchMatchesSubstring()
     {
-        partners.HasPartners(
-            NewPartner("A", web: "https://alpha.org"),
-            NewPartner("B", web: "https://beta.org")
-        );
+        store.Partners.AddRange([
+            NewPartnerRow("A", web: "https://alpha.org"),
+            NewPartnerRow("B", web: "https://beta.org"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListPartnersQuery(new PartnerListQuery { Website = "beta" }),
@@ -104,7 +102,11 @@ public sealed class ListPartnersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncExplicitDescendingSortOrdersDescending()
     {
-        partners.HasPartners(NewPartner("Acme"), NewPartner("Zeta"), NewPartner("Mint"));
+        store.Partners.AddRange([
+            NewPartnerRow("Acme"),
+            NewPartnerRow("Zeta"),
+            NewPartnerRow("Mint"),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListPartnersQuery(new PartnerListQuery { Sort = "-name" }),
@@ -117,15 +119,11 @@ public sealed class ListPartnersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNoSortSpecifiedOrdersByTierAscendingThenFromDateDescending()
     {
-        var tier1Newer = NewPartner("Tier1Newer", tier: 1);
-        tier1Newer.FromDate = new DateOnly(2023, 6, 1);
-        var tier1Older = NewPartner("Tier1Older", tier: 1);
-        tier1Older.FromDate = new DateOnly(2020, 6, 1);
-        var tier2 = NewPartner("Tier2", tier: 2);
-        tier2.FromDate = new DateOnly(2025, 1, 1);
-        var tier3 = NewPartner("Tier3", tier: 3);
-        tier3.FromDate = new DateOnly(2019, 1, 1);
-        partners.HasPartners(tier2, tier3, tier1Older, tier1Newer);
+        var tier1Newer = NewPartnerRow("Tier1Newer", tier: 1, fromDate: new DateOnly(2023, 6, 1));
+        var tier1Older = NewPartnerRow("Tier1Older", tier: 1, fromDate: new DateOnly(2020, 6, 1));
+        var tier2 = NewPartnerRow("Tier2", tier: 2, fromDate: new DateOnly(2025, 1, 1));
+        var tier3 = NewPartnerRow("Tier3", tier: 3, fromDate: new DateOnly(2019, 1, 1));
+        store.Partners.AddRange([tier2, tier3, tier1Older, tier1Newer]);
 
         var result = await sut.HandleAsync(
             new ListPartnersQuery(new PartnerListQuery()),

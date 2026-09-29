@@ -3,7 +3,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Contracts;
-using CodigoActivo.Application.DTOs;
 using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;

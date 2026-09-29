@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.EventCategories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

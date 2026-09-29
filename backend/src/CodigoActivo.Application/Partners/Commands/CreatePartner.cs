@@ -1,10 +1,12 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Partners;
 
 namespace CodigoActivo.Application.Partners.Commands;
 
@@ -14,7 +16,7 @@ namespace CodigoActivo.Application.Partners.Commands;
 /// <param name="Request">Validated client request data.</param>
 /// <param name="UserId">Identifier of the user.</param>
 public sealed record CreatePartnerCommand(CreatePartnerRequest Request, Guid UserId)
-    : ICommand<Result<PartnerResponse>>;
+    : ICommand<Result<Guid>>;
 
 /// <summary>
 /// Executes the command to create a partner.
@@ -30,39 +32,40 @@ public sealed class CreatePartnerCommandHandler(
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator
-) : ICommandHandler<CreatePartnerCommand, Result<PartnerResponse>>
+) : ICommandHandler<CreatePartnerCommand, Result<Guid>>
 {
     /// <summary>
     /// Handles the request to create a partner.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a partner on success, or an application error on failure.</returns>
-    public async Task<Result<PartnerResponse>> HandleAsync(
+    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    public async Task<Result<Guid>> HandleAsync(
         CreatePartnerCommand command,
         CancellationToken ct = default
     )
     {
         var request = command.Request;
 
-        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        if (!await files.ExistsAsync(request.ThumbnailId, ct))
         {
-            return Error.BadRequest(ErrorCode.PartnerThumbnailNotFound);
+            return Error.Validation(ErrorCode.PartnerThumbnailNotFound);
         }
 
-        var partner = new Partner
-        {
-            Name = request.Name.Trim(),
-            FromDate = request.FromDate!.Value,
-            Tier = request.Tier,
-            Web = request.Website.NormalizeOrNull(),
-            ThumbnailId = request.ThumbnailId,
-            CreatedAt = clock.UtcNow,
-            CreatedBy = command.UserId,
-        };
+        var partner = Partner.Create(
+            new PartnerDetails(
+                request.Name,
+                request.FromDate!.Value,
+                request.Tier,
+                request.Website,
+                request.ThumbnailId
+            ),
+            command.UserId,
+            clock.UtcNow
+        );
         await partners.AddAsync(partner, ct);
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Partners);
-        return partner.ToResponse();
+        return partner.Id;
     }
 }

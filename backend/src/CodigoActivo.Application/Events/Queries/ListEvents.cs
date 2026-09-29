@@ -1,9 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Events.Contracts;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -17,11 +16,11 @@ public sealed record ListEventsQuery(EventListQuery Filters)
 /// <summary>
 /// Executes the query to list events.
 /// </summary>
-/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ListEventsQueryHandler(
-    IEventRepository events,
+    IReadStore readStore,
     IQueryExecutor executor,
     IClock clock
 ) : IQueryHandler<ListEventsQuery, PagedResult<EventListItemResponse>>
@@ -60,7 +59,7 @@ public sealed class ListEventsQueryHandler(
     )
     {
         var today = clock.Today;
-        var source = events.Query().Select(Projections.EventListItem);
+        var source = readStore.Events.Select(EventProjections.EventListItem);
 
         source = query.Scope switch
         {

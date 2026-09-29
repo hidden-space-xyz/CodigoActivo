@@ -1,9 +1,12 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Reports.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -27,10 +30,14 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     {
         return Factory.SeedAsync(async db =>
         {
-            (await db.Users.FindAsync([TestSeedData.Users.AdminId], Ct))!.SecondaryPhone =
-                "+34700000001";
-            (await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct))!.SecondaryPhone =
-                "+34700000002";
+            Persisted.Overwrite(
+                (await db.Users.FindAsync([TestSeedData.Users.AdminId], Ct))!,
+                new { SecondaryPhone = "+34700000001" }
+            );
+            Persisted.Overwrite(
+                (await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct))!,
+                new { SecondaryPhone = "+34700000002" }
+            );
         });
     }
 
@@ -45,20 +52,22 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             );
 
             db.Events.Add(
-                new Event
-                {
-                    Id = EventId,
-                    Title = "Feria de Voluntariado",
-                    Subtitle = "Edición 2026",
-                    Description = "{}",
-                    EventStartsAt = new DateOnly(2026, 5, 1),
-                    EventEndsAt = new DateOnly(2026, 5, 2),
-                    SignupStartsAt = At,
-                    SignupEndsAt = At,
-                    ThumbnailId = EventThumbnailId,
-                    CreatedAt = At,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Event>(
+                    new
+                    {
+                        Id = EventId,
+                        Title = "Feria de Voluntariado",
+                        Subtitle = "Edición 2026",
+                        Description = "{}",
+                        EventStartsAt = new DateOnly(2026, 5, 1),
+                        EventEndsAt = new DateOnly(2026, 5, 2),
+                        SignupStartsAt = At,
+                        SignupEndsAt = At,
+                        ThumbnailId = EventThumbnailId,
+                        CreatedAt = At,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
 
             db.Activities.Add(BuildActivity(ActivityAId, "Taller", ActivityAThumbnailId));
@@ -102,32 +111,36 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         DateTimeOffset? startsAt = null
     )
     {
-        return new()
-        {
-            Id = id,
-            Title = title,
-            Description = "desc",
-            Location = "Sala",
-            ActivityStartsAt = startsAt ?? At,
-            ActivityEndsAt = (startsAt ?? At).AddHours(2),
-            EventId = EventId,
-            ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
-            ThumbnailId = thumbnailId,
-            CreatedAt = At,
-            CreatedBy = TestSeedData.Users.AdminId,
-        };
+        return Persisted.As<Activity>(
+            new
+            {
+                Id = id,
+                Title = title,
+                Description = "desc",
+                Location = "Sala",
+                ActivityStartsAt = startsAt ?? At,
+                ActivityEndsAt = (startsAt ?? At).AddHours(2),
+                EventId = EventId,
+                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                ThumbnailId = thumbnailId,
+                CreatedAt = At,
+                CreatedBy = TestSeedData.Users.AdminId,
+            }
+        );
     }
 
     private static FileEntity Thumbnail(Guid id)
     {
-        return new()
-        {
-            Id = id,
-            Name = "thumb",
-            Extension = "png",
-            UploadedAt = At,
-            UploadedBy = TestSeedData.Users.AdminId,
-        };
+        return Persisted.As<FileEntity>(
+            new
+            {
+                Id = id,
+                Name = "thumb",
+                Extension = "png",
+                UploadedAt = At,
+                UploadedBy = TestSeedData.Users.AdminId,
+            }
+        );
     }
 
     private static ActivityUserRoleAssignment Assignment(
@@ -137,14 +150,16 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         Guid statusId
     )
     {
-        return new()
-        {
-            ActivityId = activityId,
-            UserId = userId,
-            ActivityRoleTypeId = roleTypeId,
-            AssignmentStatusId = statusId,
-            CreatedAt = At,
-        };
+        return Persisted.As<ActivityUserRoleAssignment>(
+            new
+            {
+                ActivityId = activityId,
+                UserId = userId,
+                ActivityRoleTypeId = roleTypeId,
+                AssignmentStatusId = statusId,
+                CreatedAt = At,
+            }
+        );
     }
 
     [Fact]

@@ -1,14 +1,17 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
-using CodigoActivo.Application.Events.Queries;
+using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Files;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -42,42 +45,15 @@ public sealed class UpdateEventCommandHandlerTests
             new EventCategoryChecker(categoryTypes),
             clock,
             uow,
-            cacheInvalidator,
-            new GetEventByIdQueryHandler(events, new FakeQueryExecutor())
+            cacheInvalidator
         );
     }
 
     private void PrepareUpdate(Event ev)
     {
-        events.HasEvents(ev);
-        events.GetForEditAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
-        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
-            .Returns(_ =>
-            {
-                foreach (var category in ev.Categories)
-                {
-                    category.EventCategoryType ??= new EventCategoryType
-                    {
-                        Id = category.EventCategoryTypeId,
-                        Name = "Charlas",
-                        Color = "#654321",
-                    };
-                }
-
-                foreach (var termsDocument in ev.TermsDocuments)
-                {
-                    termsDocument.TermsDocument ??= new TermsDocument
-                    {
-                        Id = termsDocument.TermsDocumentId,
-                        Name = "Términos generales",
-                        Description = "{}",
-                    };
-                }
-
-                return 1;
-            });
     }
 
     [Fact]
@@ -86,10 +62,7 @@ public sealed class UpdateEventCommandHandlerTests
         var ev = NewEvent();
         PrepareUpdate(ev);
         termsDocuments
-            .CountAsync(
-                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
+            .CountExistingAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(0);
 
         var result = await sut.HandleAsync(
@@ -104,7 +77,7 @@ public sealed class UpdateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.TermsDocumentNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -133,7 +106,7 @@ public sealed class UpdateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventTermsDocumentDuplicated);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -146,10 +119,7 @@ public sealed class UpdateEventCommandHandlerTests
         var termsDocumentId = Guid.NewGuid();
         PrepareUpdate(ev);
         termsDocuments
-            .CountAsync(
-                Arg.Any<Expression<Func<TermsDocument, bool>>>(),
-                Arg.Any<CancellationToken>()
-            )
+            .CountExistingAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(1);
 
         var result = await sut.HandleAsync(
@@ -189,7 +159,7 @@ public sealed class UpdateEventCommandHandlerTests
         result.Error!.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
         await events
             .DidNotReceiveWithAnyArgs()
-            .GetForEditAsync(Guid.Empty, TestContext.Current.CancellationToken);
+            .GetByIdAsync(Guid.Empty, TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -212,9 +182,8 @@ public sealed class UpdateEventCommandHandlerTests
     [Fact]
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
-        Event? missing = null;
         categoryTypes.HasCategoryCount(1);
-        events.GetForEditAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(missing);
+        events.Finds(null);
         var request = UpdateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.HandleAsync(
@@ -233,7 +202,7 @@ public sealed class UpdateEventCommandHandlerTests
     {
         var ev = NewEvent();
         categoryTypes.HasCategoryCount(1);
-        events.GetForEditAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
         activities
             .AnyOutsideRangeAsync(
                 ev.Id,
@@ -249,7 +218,7 @@ public sealed class UpdateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.BadRequest);
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(ErrorCode.EventActivitiesOutsideNewRange);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -260,7 +229,7 @@ public sealed class UpdateEventCommandHandlerTests
     {
         var ev = NewEvent();
         categoryTypes.HasCategoryCount(1);
-        events.GetForEditAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
         activities
             .AnyOutsideRangeAsync(
                 ev.Id,
@@ -290,10 +259,7 @@ public sealed class UpdateEventCommandHandlerTests
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
-        var ev = NewEvent("Old title", "Old subtitle");
-        ev.Categories.Add(
-            new EventCategory { EventId = ev.Id, EventCategoryTypeId = Guid.NewGuid() }
-        );
+        var ev = NewEvent("Old title", "Old subtitle", categoryTypeIds: [Guid.NewGuid()]);
         PrepareUpdate(ev);
 
         var request = UpdateReq(
@@ -374,11 +340,9 @@ public sealed class UpdateEventCommandHandlerTests
     {
         var keptA = Guid.NewGuid();
         var keptB = Guid.NewGuid();
-        var ev = NewEvent();
-        var categoryA = NewCategory(ev.Id, keptA, "Talleres", "#111111");
-        var categoryB = NewCategory(ev.Id, keptB, "Charlas", "#222222");
-        ev.Categories.Add(categoryA);
-        ev.Categories.Add(categoryB);
+        var ev = NewEvent(categoryTypeIds: [keptA, keptB]);
+        var categoryA = ev.Categories.Single(c => c.EventCategoryTypeId == keptA);
+        var categoryB = ev.Categories.Single(c => c.EventCategoryTypeId == keptB);
         PrepareUpdate(ev);
         categoryTypes.HasCategoryCount(2);
         var request = UpdateReq(categoryTypeIds: [keptA, keptB], thumbnailId: ev.ThumbnailId);
@@ -397,11 +361,11 @@ public sealed class UpdateEventCommandHandlerTests
     [Fact]
     public async Task HandleAsyncImagesDroppedFromDescriptionCleansUpRemovedKeepsRest()
     {
-        var ev = NewEvent();
         var removedId = Guid.NewGuid();
         var keptId = Guid.NewGuid();
-        ev.Description =
-            $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}";
+        var ev = NewEvent(
+            description: $"{{\"a\":\"/api/files/{removedId}/content\",\"b\":\"/api/files/{keptId}/content\"}}"
+        );
         PrepareUpdate(ev);
         var request = UpdateReq(
             categoryTypeIds: [Guid.NewGuid()],

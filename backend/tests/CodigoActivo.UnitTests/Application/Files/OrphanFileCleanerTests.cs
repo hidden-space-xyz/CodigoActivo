@@ -1,10 +1,9 @@
-using System.Linq.Expressions;
 using AwesomeAssertions;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Files;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -16,8 +15,7 @@ public sealed class OrphanFileCleanerTests
 {
     private readonly IFileRepository files = Substitute.For<IFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ILocalFileSystemRepository storage =
-        Substitute.For<ILocalFileSystemRepository>();
+    private readonly IFileStorage storage = Substitute.For<IFileStorage>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly OrphanFileCleaner sut;
 
@@ -34,14 +32,16 @@ public sealed class OrphanFileCleanerTests
 
     private static FileEntity NewFile(string name = "photo.png", string extension = "png")
     {
-        return new()
-        {
-            Id = Guid.NewGuid(),
-            Name = name,
-            Extension = extension,
-            UploadedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            UploadedBy = Guid.NewGuid(),
-        };
+        return Persisted.As<FileEntity>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                Extension = extension,
+                UploadedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                UploadedBy = Guid.NewGuid(),
+            }
+        );
     }
 
     private void FileFound(FileEntity file)
@@ -69,12 +69,12 @@ public sealed class OrphanFileCleanerTests
     private void StoredFilesAre(params FileEntity[] all)
     {
         files
-            .GetAsync(Arg.Any<Expression<Func<FileEntity, bool>>>(), Arg.Any<CancellationToken>())
+            .ListByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(ci =>
             {
-                var predicate = ci.Arg<Expression<Func<FileEntity, bool>>>();
-                Assert.NotNull(predicate);
-                List<FileEntity> matches = [.. all.Where(predicate.Compile().Invoke)];
+                var ids = ci.Arg<IReadOnlyCollection<Guid>>();
+                Assert.NotNull(ids);
+                List<FileEntity> matches = [.. all.Where(file => ids.Contains(file.Id))];
                 return matches;
             });
     }
@@ -140,12 +140,7 @@ public sealed class OrphanFileCleanerTests
     public async Task DeleteIfOrphanedAsyncCancelledPropagatesCancellation()
     {
         files
-            .When(f =>
-                f.FindAsync(
-                    Arg.Any<Expression<Func<FileEntity, bool>>>(),
-                    Arg.Any<CancellationToken>()
-                )
-            )
+            .When(f => f.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
             .Do(_ => throw new OperationCanceledException());
 
         var act = async () =>

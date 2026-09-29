@@ -1,6 +1,6 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
 using CodigoActivo.Composition;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

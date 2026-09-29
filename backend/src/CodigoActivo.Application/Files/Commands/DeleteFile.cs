@@ -1,8 +1,10 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Files.Commands;
 
@@ -22,7 +24,7 @@ public sealed record DeleteFileCommand(Guid FileId) : ICommand<Result>;
 public sealed class DeleteFileCommandHandler(
     IFileRepository files,
     IUnitOfWork uow,
-    ILocalFileSystemRepository storage,
+    IFileStorage storage,
     ICacheInvalidator cacheInvalidator
 ) : ICommandHandler<DeleteFileCommand, Result>
 {
@@ -34,7 +36,7 @@ public sealed class DeleteFileCommandHandler(
     /// <returns>A task whose result indicates success or contains the application error.</returns>
     public async Task<Result> HandleAsync(DeleteFileCommand command, CancellationToken ct = default)
     {
-        var file = await files.FindAsync(f => f.Id == command.FileId, ct);
+        var file = await files.GetByIdAsync(command.FileId, ct);
         if (file is null)
         {
             return Error.NotFound(ErrorCode.FileNotFound);

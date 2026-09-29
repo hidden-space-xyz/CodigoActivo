@@ -1,7 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Configuration;
 using CodigoActivo.API.Diagnostics;
-using CodigoActivo.Application.Diagnostics;
+using CodigoActivo.Application.Common.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

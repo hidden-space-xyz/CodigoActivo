@@ -1,9 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Caching;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Activities.Queries;
@@ -17,11 +15,11 @@ public sealed record ListAssignmentStatusTypesQuery
 /// <summary>
 /// Executes the query to list assignment status types.
 /// </summary>
-/// <param name="statuses">Repository used to persist and retrieve statuses.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListAssignmentStatusTypesQueryHandler(
-    IAssignmentStatusTypeRepository statuses,
+    IReadStore readStore,
     IQueryExecutor executor,
     HybridCache cache
 ) : IQueryHandler<ListAssignmentStatusTypesQuery, IReadOnlyList<AssignmentStatusTypeResponse>>
@@ -41,10 +39,9 @@ public sealed class ListAssignmentStatusTypesQueryHandler(
             executor,
             "activities:assignment-status-types",
             () =>
-                statuses
-                    .Query()
-                    .OrderBy(status => status.Name)
-                    .Select(Projections.AssignmentStatusType),
+                readStore
+                    .AssignmentStatusTypes.OrderBy(status => status.Name)
+                    .Select(ActivityProjections.AssignmentStatusType),
             ct
         );
     }

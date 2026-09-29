@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -33,20 +33,20 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => new { u.FirstName, u.LastName });
 
         builder
-            .HasOne(u => u.UserStatusType)
-            .WithMany(s => s.Users)
+            .HasOne<UserStatusType>()
+            .WithMany()
             .HasForeignKey(u => u.UserStatusTypeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne(u => u.UserType)
-            .WithMany(t => t.Users)
+            .HasOne<UserType>()
+            .WithMany()
             .HasForeignKey(u => u.UserTypeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne(u => u.Parent)
-            .WithMany(u => u.Children)
+            .HasOne<User>()
+            .WithMany()
             .HasForeignKey(u => u.ParentId)
             .OnDelete(DeleteBehavior.Cascade);
     }

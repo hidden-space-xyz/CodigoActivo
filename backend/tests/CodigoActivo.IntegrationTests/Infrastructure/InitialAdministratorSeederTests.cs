@@ -1,6 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -101,17 +101,19 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
 
     private static User NewExistingUser(Guid id)
     {
-        return new User
-        {
-            Id = id,
-            FirstName = "Existing",
-            LastName = "User",
-            Email = "existing@codigoactivo.test",
-            BirthDate = new DateOnly(1990, 1, 1),
-            Gender = Gender.Other,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Participant,
-            CreatedAt = CreatedAt,
-        };
+        return Persisted.As<User>(
+            new
+            {
+                Id = id,
+                FirstName = "Existing",
+                LastName = "User",
+                Email = "existing@codigoactivo.test",
+                BirthDate = new DateOnly(1990, 1, 1),
+                Gender = Gender.Other,
+                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
+                UserTypeId = SeedIds.UserTypes.Participant,
+                CreatedAt = CreatedAt,
+            }
+        );
     }
 }

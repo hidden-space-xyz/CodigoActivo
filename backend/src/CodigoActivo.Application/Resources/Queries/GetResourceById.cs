@@ -1,8 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
 
 namespace CodigoActivo.Application.Resources.Queries;
 
@@ -15,12 +14,10 @@ public sealed record GetResourceByIdQuery(Guid ResourceId) : IQuery<Result<Resou
 /// <summary>
 /// Executes the query to retrieve resource by identifier.
 /// </summary>
-/// <param name="resources">Repository used to persist and retrieve resources.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetResourceByIdQueryHandler(
-    IResourceRepository resources,
-    IQueryExecutor executor
-) : IQueryHandler<GetResourceByIdQuery, Result<ResourceResponse>>
+public sealed class GetResourceByIdQueryHandler(IReadStore readStore, IQueryExecutor executor)
+    : IQueryHandler<GetResourceByIdQuery, Result<ResourceResponse>>
 {
     /// <summary>
     /// Handles the request to retrieve resource by identifier.
@@ -34,7 +31,9 @@ public sealed class GetResourceByIdQueryHandler(
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            resources.Query().Where(r => r.Id == query.ResourceId).Select(Projections.Resource),
+            readStore
+                .Resources.Where(r => r.Id == query.ResourceId)
+                .Select(ResourceProjections.Resource),
             ct
         );
         return response is null ? Error.NotFound(ErrorCode.ResourceNotFound) : response;

@@ -1,9 +1,10 @@
 using System.Diagnostics;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Communication;
-using CodigoActivo.Domain.Security;
+using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
@@ -192,6 +193,7 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         var toRemove = services
             .Where(d =>
                 d.ServiceType == typeof(CodigoActivoDbContext)
+                || d.ServiceType == typeof(CodigoActivoReadDbContext)
                 || (
                     d.ServiceType.FullName?.Contains("DbContextOptions", StringComparison.Ordinal)
                     ?? false
@@ -211,6 +213,12 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
                         npgsql.MigrationsAssembly(typeof(CodigoActivoDbContext).Assembly.FullName)
                 )
                 .UseSnakeCaseNamingConvention()
+        );
+        services.AddDbContext<CodigoActivoReadDbContext>(options =>
+            options
+                .UseNpgsql(postgres.ConnectionString)
+                .UseSnakeCaseNamingConvention()
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
         );
     }
 

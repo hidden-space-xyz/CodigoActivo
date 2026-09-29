@@ -1,11 +1,13 @@
+using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Caching;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
-using CodigoActivo.Application.Mapping;
+using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Repositories;
-using CodigoActivo.Domain.Storage;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
 
 namespace CodigoActivo.Application.News.Commands;
 
@@ -19,7 +21,7 @@ public sealed record UpdateNewsItemCommand(
     Guid NewsItemId,
     UpdateNewsItemRequest Request,
     Guid UserId
-) : ICommand<Result<NewsItemResponse>>;
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the news item.
@@ -37,41 +39,45 @@ public sealed class UpdateNewsItemCommandHandler(
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator
-) : ICommandHandler<UpdateNewsItemCommand, Result<NewsItemResponse>>
+) : ICommandHandler<UpdateNewsItemCommand, Result>
 {
     /// <summary>
     /// Handles the request to update the news item.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a news item on success, or an application error on failure.</returns>
-    public async Task<Result<NewsItemResponse>> HandleAsync(
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    public async Task<Result> HandleAsync(
         UpdateNewsItemCommand command,
         CancellationToken ct = default
     )
     {
         var request = command.Request;
 
-        var newsItem = await news.FindAsync(a => a.Id == command.NewsItemId, ct);
+        var newsItem = await news.GetByIdAsync(command.NewsItemId, ct);
         if (newsItem is null)
         {
             return Error.NotFound(ErrorCode.NewsItemNotFound);
         }
 
-        if (!await files.ExistsAsync(f => f.Id == request.ThumbnailId, ct))
+        if (!await files.ExistsAsync(request.ThumbnailId, ct))
         {
-            return Error.BadRequest(ErrorCode.NewsItemThumbnailNotFound);
+            return Error.Validation(ErrorCode.NewsItemThumbnailNotFound);
         }
 
         var previousThumbnailId = newsItem.ThumbnailId;
         var previousDescription = newsItem.Description;
 
-        newsItem.Title = request.Title.Trim();
-        newsItem.Subtitle = request.Subtitle.Trim();
-        newsItem.Description = request.Description;
-        newsItem.ThumbnailId = request.ThumbnailId;
-        newsItem.UpdatedAt = clock.UtcNow;
-        newsItem.UpdatedBy = command.UserId;
+        newsItem.Update(
+            new NewsItemContent(
+                request.Title,
+                request.Subtitle,
+                request.Description,
+                request.ThumbnailId
+            ),
+            command.UserId,
+            clock.UtcNow
+        );
 
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.News);
@@ -86,6 +92,6 @@ public sealed class UpdateNewsItemCommandHandler(
 
         await orphanCleaner.DeleteOrphanedAsync(orphanCandidates, ct);
 
-        return newsItem.ToResponse();
+        return Result.Success();
     }
 }

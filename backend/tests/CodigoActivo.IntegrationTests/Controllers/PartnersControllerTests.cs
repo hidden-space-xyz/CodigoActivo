@@ -1,9 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Partners;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -19,16 +21,18 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Partners.Add(
-                new Partner
-                {
-                    Id = id,
-                    Name = name,
-                    Tier = 1,
-                    FromDate = fromDate ?? new DateOnly(2024, 1, 1),
-                    ThumbnailId = thumbnailId,
-                    CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
+                Persisted.As<Partner>(
+                    new
+                    {
+                        Id = id,
+                        Name = name,
+                        Tier = 1,
+                        FromDate = fromDate ?? new DateOnly(2024, 1, 1),
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
             );
             return Task.CompletedTask;
         });

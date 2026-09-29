@@ -1,11 +1,9 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
 
@@ -13,22 +11,21 @@ namespace CodigoActivo.UnitTests.Application.Reports.Queries;
 
 public sealed class GetEventBadgesQueryHandlerTests
 {
-    private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly FakeReadStore store = new();
     private readonly GetEventBadgesQueryHandler sut;
 
     public GetEventBadgesQueryHandlerTests()
     {
-        sut = new GetEventBadgesQueryHandler(events, activities, new FakeQueryExecutor());
+        sut = new GetEventBadgesQueryHandler(store, new FakeQueryExecutor());
     }
 
-    private static User BadgeUser(
+    private static UserRow BadgeUser(
         string first,
         string last,
         string typeName,
         string typeColor,
         DateTimeOffset createdAt,
-        User? parent = null
+        UserRow? parent = null
     )
     {
         return new()
@@ -40,7 +37,7 @@ public sealed class GetEventBadgesQueryHandlerTests
             CreatedAt = createdAt,
             Parent = parent,
             ParentId = parent?.Id,
-            UserType = new UserType
+            UserType = new UserTypeRow
             {
                 Description = "Descripción de prueba",
                 Name = typeName,
@@ -49,8 +46,8 @@ public sealed class GetEventBadgesQueryHandlerTests
         };
     }
 
-    private static ActivityUserRoleAssignment BadgeAsg(
-        User user,
+    private static AssignmentRow BadgeAsg(
+        UserRow user,
         string activityTitle,
         DateTimeOffset startsAt,
         Guid statusId,
@@ -63,7 +60,7 @@ public sealed class GetEventBadgesQueryHandlerTests
             UserId = user.Id,
             User = user,
             ActivityId = Guid.NewGuid(),
-            Activity = new Activity
+            Activity = new ActivityRow
             {
                 Description = "Descripción de la actividad",
                 Location = location,
@@ -79,8 +76,6 @@ public sealed class GetEventBadgesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
-        events.HasEvents();
-
         var result = await sut.HandleAsync(
             new GetEventBadgesQuery(QueriedEventId),
             TestContext.Current.CancellationToken
@@ -89,7 +84,7 @@ public sealed class GetEventBadgesQueryHandlerTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        activities.DidNotReceive().QueryAssignments();
+        store.ReadsOf<AssignmentRow>().Should().Be(0);
     }
 
     [Fact]
@@ -101,23 +96,23 @@ public sealed class GetEventBadgesQueryHandlerTests
         var child = BadgeUser("Mateo", "Miembro", "Participante", "#FFFFFF", createdAt, parent);
         var adult = BadgeUser("Ada", "Admin", "Socio", "#EF4444", createdAt);
 
-        events.HasEvents(
-            new Event
+        store.Events.Add(
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = QueriedEventId,
                 Title = "Feria",
             }
         );
-        activities.HasAssignments(
+        store.Assignments.AddRange([
             BadgeAsg(adult, "Charla", When.AddHours(2), Confirmed, location: "Salón de actos"),
             BadgeAsg(adult, "Taller", When, Confirmed, location: "Aula 1"),
             BadgeAsg(adult, "Taller", When, Confirmed, location: "Sesión online por videollamada"),
             BadgeAsg(adult, "Otro evento", When, Confirmed, eventId: Guid.NewGuid()),
             BadgeAsg(child, "Taller infantil", When, Confirmed),
             BadgeAsg(child, "Cuentacuentos", When, Requested),
-            BadgeAsg(parent, "Charla", When, Denied)
-        );
+            BadgeAsg(parent, "Charla", When, Denied),
+        ]);
 
         var result = await sut.HandleAsync(
             new GetEventBadgesQuery(QueriedEventId),
@@ -161,15 +156,14 @@ public sealed class GetEventBadgesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncNoConfirmedAssignmentsReturnsEmptyBadges()
     {
-        events.HasEvents(
-            new Event
+        store.Events.Add(
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = QueriedEventId,
                 Title = "Feria",
             }
         );
-        activities.HasAssignments();
 
         var result = await sut.HandleAsync(
             new GetEventBadgesQuery(QueriedEventId),

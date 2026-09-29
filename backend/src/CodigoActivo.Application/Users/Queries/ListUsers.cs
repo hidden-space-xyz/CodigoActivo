@@ -1,10 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Mapping;
-using CodigoActivo.Application.Querying;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Users.Contracts;
 
 namespace CodigoActivo.Application.Users.Queries;
 
@@ -20,12 +18,12 @@ public sealed record ListUsersQuery(UserListQuery Filters, Guid CallerId, bool I
 /// <summary>
 /// Executes the query to list users.
 /// </summary>
-/// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class ListUsersQueryHandler(IUserRepository users, IQueryExecutor executor)
+public sealed class ListUsersQueryHandler(IReadStore readStore, IQueryExecutor executor)
     : IQueryHandler<ListUsersQuery, PagedResult<UserResponse>>
 {
-    private static readonly SortMap<User> Sort = new SortMap<User>()
+    private static readonly SortMap<UserRow> Sort = new SortMap<UserRow>()
         .Add("firstName", u => u.FirstName)
         .Add("lastName", u => u.LastName)
         .Add("email", u => u.Email)
@@ -54,7 +52,7 @@ public sealed class ListUsersQueryHandler(IUserRepository users, IQueryExecutor 
     )
     {
         var filters = query.Filters;
-        var source = users.Query();
+        var source = readStore.Users;
 
         if (!query.IsAdmin)
         {
@@ -65,7 +63,7 @@ public sealed class ListUsersQueryHandler(IUserRepository users, IQueryExecutor 
 
         source = Sort.Apply(source, filters.Sort);
         return executor.ToPagedAsync(
-            source.Select(query.IsAdmin ? Projections.UserWithType : Projections.User),
+            source.Select(query.IsAdmin ? UserProjections.UserWithType : UserProjections.User),
             filters.Page,
             filters.PageSize,
             ct

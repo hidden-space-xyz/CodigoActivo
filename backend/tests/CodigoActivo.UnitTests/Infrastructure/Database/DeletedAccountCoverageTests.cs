@@ -1,8 +1,12 @@
+using System.Reflection;
 using AwesomeAssertions;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
+using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Xunit;
@@ -13,9 +17,9 @@ public sealed class DeletedAccountCoverageTests : IDisposable
 {
     private const string Decide =
         "every new column or table about a user must be classified here and, when it is copied, "
-        + "added to the projections of DeletedAccountSnapshot and to DeletedAccountRepositoryTests; "
-        + "otherwise leave it out on purpose or hand it over to the initial administrator in "
-        + "DeletedAccountRepository and DeletedAccountRepositoryTests";
+        + "added to LegalCopyPerson, to the projections of DeletedAccountSnapshot and to "
+        + "AccountErasureTests; otherwise leave it out on purpose in LegalCopy.ExcludedUserProperties "
+        + "or hand it over to the initial administrator in AccountErasureStore and AccountErasureTests";
 
     private static readonly string[] CopiedReferences =
     [
@@ -85,21 +89,24 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     {
         return
         [
-            .. typeof(DeletedAccountSnapshot.PersonCopy)
-                .GetProperties()
+            .. typeof(LegalCopyPerson)
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Select(property => property.Name)
-                .Except(DeletedAccountSnapshot.CatalogNames),
+                .Except(LegalCopyPerson.CatalogNameProperties),
         ];
     }
 
-    private static User NewUser(Guid? parentId = null)
+    private static User NewUser(Guid? id = null, Guid? parentId = null)
     {
-        return new User
-        {
-            FirstName = "Ana",
-            LastName = "Gil",
-            ParentId = parentId,
-        };
+        return Persisted.As<User>(
+            new
+            {
+                Id = id ?? Guid.NewGuid(),
+                FirstName = "Ana",
+                LastName = "Gil",
+                ParentId = parentId,
+            }
+        );
     }
 
     [Fact]
@@ -108,13 +115,10 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         PropertiesOf<User>()
             .Should()
             .BeEquivalentTo(
-                [.. CopiedUserProperties(), .. DeletedAccountSnapshot.ExcludedUserProperties],
+                [.. CopiedUserProperties(), .. LegalCopy.ExcludedUserProperties],
                 Decide
             );
-        CopiedUserProperties()
-            .Intersect(DeletedAccountSnapshot.ExcludedUserProperties)
-            .Should()
-            .BeEmpty();
+        CopiedUserProperties().Intersect(LegalCopy.ExcludedUserProperties).Should().BeEmpty();
     }
 
     [Fact]
@@ -189,7 +193,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         var dependent = NewUser(parentId: Guid.NewGuid());
         context.Users.Attach(dependent);
         context.Users.Remove(dependent);
-        context.DeletedAccounts.Add(new DeletedAccount { Id = Guid.NewGuid() });
+        context.DeletedAccounts.Add(Persisted.As<DeletedAccount>(new { Id = Guid.NewGuid() }));
 
         var save = () => context.SaveChanges();
 
@@ -199,11 +203,10 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     [Fact]
     public void SaveChangesDeletingTheInitialAdministratorIsRefusedEvenWithItsCopy()
     {
-        var administrator = NewUser();
-        administrator.Id = SeedIds.Users.InitialAdministrator;
+        var administrator = NewUser(id: SeedIds.Users.InitialAdministrator);
         context.Users.Attach(administrator);
         context.Users.Remove(administrator);
-        context.DeletedAccounts.Add(new DeletedAccount { Id = administrator.Id });
+        context.DeletedAccounts.Add(Persisted.As<DeletedAccount>(new { Id = administrator.Id }));
 
         var save = () => context.SaveChanges();
 
@@ -213,9 +216,9 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     [Fact]
     public void SaveChangesChangingAStoredCopyIsRefused()
     {
-        var copy = new DeletedAccount { Id = Guid.NewGuid() };
+        var copy = Persisted.As<DeletedAccount>(new { Id = Guid.NewGuid() });
         context.DeletedAccounts.Attach(copy);
-        copy.Data = "{\"schemaVersion\":1}";
+        Persisted.Overwrite(copy, new { Data = "{\"schemaVersion\":1}" });
 
         var save = () => context.SaveChanges();
 
@@ -225,7 +228,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     [Fact]
     public void SaveChangesDeletingAStoredCopyIsRefused()
     {
-        var copy = new DeletedAccount { Id = Guid.NewGuid() };
+        var copy = Persisted.As<DeletedAccount>(new { Id = Guid.NewGuid() });
         context.DeletedAccounts.Attach(copy);
         context.DeletedAccounts.Remove(copy);
 
@@ -235,12 +238,14 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     }
 
     [Fact]
-    public async Task UserRepositoryRemoveAsyncAlwaysThrows()
+    public async Task UserRepositoryRemoveWithoutTheCopyIsRefusedOnSave()
     {
-        var users = new UserRepository(context);
+        var user = NewUser();
+        context.Users.Attach(user);
+        new UserRepository(context).Remove(user);
 
-        var remove = () => users.RemoveAsync(_ => true, TestContext.Current.CancellationToken);
+        var save = () => context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        await remove.Should().ThrowAsync<NotSupportedException>().WithMessage("*EraseAsync*");
+        await save.Should().ThrowAsync<InvalidOperationException>().WithMessage("*EraseAsync*");
     }
 }

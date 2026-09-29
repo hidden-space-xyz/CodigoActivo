@@ -1,12 +1,10 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.DTOs;
-using CodigoActivo.Application.Querying;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
-using CodigoActivo.Domain.Constants;
-using CodigoActivo.Domain.Entities;
-using CodigoActivo.Domain.Repositories;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
 
@@ -14,14 +12,7 @@ namespace CodigoActivo.UnitTests.Application.Reports.Queries;
 
 public sealed class GetDashboardAnalyticsQueryHandlerTests
 {
-    private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
-    private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
-    private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
-    private readonly IEventCategoryTypeRepository eventCategoryTypes =
-        Substitute.For<IEventCategoryTypeRepository>();
+    private readonly FakeReadStore store = new();
     private readonly TestClock clock = new(
         new DateTimeOffset(2026, 7, 7, 10, 0, 0, TimeSpan.Zero),
         new DateOnly(2026, 7, 7)
@@ -31,45 +22,14 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     public GetDashboardAnalyticsQueryHandlerTests()
     {
         sut = new GetDashboardAnalyticsQueryHandler(
-            events,
-            activities,
-            users,
-            resources,
-            news,
-            partners,
-            eventCategoryTypes,
+            store,
             new FakeQueryExecutor(),
             clock,
             new FakeHybridCache()
         );
     }
 
-    private void HasActivityRows(params Activity[] list)
-    {
-        activities.Query().Returns(list.AsQueryable());
-    }
-
-    private void HasResources(params Resource[] list)
-    {
-        resources.Query().Returns(list.AsQueryable());
-    }
-
-    private void HasNews(params NewsItem[] list)
-    {
-        news.Query().Returns(list.AsQueryable());
-    }
-
-    private void HasPartners(params Partner[] list)
-    {
-        partners.Query().Returns(list.AsQueryable());
-    }
-
-    private void HasCategoryTypes(params EventCategoryType[] list)
-    {
-        eventCategoryTypes.Query().Returns(list.AsQueryable());
-    }
-
-    private static User AnalyticsUser(
+    private static UserRow AnalyticsUser(
         Guid typeId,
         Guid statusId,
         DateTimeOffset createdAt,
@@ -90,17 +50,13 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         };
     }
 
-    private static ActivityUserRoleAssignment Insc(
-        Guid eventId,
-        Guid statusId,
-        DateTimeOffset createdAt
-    )
+    private static AssignmentRow Insc(Guid eventId, Guid statusId, DateTimeOffset createdAt)
     {
         return new()
         {
             UserId = Guid.NewGuid(),
             ActivityId = Guid.NewGuid(),
-            Activity = new Activity
+            Activity = new ActivityRow
             {
                 Description = "Descripción de la actividad",
                 Location = "Sala principal",
@@ -112,7 +68,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         };
     }
 
-    private static Activity AnalyticsActivity(
+    private static ActivityRow AnalyticsActivity(
         DateTimeOffset startsAt,
         DateTimeOffset createdAt,
         int desired,
@@ -122,7 +78,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         string title = "Actividad"
     )
     {
-        var activity = new Activity
+        var activity = new ActivityRow
         {
             Description = "Descripción de la actividad",
             Location = "Sala principal",
@@ -131,7 +87,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
             ActivityStartsAt = startsAt,
             CreatedAt = createdAt,
             EventId = eventId,
-            Event = new Event
+            Event = new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = eventId,
@@ -141,7 +97,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         if (desired > 0)
         {
             activity.RoleCapacities.Add(
-                new ActivityRoleCapacity
+                new RoleCapacityRow
                 {
                     DesiredCount = desired,
                     ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
@@ -151,9 +107,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
 
         for (var i = 0; i < confirmed; i++)
         {
-            activity.Assignments.Add(
-                new ActivityUserRoleAssignment { AssignmentStatusId = Confirmed }
-            );
+            activity.Assignments.Add(new AssignmentRow { AssignmentStatusId = Confirmed });
         }
 
         return activity;
@@ -187,24 +141,24 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         var dependent = SeedIds.UserStatusTypes.Dependent;
 
         var parent = AnalyticsUser(participant, active, Utc(2026, 6, 20), gender: Gender.Other);
-        users.HasUsers(
+        store.Users.AddRange([
             AnalyticsUser(member, active, Utc(2025, 12, 1)),
             AnalyticsUser(member, active, Utc(2026, 2, 15)),
             AnalyticsUser(sponsor, active, Utc(2026, 3, 10), gender: Gender.Male),
             parent,
-            AnalyticsUser(participant, dependent, Utc(2026, 6, 25), parent.Id, Gender.Male)
-        );
+            AnalyticsUser(participant, dependent, Utc(2026, 6, 25), parent.Id, Gender.Male),
+        ]);
 
-        activities.HasAssignments(
+        store.Assignments.AddRange([
             Insc(e1, Confirmed, Utc(2026, 2, 10)),
             Insc(e1, Confirmed, Utc(2026, 2, 20)),
             Insc(e1, Requested, Utc(2026, 3, 5)),
             Insc(e2, Denied, Utc(2026, 6, 1)),
-            Insc(e2, Confirmed, Utc(2026, 6, 15))
-        );
+            Insc(e2, Confirmed, Utc(2026, 6, 15)),
+        ]);
 
-        events.HasEvents(
-            new Event
+        store.Events.AddRange([
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = e1,
@@ -212,76 +166,78 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
                 CreatedAt = Utc(2026, 1, 5),
                 EventStartsAt = new DateOnly(2026, 2, 1),
             },
-            new Event
+            new EventRow
             {
                 Subtitle = "Subtítulo del evento",
                 Id = e2,
                 Title = "Taller",
                 CreatedAt = Utc(2026, 5, 10),
                 EventStartsAt = new DateOnly(2026, 9, 1),
-            }
-        );
+            },
+        ]);
 
-        HasCategoryTypes(
-            new EventCategoryType
+        store.EventCategoryTypes.AddRange([
+            new EventCategoryTypeRow
             {
                 Id = Guid.NewGuid(),
                 Name = "Formación",
                 Color = "#F97316",
-                Events = [new EventCategory(), new EventCategory()],
+                Events = [new EventCategoryRow(), new EventCategoryRow()],
             },
-            new EventCategoryType
+            new EventCategoryTypeRow
             {
                 Id = Guid.NewGuid(),
                 Name = "Robótica",
                 Color = "#84CC16",
-                Events = [new EventCategory()],
-            }
-        );
+                Events = [new EventCategoryRow()],
+            },
+        ]);
 
-        HasResources(
-            new Resource
+        store.Resources.AddRange([
+            new ResourceRow
             {
                 Subtitle = "Subtítulo del recurso",
                 Title = "Recurso de prueba",
                 CreatedAt = Utc(2026, 3, 1),
                 ResourceTypeId = SeedIds.ResourceTypes.Internal,
             },
-            new Resource
+            new ResourceRow
             {
                 Subtitle = "Subtítulo del recurso",
                 Title = "Recurso de prueba",
                 CreatedAt = Utc(2026, 4, 1),
                 ResourceTypeId = SeedIds.ResourceTypes.External,
             },
-            new Resource
+            new ResourceRow
             {
                 Subtitle = "Subtítulo del recurso",
                 Title = "Recurso de prueba",
                 CreatedAt = Utc(2025, 12, 15),
                 ResourceTypeId = SeedIds.ResourceTypes.External,
-            }
-        );
+            },
+        ]);
 
-        HasNews(
-            new NewsItem
+        store.News.AddRange([
+            new NewsItemRow
             {
                 Subtitle = "Subtítulo de la noticia",
                 Title = "Noticia de prueba",
                 CreatedAt = Utc(2026, 2, 1),
             },
-            new NewsItem
+            new NewsItemRow
             {
                 Subtitle = "Subtítulo de la noticia",
                 Title = "Noticia de prueba",
                 CreatedAt = Utc(2026, 5, 1),
-            }
+            },
+        ]);
+
+        store.Partners.Add(
+            new PartnerRow { Name = "Entidad colaboradora", CreatedAt = Utc(2026, 1, 10) }
         );
 
-        HasPartners(new Partner { Name = "Entidad colaboradora", CreatedAt = Utc(2026, 1, 10) });
-
         var occEventId = new Guid("cccccccc-0000-0000-0000-000000000001");
-        HasActivityRows(
+        store.Activities.AddRange([
             AnalyticsActivity(
                 Utc(2026, 9, 1),
                 Utc(2026, 5, 1),
@@ -298,8 +254,8 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
                 confirmed: 2,
                 eventId: new Guid("cccccccc-0000-0000-0000-000000000002"),
                 eventTitle: "Evento pasado"
-            )
-        );
+            ),
+        ]);
 
         var r = await sut.HandleAsync(
             new GetDashboardAnalyticsQuery(
@@ -366,18 +322,6 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         occEvent.Activities[0].Desired.Should().Be(5);
     }
 
-    private void HasNoData()
-    {
-        users.HasUsers();
-        activities.HasAssignments();
-        events.HasEvents();
-        HasActivityRows();
-        HasResources();
-        HasNews();
-        HasPartners();
-        HasCategoryTypes();
-    }
-
     private Task<DashboardAnalyticsResponse> Analytics(DateOnly? from, DateOnly? to)
     {
         return sut.HandleAsync(
@@ -389,8 +333,6 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncWithoutRangeCoversTheLastTwelveMonthsMonthly()
     {
-        HasNoData();
-
         var r = await Analytics(null, null);
 
         r.RangeStart.Should().Be(new DateOnly(2025, 7, 7));
@@ -404,8 +346,6 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncReversedShortRangeSwapsDatesAndUsesDailyBuckets()
     {
-        HasNoData();
-
         var r = await Analytics(new DateOnly(2026, 6, 30), new DateOnly(2026, 6, 1));
 
         r.RangeStart.Should().Be(new DateOnly(2026, 6, 1));
@@ -418,8 +358,6 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncQuarterRangeUsesWeeklyBucketsStartingOnMonday()
     {
-        HasNoData();
-
         var r = await Analytics(new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 31));
 
         r.Granularity.Should().Be("week");
@@ -432,16 +370,19 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncUnknownUserTypeAndStatusAreLeftOutOfTheBreakdowns()
     {
-        HasNoData();
         var unknown = Guid.NewGuid();
-        users.HasUsers(
+        store.Users.AddRange([
             AnalyticsUser(unknown, SeedIds.UserStatusTypes.Active, Utc(2026, 3, 1)),
-            AnalyticsUser(SeedIds.UserTypes.Member, SeedIds.UserStatusTypes.Active, Utc(2026, 3, 1))
-        );
-        activities.HasAssignments(
+            AnalyticsUser(
+                SeedIds.UserTypes.Member,
+                SeedIds.UserStatusTypes.Active,
+                Utc(2026, 3, 1)
+            ),
+        ]);
+        store.Assignments.AddRange([
             Insc(Guid.NewGuid(), unknown, Utc(2026, 3, 1)),
-            Insc(Guid.NewGuid(), Confirmed, Utc(2026, 3, 1))
-        );
+            Insc(Guid.NewGuid(), Confirmed, Utc(2026, 3, 1)),
+        ]);
 
         var r = await Analytics(new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31));
 
@@ -457,8 +398,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncParticipantPreferringNotToSayGenderGetsItsOwnSlice()
     {
-        HasNoData();
-        users.HasUsers(
+        store.Users.Add(
             AnalyticsUser(
                 SeedIds.UserTypes.Participant,
                 SeedIds.UserStatusTypes.Active,
