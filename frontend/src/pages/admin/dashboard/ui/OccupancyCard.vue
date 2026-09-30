@@ -1,33 +1,31 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { AppIcon, ChartCard } from '@/shared/ui'
 
-import { formatDateTime, formatNumber } from '@/shared/lib'
-import type { DashboardOccupancyResponse } from '@/shared/api/generated/models'
+import { formatDateTime } from '@/shared/lib/date'
+import { formatNumber } from '@/shared/lib/number'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { ChartCard } from '@/shared/ui/chart'
+
+import type { Occupancy } from '../model/types'
 
 const props = defineProps<{
   /**
    * Confirmed versus desired places, overall and per event with expandable activities. Items
    * without a desired count show no percentage.
    */
-  occupancy: DashboardOccupancyResponse
+  occupancy: Occupancy
 }>()
 
-const events = computed(() => props.occupancy.events ?? [])
-const overall = computed(() => {
-  const desired = props.occupancy.desired ?? 0
-  return desired > 0 ? Math.round(((props.occupancy.confirmed ?? 0) / desired) * 100) : null
-})
+const events = computed(() => props.occupancy.events)
+const overall = computed(() => percent(props.occupancy.confirmed, props.occupancy.desired))
 
 const expanded = ref<Record<string, boolean>>({})
-function toggle(id: string | undefined): void {
-  if (!id) return
+function toggle(id: string): void {
   expanded.value[id] = !expanded.value[id]
 }
 
-function percent(confirmed?: number, desired?: number): number | null {
-  const d = desired ?? 0
-  return d > 0 ? Math.round(((confirmed ?? 0) / d) * 100) : null
+function percent(confirmed: number, desired: number): number | null {
+  return desired > 0 ? Math.round((confirmed / desired) * 100) : null
 }
 </script>
 
@@ -55,12 +53,12 @@ function percent(confirmed?: number, desired?: number): number | null {
     </div>
 
     <ul v-else class="occupancy__list">
-      <li v-for="event in events" :key="event.eventId" class="occupancy__event">
-        <button type="button" class="occupancy__row" @click="toggle(event.eventId)">
+      <li v-for="event in events" :key="event.id" class="occupancy__event">
+        <button type="button" class="occupancy__row" @click="toggle(event.id)">
           <span class="occupancy__chevron">
-            <AppIcon :name="expanded[event.eventId ?? ''] ? 'chevron-down' : 'chevron-right'" />
+            <AppIcon :name="expanded[event.id] ? 'chevron-down' : 'chevron-right'" />
           </span>
-          <span class="occupancy__name" :title="event.title ?? ''">{{ event.title }}</span>
+          <span class="occupancy__name" :title="event.title">{{ event.title }}</span>
           <span class="occupancy__meter">
             <span
               class="occupancy__fill"
@@ -73,14 +71,10 @@ function percent(confirmed?: number, desired?: number): number | null {
           <span class="occupancy__pct">{{ percent(event.confirmed, event.desired) ?? '—' }}%</span>
         </button>
 
-        <ul v-if="expanded[event.eventId ?? '']" class="occupancy__activities">
-          <li
-            v-for="activity in event.activities ?? []"
-            :key="activity.activityId"
-            class="occupancy__activity"
-          >
+        <ul v-if="expanded[event.id]" class="occupancy__activities">
+          <li v-for="activity in event.activities" :key="activity.id" class="occupancy__activity">
             <span class="occupancy__activity-info">
-              <span class="occupancy__activity-name" :title="activity.title ?? ''">{{
+              <span class="occupancy__activity-name" :title="activity.title">{{
                 activity.title
               }}</span>
               <span class="occupancy__activity-date">{{ formatDateTime(activity.startsAt) }}</span>

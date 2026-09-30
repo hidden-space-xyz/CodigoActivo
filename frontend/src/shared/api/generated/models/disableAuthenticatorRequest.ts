@@ -6,8 +6,6 @@
  */
 
 export interface DisableAuthenticatorRequest {
-  /** @nullable */
-  currentPassword?: string | null;
-  /** @nullable */
-  code?: string | null;
+  currentPassword: string;
+  code: string;
 }

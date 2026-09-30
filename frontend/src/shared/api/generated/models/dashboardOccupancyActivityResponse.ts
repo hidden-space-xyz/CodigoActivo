@@ -6,10 +6,9 @@
  */
 
 export interface DashboardOccupancyActivityResponse {
-  activityId?: string;
-  /** @nullable */
-  title?: string | null;
-  startsAt?: string;
-  confirmed?: number;
-  desired?: number;
+  activityId: string;
+  title: string;
+  startsAt: string;
+  confirmed: number;
+  desired: number;
 }

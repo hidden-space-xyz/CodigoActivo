@@ -6,8 +6,8 @@
  */
 
 export interface EventRoleTypeSummaryResponse {
-  roleTypeId?: string;
+  roleTypeId: string;
   /** @nullable */
   roleTypeName?: string | null;
-  approvedAssignments?: number;
+  approvedAssignments: number;
 }

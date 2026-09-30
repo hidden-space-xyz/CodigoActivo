@@ -6,7 +6,7 @@
  */
 
 export interface TermsDecisionRequest {
-  termsDocumentId?: string;
+  termsDocumentId: string;
   /** @nullable */
   accepted?: boolean | null;
 }

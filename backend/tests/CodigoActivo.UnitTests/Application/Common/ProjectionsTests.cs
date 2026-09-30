@@ -9,6 +9,8 @@ using CodigoActivo.Application.Partners;
 using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Contracts;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using Xunit;
 
@@ -124,7 +126,8 @@ public sealed class ProjectionsTests
                     @event.UpdatedBy,
                     @event.ThumbnailId,
                     true,
-                    [new EventCategoryResponse(categoryTypeId, "Tech", "#111")]
+                    [new EventCategoryResponse(categoryTypeId, "Tech", "#111")],
+                    EventStage.Upcoming
                 )
             );
         typeof(EventListItemResponse).GetProperty("Description").Should().BeNull();
@@ -215,7 +218,8 @@ public sealed class ProjectionsTests
         Guid statusId,
         Guid typeId,
         Guid? parentId = null,
-        int children = 0
+        int children = 0,
+        Guid? parentTypeId = null
     )
     {
         var user = new UserRow
@@ -240,6 +244,7 @@ public sealed class ProjectionsTests
                     Id = parentId.Value,
                     FirstName = "Grace",
                     LastName = "Hopper",
+                    UserTypeId = parentTypeId ?? Guid.NewGuid(),
                 },
             UserStatusTypeId = statusId,
             UserStatusType = new UserStatusTypeRow
@@ -339,6 +344,39 @@ public sealed class ProjectionsTests
         response.ParentId.Should().BeNull();
         response.ParentName.Should().BeNull();
         response.DependentCount.Should().Be(0);
+    }
+
+    public static TheoryData<Guid, bool> EarlySignupTypes =>
+        new()
+        {
+            { SeedIds.UserTypes.Member, true },
+            { SeedIds.UserTypes.Sponsor, true },
+            { Guid.NewGuid(), false },
+        };
+
+    [Theory]
+    [MemberData(nameof(EarlySignupTypes))]
+    public void UserIndependentAccountEarlySignupFollowsItsOwnType(Guid typeId, bool expected)
+    {
+        var user = NewUser(Guid.NewGuid(), typeId);
+
+        Project(UserProjections.User, user).EarlySignupEligible.Should().Be(expected);
+        Project(UserProjections.UserWithType, user).EarlySignupEligible.Should().Be(expected);
+    }
+
+    [Theory]
+    [MemberData(nameof(EarlySignupTypes))]
+    public void UserDependentEarlySignupFollowsItsGuardianType(Guid guardianTypeId, bool expected)
+    {
+        var user = NewUser(
+            Guid.NewGuid(),
+            SeedIds.UserTypes.Member,
+            Guid.NewGuid(),
+            parentTypeId: guardianTypeId
+        );
+
+        Project(UserProjections.User, user).EarlySignupEligible.Should().Be(expected);
+        Project(UserProjections.UserWithType, user).EarlySignupEligible.Should().Be(expected);
     }
 
     [Fact]

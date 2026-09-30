@@ -6,6 +6,6 @@
  */
 
 export interface EmailAudienceResponse {
-  recipients?: number;
-  withoutConsent?: number;
+  recipients: number;
+  withoutConsent: number;
 }

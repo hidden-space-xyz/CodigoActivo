@@ -1,17 +1,16 @@
-import type { Gender, TwoFactorMethod } from '@/shared/api/generated/models'
+import type { Gender } from './gender'
 
-/** Reference to a user status or user type catalog entry; `color` is `null` when none is set. */
+/** A user status or user type as a user carries it and the catalogs list it. */
 export interface UserCatalogRef {
   readonly id: string
   readonly name: string
-  readonly color: string | null
+  readonly color: string
 }
 
 /**
- * User row and detail model for admin screens, mapped from `UserResponse`. `parentId` and
- * `parentName` identify the guardian of a minor; `dependentCount` counts this user's minors. Only
- * dependents have a `birthDate` and only independent accounts a `nationalId`; the missing one is
- * `''`.
+ * User row and detail model for admin screens. `parentId` and `parentName` identify the guardian
+ * of a minor; `dependentCount` counts this user's minors. Only dependents have a `birthDate` and
+ * only independent accounts a `nationalId`; the missing one is `''`.
  */
 export interface User {
   readonly id: string
@@ -26,17 +25,15 @@ export interface User {
   readonly nationalId: string
   /** Whether the user agreed to receive promotional content; always `false` for dependents. */
   readonly promotionalConsent: boolean
-  readonly gender: Gender | null
+  readonly gender: Gender
   readonly isAdmin: boolean
   /** The generic administrator created on first start: it can be neither deleted nor demoted. */
   readonly isInitialAdmin: boolean
   readonly parentId: string | null
   readonly parentName: string
   readonly dependentCount: number
-  readonly status: UserCatalogRef | null
+  readonly status: UserCatalogRef
   readonly type: UserCatalogRef | null
-  /** Second factor the user presents at login; administrators can reset it to email. */
-  readonly twoFactorMethod: TwoFactorMethod
 }
 
 /**
@@ -66,4 +63,23 @@ export interface UpdateUserInput {
    * phone or the secondary phone of the account. `null` for every other edit.
    */
   readonly currentPassword: string | null
+}
+
+/** Filters, sort and page of the admin user list. */
+export interface UserListParams {
+  readonly id?: string
+  readonly name?: string
+  readonly email?: string
+  readonly phone?: string
+  readonly nationalId?: string
+  readonly userTypeId?: string
+  readonly userStatusTypeId?: string
+  readonly isAdmin?: boolean
+  readonly promotionalConsent?: boolean
+  readonly parentId?: string
+  readonly birthDateFrom?: string
+  readonly birthDateTo?: string
+  readonly page?: number
+  readonly pageSize?: number
+  readonly sort?: string
 }

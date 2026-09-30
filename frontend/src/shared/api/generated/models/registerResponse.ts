@@ -7,7 +7,6 @@
 import type { UserResponse } from './userResponse';
 
 export interface RegisterResponse {
-  adult?: UserResponse;
-  /** @nullable */
-  minors?: UserResponse[] | null;
+  adult: UserResponse;
+  minors: UserResponse[];
 }

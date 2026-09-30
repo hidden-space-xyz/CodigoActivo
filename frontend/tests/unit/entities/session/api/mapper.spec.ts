@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { toAuthUser, toLoginChallenge } from '@/entities/session/api/mapper'
-import { EARLY_SIGNUP_USER_TYPE_IDS } from '@/shared/config'
-
-import { buildUserResponse } from '../../../../support/fixtures/user'
+import { buildUserResponse } from '../../../../support/builders'
 
 describe('toAuthUser', () => {
-  it('maps the signed-in user and marks regular user types as not early-signup eligible', () => {
+  it('maps the signed-in user', () => {
     expect(toAuthUser(buildUserResponse({ isAdmin: true }))).toEqual({
       id: 'user-1',
       firstName: 'Ada',
@@ -14,30 +12,21 @@ describe('toAuthUser', () => {
       email: 'ada@example.test',
       phone: '600000000',
       isAdmin: true,
-      userTypeId: 'type-participant',
       earlySignupEligible: false,
       twoFactorMethod: 'Email',
     })
   })
 
-  it.each(EARLY_SIGNUP_USER_TYPE_IDS)('marks user type %s as early-signup eligible', (typeId) => {
-    const user = toAuthUser(buildUserResponse({ type: { id: typeId, name: 'Socio' } }))
-
-    expect(user.userTypeId).toBe(typeId)
-    expect(user.earlySignupEligible).toBe(true)
+  it('keeps the early signup entitlement the API decided', () => {
+    expect(toAuthUser(buildUserResponse({ earlySignupEligible: true })).earlySignupEligible).toBe(
+      true,
+    )
   })
 
-  it('defaults a bare response to an anonymous-looking user without type', () => {
-    expect(toAuthUser({})).toEqual({
-      id: '',
-      firstName: '',
-      lastName: '',
+  it('shows missing contact details as empty text', () => {
+    expect(toAuthUser(buildUserResponse({ email: null, phone: null }))).toMatchObject({
       email: '',
       phone: '',
-      isAdmin: false,
-      userTypeId: '',
-      earlySignupEligible: false,
-      twoFactorMethod: 'Email',
     })
   })
 })
@@ -54,7 +43,7 @@ describe('toLoginChallenge', () => {
     })
   })
 
-  it('defaults a bare response to an email challenge without address', () => {
-    expect(toLoginChallenge({})).toEqual({ method: 'Email', maskedEmail: null })
+  it('reads a missing masked address as none', () => {
+    expect(toLoginChallenge({ method: 'Email' })).toEqual({ method: 'Email', maskedEmail: null })
   })
 })

@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 
 import { useThumbnailUpload } from '@/entities/file'
 
-import { renderComposable } from '../../../../support/fixtures/entities/composable'
-import { readMultipartFile } from '../../../../support/fixtures/entities/multipart'
 import { t } from '../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
+import { readMultipartFile } from '../../../../support/multipart'
+import { mountComposable } from '../../../../support/render'
 
 function image(): File {
   return new File(['bytes'], 'poster.png', { type: 'image/png' })
@@ -15,7 +15,7 @@ function image(): File {
 describe('useThumbnailUpload', () => {
   it('reports a missing thumbnail until a file is picked or an id exists', async () => {
     const existingId = ref<string | null>(null)
-    const { result } = await renderComposable(() => useThumbnailUpload(existingId))
+    const { result } = await mountComposable(() => useThumbnailUpload(existingId))
 
     expect(result.missingThumbnail.value).toBe(true)
 
@@ -29,7 +29,7 @@ describe('useThumbnailUpload', () => {
 
   it('returns the existing id, or null, without uploading when nothing was picked', async () => {
     const existingId = ref<string | null | undefined>('file-1')
-    const { result } = await renderComposable(() => useThumbnailUpload(existingId))
+    const { result } = await mountComposable(() => useThumbnailUpload(existingId))
 
     await expect(result.resolveThumbnailId()).resolves.toBe('file-1')
 
@@ -46,7 +46,7 @@ describe('useThumbnailUpload', () => {
         return HttpResponse.json({ id: 'file-new' })
       }),
     )
-    const { result } = await renderComposable(() => useThumbnailUpload(null))
+    const { result } = await mountComposable(() => useThumbnailUpload(null))
     result.pickedFile.value = image()
 
     const pending = result.resolveThumbnailId()
@@ -66,7 +66,7 @@ describe('useThumbnailUpload', () => {
         return HttpResponse.json({ id: 'file-1' })
       }),
     )
-    const { result } = await renderComposable(() => useThumbnailUpload(() => 'file-1'))
+    const { result } = await mountComposable(() => useThumbnailUpload(() => 'file-1'))
     result.pickedFile.value = image()
 
     await expect(result.resolveThumbnailId()).resolves.toBe('file-1')
@@ -75,7 +75,7 @@ describe('useThumbnailUpload', () => {
 
   it('translates a known API error code and returns null on failure', async () => {
     server.use(http.post('/api/files', () => apiError(413, 'FileUploadTooLarge')))
-    const { result } = await renderComposable(() => useThumbnailUpload(null))
+    const { result } = await mountComposable(() => useThumbnailUpload(null))
     result.pickedFile.value = image()
 
     await expect(result.resolveThumbnailId()).resolves.toBeNull()
@@ -89,7 +89,7 @@ describe('useThumbnailUpload', () => {
     server.use(
       http.post('/api/files', () => (fail ? apiError(500) : HttpResponse.json({ id: 'file-2' }))),
     )
-    const { result } = await renderComposable(() => useThumbnailUpload(null))
+    const { result } = await mountComposable(() => useThumbnailUpload(null))
     result.pickedFile.value = image()
 
     await result.resolveThumbnailId()

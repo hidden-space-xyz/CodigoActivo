@@ -6,12 +6,11 @@
  */
 
 export interface UpdatePartnerRequest {
-  /** @nullable */
-  name?: string | null;
+  name: string;
   /** @nullable */
   fromDate?: string | null;
-  tier?: number;
+  tier: number;
   /** @nullable */
   website?: string | null;
-  thumbnailId?: string;
+  thumbnailId: string;
 }

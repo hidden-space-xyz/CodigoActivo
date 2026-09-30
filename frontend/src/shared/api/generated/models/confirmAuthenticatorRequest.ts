@@ -6,6 +6,5 @@
  */
 
 export interface ConfirmAuthenticatorRequest {
-  /** @nullable */
-  code?: string | null;
+  code: string;
 }

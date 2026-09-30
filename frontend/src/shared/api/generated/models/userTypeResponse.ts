@@ -6,11 +6,8 @@
  */
 
 export interface UserTypeResponse {
-  id?: string;
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  description?: string | null;
-  /** @nullable */
-  color?: string | null;
+  id: string;
+  name: string;
+  description: string;
+  color: string;
 }

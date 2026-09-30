@@ -7,9 +7,8 @@
 import type { EventCategoryTypeResponse } from './eventCategoryTypeResponse';
 
 export interface EventCategoryTypeResponsePagedResult {
-  /** @nullable */
-  items?: EventCategoryTypeResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: EventCategoryTypeResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

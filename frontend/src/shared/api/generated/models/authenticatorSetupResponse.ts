@@ -6,8 +6,6 @@
  */
 
 export interface AuthenticatorSetupResponse {
-  /** @nullable */
-  sharedKey?: string | null;
-  /** @nullable */
-  authenticatorUri?: string | null;
+  sharedKey: string;
+  authenticatorUri: string;
 }

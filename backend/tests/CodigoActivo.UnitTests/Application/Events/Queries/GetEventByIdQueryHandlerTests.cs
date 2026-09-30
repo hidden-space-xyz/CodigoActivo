@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Events.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
@@ -10,11 +11,12 @@ namespace CodigoActivo.UnitTests.Application.Events.Queries;
 public sealed class GetEventByIdQueryHandlerTests
 {
     private readonly FakeReadStore store = new();
+    private readonly TestClock clock = new();
     private readonly GetEventByIdQueryHandler sut;
 
     public GetEventByIdQueryHandlerTests()
     {
-        sut = new GetEventByIdQueryHandler(store, new FakeQueryExecutor());
+        sut = new GetEventByIdQueryHandler(store, new FakeQueryExecutor(), clock);
     }
 
     [Fact]
@@ -30,6 +32,22 @@ public sealed class GetEventByIdQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Id.Should().Be(ev.Id);
+    }
+
+    [Fact]
+    public async Task HandleAsyncEventExistsStampsTheStageOfTheClock()
+    {
+        var ev = NewEventRow();
+        store.Events.Add(ev);
+        clock.UtcNow = ev.SignupEndsAt.AddSeconds(1);
+        clock.Today = ev.EventEndsAt;
+
+        var result = await sut.HandleAsync(
+            new GetEventByIdQuery(ev.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Value.Stage.Should().Be(EventStage.SignupClosed);
     }
 
     [Fact]

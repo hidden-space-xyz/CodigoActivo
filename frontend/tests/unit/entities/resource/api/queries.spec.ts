@@ -1,79 +1,75 @@
-import { ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { useResourceDetail, useResources } from '@/entities/resource'
-import type { ResourceResponse } from '@/shared/api/generated/models'
+import { resourceKeys, resourceList, resourcePages, resourceQueries } from '@/entities/resource'
 
-import { renderComposable } from '../../../../support/fixtures/entities/composable'
 import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import {
+  buildResourceListItem,
+  buildResourceResponse,
+  internalType,
+} from '../../../../support/builders'
+import { queryOf } from '../../../../support/dom'
+import { createTestQueryClient } from '../../../../support/render'
 
-describe('useResources', () => {
-  it('loads resources for the search term, reloads when it changes and pages on demand', async () => {
-    const queries: Record<string, string>[] = []
-    server.use(
-      http.get('/api/resources', ({ request }) => {
-        const query = Object.fromEntries(new URL(request.url).searchParams)
-        queries.push(query)
-        const id = `${query.search ?? 'all'}-${query.page ?? ''}`
-        return HttpResponse.json(paged([{ id }], query.search ? 2 : 1))
-      }),
-    )
-    const search = ref('')
-
-    const { result } = await renderComposable(() => useResources(search))
-    await vi.waitFor(() => expect(result.resources.value.map((r) => r.id)).toEqual(['all-1']))
-    expect(result.hasMore.value).toBe(false)
-    expect(result.isLoading.value).toBe(false)
-
-    search.value = 'python'
-    await vi.waitFor(() => expect(result.resources.value.map((r) => r.id)).toEqual(['python-1']))
-    expect(result.hasMore.value).toBe(true)
-
-    result.loadMore()
-    await vi.waitFor(() =>
-      expect(result.resources.value.map((r) => r.id)).toEqual(['python-1', 'python-2']),
-    )
-    expect(result.isFetchingMore.value).toBe(false)
-    expect(result.isError.value).toBe(false)
-    expect(queries.map((query) => [query.search, query.page])).toEqual([
-      [undefined, '1'],
-      ['python', '1'],
-      ['python', '2'],
-    ])
-  })
-
-  it('reports an error', async () => {
-    server.use(http.get('/api/resources', () => apiError(500)))
-
-    const { result } = await renderComposable(() => useResources(''))
-
-    await vi.waitFor(() => expect(result.isError.value).toBe(true))
+describe('resourceKeys', () => {
+  it('nests the resources under one root and keeps their types apart', () => {
+    expect(resourceKeys.pages('python')).toEqual(['resources', 'pages', 'python'])
+    expect(resourceKeys.detail('r1')).toEqual(['resources', 'detail', 'r1'])
+    expect(resourceKeys.list()).toEqual(['resources', 'list'])
+    expect(resourceKeys.types()).toEqual(['resource-types'])
   })
 })
 
-describe('useResourceDetail', () => {
-  it('loads the resource for a reactive id', async () => {
+describe('resourceQueries', () => {
+  it('loads a whole resource, or null when it does not exist', async () => {
     server.use(
-      http.get('/api/resources/:id', ({ params }) =>
-        HttpResponse.json<ResourceResponse>({ id: String(params.id), title: String(params.id) }),
-      ),
+      http.get('/api/resources/r1', () => HttpResponse.json(buildResourceResponse({ id: 'r1' }))),
+      http.get('/api/resources/missing', () => apiError(404)),
     )
-    const id = ref('r1')
+    const client = createTestQueryClient()
 
-    const { result } = await renderComposable(() => useResourceDetail(id))
-    await vi.waitFor(() => expect(result.resource.value?.title).toBe('r1'))
-    expect(result.notFound.value).toBe(false)
-
-    id.value = 'r2'
-    await vi.waitFor(() => expect(result.resource.value?.title).toBe('r2'))
+    await expect(client.fetchQuery(resourceQueries.detail('r1'))).resolves.toMatchObject({
+      id: 'r1',
+    })
+    await expect(client.fetchQuery(resourceQueries.detail('missing'))).resolves.toBeNull()
   })
 
-  it('flags a missing resource as not found', async () => {
-    server.use(http.get('/api/resources/missing', () => apiError(404)))
+  it('loads the resource types', async () => {
+    server.use(http.get('/api/resources/types', () => HttpResponse.json([internalType])))
 
-    const { result } = await renderComposable(() => useResourceDetail('missing'))
+    await expect(createTestQueryClient().fetchQuery(resourceQueries.types())).resolves.toEqual([
+      expect.objectContaining({ id: 'type-article', isExternal: false }),
+    ])
+  })
+})
 
-    await vi.waitFor(() => expect(result.notFound.value).toBe(true))
-    expect(result.isError.value).toBe(false)
+describe('resource sources', () => {
+  it('pages the public resources matching a search under its own key', async () => {
+    const urls: string[] = []
+    server.use(
+      http.get('/api/resources', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildResourceListItem()], 3))
+      }),
+    )
+    const source = resourcePages('python')
+
+    await expect(source.fetchPage(2, 10)).resolves.toMatchObject({ total: 3 })
+    expect(source.queryKey).toEqual(resourceKeys.pages('python'))
+    expect(queryOf(urls[0] ?? '')).toEqual({
+      search: 'python',
+      sort: '-createdAt',
+      page: '2',
+      pageSize: '10',
+    })
+  })
+
+  it('pages the admin list under the list key', async () => {
+    server.use(
+      http.get('/api/resources', () => HttpResponse.json(paged([buildResourceListItem()], 1))),
+    )
+
+    await expect(resourceList.fetchPage({ page: 1 })).resolves.toMatchObject({ total: 1 })
+    expect(resourceList.queryKey).toEqual(resourceKeys.list())
   })
 })

@@ -7,9 +7,8 @@
 import type { EventAttendeeResponse } from './eventAttendeeResponse';
 
 export interface EventAttendeeResponsePagedResult {
-  /** @nullable */
-  items?: EventAttendeeResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: EventAttendeeResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

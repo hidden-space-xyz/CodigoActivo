@@ -7,10 +7,8 @@
 import type { ErrorCode } from './errorCode';
 
 export interface ApiErrorResponse {
-  /** @nullable */
-  title?: string | null;
-  status?: number;
-  code?: ErrorCode;
-  /** @nullable */
-  traceId?: string | null;
+  title: string;
+  status: number;
+  code: ErrorCode;
+  traceId: string;
 }

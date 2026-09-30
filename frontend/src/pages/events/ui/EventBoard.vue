@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import type { UpcomingEvent } from '@/entities/event'
-
-import { EventCard } from '@/entities/event'
+import { EventCard, type EventSummary } from '@/entities/event'
 
 defineProps<{
   /** Already filtered events, rendered as cards in the given order. */
-  events: readonly UpcomingEvent[]
+  events: readonly EventSummary[]
 }>()
 </script>
 

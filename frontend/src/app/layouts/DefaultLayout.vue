@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { AppBackground } from '@/shared/ui'
-import AppFooter from './AppFooter.vue'
-import AppHeader from './AppHeader.vue'
+import { SiteFooter } from '@/widgets/site-footer'
+import { SiteHeader } from '@/widgets/site-header'
+import { AppBackground } from '@/shared/ui/app-background'
 </script>
 
 <template>
   <div class="layout">
     <AppBackground />
-    <AppHeader />
+    <SiteHeader />
     <main class="layout__main">
       <slot />
     </main>
-    <AppFooter />
+    <SiteFooter />
   </div>
 </template>
 

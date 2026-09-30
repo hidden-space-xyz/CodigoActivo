@@ -7,8 +7,7 @@
 import type { DashboardOccupancyEventResponse } from './dashboardOccupancyEventResponse';
 
 export interface DashboardOccupancyResponse {
-  confirmed?: number;
-  desired?: number;
-  /** @nullable */
-  events?: DashboardOccupancyEventResponse[] | null;
+  confirmed: number;
+  desired: number;
+  events: DashboardOccupancyEventResponse[];
 }

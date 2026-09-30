@@ -7,9 +7,8 @@
 import type { ResourceListItemResponse } from './resourceListItemResponse';
 
 export interface ResourceListItemResponsePagedResult {
-  /** @nullable */
-  items?: ResourceListItemResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: ResourceListItemResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

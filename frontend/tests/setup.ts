@@ -3,7 +3,6 @@ import { Blob as NodeBlob, File as NodeFile } from 'node:buffer'
 import { enableAutoUnmount } from '@vue/test-utils'
 import { afterAll, afterEach, beforeAll, vi } from 'vitest'
 
-import { useSession } from '@/entities/session'
 import { resetCsrfToken } from '@/shared/api'
 
 import { matchMediaMock, resetMediaQueries } from './support/media'
@@ -33,7 +32,6 @@ enableAutoUnmount(afterEach)
 
 afterEach(() => {
   server.resetHandlers()
-  useSession().clear()
   resetCsrfToken()
   vi.useRealTimers()
   resetMediaQueries()

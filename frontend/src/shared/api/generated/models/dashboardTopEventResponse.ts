@@ -6,8 +6,7 @@
  */
 
 export interface DashboardTopEventResponse {
-  eventId?: string;
-  /** @nullable */
-  title?: string | null;
-  confirmed?: number;
+  eventId: string;
+  title: string;
+  confirmed: number;
 }

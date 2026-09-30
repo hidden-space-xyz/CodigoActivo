@@ -6,18 +6,17 @@
  */
 
 export interface PartnerResponse {
-  id?: string;
-  /** @nullable */
-  name?: string | null;
-  fromDate?: string;
-  tier?: number;
+  id: string;
+  name: string;
+  fromDate: string;
+  tier: number;
   /** @nullable */
   website?: string | null;
-  createdAt?: string;
+  createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  createdBy?: string;
+  createdBy: string;
   /** @nullable */
   updatedBy?: string | null;
-  thumbnailId?: string;
+  thumbnailId: string;
 }

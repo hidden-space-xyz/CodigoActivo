@@ -6,6 +6,5 @@
  */
 
 export interface VerifyRequest {
-  /** @nullable */
-  otp?: string | null;
+  otp: string;
 }

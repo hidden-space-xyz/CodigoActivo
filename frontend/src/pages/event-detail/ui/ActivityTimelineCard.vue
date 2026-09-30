@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AppButton as Button, AppIcon, BaseButton } from '@/shared/ui'
-
-import { formatTimeRange } from '@/shared/lib'
 
 import type { ActivityRole } from '@/entities/activity'
 
 import type { TimelineActivity } from '../model/types'
+import { formatTimeRange } from '@/shared/lib/date'
+import { ActionButton } from '@/shared/ui/action-button'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { BrandButton } from '@/shared/ui/brand-button'
 
 const props = defineProps<{
   /** Activity shown on the card, including the user's and household's enrollments. */
@@ -71,9 +72,7 @@ const selectedRoleHighDemand = computed(
 )
 
 function scheduleLabel(): string {
-  const { start, end } = props.activity
-  if (!start) return t('pages.eventDetail.card.noSchedule')
-  return formatTimeRange(start, end, props.referenceDate)
+  return formatTimeRange(props.activity.start, props.activity.end, props.referenceDate)
 }
 
 function statusSeverity(name: string): 'success' | 'danger' | 'info' {
@@ -102,17 +101,17 @@ function onSignup(): void {
 
     <div class="act__time"><AppIcon name="clock" /> {{ scheduleLabel() }}</div>
 
-    <div v-if="activity.modality || activity.location" class="act__meta">
+    <div class="act__meta">
       <AppIcon name="map-marker" />
-      <span>{{ [activity.modality, activity.location].filter(Boolean).join(' · ') }}</span>
+      <span>{{ activity.modality }} · {{ activity.location }}</span>
     </div>
 
-    <p v-if="activity.description" class="act__desc">{{ activity.description }}</p>
+    <p class="act__desc">{{ activity.description }}</p>
 
     <ul v-if="hasHousehold && activity.household.length" class="act__members">
       <li v-for="member in activity.household" :key="member.userId" class="act__member">
         <span class="act__member-info">
-          <b>{{ member.name }}</b> · {{ member.roleName || '—' }}
+          <b>{{ member.name }}</b> · {{ member.roleName }}
           <el-tag :type="statusSeverity(member.status)" class="act__member-tag">
             {{ member.status }}
           </el-tag>
@@ -138,9 +137,9 @@ function onSignup(): void {
 
     <div class="act__actions">
       <template v-if="!authenticated">
-        <BaseButton variant="ghost" @click="emit('login')">
+        <BrandButton variant="ghost" @click="emit('login')">
           {{ $t('pages.eventDetail.card.loginToSignup') }}
-        </BaseButton>
+        </BrandButton>
       </template>
 
       <template v-else-if="hasHousehold">
@@ -149,7 +148,7 @@ function onSignup(): void {
             {{ closedMessage }}
           </span>
         </template>
-        <Button
+        <ActionButton
           v-else
           :label="
             activity.household.length
@@ -165,11 +164,9 @@ function onSignup(): void {
 
       <template v-else-if="activity.assignment">
         <span class="act__note">
-          {{
-            $t('pages.eventDetail.card.enrolledAs', { role: activity.assignment.roleName || '—' })
-          }}
+          {{ $t('pages.eventDetail.card.enrolledAs', { role: activity.assignment.roleName }) }}
         </span>
-        <Button
+        <ActionButton
           v-if="signupOpen"
           :label="$t('pages.eventDetail.card.unassignSelf')"
           size="small"
@@ -197,7 +194,7 @@ function onSignup(): void {
           >
             <el-option v-for="role in roles" :key="role.id" :label="role.name" :value="role.id" />
           </el-select>
-          <Button
+          <ActionButton
             :label="$t('pages.eventDetail.card.enrollSelf')"
             type="primary"
             size="small"

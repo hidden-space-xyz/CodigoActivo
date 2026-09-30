@@ -1,145 +1,46 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { AppIcon, BaseButton, DataState } from '@/shared/ui'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 
-import { fullName, hexLuminance, normalizeHexColor } from '@/shared/lib'
-import { useEventBadges } from '@/features/manage-events'
-import type { EventBadgeActivityResponse, EventBadgeResponse } from '@/shared/api/generated/models'
+import { fullName } from '@/entities/user'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { DataState } from '@/shared/ui/data-state'
+import { PrintToolbar } from '@/shared/ui/print-toolbar'
 
-const BADGES_PER_SHEET = 12
-const MAX_ACTIVITY_CHIPS = 6
+import { badgeQueries } from '../api/queries'
+import { accentColor, hiddenActivityCount, toSheets, visibleActivities } from '../lib/badges'
+import { fitAllBadges } from '../lib/fit-badge'
 
-const pageStyle = document.createElement('style')
-pageStyle.textContent = '@page { size: A4 portrait; margin: 0; }'
-onMounted(() => document.head.appendChild(pageStyle))
-onBeforeUnmount(() => pageStyle.remove())
+const props = defineProps<{
+  /** Event id from the `/admin/events/:eventId/badges` route param. */
+  eventId: string
+}>()
 
-const route = useRoute()
-const eventId = computed(() => String(route.params.eventId))
-
-const report = useEventBadges(eventId)
+const report = useQuery(() => badgeQueries.ofEvent(props.eventId))
 const eventTitle = computed(() => report.data.value?.title ?? '')
 const badges = computed(() => report.data.value?.badges ?? [])
-
-const sheets = computed(() => {
-  const pages: EventBadgeResponse[][] = []
-  for (let i = 0; i < badges.value.length; i += BADGES_PER_SHEET) {
-    pages.push(badges.value.slice(i, i + BADGES_PER_SHEET))
-  }
-  return pages
-})
-
-const MIN_FIT = 0.6
-const MAX_FIT = 1.5
-const NAME_MIN_FIT = 0.45
-const NAME_MAX_FIT = 1.6
+const sheets = computed(() => toSheets(badges.value))
 
 const rootEl = ref<HTMLElement | null>(null)
-
-function fitBadge(el: HTMLElement): void {
-  const body = el.querySelector<HTMLElement>('.badge__body')
-  if (!body) return
-
-  const fits = (value: number): boolean => {
-    el.style.setProperty('--fit', value.toFixed(3))
-    return body.scrollHeight <= body.clientHeight + 1
-  }
-  const setNameFit = (value: number): void => {
-    el.style.setProperty('--name-fit', value.toFixed(3))
-  }
-
-  const name = el.querySelector<HTMLElement>('.badge__name')
-  let nameFit = 1
-  if (name && name.scrollWidth > 0) {
-    setNameFit(1)
-    const style = getComputedStyle(body)
-    const available =
-      body.clientWidth -
-      Number.parseFloat(style.paddingLeft) -
-      Number.parseFloat(style.paddingRight)
-    nameFit = Math.min(NAME_MAX_FIT, (available / name.scrollWidth) * 0.97)
-    setNameFit(nameFit)
-    for (let attempt = 0; attempt < 5 && name.scrollWidth > available; attempt += 1) {
-      nameFit *= Math.min((available / name.scrollWidth) * 0.97, 0.97)
-      setNameFit(nameFit)
-    }
-  }
-
-  if (fits(MAX_FIT)) return
-  while (nameFit > 1 && !fits(1)) {
-    nameFit = Math.max(1, nameFit * 0.9)
-    setNameFit(nameFit)
-  }
-  let low = MIN_FIT
-  let high = MAX_FIT
-  for (let i = 0; i < 7; i += 1) {
-    const mid = (low + high) / 2
-    if (fits(mid)) low = mid
-    else high = mid
-  }
-  while (!fits(low) && name && nameFit > NAME_MIN_FIT) {
-    nameFit = Math.max(NAME_MIN_FIT, nameFit * 0.9)
-    setNameFit(nameFit)
-  }
-}
-
-function fitAllBadges(): void {
-  for (const el of rootEl.value?.querySelectorAll<HTMLElement>('.badge') ?? []) {
-    fitBadge(el)
-  }
-}
 
 watch(
   sheets,
   async () => {
     await nextTick()
     await document.fonts.ready
-    fitAllBadges()
+    fitAllBadges(rootEl.value)
   },
   { immediate: true },
 )
-
-const FALLBACK_ACCENT = '#475569'
-const MIN_READABLE_LUMINANCE = 0.82
-
-function accentColor(badge: EventBadgeResponse): string {
-  const hex = normalizeHexColor(badge.userTypeColor)
-  if (!hex) return FALLBACK_ACCENT
-  return hexLuminance(hex) > MIN_READABLE_LUMINANCE ? FALLBACK_ACCENT : hex
-}
-
-function guardianName(badge: EventBadgeResponse): string {
-  return badge.guardian?.firstName ?? ''
-}
-
-function visibleActivities(badge: EventBadgeResponse): EventBadgeActivityResponse[] {
-  return (badge.activities ?? []).slice(0, MAX_ACTIVITY_CHIPS)
-}
-
-function hiddenActivityCount(badge: EventBadgeResponse): number {
-  return Math.max(0, (badge.activities?.length ?? 0) - MAX_ACTIVITY_CHIPS)
-}
-function printSheets(): void {
-  window.print()
-}
 </script>
 
 <template>
   <div ref="rootEl" class="badges">
-    <div class="back-row no-print">
-      <BaseButton
-        variant="back"
-        :to="{ name: 'admin-event-detail', params: { eventId } }"
-        class="back"
-      >
-        {{ $t('pages.admin.eventBadges.back') }}
-      </BaseButton>
-      <button type="button" class="print-btn" @click="printSheets">
-        <AppIcon name="print" />
-        <span>{{ $t('pages.admin.eventBadges.print') }}</span>
-      </button>
-    </div>
+    <PrintToolbar
+      :back="{ name: 'admin-event-detail', params: { eventId } }"
+      :back-label="$t('pages.admin.eventBadges.back')"
+      :print-label="$t('pages.admin.eventBadges.print')"
+    />
     <p class="print-hint no-print">{{ $t('pages.admin.eventBadges.printHint') }}</p>
 
     <DataState
@@ -170,14 +71,14 @@ function printSheets(): void {
         <div class="badge__body">
           <h2 class="badge__name">{{ fullName(badge) }}</h2>
 
-          <ul v-if="badge.activities?.length" class="badge__activities">
+          <ul v-if="badge.activities.length" class="badge__activities">
             <li
               v-for="(activity, index) in visibleActivities(badge)"
               :key="index"
               class="badge__activity"
             >
               <span class="badge__activity-title">{{ activity.title }}</span>
-              <span v-if="activity.location" class="badge__activity-location">
+              <span class="badge__activity-location">
                 <span
                   class="badge__location-icon"
                   :aria-label="$t('pages.admin.eventBadges.locationAria')"
@@ -194,7 +95,7 @@ function printSheets(): void {
         </div>
 
         <footer class="badge__footer">
-          <span class="badge__type">{{ badge.userTypeName || '—' }}</span>
+          <span class="badge__type">{{ badge.userTypeName }}</span>
           <span v-if="badge.guardian" class="badge__guardian">
             <span
               class="badge__guardian-icon"
@@ -202,7 +103,7 @@ function printSheets(): void {
             >
               <AppIcon name="user" />
             </span>
-            <span class="badge__guardian-name">{{ guardianName(badge) || '—' }}</span>
+            <span class="badge__guardian-name">{{ badge.guardian.firstName }}</span>
             <span v-if="badge.guardian.phone" class="badge__guardian-phone">
               <span class="badge__phone-icon"><AppIcon name="phone" /></span>
               {{ badge.guardian.phone }}
@@ -218,20 +119,6 @@ function printSheets(): void {
 .badges {
   min-height: 100vh;
   padding: 24px 16px 48px;
-}
-
-.back-row {
-  max-width: 210mm;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.back {
-  margin-bottom: 14px;
 }
 
 .print-hint {
@@ -523,35 +410,10 @@ function printSheets(): void {
   }
 }
 
-.print-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: var(--ca-tap);
-  margin-bottom: 14px;
-  padding: 0 16px;
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 10px;
-  background: var(--ca-surface);
-  color: var(--ca-text);
-  font-family: var(--ca-font-display);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.print-btn:hover {
-  border-color: var(--ca-orange);
-}
-
 @media screen and (max-width: 1024px) {
   .badges {
     padding: 16px var(--ca-gutter) 40px;
     overflow-x: auto;
-  }
-
-  .back-row {
-    max-width: none;
   }
 }
 </style>

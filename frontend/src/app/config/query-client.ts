@@ -1,10 +1,11 @@
-import { QueryClient } from '@tanstack/vue-query'
+import { createQueryClient } from '@/shared/api'
 
 /**
- * Shared TanStack Query client. Queries are never considered fresh and are dropped as soon as no
- * view observes them, so every mount, focus or reconnect refetches from the API.
+ * Application TanStack Query client. Queries are never considered fresh and are dropped as soon as
+ * no view observes them, so every mount, focus or reconnect refetches from the API; mutations
+ * refresh what they declare in `meta.invalidates`.
  */
-export const queryClient = new QueryClient({
+export const queryClient = createQueryClient({
   defaultOptions: {
     queries: {
       // The API owns response caching. Keep data only while it is being observed by a view.

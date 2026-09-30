@@ -36,11 +36,6 @@ describe('toPage', () => {
   it('returns items and total from the response', () => {
     expect(toPage({ data: { items: [1, 2], total: 7 } })).toEqual({ items: [1, 2], total: 7 })
   })
-
-  it('defaults missing items and total', () => {
-    expect(toPage<number>({ data: { items: null, total: null } })).toEqual({ items: [], total: 0 })
-    expect(toPage<number>({ data: {} })).toEqual({ items: [], total: 0 })
-  })
 })
 
 describe('FEATURED_FIRST_SORT', () => {

@@ -6,8 +6,6 @@
  */
 
 export interface LoginRequest {
-  /** @nullable */
-  identifier?: string | null;
-  /** @nullable */
-  password?: string | null;
+  identifier: string;
+  password: string;
 }

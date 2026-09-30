@@ -6,8 +6,6 @@
  */
 
 export interface DashboardSeriesResponse {
-  /** @nullable */
-  key?: string | null;
-  /** @nullable */
-  values?: number[] | null;
+  key: string;
+  values: number[];
 }

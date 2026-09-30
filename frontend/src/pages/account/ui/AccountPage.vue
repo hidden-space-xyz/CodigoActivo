@@ -2,15 +2,15 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import {
-  CertificatesSection,
-  DeleteAccountSection,
-  HistorySection,
-  MinorsSection,
-  ProfileSection,
-  TwoFactorSection,
-} from '@/features/account'
-import { AppIcon, PageHeading } from '@/shared/ui'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { PageHeading } from '@/shared/ui/page-heading'
+
+import CertificatesSection from './CertificatesSection.vue'
+import DeleteAccountSection from './DeleteAccountSection.vue'
+import HistorySection from './HistorySection.vue'
+import MinorsSection from './MinorsSection.vue'
+import ProfileSection from './ProfileSection.vue'
+import TwoFactorSection from './TwoFactorSection.vue'
 
 const TABS = ['profile', 'history', 'certificates'] as const
 type AccountTab = (typeof TABS)[number]

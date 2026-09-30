@@ -6,8 +6,6 @@
  */
 
 export interface ResetPasswordRequest {
-  /** @nullable */
-  otp?: string | null;
-  /** @nullable */
-  newPassword?: string | null;
+  otp: string;
+  newPassword: string;
 }

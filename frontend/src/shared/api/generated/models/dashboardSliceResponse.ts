@@ -6,11 +6,10 @@
  */
 
 export interface DashboardSliceResponse {
-  /** @nullable */
-  key?: string | null;
+  key: string;
   /** @nullable */
   label?: string | null;
   /** @nullable */
   color?: string | null;
-  count?: number;
+  count: number;
 }

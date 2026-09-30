@@ -5,259 +5,158 @@ import {
   toAccountChild,
   toAccountHistoryEntry,
   toAccountProfile,
-  toAddMinorRequest,
   toAuthenticatorSetup,
+  toMinorRequest,
+  toRegisterRequest,
+  toRegistrationResult,
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
   toUpdateProfileRequest,
 } from '@/entities/account/api/mapper'
 
-import { buildUserResponse } from '../../../../support/fixtures/user'
+import {
+  buildCertificateResponse,
+  buildDependentResponse,
+  buildHistoryActivityResponse,
+  buildHistoryResponse,
+  buildUserResponse,
+} from '../../../../support/builders'
+
+const MINOR = {
+  firstName: 'Byron',
+  lastName: 'Lovelace',
+  birthDate: '2015-03-02',
+  gender: 'Male',
+} as const
 
 describe('account mapper', () => {
-  it('maps a full user response to the account profile', () => {
-    expect(
-      toAccountProfile(buildUserResponse({ isAdmin: true, promotionalConsent: true })),
-    ).toEqual({
+  it('maps the own profile, missing contact details as empty text', () => {
+    expect(toAccountProfile(buildUserResponse({ email: null, isAdmin: true }))).toEqual({
       id: 'user-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
-      email: 'ada@example.test',
+      email: '',
       phone: '600000000',
       secondaryPhone: '',
       nationalId: '12345678Z',
-      promotionalConsent: true,
+      promotionalConsent: false,
       gender: 'Female',
       statusName: 'Active',
       isAdmin: true,
-      twoFactorMethod: 'Email',
     })
   })
 
-  it('defaults missing profile fields to empty values', () => {
-    expect(toAccountProfile({})).toEqual({
-      id: '',
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      secondaryPhone: '',
-      nationalId: '',
-      promotionalConsent: false,
-      gender: null,
-      statusName: '',
-      isAdmin: false,
-      twoFactorMethod: 'Email',
-    })
-  })
-
-  it('keeps the authenticator method of the profile', () => {
+  it('maps the authenticator enrollment and the minors', () => {
     expect(
-      toAccountProfile(buildUserResponse({ twoFactorMethod: 'Authenticator' })).twoFactorMethod,
-    ).toBe('Authenticator')
-  })
-
-  it('maps the authenticator enrollment data, defaulting missing text to empty', () => {
-    expect(
-      toAuthenticatorSetup({ sharedKey: 'ABCD EFGH', authenticatorUri: 'otpauth://totp/x' }),
-    ).toEqual({ sharedKey: 'ABCD EFGH', authenticatorUri: 'otpauth://totp/x' })
-    expect(toAuthenticatorSetup({})).toEqual({ sharedKey: '', authenticatorUri: '' })
-  })
-
-  it('maps a minor to the reduced child shape', () => {
-    expect(
-      toAccountChild(buildUserResponse({ id: 'child-1', gender: 'Male', birthDate: '2015-03-02' })),
+      toAuthenticatorSetup({ sharedKey: 'ABCD EFGH', authenticatorUri: 'otpauth://x' }),
     ).toEqual({
+      sharedKey: 'ABCD EFGH',
+      authenticatorUri: 'otpauth://x',
+    })
+    expect(toAccountChild(buildDependentResponse())).toEqual({
       id: 'child-1',
-      firstName: 'Ada',
+      firstName: 'Byron',
       lastName: 'Lovelace',
       birthDate: '2015-03-02',
       gender: 'Male',
     })
-    expect(toAccountChild({})).toEqual({
-      id: '',
-      firstName: '',
-      lastName: '',
-      birthDate: '',
-      gender: null,
-    })
   })
 
-  it('builds the profile update body with a null parent and a null birth date', () => {
+  it('builds the profile update of an adult without birth date nor guardian', () => {
     expect(
       toUpdateProfileRequest({
         firstName: 'Ada',
         lastName: 'King',
         email: 'ada@example.test',
-        phone: '611111111',
-        secondaryPhone: '622222222',
-        nationalId: 'X1234567L',
+        phone: '600000000',
+        secondaryPhone: null,
+        nationalId: '12345678Z',
         promotionalConsent: true,
         gender: 'Female',
-        currentPassword: 'Str0ngPass!23',
+        currentPassword: null,
       }),
-    ).toEqual({
-      firstName: 'Ada',
-      lastName: 'King',
-      email: 'ada@example.test',
-      phone: '611111111',
-      secondaryPhone: '622222222',
-      birthDate: null,
-      nationalId: 'X1234567L',
-      promotionalConsent: true,
-      gender: 'Female',
-      parentId: null,
-      currentPassword: 'Str0ngPass!23',
+    ).toMatchObject({ lastName: 'King', birthDate: null, parentId: null, currentPassword: null })
+  })
+
+  it('builds the minor bodies, keeping an edited minor under its guardian', () => {
+    expect(toMinorRequest(MINOR)).toEqual(MINOR)
+    expect(toUpdateMinorRequest(MINOR, 'user-1')).toEqual({
+      ...MINOR,
+      promotionalConsent: false,
+      parentId: 'user-1',
     })
   })
 
-  it('builds the minor bodies without contact data and keeps the parent link on update', () => {
-    const input = {
-      firstName: 'Byron',
-      lastName: 'King',
-      birthDate: '2015-01-02',
-      gender: 'Other',
-    } as const
-
-    expect(toAddMinorRequest(input)).toEqual(input)
-    expect(toUpdateMinorRequest(input, 'parent-1')).toEqual({ ...input, parentId: 'parent-1' })
-  })
-
-  it('maps a history entry with its rateable flag and activities', () => {
-    const entry = toAccountHistoryEntry({
-      eventId: 'event-1',
-      title: 'Día Código Activo',
-      subtitle: 'Edición 2025',
-      eventStartsAt: '2025-05-10T09:00:00Z',
-      eventEndsAt: '2025-05-10T18:00:00Z',
-      thumbnailId: 'thumb-1',
-      isPast: true,
-      canRate: true,
-      activities: [
-        {
-          activityId: 'activity-1',
-          title: 'Robótica',
-          location: 'Aula 1',
-          modalityName: 'Presencial',
-          userId: 'child-1',
-          firstName: 'Byron',
-          lastName: 'King',
-          isSelf: false,
-          roleTypeName: 'Participante',
-          statusName: 'Confirmada',
-        },
-        { firstName: 'Solo' },
-        { lastName: 'Apellido' },
-      ],
-    })
-
-    expect(entry).toEqual({
-      eventId: 'event-1',
-      title: 'Día Código Activo',
-      subtitle: 'Edición 2025',
-      startsAt: '2025-05-10T09:00:00Z',
-      endsAt: '2025-05-10T18:00:00Z',
-      thumbnailId: 'thumb-1',
-      isPast: true,
-      canRate: true,
-      activities: [
-        {
-          activityId: 'activity-1',
-          title: 'Robótica',
-          location: 'Aula 1',
-          modality: 'Presencial',
-          participantId: 'child-1',
-          participantName: 'Byron King',
-          isSelf: false,
-          roleName: 'Participante',
-          statusName: 'Confirmada',
-        },
-        {
-          activityId: '',
-          title: '',
-          location: '',
-          modality: '',
-          participantId: '',
-          participantName: 'Solo',
-          isSelf: false,
-          roleName: '',
-          statusName: '',
-        },
-        expect.objectContaining({ participantName: 'Apellido' }),
-      ],
-    })
-  })
-
-  it('maps an empty history entry as not rateable with no activities', () => {
-    expect(toAccountHistoryEntry({})).toEqual({
-      eventId: '',
-      title: '',
-      subtitle: '',
-      startsAt: '',
-      endsAt: '',
-      thumbnailId: '',
-      isPast: false,
-      canRate: false,
-      activities: [],
-    })
-  })
-
-  it('maps certificates and defaults missing fields', () => {
-    expect(
-      toAccountCertificate({
-        code: 'CA-001',
-        eventId: 'event-1',
-        userId: 'user-1',
-        firstName: 'Ada',
-        lastName: 'Lovelace',
-        isSelf: true,
-        eventTitle: 'Día',
-        eventSubtitle: 'Sub',
-        eventStartsAt: '2025-05-10T09:00:00Z',
-        eventEndsAt: '2025-05-10T18:00:00Z',
+  it('joins participant names in the history and keeps rating flags', () => {
+    const entry = toAccountHistoryEntry(
+      buildHistoryResponse({
+        isPast: true,
+        canRate: true,
+        activities: [buildHistoryActivityResponse({ firstName: 'Byron', isSelf: false })],
       }),
-    ).toEqual({
-      code: 'CA-001',
+    )
+
+    expect(entry).toMatchObject({ eventId: 'event-1', isPast: true, canRate: true })
+    expect(entry.activities).toEqual([
+      {
+        activityId: 'activity-1',
+        title: 'Taller de robótica',
+        location: 'Aula 1',
+        modality: 'Presencial',
+        participantId: 'user-1',
+        participantName: 'Byron Lovelace',
+        isSelf: false,
+        roleName: 'Participante',
+        statusName: 'Confirmada',
+      },
+    ])
+  })
+
+  it('maps a certificate', () => {
+    expect(toAccountCertificate(buildCertificateResponse())).toEqual({
+      code: 'CA-2025-0001',
       eventId: 'event-1',
       participantId: 'user-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
       isSelf: true,
-      eventTitle: 'Día',
-      eventSubtitle: 'Sub',
-      startsAt: '2025-05-10T09:00:00Z',
-      endsAt: '2025-05-10T18:00:00Z',
-    })
-    expect(toAccountCertificate({})).toEqual({
-      code: '',
-      eventId: '',
-      participantId: '',
-      firstName: '',
-      lastName: '',
-      isSelf: false,
-      eventTitle: '',
-      eventSubtitle: '',
-      startsAt: '',
-      endsAt: '',
+      eventTitle: 'Hackathon de Primavera',
+      eventSubtitle: 'Edición 2025',
+      startsAt: '2025-05-10',
+      endsAt: '2025-05-12',
     })
   })
 
-  it('trims rating comments and sends blank ones as null', () => {
+  it('trims rating comments and sends blank ones as none', () => {
     expect(
       toSaveEventRatingRequest({
-        score: 3,
-        mostLiked: '  Los talleres  ',
-        leastLiked: '   ',
+        score: 4,
+        mostLiked: ' Todo ',
+        leastLiked: '  ',
         suggestions: '',
       }),
-    ).toEqual({ score: 3, mostLiked: 'Los talleres', leastLiked: null, suggestions: null })
+    ).toEqual({ score: 4, mostLiked: 'Todo', leastLiked: null, suggestions: null })
+  })
+
+  it('builds the registration of an adult with minors and reads its result', () => {
+    const adult = {
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      gender: 'Female',
+      email: 'ada@example.test',
+      phone: '600000000',
+      secondaryPhone: null,
+      nationalId: '12345678Z',
+      promotionalConsent: false,
+    } as const
+
+    expect(toRegisterRequest({ adult, password: 'Str0ngPass!23', minors: [MINOR] })).toEqual({
+      ...adult,
+      password: 'Str0ngPass!23',
+      minors: [MINOR],
+    })
     expect(
-      toSaveEventRatingRequest({
-        score: 0,
-        mostLiked: ' ',
-        leastLiked: 'La espera ',
-        suggestions: ' Más talleres',
-      }),
-    ).toEqual({ score: 0, mostLiked: null, leastLiked: 'La espera', suggestions: 'Más talleres' })
+      toRegistrationResult({ adult: buildUserResponse(), minors: [buildDependentResponse()] }),
+    ).toEqual({ adultId: 'user-1', minorCount: 1 })
   })
 })

@@ -53,11 +53,12 @@ public sealed class ListEventsQueryHandler(
         return FetchAsync(query.Filters, ct);
     }
 
-    private Task<PagedResult<EventListItemResponse>> FetchAsync(
+    private async Task<PagedResult<EventListItemResponse>> FetchAsync(
         EventListQuery query,
         CancellationToken ct
     )
     {
+        var now = clock.UtcNow;
         var today = clock.Today;
         var source = readStore.Events.Select(EventProjections.EventListItem);
 
@@ -113,6 +114,10 @@ public sealed class ListEventsQueryHandler(
         source = source.WhereContains(e => e.Subtitle, query.Subtitle);
 
         source = Sort.Apply(source, query.Sort);
-        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        var page = await executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        return page with
+        {
+            Items = [.. page.Items.Select(item => EventStages.Stamp(item, now, today))],
+        };
     }
 }

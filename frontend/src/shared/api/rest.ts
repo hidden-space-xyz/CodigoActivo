@@ -16,10 +16,10 @@ export async function unwrapOrNull<T>(
   }
 }
 
-/** Normalizes a paged API response, defaulting missing `items` to `[]` and `total` to `0`. */
-export function toPage<T>(response: { data: { items?: T[] | null; total?: number | null } }): {
+/** The rows of a paged API response and how many rows match in total. */
+export function toPage<T>(response: { data: { items: T[]; total: number } }): {
   items: T[]
   total: number
 } {
-  return { items: response.data.items ?? [], total: response.data.total ?? 0 }
+  return { items: response.data.items, total: response.data.total }
 }

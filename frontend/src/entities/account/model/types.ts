@@ -1,6 +1,6 @@
-import type { Gender, TwoFactorMethod } from '@/shared/api/generated/models'
+import type { Gender } from '@/entities/user/@x/account'
 
-/** Signed-in user's own data shown and edited on the account page, mapped from `UserResponse`. */
+/** Signed-in user's own data shown and edited on the account page. */
 export interface AccountProfile {
   readonly id: string
   readonly firstName: string
@@ -13,11 +13,9 @@ export interface AccountProfile {
   readonly nationalId: string
   /** Whether the user agreed to receive promotional content. */
   readonly promotionalConsent: boolean
-  readonly gender: Gender | null
+  readonly gender: Gender
   readonly statusName: string
   readonly isAdmin: boolean
-  /** Second factor asked for at login: an emailed code or an authenticator application. */
-  readonly twoFactorMethod: TwoFactorMethod
 }
 
 /**
@@ -29,13 +27,13 @@ export interface AuthenticatorSetup {
   readonly authenticatorUri: string
 }
 
-/** Minor managed by the signed-in adult, mapped from `UserResponse`. */
+/** Minor managed by the signed-in adult. */
 export interface AccountChild {
   readonly id: string
   readonly firstName: string
   readonly lastName: string
   readonly birthDate: string
-  readonly gender: Gender | null
+  readonly gender: Gender
 }
 
 /** One household member's participation in an activity of a past or upcoming event. */
@@ -78,4 +76,10 @@ export interface AccountHistoryEntry {
   readonly isPast: boolean
   readonly canRate: boolean
   readonly activities: readonly AccountHistoryActivity[]
+}
+
+/** Outcome of a registration: the adult to resend the verification email to and its minors. */
+export interface RegistrationResult {
+  readonly adultId: string
+  readonly minorCount: number
 }

@@ -6,6 +6,5 @@
  */
 
 export interface AccountDeletionCodeRequest {
-  /** @nullable */
-  currentPassword?: string | null;
+  currentPassword: string;
 }

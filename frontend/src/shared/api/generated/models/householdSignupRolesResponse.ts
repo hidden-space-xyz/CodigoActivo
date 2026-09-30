@@ -7,7 +7,6 @@
 import type { SignupRoleResponse } from './signupRoleResponse';
 
 export interface HouseholdSignupRolesResponse {
-  userId?: string;
-  /** @nullable */
-  roles?: SignupRoleResponse[] | null;
+  userId: string;
+  roles: SignupRoleResponse[];
 }

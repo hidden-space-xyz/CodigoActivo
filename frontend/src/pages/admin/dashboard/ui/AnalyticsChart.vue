@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BaseChart, ChartCard } from '@/shared/ui'
+import { BaseChart, ChartCard } from '@/shared/ui/chart'
 
 withDefaults(
   defineProps<{
@@ -9,7 +9,7 @@ withDefaults(
     subtitle: string
     /** Chart.js chart type; changing it recreates the chart. */
     type: 'line' | 'bar' | 'doughnut'
-    /** Chart.js `data` object, typically built by the helpers in `model/charts.ts`. */
+    /** Chart.js `data` object, typically built by the helpers in `lib/charts.ts`. */
     data: object
     /** Chart.js `options` object matching `type`. */
     options: object

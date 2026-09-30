@@ -6,23 +6,16 @@
  */
 
 export interface EventHistoryActivityResponse {
-  activityId?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  location?: string | null;
-  /** @nullable */
-  modalityName?: string | null;
-  userId?: string;
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
-  isSelf?: boolean;
-  roleTypeId?: string;
-  /** @nullable */
-  roleTypeName?: string | null;
-  statusId?: string;
-  /** @nullable */
-  statusName?: string | null;
+  activityId: string;
+  title: string;
+  location: string;
+  modalityName: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  isSelf: boolean;
+  roleTypeId: string;
+  roleTypeName: string;
+  statusId: string;
+  statusName: string;
 }

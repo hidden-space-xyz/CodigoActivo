@@ -5,34 +5,18 @@ export interface EventCategoryTag {
   readonly color: string
 }
 
-/** Lifecycle stage derived client-side from the signup window and end date; drives card styling. */
+/** Stage of an event, as the API computes it from its signup window and dates; drives styling. */
 export type EventStatusKind =
   'upcoming' | 'earlySignupOpen' | 'signupOpen' | 'signupClosed' | 'finished'
 
-/** Status kind plus its translated label, resolved when the event is mapped. */
-export interface EventStatus {
-  readonly kind: EventStatusKind
-  readonly label: string
-}
-
-/** Card model for an upcoming event, mapped from `EventListItemResponse`. */
-export interface UpcomingEvent {
+/** An event as its cards show it; `startsAt` and `endsAt` are ISO days or instants. */
+export interface EventSummary {
   readonly id: string
   readonly title: string
-  readonly slogan: string
-  readonly date: string
-  readonly status: EventStatus
-  readonly thumbnailId: string
-  readonly categories: readonly EventCategoryTag[]
-}
-
-/** Card model for a finished event; `eventName` holds the event subtitle. */
-export interface PastEvent {
-  readonly id: string
-  readonly title: string
-  readonly eventName: string
-  readonly date: string
-  readonly status: EventStatus
+  readonly subtitle: string
+  readonly startsAt: string
+  readonly endsAt: string
+  readonly status: EventStatusKind
   readonly thumbnailId: string
   readonly categories: readonly EventCategoryTag[]
 }
@@ -125,27 +109,72 @@ export interface LeaderRosterActivity {
   readonly roles: readonly LeaderRosterRole[]
 }
 
-/** Public detail page model, mapped from `EventResponse` with display labels pre-formatted. */
+/** A whole event as its public page shows it; every date is an ISO day or instant. */
 export interface EventDetail {
   readonly id: string
   readonly title: string
   readonly subtitle: string
   readonly description: string
-  readonly startsAt: string | null
-  readonly endsAt: string | null
-  readonly dateLabel: string
-  readonly signupLabel: string
-  readonly earlySignupLabel: string | null
-  readonly status: EventStatus
+  readonly startsAt: string
+  readonly endsAt: string
+  readonly signupStartsAt: string
+  readonly signupEndsAt: string
+  /** When early signup opens for eligible users; `null` when the event has none. */
+  readonly earlySignupStartsAt: string | null
+  readonly status: EventStatusKind
   readonly thumbnailId: string
-  readonly signupOpen: boolean
-  readonly earlySignupOpen: boolean
   readonly categories: readonly EventCategoryTag[]
   readonly terms: readonly EventTermsSummary[]
 }
 
 /** Home page event board: the featured event and the remaining upcoming ones. */
 export interface HomeEvents {
-  readonly featured: UpcomingEvent | null
-  readonly items: readonly UpcomingEvent[]
+  readonly featured: EventSummary | null
+  readonly items: readonly EventSummary[]
+}
+
+/** An event as the admin events table lists it. */
+export interface EventListing extends EventSummary {
+  readonly featured: boolean
+  readonly signupStartsAt: string
+  readonly signupEndsAt: string
+  readonly earlySignupStartsAt: string | null
+}
+
+/** A terms document an event links to and whether deciding on it is required. */
+interface EventTermsInput {
+  readonly documentId: string
+  readonly required: boolean
+}
+
+/**
+ * Values an event is created or replaced with: ISO days for the event itself, ISO instants for
+ * its signup window, and terms documents in the order the event shows them.
+ */
+export interface EventInput {
+  readonly title: string
+  readonly subtitle: string
+  readonly description: string
+  readonly startsAt: string
+  readonly endsAt: string
+  readonly earlySignupStartsAt: string | null
+  readonly signupStartsAt: string
+  readonly signupEndsAt: string
+  readonly thumbnailId: string
+  readonly categoryIds: readonly string[]
+  readonly terms: readonly EventTermsInput[]
+}
+
+/** Filters, sort and page of the admin events table. */
+export interface EventListParams {
+  readonly title?: string
+  readonly subtitle?: string
+  readonly categoryTypeId?: string
+  readonly eventDateFrom?: string
+  readonly eventDateTo?: string
+  readonly signupFrom?: string
+  readonly signupTo?: string
+  readonly page?: number
+  readonly pageSize?: number
+  readonly sort?: string
 }

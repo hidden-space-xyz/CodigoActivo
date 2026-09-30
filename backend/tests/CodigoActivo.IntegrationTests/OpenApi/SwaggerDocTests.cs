@@ -85,6 +85,29 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task SwaggerDocumentNonNullablePropertiesAreRequired()
+    {
+        using var doc = await FetchSwaggerAsync(Ct);
+
+        var user = doc
+            .RootElement.GetProperty("components")
+            .GetProperty("schemas")
+            .GetProperty("UserResponse");
+        var required = user.GetProperty("required")
+            .EnumerateArray()
+            .Select(name => name.GetString())
+            .ToList();
+
+        required.Should().Contain(["id", "firstName", "status", "earlySignupEligible"]);
+        required.Should().NotContain(["email", "birthDate", "type"]);
+        user.GetProperty("properties")
+            .GetProperty("firstName")
+            .TryGetProperty("nullable", out _)
+            .Should()
+            .BeFalse();
+    }
+
+    [Fact]
     public async Task SwaggerDocumentErrorSchemaIsForcedIntoComponents()
     {
         using var doc = await FetchSwaggerAsync(Ct);

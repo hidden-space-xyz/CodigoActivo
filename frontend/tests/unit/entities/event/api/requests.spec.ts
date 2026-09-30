@@ -1,48 +1,47 @@
 import { describe, expect, it } from 'vitest'
 
+import type { EventInput } from '@/entities/event'
 import {
   createEventRequest,
   deleteEventRequest,
-  getDashboardAnalyticsRequest,
-  getEventAdminRequest,
-  getEventAttendeesPageRequest,
-  getEventBadgesRequest,
-  getEventRatingsPageRequest,
-  getEventRosterRequest,
+  featureEventRequest,
   getEventLeaderRosterRequest,
-  getEventsAdminPageRequest,
-  getEventSummaryRequest,
+  getEventRequest,
+  getEventsPageRequest,
   getEventTermsStateRequest,
-  toggleEventFeatureRequest,
-  updateEventRequest,
-} from '@/entities/event'
-import {
-  getEventByIdRequest,
   getHomeEventsRequest,
   getPastEventCategoriesRequest,
   getPastEventsPageRequest,
   getPastEventYearsRequest,
   getUpcomingEventsPageRequest,
+  updateEventRequest,
 } from '@/entities/event/api/requests'
 import { ApiError, FEATURED_FIRST_SORT } from '@/shared/api'
 import type {
   EventCategoryTypeResponse,
   EventListItemResponse,
   EventResponse,
+  EventTermsStateResponse,
 } from '@/shared/api/generated/models'
 
-import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import { apiError, http, HttpResponse, noContent, paged, server } from '../../../../support/server'
+import {
+  buildEventListItem,
+  buildEventResponse,
+  buildLeaderRosterActivity,
+  buildTermsDocumentState,
+} from '../../../../support/builders'
 
 function queryOf(request: Request): Record<string, string> {
   return Object.fromEntries(new URL(request.url).searchParams)
 }
 
-const noContent = () => new HttpResponse(null, { status: 204 })
-
 describe('event requests', () => {
   it('pages upcoming events by start date and maps them to cards', async () => {
     let query: Record<string, string> = {}
-    const items: EventListItemResponse[] = [{ id: 'e1', title: 'Día', subtitle: 'Lema' }]
+    const items: EventListItemResponse[] = [
+      buildEventListItem({ id: 'e1', title: 'Día', subtitle: 'Lema', stage: 'Upcoming' }),
+    ]
     server.use(
       http.get('/api/events', ({ request }) => {
         query = queryOf(request)
@@ -53,30 +52,25 @@ describe('event requests', () => {
     const page = await getUpcomingEventsPageRequest(2, 4)
 
     expect(page.total).toBe(9)
-    expect(page.items).toEqual([expect.objectContaining({ id: 'e1', slogan: 'Lema' })])
+    expect(page.items).toEqual([
+      expect.objectContaining({ id: 'e1', subtitle: 'Lema', status: 'upcoming' }),
+    ])
     expect(query).toEqual({ scope: 'Upcoming', sort: 'eventStartsAt', page: '2', pageSize: '4' })
   })
 
-  it('lists past years as strings and treats an empty body as none', async () => {
+  it('lists past years as strings', async () => {
     server.use(http.get('/api/events/past-years', () => HttpResponse.json([2025, 2024])))
-    await expect(getPastEventYearsRequest()).resolves.toEqual(['2025', '2024'])
 
-    server.use(http.get('/api/events/past-years', noContent))
-    await expect(getPastEventYearsRequest()).resolves.toEqual([])
+    await expect(getPastEventYearsRequest()).resolves.toEqual(['2025', '2024'])
   })
 
-  it('lists past categories dropping entries without id', async () => {
-    const data: EventCategoryTypeResponse[] = [
-      { id: 'cat-1', name: 'IA', color: '#123456' },
-      { name: 'Sin id' },
-    ]
+  it('lists past categories as tags', async () => {
+    const data: EventCategoryTypeResponse[] = [{ id: 'cat-1', name: 'IA', color: '#123456' }]
     server.use(http.get('/api/events/past-categories', () => HttpResponse.json(data)))
+
     await expect(getPastEventCategoriesRequest()).resolves.toEqual([
       { id: 'cat-1', name: 'IA', color: '#123456' },
     ])
-
-    server.use(http.get('/api/events/past-categories', noContent))
-    await expect(getPastEventCategoriesRequest()).resolves.toEqual([])
   })
 
   it('pages past events newest first sending search and category only when set', async () => {
@@ -84,7 +78,7 @@ describe('event requests', () => {
     server.use(
       http.get('/api/events', ({ request }) => {
         queries.push(queryOf(request))
-        return HttpResponse.json(paged([{ id: 'e0', subtitle: 'Crea' }]))
+        return HttpResponse.json(paged([buildEventListItem({ id: 'e0', subtitle: 'Crea' })]))
       }),
     )
 
@@ -95,7 +89,9 @@ describe('event requests', () => {
     )
     await getPastEventsPageRequest({ year: '2024', search: '', categoryId: '' }, 2, 10)
 
-    expect(page.items).toEqual([expect.objectContaining({ id: 'e0', eventName: 'Crea' })])
+    expect(page.items).toEqual([
+      expect.objectContaining({ id: 'e0', subtitle: 'Crea', status: 'finished' }),
+    ])
     expect(queries).toEqual([
       {
         scope: 'Past',
@@ -110,208 +106,72 @@ describe('event requests', () => {
     ])
   })
 
-  describe('getEventByIdRequest and getEventAdminRequest', () => {
-    it('maps the public detail and returns the raw admin event', async () => {
-      const event: EventResponse = { id: 'e1', title: 'Día', description: 'Texto' }
+  describe('getEventRequest', () => {
+    it('maps the whole event', async () => {
+      const event: EventResponse = buildEventResponse({
+        id: 'e1',
+        title: 'Día',
+        description: 'Texto',
+      })
       server.use(http.get('/api/events/e1', () => HttpResponse.json(event)))
 
-      await expect(getEventByIdRequest('e1')).resolves.toMatchObject({
+      await expect(getEventRequest('e1')).resolves.toMatchObject({
         id: 'e1',
         description: 'Texto',
+        status: 'signupOpen',
         terms: [],
       })
-      await expect(getEventAdminRequest('e1')).resolves.toEqual(event)
     })
 
     it('resolves null for a missing event', async () => {
       server.use(http.get('/api/events/missing', () => apiError(404, 'EventNotFound')))
 
-      await expect(getEventByIdRequest('missing')).resolves.toBeNull()
-      await expect(getEventAdminRequest('missing')).resolves.toBeNull()
+      await expect(getEventRequest('missing')).resolves.toBeNull()
     })
 
     it('rethrows other errors', async () => {
       server.use(http.get('/api/events/broken', () => apiError(500)))
 
-      await expect(getEventByIdRequest('broken')).rejects.toBeInstanceOf(ApiError)
+      await expect(getEventRequest('broken')).rejects.toBeInstanceOf(ApiError)
     })
   })
 
-  it('loads the terms state, sorted by display order, defaulting missing fields', async () => {
-    server.use(
-      http.get('/api/events/e1/terms', () =>
-        HttpResponse.json({
-          documents: [
-            {
-              termsDocumentId: 'terms-2',
-              name: 'Segundo',
-              description: 'B',
-              required: false,
-              displayOrder: 1,
-              accepted: true,
-              decidedAt: '2026-01-01T00:00:00Z',
-            },
-            { termsDocumentId: 'terms-1', displayOrder: 0 },
-          ],
-          signupBlocked: true,
-        }),
-      ),
-      http.get('/api/events/e2/terms', () => HttpResponse.json({})),
-    )
-
-    await expect(getEventTermsStateRequest('e1')).resolves.toEqual({
+  it('loads the terms state sorted by display order', async () => {
+    const state: EventTermsStateResponse = {
       documents: [
-        {
-          id: 'terms-1',
-          name: '',
-          description: '',
-          required: false,
-          displayOrder: 0,
-          accepted: null,
-          decidedAt: null,
-        },
-        {
-          id: 'terms-2',
-          name: 'Segundo',
-          description: 'B',
-          required: false,
-          displayOrder: 1,
-          accepted: true,
-          decidedAt: '2026-01-01T00:00:00Z',
-        },
+        buildTermsDocumentState({ termsDocumentId: 'terms-2', name: 'Segundo', displayOrder: 1 }),
+        buildTermsDocumentState({ termsDocumentId: 'terms-1', name: 'Primero' }),
       ],
       signupBlocked: true,
-    })
-    await expect(getEventTermsStateRequest('e2')).resolves.toEqual({
-      documents: [],
-      signupBlocked: false,
-    })
+    }
+    server.use(http.get('/api/events/e1/terms', () => HttpResponse.json(state)))
+
+    const result = await getEventTermsStateRequest('e1')
+
+    expect(result.signupBlocked).toBe(true)
+    expect(result.documents.map((document) => [document.id, document.name])).toEqual([
+      ['terms-1', 'Primero'],
+      ['terms-2', 'Segundo'],
+    ])
   })
 
-  it('loads the leader roster, keeping the API order and splitting users from dependents', async () => {
+  it('loads the activities the user leads with their attendees', async () => {
     server.use(
       http.get('/api/events/e1/leader-roster', () =>
-        HttpResponse.json([
-          {
-            activityId: 'act-1',
-            title: 'Robótica',
-            location: 'Aula 3',
-            activityStartsAt: '2026-10-10T09:00:00Z',
-            activityEndsAt: '2026-10-10T11:00:00Z',
-            roles: [
-              {
-                roleTypeId: 'role-leader',
-                roleName: 'Líder',
-                users: [
-                  {
-                    firstName: 'Marta',
-                    lastName: 'Molina',
-                    email: 'marta@example.test',
-                    phone: '600 000 001',
-                    signedUpAt: '2026-09-01T10:00:00Z',
-                  },
-                ],
-                dependents: [],
-              },
-              {
-                roleTypeId: 'role-participant',
-                roleName: 'Participante',
-                dependents: [
-                  {
-                    firstName: 'Nora',
-                    lastName: 'Gil',
-                    age: 11,
-                    guardian: {
-                      firstName: 'Gabriela',
-                      lastName: 'Gil',
-                      email: 'gabriela@example.test',
-                      phone: '600 000 002',
-                    },
-                    signedUpAt: '2026-09-02T10:00:00Z',
-                  },
-                  { signedUpAt: '2026-09-03T10:00:00Z' },
-                ],
-              },
-            ],
-          },
-          { activityId: 'act-2' },
-        ]),
+        HttpResponse.json([buildLeaderRosterActivity()]),
       ),
       http.get('/api/events/e2/leader-roster', () => HttpResponse.json([])),
     )
 
-    await expect(getEventLeaderRosterRequest('e1')).resolves.toEqual([
-      {
-        id: 'act-1',
-        title: 'Robótica',
-        location: 'Aula 3',
-        startsAt: '2026-10-10T09:00:00Z',
-        endsAt: '2026-10-10T11:00:00Z',
-        roles: [
-          {
-            id: 'role-leader',
-            name: 'Líder',
-            users: [
-              {
-                firstName: 'Marta',
-                lastName: 'Molina',
-                email: 'marta@example.test',
-                phone: '600 000 001',
-                signedUpAt: '2026-09-01T10:00:00Z',
-              },
-            ],
-            dependents: [],
-          },
-          {
-            id: 'role-participant',
-            name: 'Participante',
-            users: [],
-            dependents: [
-              {
-                firstName: 'Nora',
-                lastName: 'Gil',
-                age: 11,
-                guardian: {
-                  firstName: 'Gabriela',
-                  lastName: 'Gil',
-                  email: 'gabriela@example.test',
-                  phone: '600 000 002',
-                },
-                signedUpAt: '2026-09-02T10:00:00Z',
-              },
-              {
-                firstName: '',
-                lastName: '',
-                age: null,
-                guardian: { firstName: '', lastName: '', email: '', phone: '' },
-                signedUpAt: '2026-09-03T10:00:00Z',
-              },
-            ],
-          },
-        ],
-      },
-      { id: 'act-2', title: '', location: '', startsAt: '', endsAt: '', roles: [] },
-    ])
-    await expect(getEventLeaderRosterRequest('e2')).resolves.toEqual([])
-  })
-
-  it('fills in missing user fields of the leader roster', async () => {
-    server.use(
-      http.get('/api/events/e1/leader-roster', () =>
-        HttpResponse.json([{ activityId: 'act-1', roles: [{ users: [{}] }] }]),
-      ),
-    )
-
     const [activity] = await getEventLeaderRosterRequest('e1')
 
-    expect(activity?.roles).toEqual([
-      {
-        id: '',
-        name: '',
-        users: [{ firstName: '', lastName: '', email: '', phone: '', signedUpAt: '' }],
-        dependents: [],
-      },
+    expect(activity).toMatchObject({ id: 'act-1', title: 'Taller de robótica' })
+    expect(activity?.roles.map((role) => role.id)).toEqual([
+      'role-leader',
+      'role-volunteer',
+      'role-participant',
     ])
+    await expect(getEventLeaderRosterRequest('e2')).resolves.toEqual([])
   })
 
   describe('getHomeEventsRequest', () => {
@@ -322,10 +182,16 @@ describe('event requests', () => {
           const query = queryOf(request)
           queries.push(query)
           if (query.sort === FEATURED_FIRST_SORT) {
-            return HttpResponse.json(paged([{ id: 'e2', title: 'Destacado' }]))
+            return HttpResponse.json(paged([buildEventListItem({ id: 'e2', title: 'Destacado' })]))
           }
           return HttpResponse.json(
-            paged([{ id: 'e1' }, { id: 'e2' }, { id: 'e3' }, { id: 'e4' }, { id: 'e5' }]),
+            paged([
+              buildEventListItem({ id: 'e1' }),
+              buildEventListItem({ id: 'e2' }),
+              buildEventListItem({ id: 'e3' }),
+              buildEventListItem({ id: 'e4' }),
+              buildEventListItem({ id: 'e5' }),
+            ]),
           )
         }),
       )
@@ -343,29 +209,72 @@ describe('event requests', () => {
     })
 
     it('returns no featured event and no items when the lists are empty', async () => {
-      server.use(http.get('/api/events', () => HttpResponse.json({})))
+      server.use(http.get('/api/events', () => HttpResponse.json(paged([]))))
 
       await expect(getHomeEventsRequest()).resolves.toEqual({ featured: null, items: [] })
     })
   })
 
-  it('pages the admin table with raw items', async () => {
+  it('pages the admin table, mapping each event to a row', async () => {
     let query: Record<string, string> = {}
-    const items: EventListItemResponse[] = [{ id: 'e1', featured: true }]
     server.use(
       http.get('/api/events', ({ request }) => {
         query = queryOf(request)
-        return HttpResponse.json(paged(items, 3))
+        return HttpResponse.json(
+          paged(
+            [
+              buildEventListItem({
+                id: 'e1',
+                featured: true,
+                earlySignupStartsAt: '2026-08-20T08:00:00Z',
+              }),
+            ],
+            3,
+          ),
+        )
       }),
     )
 
-    await expect(
-      getEventsAdminPageRequest({ page: 1, pageSize: 20, sort: 'title' }),
-    ).resolves.toEqual({ items, total: 3 })
+    const page = await getEventsPageRequest({ page: 1, pageSize: 20, sort: 'title' })
+
+    expect(page.total).toBe(3)
+    expect(page.items[0]).toMatchObject({
+      id: 'e1',
+      featured: true,
+      earlySignupStartsAt: '2026-08-20T08:00:00Z',
+      signupStartsAt: expect.any(String) as string,
+      status: 'signupOpen',
+    })
     expect(query).toEqual({ page: '1', pageSize: '20', sort: 'title' })
   })
 
   it('creates, updates, features and deletes events', async () => {
+    const input: EventInput = {
+      title: 'Nuevo',
+      subtitle: 'Sub',
+      description: '<p>Texto</p>',
+      startsAt: '2026-10-10',
+      endsAt: '2026-10-11',
+      earlySignupStartsAt: null,
+      signupStartsAt: '2026-09-01T08:00:00.000Z',
+      signupEndsAt: '2026-10-01T20:00:00.000Z',
+      thumbnailId: 't1',
+      categoryIds: ['cat-1'],
+      terms: [{ documentId: 'terms-1', required: false }],
+    }
+    const body = {
+      title: 'Nuevo',
+      subtitle: 'Sub',
+      description: '<p>Texto</p>',
+      eventStartsAt: '2026-10-10',
+      eventEndsAt: '2026-10-11',
+      earlySignupStartsAt: null,
+      signupStartsAt: '2026-09-01T08:00:00.000Z',
+      signupEndsAt: '2026-10-01T20:00:00.000Z',
+      thumbnailId: 't1',
+      categoryTypeIds: ['cat-1'],
+      termsDocuments: [{ termsDocumentId: 'terms-1', required: false }],
+    }
     const calls: { method: string; path: string; body: unknown }[] = []
     const record = async ({ request }: { request: Request }) => {
       const text = await request.text()
@@ -376,7 +285,7 @@ describe('event requests', () => {
       })
       return request.method === 'DELETE'
         ? noContent()
-        : HttpResponse.json<EventResponse>({ id: 'e1', title: request.method })
+        : HttpResponse.json<EventResponse>(buildEventResponse({ id: 'e1' }))
     }
     server.use(
       http.post('/api/events', record),
@@ -385,67 +294,16 @@ describe('event requests', () => {
       http.delete('/api/events/e1', record),
     )
 
-    await expect(createEventRequest({ title: 'Nuevo' })).resolves.toEqual({
-      id: 'e1',
-      title: 'POST',
-    })
-    await expect(updateEventRequest('e1', { title: 'Editado' })).resolves.toEqual({
-      id: 'e1',
-      title: 'PUT',
-    })
-    await expect(toggleEventFeatureRequest('e1')).resolves.toEqual({ id: 'e1', title: 'PATCH' })
-    expect((await deleteEventRequest('e1')).status).toBe(204)
+    await createEventRequest(input)
+    await updateEventRequest('e1', { ...input, terms: [] })
+    await featureEventRequest('e1')
+    await deleteEventRequest('e1')
 
     expect(calls).toEqual([
-      { method: 'POST', path: '/api/events', body: { title: 'Nuevo' } },
-      { method: 'PUT', path: '/api/events/e1', body: { title: 'Editado' } },
+      { method: 'POST', path: '/api/events', body },
+      { method: 'PUT', path: '/api/events/e1', body: { ...body, termsDocuments: null } },
       { method: 'PATCH', path: '/api/events/e1/feature', body: null },
       { method: 'DELETE', path: '/api/events/e1', body: null },
     ])
-  })
-
-  it('pages the ratings and attendees reports with their params', async () => {
-    const queries: Record<string, string>[] = []
-    server.use(
-      http.get('/api/events/e1/ratings', ({ request }) => {
-        queries.push(queryOf(request))
-        return HttpResponse.json(paged([{ score: 5 }], 1))
-      }),
-      http.get('/api/reports/events/e1/attendees', ({ request }) => {
-        queries.push(queryOf(request))
-        return HttpResponse.json(paged([{ userId: 'u1' }], 2))
-      }),
-    )
-
-    await expect(getEventRatingsPageRequest('e1', { page: 1, pageSize: 10 })).resolves.toEqual({
-      items: [{ score: 5 }],
-      total: 1,
-    })
-    await expect(getEventAttendeesPageRequest('e1', { page: 2 })).resolves.toEqual({
-      items: [{ userId: 'u1' }],
-      total: 2,
-    })
-    expect(queries).toEqual([{ page: '1', pageSize: '10' }, { page: '2' }])
-  })
-
-  it('loads the summary, badges, roster and dashboard analytics reports', async () => {
-    let analyticsQuery: Record<string, string> = {}
-    server.use(
-      http.get('/api/reports/events/e1/summary', () => HttpResponse.json({ totalAttendees: 4 })),
-      http.get('/api/reports/events/e1/badges', () => HttpResponse.json({ badges: [] })),
-      http.get('/api/reports/events/e1/roster', () => HttpResponse.json({ activities: [] })),
-      http.get('/api/reports/dashboard/analytics', ({ request }) => {
-        analyticsQuery = queryOf(request)
-        return HttpResponse.json({ kpis: [] })
-      }),
-    )
-
-    await expect(getEventSummaryRequest('e1')).resolves.toEqual({ totalAttendees: 4 })
-    await expect(getEventBadgesRequest('e1')).resolves.toEqual({ badges: [] })
-    await expect(getEventRosterRequest('e1')).resolves.toEqual({ activities: [] })
-    await expect(
-      getDashboardAnalyticsRequest({ from: '2026-01-01', to: '2026-06-30' }),
-    ).resolves.toEqual({ kpis: [] })
-    expect(analyticsQuery).toEqual({ from: '2026-01-01', to: '2026-06-30' })
   })
 })

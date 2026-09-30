@@ -1,10 +1,16 @@
+export type { AuthUser } from './model/types'
 export type { Credentials } from './model/credentials'
 export { createEmptyCredentials } from './model/credentials'
-export { useSession } from './model/session'
-export { sessionQueryKeys } from './api/query-keys'
 export {
-  getCurrentUserRequest,
-  getLoginChallengeRequest,
+  currentUser,
+  endSession,
+  refreshSession,
+  resolveSession,
+  startSession,
+} from './model/session'
+export { useSession } from './model/use-session'
+export { sessionQueries } from './api/queries'
+export {
   loginRequest,
   logoutRequest,
   resendTwoFactorCodeRequest,

@@ -6,6 +6,6 @@
  */
 
 export interface EventTermsDocumentRequest {
-  termsDocumentId?: string;
-  required?: boolean;
+  termsDocumentId: string;
+  required: boolean;
 }

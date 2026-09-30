@@ -2,26 +2,24 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatDate } from '@/shared/lib/date'
+import { FeaturedCard } from '@/shared/ui/featured-card'
+
 import type { NewsSummary } from '../model/types'
-import { FeaturedCard } from '@/shared/ui'
 
 const props = defineProps<{
-  /** News item shown as the large home highlight; the date row is hidden if `date` is empty. */
+  /** News item shown as the large home highlight with its publication date. */
   newsItem: NewsSummary
 }>()
 
 const { t } = useI18n()
 
-const meta = computed(() =>
-  props.newsItem.date
-    ? [
-        {
-          label: t('entities.newsItem.featured.publishedLabel'),
-          value: props.newsItem.date,
-        },
-      ]
-    : [],
-)
+const meta = computed(() => [
+  {
+    label: t('entities.newsItem.featured.publishedLabel'),
+    value: formatDate(props.newsItem.createdAt),
+  },
+])
 </script>
 
 <template>

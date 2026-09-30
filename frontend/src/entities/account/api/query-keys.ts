@@ -1,9 +1,0 @@
-/** Query keys for the signed-in account; invalidating `all` refreshes every account query. */
-export const accountQueryKeys = {
-  all: ['account'] as const,
-  me: () => [...accountQueryKeys.all, 'me'] as const,
-  children: () => [...accountQueryKeys.all, 'children'] as const,
-  history: () => [...accountQueryKeys.all, 'history'] as const,
-  certificates: () => [...accountQueryKeys.all, 'certificates'] as const,
-  deletionAllowed: () => [...accountQueryKeys.all, 'deletion-allowed'] as const,
-}

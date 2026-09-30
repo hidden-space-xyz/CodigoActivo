@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 
-import {
-  PastEventCard,
-  usePastEventCategories,
-  usePastEventsPaged,
-  usePastEventYears,
-  useUpcomingEventsPaged,
-} from '@/entities/event'
+import { eventPages, eventQueries, PastEventCard } from '@/entities/event'
+import { usePagedList } from '@/shared/lib/paging'
+import { ActionButton } from '@/shared/ui/action-button'
+import { PageHeading } from '@/shared/ui/page-heading'
+import { SearchInput } from '@/shared/ui/search-input'
+import { YearFilter } from '@/shared/ui/year-filter'
+
 import EventBoard from './EventBoard.vue'
 import EventCategoryFilter from './EventCategoryFilter.vue'
-import { AppButton, PageHeading, SearchInput, YearFilter } from '@/shared/ui'
 
 const {
   items: upcomingEvents,
@@ -18,10 +18,13 @@ const {
   loadMore: loadMoreUpcoming,
   isLoading: isLoadingUpcoming,
   isFetchingMore: isFetchingMoreUpcoming,
-} = useUpcomingEventsPaged()
+} = usePagedList(() => eventPages.upcoming())
 
-const { years, isLoading: isLoadingYears } = usePastEventYears()
-const { categories } = usePastEventCategories()
+const yearsQuery = useQuery(eventQueries.pastYears())
+const categoriesQuery = useQuery(eventQueries.pastCategories())
+const years = computed(() => yearsQuery.data.value ?? [])
+const categories = computed(() => categoriesQuery.data.value ?? [])
+const isLoadingYears = yearsQuery.isLoading
 const selectedYear = ref('')
 const search = ref('')
 const categoryId = ref('')
@@ -45,11 +48,15 @@ const {
   loadMore: loadMorePast,
   isLoading: isLoadingPastEvents,
   isFetchingMore: isFetchingMorePast,
-} = usePastEventsPaged(() => ({
-  year: selectedYear.value,
-  search: search.value,
-  categoryId: categoryId.value,
-}))
+} = usePagedList(
+  () =>
+    eventPages.past({
+      year: selectedYear.value,
+      search: search.value,
+      categoryId: categoryId.value,
+    }),
+  { enabled: () => selectedYear.value !== '' },
+)
 
 const isLoadingPast = computed(() => isLoadingYears.value || isLoadingPastEvents.value)
 const hasNoPastResults = computed(
@@ -73,7 +80,7 @@ const hasNoPastResults = computed(
         <p v-if="isLoadingUpcoming" class="events-loading">{{ $t('common.loading') }}</p>
         <EventBoard v-else :events="upcomingEvents" />
         <div v-if="hasMoreUpcoming" class="events-more">
-          <AppButton
+          <ActionButton
             :label="$t('common.loadMore')"
             plain
             :loading="isFetchingMoreUpcoming"
@@ -112,7 +119,7 @@ const hasNoPastResults = computed(
           <PastEventCard v-for="event in pastEvents" :key="event.id" :event="event" />
         </div>
         <div v-if="hasMorePast" class="events-more">
-          <AppButton
+          <ActionButton
             :label="$t('common.loadMore')"
             plain
             :loading="isFetchingMorePast"

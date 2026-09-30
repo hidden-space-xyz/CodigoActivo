@@ -6,6 +6,5 @@
  */
 
 export interface ResetTwoFactorRequest {
-  /** @nullable */
-  currentPassword?: string | null;
+  currentPassword: string;
 }

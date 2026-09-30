@@ -6,5 +6,5 @@
  */
 
 export interface ChangeAssignmentRoleRequest {
-  activityRoleTypeId?: string;
+  activityRoleTypeId: string;
 }

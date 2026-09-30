@@ -7,11 +7,9 @@
 import type { EventRosterGuardianResponse } from './eventRosterGuardianResponse';
 
 export interface EventRosterParticipantResponse {
-  userId?: string;
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
+  userId: string;
+  firstName: string;
+  lastName: string;
   /** @nullable */
   birthDate?: string | null;
   /** @nullable */
@@ -20,7 +18,6 @@ export interface EventRosterParticipantResponse {
   phone?: string | null;
   /** @nullable */
   secondaryPhone?: string | null;
-  /** @nullable */
-  roleName?: string | null;
+  roleName: string;
   guardian?: EventRosterGuardianResponse;
 }

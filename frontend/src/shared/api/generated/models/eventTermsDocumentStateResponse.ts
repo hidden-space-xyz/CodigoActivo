@@ -6,13 +6,11 @@
  */
 
 export interface EventTermsDocumentStateResponse {
-  termsDocumentId?: string;
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  description?: string | null;
-  required?: boolean;
-  displayOrder?: number;
+  termsDocumentId: string;
+  name: string;
+  description: string;
+  required: boolean;
+  displayOrder: number;
   /** @nullable */
   accepted?: boolean | null;
   /** @nullable */

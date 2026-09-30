@@ -6,9 +6,7 @@
  */
 
 export interface TermsDocumentResponse {
-  id?: string;
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  description?: string | null;
+  id: string;
+  name: string;
+  description: string;
 }

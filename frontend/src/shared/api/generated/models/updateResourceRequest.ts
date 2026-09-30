@@ -6,14 +6,12 @@
  */
 
 export interface UpdateResourceRequest {
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  subtitle?: string | null;
+  title: string;
+  subtitle: string;
   /** @nullable */
   description?: string | null;
   /** @nullable */
   url?: string | null;
-  resourceTypeId?: string;
-  thumbnailId?: string;
+  resourceTypeId: string;
+  thumbnailId: string;
 }

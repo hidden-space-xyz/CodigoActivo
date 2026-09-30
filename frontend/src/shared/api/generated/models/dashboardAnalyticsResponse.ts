@@ -11,25 +11,18 @@ import type { DashboardTimeSeriesResponse } from './dashboardTimeSeriesResponse'
 import type { DashboardTopEventResponse } from './dashboardTopEventResponse';
 
 export interface DashboardAnalyticsResponse {
-  rangeStart?: string;
-  rangeEnd?: string;
-  /** @nullable */
-  granularity?: string | null;
-  /** @nullable */
-  kpis?: DashboardKpiResponse[] | null;
-  userGrowth?: DashboardTimeSeriesResponse;
-  inscriptions?: DashboardTimeSeriesResponse;
-  contentPublished?: DashboardTimeSeriesResponse;
-  /** @nullable */
-  usersByType?: DashboardSliceResponse[] | null;
-  /** @nullable */
-  audienceComposition?: DashboardSliceResponse[] | null;
-  /** @nullable */
-  participantsByGender?: DashboardSliceResponse[] | null;
-  /** @nullable */
-  eventsByCategory?: DashboardSliceResponse[] | null;
-  /** @nullable */
-  topEvents?: DashboardTopEventResponse[] | null;
-  eventsCalendar?: DashboardTimeSeriesResponse;
-  occupancy?: DashboardOccupancyResponse;
+  rangeStart: string;
+  rangeEnd: string;
+  granularity: string;
+  kpis: DashboardKpiResponse[];
+  userGrowth: DashboardTimeSeriesResponse;
+  inscriptions: DashboardTimeSeriesResponse;
+  contentPublished: DashboardTimeSeriesResponse;
+  usersByType: DashboardSliceResponse[];
+  audienceComposition: DashboardSliceResponse[];
+  participantsByGender: DashboardSliceResponse[];
+  eventsByCategory: DashboardSliceResponse[];
+  topEvents: DashboardTopEventResponse[];
+  eventsCalendar: DashboardTimeSeriesResponse;
+  occupancy: DashboardOccupancyResponse;
 }

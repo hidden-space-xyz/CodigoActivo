@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AppIcon } from '@/shared/ui'
 
-import { formatNumber, formatSignedPercent } from '@/shared/lib'
-import type { DashboardKpiResponse } from '@/shared/api/generated/models'
+import { formatNumber, formatSignedPercent } from '@/shared/lib/number'
+import { AppIcon } from '@/shared/ui/app-icon'
+
+import type { DashboardKpi } from '../model/types'
 
 const { t } = useI18n()
 
@@ -13,7 +14,7 @@ const props = defineProps<{
    * KPIs from the analytics response, matched to the fixed tiles by `key`; missing keys render as
    * zero. The trend badge compares `inRange` with `previousRange` and is hidden when that is zero.
    */
-  kpis: DashboardKpiResponse[]
+  kpis: readonly DashboardKpi[]
 }>()
 
 interface TileMeta {
@@ -68,7 +69,7 @@ const TILES: readonly TileMeta[] = [
 ]
 
 const tiles = computed(() => {
-  const byKey = new Map(props.kpis.map((kpi) => [kpi.key ?? '', kpi]))
+  const byKey = new Map(props.kpis.map((kpi) => [kpi.key, kpi]))
   return TILES.map((meta) => {
     const kpi = byKey.get(meta.key)
     const total = kpi?.total ?? 0

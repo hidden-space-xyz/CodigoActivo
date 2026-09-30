@@ -2,19 +2,25 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { UpcomingEvent } from '../model/types'
-import { FeaturedCard } from '@/shared/ui'
+import { formatDateRange } from '@/shared/lib/date'
+import { FeaturedCard } from '@/shared/ui/featured-card'
+
+import { statusLabelKey } from '../model/status'
+import type { EventSummary } from '../model/types'
 
 const props = defineProps<{
-  /** Event highlighted on the home page; its slogan is shown quoted as the subtitle. */
-  event: UpcomingEvent
+  /** Event highlighted on the home page; its subtitle is shown quoted. */
+  event: EventSummary
 }>()
 
 const { t } = useI18n()
 
 const meta = computed(() => [
-  { label: t('entities.event.featured.dateLabel'), value: props.event.date },
-  { label: t('common.status'), value: props.event.status.label },
+  {
+    label: t('entities.event.featured.dateLabel'),
+    value: formatDateRange(props.event.startsAt, props.event.endsAt),
+  },
+  { label: t('common.status'), value: t(statusLabelKey(props.event.status)) },
 ])
 </script>
 
@@ -22,7 +28,7 @@ const meta = computed(() => [
   <FeaturedCard
     :badge="$t('entities.event.featured.badge')"
     :title="event.title"
-    :subtitle="`«${event.slogan}»`"
+    :subtitle="`«${event.subtitle}»`"
     :thumbnail-id="event.thumbnailId"
     :to="{ name: 'event-detail', params: { eventId: event.id } }"
     :cta-label="$t('entities.event.featured.viewDetails')"

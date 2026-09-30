@@ -1,107 +1,58 @@
-import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { queryOptions } from '@tanstack/vue-query'
 
-import { usePagedList } from '@/shared/lib'
+import type { PagedListSource, ServerTableSource } from '@/shared/lib/paging'
 
-import { newsQueryKeys } from './query-keys'
+import type { NewsListParams, NewsSummary } from '../model/types'
 import {
   getHomeNewsRequest,
   getNewsByYearPageRequest,
-  getNewsItemByIdRequest,
+  getNewsItemRequest,
+  getNewsListPageRequest,
   getNewsYearsRequest,
 } from './requests'
 
-/**
- * Drives the public news archive: loads the available years, keeps a valid year selected
- * (the first one by default) and pages that year's news items, newest first, filtered by search.
- */
-export function useNews() {
-  const yearsQuery = useQuery({
-    queryKey: newsQueryKeys.years(),
-    queryFn: () => getNewsYearsRequest(),
-  })
+/** Query keys of news; `all` covers every one of them. */
+export const newsKeys = {
+  all: ['news'] as const,
+  years: () => [...newsKeys.all, 'years'] as const,
+  pages: (year: string, search: string) => [...newsKeys.all, 'pages', year, search] as const,
+  home: () => [...newsKeys.all, 'home'] as const,
+  detail: (id: string) => [...newsKeys.all, 'detail', id] as const,
+  list: () => [...newsKeys.all, 'list'] as const,
+}
 
-  const years = computed(() => yearsQuery.data.value ?? [])
-  const selectedYear = ref('')
+/** Query options of news. */
+export const newsQueries = {
+  /** Years that have news items, newest first. */
+  years: () =>
+    queryOptions({
+      queryKey: newsKeys.years(),
+      queryFn: () => getNewsYearsRequest(),
+    }),
+  /** Home page block: up to four news items, featured first. */
+  home: () =>
+    queryOptions({
+      queryKey: newsKeys.home(),
+      queryFn: () => getHomeNewsRequest(),
+    }),
+  /** A whole news item, or `null` when it does not exist. */
+  detail: (id: string) =>
+    queryOptions({
+      queryKey: newsKeys.detail(id),
+      queryFn: () => getNewsItemRequest(id),
+    }),
+}
 
-  watch(
-    years,
-    (list) => {
-      if (!list.length) {
-        selectedYear.value = ''
-        return
-      }
-      if (!list.includes(selectedYear.value)) selectedYear.value = list[0] ?? ''
-    },
-    { immediate: true },
-  )
-
-  function setYear(year: string): void {
-    selectedYear.value = year
-  }
-
-  const search = ref('')
-
-  function setSearch(value: string): void {
-    search.value = value
-  }
-
-  const byYearList = usePagedList({
-    queryKey: () => newsQueryKeys.byYear(selectedYear.value, search.value),
-    fetchPage: (page, pageSize) =>
-      getNewsByYearPageRequest(selectedYear.value, search.value, page, pageSize),
-    enabled: () => selectedYear.value !== '',
-  })
-
-  const isLoading = computed(
-    () => yearsQuery.isLoading.value || (selectedYear.value !== '' && byYearList.isLoading.value),
-  )
-
+/** News items of `year` matching `search`, newest first, loaded page by page. */
+export function newsPages(year: string, search: string): PagedListSource<NewsSummary> {
   return {
-    years,
-    selectedYear,
-    setYear,
-    search,
-    setSearch,
-    news: byYearList.items,
-    hasMore: byYearList.hasMore,
-    loadMore: byYearList.loadMore,
-    isFetchingMore: byYearList.isFetchingMore,
-    isLoading,
-    isError: computed(() => yearsQuery.isError.value || byYearList.isError.value),
+    queryKey: newsKeys.pages(year, search),
+    fetchPage: (page, pageSize) => getNewsByYearPageRequest(year, search, page, pageSize),
   }
 }
 
-/** Home page block: up to four news items, featured first; `featured` is `null` if none. */
-export function useHomeNews() {
-  const query = useQuery({
-    queryKey: newsQueryKeys.home(),
-    queryFn: () => getHomeNewsRequest(),
-  })
-
-  return {
-    featured: computed(() => query.data.value?.featured ?? null),
-    items: computed(() => query.data.value?.items ?? []),
-    isLoading: query.isLoading,
-    isError: query.isError,
-  }
-}
-
-/** Loads a public news item by id; `notFound` turns true once the API answers 404. */
-export function useNewsDetail(newsItemId: MaybeRefOrGetter<string>) {
-  const id = computed(() => toValue(newsItemId))
-
-  const query = useQuery({
-    queryKey: computed(() => newsQueryKeys.publicDetail(id.value)),
-    queryFn: () => getNewsItemByIdRequest(id.value),
-  })
-
-  const notFound = computed(() => !query.isLoading.value && query.data.value === null)
-
-  return {
-    newsItem: query.data,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    notFound,
-  }
+/** Admin news list, paged, filtered and sorted by the API. */
+export const newsList: ServerTableSource<NewsSummary, NewsListParams> = {
+  queryKey: newsKeys.list(),
+  fetchPage: (params) => getNewsListPageRequest(params),
 }

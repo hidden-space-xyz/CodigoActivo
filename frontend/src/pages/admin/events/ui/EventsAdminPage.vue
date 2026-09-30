@@ -1,115 +1,28 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+
+import { eventCategoryQueries } from '@/entities/event-category'
+import { formatDate, formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
+import { ActionButton } from '@/shared/ui/action-button'
+import { AdminPageHeader } from '@/shared/ui/admin-page-header'
+import { ColorTag } from '@/shared/ui/color-tag'
 import {
-  AdminPageHeader,
-  AppButton as Button,
-  AppIcon,
-  ColorTag,
   ColumnFilterDate,
   ColumnFilterSelect,
   ColumnSearch,
-  ListThumbnail,
-} from '@/shared/ui'
-
-import { useEventCategoryTypesList } from '@/entities/catalog'
-import { EventFormDialog, useEventsAdmin } from '@/features/manage-events'
-import type {
-  CreateEventRequest,
-  EventListItemResponse,
-  EventResponse,
-  UpdateEventRequest,
-} from '@/shared/api/generated/models'
-import {
-  formatDate,
-  formatDateTime,
-  formatDateTimeRange,
   toSelectOptions,
-  useCrudFeedback,
-  useDeleteConfirm,
-} from '@/shared/lib'
+} from '@/shared/ui/column-filter'
+import { DataTable } from '@/shared/ui/data-table'
+import { ListThumbnail } from '@/shared/ui/list-thumbnail'
 
-const { t } = useI18n()
-const { table, create, update, remove, feature, fetchOne } = useEventsAdmin()
-const categoryTypes = useEventCategoryTypesList()
-const feedback = useCrudFeedback()
-const { confirmDelete: requireDelete } = useDeleteConfirm()
+import { useEventsAdmin } from '../model/use-events-admin'
+import EventFormDialog from './EventFormDialog.vue'
 
-const categoryOptions = computed(() => toSelectOptions(categoryTypes.data.value))
-
-function onFeature(event: EventListItemResponse): void {
-  if (!event.id || event.featured) return
-  feature.mutate(event.id, {
-    onSuccess: () => feedback.success(t('pages.admin.events.toasts.featured')),
-    onError: (error) => feedback.error(error),
-  })
-}
-
-const dialogVisible = ref(false)
-const selected = ref<EventResponse | null>(null)
-const loadingDetail = ref(false)
-const saving = computed(() => create.isPending.value || update.isPending.value)
-
-function openCreate(): void {
-  if (loadingDetail.value) return
-  selected.value = null
-  dialogVisible.value = true
-}
-
-async function openEdit(event: EventListItemResponse): Promise<void> {
-  if (!event.id || loadingDetail.value) return
-  loadingDetail.value = true
-  try {
-    const detail = await fetchOne(event.id)
-    if (!detail) {
-      feedback.error(t('pages.admin.events.toasts.notFound'))
-      return
-    }
-    selected.value = detail
-    dialogVisible.value = true
-  } catch (error) {
-    feedback.error(error)
-  } finally {
-    loadingDetail.value = false
-  }
-}
-
-function onSubmit(body: CreateEventRequest | UpdateEventRequest): void {
-  if (selected.value?.id) {
-    update.mutate(
-      { id: selected.value.id, body: body },
-      {
-        onSuccess: () => {
-          feedback.success(t('pages.admin.events.toasts.updated'))
-          dialogVisible.value = false
-        },
-        onError: (error) => feedback.error(error),
-      },
-    )
-    return
-  }
-  create.mutate(body, {
-    onSuccess: () => {
-      feedback.success(t('pages.admin.events.toasts.created'))
-      dialogVisible.value = false
-    },
-    onError: (error) => feedback.error(error),
-  })
-}
-
-function confirmDelete(event: EventListItemResponse): void {
-  requireDelete({
-    header: t('pages.admin.events.delete.header'),
-    message: t('pages.admin.events.delete.message', { title: event.title }),
-    accept: () => {
-      if (!event.id) return
-      remove.mutate(event.id, {
-        onSuccess: () => feedback.success(t('pages.admin.events.toasts.deleted')),
-        onError: (error) => feedback.error(error),
-      })
-    },
-  })
-}
+const { table, dialog, saving, featuring, save, feature, confirmRemove } = useEventsAdmin()
+const { visible, editing, loading, openCreate, openEdit } = dialog
+const categories = useQuery(eventCategoryQueries.options())
+const categoryOptions = computed(() => toSelectOptions(categories.data.value))
 </script>
 
 <template>
@@ -119,23 +32,21 @@ function confirmDelete(event: EventListItemResponse): void {
       :subtitle="$t('pages.admin.events.header.subtitle')"
     >
       <template #actions>
-        <el-button type="primary" :disabled="loadingDetail" @click="openCreate">
-          <template #icon><AppIcon name="plus" /></template>
-          {{ $t('pages.admin.events.newEvent') }}
-        </el-button>
+        <ActionButton
+          :label="$t('pages.admin.events.newEvent')"
+          icon="plus"
+          type="primary"
+          :disabled="loading"
+          @click="openCreate"
+        />
       </template>
     </AdminPageHeader>
 
-    <el-table
-      v-loading="table.loading.value"
-      v-bind="table.tableProps.value"
-      @sort-change="table.onSortChange"
+    <DataTable
+      :table="table"
+      :empty-text="$t('pages.admin.events.empty.none')"
+      :error-text="$t('pages.admin.events.empty.error')"
     >
-      <template #empty>
-        <span v-if="table.isError.value">{{ $t('pages.admin.events.empty.error') }}</span>
-        <span v-else>{{ $t('pages.admin.events.empty.none') }}</span>
-      </template>
-
       <el-table-column :label="$t('common.image')" width="110">
         <template #default="{ row }">
           <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
@@ -170,7 +81,6 @@ function confirmDelete(event: EventListItemResponse): void {
             @apply="table.onFilter"
           />
         </template>
-        <template #default="{ row }">{{ row.subtitle || '—' }}</template>
       </el-table-column>
 
       <el-table-column prop="categories" sortable="custom" min-width="160">
@@ -185,12 +95,12 @@ function confirmDelete(event: EventListItemResponse): void {
         <template #default="{ row }">
           <div class="cats-cell">
             <ColorTag
-              v-for="cat in row.categories ?? []"
-              :key="cat.categoryTypeId"
-              :value="cat.name ?? ''"
-              :color="cat.color"
+              v-for="category in row.categories"
+              :key="category.id"
+              :value="category.name"
+              :color="category.color"
             />
-            <span v-if="!row.categories?.length">—</span>
+            <span v-if="!row.categories.length">—</span>
           </div>
         </template>
       </el-table-column>
@@ -204,7 +114,7 @@ function confirmDelete(event: EventListItemResponse): void {
           />
         </template>
         <template #default="{ row }">
-          {{ formatDate(row.eventStartsAt) }} – {{ formatDate(row.eventEndsAt) }}
+          {{ formatDate(row.startsAt) }} – {{ formatDate(row.endsAt) }}
         </template>
       </el-table-column>
 
@@ -231,7 +141,7 @@ function confirmDelete(event: EventListItemResponse): void {
       <el-table-column :label="$t('common.actions')" width="200" align="center" fixed="right">
         <template #default="{ row }">
           <div class="ca-row-actions">
-            <Button
+            <ActionButton
               :icon="row.featured ? 'star-fill' : 'star'"
               text
               circle
@@ -241,12 +151,12 @@ function confirmDelete(event: EventListItemResponse): void {
                   ? $t('pages.admin.events.aria.featured')
                   : $t('pages.admin.events.aria.feature')
               "
-              :disabled="row.featured || feature.isPending.value"
+              :disabled="row.featured || featuring"
               :class="{ 'is-featured': row.featured }"
-              @click="onFeature(row)"
+              @click="feature(row)"
             />
             <RouterLink :to="{ name: 'admin-event-detail', params: { eventId: row.id } }">
-              <Button
+              <ActionButton
                 icon="cog"
                 text
                 circle
@@ -255,52 +165,33 @@ function confirmDelete(event: EventListItemResponse): void {
                 :aria-label="$t('pages.admin.events.aria.manage')"
               />
             </RouterLink>
-            <Button
+            <ActionButton
               icon="pencil"
               text
               circle
               type="success"
               :aria-label="$t('common.edit')"
-              :disabled="loadingDetail"
+              :disabled="loading"
               @click="openEdit(row)"
             />
-            <Button
+            <ActionButton
               icon="trash"
               text
               circle
               type="danger"
               :aria-label="$t('common.delete')"
-              @click="confirmDelete(row)"
+              @click="confirmRemove(row)"
             />
           </div>
         </template>
       </el-table-column>
-    </el-table>
+    </DataTable>
 
-    <div class="table-footer">
-      <el-pagination
-        v-bind="table.paginationProps.value"
-        @current-change="table.onCurrentPageChange"
-        @size-change="table.onPageSizeChange"
-      />
-    </div>
-
-    <EventFormDialog
-      v-model:visible="dialogVisible"
-      :event="selected"
-      :saving="saving"
-      @submit="onSubmit"
-    />
+    <EventFormDialog v-model:visible="visible" :event="editing" :saving="saving" @submit="save" />
   </div>
 </template>
 
 <style scoped>
-.table-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 14px 4px 0;
-}
-
 .title-cell {
   display: inline-flex;
   align-items: center;

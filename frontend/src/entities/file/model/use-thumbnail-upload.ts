@@ -2,9 +2,8 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { getErrorMessage } from '@/shared/lib'
-
 import { uploadThumbnailRequest } from '../api/requests'
+import { getErrorMessage } from '@/shared/lib/feedback'
 
 /**
  * Holds the thumbnail picked in a form and uploads it only on save. `resolveThumbnailId` returns

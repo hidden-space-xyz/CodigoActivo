@@ -1,42 +1,40 @@
-import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
+import type { RouteMeta, RouteRecordRaw } from 'vue-router'
 
-import { redirectIfAuthenticated, requireAdmin, requireAuth } from '@/features/auth'
-import type { SeoRouteMeta } from '@/shared/lib'
-
-declare module 'vue-router' {
-  interface RouteMeta {
-    layout?: 'admin' | 'blank' | undefined
-    seo?: SeoRouteMeta | undefined
-  }
-}
+import type { RouteName } from '@/shared/routes'
 
 function adminRoute(
   path: string,
-  name: string,
-  component: RouteRecordRaw['component'],
-  meta?: RouteRecordRaw['meta'],
+  name: RouteName,
+  component: () => Promise<unknown>,
+  meta: RouteMeta = {},
 ): RouteRecordRaw {
   return {
     path,
     name,
     component,
-    meta: { layout: 'admin', ...meta },
-    beforeEnter: (to: RouteLocationNormalized) => requireAdmin(to),
-  } as RouteRecordRaw
+    props: true,
+    meta: { layout: 'admin', access: 'admin', ...meta },
+  }
 }
 
 /**
  * Application route table with lazily loaded pages. Admin routes use the admin layout (or `blank`
- * for printable pages) behind `requireAdmin`; public detail routes receive their path params as
+ * for printable pages) and are for administrators only; detail pages receive their path params as
  * props.
  */
 export const routes: readonly RouteRecordRaw[] = [
-  { path: '/', name: 'home', component: () => import('@/pages/home').then((m) => m.HomePage) },
+  {
+    path: '/',
+    name: 'home',
+    component: () => import('@/pages/home').then((m) => m.HomePage),
+    meta: { section: 'home' },
+  },
   {
     path: '/about',
     name: 'about',
     component: () => import('@/pages/about').then((m) => m.AboutPage),
     meta: {
+      section: 'about',
       seo: {
         titleKey: 'seo.routes.about.title',
         descriptionKey: 'seo.routes.about.description',
@@ -48,6 +46,7 @@ export const routes: readonly RouteRecordRaw[] = [
     name: 'events',
     component: () => import('@/pages/events').then((m) => m.EventsPage),
     meta: {
+      section: 'events',
       seo: {
         titleKey: 'seo.routes.events.title',
         descriptionKey: 'seo.routes.events.description',
@@ -59,12 +58,14 @@ export const routes: readonly RouteRecordRaw[] = [
     name: 'event-detail',
     component: () => import('@/pages/event-detail').then((m) => m.EventDetailPage),
     props: true,
+    meta: { section: 'events' },
   },
   {
     path: '/resources',
     name: 'resources',
     component: () => import('@/pages/resources').then((m) => m.ResourcesPage),
     meta: {
+      section: 'resources',
       seo: {
         titleKey: 'seo.routes.resources.title',
         descriptionKey: 'seo.routes.resources.description',
@@ -82,6 +83,7 @@ export const routes: readonly RouteRecordRaw[] = [
     name: 'news',
     component: () => import('@/pages/news').then((m) => m.NewsPage),
     meta: {
+      section: 'news',
       seo: {
         titleKey: 'seo.routes.news.title',
         descriptionKey: 'seo.routes.news.description',
@@ -109,8 +111,8 @@ export const routes: readonly RouteRecordRaw[] = [
     path: '/register',
     name: 'register',
     component: () => import('@/pages/register').then((m) => m.RegisterPage),
-    beforeEnter: () => redirectIfAuthenticated(),
     meta: {
+      access: 'guest',
       seo: {
         titleKey: 'seo.routes.register.title',
         descriptionKey: 'seo.routes.register.description',
@@ -121,15 +123,13 @@ export const routes: readonly RouteRecordRaw[] = [
     path: '/login',
     name: 'login',
     component: () => import('@/pages/login').then((m) => m.LoginPage),
-    beforeEnter: () => redirectIfAuthenticated(),
-    meta: { seo: { titleKey: 'seo.routes.login.title', noindex: true } },
+    meta: { access: 'guest', seo: { titleKey: 'seo.routes.login.title', noindex: true } },
   },
   {
     path: '/login/verify',
     name: 'login-two-factor',
     component: () => import('@/pages/login-two-factor').then((m) => m.TwoFactorLoginPage),
-    beforeEnter: () => redirectIfAuthenticated(),
-    meta: { seo: { titleKey: 'seo.routes.loginTwoFactor.title', noindex: true } },
+    meta: { access: 'guest', seo: { titleKey: 'seo.routes.loginTwoFactor.title', noindex: true } },
   },
   {
     path: '/verify-account',
@@ -141,8 +141,7 @@ export const routes: readonly RouteRecordRaw[] = [
     path: '/forgot-password',
     name: 'forgot-password',
     component: () => import('@/pages/forgot-password').then((m) => m.ForgotPasswordPage),
-    beforeEnter: () => redirectIfAuthenticated(),
-    meta: { seo: { titleKey: 'seo.routes.forgotPassword.title', noindex: true } },
+    meta: { access: 'guest', seo: { titleKey: 'seo.routes.forgotPassword.title', noindex: true } },
   },
   {
     path: '/reset-password',
@@ -154,8 +153,11 @@ export const routes: readonly RouteRecordRaw[] = [
     path: '/account',
     name: 'account',
     component: () => import('@/pages/account').then((m) => m.AccountPage),
-    beforeEnter: (to: RouteLocationNormalized) => requireAuth(to),
-    meta: { seo: { titleKey: 'seo.routes.account.title', noindex: true } },
+    meta: {
+      access: 'user',
+      section: 'account',
+      seo: { titleKey: 'seo.routes.account.title', noindex: true },
+    },
   },
   { path: '/admin', redirect: { name: 'admin-dashboard' } },
   adminRoute('/admin/dashboard', 'admin-dashboard', () =>

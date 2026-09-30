@@ -7,13 +7,10 @@
 import type { EventRosterParticipantResponse } from './eventRosterParticipantResponse';
 
 export interface EventRosterActivityResponse {
-  activityId?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  location?: string | null;
-  activityStartsAt?: string;
-  activityEndsAt?: string;
-  /** @nullable */
-  participants?: EventRosterParticipantResponse[] | null;
+  activityId: string;
+  title: string;
+  location: string;
+  activityStartsAt: string;
+  activityEndsAt: string;
+  participants: EventRosterParticipantResponse[];
 }

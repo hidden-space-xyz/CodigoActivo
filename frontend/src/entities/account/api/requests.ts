@@ -1,8 +1,13 @@
 import {
   getApiAuthMe,
+  patchApiAuthUserIdResetPassword,
+  patchApiAuthUserIdVerify,
+  postApiAuthForgotPassword,
+  postApiAuthRegister,
   postApiAuthTwoFactorAuthenticatorConfirm,
   postApiAuthTwoFactorAuthenticatorSetup,
   postApiAuthTwoFactorEmail,
+  postApiAuthUserIdResendVerification,
 } from '@/shared/api/generated/endpoints/auth/auth'
 import { postApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
 import {
@@ -27,22 +32,27 @@ import type {
   DisableAuthenticatorInput,
   EventRatingInput,
   MinorInput,
+  RegistrationInput,
+  ResetPasswordInput,
   UpdateProfileInput,
 } from '../model/account-inputs'
 import type {
-  AccountChild,
   AccountCertificate,
+  AccountChild,
   AccountHistoryEntry,
   AccountProfile,
   AuthenticatorSetup,
+  RegistrationResult,
 } from '../model/types'
 import {
-  toAccountChild,
   toAccountCertificate,
+  toAccountChild,
   toAccountHistoryEntry,
   toAccountProfile,
-  toAddMinorRequest,
   toAuthenticatorSetup,
+  toMinorRequest,
+  toRegisterRequest,
+  toRegistrationResult,
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
   toUpdateProfileRequest,
@@ -58,12 +68,8 @@ export async function getAccountProfileRequest(): Promise<AccountProfile | null>
 export async function getAccountChildrenRequest(
   parentId: string,
 ): Promise<readonly AccountChild[]> {
-  const { items } = await getApiUsers({
-    parentId,
-    pageSize: 100,
-    sort: 'firstName',
-  }).then(toPage)
-  return items.map(toAccountChild)
+  const response = await getApiUsers({ parentId, pageSize: 100, sort: 'firstName' })
+  return toPage(response).items.map(toAccountChild)
 }
 
 /** Saves the user's own profile and returns the updated profile from the server. */
@@ -81,7 +87,7 @@ export async function updateAccountProfileRequest(
  */
 export async function getAccountDeletionAllowedRequest(): Promise<boolean> {
   const { data } = await getApiMeDeletion()
-  return data.allowed ?? false
+  return data.allowed
 }
 
 /**
@@ -140,7 +146,7 @@ export async function addAccountChildRequest(
   parentId: string,
   input: MinorInput,
 ): Promise<AccountChild> {
-  const response = await postApiUsersUserIdChildren(parentId, toAddMinorRequest(input))
+  const response = await postApiUsersUserIdChildren(parentId, toMinorRequest(input))
   return toAccountChild(response.data)
 }
 
@@ -162,13 +168,13 @@ export async function deleteAccountChildRequest(childId: string): Promise<void> 
 /** Loads the events the user or their minors took part in, from `/api/me/event-history`. */
 export async function getAccountHistoryRequest(): Promise<readonly AccountHistoryEntry[]> {
   const { data } = await getApiMeEventHistory()
-  return (data ?? []).map(toAccountHistoryEntry)
+  return data.map(toAccountHistoryEntry)
 }
 
 /** Loads the participation certificates available to the user and their minors. */
 export async function getAccountCertificatesRequest(): Promise<readonly AccountCertificate[]> {
   const { data } = await getApiMeCertificates()
-  return (data ?? []).map(toAccountCertificate)
+  return data.map(toAccountCertificate)
 }
 
 /**
@@ -180,4 +186,36 @@ export async function saveAccountEventRatingRequest(
   input: EventRatingInput,
 ): Promise<void> {
   await postApiEventsEventIdRating(eventId, toSaveEventRatingRequest(input))
+}
+
+/** Registers an adult together with any minors in one call (`POST /api/auth/register`). */
+export async function registerRequest(input: RegistrationInput): Promise<RegistrationResult> {
+  const response = await postApiAuthRegister(toRegisterRequest(input))
+  return toRegistrationResult(response.data)
+}
+
+/** Activates an account with the one-time code from the verification email link. */
+export async function verifyAccountRequest(userId: string, otp: string): Promise<void> {
+  await patchApiAuthUserIdVerify(userId, { otp })
+}
+
+/** Asks the API to email the user a new account verification link. */
+export async function resendVerificationRequest(userId: string): Promise<void> {
+  await postApiAuthUserIdResendVerification(userId)
+}
+
+/** Asks the API (`POST /api/auth/forgot-password`) to email a password reset link. */
+export async function forgotPasswordRequest(email: string): Promise<void> {
+  await postApiAuthForgotPassword({ email })
+}
+
+/**
+ * Sets a new password with the one-time code from the reset link
+ * (`PATCH /api/auth/{userId}/reset-password`).
+ */
+export async function resetPasswordRequest(input: ResetPasswordInput): Promise<void> {
+  await patchApiAuthUserIdResetPassword(input.userId, {
+    otp: input.otp,
+    newPassword: input.newPassword,
+  })
 }

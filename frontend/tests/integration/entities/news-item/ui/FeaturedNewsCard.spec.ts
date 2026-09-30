@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import { FeaturedNewsCard } from '@/entities/news-item'
 
-import { buildNewsSummary } from '../../../../support/fixtures/entities/models'
 import { renderWithProviders, t } from '../../../../support/render'
+import { buildNewsSummary } from '../../../../support/models'
 
 describe('FeaturedNewsCard', () => {
   it('highlights the news item with its publication date and a read-more link', async () => {
@@ -29,13 +29,12 @@ describe('FeaturedNewsCard', () => {
     expect(router.currentRoute.value.fullPath).toBe('/news/news-item-1')
   })
 
-  it('hides the date row when the news item has no date', async () => {
-    const newsItem = buildNewsSummary({ date: '', subtitle: '' })
+  it('hides the subtitle when the news item has none', async () => {
+    const newsItem = buildNewsSummary({ subtitle: '' })
     const { wrapper } = await renderWithProviders(FeaturedNewsCard, {
       props: { newsItem },
     })
 
-    expect(wrapper.find('.featured__meta').exists()).toBe(false)
     expect(wrapper.find('.featured__slogan').exists()).toBe(false)
   })
 })

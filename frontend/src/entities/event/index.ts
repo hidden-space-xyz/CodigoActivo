@@ -1,38 +1,18 @@
 export type {
   EventCategoryTag,
+  EventDetail,
+  EventInput,
+  EventListing,
+  EventStatusKind,
+  EventSummary,
   EventTermsDocumentState,
   EventTermsSummary,
   LeaderRosterActivity,
   LeaderRosterDependent,
-  UpcomingEvent,
 } from './model/types'
-export {
-  useEventDetail,
-  useEventLeaderRoster,
-  useEventTermsState,
-  useHomeEvents,
-  usePastEventCategories,
-  usePastEventsPaged,
-  usePastEventYears,
-  useUpcomingEventsPaged,
-} from './api/queries'
-export { eventQueryKeys, eventReportQueryKeys } from './api/query-keys'
-export {
-  createEventRequest,
-  deleteEventRequest,
-  getDashboardAnalyticsRequest,
-  getEventAdminRequest,
-  getEventAttendeesPageRequest,
-  getEventBadgesRequest,
-  getEventRatingsPageRequest,
-  getEventRosterRequest,
-  getEventLeaderRosterRequest,
-  getEventsAdminPageRequest,
-  getEventSummaryRequest,
-  getEventTermsStateRequest,
-  toggleEventFeatureRequest,
-  updateEventRequest,
-} from './api/requests'
+export { signupAccess, statusLabelKey, type SignupAccess } from './model/status'
+export { eventKeys, eventList, eventPages, eventQueries } from './api/queries'
+export { eventMutations } from './api/mutations'
 export { default as EventCard } from './ui/EventCard.vue'
 export { default as FeaturedEventCard } from './ui/FeaturedEventCard.vue'
 export { default as PastEventCard } from './ui/PastEventCard.vue'

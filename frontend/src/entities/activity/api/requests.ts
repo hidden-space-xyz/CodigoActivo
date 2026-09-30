@@ -3,7 +3,10 @@ import {
   getApiActivities,
   getApiActivitiesActivityId,
   getApiActivitiesActivityIdOverlapsUserId,
+  getApiActivitiesAssignmentStatusTypes,
   getApiActivitiesHouseholdAssignmentsEventId,
+  getApiActivitiesModalityTypes,
+  getApiActivitiesRoleType,
   getApiActivitiesSignupRoles,
   patchApiActivitiesActivityIdUserIdAssign,
   patchApiActivitiesActivityIdUserIdChangeRole,
@@ -15,20 +18,19 @@ import {
 } from '@/shared/api/generated/endpoints/activities/activities'
 import { getApiMeAssignedActivities } from '@/shared/api/generated/endpoints/me/me'
 import { getApiUsers } from '@/shared/api/generated/endpoints/users/users'
-import type {
-  ActivityResponse,
-  ChangeAssignmentRoleRequest,
-  ChangeAssignmentStatusRequest,
-  CreateActivityRequest,
-  GetApiActivitiesParams,
-  UpdateActivityRequest,
-} from '@/shared/api/generated/models'
 import { toPage, unwrapOrNull } from '@/shared/api'
+import type { ServerTablePage } from '@/shared/lib/paging'
 
 import type { HouseholdAssignmentInput } from '../model/household-assignment-input'
 import type {
   ActivityAssignment,
   ActivityDetail,
+  ActivityInput,
+  ActivityListing,
+  ActivityListParams,
+  ActivityModality,
+  ActivityRole,
+  AssignmentStatus,
   EventActivity,
   HouseholdActivityAssignment,
   HouseholdMember,
@@ -39,6 +41,11 @@ import type {
 import {
   toActivityAssignment,
   toActivityDetail,
+  toActivityListing,
+  toActivityModality,
+  toActivityRequest,
+  toActivityRole,
+  toAssignmentStatus,
   toEventActivity,
   toHouseholdActivityAssignment,
   toHouseholdMember,
@@ -46,61 +53,46 @@ import {
   toOverlapCheck,
 } from './mapper'
 
-/** Loads an event's activities for the public timeline, ordered by start time (first 100). */
+/** Loads an event's activities for its timeline, ordered by start time (first 100). */
 export async function getEventActivitiesRequest(
   eventId: string,
 ): Promise<readonly EventActivity[]> {
-  const items = await listEventActivitiesRequest(eventId)
+  const { items } = toPage(
+    await getApiActivities({ eventId, pageSize: 100, sort: 'activityStartsAt' }),
+  )
   return items.map(toEventActivity)
 }
 
-/** Loads the signed-in user's own assignments, limited to `eventId` when given. */
+/** Loads the signed-in user's own signups to the activities of an event. */
 export async function getMyAssignmentsRequest(
-  eventId?: string,
+  eventId: string,
 ): Promise<readonly ActivityAssignment[]> {
-  const { data } = await getApiMeAssignedActivities(eventId ? { eventId } : {})
-  return (data ?? []).map(toActivityAssignment)
+  const { data } = await getApiMeAssignedActivities({ eventId })
+  return data.map(toActivityAssignment)
 }
 
-async function listEventActivitiesRequest(eventId: string): Promise<ActivityResponse[]> {
-  const { items } = await getApiActivities({
-    eventId,
-    pageSize: 100,
-    sort: 'activityStartsAt',
-  }).then(toPage)
-  return items
-}
-
-/** Loads an activity for the admin edit form; resolves `null` when it no longer exists (404). */
-export async function getActivityByIdRequest(activityId: string): Promise<ActivityDetail | null> {
-  const response = await unwrapOrNull<ActivityResponse>(getApiActivitiesActivityId(activityId))
-  return response ? toActivityDetail(response) : null
-}
-
-/** Loads the assignments of the signed-in user's household (self and minors) for one event. */
+/** Loads the signups of the signed-in user's household (self and minors) for one event. */
 export async function getHouseholdAssignmentsRequest(
   eventId: string,
 ): Promise<readonly HouseholdActivityAssignment[]> {
   const { data } = await getApiActivitiesHouseholdAssignmentsEventId(eventId)
-  return (data ?? []).map(toHouseholdActivityAssignment)
+  return data.map(toHouseholdActivityAssignment)
 }
 
 /** Lists the minors under `userId` (first 100 by first name); the caller adds the user itself. */
 export async function getHouseholdMembersRequest(
   userId: string,
 ): Promise<readonly HouseholdMember[]> {
-  const { items } = await getApiUsers({
-    parentId: userId,
-    pageSize: 100,
-    sort: 'firstName',
-  }).then(toPage)
+  const { items } = toPage(
+    await getApiUsers({ parentId: userId, pageSize: 100, sort: 'firstName' }),
+  )
   return items.map(toHouseholdMember)
 }
 
 /** Loads, per household member, the roles their user type allows them to sign up for. */
 export async function getSignupRolesRequest(): Promise<readonly HouseholdSignupRoles[]> {
   const { data } = await getApiActivitiesSignupRoles()
-  return (data ?? []).map(toHouseholdSignupRoles)
+  return data.map(toHouseholdSignupRoles)
 }
 
 /** Checks whether `userId` already has other activities that overlap this one in time. */
@@ -110,6 +102,17 @@ export async function verifyOverlapsRequest(
 ): Promise<OverlapCheck> {
   const { data } = await getApiActivitiesActivityIdOverlapsUserId(activityId, userId)
   return toOverlapCheck(data)
+}
+
+function toTermsDecisions(termsDecisions?: readonly TermsDecisionInput[]) {
+  return termsDecisions
+    ? {
+        termsDecisions: termsDecisions.map((decision) => ({
+          termsDocumentId: decision.termsDocumentId,
+          accepted: decision.accepted,
+        })),
+      }
+    : {}
 }
 
 /**
@@ -125,14 +128,7 @@ export async function assignActivityRequest(
 ): Promise<void> {
   await patchApiActivitiesActivityIdUserIdAssign(activityId, userId, {
     activityRoleTypeId: roleId,
-    ...(termsDecisions
-      ? {
-          termsDecisions: termsDecisions.map((decision) => ({
-            termsDocumentId: decision.termsDocumentId,
-            accepted: decision.accepted,
-          })),
-        }
-      : {}),
+    ...toTermsDecisions(termsDecisions),
   })
 }
 
@@ -150,14 +146,7 @@ export async function assignHouseholdRequest(
       userId: assignment.userId,
       activityRoleTypeId: assignment.roleId,
     })),
-    ...(termsDecisions
-      ? {
-          termsDecisions: termsDecisions.map((decision) => ({
-            termsDocumentId: decision.termsDocumentId,
-            accepted: decision.accepted,
-          })),
-        }
-      : {}),
+    ...toTermsDecisions(termsDecisions),
   })
 }
 
@@ -166,49 +155,71 @@ export async function unassignActivityRequest(activityId: string, userId: string
   await patchApiActivitiesActivityIdUserIdUnassign(activityId, userId)
 }
 
-/** Fetches one page of raw activities for the admin table with server-side filters and sorting. */
-export function getActivitiesAdminPageRequest(
-  params: GetApiActivitiesParams,
-): Promise<{ items: ActivityResponse[]; total: number }> {
-  return getApiActivities(params).then(toPage)
+/** Fetches one page of the admin activities table. */
+export async function getActivitiesPageRequest(
+  params: ActivityListParams,
+): Promise<ServerTablePage<ActivityListing>> {
+  const { items, total } = toPage(await getApiActivities(params))
+  return { items: items.map(toActivityListing), total }
 }
 
-/** Lists an event's raw activities (first 100 by start time) for admin selectors. */
-export function getEventActivityOptionsRequest(eventId: string): Promise<ActivityResponse[]> {
-  return listEventActivitiesRequest(eventId)
+/** Loads an activity for the admin edit form; resolves `null` when it no longer exists (404). */
+export async function getActivityRequest(activityId: string): Promise<ActivityDetail | null> {
+  const activity = await unwrapOrNull(getApiActivitiesActivityId(activityId))
+  return activity ? toActivityDetail(activity) : null
 }
 
-/** Creates an activity inside `eventId` and resolves the created `ActivityResponse`. */
-export function createActivityRequest(eventId: string, body: CreateActivityRequest) {
-  return postApiActivitiesEventId(eventId, body).then((r) => r.data)
+/** Creates an activity inside an event. */
+export async function createActivityRequest(eventId: string, input: ActivityInput): Promise<void> {
+  await postApiActivitiesEventId(eventId, toActivityRequest(input))
 }
 
-/** Replaces an activity's editable data and resolves the updated `ActivityResponse`. */
-export function updateActivityRequest(id: string, body: UpdateActivityRequest) {
-  return putApiActivitiesActivityId(id, body).then((r) => r.data)
+/** Replaces an activity's editable data. */
+export async function updateActivityRequest(id: string, input: ActivityInput): Promise<void> {
+  await putApiActivitiesActivityId(id, toActivityRequest(input))
 }
 
-/** Deletes an activity from the admin panel. */
-export function deleteActivityRequest(id: string) {
-  return deleteApiActivitiesActivityId(id)
+/** Deletes an activity with its signups. */
+export async function deleteActivityRequest(id: string): Promise<void> {
+  await deleteApiActivitiesActivityId(id)
 }
 
-/** Admin action that moves a user's assignment to another status (e.g. confirmed or denied). */
-export function changeAssignmentStatusRequest(
+/** Moves a user's signup to another status, such as confirmed or denied. */
+export async function changeAssignmentStatusRequest(
   activityId: string,
   userId: string,
-  body: ChangeAssignmentStatusRequest,
-) {
-  return patchApiActivitiesActivityIdUserIdChangeStatus(activityId, userId, body).then(
-    (r) => r.data,
-  )
+  statusId: string,
+): Promise<void> {
+  await patchApiActivitiesActivityIdUserIdChangeStatus(activityId, userId, {
+    assignmentStatusId: statusId,
+  })
 }
 
-/** Admin action that moves an existing assignment to a different activity role. */
-export function changeAssignmentRoleRequest(
+/** Moves a user's signup to another role of the same activity. */
+export async function changeAssignmentRoleRequest(
   activityId: string,
   userId: string,
-  body: ChangeAssignmentRoleRequest,
-) {
-  return patchApiActivitiesActivityIdUserIdChangeRole(activityId, userId, body).then((r) => r.data)
+  roleTypeId: string,
+): Promise<void> {
+  await patchApiActivitiesActivityIdUserIdChangeRole(activityId, userId, {
+    activityRoleTypeId: roleTypeId,
+  })
+}
+
+/** Lists the roles a participant can take in an activity. */
+export async function getActivityRolesRequest(): Promise<readonly ActivityRole[]> {
+  const { data } = await getApiActivitiesRoleType()
+  return data.map(toActivityRole)
+}
+
+/** Lists the statuses an activity signup can move through. */
+export async function getAssignmentStatusesRequest(): Promise<readonly AssignmentStatus[]> {
+  const { data } = await getApiActivitiesAssignmentStatusTypes()
+  return data.map(toAssignmentStatus)
+}
+
+/** Lists the modalities an activity can be offered in. */
+export async function getActivityModalitiesRequest(): Promise<readonly ActivityModality[]> {
+  const { data } = await getApiActivitiesModalityTypes()
+  return data.map(toActivityModality)
 }

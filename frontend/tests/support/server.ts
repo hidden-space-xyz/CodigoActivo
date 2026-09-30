@@ -32,6 +32,11 @@ export function apiError(
   )
 }
 
+/** Empty `204 No Content` response, as the API answers commands. */
+export function noContent(): HttpResponse<null> {
+  return new HttpResponse(null, { status: 204 })
+}
+
 /** Paged-result body in the shape the API returns. */
 export function paged<T>(items: T[], total = items.length): { items: T[]; total: number } {
   return { items, total }

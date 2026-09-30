@@ -1,189 +1,68 @@
-import { ref } from 'vue'
-import { flushPromises } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { useHomeNews, useNews, useNewsDetail } from '@/entities/news-item'
-import type { NewsItemResponse, NewsListItemResponse } from '@/shared/api/generated/models'
+import { newsKeys, newsList, newsPages, newsQueries } from '@/entities/news-item'
 
-import { renderComposable } from '../../../../support/fixtures/entities/composable'
 import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import { buildNewsItemResponse, buildNewsListItem } from '../../../../support/builders'
+import { queryOf } from '../../../../support/dom'
+import { createTestQueryClient } from '../../../../support/render'
 
-function item(id: string): NewsListItemResponse {
-  return { id, title: `Novedad ${id}` }
-}
-
-describe('useNews', () => {
-  it('selects the first year and loads its news items', async () => {
-    const requested: Record<string, string>[] = []
-    server.use(
-      http.get('/api/news/years', () => HttpResponse.json([2026, 2025])),
-      http.get('/api/news', ({ request }) => {
-        requested.push(Object.fromEntries(new URL(request.url).searchParams))
-        return HttpResponse.json(paged([item('a1')]))
-      }),
-    )
-
-    const { result } = await renderComposable(() => useNews())
-    await vi.waitFor(() => expect(result.news.value).toHaveLength(1))
-
-    expect(result.years.value).toEqual(['2026', '2025'])
-    expect(result.selectedYear.value).toBe('2026')
-    expect(result.isLoading.value).toBe(false)
-    expect(result.isError.value).toBe(false)
-    expect(result.hasMore.value).toBe(false)
-    expect(requested).toEqual([{ year: '2026', sort: '-createdAt', page: '1', pageSize: '25' }])
-  })
-
-  it('reloads when the year or the search change', async () => {
-    const requested: Record<string, string>[] = []
-    server.use(
-      http.get('/api/news/years', () => HttpResponse.json([2026, 2025])),
-      http.get('/api/news', ({ request }) => {
-        const query = Object.fromEntries(new URL(request.url).searchParams)
-        requested.push(query)
-        return HttpResponse.json(paged([item(`${query.year}-${query.search ?? ''}`)]))
-      }),
-    )
-
-    const { result } = await renderComposable(() => useNews())
-    await vi.waitFor(() => expect(result.news.value).toHaveLength(1))
-
-    result.setYear('2025')
-    await vi.waitFor(() => expect(result.news.value[0]?.id).toBe('2025-'))
-
-    result.setSearch('robot')
-    await vi.waitFor(() => expect(result.news.value[0]?.id).toBe('2025-robot'))
-
-    expect(result.search.value).toBe('robot')
-    expect(requested.map((query) => [query.year, query.search])).toEqual([
-      ['2026', undefined],
-      ['2025', undefined],
-      ['2025', 'robot'],
-    ])
-  })
-
-  it('loads the next page on demand while more news items remain', async () => {
-    const pages: string[] = []
-    server.use(
-      http.get('/api/news/years', () => HttpResponse.json([2026])),
-      http.get('/api/news', ({ request }) => {
-        const page = new URL(request.url).searchParams.get('page') ?? ''
-        pages.push(page)
-        return HttpResponse.json(paged([item(`p${page}`)], 2))
-      }),
-    )
-
-    const { result } = await renderComposable(() => useNews())
-    await vi.waitFor(() => expect(result.hasMore.value).toBe(true))
-
-    result.loadMore()
-    await vi.waitFor(() => expect(result.news.value).toHaveLength(2))
-
-    expect(result.news.value.map((newsItem) => newsItem.id)).toEqual(['p1', 'p2'])
-    expect(result.hasMore.value).toBe(false)
-    expect(result.isFetchingMore.value).toBe(false)
-    expect(pages).toEqual(['1', '2'])
-  })
-
-  it('does not request news items when there are no years', async () => {
-    server.use(http.get('/api/news/years', () => HttpResponse.json([])))
-
-    const { result } = await renderComposable(() => useNews())
-    await flushPromises()
-
-    expect(result.selectedYear.value).toBe('')
-    expect(result.news.value).toEqual([])
-    expect(result.isLoading.value).toBe(false)
-  })
-
-  it('keeps a selected year that is still available and resets one that disappears', async () => {
-    let years = [2026, 2025]
-    server.use(
-      http.get('/api/news/years', () => HttpResponse.json(years)),
-      http.get('/api/news', () => HttpResponse.json(paged([]))),
-    )
-
-    const { result, queryClient } = await renderComposable(() => useNews())
-    await vi.waitFor(() => expect(result.selectedYear.value).toBe('2026'))
-    result.setYear('2025')
-
-    years = [2027, 2025]
-    await queryClient.refetchQueries({ queryKey: ['news', 'years'] })
-    await flushPromises()
-    expect(result.selectedYear.value).toBe('2025')
-
-    years = [2027]
-    await queryClient.refetchQueries({ queryKey: ['news', 'years'] })
-    await vi.waitFor(() => expect(result.selectedYear.value).toBe('2027'))
-  })
-
-  it('reports an error when the years cannot be loaded', async () => {
-    server.use(http.get('/api/news/years', () => apiError(500)))
-
-    const { result } = await renderComposable(() => useNews())
-
-    await vi.waitFor(() => expect(result.isError.value).toBe(true))
-    expect(result.isLoading.value).toBe(false)
-  })
-
-  it('reports an error when the year page fails', async () => {
-    server.use(
-      http.get('/api/news/years', () => HttpResponse.json([2026])),
-      http.get('/api/news', () => apiError(500)),
-    )
-
-    const { result } = await renderComposable(() => useNews())
-
-    await vi.waitFor(() => expect(result.isError.value).toBe(true))
+describe('newsKeys', () => {
+  it('nests every news query under one root', () => {
+    expect(newsKeys.years()).toEqual(['news', 'years'])
+    expect(newsKeys.pages('2026', 'robot')).toEqual(['news', 'pages', '2026', 'robot'])
+    expect(newsKeys.home()).toEqual(['news', 'home'])
+    expect(newsKeys.detail('a1')).toEqual(['news', 'detail', 'a1'])
+    expect(newsKeys.list()).toEqual(['news', 'list'])
   })
 })
 
-describe('useHomeNews', () => {
-  it('starts empty and exposes the featured news item and the rest once loaded', async () => {
+describe('newsQueries', () => {
+  it('loads the years, the home block and a whole news item', async () => {
     server.use(
-      http.get('/api/news', () => HttpResponse.json(paged([item('a1'), item('a2'), item('a3')]))),
+      http.get('/api/news/years', () => HttpResponse.json([2026])),
+      http.get('/api/news', () => HttpResponse.json(paged([buildNewsListItem()]))),
+      http.get('/api/news/a1', () => HttpResponse.json(buildNewsItemResponse({ id: 'a1' }))),
+      http.get('/api/news/missing', () => apiError(404)),
     )
+    const client = createTestQueryClient()
 
-    const { result } = await renderComposable(() => {
-      const home = useHomeNews()
-      expect(home.featured.value).toBeNull()
-      expect(home.items.value).toEqual([])
-      return home
+    await expect(client.fetchQuery(newsQueries.years())).resolves.toEqual(['2026'])
+    await expect(client.fetchQuery(newsQueries.home())).resolves.toMatchObject({
+      featured: { id: 'news-item-1' },
+      items: [],
     })
-
-    await vi.waitFor(() => expect(result.featured.value?.id).toBe('a1'))
-    expect(result.items.value.map((newsItem) => newsItem.id)).toEqual(['a2', 'a3'])
-    expect(result.isLoading.value).toBe(false)
-    expect(result.isError.value).toBe(false)
+    await expect(client.fetchQuery(newsQueries.detail('a1'))).resolves.toMatchObject({ id: 'a1' })
+    await expect(client.fetchQuery(newsQueries.detail('missing'))).resolves.toBeNull()
   })
 })
 
-describe('useNewsDetail', () => {
-  it('loads the news item for a reactive id', async () => {
+describe('news sources', () => {
+  it('pages the news items of a year matching a search under their own key', async () => {
+    const urls: string[] = []
     server.use(
-      http.get('/api/news/:id', ({ params }) =>
-        HttpResponse.json<NewsItemResponse>({
-          id: String(params.id),
-          title: `Novedad ${String(params.id)}`,
-        }),
-      ),
+      http.get('/api/news', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildNewsListItem()], 3))
+      }),
     )
-    const id = ref('a1')
+    const source = newsPages('2026', 'robot')
 
-    const { result } = await renderComposable(() => useNewsDetail(id))
-    await vi.waitFor(() => expect(result.newsItem.value?.title).toBe('Novedad a1'))
-    expect(result.notFound.value).toBe(false)
-
-    id.value = 'a2'
-    await vi.waitFor(() => expect(result.newsItem.value?.title).toBe('Novedad a2'))
+    await expect(source.fetchPage(2, 10)).resolves.toMatchObject({ total: 3 })
+    expect(source.queryKey).toEqual(newsKeys.pages('2026', 'robot'))
+    expect(queryOf(urls[0] ?? '')).toEqual({
+      year: '2026',
+      search: 'robot',
+      sort: '-createdAt',
+      page: '2',
+      pageSize: '10',
+    })
   })
 
-  it('flags a missing news item as not found', async () => {
-    server.use(http.get('/api/news/missing', () => apiError(404)))
+  it('pages the admin list under the list key', async () => {
+    server.use(http.get('/api/news', () => HttpResponse.json(paged([buildNewsListItem()], 1))))
 
-    const { result } = await renderComposable(() => useNewsDetail('missing'))
-
-    await vi.waitFor(() => expect(result.notFound.value).toBe(true))
-    expect(result.isError.value).toBe(false)
+    await expect(newsList.fetchPage({ page: 1 })).resolves.toMatchObject({ total: 1 })
+    expect(newsList.queryKey).toEqual(newsKeys.list())
   })
 })

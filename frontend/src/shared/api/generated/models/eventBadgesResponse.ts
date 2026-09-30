@@ -7,9 +7,7 @@
 import type { EventBadgeResponse } from './eventBadgeResponse';
 
 export interface EventBadgesResponse {
-  eventId?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  badges?: EventBadgeResponse[] | null;
+  eventId: string;
+  title: string;
+  badges: EventBadgeResponse[];
 }

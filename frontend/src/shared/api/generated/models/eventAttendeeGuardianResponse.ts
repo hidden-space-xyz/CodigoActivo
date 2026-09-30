@@ -6,10 +6,8 @@
  */
 
 export interface EventAttendeeGuardianResponse {
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
+  firstName: string;
+  lastName: string;
   /** @nullable */
   email?: string | null;
   /** @nullable */

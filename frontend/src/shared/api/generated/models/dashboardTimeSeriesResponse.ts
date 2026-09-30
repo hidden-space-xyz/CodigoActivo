@@ -7,8 +7,6 @@
 import type { DashboardSeriesResponse } from './dashboardSeriesResponse';
 
 export interface DashboardTimeSeriesResponse {
-  /** @nullable */
-  buckets?: string[] | null;
-  /** @nullable */
-  series?: DashboardSeriesResponse[] | null;
+  buckets: string[];
+  series: DashboardSeriesResponse[];
 }

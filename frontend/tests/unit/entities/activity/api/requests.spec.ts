@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { ActivityInput } from '@/entities/activity'
 import {
   assignActivityRequest,
   assignHouseholdRequest,
@@ -7,10 +8,12 @@ import {
   changeAssignmentStatusRequest,
   createActivityRequest,
   deleteActivityRequest,
-  getActivitiesAdminPageRequest,
-  getActivityByIdRequest,
+  getActivitiesPageRequest,
+  getActivityModalitiesRequest,
+  getActivityRequest,
+  getActivityRolesRequest,
+  getAssignmentStatusesRequest,
   getEventActivitiesRequest,
-  getEventActivityOptionsRequest,
   getHouseholdAssignmentsRequest,
   getHouseholdMembersRequest,
   getMyAssignmentsRequest,
@@ -18,18 +21,24 @@ import {
   unassignActivityRequest,
   updateActivityRequest,
   verifyOverlapsRequest,
-} from '@/entities/activity'
+} from '@/entities/activity/api/requests'
 import { ApiError } from '@/shared/api'
 import type {
   ActivityResponse,
-  AssignedActivityResponse,
-  HouseholdMemberAssignmentResponse,
   HouseholdSignupRolesResponse,
   TimeOverlapResponse,
 } from '@/shared/api/generated/models'
 
-import { buildUserResponse } from '../../../../support/fixtures/user'
 import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import {
+  buildActivityResponse,
+  buildAssignedActivity,
+  buildHouseholdAssignment,
+  buildUserResponse,
+  assignmentStatusTypes,
+  modalityTypes,
+  roleTypes,
+} from '../../../../support/builders'
 
 function queryOf(url: URL | undefined): Record<string, string> {
   return Object.fromEntries(url?.searchParams ?? [])
@@ -40,7 +49,9 @@ const noContent = () => new HttpResponse(null, { status: 204 })
 describe('activity requests', () => {
   it('loads the event timeline ordered by start time and maps it', async () => {
     let url: URL | undefined
-    const items: ActivityResponse[] = [{ id: 'activity-1', title: 'Robótica' }]
+    const items: ActivityResponse[] = [
+      buildActivityResponse({ id: 'activity-1', title: 'Robótica' }),
+    ]
     server.use(
       http.get('/api/activities', ({ request }) => {
         url = new URL(request.url)
@@ -54,66 +65,64 @@ describe('activity requests', () => {
     expect(queryOf(url)).toEqual({ eventId: 'event-1', pageSize: '100', sort: 'activityStartsAt' })
   })
 
-  it('returns raw activities for admin selectors and tables', async () => {
-    const urls: URL[] = []
-    const items: ActivityResponse[] = [{ id: 'activity-1', modalityId: 'm1' }]
+  it('pages the admin table of an event, mapping each activity to a row', async () => {
+    let url: URL | undefined
     server.use(
       http.get('/api/activities', ({ request }) => {
-        urls.push(new URL(request.url))
-        return HttpResponse.json(paged(items, 7))
+        url = new URL(request.url)
+        return HttpResponse.json(paged([buildActivityResponse({ id: 'activity-1' })], 7))
       }),
     )
 
-    await expect(getEventActivityOptionsRequest('event-1')).resolves.toEqual(items)
-    await expect(getActivitiesAdminPageRequest({ page: 2, pageSize: 10 })).resolves.toEqual({
-      items,
+    await expect(
+      getActivitiesPageRequest({ eventId: 'event-1', page: 2, pageSize: 10 }),
+    ).resolves.toEqual({
+      items: [
+        {
+          id: 'activity-1',
+          title: 'Robotics',
+          location: 'Room 1',
+          modality: 'On site',
+          startsAt: '2026-10-10T09:00:00.000Z',
+          endsAt: '2026-10-10T11:00:00.000Z',
+          thumbnailId: 'thumb-event',
+        },
+      ],
       total: 7,
     })
-    expect(queryOf(urls[1])).toEqual({ page: '2', pageSize: '10' })
+    expect(queryOf(url)).toEqual({ eventId: 'event-1', page: '2', pageSize: '10' })
   })
 
-  it('treats a page without items as empty', async () => {
-    server.use(http.get('/api/activities', () => HttpResponse.json({})))
-
-    await expect(getActivitiesAdminPageRequest({})).resolves.toEqual({ items: [], total: 0 })
-  })
-
-  it('filters own assignments by event only when an event id is given', async () => {
-    const urls: URL[] = []
-    const data: AssignedActivityResponse[] = [
-      { activityId: 'activity-1', status: { name: 'Confirmada' }, roleType: { name: 'Mentor' } },
-    ]
+  it('loads the own signups to the activities of an event', async () => {
+    let url: URL | undefined
     server.use(
       http.get('/api/me/assigned-activities', ({ request }) => {
-        urls.push(new URL(request.url))
-        return HttpResponse.json(data)
+        url = new URL(request.url)
+        return HttpResponse.json([
+          buildAssignedActivity({
+            activityId: 'activity-1',
+            status: { id: 'status-2', name: 'Confirmada' },
+            roleType: { id: 'role-mentor', name: 'Mentor' },
+          }),
+        ])
       }),
     )
 
     await expect(getMyAssignmentsRequest('event-1')).resolves.toEqual([
       { activityId: 'activity-1', status: 'Confirmada', roleName: 'Mentor' },
     ])
-    await getMyAssignmentsRequest()
-
-    expect(queryOf(urls[0])).toEqual({ eventId: 'event-1' })
-    expect(queryOf(urls[1])).toEqual({})
+    expect(queryOf(url)).toEqual({ eventId: 'event-1' })
   })
 
-  it('returns no own assignments when the body is empty', async () => {
-    server.use(http.get('/api/me/assigned-activities', noContent))
-
-    await expect(getMyAssignmentsRequest()).resolves.toEqual([])
-  })
-
-  describe('getActivityByIdRequest', () => {
+  describe('getActivityRequest', () => {
     it('maps the admin detail', async () => {
       server.use(
         http.get('/api/activities/activity-1', () =>
-          HttpResponse.json<ActivityResponse>({ id: 'activity-1', title: 'Robótica' }),
+          HttpResponse.json(buildActivityResponse({ id: 'activity-1', title: 'Robótica' })),
         ),
       )
 
-      await expect(getActivityByIdRequest('activity-1')).resolves.toMatchObject({
+      await expect(getActivityRequest('activity-1')).resolves.toMatchObject({
         id: 'activity-1',
         title: 'Robótica',
       })
@@ -122,30 +131,32 @@ describe('activity requests', () => {
     it('resolves null when the activity no longer exists', async () => {
       server.use(http.get('/api/activities/missing', () => apiError(404, 'ActivityNotFound')))
 
-      await expect(getActivityByIdRequest('missing')).resolves.toBeNull()
+      await expect(getActivityRequest('missing')).resolves.toBeNull()
     })
 
     it('rethrows server errors', async () => {
       server.use(http.get('/api/activities/broken', () => apiError(500)))
 
-      await expect(getActivityByIdRequest('broken')).rejects.toBeInstanceOf(ApiError)
+      await expect(getActivityRequest('broken')).rejects.toBeInstanceOf(ApiError)
     })
   })
 
-  it('maps the household assignments of an event', async () => {
-    const data: HouseholdMemberAssignmentResponse[] = [
-      { activityId: 'activity-1', userId: 'child-1', firstName: 'Byron', lastName: 'King' },
-    ]
+  it('maps the household signups of an event', async () => {
     server.use(
-      http.get('/api/activities/household-assignments/event-1', () => HttpResponse.json(data)),
+      http.get('/api/activities/household-assignments/event-1', () =>
+        HttpResponse.json([buildHouseholdAssignment({ activityId: 'activity-1' })]),
+      ),
     )
 
     await expect(getHouseholdAssignmentsRequest('event-1')).resolves.toEqual([
-      { activityId: 'activity-1', userId: 'child-1', name: 'Byron King', roleName: '', status: '' },
+      {
+        activityId: 'activity-1',
+        userId: 'child-1',
+        name: 'Byron King',
+        roleName: 'Participante',
+        status: 'Solicitada',
+      },
     ])
-
-    server.use(http.get('/api/activities/household-assignments/event-2', noContent))
-    await expect(getHouseholdAssignmentsRequest('event-2')).resolves.toEqual([])
   })
 
   it('lists household members as the minors of the user', async () => {
@@ -172,24 +183,25 @@ describe('activity requests', () => {
     await expect(getSignupRolesRequest()).resolves.toEqual([
       { userId: 'user-1', roles: [{ id: 'role-1', name: 'Mentor' }] },
     ])
-
-    server.use(http.get('/api/activities/signup-roles', noContent))
-    await expect(getSignupRolesRequest()).resolves.toEqual([])
   })
 
   it('checks schedule overlaps for a user', async () => {
     const data: TimeOverlapResponse = {
       hasOverlaps: true,
-      overlaps: [{ activityId: 'activity-2', title: 'Python' }],
+      overlaps: [
+        {
+          activityId: 'activity-2',
+          title: 'Python',
+          startsAt: '2026-10-01T10:00:00Z',
+          endsAt: '2026-10-01T12:00:00Z',
+        },
+      ],
     }
     server.use(
       http.get('/api/activities/activity-1/overlaps/user-1', () => HttpResponse.json(data)),
     )
 
-    await expect(verifyOverlapsRequest('activity-1', 'user-1')).resolves.toEqual({
-      hasOverlaps: true,
-      overlaps: [{ activityId: 'activity-2', title: 'Python', startsAt: null, endsAt: null }],
-    })
+    await expect(verifyOverlapsRequest('activity-1', 'user-1')).resolves.toEqual(data)
   })
 
   it('signs a user up without terms decisions by default and with them when given', async () => {
@@ -275,13 +287,31 @@ describe('activity requests', () => {
   })
 
   it('creates, updates and deletes activities through the admin endpoints', async () => {
+    const input: ActivityInput = {
+      title: 'Nueva',
+      description: 'Texto',
+      location: 'Aula 1',
+      modalityId: 'm1',
+      startsAt: '2026-10-10T09:00:00.000Z',
+      endsAt: '2026-10-10T11:00:00.000Z',
+      thumbnailId: 't1',
+      roleCapacities: [{ roleTypeId: 'role-1', desiredCount: 5 }],
+    }
+    const body = {
+      title: 'Nueva',
+      description: 'Texto',
+      location: 'Aula 1',
+      activityModalityTypeId: 'm1',
+      activityStartsAt: '2026-10-10T09:00:00.000Z',
+      activityEndsAt: '2026-10-10T11:00:00.000Z',
+      thumbnailId: 't1',
+      roleCapacities: [{ activityRoleTypeId: 'role-1', desiredCount: 5 }],
+    }
     const calls: { method: string; path: string; body: unknown }[] = []
     const record = async ({ request }: { request: Request }) => {
-      const body: unknown = request.method === 'DELETE' ? null : await request.json()
-      calls.push({ method: request.method, path: new URL(request.url).pathname, body })
-      return request.method === 'DELETE'
-        ? noContent()
-        : HttpResponse.json<ActivityResponse>({ id: 'activity-1', title: 'Saved' })
+      const sent: unknown = request.method === 'DELETE' ? null : await request.json()
+      calls.push({ method: request.method, path: new URL(request.url).pathname, body: sent })
+      return request.method === 'DELETE' ? noContent() : HttpResponse.json(buildActivityResponse())
     }
     server.use(
       http.post('/api/activities/event-1', record),
@@ -289,23 +319,17 @@ describe('activity requests', () => {
       http.delete('/api/activities/activity-1', record),
     )
 
-    await expect(
-      createActivityRequest('event-1', { title: 'Nueva', activityModalityTypeId: 'm1' }),
-    ).resolves.toEqual({ id: 'activity-1', title: 'Saved' })
-    await expect(updateActivityRequest('activity-1', { title: 'Editada' })).resolves.toEqual({
-      id: 'activity-1',
-      title: 'Saved',
-    })
-    const deleted = await deleteActivityRequest('activity-1')
+    await createActivityRequest('event-1', input)
+    await updateActivityRequest('activity-1', { ...input, roleCapacities: [] })
+    await deleteActivityRequest('activity-1')
 
-    expect(deleted.status).toBe(204)
     expect(calls).toEqual([
+      { method: 'POST', path: '/api/activities/event-1', body },
       {
-        method: 'POST',
-        path: '/api/activities/event-1',
-        body: { title: 'Nueva', activityModalityTypeId: 'm1' },
+        method: 'PUT',
+        path: '/api/activities/activity-1',
+        body: { ...body, roleCapacities: null },
       },
-      { method: 'PUT', path: '/api/activities/activity-1', body: { title: 'Editada' } },
       { method: 'DELETE', path: '/api/activities/activity-1', body: null },
     ])
   })
@@ -315,21 +339,40 @@ describe('activity requests', () => {
     server.use(
       http.patch('/api/activities/activity-1/user-1/change-status', async ({ request }) => {
         bodies.push(await request.json())
-        return HttpResponse.json({ status: 'changed' })
+        return HttpResponse.json({ id: 'status-ok', name: 'Confirmed' })
       }),
       http.patch('/api/activities/activity-1/user-1/change-role', async ({ request }) => {
         bodies.push(await request.json())
-        return HttpResponse.json({ role: 'changed' })
+        return HttpResponse.json(buildActivityResponse())
       }),
     )
 
-    await expect(
-      changeAssignmentStatusRequest('activity-1', 'user-1', { assignmentStatusId: 'status-ok' }),
-    ).resolves.toEqual({ status: 'changed' })
-    await expect(
-      changeAssignmentRoleRequest('activity-1', 'user-1', { activityRoleTypeId: 'role-2' }),
-    ).resolves.toEqual({ role: 'changed' })
+    await changeAssignmentStatusRequest('activity-1', 'user-1', 'status-ok')
+    await changeAssignmentRoleRequest('activity-1', 'user-1', 'role-2')
 
     expect(bodies).toEqual([{ assignmentStatusId: 'status-ok' }, { activityRoleTypeId: 'role-2' }])
+  })
+
+  it('lists the roles, signup statuses and modalities of activities', async () => {
+    server.use(
+      http.get('/api/activities/roleType', () => HttpResponse.json(roleTypes)),
+      http.get('/api/activities/assignment-status-types', () =>
+        HttpResponse.json(assignmentStatusTypes),
+      ),
+      http.get('/api/activities/modality-types', () => HttpResponse.json(modalityTypes)),
+    )
+
+    await expect(getActivityRolesRequest()).resolves.toEqual([
+      { id: 'role-1', name: 'Volunteer' },
+      { id: 'role-2', name: 'Mentor' },
+    ])
+    await expect(getAssignmentStatusesRequest()).resolves.toEqual([
+      { id: 'status-1', name: 'Requested', color: '#aabbcc' },
+      { id: 'status-2', name: 'Confirmed', color: '#00ff00' },
+    ])
+    await expect(getActivityModalitiesRequest()).resolves.toEqual([
+      { id: 'mod-1', name: 'On site' },
+      { id: 'mod-2', name: 'Online' },
+    ])
   })
 })

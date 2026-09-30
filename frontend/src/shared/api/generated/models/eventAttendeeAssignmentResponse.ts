@@ -6,17 +6,16 @@
  */
 
 export interface EventAttendeeAssignmentResponse {
-  activityId?: string;
-  /** @nullable */
-  activityTitle?: string | null;
-  activityStartsAt?: string;
-  activityEndsAt?: string;
-  roleTypeId?: string;
+  activityId: string;
+  activityTitle: string;
+  activityStartsAt: string;
+  activityEndsAt: string;
+  roleTypeId: string;
   /** @nullable */
   roleTypeName?: string | null;
-  statusId?: string;
+  statusId: string;
   /** @nullable */
   statusName?: string | null;
-  signedUpAt?: string;
-  hasTimeConflict?: boolean;
+  signedUpAt: string;
+  hasTimeConflict: boolean;
 }

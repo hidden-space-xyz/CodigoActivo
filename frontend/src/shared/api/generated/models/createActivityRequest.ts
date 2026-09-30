@@ -7,18 +7,15 @@
 import type { ActivityRoleCapacityRequest } from './activityRoleCapacityRequest';
 
 export interface CreateActivityRequest {
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  description?: string | null;
-  /** @nullable */
-  location?: string | null;
-  activityModalityTypeId?: string;
+  title: string;
+  description: string;
+  location: string;
+  activityModalityTypeId: string;
   /** @nullable */
   activityStartsAt?: string | null;
   /** @nullable */
   activityEndsAt?: string | null;
-  thumbnailId?: string;
+  thumbnailId: string;
   /** @nullable */
   roleCapacities?: ActivityRoleCapacityRequest[] | null;
 }

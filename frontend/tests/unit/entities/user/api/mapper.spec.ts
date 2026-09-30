@@ -1,68 +1,79 @@
 import { describe, expect, it } from 'vitest'
 
-import { toUser } from '@/entities/user/api/mapper'
+import { toUpdateUserRequest, toUser, toUserCatalogRef } from '@/entities/user/api/mapper'
 
-import { buildUserResponse } from '../../../../support/fixtures/user'
+import {
+  buildDependentResponse,
+  buildUserResponse,
+  omit,
+  userTypes,
+} from '../../../../support/builders'
 
-describe('user mapper', () => {
-  it('maps a user for the admin screens with status and type references', () => {
-    expect(
-      toUser(
-        buildUserResponse({
-          parentId: 'parent-1',
-          parentName: 'Ada Lovelace',
-          dependentCount: 2,
-          isAdmin: true,
-          isInitialAdmin: true,
-          status: { id: 'status-active', name: 'Active', color: '#00ff00' },
-        }),
-      ),
-    ).toEqual({
+describe('toUser', () => {
+  it('maps an independent account for the admin screens', () => {
+    expect(toUser(buildUserResponse({ secondaryPhone: '611111111', isAdmin: true }))).toEqual({
       id: 'user-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
       email: 'ada@example.test',
       phone: '600000000',
-      secondaryPhone: '',
+      secondaryPhone: '611111111',
       birthDate: '',
       nationalId: '12345678Z',
       promotionalConsent: false,
       gender: 'Female',
       isAdmin: true,
-      isInitialAdmin: true,
-      parentId: 'parent-1',
-      parentName: 'Ada Lovelace',
-      dependentCount: 2,
-      status: { id: 'status-active', name: 'Active', color: '#00ff00' },
-      type: { id: 'type-participant', name: 'Participant', color: null },
-      twoFactorMethod: 'Email',
-    })
-  })
-
-  it('defaults missing fields and turns missing references into null', () => {
-    expect(toUser({})).toEqual({
-      id: '',
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      secondaryPhone: '',
-      birthDate: '',
-      nationalId: '',
-      promotionalConsent: false,
-      gender: null,
-      isAdmin: false,
       isInitialAdmin: false,
       parentId: null,
       parentName: '',
       dependentCount: 0,
-      status: null,
-      type: null,
-      twoFactorMethod: 'Email',
+      status: { id: 'status-active', name: 'Active', color: '#00FF00' },
+      type: { id: 'type-participant', name: 'Participant', color: '#00AA00' },
     })
-    expect(toUser({ status: {}, type: {} })).toMatchObject({
-      status: { id: '', name: '', color: null },
-      type: { id: '', name: '', color: null },
+  })
+
+  it('reads the missing contact details of a dependent as empty text', () => {
+    expect(toUser(buildDependentResponse())).toMatchObject({
+      email: '',
+      phone: '',
+      nationalId: '',
+      birthDate: '2015-03-02',
+      parentId: 'user-1',
+      parentName: 'Ada Lovelace',
+      dependentCount: 0,
     })
+  })
+
+  it('reads a user without a type as having none', () => {
+    expect(toUser(omit(buildUserResponse(), 'type')).type).toBeNull()
+  })
+})
+
+describe('toUserCatalogRef', () => {
+  it('keeps what identifies and colors a catalog entry', () => {
+    expect(userTypes.map(toUserCatalogRef)).toEqual([
+      { id: 'type-participant', name: 'Participant', color: '#00AA00' },
+      { id: 'type-member', name: 'Member', color: '#0000AA' },
+    ])
+  })
+})
+
+describe('toUpdateUserRequest', () => {
+  it('sends every field of the update', () => {
+    const input = {
+      firstName: 'Ada',
+      lastName: 'King',
+      email: null,
+      phone: null,
+      secondaryPhone: null,
+      birthDate: '2015-03-02',
+      nationalId: null,
+      promotionalConsent: false,
+      gender: 'Female',
+      parentId: 'user-1',
+      currentPassword: null,
+    } as const
+
+    expect(toUpdateUserRequest(input)).toEqual(input)
   })
 })

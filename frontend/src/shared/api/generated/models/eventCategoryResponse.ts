@@ -6,9 +6,7 @@
  */
 
 export interface EventCategoryResponse {
-  categoryTypeId?: string;
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  color?: string | null;
+  categoryTypeId: string;
+  name: string;
+  color: string;
 }

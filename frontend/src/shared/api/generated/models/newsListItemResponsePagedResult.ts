@@ -7,9 +7,8 @@
 import type { NewsListItemResponse } from './newsListItemResponse';
 
 export interface NewsListItemResponsePagedResult {
-  /** @nullable */
-  items?: NewsListItemResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: NewsListItemResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

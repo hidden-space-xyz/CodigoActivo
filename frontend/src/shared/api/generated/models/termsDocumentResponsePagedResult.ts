@@ -7,9 +7,8 @@
 import type { TermsDocumentResponse } from './termsDocumentResponse';
 
 export interface TermsDocumentResponsePagedResult {
-  /** @nullable */
-  items?: TermsDocumentResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: TermsDocumentResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

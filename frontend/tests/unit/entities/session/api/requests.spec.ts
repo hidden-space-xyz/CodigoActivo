@@ -7,11 +7,11 @@ import {
   logoutRequest,
   resendTwoFactorCodeRequest,
   verifyTwoFactorLoginRequest,
-} from '@/entities/session'
+} from '@/entities/session/api/requests'
 import { ApiError } from '@/shared/api'
 
-import { buildLoginChallenge, buildUserResponse } from '../../../../support/fixtures/user'
 import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
+import { buildLoginChallenge, buildUserResponse } from '../../../../support/builders'
 
 /** Serves a distinct CSRF token per fetch so tests can tell when the cached token was dropped. */
 function countCsrfFetches() {

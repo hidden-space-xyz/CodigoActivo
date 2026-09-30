@@ -1,4 +1,5 @@
-import type { TwoFactorMethod } from '@/shared/api/generated/models'
+/** Second factor a user presents after the password: an emailed code or an authenticator app. */
+type TwoFactorMethod = 'Email' | 'Authenticator'
 
 /** Signed-in user held by the session; missing text fields are empty strings. */
 export interface AuthUser {
@@ -8,7 +9,7 @@ export interface AuthUser {
   readonly email: string
   readonly phone: string
   readonly isAdmin: boolean
-  readonly userTypeId: string
+  /** Whether the account may sign up during the early signup, as the API decides. */
   readonly earlySignupEligible: boolean
   /** Second factor the user presents after the password; every account has one. */
   readonly twoFactorMethod: TwoFactorMethod

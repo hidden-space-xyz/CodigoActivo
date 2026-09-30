@@ -6,10 +6,8 @@
  */
 
 export interface EventBadgeGuardianResponse {
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
+  firstName: string;
+  lastName: string;
   /** @nullable */
   phone?: string | null;
 }

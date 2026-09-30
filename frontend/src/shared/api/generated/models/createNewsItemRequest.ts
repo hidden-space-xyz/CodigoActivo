@@ -6,11 +6,8 @@
  */
 
 export interface CreateNewsItemRequest {
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  subtitle?: string | null;
-  /** @nullable */
-  description?: string | null;
-  thumbnailId?: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  thumbnailId: string;
 }

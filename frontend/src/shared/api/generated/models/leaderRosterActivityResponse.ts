@@ -7,13 +7,10 @@
 import type { LeaderRosterRoleResponse } from './leaderRosterRoleResponse';
 
 export interface LeaderRosterActivityResponse {
-  activityId?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  location?: string | null;
-  activityStartsAt?: string;
-  activityEndsAt?: string;
-  /** @nullable */
-  roles?: LeaderRosterRoleResponse[] | null;
+  activityId: string;
+  title: string;
+  location: string;
+  activityStartsAt: string;
+  activityEndsAt: string;
+  roles: LeaderRosterRoleResponse[];
 }

@@ -6,8 +6,8 @@
  */
 
 export interface EventRatingListItemResponse {
-  id?: string;
-  score?: number;
+  id: string;
+  score: number;
   /** @nullable */
   mostLiked?: string | null;
   /** @nullable */

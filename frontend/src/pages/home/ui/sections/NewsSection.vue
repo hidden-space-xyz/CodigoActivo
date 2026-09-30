@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { FeaturedNewsCard, NewsCard, useHomeNews } from '@/entities/news-item'
-import { BaseButton } from '@/shared/ui'
+import { computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 
-const { featured, items: recent, isLoading } = useHomeNews()
+import { FeaturedNewsCard, NewsCard, newsQueries } from '@/entities/news-item'
+import { BrandButton } from '@/shared/ui/brand-button'
+
+const { data, isLoading } = useQuery(newsQueries.home())
+const featured = computed(() => data.value?.featured ?? null)
+const recent = computed(() => data.value?.items ?? [])
 </script>
 
 <template>
@@ -10,9 +15,9 @@ const { featured, items: recent, isLoading } = useHomeNews()
     <div class="ca-container">
       <div class="home-section__head">
         <h2 class="home-section__title">{{ $t('pages.home.news.title') }}</h2>
-        <BaseButton variant="link" class="home-section__view-all" :to="{ name: 'news' }">
+        <BrandButton variant="link" class="home-section__view-all" :to="{ name: 'news' }">
           {{ $t('pages.home.news.viewAll') }}
-        </BaseButton>
+        </BrandButton>
       </div>
 
       <p v-if="isLoading" class="home-section__loading">{{ $t('common.loading') }}</p>

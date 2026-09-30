@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { ResourceCard, useResources } from '@/entities/resource'
-import { AppButton, PageHeading, SearchInput } from '@/shared/ui'
+import { ResourceCard, resourcePages } from '@/entities/resource'
+import { usePagedList } from '@/shared/lib/paging'
+import { ActionButton } from '@/shared/ui/action-button'
+import { PageHeading } from '@/shared/ui/page-heading'
+import { SearchInput } from '@/shared/ui/search-input'
 
 const search = ref('')
 
-const { resources, hasMore, loadMore, isFetchingMore, isLoading } = useResources(() => search.value)
+const {
+  items: resources,
+  hasMore,
+  loadMore,
+  isFetchingMore,
+  isLoading,
+} = usePagedList(() => resourcePages(search.value))
 
 const hasNoResults = computed(
   () => search.value !== '' && !isLoading.value && resources.value.length === 0,
@@ -42,7 +51,7 @@ const hasNoResults = computed(
           <ResourceCard v-for="resource in resources" :key="resource.id" :resource="resource" />
         </div>
         <div v-if="hasMore" class="resources-more">
-          <AppButton
+          <ActionButton
             :label="$t('common.loadMore')"
             plain
             :loading="isFetchingMore"

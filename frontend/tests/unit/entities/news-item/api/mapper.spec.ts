@@ -1,60 +1,50 @@
 import { describe, expect, it } from 'vitest'
 
-import { toNewsItem, toNewsSummary } from '@/entities/news-item/api/mapper'
-import { formatDate } from '@/shared/lib'
+import { toNewsItem, toNewsItemRequest, toNewsSummary } from '@/entities/news-item/api/mapper'
 
-describe('news mapper', () => {
-  it('maps a list item formatting the creation date for display', () => {
-    const summary = toNewsSummary({
+import {
+  buildNewsItemResponse,
+  buildNewsListItem,
+  omit,
+  richText,
+} from '../../../../support/builders'
+
+describe('toNewsSummary', () => {
+  it('maps a list item keeping its publication instant', () => {
+    expect(toNewsSummary(buildNewsListItem({ featured: true }))).toEqual({
       id: 'news-item-1',
-      title: 'Nueva edición',
-      subtitle: 'Inscripciones abiertas',
-      createdAt: '2026-03-15T10:00:00Z',
-      thumbnailId: 'thumb-1',
+      title: 'Abrimos inscripciones',
+      subtitle: 'Nueva temporada',
+      createdAt: '2026-02-01T10:00:00Z',
+      thumbnailId: 'thumb-news-item',
       featured: true,
     })
-
-    expect(summary).toEqual({
-      id: 'news-item-1',
-      title: 'Nueva edición',
-      subtitle: 'Inscripciones abiertas',
-      date: formatDate('2026-03-15T10:00:00Z'),
-      thumbnailId: 'thumb-1',
-      featured: true,
-    })
-    expect(summary.date).toMatch(/2026/)
   })
+})
 
-  it('defaults a bare list item to empty values and no date', () => {
-    expect(toNewsSummary({})).toEqual({
-      id: '',
-      title: '',
-      subtitle: '',
-      date: '',
-      thumbnailId: '',
-      featured: false,
+describe('toNewsItem', () => {
+  it('adds the description and the last change to the summary', () => {
+    expect(toNewsItem(buildNewsItemResponse())).toMatchObject({
+      id: 'news-item-1',
+      description: richText('Ya puedes apuntarte.'),
+      updatedAt: '2026-02-03T10:00:00Z',
     })
   })
 
-  it('maps the full news item keeping the raw timestamps', () => {
-    expect(
-      toNewsItem({
-        id: 'news-item-1',
-        title: 'Nueva edición',
-        description: '<p>Texto</p>',
-        createdAt: '2026-03-15T10:00:00Z',
-        updatedAt: '2026-03-16T10:00:00Z',
-      }),
-    ).toMatchObject({
-      id: 'news-item-1',
-      description: '<p>Texto</p>',
-      publishedAt: '2026-03-15T10:00:00Z',
-      updatedAt: '2026-03-16T10:00:00Z',
-    })
-    expect(toNewsItem({})).toMatchObject({
-      description: '',
-      publishedAt: null,
-      updatedAt: null,
-    })
+  it('reads a news item never edited as having no last change', () => {
+    expect(toNewsItem(omit(buildNewsItemResponse(), 'updatedAt')).updatedAt).toBeNull()
+  })
+})
+
+describe('toNewsItemRequest', () => {
+  it('sends every field of the news item', () => {
+    const input = {
+      title: 'Demo day',
+      subtitle: 'Friday',
+      description: richText('Details'),
+      thumbnailId: 'thumb',
+    }
+
+    expect(toNewsItemRequest(input)).toEqual(input)
   })
 })

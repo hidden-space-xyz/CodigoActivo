@@ -7,9 +7,8 @@
 import type { EventRatingListItemResponse } from './eventRatingListItemResponse';
 
 export interface EventRatingListItemResponsePagedResult {
-  /** @nullable */
-  items?: EventRatingListItemResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: EventRatingListItemResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

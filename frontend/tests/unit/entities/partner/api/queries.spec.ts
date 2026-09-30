@@ -1,37 +1,52 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { partnerQueryKeys, useSponsors } from '@/entities/partner'
+import { partnerKeys, partnerList, partnerQueries } from '@/entities/partner'
 
-import { renderComposable } from '../../../../support/fixtures/entities/composable'
-import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import { http, HttpResponse, paged, server } from '../../../../support/server'
+import { buildPartnerResponse } from '../../../../support/builders'
+import { queryOf } from '../../../../support/dom'
+import { createTestQueryClient } from '../../../../support/render'
 
-describe('useSponsors', () => {
-  it('keeps sponsors undefined until loaded and then exposes them', async () => {
-    server.use(
-      http.get('/api/partners', () => HttpResponse.json(paged([{ id: 'p1', name: 'Acme' }]))),
-    )
-
-    const { result, queryClient } = await renderComposable(() => {
-      const sponsors = useSponsors()
-      expect(sponsors.sponsors.value).toBeUndefined()
-      expect(sponsors.isLoading.value).toBe(true)
-      return sponsors
-    })
-
-    await vi.waitFor(() =>
-      expect(result.sponsors.value).toEqual([
-        { id: 'p1', name: 'Acme', website: '', thumbnailId: '' },
-      ]),
-    )
-    expect(result.isLoading.value).toBe(false)
-    expect(queryClient.getQueryData(partnerQueryKeys.sponsors())).toEqual(result.sponsors.value)
+describe('partnerKeys', () => {
+  it('shares the partners root between the sponsors and the admin list', () => {
+    expect(partnerKeys.all).toEqual(['partners'])
+    expect(partnerKeys.sponsors()).toEqual(['partners', 'sponsors'])
+    expect(partnerKeys.list()).toEqual(['partners', 'list'])
   })
+})
 
-  it('reports an error', async () => {
-    server.use(http.get('/api/partners', () => apiError(503)))
+describe('partnerQueries.sponsors', () => {
+  it('caches the sponsors under their key', async () => {
+    server.use(http.get('/api/partners', () => HttpResponse.json(paged([buildPartnerResponse()]))))
+    const client = createTestQueryClient()
 
-    const { result } = await renderComposable(() => useSponsors())
+    await expect(client.fetchQuery(partnerQueries.sponsors())).resolves.toEqual([
+      {
+        id: 'partner-1',
+        name: 'Acme',
+        website: 'https://acme.test',
+        thumbnailId: 'thumb-partner-1',
+      },
+    ])
+    expect(client.getQueryData(partnerKeys.sponsors())).toHaveLength(1)
+  })
+})
 
-    await vi.waitFor(() => expect(result.isError.value).toBe(true))
+describe('partnerList', () => {
+  it('pages the admin list under the list key with the table params', async () => {
+    const urls: string[] = []
+    server.use(
+      http.get('/api/partners', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildPartnerResponse()], 30))
+      }),
+    )
+
+    const page = await partnerList.fetchPage({ page: 2, pageSize: 25, sort: 'tier' })
+
+    expect(partnerList.queryKey).toEqual(partnerKeys.list())
+    expect(page.total).toBe(30)
+    expect(page.items.map((partner) => partner.name)).toEqual(['Acme'])
+    expect(queryOf(urls[0] ?? '')).toEqual({ page: '2', pageSize: '25', sort: 'tier' })
   })
 })

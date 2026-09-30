@@ -839,3 +839,13 @@
     padding: 0 14px;
   }
 }
+
+.ca-invalid.ca-invalid {
+  --el-input-border-color: var(--ca-danger);
+  --el-input-hover-border-color: var(--ca-danger);
+  --el-input-focus-border-color: var(--ca-danger);
+}
+
+.ca-invalid.ca-invalid .el-select__wrapper {
+  box-shadow: 0 0 0 1px var(--ca-danger) inset;
+}

@@ -155,13 +155,17 @@ The five required steps are documented once, in
 
 ## Frontend conventions
 
-- Respect the Feature-Sliced import direction and import a slice through its `index.ts` public API.
-- Keep generated request functions behind handwritten `api/requests.ts` modules.
-- Put entity-scoped server state in the entity; put multi-entity or session-dependent workflows in a feature.
-- Build TanStack Query keys through the entity's `api/query-keys.ts` factory.
-- Do not hardcode user-facing text. Add Vue I18n keys to `src/shared/i18n/locales/es.json`.
-- Feature composables use camelCase filenames such as `useLogin.ts`; entity and `shared/lib` composables use
-  kebab-case names such as `use-theme.ts`.
+- Respect the Feature-Sliced import direction and import a slice through its `index.ts` public API. Keep code
+  in the page that uses it until a second slice needs it.
+- Import the generated client only from `api` segments and map its DTOs there; models never use DTO types.
+- Expose an entity's server state as `xKeys`, `xQueries` (`queryOptions`) and `xMutations` (`mutationOptions`
+  with `meta.invalidates`); pages use them with `useQuery`/`useMutation` and add cross-slice keys with
+  `alsoInvalidates`.
+- Keep `.vue` files humble: put mutations, cache access, API error handling and rules in `model` composables or
+  pure `lib` functions, and forms on `useForm` with a pure `read`.
+- Do not hardcode user-facing text. Add Vue I18n keys to `src/shared/i18n/locales/es.json`; messages a form
+  reader returns go under a `form.problems` group.
+- Name components in PascalCase and every other file in kebab-case, such as `use-events-admin.ts`.
 - Document the public API with JSDoc: every top-level export, public class member, and every component prop,
   emitted event and `defineExpose` member. ESLint enforces it and rejects comments that only repeat the name,
   so explain purpose and non-obvious behavior instead. Tests (`tests/`, `*.spec.ts`, `*.test.ts`,
@@ -178,13 +182,15 @@ mail indirectly or advance the clock to a scheduled retry call `Factory.DrainEma
 downloads the disposable email domain list, so `disposable_email_domains` starts empty and every domain is
 accepted; tests that need a blocked domain seed that table.
 
-Frontend tests use Vitest, Vue Test Utils and jsdom in `frontend/tests/`, mirroring `src/`: `tests/unit/`
-covers isolated units, `tests/integration/` mounts components or `App.vue` with real plugins.
+Frontend tests use Vitest, Vue Test Utils and jsdom in `frontend/tests/`, one spec per source file at its `src/`
+path: `tests/unit/` covers isolated units, `tests/integration/` mounts components or `App.vue` with real plugins.
 
 - The backend is never required: `tests/setup.ts` runs an MSW server that fails unhandled requests, so
   declare responses with `server.use(...)` from `tests/support/server.ts` (requests still go through the
   generated client and `httpClient`, including CSRF).
-- Mount with `renderWithProviders` or `renderApp` from `tests/support/render.ts`.
+- Mount with `renderWithProviders` or `renderApp`, and run composables with `mountComposable`, from
+  `tests/support/render.ts`; build API payloads with `tests/support/builders/` and model values with
+  `tests/support/models.ts`.
 - Shared state (session, CSRF token, handlers, storage, fake timers, media queries) resets after each test.
 - Coverage covers `src/**/*.{ts,vue}` except the generated client and `main.ts`, at or above 90% for
   statements, branches, functions and lines.

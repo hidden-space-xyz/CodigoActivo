@@ -6,11 +6,9 @@
  */
 
 export interface FileResponse {
-  id?: string;
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  extension?: string | null;
-  uploadedAt?: string;
-  uploadedBy?: string;
+  id: string;
+  name: string;
+  extension: string;
+  uploadedAt: string;
+  uploadedBy: string;
 }

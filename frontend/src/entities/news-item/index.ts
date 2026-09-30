@@ -1,12 +1,5 @@
-export { useHomeNews, useNews, useNewsDetail } from './api/queries'
-export { newsQueryKeys } from './api/query-keys'
-export {
-  createNewsItemRequest,
-  deleteNewsItemRequest,
-  getNewsAdminPageRequest,
-  getNewsItemAdminRequest,
-  toggleNewsItemFeatureRequest,
-  updateNewsItemRequest,
-} from './api/requests'
+export type { NewsItem, NewsItemInput, NewsSummary } from './model/types'
+export { newsKeys, newsList, newsPages, newsQueries } from './api/queries'
+export { newsMutations } from './api/mutations'
 export { default as FeaturedNewsCard } from './ui/FeaturedNewsCard.vue'
 export { default as NewsCard } from './ui/NewsCard.vue'

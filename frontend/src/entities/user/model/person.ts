@@ -1,7 +1,8 @@
-import type { Gender } from '@/shared/api/generated/models'
-import { i18n, type TranslationKey } from '@/shared/i18n'
-import { nationalIdError, normalizeNationalId, toDateOnly } from '@/shared/lib'
+import type { TranslationKey } from '@/shared/i18n'
+import { toDateOnly } from '@/shared/lib/date'
 
+import type { Gender } from './gender'
+import { nationalIdError, normalizeNationalId } from './national-id'
 import type { UpdateUserInput } from './types'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -216,13 +217,11 @@ export function minorBirthDateRange(today: string = toDateOnly(new Date())): {
   return { min: cutoff.toISOString().slice(0, 10), max: today }
 }
 
-/** Translated explanation of why `field` is refused, worded for the field when it is missing. */
-export function personProblemMessage(field: PersonField, problem: PersonProblem): string {
-  const key =
-    problem === 'required'
-      ? (REQUIRED_MESSAGES[field] ?? PROBLEM_MESSAGES.required)
-      : PROBLEM_MESSAGES[problem]
-  return i18n.global.t(key)
+/** Message explaining why `field` is refused, worded for the field when it is missing. */
+export function personProblemKey(field: PersonField, problem: PersonProblem): TranslationKey {
+  return problem === 'required'
+    ? (REQUIRED_MESSAGES[field] ?? PROBLEM_MESSAGES.required)
+    : PROBLEM_MESSAGES[problem]
 }
 
 /**

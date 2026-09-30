@@ -7,12 +7,10 @@
 import type { LeaderRosterGuardianResponse } from './leaderRosterGuardianResponse';
 
 export interface LeaderRosterDependentResponse {
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
+  firstName: string;
+  lastName: string;
   /** @nullable */
   age?: number | null;
-  guardian?: LeaderRosterGuardianResponse;
-  signedUpAt?: string;
+  guardian: LeaderRosterGuardianResponse;
+  signedUpAt: string;
 }

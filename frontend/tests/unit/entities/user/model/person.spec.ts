@@ -4,12 +4,10 @@ import {
   minorBirthDateRange,
   parseDependentPerson,
   parseIndependentPerson,
-  personProblemMessage,
+  personProblemKey,
   toUpdateUserInput,
 } from '@/entities/user'
 import type { DependentDraft, IndependentDraft } from '@/entities/user/model/person'
-
-import { t } from '../../../../support/render'
 
 const TODAY = '2026-07-04'
 
@@ -136,7 +134,7 @@ describe('minorBirthDateRange', () => {
   })
 })
 
-describe('personProblemMessage', () => {
+describe('personProblemKey', () => {
   it.each([
     ['firstName', 'required', 'entities.user.person.required'],
     ['gender', 'required', 'entities.user.person.genderRequired'],
@@ -148,7 +146,7 @@ describe('personProblemMessage', () => {
     ['birthDate', 'futureDate', 'entities.user.person.birthDateInvalid'],
     ['birthDate', 'notMinor', 'entities.user.person.birthDateNotMinor'],
   ] as const)('explains %s %s', (field, problem, key) => {
-    expect(personProblemMessage(field, problem)).toBe(t(key))
+    expect(personProblemKey(field, problem)).toBe(key)
   })
 })
 

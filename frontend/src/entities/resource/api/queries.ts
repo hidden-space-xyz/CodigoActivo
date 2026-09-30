@@ -1,45 +1,53 @@
-import { computed, toValue, type MaybeRefOrGetter } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { queryOptions } from '@tanstack/vue-query'
 
-import { usePagedList } from '@/shared/lib'
+import type { PagedListSource, ServerTableSource } from '@/shared/lib/paging'
 
-import { resourceQueryKeys } from './query-keys'
-import { getResourceByIdRequest, getResourcesPageRequest } from './requests'
+import type { LearningResourceSummary, ResourceListParams } from '../model/types'
+import {
+  getResourceListPageRequest,
+  getResourceRequest,
+  getResourcesPageRequest,
+  getResourceTypesRequest,
+} from './requests'
 
-/** Infinite list of public resources, newest first, filtered by the search term when not empty. */
-export function useResources(search: MaybeRefOrGetter<string>) {
-  const term = computed(() => toValue(search))
+/**
+ * Query keys of resources; `all` covers the resources themselves. Their types live apart, since
+ * no change to a resource alters them.
+ */
+export const resourceKeys = {
+  all: ['resources'] as const,
+  pages: (search: string) => [...resourceKeys.all, 'pages', search] as const,
+  detail: (id: string) => [...resourceKeys.all, 'detail', id] as const,
+  list: () => [...resourceKeys.all, 'list'] as const,
+  types: () => ['resource-types'] as const,
+}
 
-  const list = usePagedList({
-    queryKey: () => resourceQueryKeys.list(term.value),
-    fetchPage: (page, pageSize) => getResourcesPageRequest(term.value, page, pageSize),
-  })
+/** Query options of resources. */
+export const resourceQueries = {
+  /** A whole resource, or `null` when it does not exist. */
+  detail: (id: string) =>
+    queryOptions({
+      queryKey: resourceKeys.detail(id),
+      queryFn: () => getResourceRequest(id),
+    }),
+  /** Every resource type, for selectors and filters. */
+  types: () =>
+    queryOptions({
+      queryKey: resourceKeys.types(),
+      queryFn: () => getResourceTypesRequest(),
+    }),
+}
 
+/** Public resources matching `search`, newest first, loaded page by page. */
+export function resourcePages(search: string): PagedListSource<LearningResourceSummary> {
   return {
-    resources: list.items,
-    hasMore: list.hasMore,
-    loadMore: list.loadMore,
-    isFetchingMore: list.isFetchingMore,
-    isLoading: list.isLoading,
-    isError: list.isError,
+    queryKey: resourceKeys.pages(search),
+    fetchPage: (page, pageSize) => getResourcesPageRequest(search, page, pageSize),
   }
 }
 
-/** Public resource detail; `notFound` becomes true once the API answers 404 for the id. */
-export function useResourceDetail(resourceId: MaybeRefOrGetter<string>) {
-  const id = computed(() => toValue(resourceId))
-
-  const query = useQuery({
-    queryKey: computed(() => resourceQueryKeys.detail(id.value)),
-    queryFn: () => getResourceByIdRequest(id.value),
-  })
-
-  const notFound = computed(() => !query.isLoading.value && query.data.value === null)
-
-  return {
-    resource: query.data,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    notFound,
-  }
+/** Admin resource list, paged, filtered and sorted by the API. */
+export const resourceList: ServerTableSource<LearningResourceSummary, ResourceListParams> = {
+  queryKey: resourceKeys.list(),
+  fetchPage: (params) => getResourceListPageRequest(params),
 }

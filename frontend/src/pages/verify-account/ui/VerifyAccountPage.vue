@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-import { useAccountVerification } from '@/features/register'
-import { useLinkFragment } from '@/shared/lib'
-import { AppIcon, BaseButton, PageHead } from '@/shared/ui'
+import { useAccountVerification } from '../model/use-account-verification'
+import { useLinkFragment } from '@/shared/lib/navigation'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { PageHead } from '@/shared/ui/page-head'
 
 const linkParam = useLinkFragment()
 const { state, errorMessage, verify, resend, canResend, isResending } = useAccountVerification()
@@ -38,9 +40,9 @@ onMounted(() => {
             <p class="verify-card__text">
               {{ $t('pages.verifyAccount.successText') }}
             </p>
-            <BaseButton :to="{ name: 'login' }" variant="primary">{{
+            <BrandButton :to="{ name: 'login' }" variant="primary">{{
               $t('common.login')
-            }}</BaseButton>
+            }}</BrandButton>
           </template>
 
           <template v-else>
@@ -53,12 +55,17 @@ onMounted(() => {
               {{ $t('pages.verifyAccount.hint') }}
             </p>
             <div class="verify-card__actions">
-              <BaseButton v-if="canResend" variant="primary" :loading="isResending" @click="resend">
+              <BrandButton
+                v-if="canResend"
+                variant="primary"
+                :loading="isResending"
+                @click="resend"
+              >
                 {{ $t('pages.verifyAccount.resend') }}
-              </BaseButton>
-              <BaseButton :to="{ name: 'home' }" variant="ghost">{{
+              </BrandButton>
+              <BrandButton :to="{ name: 'home' }" variant="ghost">{{
                 $t('common.backToHome')
-              }}</BaseButton>
+              }}</BrandButton>
             </div>
           </template>
         </div>

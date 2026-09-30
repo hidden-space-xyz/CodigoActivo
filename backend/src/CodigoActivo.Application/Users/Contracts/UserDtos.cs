@@ -30,6 +30,10 @@ namespace CodigoActivo.Application.Users.Contracts;
 /// </param>
 /// <param name="Type">The type value.</param>
 /// <param name="TwoFactorMethod">Second factor the user presents when logging in.</param>
+/// <param name="EarlySignupEligible">
+/// Whether the account may sign up during the early signup: its membership type, or its guardian's for
+/// a dependent, is entitled to it.
+/// </param>
 public record UserResponse(
     Guid Id,
     string FirstName,
@@ -51,7 +55,8 @@ public record UserResponse(
     bool IsAdmin,
     bool IsInitialAdmin,
     UserTypeSummaryResponse? Type,
-    TwoFactorMethod TwoFactorMethod
+    TwoFactorMethod TwoFactorMethod,
+    bool EarlySignupEligible
 )
 {
     /// <summary>
@@ -79,7 +84,8 @@ public record UserResponse(
             false,
             false,
             null,
-            TwoFactorMethod.Email
+            TwoFactorMethod.Email,
+            false
         ) { }
 }
 

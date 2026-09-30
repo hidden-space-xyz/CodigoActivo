@@ -6,8 +6,6 @@
  */
 
 export interface CsrfTokenResponse {
-  /** @nullable */
-  token?: string | null;
-  /** @nullable */
-  headerName?: string | null;
+  token: string;
+  headerName: string;
 }

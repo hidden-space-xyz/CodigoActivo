@@ -171,20 +171,22 @@ hosted service keeps that table filled from an external list, replacing it only 
 
 ## Frontend
 
-The frontend follows Feature-Sliced Design. Imports flow downward, and slices at the same layer do not import
-one another. Steiger enforces the structure through `npm run lint:fsd`.
+The frontend follows Feature-Sliced Design 2.1, pages first. Imports flow downward, slices at the same layer do
+not import one another and each slice exposes its public API through `index.ts`; `@` maps to `src`. Code starts
+in the page that uses it and moves down to a feature or entity only when a second slice needs it. Steiger
+(`npm run lint:fsd`) enforces the structure, including that no slice has a single consumer.
 
-| Layer       | Responsibility                                                                  |
-| ----------- | ------------------------------------------------------------------------------- |
-| `app/`      | Application bootstrap, router, layouts and global configuration                 |
-| `pages/`    | Route-level composition, including the admin pages                              |
-| `widgets/`  | Reusable page sections composed from lower layers                               |
-| `features/` | User workflows such as authentication, registration and administration          |
-| `entities/` | Domain-facing types, API adapters, query state and entity UI                    |
-| `shared/`   | Generated client, HTTP client, UI primitives, utilities, configuration and i18n |
+| Layer       | Responsibility                                                                       |
+| ----------- | ------------------------------------------------------------------------------------ |
+| `app/`      | Bootstrap, route table and guards, layouts and global styles                         |
+| `pages/`    | One slice per route: its views, view models, single-page API access and helpers      |
+| `widgets/`  | Page chrome shared by several pages (site header and footer, admin shell)            |
+| `features/` | User actions reused by several pages (logout, emailing users or attendees)           |
+| `entities/` | Business models with their API adapters, query and mutation options, rules and UI    |
+| `shared/`   | Generated client, HTTP client, UI primitives, utilities, typed routes, config, i18n  |
 
-Slices expose a public API through `index.ts`; `@` maps to `src`. The generated API client is the only
-intentional deep-import area.
+Segments mean the same in every slice: `ui` components, `model` state and pure rules, `api` server access,
+`lib` pure helpers and `config` static content.
 
 ### API and server state
 
@@ -192,20 +194,30 @@ intentional deep-import area.
 `src/shared/api/generated/{endpoints,models}` using `src/shared/api/http-client.ts` as its request mutator.
 Generated files are disposable and must never be edited manually.
 
-Handwritten `api/requests.ts` modules isolate generated functions. Entity modules map wire DTOs to frontend
-models and expose TanStack Query composables; query keys come from each entity's `api/query-keys.ts` factory.
-Entity-scoped reads/mutations stay with the entity; workflows depending on session state, multiple entities or
-user interaction belong to a feature. Pages contain route composition and view-shaping only.
+The generated client is an anti-corruption boundary: only `api` segments import it, and their `mapper.ts`
+turns wire DTOs into the slice's own `model/types.ts`. Dates stay ISO strings; views format them. Entities
+expose query keys (`xKeys`), `queryOptions` factories (`xQueries`), paged sources for `useServerTable` and
+`usePagedList`, and `mutationOptions` factories (`xMutations`) that list the keys they refresh in
+`meta.invalidates`; the query client invalidates them after a successful mutation, and a page adds keys of
+another slice with `alsoInvalidates`. Reports read by a single page (event statistics, attendees, ratings,
+badges, roster and dashboard analytics) live in that page's `api` segment.
 
 Person field rules mirror the backend `User` rules in one place, `entities/user`: `usePersonForm` (and the
 `parseIndependentPerson`/`parseDependentPerson` functions behind it) validates and normalizes an independent
 account or a dependent and decides when a change needs the caller's password; the registration, profile,
 minors and admin user forms only bind fields and show its messages.
 
-### Routing, session and presentation
+### Views, forms, routing and session
 
-- Route guards resolve authentication and administrator access before entering protected pages.
-- Session state is a module-level reactive singleton backed by `GET /api/auth/me`; Pinia is not used.
+- Views are humble: `.vue` files bind to `model` composables and never create mutations, touch the query cache
+  or inspect API errors. Business rules are pure functions in `model` or `lib`.
+- Forms use `useForm` (`shared/lib/form`) around a pure `read(draft)` that returns the problem of each field
+  (a translation key in a `form.problems` group, or `true` for a red border only) and, without problems, the
+  value to send. Admin create/edit dialogs follow the `useCrudDialog` state machine.
+- Route names and params are typed in `shared/routes`. Route guards resolve authentication and administrator
+  access before entering protected pages; detail pages receive their path params as props.
+- The session is the `GET /api/auth/me` query in the TanStack Query cache, read through `useSession`; ending it
+  clears every other cached query. Pinia is not used.
 - Login is two pages: the password form navigates to `/login/verify`, which reads the pending challenge from
   `GET /api/auth/login/two-factor` (held in a cookie, so a reload survives) and only stores the user in the
   session once the second factor is accepted.
@@ -213,7 +225,11 @@ minors and admin user forms only bind fields and show its messages.
   `ApiError`. `ErrorCode` values map to Spanish messages under `errors.*` in
   `src/shared/i18n/locales/es.json`.
 - Light and dark themes use `--ca-*` CSS variables; Element Plus tokens map onto them.
-- User-facing frontend copy must go through Vue I18n. Spanish is currently the only locale.
+- User-facing frontend copy must go through Vue I18n. Spanish is currently the only locale. Only `shared` and
+  `app` use the global i18n instance; components call `useI18n` and pure helpers receive a `Translate`.
+- ESLint turns these boundaries into build failures: the generated client outside `api` segments, the global
+  i18n instance or Element Plus imperative feedback in pages, widgets, features or entities, and mutations,
+  cache access or API errors in views.
 
 ## Changing the API contract
 
