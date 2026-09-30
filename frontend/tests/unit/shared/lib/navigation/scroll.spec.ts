@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-
-import { scrollToTop } from '@/shared/lib'
+import { scrollToTop } from '@/shared/lib/navigation'
 
 describe('scrollToTop', () => {
   it('scrolls smoothly to the top', () => {

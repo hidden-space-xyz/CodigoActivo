@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest'
 
 import { PastEventCard } from '@/entities/event'
 
-import { buildPastEvent } from '../../../../support/fixtures/entities/models'
 import { renderWithProviders, t } from '../../../../support/render'
+import { buildPastEventSummary } from '../../../../support/models'
 
 describe('PastEventCard', () => {
   it('shows the finished event and links to its detail page', async () => {
-    const event = buildPastEvent()
+    const event = buildPastEventSummary()
     const { wrapper, router } = await renderWithProviders(PastEventCard, { props: { event } })
 
     expect(wrapper.find('a').attributes('href')).toBe('/events/event-0')
@@ -24,8 +24,8 @@ describe('PastEventCard', () => {
     expect(router.currentRoute.value.fullPath).toBe('/events/event-0')
   })
 
-  it('hides the event name and categories when empty', async () => {
-    const event = buildPastEvent({ eventName: '', categories: [] })
+  it('hides the subtitle and categories when empty', async () => {
+    const event = buildPastEventSummary({ subtitle: '', categories: [] })
     const { wrapper } = await renderWithProviders(PastEventCard, { props: { event } })
 
     expect(wrapper.find('.past-card__event').exists()).toBe(false)

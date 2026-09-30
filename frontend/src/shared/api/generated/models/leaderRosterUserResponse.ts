@@ -6,13 +6,11 @@
  */
 
 export interface LeaderRosterUserResponse {
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
+  firstName: string;
+  lastName: string;
   /** @nullable */
   email?: string | null;
   /** @nullable */
   phone?: string | null;
-  signedUpAt?: string;
+  signedUpAt: string;
 }

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AppIcon } from '@/shared/ui'
 
-import { formatDate, useMediaQuery } from '@/shared/lib'
-import { RANGE_OPTIONS, type RangePreset } from '../model/useDashboardRange'
+import { formatDate } from '@/shared/lib/date'
+import { useMediaQuery } from '@/shared/lib/media-query'
+import { AppIcon } from '@/shared/ui/app-icon'
+
+import { RANGE_OPTIONS, type RangePreset } from '../model/use-dashboard-range'
 
 const { t } = useI18n()
 
@@ -66,7 +68,7 @@ function onSelect(value: unknown): void {
       :aria-pressed="preset === option.value"
       @click="emit('preset', option.value)"
     >
-      {{ option.label }}
+      {{ $t(option.labelKey) }}
     </button>
 
     <el-popover

@@ -21,3 +21,9 @@ export const i18n = createI18n({
   fallbackLocale: 'es',
   messages: { es },
 })
+
+/**
+ * Translates a message the way `t` of `useI18n` does; pure helpers that build text take one so
+ * they never read the global instance.
+ */
+export type Translate = (key: TranslationKey, values?: Record<string, unknown>) => string

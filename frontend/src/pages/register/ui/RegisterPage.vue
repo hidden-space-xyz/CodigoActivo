@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import {
-  AgeGate,
-  RegistrationForm,
-  RegistrationSuccess,
-  useRegistration,
-} from '@/features/register'
-import { PageHeading } from '@/shared/ui'
+import { PageHeading } from '@/shared/ui/page-heading'
+
+import { useRegistration } from '../model/use-registration'
+import AgeGate from './AgeGate.vue'
+import RegistrationForm from './RegistrationForm.vue'
+import RegistrationSuccess from './RegistrationSuccess.vue'
 
 const {
   step,

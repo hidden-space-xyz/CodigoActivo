@@ -1,4 +1,4 @@
-import type { Gender } from '@/shared/api/generated/models'
+import type { Gender } from '@/entities/user/@x/account'
 
 /**
  * Values from the profile form for editing the signed-in adult's own data. Adults have no birth
@@ -62,4 +62,31 @@ export interface EventRatingInput {
   mostLiked: string
   leastLiked: string
   suggestions: string
+}
+
+/** Adult who registers an account, already checked and normalized by the registration form. */
+interface RegistrantInput {
+  readonly firstName: string
+  readonly lastName: string
+  readonly gender: Gender
+  readonly email: string
+  readonly phone: string
+  /** Optional second contact phone; `null` when none was given. */
+  readonly secondaryPhone: string | null
+  readonly nationalId: string
+  readonly promotionalConsent: boolean
+}
+
+/** Everything a registration sends: the adult, the password and the minors registered with them. */
+export interface RegistrationInput {
+  readonly adult: RegistrantInput
+  readonly password: string
+  readonly minors: readonly MinorInput[]
+}
+
+/** New password set with the one-time code of a reset link. */
+export interface ResetPasswordInput {
+  readonly userId: string
+  readonly otp: string
+  readonly newPassword: string
 }

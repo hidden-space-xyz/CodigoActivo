@@ -8,8 +8,7 @@ import type { HouseholdAssignmentRequest } from './householdAssignmentRequest';
 import type { TermsDecisionRequest } from './termsDecisionRequest';
 
 export interface AssignHouseholdRequest {
-  /** @nullable */
-  assignments?: HouseholdAssignmentRequest[] | null;
+  assignments: HouseholdAssignmentRequest[];
   /** @nullable */
   termsDecisions?: TermsDecisionRequest[] | null;
 }

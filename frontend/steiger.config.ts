@@ -6,9 +6,4 @@ export default defineConfig([
   {
     ignores: ['**/shared/api/generated/**'],
   },
-  {
-    rules: {
-      'fsd/insignificant-slice': 'off',
-    },
-  },
 ])

@@ -1,75 +1,77 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { fullName, genderLabelKey, type User } from '@/entities/user'
+import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
+import { ageFrom, formatDate, todayIso } from '@/shared/lib/date'
+import { type CsvValue, useCsvExport } from '@/shared/lib/download'
+import { useCrudFeedback } from '@/shared/lib/feedback'
+import { ActionButton } from '@/shared/ui/action-button'
+import { AdminPageHeader } from '@/shared/ui/admin-page-header'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { ColorTag } from '@/shared/ui/color-tag'
 import {
-  AdminPageHeader,
-  AppButton as Button,
-  AppIcon,
-  ColorTag,
   ColumnFilterDate,
   ColumnFilterSelect,
   ColumnSearch,
-} from '@/shared/ui'
-
-import { useUserStatusTypesList, useUserTypesList } from '@/entities/catalog'
-import {
-  GrantAdminDialog,
-  ResetTwoFactorDialog,
-  UserFormDialog,
-  useUsers,
-} from '@/features/manage-users'
-import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
-import { genderLabel } from '@/entities/user'
-import type { UpdateUserInput, User } from '@/entities/user'
-import { ApiError } from '@/shared/api'
-import type { CsvValue } from '@/shared/lib'
-import {
-  ageFrom,
-  formatDate,
-  fullName,
-  getErrorMessage,
   toSelectOptions,
-  todayIso,
-  useCrudFeedback,
-  useCsvExport,
-  useDeleteConfirm,
-} from '@/shared/lib'
+} from '@/shared/ui/column-filter'
+import { DataTable } from '@/shared/ui/data-table'
+
+import { useUsersAdmin } from '../model/use-users-admin'
+import AdminPasswordDialog from './AdminPasswordDialog.vue'
+import UserFormDialog from './UserFormDialog.vue'
+import UserTypeDialog from './UserTypeDialog.vue'
 
 const { t } = useI18n()
-
+const feedback = useCrudFeedback()
 const {
   table,
+  types,
+  statuses,
   relationFilter,
-  update,
-  remove,
-  changeType,
-  setAdmin,
-  resetTwoFactor,
-  fetchOne,
-  fetchAllUsers,
-} = useUsers()
-const userTypes = useUserTypesList()
-const userStatusTypes = useUserStatusTypesList()
-const feedback = useCrudFeedback()
-const { confirmDelete: requireDelete } = useDeleteConfirm()
+  showGuardianOf,
+  showDependentsOf,
+  clearRelationFilter,
+  editDialog,
+  editError,
+  openEdit,
+  saveUser,
+  saving,
+  typeDialog,
+  saveType,
+  changingType,
+  grantDialog,
+  grantError,
+  toggleAdmin,
+  grantAdmin,
+  settingAdmin,
+  resetDialog,
+  resetError,
+  openResetTwoFactor,
+  resetUserTwoFactor,
+  resettingTwoFactor,
+  confirmRemove,
+} = useUsersAdmin()
 const { sendToUsers, usersAudience } = useSendEmail()
 
-const dialogVisible = ref(false)
-const selected = ref<User | null>(null)
-const editError = ref('')
-const loadingDetail = ref(false)
+const editVisible = editDialog.visible
+const editedUser = editDialog.editing
+const loadingUser = editDialog.loading
+const typeVisible = typeDialog.visible
+const typedUser = typeDialog.editing
+const grantVisible = grantDialog.visible
+const grantedUser = grantDialog.editing
+const resetVisible = resetDialog.visible
+const resetUser = resetDialog.editing
 
-const typeDialogVisible = ref(false)
-const typeUser = ref<User | null>(null)
-const selectedUserTypeId = ref<string | null>(null)
-
-const grantDialogVisible = ref(false)
-const grantUser = ref<User | null>(null)
-const grantError = ref('')
-
-const resetTwoFactorVisible = ref(false)
-const resetTwoFactorUser = ref<User | null>(null)
-const resetTwoFactorError = ref('')
+const statusOptions = computed(() => toSelectOptions(statuses.data.value))
+const typeOptions = computed(() => toSelectOptions(types.data.value))
+const yesNoOptions: { label: string; value: boolean }[] = [
+  { label: t('common.yes'), value: true },
+  { label: t('common.no'), value: false },
+]
 
 function birthDateWithAge(user: User): string {
   const formatted = formatDate(user.birthDate)
@@ -80,156 +82,6 @@ function birthDateWithAge(user: User): string {
 
 function dependentsLabel(count: number): string {
   return t('pages.admin.users.dependentsLabel', { count }, count)
-}
-
-const statusOptions = computed(() => toSelectOptions(userStatusTypes.data.value))
-
-const typeOptions = computed(() => toSelectOptions(userTypes.data.value))
-
-const yesNoOptions: { label: string; value: boolean }[] = [
-  { label: t('common.yes'), value: true },
-  { label: t('common.no'), value: false },
-]
-
-function showTutorOf(user: User): void {
-  if (!user.parentId) return
-  table.clearFilters()
-  relationFilter.value = {
-    label: t('pages.admin.users.relation.tutorOf', { fullName: fullName(user) }),
-    params: { id: user.parentId },
-  }
-}
-
-function showDependentsOf(user: User): void {
-  if (!user.id) return
-  table.clearFilters()
-  relationFilter.value = {
-    label: t('pages.admin.users.relation.dependentsOf', { fullName: fullName(user) }),
-    params: { parentId: user.id },
-  }
-}
-
-function clearRelationFilter(): void {
-  relationFilter.value = null
-}
-
-async function openEdit(user: User): Promise<void> {
-  if (loadingDetail.value) return
-  editError.value = ''
-  selected.value = user
-  if (user.id) {
-    loadingDetail.value = true
-    selected.value = (await fetchOne(user.id).catch(() => null)) ?? user
-    loadingDetail.value = false
-  }
-  dialogVisible.value = true
-}
-
-function onSubmit(body: UpdateUserInput): void {
-  if (!selected.value?.id) return
-  editError.value = ''
-  update.mutate(
-    { id: selected.value.id, body },
-    {
-      onSuccess: () => {
-        feedback.success(t('pages.admin.users.toasts.updated'))
-        dialogVisible.value = false
-      },
-      onError: (error) => {
-        if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
-          editError.value = getErrorMessage(error)
-          return
-        }
-        feedback.error(error)
-      },
-    },
-  )
-}
-
-function openChangeType(user: User): void {
-  typeUser.value = user
-  selectedUserTypeId.value = user.type?.id ?? null
-  typeDialogVisible.value = true
-}
-
-function toggleAdmin(user: User, value: boolean): void {
-  if (!user.id) return
-  if (value) {
-    grantUser.value = user
-    grantError.value = ''
-    grantDialogVisible.value = true
-    return
-  }
-  setAdmin.mutate(
-    { id: user.id, isAdmin: false },
-    {
-      onSuccess: () => feedback.success(t('pages.admin.users.toasts.adminRevoked')),
-      onError: (error) => feedback.error(error),
-    },
-  )
-}
-
-function submitGrantAdmin(currentPassword: string): void {
-  if (!grantUser.value?.id) return
-  grantError.value = ''
-  setAdmin.mutate(
-    { id: grantUser.value.id, isAdmin: true, currentPassword },
-    {
-      onSuccess: () => {
-        feedback.success(t('pages.admin.users.toasts.adminGranted'))
-        grantDialogVisible.value = false
-      },
-      onError: (error) => {
-        if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
-          grantError.value = getErrorMessage(error)
-          return
-        }
-        feedback.error(error)
-      },
-    },
-  )
-}
-
-function openResetTwoFactor(user: User): void {
-  if (!user.id) return
-  resetTwoFactorUser.value = user
-  resetTwoFactorError.value = ''
-  resetTwoFactorVisible.value = true
-}
-
-function submitResetTwoFactor(currentPassword: string): void {
-  if (!resetTwoFactorUser.value?.id) return
-  resetTwoFactorError.value = ''
-  resetTwoFactor.mutate(
-    { id: resetTwoFactorUser.value.id, currentPassword },
-    {
-      onSuccess: () => {
-        feedback.success(t('pages.admin.users.toasts.twoFactorReset'))
-        resetTwoFactorVisible.value = false
-      },
-      onError: (error) => {
-        if (error instanceof ApiError && error.code === 'UserCurrentPasswordIncorrect') {
-          resetTwoFactorError.value = getErrorMessage(error)
-          return
-        }
-        feedback.error(error)
-      },
-    },
-  )
-}
-
-function submitChangeType(): void {
-  if (!typeUser.value?.id || !selectedUserTypeId.value) return
-  changeType.mutate(
-    { id: typeUser.value.id, userTypeId: selectedUserTypeId.value },
-    {
-      onSuccess: () => {
-        feedback.success(t('pages.admin.users.toasts.typeUpdated'))
-        typeDialogVisible.value = false
-      },
-      onError: (error) => feedback.error(error),
-    },
-  )
 }
 
 const exportHeaders = [
@@ -257,8 +109,8 @@ function exportRow(user: User): CsvValue[] {
     user.secondaryPhone,
     user.nationalId,
     formatDate(user.birthDate),
-    user.gender ? genderLabel(user.gender) : null,
-    user.status?.name,
+    t(genderLabelKey(user.gender)),
+    user.status.name,
     user.type?.name,
     user.isAdmin ? t('common.yes') : t('common.no'),
     user.promotionalConsent ? t('common.yes') : t('common.no'),
@@ -267,7 +119,7 @@ function exportRow(user: User): CsvValue[] {
 }
 
 const { exporting, exportCsv } = useCsvExport<User>({
-  fetchRows: fetchAllUsers,
+  fetchRows: table.fetchAll,
   headers: exportHeaders,
   toRow: exportRow,
   filename: () => t('pages.admin.users.export.filename', { date: todayIso() }),
@@ -292,20 +144,6 @@ const {
   fetchAudience: (user) => usersAudience(user ? { id: user.id } : table.filterParams.value),
   onError: (error) => feedback.error(error),
 })
-
-function confirmDelete(user: User): void {
-  requireDelete({
-    header: t('pages.admin.users.delete.header'),
-    message: t('pages.admin.users.delete.message', { fullName: fullName(user) }),
-    accept: () => {
-      if (!user.id) return
-      remove.mutate(user.id, {
-        onSuccess: () => feedback.success(t('pages.admin.users.toasts.deleted')),
-        onError: (error) => feedback.error(error),
-      })
-    },
-  })
-}
 </script>
 
 <template>
@@ -315,7 +153,7 @@ function confirmDelete(user: User): void {
       :subtitle="$t('pages.admin.users.header.subtitle')"
     >
       <template #actions>
-        <Button
+        <ActionButton
           :label="$t('pages.admin.users.export.label')"
           :tooltip="$t('pages.admin.users.export.tooltip')"
           icon="download"
@@ -323,7 +161,7 @@ function confirmDelete(user: User): void {
           :disabled="table.total.value === 0"
           @click="exportCsv"
         />
-        <Button
+        <ActionButton
           :label="$t('pages.admin.users.email.bulkLabel')"
           :tooltip="$t('pages.admin.users.email.bulkTooltip')"
           icon="envelope"
@@ -337,7 +175,7 @@ function confirmDelete(user: User): void {
     <div v-if="relationFilter" class="relation-filter">
       <span class="relation-filter__icon"><AppIcon name="filter" /></span>
       <span class="relation-filter__label">{{ relationFilter.label }}</span>
-      <Button
+      <ActionButton
         icon="times"
         text
         circle
@@ -347,16 +185,11 @@ function confirmDelete(user: User): void {
       />
     </div>
 
-    <el-table
-      v-loading="table.loading.value"
-      v-bind="table.tableProps.value"
-      @sort-change="table.onSortChange"
+    <DataTable
+      :table="table"
+      :empty-text="$t('pages.admin.users.empty.none')"
+      :error-text="$t('pages.admin.users.empty.error')"
     >
-      <template #empty>
-        <span v-if="table.isError.value">{{ $t('pages.admin.users.empty.error') }}</span>
-        <span v-else>{{ $t('pages.admin.users.empty.none') }}</span>
-      </template>
-
       <el-table-column prop="firstName" sortable="custom" min-width="170">
         <template #header>
           <ColumnSearch
@@ -441,7 +274,7 @@ function confirmDelete(user: User): void {
           />
         </template>
         <template #default="{ row }">
-          <ColorTag v-if="row.status?.name" :value="row.status.name" :color="row.status.color" />
+          <ColorTag v-if="row.status.name" :value="row.status.name" :color="row.status.color" />
           <span v-else>—</span>
         </template>
       </el-table-column>
@@ -455,7 +288,7 @@ function confirmDelete(user: User): void {
           />
         </template>
         <template #default="{ row }">
-          <ColorTag v-if="row.type" :value="row.type.name ?? ''" :color="row.type.color" />
+          <ColorTag v-if="row.type" :value="row.type.name" :color="row.type.color" />
           <span v-else>—</span>
         </template>
       </el-table-column>
@@ -467,25 +300,25 @@ function confirmDelete(user: User): void {
       >
         <template #default="{ row }">
           <div class="family-cell">
-            <Button
+            <ActionButton
               v-if="row.parentId"
-              :label="row.parentName ?? '—'"
+              :label="row.parentName"
               icon="user"
               text
               size="small"
               :tooltip="$t('pages.admin.users.tooltips.showTutor')"
-              @click="showTutorOf(row)"
+              @click="showGuardianOf(row)"
             />
-            <Button
-              v-if="(row.dependentCount ?? 0) > 0"
-              :label="dependentsLabel(row.dependentCount ?? 0)"
+            <ActionButton
+              v-if="row.dependentCount > 0"
+              :label="dependentsLabel(row.dependentCount)"
               icon="users"
               text
               size="small"
               :tooltip="$t('pages.admin.users.tooltips.showDependents')"
               @click="showDependentsOf(row)"
             />
-            <span v-if="!row.parentId && (row.dependentCount ?? 0) === 0">—</span>
+            <span v-if="!row.parentId && row.dependentCount === 0">—</span>
           </div>
         </template>
       </el-table-column>
@@ -500,8 +333,8 @@ function confirmDelete(user: User): void {
         </template>
         <template #default="{ row }">
           <el-switch
-            :model-value="!!row.isAdmin"
-            :disabled="setAdmin.isPending.value || row.isInitialAdmin"
+            :model-value="row.isAdmin"
+            :disabled="settingAdmin || row.isInitialAdmin"
             :aria-label="$t('pages.admin.users.aria.admin')"
             @update:model-value="
               (value: string | number | boolean) => toggleAdmin(row, value === true)
@@ -512,24 +345,24 @@ function confirmDelete(user: User): void {
       <el-table-column :label="$t('common.actions')" width="240" align="center" fixed="right">
         <template #default="{ row }">
           <div class="ca-row-actions">
-            <Button
+            <ActionButton
               icon="pencil"
               type="success"
               text
               circle
               :aria-label="$t('common.edit')"
-              :disabled="loadingDetail"
+              :disabled="loadingUser"
               @click="openEdit(row)"
             />
-            <Button
+            <ActionButton
               icon="sync"
               text
               circle
               class="ca-action-icon--change-type"
               :aria-label="$t('pages.admin.users.aria.changeType')"
-              @click="openChangeType(row)"
+              @click="typeDialog.openEdit(row)"
             />
-            <Button
+            <ActionButton
               v-if="row.email"
               icon="envelope"
               text
@@ -538,7 +371,7 @@ function confirmDelete(user: User): void {
               :aria-label="$t('pages.admin.users.aria.sendEmail')"
               @click="openEmail(row)"
             />
-            <Button
+            <ActionButton
               v-if="row.email"
               icon="undo"
               text
@@ -547,49 +380,62 @@ function confirmDelete(user: User): void {
               :aria-label="$t('pages.admin.users.aria.resetTwoFactor')"
               @click="openResetTwoFactor(row)"
             />
-            <Button
+            <ActionButton
               icon="trash"
               text
               circle
               type="danger"
               :aria-label="$t('common.delete')"
               :disabled="row.isInitialAdmin"
-              @click="confirmDelete(row)"
+              @click="confirmRemove(row)"
             />
           </div>
         </template>
       </el-table-column>
-    </el-table>
-
-    <el-pagination
-      v-bind="table.paginationProps.value"
-      class="table-pagination"
-      @current-change="table.onCurrentPageChange"
-      @size-change="table.onPageSizeChange"
-    />
+    </DataTable>
 
     <UserFormDialog
-      v-model:visible="dialogVisible"
-      :user="selected"
-      :saving="update.isPending.value"
+      v-model:visible="editVisible"
+      :user="editedUser"
+      :saving="saving"
       :error="editError"
-      @submit="onSubmit"
+      @submit="saveUser"
     />
 
-    <GrantAdminDialog
-      v-model:visible="grantDialogVisible"
-      :user="grantUser"
-      :saving="setAdmin.isPending.value"
+    <AdminPasswordDialog
+      v-model:visible="grantVisible"
+      :title="$t('pages.admin.users.grantAdmin.header')"
+      :message="
+        $t('pages.admin.users.grantAdmin.message', { fullName: fullName(grantedUser ?? {}) })
+      "
+      :confirm-label="$t('pages.admin.users.grantAdmin.confirm')"
+      input-id="grant-admin-password"
+      width="min(440px, 92vw)"
+      :saving="settingAdmin"
       :error="grantError"
-      @submit="submitGrantAdmin"
+      @submit="grantAdmin"
     />
 
-    <ResetTwoFactorDialog
-      v-model:visible="resetTwoFactorVisible"
-      :user="resetTwoFactorUser"
-      :saving="resetTwoFactor.isPending.value"
-      :error="resetTwoFactorError"
-      @submit="submitResetTwoFactor"
+    <AdminPasswordDialog
+      v-model:visible="resetVisible"
+      :title="$t('pages.admin.users.resetTwoFactor.header')"
+      :message="
+        $t('pages.admin.users.resetTwoFactor.message', { fullName: fullName(resetUser ?? {}) })
+      "
+      :confirm-label="$t('pages.admin.users.resetTwoFactor.confirm')"
+      input-id="reset-two-factor-password"
+      width="min(460px, 92vw)"
+      :saving="resettingTwoFactor"
+      :error="resetError"
+      @submit="resetUserTwoFactor"
+    />
+
+    <UserTypeDialog
+      v-model:visible="typeVisible"
+      :user="typedUser"
+      :options="typeOptions"
+      :saving="changingType"
+      @submit="saveType"
     />
 
     <SendEmailDialog
@@ -599,53 +445,10 @@ function confirmDelete(user: User): void {
       :without-consent="emailWithoutConsent"
       @submit="submitEmail"
     />
-
-    <el-dialog
-      v-model="typeDialogVisible"
-      :title="$t('pages.admin.users.typeDialog.header')"
-      width="min(92vw, 420px)"
-    >
-      <div class="form__field">
-        <label for="user-type">{{ $t('pages.admin.users.typeDialog.typeLabel') }}</label>
-        <el-select
-          id="user-type"
-          v-model="selectedUserTypeId"
-          :placeholder="$t('pages.admin.users.typeDialog.placeholder')"
-          class="form__select"
-        >
-          <el-option
-            v-for="option in typeOptions"
-            :key="option.value"
-            :label="option.label"
-            :value="option.value"
-          />
-        </el-select>
-      </div>
-      <template #footer>
-        <Button
-          :label="$t('common.cancel')"
-          text
-          :disabled="changeType.isPending.value"
-          @click="typeDialogVisible = false"
-        />
-        <Button
-          :label="$t('common.apply')"
-          type="primary"
-          :loading="changeType.isPending.value"
-          :disabled="!selectedUserTypeId"
-          @click="submitChangeType"
-        />
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <style scoped>
-.table-pagination {
-  margin-top: 14px;
-  justify-content: flex-end;
-}
-
 .relation-filter {
   display: inline-flex;
   align-items: center;
@@ -684,21 +487,5 @@ function confirmDelete(user: User): void {
   flex-wrap: wrap;
   align-items: center;
   gap: 2px;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__select {
-  width: 100%;
 }
 </style>

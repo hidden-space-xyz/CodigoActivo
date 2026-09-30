@@ -20,6 +20,11 @@ export class ApiError extends Error {
   }
 }
 
+/** Whether `error` is an `ApiError` carrying the backend error `code`. */
+export function hasErrorCode(error: unknown, code: ErrorCode): boolean {
+  return error instanceof ApiError && error.code === code
+}
+
 let csrfToken: string | null = null
 let csrfHeaderName = 'X-CSRF-TOKEN'
 let csrfTokenPromise: Promise<void> | null = null

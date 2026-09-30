@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
-import { useNewsDetail } from '@/entities/news-item'
-import { i18n } from '@/shared/i18n'
-import { BaseButton } from '@/shared/ui'
-import RichTextContent from '@/shared/ui/RichTextContent.vue'
-import { absoluteUrl, fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
-import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
+import { newsQueries } from '@/entities/news-item'
+import { fileContentUrl } from '@/shared/api'
+import { formatDate } from '@/shared/lib/date'
+import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/rich-text'
+import { absoluteUrl, type SeoData, useSeo } from '@/shared/lib/seo'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { RichTextContent } from '@/shared/ui/rich-text-content'
 
 const props = defineProps<{
   /** News item id from the `/news/:newsItemId` route param. */
@@ -17,7 +19,8 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const route = useRoute()
-const { newsItem, isLoading, notFound } = useNewsDetail(() => props.newsItemId)
+const { data: newsItem, isLoading } = useQuery(() => newsQueries.detail(props.newsItemId))
+const notFound = computed(() => !isLoading.value && newsItem.value === null)
 
 const posterUrl = computed(() => fileContentUrl(newsItem.value?.thumbnailId))
 const hasDescription = computed(() => !isRichTextEmpty(newsItem.value?.description))
@@ -32,16 +35,16 @@ const seo = computed<SeoData | undefined>(() => {
     '@type': 'NewsArticle',
     headline: current.title,
     url: absoluteUrl(route.path),
-    author: { '@type': 'Organization', name: i18n.global.t('seo.siteName') },
+    author: { '@type': 'Organization', name: t('seo.siteName') },
     publisher: {
       '@type': 'Organization',
-      name: i18n.global.t('seo.siteName'),
+      name: t('seo.siteName'),
       logo: { '@type': 'ImageObject', url: absoluteUrl('/apple-touch-icon.png') },
     },
   }
   if (description) jsonLd.description = description
   if (posterUrl.value) jsonLd.image = absoluteUrl(posterUrl.value)
-  if (current.publishedAt) jsonLd.datePublished = current.publishedAt
+  jsonLd.datePublished = current.createdAt
   if (current.updatedAt) jsonLd.dateModified = current.updatedAt
   return {
     title: current.title,
@@ -59,9 +62,9 @@ useSeo(seo)
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BaseButton variant="back" :to="{ name: 'news' }">
+        <BrandButton variant="back" :to="{ name: 'news' }">
           {{ $t('pages.newsDetail.back') }}
-        </BaseButton>
+        </BrandButton>
       </div>
     </section>
 
@@ -73,7 +76,7 @@ useSeo(seo)
 
     <template v-else>
       <article class="detail ca-container--narrow">
-        <time v-if="newsItem.date" class="detail__date">{{ newsItem.date }}</time>
+        <time class="detail__date">{{ formatDate(newsItem.createdAt) }}</time>
         <h1 class="detail__title">{{ newsItem.title }}</h1>
         <p v-if="newsItem.subtitle" class="detail__subtitle">{{ newsItem.subtitle }}</p>
 

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
-import { useResourceDetail } from '@/entities/resource'
-import { BaseButton } from '@/shared/ui'
-import RichTextContent from '@/shared/ui/RichTextContent.vue'
-import { fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
-import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
+import { resourceQueries } from '@/entities/resource'
+import { fileContentUrl } from '@/shared/api'
+import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/rich-text'
+import { type SeoData, useSeo } from '@/shared/lib/seo'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { RichTextContent } from '@/shared/ui/rich-text-content'
 
 const props = defineProps<{
   /** Id from the `/resources/:resourceId` route param; link resources redirect to their URL. */
@@ -15,7 +17,8 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
-const { resource, isLoading, notFound } = useResourceDetail(() => props.resourceId)
+const { data: resource, isLoading } = useQuery(() => resourceQueries.detail(props.resourceId))
+const notFound = computed(() => !isLoading.value && resource.value === null)
 
 const posterUrl = computed(() => fileContentUrl(resource.value?.thumbnailId))
 const hasDescription = computed(() => !isRichTextEmpty(resource.value?.description))
@@ -46,9 +49,9 @@ watchEffect(() => {
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BaseButton variant="back" :to="{ name: 'resources' }">
+        <BrandButton variant="back" :to="{ name: 'resources' }">
           {{ $t('pages.resourceDetail.back') }}
-        </BaseButton>
+        </BrandButton>
       </div>
     </section>
 

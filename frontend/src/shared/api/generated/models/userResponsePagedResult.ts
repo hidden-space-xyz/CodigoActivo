@@ -7,9 +7,8 @@
 import type { UserResponse } from './userResponse';
 
 export interface UserResponsePagedResult {
-  /** @nullable */
-  items?: UserResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: UserResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

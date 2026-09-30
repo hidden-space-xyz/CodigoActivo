@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { NewsCard, useNews } from '@/entities/news-item'
-import { AppButton, PageHeading, SearchInput, YearFilter } from '@/shared/ui'
+import { NewsCard } from '@/entities/news-item'
+import { ActionButton } from '@/shared/ui/action-button'
+import { PageHeading } from '@/shared/ui/page-heading'
+import { SearchInput } from '@/shared/ui/search-input'
+import { YearFilter } from '@/shared/ui/year-filter'
+
+import { useNewsArchive } from '../model/use-news-archive'
 
 const {
   years,
@@ -15,7 +20,7 @@ const {
   loadMore,
   isFetchingMore,
   isLoading,
-} = useNews()
+} = useNewsArchive()
 
 const isEmpty = computed(() => !isLoading.value && news.value.length === 0)
 </script>
@@ -48,7 +53,7 @@ const isEmpty = computed(() => !isLoading.value && news.value.length === 0)
           <NewsCard v-for="newsItem in news" :key="newsItem.id" :news-item="newsItem" />
         </div>
         <div v-if="hasMore" class="news-more">
-          <AppButton
+          <ActionButton
             :label="$t('common.loadMore')"
             plain
             :loading="isFetchingMore"

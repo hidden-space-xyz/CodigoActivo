@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Common;
 
@@ -16,8 +17,12 @@ public sealed record GetEventByIdQuery(Guid EventId) : IQuery<Result<EventRespon
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetEventByIdQueryHandler(IReadStore readStore, IQueryExecutor executor)
-    : IQueryHandler<GetEventByIdQuery, Result<EventResponse>>
+/// <param name="clock">Clock that places the event in its stage.</param>
+public sealed class GetEventByIdQueryHandler(
+    IReadStore readStore,
+    IQueryExecutor executor,
+    IClock clock
+) : IQueryHandler<GetEventByIdQuery, Result<EventResponse>>
 {
     /// <summary>
     /// Handles the request to retrieve event by identifier.
@@ -34,6 +39,8 @@ public sealed class GetEventByIdQueryHandler(IReadStore readStore, IQueryExecuto
             readStore.Events.Where(e => e.Id == query.EventId).Select(EventProjections.Event),
             ct
         );
-        return response is null ? Error.NotFound(ErrorCode.EventNotFound) : response;
+        return response is null
+            ? Error.NotFound(ErrorCode.EventNotFound)
+            : EventStages.Stamp(response, clock.UtcNow, clock.Today);
     }
 }

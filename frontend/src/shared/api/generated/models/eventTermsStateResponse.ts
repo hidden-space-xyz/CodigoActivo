@@ -7,7 +7,6 @@
 import type { EventTermsDocumentStateResponse } from './eventTermsDocumentStateResponse';
 
 export interface EventTermsStateResponse {
-  /** @nullable */
-  documents?: EventTermsDocumentStateResponse[] | null;
-  signupBlocked?: boolean;
+  documents: EventTermsDocumentStateResponse[];
+  signupBlocked: boolean;
 }

@@ -6,7 +6,6 @@
  */
 
 export interface SignupRoleResponse {
-  id?: string;
-  /** @nullable */
-  name?: string | null;
+  id: string;
+  name: string;
 }

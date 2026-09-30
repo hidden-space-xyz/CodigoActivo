@@ -1,34 +1,16 @@
 export type {
-  ChangePasswordInput,
   DeleteAccountInput,
   DisableAuthenticatorInput,
   EventRatingInput,
-  MinorInput,
-  UpdateProfileInput,
+  RegistrationInput,
 } from './model/account-inputs'
 export type {
-  AccountChild,
   AccountCertificate,
+  AccountChild,
   AccountHistoryEntry,
   AccountProfile,
   AuthenticatorSetup,
 } from './model/types'
-export { accountQueryKeys } from './api/query-keys'
-export {
-  addAccountChildRequest,
-  beginAuthenticatorSetupRequest,
-  changeAccountPasswordRequest,
-  confirmAuthenticatorRequest,
-  deleteAccountChildRequest,
-  deleteAccountRequest,
-  disableAuthenticatorRequest,
-  getAccountChildrenRequest,
-  getAccountCertificatesRequest,
-  getAccountDeletionAllowedRequest,
-  getAccountHistoryRequest,
-  getAccountProfileRequest,
-  requestAccountDeletionCodeRequest,
-  saveAccountEventRatingRequest,
-  updateAccountChildRequest,
-  updateAccountProfileRequest,
-} from './api/requests'
+export { isPasswordTooShort } from './model/password'
+export { accountKeys, accountQueries } from './api/queries'
+export { accountMutations } from './api/mutations'

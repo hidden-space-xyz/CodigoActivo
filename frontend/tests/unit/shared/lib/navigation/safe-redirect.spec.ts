@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-
-import { toLocalRedirect } from '@/shared/lib'
+import { toLocalRedirect } from '@/shared/lib/navigation'
 
 describe('toLocalRedirect', () => {
   it.each(['/', '/account', '/admin/users?search=ana&page=2', '/events#top'])(

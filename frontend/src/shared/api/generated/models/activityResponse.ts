@@ -7,26 +7,21 @@
 import type { ActivityRoleCapacityResponse } from './activityRoleCapacityResponse';
 
 export interface ActivityResponse {
-  id?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  description?: string | null;
-  /** @nullable */
-  location?: string | null;
-  activityStartsAt?: string;
-  activityEndsAt?: string;
-  eventId?: string;
-  modalityId?: string;
-  /** @nullable */
-  modalityName?: string | null;
-  thumbnailId?: string;
-  /** @nullable */
-  roleCapacities?: ActivityRoleCapacityResponse[] | null;
-  createdAt?: string;
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  activityStartsAt: string;
+  activityEndsAt: string;
+  eventId: string;
+  modalityId: string;
+  modalityName: string;
+  thumbnailId: string;
+  roleCapacities: ActivityRoleCapacityResponse[];
+  createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  createdBy?: string;
+  createdBy: string;
   /** @nullable */
   updatedBy?: string | null;
 }

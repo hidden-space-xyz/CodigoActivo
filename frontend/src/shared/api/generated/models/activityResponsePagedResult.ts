@@ -7,9 +7,8 @@
 import type { ActivityResponse } from './activityResponse';
 
 export interface ActivityResponsePagedResult {
-  /** @nullable */
-  items?: ActivityResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: ActivityResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

@@ -7,16 +7,13 @@
 import type { EventHistoryActivityResponse } from './eventHistoryActivityResponse';
 
 export interface EventHistoryResponse {
-  eventId?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  subtitle?: string | null;
-  eventStartsAt?: string;
-  eventEndsAt?: string;
-  thumbnailId?: string;
-  isPast?: boolean;
-  canRate?: boolean;
-  /** @nullable */
-  activities?: EventHistoryActivityResponse[] | null;
+  eventId: string;
+  title: string;
+  subtitle: string;
+  eventStartsAt: string;
+  eventEndsAt: string;
+  thumbnailId: string;
+  isPast: boolean;
+  canRate: boolean;
+  activities: EventHistoryActivityResponse[];
 }

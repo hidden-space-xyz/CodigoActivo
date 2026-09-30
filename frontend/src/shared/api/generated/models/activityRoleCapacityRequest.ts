@@ -6,7 +6,7 @@
  */
 
 export interface ActivityRoleCapacityRequest {
-  activityRoleTypeId?: string;
+  activityRoleTypeId: string;
   /** @nullable */
   desiredCount?: number | null;
 }

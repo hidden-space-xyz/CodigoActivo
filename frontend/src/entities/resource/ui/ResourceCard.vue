@@ -2,8 +2,11 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { formatDate } from '@/shared/lib/date'
+import { CardDate } from '@/shared/ui/card-date'
+import { ListThumbnail } from '@/shared/ui/list-thumbnail'
+
 import type { LearningResourceSummary } from '../model/types'
-import { CardDate, ListThumbnail } from '@/shared/ui'
 
 const props = defineProps<{
   /** Resource card; links to `url` as a plain anchor when set, otherwise to the detail route. */
@@ -25,7 +28,10 @@ const linkAttrs = computed(() =>
   >
     <ListThumbnail :thumbnail-id="resource.thumbnailId" :alt="resource.title" />
 
-    <CardDate :label="$t('entities.resource.card.dateLabel')" :value="resource.date" />
+    <CardDate
+      :label="$t('entities.resource.card.dateLabel')"
+      :value="formatDate(resource.createdAt)"
+    />
     <h3 class="resource-card__title">{{ resource.title }}</h3>
     <p v-if="resource.subtitle" class="resource-card__subtitle">{{ resource.subtitle }}</p>
   </component>

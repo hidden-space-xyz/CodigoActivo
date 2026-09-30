@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useLogin } from '@/features/auth'
-import { BaseButton, PageHeading } from '@/shared/ui'
+import { useLogin } from '../model/use-login'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { PageHeading } from '@/shared/ui/page-heading'
 
 const { form, submit, isSubmitting, isError } = useLogin()
 </script>
@@ -51,9 +52,9 @@ const { form, submit, isSubmitting, isError } = useLogin()
             {{ $t('pages.login.error') }}
           </p>
 
-          <BaseButton type="submit" variant="primary" block :loading="isSubmitting">
+          <BrandButton type="submit" variant="primary" block :loading="isSubmitting">
             {{ $t('common.login') }}
-          </BaseButton>
+          </BrandButton>
         </form>
 
         <p class="login-alt">

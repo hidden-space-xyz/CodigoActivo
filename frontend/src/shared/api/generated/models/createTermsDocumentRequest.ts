@@ -6,8 +6,6 @@
  */
 
 export interface CreateTermsDocumentRequest {
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  description?: string | null;
+  name: string;
+  description: string;
 }

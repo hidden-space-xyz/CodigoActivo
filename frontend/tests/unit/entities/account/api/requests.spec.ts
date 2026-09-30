@@ -17,11 +17,14 @@ import {
   saveAccountEventRatingRequest,
   updateAccountChildRequest,
   updateAccountProfileRequest,
-} from '@/entities/account'
+  forgotPasswordRequest,
+  registerRequest,
+  resendVerificationRequest,
+  resetPasswordRequest,
+  verifyAccountRequest,
+} from '@/entities/account/api/requests'
 import { ApiError } from '@/shared/api'
-import type { EventCertificateResponse, EventHistoryResponse } from '@/shared/api/generated/models'
 
-import { buildUserResponse } from '../../../../support/fixtures/user'
 import {
   apiError,
   http,
@@ -30,6 +33,12 @@ import {
   server,
   TEST_CSRF_TOKEN,
 } from '../../../../support/server'
+import {
+  buildCertificateResponse,
+  buildDependentResponse,
+  buildHistoryResponse,
+  buildUserResponse,
+} from '../../../../support/builders'
 
 describe('account requests', () => {
   describe('getAccountProfileRequest', () => {
@@ -203,12 +212,11 @@ describe('account requests', () => {
     expect(deleted).toEqual(['child-1'])
   })
 
-  it('asks whether the own account may be deleted, refusing when the answer is missing', async () => {
-    const answers = [{ allowed: true }, { allowed: false }, {}]
+  it('asks whether the own account may be deleted', async () => {
+    const answers = [{ allowed: true }, { allowed: false }]
     server.use(http.get('/api/me/deletion', () => HttpResponse.json(answers.shift())))
 
     await expect(getAccountDeletionAllowedRequest()).resolves.toBe(true)
-    await expect(getAccountDeletionAllowedRequest()).resolves.toBe(false)
     await expect(getAccountDeletionAllowedRequest()).resolves.toBe(false)
   })
 
@@ -330,7 +338,7 @@ describe('account requests', () => {
   })
 
   it('maps the event history', async () => {
-    const history: EventHistoryResponse[] = [{ eventId: 'event-1', title: 'Día', activities: [] }]
+    const history = [buildHistoryResponse({ title: 'Día', activities: [] })]
     server.use(http.get('/api/me/event-history', () => HttpResponse.json(history)))
 
     const entries = await getAccountHistoryRequest()
@@ -339,22 +347,13 @@ describe('account requests', () => {
     expect(entries[0]).toMatchObject({ eventId: 'event-1', title: 'Día', canRate: false })
   })
 
-  it('returns an empty history when the API sends no body', async () => {
-    server.use(http.get('/api/me/event-history', () => new HttpResponse(null, { status: 204 })))
-
-    await expect(getAccountHistoryRequest()).resolves.toEqual([])
-  })
-
-  it('maps the certificates and treats an empty body as no certificates', async () => {
-    const certificates: EventCertificateResponse[] = [{ code: 'CA-1', userId: 'user-1' }]
+  it('maps the certificates', async () => {
+    const certificates = [buildCertificateResponse({ code: 'CA-1' })]
     server.use(http.get('/api/me/certificates', () => HttpResponse.json(certificates)))
 
     await expect(getAccountCertificatesRequest()).resolves.toEqual([
       expect.objectContaining({ code: 'CA-1', participantId: 'user-1' }),
     ])
-
-    server.use(http.get('/api/me/certificates', () => new HttpResponse(null, { status: 204 })))
-    await expect(getAccountCertificatesRequest()).resolves.toEqual([])
   })
 
   it('posts an event rating with trimmed comments and resolves without a body', async () => {
@@ -394,5 +393,67 @@ describe('account requests', () => {
         suggestions: '',
       }),
     ).rejects.toMatchObject({ status: 409, code: 'EventRatingNotFinished' })
+  })
+  it('registers an adult with minors and resends the verification link', async () => {
+    let registered: unknown
+    server.use(
+      http.post('/api/auth/register', async ({ request }) => {
+        registered = await request.json()
+        return HttpResponse.json({ adult: buildUserResponse(), minors: [buildDependentResponse()] })
+      }),
+      http.post(
+        '/api/auth/user-1/resend-verification',
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    )
+    const adult = {
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      gender: 'Female',
+      email: 'ada@example.test',
+      phone: '600000000',
+      secondaryPhone: null,
+      nationalId: '12345678Z',
+      promotionalConsent: true,
+    } as const
+    const minor = {
+      firstName: 'Byron',
+      lastName: 'Lovelace',
+      birthDate: '2015-03-02',
+      gender: 'Male',
+    } as const
+
+    await expect(
+      registerRequest({ adult, password: 'Str0ngPass!23', minors: [minor] }),
+    ).resolves.toEqual({ adultId: 'user-1', minorCount: 1 })
+    await resendVerificationRequest('user-1')
+
+    expect(registered).toEqual({ ...adult, password: 'Str0ngPass!23', minors: [minor] })
+  })
+
+  it('verifies an account and resets a password with the one-time code of the link', async () => {
+    const bodies: unknown[] = []
+    const record = async ({ request }: { request: Request }) => {
+      bodies.push({ path: new URL(request.url).pathname, body: await request.json() })
+      return new HttpResponse(null, { status: 204 })
+    }
+    server.use(
+      http.patch('/api/auth/user-1/verify', record),
+      http.post('/api/auth/forgot-password', record),
+      http.patch('/api/auth/user-1/reset-password', record),
+    )
+
+    await verifyAccountRequest('user-1', 'otp-1')
+    await forgotPasswordRequest('ada@example.test')
+    await resetPasswordRequest({ userId: 'user-1', otp: 'otp-2', newPassword: 'Str0ngPass!23' })
+
+    expect(bodies).toEqual([
+      { path: '/api/auth/user-1/verify', body: { otp: 'otp-1' } },
+      { path: '/api/auth/forgot-password', body: { email: 'ada@example.test' } },
+      {
+        path: '/api/auth/user-1/reset-password',
+        body: { otp: 'otp-2', newPassword: 'Str0ngPass!23' },
+      },
+    ])
   })
 })

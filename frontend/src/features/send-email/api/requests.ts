@@ -7,71 +7,83 @@ import {
 } from '@/shared/api/generated/endpoints/emails/emails'
 import type {
   EmailAudienceResponse,
-  GetApiEmailsEventsEventIdAttendeesAudienceParams,
-  GetApiEmailsUsersAudienceParams,
-  PostApiEmailsEventsEventIdAttendeesBody,
-  PostApiEmailsEventsEventIdAttendeesParams,
   PostApiEmailsUsersBody,
-  PostApiEmailsUsersParams,
-  PostApiEmailsUsersUserIdBody,
+  SendEmailResultResponse,
 } from '@/shared/api/generated/models'
 
-import type { EmailAudience } from '../model/types'
+import type {
+  EmailAudience,
+  RecipientFilters,
+  SendEmailPayload,
+  SendEmailResult,
+} from '../model/types'
 
 function toEmailAudience(audience: EmailAudienceResponse): EmailAudience {
-  return {
-    recipients: audience.recipients ?? 0,
-    withoutConsent: audience.withoutConsent ?? 0,
-  }
+  return { recipients: audience.recipients, withoutConsent: audience.withoutConsent }
 }
 
-/** Queues an email for a single user (`POST /api/emails/users/{userId}`) and resolves to its counts. */
-export function sendEmailToUserRequest(userId: string, body: PostApiEmailsUsersUserIdBody) {
-  return postApiEmailsUsersUserId(userId, body).then((r) => r.data)
+function toSendEmailResult(result: SendEmailResultResponse): SendEmailResult {
+  return { queued: result.queued, skipped: result.skipped }
 }
 
-/**
- * Queues an email for every user matching the admin users filters (`POST /api/emails/users`) and
- * resolves to the queued and skipped counts.
- */
-export function sendEmailToUsersRequest(
-  body: PostApiEmailsUsersBody,
-  params: PostApiEmailsUsersParams,
-) {
-  return postApiEmailsUsers(body, params).then((r) => r.data)
+function toEmailBody(payload: SendEmailPayload): PostApiEmailsUsersBody {
+  const subject = payload.subject.trim()
+  const body = payload.body.trim()
+  return payload.attachments.length > 0
+    ? { subject, body, attachments: [...payload.attachments] }
+    : { subject, body }
+}
+
+/** Queues an email for a single user (`POST /api/emails/users/{userId}`). */
+export async function sendEmailToUserRequest(
+  userId: string,
+  payload: SendEmailPayload,
+): Promise<SendEmailResult> {
+  const response = await postApiEmailsUsersUserId(userId, toEmailBody(payload))
+  return toSendEmailResult(response.data)
+}
+
+/** Queues an email for every user matching the admin user filters (`POST /api/emails/users`). */
+export async function sendEmailToUsersRequest(
+  filters: RecipientFilters,
+  payload: SendEmailPayload,
+): Promise<SendEmailResult> {
+  const response = await postApiEmailsUsers(toEmailBody(payload), filters)
+  return toSendEmailResult(response.data)
 }
 
 /**
  * Queues an email for the event attendees matching the attendee report filters
- * (`POST /api/emails/events/{eventId}/attendees`) and resolves to its counts.
+ * (`POST /api/emails/events/{eventId}/attendees`).
  */
-export function sendEmailToEventAttendeesRequest(
+export async function sendEmailToEventAttendeesRequest(
   eventId: string,
-  body: PostApiEmailsEventsEventIdAttendeesBody,
-  params: PostApiEmailsEventsEventIdAttendeesParams,
-) {
-  return postApiEmailsEventsEventIdAttendees(eventId, body, params).then((r) => r.data)
+  filters: RecipientFilters,
+  payload: SendEmailPayload,
+): Promise<SendEmailResult> {
+  const response = await postApiEmailsEventsEventIdAttendees(eventId, toEmailBody(payload), filters)
+  return toSendEmailResult(response.data)
 }
 
 /**
- * Counts who an email to the users matching the admin users filters would reach, and how many of
+ * Counts who an email to the users matching the admin user filters would reach, and how many of
  * them lack promotional consent (`GET /api/emails/users/audience`). `{ id }` targets one user.
  */
-export function getUsersEmailAudienceRequest(
-  params: GetApiEmailsUsersAudienceParams,
+export async function getUsersEmailAudienceRequest(
+  filters: RecipientFilters,
 ): Promise<EmailAudience> {
-  return getApiEmailsUsersAudience(params).then((r) => toEmailAudience(r.data))
+  const response = await getApiEmailsUsersAudience(filters)
+  return toEmailAudience(response.data)
 }
 
 /**
  * Counts who an email to the event attendees matching the attendee report filters would reach, and
  * how many of them lack promotional consent (`GET /api/emails/events/{eventId}/attendees/audience`).
  */
-export function getEventAttendeesEmailAudienceRequest(
+export async function getEventAttendeesEmailAudienceRequest(
   eventId: string,
-  params: GetApiEmailsEventsEventIdAttendeesAudienceParams,
+  filters: RecipientFilters,
 ): Promise<EmailAudience> {
-  return getApiEmailsEventsEventIdAttendeesAudience(eventId, params).then((r) =>
-    toEmailAudience(r.data),
-  )
+  const response = await getApiEmailsEventsEventIdAttendeesAudience(eventId, filters)
+  return toEmailAudience(response.data)
 }

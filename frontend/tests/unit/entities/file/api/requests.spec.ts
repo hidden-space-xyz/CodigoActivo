@@ -4,8 +4,8 @@ import { uploadFileRequest } from '@/entities/file'
 import { getThumbnailNameRequest, uploadThumbnailRequest } from '@/entities/file/api/requests'
 import { ApiError } from '@/shared/api'
 
-import { readMultipartFile } from '../../../../support/fixtures/entities/multipart'
 import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
+import { readMultipartFile } from '../../../../support/multipart'
 
 interface Upload {
   readonly method: string

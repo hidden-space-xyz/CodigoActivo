@@ -2,9 +2,10 @@ import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
 import { ResourceCard } from '@/entities/resource'
+import { formatDate } from '@/shared/lib/date'
 
-import { buildResourceSummary } from '../../../../support/fixtures/entities/models'
 import { renderWithProviders, t } from '../../../../support/render'
+import { buildResourceSummary } from '../../../../support/models'
 
 describe('ResourceCard', () => {
   it('links an internal resource to its detail page', async () => {
@@ -16,7 +17,7 @@ describe('ResourceCard', () => {
     expect(wrapper.find('h3').text()).toBe('Guía de Scratch')
     expect(wrapper.find('.resource-card__subtitle').text()).toBe('Primeros pasos')
     expect(wrapper.find('time').text()).toContain(t('entities.resource.card.dateLabel'))
-    expect(wrapper.find('time').text()).toContain('1 feb 2026')
+    expect(wrapper.find('time').text()).toContain(formatDate('2026-02-01T10:00:00Z'))
     expect(wrapper.find('img').attributes('src')).toBe('/api/files/thumb-r/content')
 
     await link.trigger('click')

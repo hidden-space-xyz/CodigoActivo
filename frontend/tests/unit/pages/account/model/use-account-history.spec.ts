@@ -1,0 +1,141 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import { useAccountHistory } from '@/pages/account/model/use-account-history'
+import type { EventHistoryResponse } from '@/shared/api/generated/models'
+
+import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
+import { buildHistoryActivityResponse, buildHistoryResponse } from '../../../../support/builders'
+import { mountComposable } from '../../../../support/render'
+
+describe('useAccountHistory', () => {
+  it('does not request the history without a signed-in user', async () => {
+    const requested = vi.fn()
+    server.use(
+      http.get('/api/me/event-history', () => {
+        requested()
+        return HttpResponse.json([])
+      }),
+    )
+
+    const { result } = await mountComposable(() => useAccountHistory())
+
+    expect(requested).not.toHaveBeenCalled()
+    expect(result.entries.value).toEqual([])
+    expect(result.upcoming.value).toEqual([])
+    expect(result.past.value).toEqual([])
+  })
+
+  it('splits the mapped history into upcoming and past events', async () => {
+    const entries: EventHistoryResponse[] = [
+      buildHistoryResponse({ eventId: 'upcoming-1', isPast: false }),
+      buildHistoryResponse({
+        eventId: 'past-1',
+        isPast: true,
+        canRate: true,
+        activities: [
+          buildHistoryActivityResponse({
+            userId: 'child-1',
+            firstName: 'Byron',
+            lastName: '',
+            isSelf: false,
+          }),
+        ],
+      }),
+      buildHistoryResponse({ eventId: 'bare', activities: [] }),
+    ]
+    server.use(http.get('/api/me/event-history', () => HttpResponse.json(entries)))
+
+    const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
+    await vi.waitFor(() => expect(result.entries.value).toHaveLength(3))
+
+    expect(result.upcoming.value.map((entry) => entry.eventId)).toEqual(['upcoming-1', 'bare'])
+    expect(result.past.value.map((entry) => entry.eventId)).toEqual(['past-1'])
+
+    const [past] = result.past.value
+    expect(past?.canRate).toBe(true)
+    expect(past?.activities[0]).toMatchObject({
+      participantId: 'child-1',
+      participantName: 'Byron',
+      isSelf: false,
+    })
+    expect(result.upcoming.value[1]).toMatchObject({ canRate: false, activities: [] })
+  })
+
+  it('saves a rating with trimmed answers and refetches the history', async () => {
+    let historyRequests = 0
+    let received: { body: unknown; csrf: string | null } | undefined
+    server.use(
+      http.get('/api/me/event-history', () => {
+        historyRequests += 1
+        return HttpResponse.json([buildHistoryResponse({ isPast: true, canRate: true })])
+      }),
+      http.post('/api/events/:eventId/rating', async ({ request, params }) => {
+        received = { body: await request.json(), csrf: request.headers.get('X-CSRF-TOKEN') }
+        expect(params.eventId).toBe('event-1')
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
+    await vi.waitFor(() => expect(historyRequests).toBe(1))
+
+    const saved = await result.saveRating.mutateAsync({
+      eventId: 'event-1',
+      input: { score: 4, mostLiked: '  Los talleres ', leastLiked: '   ', suggestions: '' },
+    })
+
+    expect(saved).toBeUndefined()
+    expect(received).toEqual({
+      body: { score: 4, mostLiked: 'Los talleres', leastLiked: null, suggestions: null },
+      csrf: TEST_CSRF_TOKEN,
+    })
+    await vi.waitFor(() => expect(historyRequests).toBe(2))
+  })
+
+  it('exposes the error when the rating cannot be saved', async () => {
+    server.use(
+      http.get('/api/me/event-history', () => HttpResponse.json([])),
+      http.post('/api/events/:eventId/rating', () => apiError(400, 'EventNotFound')),
+    )
+
+    const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
+
+    await expect(
+      result.saveRating.mutateAsync({
+        eventId: 'event-1',
+        input: { score: 0, mostLiked: '', leastLiked: '', suggestions: '' },
+      }),
+    ).rejects.toMatchObject({ status: 400, code: 'EventNotFound' })
+  })
+
+  it('refetches the history after each of several ratings for the same event', async () => {
+    let historyRequests = 0
+    let ratingRequests = 0
+    server.use(
+      http.get('/api/me/event-history', () => {
+        historyRequests += 1
+        return HttpResponse.json([buildHistoryResponse({ isPast: true, canRate: true })])
+      }),
+      http.post('/api/events/:eventId/rating', () => {
+        ratingRequests += 1
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
+    await vi.waitFor(() => expect(historyRequests).toBe(1))
+
+    await result.saveRating.mutateAsync({
+      eventId: 'event-1',
+      input: { score: 5, mostLiked: 'Todo', leastLiked: '', suggestions: '' },
+    })
+    await vi.waitFor(() => expect(historyRequests).toBe(2))
+    await result.saveRating.mutateAsync({
+      eventId: 'event-1',
+      input: { score: 2, mostLiked: 'Otra cosa', leastLiked: '', suggestions: '' },
+    })
+
+    expect(ratingRequests).toBe(2)
+    await vi.waitFor(() => expect(historyRequests).toBe(3))
+  })
+})

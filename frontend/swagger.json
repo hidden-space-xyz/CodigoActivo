@@ -3987,16 +3987,21 @@
   "components": {
     "schemas": {
       "AccountDeletionCodeRequest": {
+        "required": [
+          "currentPassword"
+        ],
         "type": "object",
         "properties": {
           "currentPassword": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "AccountDeletionStatusResponse": {
+        "required": [
+          "allowed"
+        ],
         "type": "object",
         "properties": {
           "allowed": {
@@ -4006,6 +4011,10 @@
         "additionalProperties": false
       },
       "ActivityModalityTypeResponse": {
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -4013,13 +4022,27 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "ActivityResponse": {
+        "required": [
+          "activityEndsAt",
+          "activityStartsAt",
+          "createdAt",
+          "createdBy",
+          "description",
+          "eventId",
+          "id",
+          "location",
+          "modalityId",
+          "modalityName",
+          "roleCapacities",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -4027,16 +4050,13 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "location": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "activityStartsAt": {
             "type": "string",
@@ -4055,8 +4075,7 @@
             "format": "uuid"
           },
           "modalityName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "thumbnailId": {
             "type": "string",
@@ -4066,8 +4085,7 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ActivityRoleCapacityResponse"
-            },
-            "nullable": true
+            }
           },
           "createdAt": {
             "type": "string",
@@ -4091,14 +4109,19 @@
         "additionalProperties": false
       },
       "ActivityResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ActivityResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -4116,6 +4139,9 @@
         "additionalProperties": false
       },
       "ActivityRoleCapacityRequest": {
+        "required": [
+          "activityRoleTypeId"
+        ],
         "type": "object",
         "properties": {
           "activityRoleTypeId": {
@@ -4131,6 +4157,11 @@
         "additionalProperties": false
       },
       "ActivityRoleCapacityResponse": {
+        "required": [
+          "activityRoleTypeId",
+          "desiredCount",
+          "isHighDemand"
+        ],
         "type": "object",
         "properties": {
           "activityRoleTypeId": {
@@ -4148,6 +4179,11 @@
         "additionalProperties": false
       },
       "ActivityRoleTypeResponse": {
+        "required": [
+          "description",
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -4155,22 +4191,25 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "ApiErrorResponse": {
+        "required": [
+          "code",
+          "status",
+          "title",
+          "traceId"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "status": {
             "type": "integer",
@@ -4180,21 +4219,22 @@
             "$ref": "#/components/schemas/ErrorCode"
           },
           "traceId": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "AssignHouseholdRequest": {
+        "required": [
+          "assignments"
+        ],
         "type": "object",
         "properties": {
           "assignments": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/HouseholdAssignmentRequest"
-            },
-            "nullable": true
+            }
           },
           "termsDecisions": {
             "type": "array",
@@ -4207,6 +4247,9 @@
         "additionalProperties": false
       },
       "AssignRequest": {
+        "required": [
+          "activityRoleTypeId"
+        ],
         "type": "object",
         "properties": {
           "activityRoleTypeId": {
@@ -4224,6 +4267,16 @@
         "additionalProperties": false
       },
       "AssignedActivityResponse": {
+        "required": [
+          "activityEndsAt",
+          "activityId",
+          "activityStartsAt",
+          "description",
+          "eventId",
+          "roleType",
+          "status",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "activityId": {
@@ -4231,12 +4284,10 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "activityStartsAt": {
             "type": "string",
@@ -4260,6 +4311,10 @@
         "additionalProperties": false
       },
       "AssignedActivityRoleResponse": {
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -4267,13 +4322,16 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "AssignedActivityStatusResponse": {
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -4281,13 +4339,18 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "AssignmentResponse": {
+        "required": [
+          "activityId",
+          "roleTypeId",
+          "status",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "userId": {
@@ -4313,6 +4376,10 @@
         "additionalProperties": false
       },
       "AssignmentStatusResponse": {
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -4320,13 +4387,18 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "AssignmentStatusTypeResponse": {
+        "required": [
+          "color",
+          "description",
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -4334,45 +4406,49 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "AuthenticatorSetupRequest": {
+        "required": [
+          "currentPassword"
+        ],
         "type": "object",
         "properties": {
           "currentPassword": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "AuthenticatorSetupResponse": {
+        "required": [
+          "authenticatorUri",
+          "sharedKey"
+        ],
         "type": "object",
         "properties": {
           "sharedKey": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "authenticatorUri": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "ChangeAssignmentRoleRequest": {
+        "required": [
+          "activityRoleTypeId"
+        ],
         "type": "object",
         "properties": {
           "activityRoleTypeId": {
@@ -4383,6 +4459,9 @@
         "additionalProperties": false
       },
       "ChangeAssignmentStatusRequest": {
+        "required": [
+          "assignmentStatusId"
+        ],
         "type": "object",
         "properties": {
           "assignmentStatusId": {
@@ -4393,43 +4472,51 @@
         "additionalProperties": false
       },
       "ChangePasswordRequest": {
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
         "type": "object",
         "properties": {
           "currentPassword": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "newPassword": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "ConfirmAuthenticatorRequest": {
+        "required": [
+          "code"
+        ],
         "type": "object",
         "properties": {
           "code": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "CreateActivityRequest": {
+        "required": [
+          "activityModalityTypeId",
+          "description",
+          "location",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "location": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "activityModalityTypeId": {
             "type": "string",
@@ -4460,33 +4547,38 @@
         "additionalProperties": false
       },
       "CreateEventCategoryTypeRequest": {
+        "required": [
+          "color",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "CreateEventRequest": {
+        "required": [
+          "description",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventStartsAt": {
             "type": "string",
@@ -4536,19 +4628,22 @@
         "additionalProperties": false
       },
       "CreateNewsItemRequest": {
+        "required": [
+          "description",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "thumbnailId": {
             "type": "string",
@@ -4558,11 +4653,15 @@
         "additionalProperties": false
       },
       "CreatePartnerRequest": {
+        "required": [
+          "name",
+          "thumbnailId",
+          "tier"
+        ],
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "fromDate": {
             "type": "string",
@@ -4585,15 +4684,19 @@
         "additionalProperties": false
       },
       "CreateResourceRequest": {
+        "required": [
+          "resourceTypeId",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
             "type": "string",
@@ -4615,34 +4718,54 @@
         "additionalProperties": false
       },
       "CreateTermsDocumentRequest": {
+        "required": [
+          "description",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "CsrfTokenResponse": {
+        "required": [
+          "headerName",
+          "token"
+        ],
         "type": "object",
         "properties": {
           "token": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "headerName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "DashboardAnalyticsResponse": {
+        "required": [
+          "audienceComposition",
+          "contentPublished",
+          "eventsByCategory",
+          "eventsCalendar",
+          "granularity",
+          "inscriptions",
+          "kpis",
+          "occupancy",
+          "participantsByGender",
+          "rangeEnd",
+          "rangeStart",
+          "topEvents",
+          "userGrowth",
+          "usersByType"
+        ],
         "type": "object",
         "properties": {
           "rangeStart": {
@@ -4654,15 +4777,13 @@
             "format": "date"
           },
           "granularity": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "kpis": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardKpiResponse"
-            },
-            "nullable": true
+            }
           },
           "userGrowth": {
             "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
@@ -4677,36 +4798,31 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardSliceResponse"
-            },
-            "nullable": true
+            }
           },
           "audienceComposition": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardSliceResponse"
-            },
-            "nullable": true
+            }
           },
           "participantsByGender": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardSliceResponse"
-            },
-            "nullable": true
+            }
           },
           "eventsByCategory": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardSliceResponse"
-            },
-            "nullable": true
+            }
           },
           "topEvents": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardTopEventResponse"
-            },
-            "nullable": true
+            }
           },
           "eventsCalendar": {
             "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
@@ -4718,11 +4834,16 @@
         "additionalProperties": false
       },
       "DashboardKpiResponse": {
+        "required": [
+          "inRange",
+          "key",
+          "previousRange",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "key": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "total": {
             "type": "integer",
@@ -4740,6 +4861,13 @@
         "additionalProperties": false
       },
       "DashboardOccupancyActivityResponse": {
+        "required": [
+          "activityId",
+          "confirmed",
+          "desired",
+          "startsAt",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "activityId": {
@@ -4747,8 +4875,7 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "startsAt": {
             "type": "string",
@@ -4766,6 +4893,13 @@
         "additionalProperties": false
       },
       "DashboardOccupancyEventResponse": {
+        "required": [
+          "activities",
+          "confirmed",
+          "desired",
+          "eventId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "eventId": {
@@ -4773,8 +4907,7 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "confirmed": {
             "type": "integer",
@@ -4788,13 +4921,17 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardOccupancyActivityResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "DashboardOccupancyResponse": {
+        "required": [
+          "confirmed",
+          "desired",
+          "events"
+        ],
         "type": "object",
         "properties": {
           "confirmed": {
@@ -4809,36 +4946,40 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardOccupancyEventResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "DashboardSeriesResponse": {
+        "required": [
+          "key",
+          "values"
+        ],
         "type": "object",
         "properties": {
           "key": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "values": {
             "type": "array",
             "items": {
               "type": "integer",
               "format": "int32"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "DashboardSliceResponse": {
+        "required": [
+          "count",
+          "key"
+        ],
         "type": "object",
         "properties": {
           "key": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "label": {
             "type": "string",
@@ -4856,6 +4997,14 @@
         "additionalProperties": false
       },
       "DashboardSummaryResponse": {
+        "required": [
+          "activities",
+          "events",
+          "news",
+          "partners",
+          "resources",
+          "users"
+        ],
         "type": "object",
         "properties": {
           "events": {
@@ -4886,6 +5035,10 @@
         "additionalProperties": false
       },
       "DashboardTimeSeriesResponse": {
+        "required": [
+          "buckets",
+          "series"
+        ],
         "type": "object",
         "properties": {
           "buckets": {
@@ -4893,20 +5046,23 @@
             "items": {
               "type": "string",
               "format": "date"
-            },
-            "nullable": true
+            }
           },
           "series": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardSeriesResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "DashboardTopEventResponse": {
+        "required": [
+          "confirmed",
+          "eventId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "eventId": {
@@ -4914,8 +5070,7 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "confirmed": {
             "type": "integer",
@@ -4925,34 +5080,42 @@
         "additionalProperties": false
       },
       "DeleteAccountRequest": {
+        "required": [
+          "code",
+          "currentPassword"
+        ],
         "type": "object",
         "properties": {
           "currentPassword": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "code": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "DisableAuthenticatorRequest": {
+        "required": [
+          "code",
+          "currentPassword"
+        ],
         "type": "object",
         "properties": {
           "currentPassword": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "code": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "EmailAudienceResponse": {
+        "required": [
+          "recipients",
+          "withoutConsent"
+        ],
         "type": "object",
         "properties": {
           "recipients": {
@@ -5070,6 +5233,16 @@
         "type": "string"
       },
       "EventAttendeeAssignmentResponse": {
+        "required": [
+          "activityEndsAt",
+          "activityId",
+          "activityStartsAt",
+          "activityTitle",
+          "hasTimeConflict",
+          "roleTypeId",
+          "signedUpAt",
+          "statusId"
+        ],
         "type": "object",
         "properties": {
           "activityId": {
@@ -5077,8 +5250,7 @@
             "format": "uuid"
           },
           "activityTitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "activityStartsAt": {
             "type": "string",
@@ -5115,15 +5287,17 @@
         "additionalProperties": false
       },
       "EventAttendeeGuardianResponse": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "email": {
             "type": "string",
@@ -5141,6 +5315,13 @@
         "additionalProperties": false
       },
       "EventAttendeeResponse": {
+        "required": [
+          "assignments",
+          "gender",
+          "userId",
+          "userTypeColor",
+          "userTypeName"
+        ],
         "type": "object",
         "properties": {
           "userId": {
@@ -5176,12 +5357,10 @@
             "$ref": "#/components/schemas/Gender"
           },
           "userTypeName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "userTypeColor": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "guardian": {
             "$ref": "#/components/schemas/EventAttendeeGuardianResponse"
@@ -5190,21 +5369,25 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventAttendeeAssignmentResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "EventAttendeeResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventAttendeeResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -5222,29 +5405,33 @@
         "additionalProperties": false
       },
       "EventBadgeActivityResponse": {
+        "required": [
+          "location",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "location": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "EventBadgeGuardianResponse": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "phone": {
             "type": "string",
@@ -5254,6 +5441,15 @@
         "additionalProperties": false
       },
       "EventBadgeResponse": {
+        "required": [
+          "activities",
+          "createdAt",
+          "firstName",
+          "lastName",
+          "userId",
+          "userTypeColor",
+          "userTypeName"
+        ],
         "type": "object",
         "properties": {
           "userId": {
@@ -5261,20 +5457,16 @@
             "format": "uuid"
           },
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "userTypeName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "userTypeColor": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "createdAt": {
             "type": "string",
@@ -5287,13 +5479,17 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventBadgeActivityResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "EventBadgesResponse": {
+        "required": [
+          "badges",
+          "eventId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "eventId": {
@@ -5301,20 +5497,23 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "badges": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventBadgeResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "EventCategoryResponse": {
+        "required": [
+          "categoryTypeId",
+          "color",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "categoryTypeId": {
@@ -5322,17 +5521,20 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "EventCategoryTypeResponse": {
+        "required": [
+          "color",
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -5340,25 +5542,28 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "EventCategoryTypeResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventCategoryTypeResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -5376,11 +5581,22 @@
         "additionalProperties": false
       },
       "EventCertificateResponse": {
+        "required": [
+          "code",
+          "eventEndsAt",
+          "eventId",
+          "eventStartsAt",
+          "eventSubtitle",
+          "eventTitle",
+          "firstName",
+          "isSelf",
+          "lastName",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "code": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventId": {
             "type": "string",
@@ -5391,23 +5607,19 @@
             "format": "uuid"
           },
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "isSelf": {
             "type": "boolean"
           },
           "eventTitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventSubtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventStartsAt": {
             "type": "string",
@@ -5421,6 +5633,20 @@
         "additionalProperties": false
       },
       "EventHistoryActivityResponse": {
+        "required": [
+          "activityId",
+          "firstName",
+          "isSelf",
+          "lastName",
+          "location",
+          "modalityName",
+          "roleTypeId",
+          "roleTypeName",
+          "statusId",
+          "statusName",
+          "title",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "activityId": {
@@ -5428,28 +5654,23 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "location": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "modalityName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "userId": {
             "type": "string",
             "format": "uuid"
           },
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "isSelf": {
             "type": "boolean"
@@ -5459,21 +5680,30 @@
             "format": "uuid"
           },
           "roleTypeName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "statusId": {
             "type": "string",
             "format": "uuid"
           },
           "statusName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "EventHistoryResponse": {
+        "required": [
+          "activities",
+          "canRate",
+          "eventEndsAt",
+          "eventId",
+          "eventStartsAt",
+          "isPast",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "eventId": {
@@ -5481,12 +5711,10 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventStartsAt": {
             "type": "string",
@@ -5510,13 +5738,27 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventHistoryActivityResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "EventListItemResponse": {
+        "required": [
+          "categories",
+          "createdAt",
+          "createdBy",
+          "eventEndsAt",
+          "eventStartsAt",
+          "featured",
+          "id",
+          "signupEndsAt",
+          "signupStartsAt",
+          "stage",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -5524,12 +5766,10 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventStartsAt": {
             "type": "string",
@@ -5581,21 +5821,28 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventCategoryResponse"
-            },
-            "nullable": true
+            }
+          },
+          "stage": {
+            "$ref": "#/components/schemas/EventStage"
           }
         },
         "additionalProperties": false
       },
       "EventListItemResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventListItemResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -5613,6 +5860,10 @@
         "additionalProperties": false
       },
       "EventRatingListItemResponse": {
+        "required": [
+          "id",
+          "score"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -5639,14 +5890,19 @@
         "additionalProperties": false
       },
       "EventRatingListItemResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventRatingListItemResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -5664,6 +5920,23 @@
         "additionalProperties": false
       },
       "EventResponse": {
+        "required": [
+          "categories",
+          "createdAt",
+          "createdBy",
+          "description",
+          "eventEndsAt",
+          "eventStartsAt",
+          "featured",
+          "id",
+          "signupEndsAt",
+          "signupStartsAt",
+          "stage",
+          "subtitle",
+          "termsDocuments",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -5671,16 +5944,13 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventStartsAt": {
             "type": "string",
@@ -5732,20 +6002,25 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventCategoryResponse"
-            },
-            "nullable": true
+            }
           },
           "termsDocuments": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventTermsDocumentResponse"
-            },
-            "nullable": true
+            }
+          },
+          "stage": {
+            "$ref": "#/components/schemas/EventStage"
           }
         },
         "additionalProperties": false
       },
       "EventRoleTypeSummaryResponse": {
+        "required": [
+          "approvedAssignments",
+          "roleTypeId"
+        ],
         "type": "object",
         "properties": {
           "roleTypeId": {
@@ -5764,6 +6039,14 @@
         "additionalProperties": false
       },
       "EventRosterActivityResponse": {
+        "required": [
+          "activityEndsAt",
+          "activityId",
+          "activityStartsAt",
+          "location",
+          "participants",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "activityId": {
@@ -5771,12 +6054,10 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "location": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "activityStartsAt": {
             "type": "string",
@@ -5790,22 +6071,23 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventRosterParticipantResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "EventRosterGuardianResponse": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "email": {
             "type": "string",
@@ -5823,6 +6105,12 @@
         "additionalProperties": false
       },
       "EventRosterParticipantResponse": {
+        "required": [
+          "firstName",
+          "lastName",
+          "roleName",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "userId": {
@@ -5830,12 +6118,10 @@
             "format": "uuid"
           },
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "birthDate": {
             "type": "string",
@@ -5855,8 +6141,7 @@
             "nullable": true
           },
           "roleName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "guardian": {
             "$ref": "#/components/schemas/EventRosterGuardianResponse"
@@ -5865,6 +6150,11 @@
         "additionalProperties": false
       },
       "EventRosterResponse": {
+        "required": [
+          "activities",
+          "eventId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "eventId": {
@@ -5872,15 +6162,13 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "activities": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventRosterActivityResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
@@ -5892,7 +6180,29 @@
         ],
         "type": "string"
       },
+      "EventStage": {
+        "enum": [
+          "Upcoming",
+          "EarlySignupOpen",
+          "SignupOpen",
+          "SignupClosed",
+          "Finished"
+        ],
+        "type": "string"
+      },
       "EventSummaryResponse": {
+        "required": [
+          "activitiesCount",
+          "confirmedAssignments",
+          "deniedAssignments",
+          "distinctVolunteers",
+          "eventId",
+          "ratingsCount",
+          "requestedAssignments",
+          "roleTypeBreakdown",
+          "title",
+          "totalAssignments"
+        ],
         "type": "object",
         "properties": {
           "eventId": {
@@ -5900,8 +6210,7 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "activitiesCount": {
             "type": "integer",
@@ -5940,13 +6249,16 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventRoleTypeSummaryResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "EventTermsDocumentRequest": {
+        "required": [
+          "required",
+          "termsDocumentId"
+        ],
         "type": "object",
         "properties": {
           "termsDocumentId": {
@@ -5960,6 +6272,12 @@
         "additionalProperties": false
       },
       "EventTermsDocumentResponse": {
+        "required": [
+          "displayOrder",
+          "name",
+          "required",
+          "termsDocumentId"
+        ],
         "type": "object",
         "properties": {
           "termsDocumentId": {
@@ -5967,8 +6285,7 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "required": {
             "type": "boolean"
@@ -5981,6 +6298,13 @@
         "additionalProperties": false
       },
       "EventTermsDocumentStateResponse": {
+        "required": [
+          "description",
+          "displayOrder",
+          "name",
+          "required",
+          "termsDocumentId"
+        ],
         "type": "object",
         "properties": {
           "termsDocumentId": {
@@ -5988,12 +6312,10 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "required": {
             "type": "boolean"
@@ -6015,14 +6337,17 @@
         "additionalProperties": false
       },
       "EventTermsStateResponse": {
+        "required": [
+          "documents",
+          "signupBlocked"
+        ],
         "type": "object",
         "properties": {
           "documents": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventTermsDocumentStateResponse"
-            },
-            "nullable": true
+            }
           },
           "signupBlocked": {
             "type": "boolean"
@@ -6031,6 +6356,13 @@
         "additionalProperties": false
       },
       "FileResponse": {
+        "required": [
+          "extension",
+          "id",
+          "name",
+          "uploadedAt",
+          "uploadedBy"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -6038,12 +6370,10 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "extension": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "uploadedAt": {
             "type": "string",
@@ -6057,11 +6387,13 @@
         "additionalProperties": false
       },
       "ForgotPasswordRequest": {
+        "required": [
+          "email"
+        ],
         "type": "object",
         "properties": {
           "email": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -6076,6 +6408,10 @@
         "type": "string"
       },
       "HouseholdAssignmentRequest": {
+        "required": [
+          "activityRoleTypeId",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "userId": {
@@ -6090,6 +6426,16 @@
         "additionalProperties": false
       },
       "HouseholdMemberAssignmentResponse": {
+        "required": [
+          "activityId",
+          "firstName",
+          "lastName",
+          "roleName",
+          "roleTypeId",
+          "statusId",
+          "statusName",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "activityId": {
@@ -6101,33 +6447,33 @@
             "format": "uuid"
           },
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "roleTypeId": {
             "type": "string",
             "format": "uuid"
           },
           "roleName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "statusId": {
             "type": "string",
             "format": "uuid"
           },
           "statusName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "HouseholdSignupRolesResponse": {
+        "required": [
+          "roles",
+          "userId"
+        ],
         "type": "object",
         "properties": {
           "userId": {
@@ -6138,13 +6484,20 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SignupRoleResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "LeaderRosterActivityResponse": {
+        "required": [
+          "activityEndsAt",
+          "activityId",
+          "activityStartsAt",
+          "location",
+          "roles",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "activityId": {
@@ -6152,12 +6505,10 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "location": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "activityStartsAt": {
             "type": "string",
@@ -6171,22 +6522,25 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LeaderRosterRoleResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "LeaderRosterDependentResponse": {
+        "required": [
+          "firstName",
+          "guardian",
+          "lastName",
+          "signedUpAt"
+        ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "age": {
             "type": "integer",
@@ -6204,15 +6558,17 @@
         "additionalProperties": false
       },
       "LeaderRosterGuardianResponse": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "email": {
             "type": "string",
@@ -6226,6 +6582,12 @@
         "additionalProperties": false
       },
       "LeaderRosterRoleResponse": {
+        "required": [
+          "dependents",
+          "roleName",
+          "roleTypeId",
+          "users"
+        ],
         "type": "object",
         "properties": {
           "roleTypeId": {
@@ -6233,36 +6595,36 @@
             "format": "uuid"
           },
           "roleName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "users": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LeaderRosterUserResponse"
-            },
-            "nullable": true
+            }
           },
           "dependents": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LeaderRosterDependentResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "LeaderRosterUserResponse": {
+        "required": [
+          "firstName",
+          "lastName",
+          "signedUpAt"
+        ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "email": {
             "type": "string",
@@ -6280,6 +6642,9 @@
         "additionalProperties": false
       },
       "LoginChallengeResponse": {
+        "required": [
+          "method"
+        ],
         "type": "object",
         "properties": {
           "method": {
@@ -6293,20 +6658,32 @@
         "additionalProperties": false
       },
       "LoginRequest": {
+        "required": [
+          "identifier",
+          "password"
+        ],
         "type": "object",
         "properties": {
           "identifier": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "password": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "NewsItemResponse": {
+        "required": [
+          "createdAt",
+          "createdBy",
+          "description",
+          "featured",
+          "id",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -6314,16 +6691,13 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "createdAt": {
             "type": "string",
@@ -6354,6 +6728,15 @@
         "additionalProperties": false
       },
       "NewsListItemResponse": {
+        "required": [
+          "createdAt",
+          "createdBy",
+          "featured",
+          "id",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -6361,12 +6744,10 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "createdAt": {
             "type": "string",
@@ -6397,14 +6778,19 @@
         "additionalProperties": false
       },
       "NewsListItemResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NewsListItemResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -6422,6 +6808,12 @@
         "additionalProperties": false
       },
       "OverlappingActivityResponse": {
+        "required": [
+          "activityId",
+          "endsAt",
+          "startsAt",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "activityId": {
@@ -6429,8 +6821,7 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "startsAt": {
             "type": "string",
@@ -6444,6 +6835,15 @@
         "additionalProperties": false
       },
       "PartnerResponse": {
+        "required": [
+          "createdAt",
+          "createdBy",
+          "fromDate",
+          "id",
+          "name",
+          "thumbnailId",
+          "tier"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -6451,8 +6851,7 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "fromDate": {
             "type": "string",
@@ -6492,14 +6891,19 @@
         "additionalProperties": false
       },
       "PartnerResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PartnerResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -6517,15 +6921,19 @@
         "additionalProperties": false
       },
       "RegisterMinorRequest": {
+        "required": [
+          "birthDate",
+          "firstName",
+          "gender",
+          "lastName"
+        ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "birthDate": {
             "type": "string",
@@ -6538,31 +6946,35 @@
         "additionalProperties": false
       },
       "RegisterRequest": {
+        "required": [
+          "email",
+          "firstName",
+          "gender",
+          "lastName",
+          "nationalId",
+          "password",
+          "phone",
+          "promotionalConsent"
+        ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "email": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "phone": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "password": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "nationalId": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "gender": {
             "$ref": "#/components/schemas/Gender"
@@ -6585,6 +6997,10 @@
         "additionalProperties": false
       },
       "RegisterResponse": {
+        "required": [
+          "adult",
+          "minors"
+        ],
         "type": "object",
         "properties": {
           "adult": {
@@ -6594,37 +7010,49 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UserResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "ResetPasswordRequest": {
+        "required": [
+          "newPassword",
+          "otp"
+        ],
         "type": "object",
         "properties": {
           "otp": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "newPassword": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "ResetTwoFactorRequest": {
+        "required": [
+          "currentPassword"
+        ],
         "type": "object",
         "properties": {
           "currentPassword": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "ResourceListItemResponse": {
+        "required": [
+          "createdAt",
+          "createdBy",
+          "id",
+          "subtitle",
+          "thumbnailId",
+          "title",
+          "type"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -6632,12 +7060,10 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "url": {
             "type": "string",
@@ -6672,14 +7098,19 @@
         "additionalProperties": false
       },
       "ResourceListItemResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResourceListItemResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -6697,6 +7128,16 @@
         "additionalProperties": false
       },
       "ResourceResponse": {
+        "required": [
+          "createdAt",
+          "createdBy",
+          "description",
+          "id",
+          "subtitle",
+          "thumbnailId",
+          "title",
+          "type"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -6704,16 +7145,13 @@
             "format": "uuid"
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "url": {
             "type": "string",
@@ -6748,6 +7186,13 @@
         "additionalProperties": false
       },
       "ResourceTypeResponse": {
+        "required": [
+          "color",
+          "description",
+          "id",
+          "isExternal",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -6755,16 +7200,13 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "isExternal": {
             "type": "boolean"
@@ -6796,6 +7238,10 @@
         "additionalProperties": false
       },
       "SendEmailResultResponse": {
+        "required": [
+          "queued",
+          "skipped"
+        ],
         "type": "object",
         "properties": {
           "queued": {
@@ -6810,6 +7256,9 @@
         "additionalProperties": false
       },
       "SetAdminRequest": {
+        "required": [
+          "isAdmin"
+        ],
         "type": "object",
         "properties": {
           "isAdmin": {
@@ -6823,6 +7272,10 @@
         "additionalProperties": false
       },
       "SignupRoleResponse": {
+        "required": [
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -6830,13 +7283,15 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "TermsDecisionRequest": {
+        "required": [
+          "termsDocumentId"
+        ],
         "type": "object",
         "properties": {
           "termsDocumentId": {
@@ -6851,6 +7306,11 @@
         "additionalProperties": false
       },
       "TermsDocumentResponse": {
+        "required": [
+          "description",
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -6858,25 +7318,28 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "TermsDocumentResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TermsDocumentResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -6894,6 +7357,10 @@
         "additionalProperties": false
       },
       "TimeOverlapResponse": {
+        "required": [
+          "hasOverlaps",
+          "overlaps"
+        ],
         "type": "object",
         "properties": {
           "hasOverlaps": {
@@ -6903,18 +7370,20 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/OverlappingActivityResponse"
-            },
-            "nullable": true
+            }
           }
         },
         "additionalProperties": false
       },
       "TwoFactorLoginRequest": {
+        "required": [
+          "code",
+          "keepSignedIn"
+        ],
         "type": "object",
         "properties": {
           "code": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "keepSignedIn": {
             "type": "boolean"
@@ -6930,19 +7399,23 @@
         "type": "string"
       },
       "UpdateActivityRequest": {
+        "required": [
+          "activityModalityTypeId",
+          "description",
+          "location",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "location": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "activityModalityTypeId": {
             "type": "string",
@@ -6973,33 +7446,38 @@
         "additionalProperties": false
       },
       "UpdateEventCategoryTypeRequest": {
+        "required": [
+          "color",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "UpdateEventRequest": {
+        "required": [
+          "description",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "eventStartsAt": {
             "type": "string",
@@ -7049,19 +7527,22 @@
         "additionalProperties": false
       },
       "UpdateNewsItemRequest": {
+        "required": [
+          "description",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "thumbnailId": {
             "type": "string",
@@ -7071,11 +7552,15 @@
         "additionalProperties": false
       },
       "UpdatePartnerRequest": {
+        "required": [
+          "name",
+          "thumbnailId",
+          "tier"
+        ],
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "fromDate": {
             "type": "string",
@@ -7098,15 +7583,19 @@
         "additionalProperties": false
       },
       "UpdateResourceRequest": {
+        "required": [
+          "resourceTypeId",
+          "subtitle",
+          "thumbnailId",
+          "title"
+        ],
         "type": "object",
         "properties": {
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "subtitle": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
             "type": "string",
@@ -7128,29 +7617,35 @@
         "additionalProperties": false
       },
       "UpdateTermsDocumentRequest": {
+        "required": [
+          "description",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "UpdateUserRequest": {
+        "required": [
+          "firstName",
+          "gender",
+          "lastName",
+          "promotionalConsent"
+        ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "email": {
             "type": "string",
@@ -7192,6 +7687,19 @@
         "additionalProperties": false
       },
       "UserResponse": {
+        "required": [
+          "createdAt",
+          "earlySignupEligible",
+          "firstName",
+          "gender",
+          "id",
+          "isAdmin",
+          "isInitialAdmin",
+          "lastName",
+          "promotionalConsent",
+          "status",
+          "twoFactorMethod"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -7199,12 +7707,10 @@
             "format": "uuid"
           },
           "firstName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "email": {
             "type": "string",
@@ -7275,19 +7781,27 @@
           },
           "twoFactorMethod": {
             "$ref": "#/components/schemas/TwoFactorMethod"
+          },
+          "earlySignupEligible": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
       },
       "UserResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UserResponse"
-            },
-            "nullable": true
+            }
           },
           "total": {
             "type": "integer",
@@ -7305,6 +7819,11 @@
         "additionalProperties": false
       },
       "UserStatusResponse": {
+        "required": [
+          "color",
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -7312,17 +7831,21 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "UserStatusTypeResponse": {
+        "required": [
+          "color",
+          "description",
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -7330,21 +7853,24 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "UserTypeResponse": {
+        "required": [
+          "color",
+          "description",
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -7352,21 +7878,23 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "UserTypeSummaryResponse": {
+        "required": [
+          "color",
+          "id",
+          "name"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -7374,22 +7902,22 @@
             "format": "uuid"
           },
           "name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "color": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "VerifyRequest": {
+        "required": [
+          "otp"
+        ],
         "type": "object",
         "properties": {
           "otp": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           }
         },
         "additionalProperties": false

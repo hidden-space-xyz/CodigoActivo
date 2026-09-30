@@ -6,7 +6,6 @@
  */
 
 export interface AssignmentStatusResponse {
-  id?: string;
-  /** @nullable */
-  name?: string | null;
+  id: string;
+  name: string;
 }

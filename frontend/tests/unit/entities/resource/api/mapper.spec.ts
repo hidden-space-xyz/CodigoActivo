@@ -1,46 +1,75 @@
 import { describe, expect, it } from 'vitest'
 
-import { toLearningResource, toLearningResourceSummary } from '@/entities/resource/api/mapper'
-import { formatDate } from '@/shared/lib'
+import {
+  toLearningResource,
+  toLearningResourceSummary,
+  toResourceRequest,
+  toResourceType,
+} from '@/entities/resource/api/mapper'
 
-describe('resource mapper', () => {
-  it('maps a list item with a formatted date and external url', () => {
+import {
+  buildResourceListItem,
+  buildResourceResponse,
+  externalType,
+  omit,
+  richText,
+} from '../../../../support/builders'
+
+const ARTICLE = { id: 'type-article', name: 'Artículo', color: '#123456', isExternal: false }
+
+describe('toResourceType', () => {
+  it('keeps what classifies a resource', () => {
+    expect(toResourceType(externalType)).toEqual({
+      id: 'type-link',
+      name: 'Enlace',
+      color: '',
+      isExternal: true,
+    })
+  })
+})
+
+describe('toLearningResourceSummary', () => {
+  it('maps a list item keeping its creation instant', () => {
+    expect(toLearningResourceSummary(buildResourceListItem())).toEqual({
+      id: 'resource-1',
+      title: 'Guía de Python',
+      subtitle: 'Primeros pasos',
+      type: ARTICLE,
+      url: null,
+      createdAt: '2026-03-02T10:00:00Z',
+      thumbnailId: 'thumb-resource',
+    })
+  })
+
+  it('reads a missing url as none', () => {
+    expect(toLearningResourceSummary(omit(buildResourceListItem(), 'url')).url).toBeNull()
     expect(
-      toLearningResourceSummary({
-        id: 'r1',
-        title: 'Scratch',
-        subtitle: 'Guía',
-        createdAt: '2026-02-01T10:00:00Z',
-        url: 'https://scratch.mit.edu',
-        thumbnailId: 'thumb-1',
-      }),
-    ).toEqual({
-      id: 'r1',
-      title: 'Scratch',
-      subtitle: 'Guía',
-      date: formatDate('2026-02-01T10:00:00Z'),
-      url: 'https://scratch.mit.edu',
-      thumbnailId: 'thumb-1',
+      toLearningResourceSummary(buildResourceListItem({ url: 'https://scratch.mit.edu' })).url,
+    ).toBe('https://scratch.mit.edu')
+  })
+})
+
+describe('toLearningResource', () => {
+  it('adds the description to the summary', () => {
+    expect(toLearningResource(buildResourceResponse())).toMatchObject({
+      id: 'resource-1',
+      type: ARTICLE,
+      description: richText('Todo sobre Python.'),
     })
   })
+})
 
-  it('defaults a bare list item and keeps a missing url as null', () => {
-    expect(toLearningResourceSummary({ url: null })).toEqual({
-      id: '',
-      title: '',
-      subtitle: '',
-      date: '',
-      url: null,
-      thumbnailId: '',
-    })
-  })
+describe('toResourceRequest', () => {
+  it('sends every field of the resource', () => {
+    const input = {
+      title: 'Vue',
+      subtitle: 'Docs',
+      description: null,
+      url: 'https://vuejs.org',
+      resourceTypeId: 'type-link',
+      thumbnailId: 'thumb',
+    }
 
-  it('adds the description to the detail model', () => {
-    expect(toLearningResource({ id: 'r1', description: '<p>Texto</p>' })).toMatchObject({
-      id: 'r1',
-      url: null,
-      description: '<p>Texto</p>',
-    })
-    expect(toLearningResource({}).description).toBe('')
+    expect(toResourceRequest(input)).toEqual(input)
   })
 })

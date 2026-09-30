@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import { NewsCard } from '@/entities/news-item'
 
-import { buildNewsSummary } from '../../../../support/fixtures/entities/models'
 import { renderWithProviders, t } from '../../../../support/render'
+import { buildNewsSummary } from '../../../../support/models'
 
 describe('NewsCard', () => {
   it('shows the news item and links to its detail page', async () => {
@@ -30,11 +30,10 @@ describe('NewsCard', () => {
     expect(router.currentRoute.value.params).toEqual({ newsItemId: 'news-item-1' })
   })
 
-  it('hides the subtitle and the date when they are empty', async () => {
-    const newsItem = buildNewsSummary({ subtitle: '', date: '' })
+  it('hides the subtitle when the news item has none', async () => {
+    const newsItem = buildNewsSummary({ subtitle: '' })
     const { wrapper } = await renderWithProviders(NewsCard, { props: { newsItem } })
 
     expect(wrapper.find('.news-card__subtitle').exists()).toBe(false)
-    expect(wrapper.find('time').exists()).toBe(false)
   })
 })

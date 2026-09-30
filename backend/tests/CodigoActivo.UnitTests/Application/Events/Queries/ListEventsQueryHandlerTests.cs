@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Events.Queries;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
@@ -31,6 +32,29 @@ public sealed class ListEventsQueryHandlerTests
         result.Total.Should().Be(2);
         result.Items.Should().HaveCount(2);
         result.Items.Should().AllBeOfType<EventListItemResponse>();
+    }
+
+    [Fact]
+    public async Task HandleAsyncItemsCarryTheStageOfTheClock()
+    {
+        var finished = NewEventRow("Finished", ends: clock.Today.AddDays(-1));
+        var open = NewEventRow(
+            "Open",
+            ends: clock.Today.AddDays(10),
+            signupStart: clock.UtcNow.AddDays(-1),
+            signupEnd: clock.UtcNow.AddDays(1)
+        );
+        store.Events.AddRange([finished, open]);
+
+        var result = await sut.HandleAsync(
+            new ListEventsQuery(new EventListQuery { Page = 1, PageSize = 10 }),
+            TestContext.Current.CancellationToken
+        );
+
+        result
+            .Items.Select(item => (item.Title, item.Stage))
+            .Should()
+            .BeEquivalentTo([("Finished", EventStage.Finished), ("Open", EventStage.SignupOpen)]);
     }
 
     [Theory]

@@ -1,26 +1,28 @@
 import { describe, expect, it } from 'vitest'
 
+import type { NewsItemInput } from '@/entities/news-item'
 import {
   createNewsItemRequest,
   deleteNewsItemRequest,
-  getNewsAdminPageRequest,
-  getNewsItemAdminRequest,
-  toggleNewsItemFeatureRequest,
-  updateNewsItemRequest,
-} from '@/entities/news-item'
-import {
+  featureNewsItemRequest,
   getHomeNewsRequest,
   getNewsByYearPageRequest,
-  getNewsItemByIdRequest,
+  getNewsItemRequest,
+  getNewsListPageRequest,
   getNewsYearsRequest,
+  updateNewsItemRequest,
 } from '@/entities/news-item/api/requests'
 import { ApiError, FEATURED_FIRST_SORT } from '@/shared/api'
-import type { NewsItemResponse, NewsListItemResponse } from '@/shared/api/generated/models'
 
-import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import { apiError, http, HttpResponse, noContent, paged, server } from '../../../../support/server'
+import { buildNewsItemResponse, buildNewsListItem, richText } from '../../../../support/builders'
+import { queryOf } from '../../../../support/dom'
 
-function queryOf(url: URL | undefined): Record<string, string> {
-  return Object.fromEntries(url?.searchParams ?? [])
+const INPUT: NewsItemInput = {
+  title: 'Nuevo',
+  subtitle: 'Viernes',
+  description: richText('Texto'),
+  thumbnailId: 't1',
 }
 
 describe('news requests', () => {
@@ -30,19 +32,12 @@ describe('news requests', () => {
     await expect(getNewsYearsRequest()).resolves.toEqual(['2026', '2025'])
   })
 
-  it('returns no years when the body is empty', async () => {
-    server.use(http.get('/api/news/years', () => new HttpResponse(null, { status: 204 })))
-
-    await expect(getNewsYearsRequest()).resolves.toEqual([])
-  })
-
   it('pages a year newest first and sends the search only when present', async () => {
-    const urls: URL[] = []
-    const items: NewsListItemResponse[] = [{ id: 'a1', title: 'Uno' }]
+    const urls: string[] = []
     server.use(
       http.get('/api/news', ({ request }) => {
-        urls.push(new URL(request.url))
-        return HttpResponse.json(paged(items, 30))
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildNewsListItem({ id: 'a1', title: 'Uno' })], 30))
       }),
     )
 
@@ -51,28 +46,20 @@ describe('news requests', () => {
 
     expect(page.total).toBe(30)
     expect(page.items).toEqual([expect.objectContaining({ id: 'a1', title: 'Uno' })])
-    expect(queryOf(urls[0])).toEqual({
-      year: '2026',
-      search: 'robot',
-      sort: '-createdAt',
-      page: '2',
-      pageSize: '25',
-    })
-    expect(queryOf(urls[1])).toEqual({
-      year: '2025',
-      sort: '-createdAt',
-      page: '1',
-      pageSize: '10',
-    })
+    expect(urls.map(queryOf)).toEqual([
+      { year: '2026', search: 'robot', sort: '-createdAt', page: '2', pageSize: '25' },
+      { year: '2025', sort: '-createdAt', page: '1', pageSize: '10' },
+    ])
   })
 
   it('splits the first home news item off as the featured one', async () => {
-    let url: URL | undefined
-    const items: NewsListItemResponse[] = [{ id: 'a1', featured: true }, { id: 'a2' }, { id: 'a3' }]
+    const urls: string[] = []
     server.use(
       http.get('/api/news', ({ request }) => {
-        url = new URL(request.url)
-        return HttpResponse.json(paged(items))
+        urls.push(request.url)
+        return HttpResponse.json(
+          paged(['a1', 'a2', 'a3'].map((id) => buildNewsListItem({ id, featured: id === 'a1' }))),
+        )
       }),
     )
 
@@ -80,58 +67,47 @@ describe('news requests', () => {
 
     expect(home.featured?.id).toBe('a1')
     expect(home.items.map((item) => item.id)).toEqual(['a2', 'a3'])
-    expect(queryOf(url)).toEqual({ sort: FEATURED_FIRST_SORT, pageSize: '4' })
+    expect(queryOf(urls[0] ?? '')).toEqual({ sort: FEATURED_FIRST_SORT, pageSize: '4' })
   })
 
   it('returns no featured news item when there are none', async () => {
-    server.use(http.get('/api/news', () => HttpResponse.json({})))
+    server.use(http.get('/api/news', () => HttpResponse.json(paged([]))))
 
     await expect(getHomeNewsRequest()).resolves.toEqual({ featured: null, items: [] })
   })
 
-  describe('detail requests', () => {
-    it('maps the public detail and returns the raw admin detail', async () => {
-      const newsItem: NewsItemResponse = { id: 'a1', title: 'Uno', description: 'Texto' }
-      server.use(http.get('/api/news/a1', () => HttpResponse.json(newsItem)))
+  it('loads a whole news item, resolving null when it does not exist', async () => {
+    server.use(
+      http.get('/api/news/a1', () => HttpResponse.json(buildNewsItemResponse({ id: 'a1' }))),
+      http.get('/api/news/missing', () => apiError(404, 'NewsItemNotFound')),
+      http.get('/api/news/broken', () => apiError(500)),
+    )
 
-      await expect(getNewsItemByIdRequest('a1')).resolves.toMatchObject({
-        id: 'a1',
-        description: 'Texto',
-        publishedAt: null,
-      })
-      await expect(getNewsItemAdminRequest('a1')).resolves.toEqual(newsItem)
+    await expect(getNewsItemRequest('a1')).resolves.toMatchObject({
+      id: 'a1',
+      description: richText('Ya puedes apuntarte.'),
     })
-
-    it('resolves null for a missing news item', async () => {
-      server.use(http.get('/api/news/missing', () => apiError(404, 'NewsItemNotFound')))
-
-      await expect(getNewsItemByIdRequest('missing')).resolves.toBeNull()
-      await expect(getNewsItemAdminRequest('missing')).resolves.toBeNull()
-    })
-
-    it('rethrows other errors', async () => {
-      server.use(http.get('/api/news/broken', () => apiError(500)))
-
-      await expect(getNewsItemByIdRequest('broken')).rejects.toBeInstanceOf(ApiError)
-    })
+    await expect(getNewsItemRequest('missing')).resolves.toBeNull()
+    await expect(getNewsItemRequest('broken')).rejects.toBeInstanceOf(ApiError)
   })
 
-  it('pages the admin table with the given params', async () => {
-    let url: URL | undefined
+  it('pages the admin list with the given params', async () => {
+    const urls: string[] = []
     server.use(
       http.get('/api/news', ({ request }) => {
-        url = new URL(request.url)
-        return HttpResponse.json(paged([{ id: 'a1' }], 12))
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildNewsListItem()], 12))
       }),
     )
 
-    await expect(getNewsAdminPageRequest({ page: 3, pageSize: 5, sort: 'title' })).resolves.toEqual(
-      { items: [{ id: 'a1' }], total: 12 },
-    )
-    expect(queryOf(url)).toEqual({ page: '3', pageSize: '5', sort: 'title' })
+    await expect(getNewsListPageRequest({ page: 3, pageSize: 5, sort: 'title' })).resolves.toEqual({
+      items: [expect.objectContaining({ id: 'news-item-1' })],
+      total: 12,
+    })
+    expect(queryOf(urls[0] ?? '')).toEqual({ page: '3', pageSize: '5', sort: 'title' })
   })
 
-  it('creates, updates, features and deletes news items', async () => {
+  it('creates, replaces, features and deletes news items', async () => {
     const calls: { method: string; path: string; body: unknown }[] = []
     const record = async ({ request }: { request: Request }) => {
       const text = await request.text()
@@ -140,9 +116,9 @@ describe('news requests', () => {
         path: new URL(request.url).pathname,
         body: text ? (JSON.parse(text) as unknown) : null,
       })
-      return request.method === 'DELETE'
-        ? new HttpResponse(null, { status: 204 })
-        : HttpResponse.json<NewsItemResponse>({ id: 'a1', title: 'Saved' })
+      return request.method === 'POST' || request.method === 'PUT'
+        ? HttpResponse.json(buildNewsItemResponse())
+        : noContent()
     }
     server.use(
       http.post('/api/news', record),
@@ -151,16 +127,14 @@ describe('news requests', () => {
       http.delete('/api/news/a1', record),
     )
 
-    const created = await createNewsItemRequest({ title: 'Nuevo', thumbnailId: 't1' })
-    await updateNewsItemRequest('a1', { title: 'Editado' })
-    await toggleNewsItemFeatureRequest('a1')
-    const deleted = await deleteNewsItemRequest('a1')
+    await createNewsItemRequest(INPUT)
+    await updateNewsItemRequest('a1', { ...INPUT, title: 'Editado' })
+    await featureNewsItemRequest('a1')
+    await deleteNewsItemRequest('a1')
 
-    expect(created.data).toEqual({ id: 'a1', title: 'Saved' })
-    expect(deleted.status).toBe(204)
     expect(calls).toEqual([
-      { method: 'POST', path: '/api/news', body: { title: 'Nuevo', thumbnailId: 't1' } },
-      { method: 'PUT', path: '/api/news/a1', body: { title: 'Editado' } },
+      { method: 'POST', path: '/api/news', body: INPUT },
+      { method: 'PUT', path: '/api/news/a1', body: { ...INPUT, title: 'Editado' } },
       { method: 'PATCH', path: '/api/news/a1/feature', body: null },
       { method: 'DELETE', path: '/api/news/a1', body: null },
     ])

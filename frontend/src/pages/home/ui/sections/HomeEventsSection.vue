@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { EventCard, FeaturedEventCard, useHomeEvents } from '@/entities/event'
-import { BaseButton } from '@/shared/ui'
+import { computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 
-const { featured, items, isLoading } = useHomeEvents()
+import { EventCard, eventQueries, FeaturedEventCard } from '@/entities/event'
+import { BrandButton } from '@/shared/ui/brand-button'
+
+const { data, isLoading } = useQuery(eventQueries.home())
+const featured = computed(() => data.value?.featured ?? null)
+const items = computed(() => data.value?.items ?? [])
 </script>
 
 <template>
@@ -10,9 +15,9 @@ const { featured, items, isLoading } = useHomeEvents()
     <div class="ca-container">
       <div class="home-section__head">
         <h2 class="home-section__title">{{ $t('pages.home.events.title') }}</h2>
-        <BaseButton variant="link" class="home-section__view-all" :to="{ name: 'events' }">
+        <BrandButton variant="link" class="home-section__view-all" :to="{ name: 'events' }">
           {{ $t('pages.home.events.viewAll') }}
-        </BaseButton>
+        </BrandButton>
       </div>
 
       <p v-if="isLoading" class="home-section__loading">{{ $t('common.loading') }}</p>

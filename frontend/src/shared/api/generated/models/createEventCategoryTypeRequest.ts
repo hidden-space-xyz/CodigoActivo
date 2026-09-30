@@ -6,8 +6,6 @@
  */
 
 export interface CreateEventCategoryTypeRequest {
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  color?: string | null;
+  name: string;
+  color: string;
 }

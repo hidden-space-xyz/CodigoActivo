@@ -7,12 +7,9 @@
 import type { EventTermsDocumentRequest } from './eventTermsDocumentRequest';
 
 export interface CreateEventRequest {
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  subtitle?: string | null;
-  /** @nullable */
-  description?: string | null;
+  title: string;
+  subtitle: string;
+  description: string;
   /** @nullable */
   eventStartsAt?: string | null;
   /** @nullable */
@@ -23,7 +20,7 @@ export interface CreateEventRequest {
   signupStartsAt?: string | null;
   /** @nullable */
   signupEndsAt?: string | null;
-  thumbnailId?: string;
+  thumbnailId: string;
   /** @nullable */
   categoryTypeIds?: string[] | null;
   /** @nullable */

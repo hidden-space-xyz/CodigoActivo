@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Users;
 
@@ -37,6 +38,9 @@ public static class UserProjections
         IsAdmin = user.IsAdmin,
         IsInitialAdmin = user.Id == SeedIds.Users.InitialAdministrator,
         TwoFactorMethod = user.TwoFactorMethod,
+        EarlySignupEligible = EarlySignup.EntitledUserTypeIds.Contains(
+            user.Parent != null ? user.Parent.UserTypeId : user.UserTypeId
+        ),
     };
 
     /// <summary>
@@ -75,6 +79,9 @@ public static class UserProjections
                 user.UserType.Color
             ),
             TwoFactorMethod = user.TwoFactorMethod,
+            EarlySignupEligible = EarlySignup.EntitledUserTypeIds.Contains(
+                user.Parent != null ? user.Parent.UserTypeId : user.UserTypeId
+            ),
         };
 
     /// <summary>

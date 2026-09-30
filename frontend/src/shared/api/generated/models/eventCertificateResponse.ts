@@ -6,19 +6,14 @@
  */
 
 export interface EventCertificateResponse {
-  /** @nullable */
-  code?: string | null;
-  eventId?: string;
-  userId?: string;
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
-  isSelf?: boolean;
-  /** @nullable */
-  eventTitle?: string | null;
-  /** @nullable */
-  eventSubtitle?: string | null;
-  eventStartsAt?: string;
-  eventEndsAt?: string;
+  code: string;
+  eventId: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  isSelf: boolean;
+  eventTitle: string;
+  eventSubtitle: string;
+  eventStartsAt: string;
+  eventEndsAt: string;
 }

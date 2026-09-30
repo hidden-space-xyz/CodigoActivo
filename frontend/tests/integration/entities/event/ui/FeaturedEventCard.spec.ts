@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest'
 
 import { FeaturedEventCard } from '@/entities/event'
 
-import { buildUpcomingEvent } from '../../../../support/fixtures/entities/models'
 import { renderWithProviders, t } from '../../../../support/render'
+import { buildEventSummary } from '../../../../support/models'
 
 describe('FeaturedEventCard', () => {
   it('highlights the event with its quoted slogan, date, status, tags and a detail link', async () => {
-    const event = buildUpcomingEvent()
+    const event = buildEventSummary()
     const { wrapper, router } = await renderWithProviders(FeaturedEventCard, { props: { event } })
 
     expect(wrapper.find('.featured__badge').text()).toBe(t('entities.event.featured.badge'))

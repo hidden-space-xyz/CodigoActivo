@@ -1,0 +1,383 @@
+<script setup lang="ts">
+import { GENDERS, genderLabelKey, NationalIdInput } from '@/entities/user'
+import { BrandButton } from '@/shared/ui/brand-button'
+
+import { useAccount } from '../model/use-account'
+import { usePasswordChange } from '../model/use-password-change'
+import { useProfileEditor } from '../model/use-profile-editor'
+
+const account = useAccount()
+const { profile, updateProfile, changePassword } = account
+const {
+  user,
+  visible: editVisible,
+  error: editError,
+  form: {
+    draft,
+    currentPassword,
+    submitted: editSubmitted,
+    errors,
+    requiresPassword,
+    passwordMissing,
+  },
+  open: openEdit,
+  save: saveEdit,
+} = useProfileEditor(account)
+const {
+  visible: passwordVisible,
+  form: passwordForm,
+  error: passwordError,
+  open: openPassword,
+  save: savePassword,
+} = usePasswordChange(account)
+</script>
+
+<template>
+  <section class="acc-pane">
+    <div class="acc-pane__head">
+      <p class="acc-pane__lead">{{ $t('pages.account.profile.lead') }}</p>
+      <div class="acc-pane__actions">
+        <BrandButton variant="ghost" @click="openEdit">{{
+          $t('pages.account.profile.editData')
+        }}</BrandButton>
+        <BrandButton variant="ghost" @click="openPassword">{{
+          $t('pages.account.profile.changePassword')
+        }}</BrandButton>
+      </div>
+    </div>
+
+    <p v-if="profile.isLoading.value" class="acc-pane__state">{{ $t('common.loading') }}</p>
+    <dl v-else-if="user" class="acc-info">
+      <div class="acc-info__row">
+        <dt>{{ $t('common.name') }}</dt>
+        <dd>{{ user.firstName }} {{ user.lastName }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.status') }}</dt>
+        <dd>{{ user.statusName || '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.nationalId') }}</dt>
+        <dd>{{ user.nationalId || '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.gender') }}</dt>
+        <dd>{{ $t(genderLabelKey(user.gender)) }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.phone') }}</dt>
+        <dd>{{ user.phone || '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.secondaryPhone') }}</dt>
+        <dd>{{ user.secondaryPhone || '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.email') }}</dt>
+        <dd>{{ user.email || '—' }}</dd>
+      </div>
+      <div class="acc-info__row">
+        <dt>{{ $t('common.promotionalConsent') }}</dt>
+        <dd>{{ user.promotionalConsent ? $t('common.yes') : $t('common.no') }}</dd>
+      </div>
+    </dl>
+
+    <el-dialog
+      v-model="editVisible"
+      :title="$t('pages.account.profile.editDialogHeader')"
+      width="min(90vw, 520px)"
+      :close-on-click-modal="false"
+    >
+      <form class="acc-form" @submit.prevent="saveEdit">
+        <div class="acc-form__grid">
+          <div class="acc-form__field">
+            <label for="p-firstname">{{ $t('common.firstName') }}</label>
+            <el-input
+              id="p-firstname"
+              v-model="draft.firstName"
+              :maxlength="120"
+              :class="{ 'ca-invalid': errors.firstName }"
+              required
+            />
+            <small v-if="errors.firstName" class="acc-form__error">{{ errors.firstName }}</small>
+          </div>
+          <div class="acc-form__field">
+            <label for="p-lastname">{{ $t('common.lastName') }}</label>
+            <el-input
+              id="p-lastname"
+              v-model="draft.lastName"
+              :maxlength="120"
+              :class="{ 'ca-invalid': errors.lastName }"
+              required
+            />
+            <small v-if="errors.lastName" class="acc-form__error">{{ errors.lastName }}</small>
+          </div>
+          <div class="acc-form__field">
+            <label for="p-national-id">{{ $t('common.nationalId') }}</label>
+            <NationalIdInput
+              id="p-national-id"
+              v-model="draft.nationalId"
+              :show-errors="editSubmitted"
+            />
+          </div>
+          <div class="acc-form__field">
+            <label for="p-gender">{{ $t('common.gender') }}</label>
+            <el-select
+              id="p-gender"
+              v-model="draft.gender"
+              :class="{ 'ca-invalid': errors.gender }"
+            >
+              <el-option
+                v-for="gender in GENDERS"
+                :key="gender"
+                :label="$t(genderLabelKey(gender))"
+                :value="gender"
+              />
+            </el-select>
+            <small v-if="errors.gender" class="acc-form__error">{{ errors.gender }}</small>
+          </div>
+          <div class="acc-form__field">
+            <label for="p-phone">{{ $t('common.phone') }}</label>
+            <el-input
+              id="p-phone"
+              v-model="draft.phone"
+              type="tel"
+              :maxlength="40"
+              :class="{ 'ca-invalid': errors.phone }"
+              required
+            />
+            <small v-if="errors.phone" class="acc-form__error">{{ errors.phone }}</small>
+          </div>
+          <div class="acc-form__field">
+            <label for="p-secondary-phone">{{ $t('common.secondaryPhoneOptional') }}</label>
+            <el-input
+              id="p-secondary-phone"
+              v-model="draft.secondaryPhone"
+              type="tel"
+              :maxlength="40"
+              :class="{ 'ca-invalid': errors.secondaryPhone }"
+            />
+            <small v-if="errors.secondaryPhone" class="acc-form__error">{{
+              errors.secondaryPhone
+            }}</small>
+          </div>
+          <div class="acc-form__field acc-form__field--wide">
+            <label for="p-email">{{ $t('common.email') }}</label>
+            <el-input
+              id="p-email"
+              v-model="draft.email"
+              type="email"
+              :maxlength="256"
+              :class="{ 'ca-invalid': errors.email }"
+              required
+            />
+            <small v-if="errors.email" class="acc-form__error">{{ errors.email }}</small>
+          </div>
+          <div class="acc-form__consent acc-form__field--wide">
+            <el-checkbox id="p-promotional-consent" v-model="draft.promotionalConsent" />
+            <label for="p-promotional-consent">{{ $t('common.promotionalConsentOption') }}</label>
+          </div>
+          <div v-if="requiresPassword" class="acc-form__field acc-form__field--wide">
+            <label for="p-current">{{
+              $t('pages.account.profile.contactChange.passwordLabel')
+            }}</label>
+            <p class="acc-form__hint">
+              {{ $t('pages.account.profile.contactChange.message') }}
+            </p>
+            <el-input
+              id="p-current"
+              v-model="currentPassword"
+              type="password"
+              show-password
+              autocomplete="current-password"
+              :maxlength="128"
+            />
+            <small v-if="editError" class="acc-form__error">{{ editError }}</small>
+            <small v-else-if="editSubmitted && passwordMissing" class="acc-form__error">{{
+              $t('pages.account.profile.contactChange.passwordRequired')
+            }}</small>
+          </div>
+        </div>
+        <div class="acc-form__actions">
+          <BrandButton variant="link" type="button" @click="editVisible = false">{{
+            $t('common.cancel')
+          }}</BrandButton>
+          <BrandButton variant="primary" type="submit" :loading="updateProfile.isPending.value">
+            {{ $t('common.save') }}
+          </BrandButton>
+        </div>
+      </form>
+    </el-dialog>
+
+    <el-dialog
+      v-model="passwordVisible"
+      :title="$t('pages.account.profile.changePassword')"
+      width="min(90vw, 460px)"
+      :close-on-click-modal="false"
+    >
+      <form class="acc-form" @submit.prevent="savePassword">
+        <div class="acc-form__field">
+          <label for="p-cur">{{ $t('pages.account.profile.currentPassword') }}</label>
+          <el-input
+            id="p-cur"
+            v-model="passwordForm.current"
+            type="password"
+            show-password
+            required
+          />
+        </div>
+        <div class="acc-form__field">
+          <label for="p-new">{{ $t('pages.account.profile.newPassword') }}</label>
+          <el-input id="p-new" v-model="passwordForm.next" type="password" show-password required />
+        </div>
+        <div class="acc-form__field">
+          <label for="p-conf">{{ $t('pages.account.profile.confirmNewPassword') }}</label>
+          <el-input
+            id="p-conf"
+            v-model="passwordForm.confirm"
+            type="password"
+            show-password
+            required
+          />
+        </div>
+        <p v-if="passwordError" class="acc-form__error">{{ passwordError }}</p>
+        <div class="acc-form__actions">
+          <BrandButton variant="link" type="button" @click="passwordVisible = false">
+            {{ $t('common.cancel') }}
+          </BrandButton>
+          <BrandButton variant="primary" type="submit" :loading="changePassword.isPending.value">
+            {{ $t('common.save') }}
+          </BrandButton>
+        </div>
+      </form>
+    </el-dialog>
+  </section>
+</template>
+
+<style scoped>
+.acc-pane__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.acc-pane__lead {
+  flex: 1;
+  min-width: 240px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
+  max-width: 46ch;
+}
+
+.acc-pane__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.acc-pane__state {
+  color: var(--ca-text-dim);
+  font-family: var(--ca-font-mono);
+}
+
+.acc-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+}
+
+.acc-info__row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.acc-info__row dt {
+  font-size: 12px;
+  color: var(--ca-text-dim);
+}
+
+.acc-info__row dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ca-text);
+  overflow-wrap: anywhere;
+}
+
+.acc-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.acc-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.acc-form__field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ca-text-muted);
+}
+
+.acc-form__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.acc-form__consent label {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
+  cursor: pointer;
+}
+
+.acc-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.acc-form__error {
+  color: var(--ca-danger-ink);
+  font-size: 13.5px;
+  margin: 0 0 10px;
+}
+
+.acc-form__field--wide {
+  grid-column: 1 / -1;
+}
+
+.acc-form__hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ca-text-muted);
+}
+
+@media (max-width: 640px) {
+  .acc-info,
+  .acc-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .acc-pane__actions {
+    width: 100%;
+  }
+
+  .acc-pane__actions > * {
+    flex: 1 1 100%;
+  }
+}
+</style>

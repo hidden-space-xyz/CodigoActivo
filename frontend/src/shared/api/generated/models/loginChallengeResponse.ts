@@ -7,7 +7,7 @@
 import type { TwoFactorMethod } from './twoFactorMethod';
 
 export interface LoginChallengeResponse {
-  method?: TwoFactorMethod;
+  method: TwoFactorMethod;
   /** @nullable */
   maskedEmail?: string | null;
 }

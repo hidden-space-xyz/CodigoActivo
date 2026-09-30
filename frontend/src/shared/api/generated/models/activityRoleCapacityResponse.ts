@@ -6,7 +6,7 @@
  */
 
 export interface ActivityRoleCapacityResponse {
-  activityRoleTypeId?: string;
-  desiredCount?: number;
-  isHighDemand?: boolean;
+  activityRoleTypeId: string;
+  desiredCount: number;
+  isHighDemand: boolean;
 }

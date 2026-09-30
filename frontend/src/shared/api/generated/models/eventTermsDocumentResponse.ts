@@ -6,9 +6,8 @@
  */
 
 export interface EventTermsDocumentResponse {
-  termsDocumentId?: string;
-  /** @nullable */
-  name?: string | null;
-  required?: boolean;
-  displayOrder?: number;
+  termsDocumentId: string;
+  name: string;
+  required: boolean;
+  displayOrder: number;
 }

@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useQueryClient } from '@tanstack/vue-query'
-import { AppButton as Button, AppIcon } from '@/shared/ui'
+import { computed } from 'vue'
 
-import { EventTermsDialog, useEventActivities } from '@/features/activity-signup'
-import ActivityTimelineCard from './ActivityTimelineCard.vue'
-import type { TimelineActivity, TimelineMemberAssignment } from '../model/types'
-import type {
-  ActivityOverlap,
-  HouseholdAssignmentInput,
-  TermsDecisionInput,
-} from '@/entities/activity'
-import { eventQueryKeys } from '@/entities/event'
 import type { EventTermsSummary } from '@/entities/event'
-import { ApiError } from '@/shared/api'
-import { formatDateTime, formatDateTimeRange, useCrudFeedback } from '@/shared/lib'
+import { formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
+import { ActionButton } from '@/shared/ui/action-button'
+import { AppIcon } from '@/shared/ui/app-icon'
+
+import { toTimeline, toTimelineActivities } from '../lib/timeline'
+import { useEventActivities } from '../model/use-event-activities'
+import { useSignupFlow } from '../model/use-signup-flow'
+import ActivityTimelineCard from './ActivityTimelineCard.vue'
+import EventTermsDialog from './EventTermsDialog.vue'
 
 const props = defineProps<{
   /** Event whose activities are listed and grouped by overlapping schedules. */
@@ -29,343 +23,51 @@ const props = defineProps<{
   terms?: readonly EventTermsSummary[]
 }>()
 
-const router = useRouter()
-const { t } = useI18n()
-const feedback = useCrudFeedback()
-const queryClient = useQueryClient()
+const hasTerms = (): boolean => (props.terms?.length ?? 0) > 0
+const eventActivities = useEventActivities(() => props.eventId, hasTerms)
 const {
   activities,
   assigned,
   household,
   hasHousehold,
   membershipReady,
-  members,
-  userId,
   signupRoles,
   selfRoles,
   rolesFor,
-  assign,
-  assignHousehold,
-  unassign,
-  verifyOverlaps,
-  termsState,
   isAuthenticated,
-} = useEventActivities(
-  () => props.eventId,
-  () => (props.terms?.length ?? 0) > 0,
-)
-
-interface Cluster {
-  start: Date
-  items: TimelineActivity[]
-}
-
-const assignmentByActivity = computed(() => {
-  const map = new Map<string, { status: string; roleName: string }>()
-  for (const a of assigned.data.value ?? []) {
-    if (a.activityId) {
-      map.set(a.activityId, { status: a.status, roleName: a.roleName })
-    }
-  }
-  return map
+} = eventActivities
+const {
+  busyId,
+  overlapDialog,
+  householdDialog,
+  termsDialog,
+  pendingTermsDocuments,
+  householdSelectable,
+  householdHighDemand,
+  onSignup,
+  confirmOverlapSignup,
+  confirmTerms,
+  openHousehold,
+  confirmHousehold,
+  onUnassign,
+  onUnassignMember,
+  goLogin,
+} = useSignupFlow({
+  eventId: () => props.eventId,
+  signupOpen: () => props.signupOpen,
+  hasTerms,
+  activities: eventActivities,
 })
 
-const householdByActivity = computed(() => {
-  const map = new Map<string, TimelineMemberAssignment[]>()
-  for (const a of household.data.value ?? []) {
-    if (!a.activityId) continue
-    const list = map.get(a.activityId) ?? []
-    list.push({
-      userId: a.userId,
-      name: a.name,
-      roleName: a.roleName,
-      status: a.status,
-    })
-    map.set(a.activityId, list)
-  }
-  return map
-})
-
-const items = computed<TimelineActivity[]>(() =>
-  (activities.data.value ?? []).map((a) => ({
-    id: a.id,
-    title: a.title,
-    description: a.description,
-    location: a.location,
-    modality: a.modality,
-    start: a.startsAt ? new Date(a.startsAt) : null,
-    end: a.endsAt ? new Date(a.endsAt) : null,
-    highDemandRoleIds: membershipReady.value ? [...a.highDemandRoleIds] : [],
-    assignment: assignmentByActivity.value.get(a.id) ?? null,
-    household: householdByActivity.value.get(a.id) ?? [],
-  })),
+const items = computed(() =>
+  toTimelineActivities(
+    activities.data.value ?? [],
+    assigned.data.value ?? [],
+    household.data.value ?? [],
+    membershipReady.value,
+  ),
 )
-
-const scheduled = computed(() =>
-  items.value.filter((a): a is TimelineActivity & { start: Date } => a.start !== null),
-)
-
-const unscheduled = computed(() => items.value.filter((a) => a.start === null))
-
-const clusters = computed<Cluster[]>(() => {
-  const result: Cluster[] = []
-  let current: Cluster | null = null
-  let maxEnd = 0
-  for (const act of scheduled.value) {
-    const start = act.start.getTime()
-    const end = (act.end ?? act.start).getTime()
-    if (current && start < maxEnd) {
-      current.items.push(act)
-      maxEnd = Math.max(maxEnd, end)
-    } else {
-      current = { start: act.start, items: [act] }
-      result.push(current)
-      maxEnd = end
-    }
-  }
-  return result
-})
-
-const busyId = ref<string | null>(null)
-
-const overlapDialog = reactive<{
-  visible: boolean
-  activity: TimelineActivity | null
-  roleId: string
-  overlaps: readonly ActivityOverlap[]
-}>({ visible: false, activity: null, roleId: '', overlaps: [] })
-
-interface HouseholdRow {
-  userId: string
-  name: string
-  alreadyAssigned: boolean
-  assignedRole: string
-  include: boolean
-  roleId: string
-}
-
-const householdDialog = reactive<{
-  visible: boolean
-  activity: TimelineActivity | null
-  rows: HouseholdRow[]
-}>({ visible: false, activity: null, rows: [] })
-
-type TermsPendingAction =
-  | { kind: 'self'; activityId: string; roleId: string }
-  | { kind: 'household'; activityId: string; assignments: HouseholdAssignmentInput[] }
-
-const termsDialog = reactive<{ visible: boolean; action: TermsPendingAction | null }>({
-  visible: false,
-  action: null,
-})
-
-/**
- * Documents the user must still decide on: an acceptance is final, but a rejection can be revised,
- * so anything short of `accepted === true` (including a previous rejection) counts as pending.
- */
-const pendingTermsDocuments = computed(() =>
-  (termsState.data.value?.documents ?? []).filter((document) => document.accepted !== true),
-)
-
-/**
- * Whether the terms dialog must be shown before signing up. Required documents block signup
- * (`signupBlocked`), but any pending document — required or optional — must still be offered so
- * the user can decide on it; the confirm button itself only gates on the required ones.
- */
-const hasPendingTerms = computed(() => pendingTermsDocuments.value.length > 0)
-
-function handleSignupError(error: unknown, action: TermsPendingAction): void {
-  if (error instanceof ApiError && error.code === 'EventTermsAcceptanceRequired') {
-    void queryClient.invalidateQueries({ queryKey: eventQueryKeys.detail(props.eventId) })
-    void queryClient.invalidateQueries({ queryKey: eventQueryKeys.terms(props.eventId) })
-    if ((props.terms?.length ?? 0) > 0) {
-      termsDialog.action = action
-      termsDialog.visible = true
-      return
-    }
-  }
-  feedback.error(error, t('pages.eventDetail.toast.signupFailed'))
-}
-
-function goLogin(): void {
-  void router.push({ name: 'login', query: { redirect: `/events/${props.eventId}` } })
-}
-
-async function onSignup(activity: TimelineActivity, roleId: string): Promise<void> {
-  if (!props.signupOpen) return
-  busyId.value = activity.id
-  try {
-    const overlap = await verifyOverlaps(activity.id)
-    if (overlap?.hasOverlaps) {
-      overlapDialog.activity = activity
-      overlapDialog.roleId = roleId
-      overlapDialog.overlaps = overlap.overlaps ?? []
-      overlapDialog.visible = true
-      busyId.value = null
-      return
-    }
-    doAssign(activity.id, roleId)
-  } catch (error) {
-    busyId.value = null
-    feedback.error(error)
-  }
-}
-
-function confirmOverlapSignup(): void {
-  if (!overlapDialog.activity) return
-  doAssign(overlapDialog.activity.id, overlapDialog.roleId)
-  overlapDialog.visible = false
-}
-
-function doAssign(activityId: string, roleId: string): void {
-  if (hasPendingTerms.value) {
-    termsDialog.action = { kind: 'self', activityId, roleId }
-    termsDialog.visible = true
-    busyId.value = null
-    return
-  }
-  executeAssign(activityId, roleId)
-}
-
-function executeAssign(
-  activityId: string,
-  roleId: string,
-  termsDecisions?: readonly TermsDecisionInput[],
-): void {
-  busyId.value = activityId
-  assign.mutate(
-    { activityId, activityRoleTypeId: roleId, termsDecisions },
-    {
-      onSuccess: () =>
-        feedback.success(
-          t('pages.eventDetail.toast.signupSuccess'),
-          t('pages.eventDetail.toast.signupSent'),
-        ),
-      onError: (error) => handleSignupError(error, { kind: 'self', activityId, roleId }),
-      onSettled: () => {
-        busyId.value = null
-      },
-    },
-  )
-}
-
-function confirmTerms(decisions: TermsDecisionInput[]): void {
-  const action = termsDialog.action
-  termsDialog.visible = false
-  termsDialog.action = null
-  if (!action) return
-  if (action.kind === 'self') {
-    executeAssign(action.activityId, action.roleId, decisions)
-    return
-  }
-  mutateHousehold(action.activityId, action.assignments, decisions)
-}
-
-function openHousehold(activity: TimelineActivity): void {
-  householdDialog.activity = activity
-  householdDialog.rows = members.value.map((member) => {
-    const existing = activity.household.find((h) => h.userId === member.id)
-    const memberRoles = rolesFor(member.id)
-    return {
-      userId: member.id,
-      name: member.name,
-      alreadyAssigned: existing !== undefined,
-      assignedRole: existing?.roleName ?? '',
-      include: existing === undefined,
-      roleId: memberRoles.length === 1 ? (memberRoles[0]?.id ?? '') : '',
-    }
-  })
-  householdDialog.visible = true
-}
-
-const householdSelectable = computed(() =>
-  householdDialog.rows.filter((row) => !row.alreadyAssigned),
-)
-
-const householdHighDemand = computed(() => {
-  const saturated = householdDialog.activity?.highDemandRoleIds ?? []
-  return householdDialog.rows.some(
-    (row) => row.include && !row.alreadyAssigned && !!row.roleId && saturated.includes(row.roleId),
-  )
-})
-
-function confirmHousehold(): void {
-  const activity = householdDialog.activity
-  if (!activity) return
-
-  const includedRows = householdDialog.rows.filter((row) => row.include && !row.alreadyAssigned)
-  const missingRole = includedRows.some((row) => !row.roleId)
-  if (missingRole) {
-    feedback.warn(
-      t('pages.eventDetail.toast.missingRoleDetail'),
-      t('pages.eventDetail.toast.missingRole'),
-    )
-    return
-  }
-
-  const assignments = includedRows.map((row) => ({ userId: row.userId, roleId: row.roleId }))
-
-  if (assignments.length === 0) {
-    householdDialog.visible = false
-    return
-  }
-
-  if (hasPendingTerms.value) {
-    termsDialog.action = { kind: 'household', activityId: activity.id, assignments }
-    termsDialog.visible = true
-    return
-  }
-
-  mutateHousehold(activity.id, assignments)
-}
-
-function mutateHousehold(
-  activityId: string,
-  assignments: HouseholdAssignmentInput[],
-  termsDecisions?: readonly TermsDecisionInput[],
-): void {
-  busyId.value = activityId
-  assignHousehold.mutate(
-    { activityId, assignments, termsDecisions },
-    {
-      onSuccess: () => {
-        householdDialog.visible = false
-        feedback.success(
-          t('pages.eventDetail.toast.householdSuccess'),
-          t('pages.eventDetail.toast.signupSent'),
-        )
-      },
-      onError: (error) => handleSignupError(error, { kind: 'household', activityId, assignments }),
-      onSettled: () => {
-        busyId.value = null
-      },
-    },
-  )
-}
-
-function onUnassignMember(activity: TimelineActivity, memberId: string): void {
-  if (!props.signupOpen) return
-  busyId.value = activity.id
-  unassign.mutate(
-    { activityId: activity.id, userId: memberId },
-    {
-      onSuccess: () =>
-        feedback.success(
-          t('pages.eventDetail.toast.unassignSuccess'),
-          t('pages.eventDetail.toast.unassignSummary'),
-        ),
-      onError: (error) => feedback.error(error),
-      onSettled: () => {
-        busyId.value = null
-      },
-    },
-  )
-}
-
-function onUnassign(activity: TimelineActivity): void {
-  if (!userId.value) return
-  onUnassignMember(activity, userId.value)
-}
+const clusters = computed(() => toTimeline(items.value))
 </script>
 
 <template>
@@ -391,7 +93,7 @@ function onUnassign(activity: TimelineActivity): void {
       </p>
       <p v-else-if="isAuthenticated && signupRoles.isError.value" class="signup-closed">
         <AppIcon name="info-circle" /> {{ $t('pages.eventDetail.activities.rolesLoadError') }}
-        <Button
+        <ActionButton
           :label="$t('common.retry')"
           type="primary"
           size="small"
@@ -436,29 +138,6 @@ function onUnassign(activity: TimelineActivity): void {
           </div>
         </li>
       </ol>
-
-      <section v-if="unscheduled.length" class="unscheduled">
-        <h3 class="unscheduled__title">{{ $t('pages.eventDetail.activities.noSchedule') }}</h3>
-        <div class="tl-cards tl-cards--multi">
-          <ActivityTimelineCard
-            v-for="act in unscheduled"
-            :key="act.id"
-            :activity="act"
-            :roles="selfRoles"
-            :roles-loading="signupRoles.isLoading.value"
-            :authenticated="isAuthenticated"
-            :signup-open="signupOpen"
-            :early-only="earlyOnly"
-            :has-household="hasHousehold"
-            :busy="busyId === act.id"
-            @signup="onSignup(act, $event)"
-            @household="openHousehold(act)"
-            @unassign="onUnassign(act)"
-            @unassign-member="onUnassignMember(act, $event)"
-            @login="goLogin"
-          />
-        </div>
-      </section>
     </template>
 
     <el-dialog
@@ -483,7 +162,7 @@ function onUnassign(activity: TimelineActivity): void {
             <label :for="`hh-${row.userId}`" class="household__name">{{ row.name }}</label>
           </div>
           <span v-if="row.alreadyAssigned" class="household__already">
-            {{ $t('pages.eventDetail.household.alreadyAs', { role: row.assignedRole || '—' }) }}
+            {{ $t('pages.eventDetail.household.alreadyAs', { role: row.assignedRole }) }}
           </span>
           <el-select
             v-else
@@ -509,8 +188,8 @@ function onUnassign(activity: TimelineActivity): void {
         <span>{{ $t('pages.eventDetail.highDemandWarning') }}</span>
       </p>
       <template #footer>
-        <Button :label="$t('common.cancel')" text @click="householdDialog.visible = false" />
-        <Button
+        <ActionButton :label="$t('common.cancel')" text @click="householdDialog.visible = false" />
+        <ActionButton
           :label="$t('pages.eventDetail.household.enroll')"
           type="primary"
           :disabled="householdSelectable.length === 0"
@@ -538,8 +217,8 @@ function onUnassign(activity: TimelineActivity): void {
       </ul>
       <p class="overlap__q">{{ $t('pages.eventDetail.overlap.question') }}</p>
       <template #footer>
-        <Button :label="$t('common.cancel')" text @click="overlapDialog.visible = false" />
-        <Button
+        <ActionButton :label="$t('common.cancel')" text @click="overlapDialog.visible = false" />
+        <ActionButton
           :label="$t('pages.eventDetail.overlap.enrollAnyway')"
           type="primary"
           @click="confirmOverlapSignup"
@@ -649,18 +328,6 @@ function onUnassign(activity: TimelineActivity): void {
 
 .tl-cards--multi {
   grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
-}
-
-.unscheduled {
-  margin-top: 16px;
-}
-
-.unscheduled__title {
-  font-family: var(--ca-font-display);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--ca-text-bright);
-  margin-bottom: 14px;
 }
 
 .household__lead {

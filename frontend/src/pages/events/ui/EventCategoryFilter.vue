@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { EventCategoryTag } from '@/entities/event'
-import { normalizeHexColor } from '@/shared/lib'
+import { normalizeHexColor } from '@/shared/lib/color'
 
 defineProps<{
   /** Selectable categories, each shown with its color swatch. */

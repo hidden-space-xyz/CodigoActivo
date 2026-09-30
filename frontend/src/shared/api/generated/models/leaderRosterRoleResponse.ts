@@ -8,11 +8,8 @@ import type { LeaderRosterDependentResponse } from './leaderRosterDependentRespo
 import type { LeaderRosterUserResponse } from './leaderRosterUserResponse';
 
 export interface LeaderRosterRoleResponse {
-  roleTypeId?: string;
-  /** @nullable */
-  roleName?: string | null;
-  /** @nullable */
-  users?: LeaderRosterUserResponse[] | null;
-  /** @nullable */
-  dependents?: LeaderRosterDependentResponse[] | null;
+  roleTypeId: string;
+  roleName: string;
+  users: LeaderRosterUserResponse[];
+  dependents: LeaderRosterDependentResponse[];
 }

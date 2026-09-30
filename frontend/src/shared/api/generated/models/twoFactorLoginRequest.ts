@@ -6,7 +6,6 @@
  */
 
 export interface TwoFactorLoginRequest {
-  /** @nullable */
-  code?: string | null;
-  keepSignedIn?: boolean;
+  code: string;
+  keepSignedIn: boolean;
 }

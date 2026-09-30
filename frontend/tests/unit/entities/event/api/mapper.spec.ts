@@ -1,220 +1,305 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   toCategoryTag,
   toEventDetail,
-  toPastEvent,
-  toUpcomingEvent,
+  toEventListing,
+  toEventRequest,
+  toEventSummary,
+  toEventTermsState,
+  toLeaderRosterActivity,
+  toPastEventSummary,
 } from '@/entities/event/api/mapper'
-import type { EventListItemResponse } from '@/shared/api/generated/models'
-import { formatDateRange, formatDateTime, formatDateTimeRange } from '@/shared/lib'
+import type { EventStatusKind } from '@/entities/event'
+import type { EventStage } from '@/shared/api/generated/models'
 
-import { t } from '../../../../support/render'
-
-/** ISO timestamp for a local date-time relative to the frozen "now" (2026-09-17 12:00 local). */
-function at(day: number, hour = 12): string {
-  return new Date(2026, 8, day, hour, 0, 0).toISOString()
-}
-
-const NOW = new Date(2026, 8, 17, 12, 0, 0)
+import {
+  buildEventCategory,
+  buildEventListItem,
+  buildEventResponse,
+  buildEventTermsLink,
+  buildLeaderRosterActivity,
+  buildTermsDocumentState,
+} from '../../../../support/builders'
 
 describe('event mapper', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(NOW)
+  it.each<[EventStage, EventStatusKind]>([
+    ['Upcoming', 'upcoming'],
+    ['EarlySignupOpen', 'earlySignupOpen'],
+    ['SignupOpen', 'signupOpen'],
+    ['SignupClosed', 'signupClosed'],
+    ['Finished', 'finished'],
+  ])('takes the %s stage the API decided as the status', (stage, status) => {
+    expect(toEventSummary(buildEventListItem({ stage })).status).toBe(status)
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
-  describe('status', () => {
-    const cases: [string, EventListItemResponse, string][] = [
-      ['finished once the end date is before today', { eventEndsAt: '2026-09-16' }, 'finished'],
-      [
-        'finished even with an open signup window',
-        { eventEndsAt: '2026-09-10T20:00:00', signupStartsAt: at(1), signupEndsAt: at(30) },
-        'finished',
-      ],
-      ['upcoming without a signup window', { eventEndsAt: '2026-09-17' }, 'upcoming'],
-      ['upcoming before the signup starts', { signupStartsAt: at(20) }, 'upcoming'],
-      [
-        'upcoming when the early signup has not started either',
-        { signupStartsAt: at(20), earlySignupStartsAt: at(18) },
-        'upcoming',
-      ],
-      [
-        'earlySignupOpen once the early window started',
-        { signupStartsAt: at(20), earlySignupStartsAt: at(16), signupEndsAt: at(25) },
-        'earlySignupOpen',
-      ],
-      [
-        'signupClosed after the signup ends',
-        { signupStartsAt: at(1), signupEndsAt: at(16), eventEndsAt: '2026-10-01' },
-        'signupClosed',
-      ],
-      ['signupClosed with only a past signup end', { signupEndsAt: at(17, 11) }, 'signupClosed'],
-      [
-        'signupOpen inside the signup window',
-        { signupStartsAt: at(10), signupEndsAt: at(20) },
-        'signupOpen',
-      ],
-      ['signupOpen with only a past signup start', { signupStartsAt: at(17, 11) }, 'signupOpen'],
-      ['signupOpen with only a future signup end', { signupEndsAt: at(18) }, 'signupOpen'],
-    ]
-
-    it.each(cases)('is %s', (_name, event, kind) => {
-      const status = toUpcomingEvent(event).status
-
-      expect(status.kind).toBe(kind)
-      expect(status.label).toBe(t(`entities.event.status.${kind}`))
-    })
-
-    it('treats a malformed end date as not finished', () => {
-      expect(toUpcomingEvent({ eventEndsAt: 'not-a-date' }).status.kind).toBe('upcoming')
-    })
-  })
-
-  it('maps an upcoming event card with a formatted date range and valid categories', () => {
-    const event = toUpcomingEvent({
-      id: 'event-1',
-      title: 'Día Código Activo',
-      subtitle: 'Programa tu futuro',
-      eventStartsAt: '2026-10-03',
-      eventEndsAt: '2026-10-04',
-      thumbnailId: 'thumb-1',
-      categories: [
-        { categoryTypeId: 'cat-1', name: 'Robótica', color: '#ff0000' },
-        { categoryTypeId: 'cat-2' },
-        { name: 'Sin id', color: '#00ff00' },
-      ],
-    })
+  it('maps a list item to a card model keeping its ISO days', () => {
+    const event = toEventSummary(
+      buildEventListItem({
+        id: 'event-1',
+        title: 'Día Código Activo',
+        subtitle: 'Programa tu futuro',
+        eventStartsAt: '2026-10-03',
+        eventEndsAt: '2026-10-04',
+        thumbnailId: 'thumb-1',
+        categories: [buildEventCategory({ categoryTypeId: 'cat-1', name: 'Robótica' })],
+        stage: 'Upcoming',
+      }),
+    )
 
     expect(event).toEqual({
       id: 'event-1',
       title: 'Día Código Activo',
-      slogan: 'Programa tu futuro',
-      date: formatDateRange('2026-10-03', '2026-10-04'),
-      status: { kind: 'upcoming', label: t('entities.event.status.upcoming') },
+      subtitle: 'Programa tu futuro',
+      startsAt: '2026-10-03',
+      endsAt: '2026-10-04',
+      status: 'upcoming',
       thumbnailId: 'thumb-1',
-      categories: [
-        { id: 'cat-1', name: 'Robótica', color: '#ff0000' },
-        { id: 'cat-2', name: '', color: '' },
-      ],
+      categories: [{ id: 'cat-1', name: 'Robótica', color: '#ff6600' }],
     })
   })
 
-  it('defaults a bare event card and shows the date fallback', () => {
-    expect(toUpcomingEvent({})).toEqual({
-      id: '',
-      title: '',
-      slogan: '',
-      date: t('entities.event.dateFallback'),
-      status: { kind: 'upcoming', label: t('entities.event.status.upcoming') },
-      thumbnailId: '',
-      categories: [],
-    })
+  it('shows a past event as finished whatever its stage', () => {
+    const event = toPastEventSummary(buildEventListItem({ id: 'event-0', stage: 'SignupClosed' }))
+
+    expect(event).toMatchObject({ id: 'event-0', status: 'finished' })
   })
 
-  it('maps a category type to a tag with empty defaults', () => {
+  it('maps a category type to a tag', () => {
     expect(toCategoryTag({ id: 'cat-1', name: 'IA', color: '#123456' })).toEqual({
       id: 'cat-1',
       name: 'IA',
       color: '#123456',
     })
-    expect(toCategoryTag({})).toEqual({ id: '', name: '', color: '' })
   })
 
-  it('maps the detail with labels, open signup flag and terms', () => {
-    const detail = toEventDetail({
-      id: 'event-1',
-      title: 'Día',
-      subtitle: 'Sub',
-      description: '<p>Texto</p>',
-      eventStartsAt: '2026-10-03T09:00:00Z',
-      eventEndsAt: '2026-10-03T18:00:00Z',
-      signupStartsAt: at(10),
-      signupEndsAt: at(30),
-      thumbnailId: 'thumb-1',
-      categories: [{ categoryTypeId: 'cat-1', name: 'IA', color: '#123456' }],
-      termsDocuments: [
-        { termsDocumentId: 'terms-1', name: 'Normas', required: true, displayOrder: 0 },
-      ],
-    })
+  it('maps the whole event with its signup window and terms', () => {
+    const detail = toEventDetail(
+      buildEventResponse({
+        id: 'event-1',
+        title: 'Día',
+        subtitle: 'Sub',
+        description: '<p>Texto</p>',
+        eventStartsAt: '2026-10-03',
+        eventEndsAt: '2026-10-04',
+        signupStartsAt: '2026-09-10T10:00:00Z',
+        signupEndsAt: '2026-09-30T10:00:00Z',
+        thumbnailId: 'thumb-1',
+        categories: [buildEventCategory({ categoryTypeId: 'cat-1', name: 'IA', color: '#123456' })],
+        termsDocuments: [buildEventTermsLink({ name: 'Normas' })],
+        stage: 'SignupOpen',
+      }),
+    )
 
     expect(detail).toEqual({
       id: 'event-1',
       title: 'Día',
       subtitle: 'Sub',
       description: '<p>Texto</p>',
-      startsAt: '2026-10-03T09:00:00Z',
-      endsAt: '2026-10-03T18:00:00Z',
-      dateLabel: formatDateRange('2026-10-03T09:00:00Z', '2026-10-03T18:00:00Z'),
-      signupLabel: formatDateTimeRange(at(10), at(30)),
-      earlySignupLabel: null,
-      status: { kind: 'signupOpen', label: t('entities.event.status.signupOpen') },
+      startsAt: '2026-10-03',
+      endsAt: '2026-10-04',
+      signupStartsAt: '2026-09-10T10:00:00Z',
+      signupEndsAt: '2026-09-30T10:00:00Z',
+      earlySignupStartsAt: null,
+      status: 'signupOpen',
       thumbnailId: 'thumb-1',
-      signupOpen: true,
-      earlySignupOpen: false,
       categories: [{ id: 'cat-1', name: 'IA', color: '#123456' }],
       terms: [{ id: 'terms-1', name: 'Normas', required: true, displayOrder: 0 }],
     })
   })
 
-  it('flags the early signup window and formats its start', () => {
-    const detail = toEventDetail({
-      signupStartsAt: at(20),
-      earlySignupStartsAt: at(15),
-      termsDocuments: [{ termsDocumentId: 'terms-1' }],
-    })
+  it('keeps the early signup start of the event', () => {
+    const detail = toEventDetail(
+      buildEventResponse({ earlySignupStartsAt: '2026-09-15T10:00:00Z', stage: 'EarlySignupOpen' }),
+    )
 
-    expect(detail.earlySignupOpen).toBe(true)
-    expect(detail.signupOpen).toBe(false)
-    expect(detail.earlySignupLabel).toBe(formatDateTime(at(15)))
-    expect(detail.terms).toEqual([{ id: 'terms-1', name: '', required: false, displayOrder: 0 }])
-  })
-
-  it('defaults a bare detail without terms documents', () => {
-    expect(toEventDetail({})).toEqual({
-      id: '',
-      title: '',
-      subtitle: '',
-      description: '',
-      startsAt: null,
-      endsAt: null,
-      dateLabel: t('entities.event.dateFallback'),
-      signupLabel: '—',
-      earlySignupLabel: null,
-      status: { kind: 'upcoming', label: t('entities.event.status.upcoming') },
-      thumbnailId: '',
-      signupOpen: false,
-      earlySignupOpen: false,
-      categories: [],
-      terms: [],
+    expect(detail).toMatchObject({
+      earlySignupStartsAt: '2026-09-15T10:00:00Z',
+      status: 'earlySignupOpen',
     })
   })
 
-  it('maps past events as finished regardless of dates', () => {
-    expect(
-      toPastEvent({
-        id: 'event-0',
-        title: 'Edición 2025',
-        subtitle: 'Crea',
-        eventStartsAt: '2025-05-10',
-        signupStartsAt: at(10),
-        signupEndsAt: at(30),
-        categories: [{ categoryTypeId: 'cat-1', name: 'IA', color: '#123456' }],
-        thumbnailId: 'thumb-0',
+  it('sorts the terms state by display order and keeps undecided documents as null', () => {
+    const state = toEventTermsState({
+      documents: [
+        buildTermsDocumentState({
+          termsDocumentId: 'terms-2',
+          name: 'Imagen',
+          required: false,
+          displayOrder: 1,
+          description: '<p>Fotos</p>',
+          accepted: true,
+          decidedAt: '2026-09-01T10:00:00Z',
+        }),
+        buildTermsDocumentState({ termsDocumentId: 'terms-1', description: '<p>Normas</p>' }),
+      ],
+      signupBlocked: true,
+    })
+
+    expect(state).toEqual({
+      documents: [
+        {
+          id: 'terms-1',
+          name: 'Normas del campamento',
+          description: '<p>Normas</p>',
+          required: true,
+          displayOrder: 0,
+          accepted: null,
+          decidedAt: null,
+        },
+        {
+          id: 'terms-2',
+          name: 'Imagen',
+          description: '<p>Fotos</p>',
+          required: false,
+          displayOrder: 1,
+          accepted: true,
+          decidedAt: '2026-09-01T10:00:00Z',
+        },
+      ],
+      signupBlocked: true,
+    })
+  })
+
+  it('maps a led activity keeping the order of roles and attendees', () => {
+    const activity = toLeaderRosterActivity(buildLeaderRosterActivity())
+
+    expect(activity).toMatchObject({
+      id: 'act-1',
+      title: 'Taller de robótica',
+      location: 'Aula 3',
+      startsAt: '2099-06-10T09:00:00Z',
+      endsAt: '2099-06-10T11:00:00Z',
+    })
+    expect(activity.roles.map((role) => [role.id, role.name])).toEqual([
+      ['role-leader', 'Líder'],
+      ['role-volunteer', 'Voluntario'],
+      ['role-participant', 'Participante'],
+    ])
+    expect(activity.roles[2]).toEqual({
+      id: 'role-participant',
+      name: 'Participante',
+      users: [
+        {
+          firstName: 'Ana',
+          lastName: 'Álvarez',
+          email: 'ana@example.test',
+          phone: '600 333 444',
+          signedUpAt: '2099-05-04T10:00:00Z',
+        },
+      ],
+      dependents: [
+        {
+          firstName: 'Nora',
+          lastName: 'Gil',
+          age: 11,
+          guardian: {
+            firstName: 'Gabriela',
+            lastName: 'Gil',
+            email: 'gabriela@example.test',
+            phone: '600 555 666',
+          },
+          signedUpAt: '2099-05-05T10:00:00Z',
+        },
+        {
+          firstName: 'Hugo',
+          lastName: 'Gil',
+          age: 1,
+          guardian: { firstName: 'Gabriela', lastName: 'Gil', email: '', phone: '' },
+          signedUpAt: '2099-05-06T10:00:00Z',
+        },
+      ],
+    })
+  })
+
+  it('leaves missing contact data and ages empty in the roster', () => {
+    const activity = toLeaderRosterActivity(
+      buildLeaderRosterActivity({
+        roles: [
+          {
+            roleTypeId: 'role-participant',
+            roleName: 'Participante',
+            users: [
+              {
+                firstName: 'Ana',
+                lastName: 'Álvarez',
+                email: null,
+                phone: null,
+                signedUpAt: '2099-05-04T10:00:00Z',
+              },
+            ],
+            dependents: [
+              {
+                firstName: 'Nora',
+                lastName: 'Gil',
+                age: null,
+                guardian: { firstName: 'Gabriela', lastName: 'Gil', email: null, phone: null },
+                signedUpAt: '2099-05-05T10:00:00Z',
+              },
+            ],
+          },
+        ],
       }),
-    ).toEqual({
-      id: 'event-0',
-      title: 'Edición 2025',
-      eventName: 'Crea',
-      date: formatDateRange('2025-05-10'),
-      status: { kind: 'finished', label: t('entities.event.status.finished') },
-      thumbnailId: 'thumb-0',
-      categories: [{ id: 'cat-1', name: 'IA', color: '#123456' }],
+    )
+
+    expect(activity.roles[0]?.users[0]).toMatchObject({ email: '', phone: '' })
+    expect(activity.roles[0]?.dependents[0]).toMatchObject({
+      age: null,
+      guardian: { email: '', phone: '' },
     })
-    expect(toPastEvent({})).toMatchObject({ id: '', title: '', eventName: '', thumbnailId: '' })
+  })
+})
+
+describe('event admin mapper', () => {
+  it('maps a list item to an admin table row', () => {
+    expect(
+      toEventListing(
+        buildEventListItem({
+          id: 'event-1',
+          featured: true,
+          signupStartsAt: '2026-09-01T08:00:00Z',
+          signupEndsAt: '2026-10-01T20:00:00Z',
+          earlySignupStartsAt: '2026-08-20T08:00:00Z',
+        }),
+      ),
+    ).toMatchObject({
+      id: 'event-1',
+      featured: true,
+      signupStartsAt: '2026-09-01T08:00:00Z',
+      signupEndsAt: '2026-10-01T20:00:00Z',
+      earlySignupStartsAt: '2026-08-20T08:00:00Z',
+    })
+    expect(toEventListing(buildEventListItem()).earlySignupStartsAt).toBeNull()
+  })
+
+  it('builds the body that saves an event, without terms when it has none', () => {
+    const input = {
+      title: 'Día',
+      subtitle: 'Sub',
+      description: '<p>Texto</p>',
+      startsAt: '2026-10-03',
+      endsAt: '2026-10-04',
+      earlySignupStartsAt: null,
+      signupStartsAt: '2026-09-10T10:00:00Z',
+      signupEndsAt: '2026-09-30T10:00:00Z',
+      thumbnailId: 'thumb-1',
+      categoryIds: ['cat-1'],
+      terms: [{ documentId: 'terms-1', required: true }],
+    }
+
+    expect(toEventRequest(input)).toEqual({
+      title: 'Día',
+      subtitle: 'Sub',
+      description: '<p>Texto</p>',
+      eventStartsAt: '2026-10-03',
+      eventEndsAt: '2026-10-04',
+      earlySignupStartsAt: null,
+      signupStartsAt: '2026-09-10T10:00:00Z',
+      signupEndsAt: '2026-09-30T10:00:00Z',
+      thumbnailId: 'thumb-1',
+      categoryTypeIds: ['cat-1'],
+      termsDocuments: [{ termsDocumentId: 'terms-1', required: true }],
+    })
+    expect(toEventRequest({ ...input, terms: [] }).termsDocuments).toBeNull()
   })
 })

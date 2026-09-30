@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { useSponsorCarousel } from '../../model/useSponsorCarousel'
-import { useSponsors } from '@/entities/partner'
-import { fileContentUrl } from '@/shared/lib'
+import { useQuery } from '@tanstack/vue-query'
 
-const { sponsors } = useSponsors()
+import { partnerQueries } from '@/entities/partner'
+import { fileContentUrl } from '@/shared/api'
+
+import { useSponsorCarousel } from '../../model/use-sponsor-carousel'
+
+const { data: sponsors } = useQuery(partnerQueries.sponsors())
 const { cards, next, prev, pause, resume } = useSponsorCarousel(sponsors)
 
 const LOGO_PALETTE = [

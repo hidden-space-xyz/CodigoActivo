@@ -1,88 +1,79 @@
 import { describe, expect, it } from 'vitest'
 
-import { useSession } from '@/entities/session'
+import {
+  currentUser,
+  endSession,
+  refreshSession,
+  resolveSession,
+  startSession,
+} from '@/entities/session'
 
-import { buildAuthUser, buildUserResponse } from '../../../../support/fixtures/user'
+import { createTestQueryClient } from '../../../../support/render'
 import { http, HttpResponse, server } from '../../../../support/server'
+import { buildUserResponse } from '../../../../support/builders'
+import { buildAuthUser } from '../../../../support/models'
 
-describe('useSession', () => {
-  it('returns the same singleton everywhere', () => {
-    expect(useSession()).toBe(useSession())
+function countMeRequests(response: () => Response): { count: number } {
+  const calls = { count: 0 }
+  server.use(
+    http.get('/api/auth/me', () => {
+      calls.count += 1
+      return response()
+    }),
+  )
+  return calls
+}
+
+describe('session', () => {
+  it('knows no user until one is resolved or started', () => {
+    const queryClient = createTestQueryClient()
+
+    expect(currentUser(queryClient)).toBeNull()
+
+    startSession(queryClient, buildAuthUser({ firstName: 'Grace' }))
+
+    expect(currentUser(queryClient)?.firstName).toBe('Grace')
   })
 
-  it('starts anonymous and derives state from the user set locally', () => {
-    const session = useSession()
-
-    expect(session.user).toBeNull()
-    expect(session.isAuthenticated).toBe(false)
-    expect(session.displayName).toBe('')
-    expect(session.isAdmin).toBe(false)
-
-    session.setUser(buildAuthUser({ firstName: 'Grace', isAdmin: true }))
-
-    expect(session.isAuthenticated).toBe(true)
-    expect(session.displayName).toBe('Grace')
-    expect(session.isAdmin).toBe(true)
-
-    session.clear()
-
-    expect(session.user).toBeNull()
-    expect(session.isAuthenticated).toBe(false)
-  })
-
-  it('returns the cached user without asking the API', async () => {
-    let calls = 0
-    server.use(
-      http.get('/api/auth/me', () => {
-        calls += 1
-        return HttpResponse.json(buildUserResponse())
-      }),
-    )
+  it('returns a known user without asking the API', async () => {
+    const calls = countMeRequests(() => HttpResponse.json(buildUserResponse()))
+    const queryClient = createTestQueryClient()
     const user = buildAuthUser({ id: 'cached' })
-    useSession().setUser(user)
+    startSession(queryClient, user)
 
-    await expect(useSession().resolve()).resolves.toStrictEqual(user)
-    expect(calls).toBe(0)
+    await expect(resolveSession(queryClient)).resolves.toStrictEqual(user)
+    expect(calls.count).toBe(0)
   })
 
-  it('loads the user once for concurrent callers and caches it', async () => {
-    let calls = 0
-    server.use(
-      http.get('/api/auth/me', () => {
-        calls += 1
-        return HttpResponse.json(buildUserResponse({ firstName: 'Grace' }))
-      }),
+  it('loads the user once for concurrent callers and keeps it', async () => {
+    const calls = countMeRequests(() =>
+      HttpResponse.json(buildUserResponse({ firstName: 'Grace' })),
     )
-    const session = useSession()
+    const queryClient = createTestQueryClient()
 
-    const [first, second] = await Promise.all([session.resolve(), session.resolve()])
-    const third = await session.resolve()
+    const [first, second] = await Promise.all([
+      resolveSession(queryClient),
+      resolveSession(queryClient),
+    ])
+    const third = await resolveSession(queryClient)
 
     expect(first?.firstName).toBe('Grace')
     expect(second).toStrictEqual(first)
     expect(third).toStrictEqual(first)
-    expect(session.isAuthenticated).toBe(true)
-    expect(calls).toBe(1)
+    expect(calls.count).toBe(1)
   })
 
-  it('does not cache an anonymous result, so later calls ask again', async () => {
-    let calls = 0
-    server.use(
-      http.get('/api/auth/me', () => {
-        calls += 1
-        return new HttpResponse(null, { status: 401 })
-      }),
-    )
-    const session = useSession()
+  it('asks the API again for a guest', async () => {
+    const calls = countMeRequests(() => new HttpResponse(null, { status: 401 }))
+    const queryClient = createTestQueryClient()
 
-    await expect(session.resolve()).resolves.toBeNull()
-    await expect(session.resolve()).resolves.toBeNull()
+    await expect(resolveSession(queryClient)).resolves.toBeNull()
+    await expect(resolveSession(queryClient)).resolves.toBeNull()
 
-    expect(session.isAuthenticated).toBe(false)
-    expect(calls).toBe(2)
+    expect(calls.count).toBe(2)
   })
 
-  it('lets a later call retry after the in-flight request fails', async () => {
+  it('lets a later call retry after the lookup fails', async () => {
     let fail = true
     server.use(
       http.get('/api/auth/me', () =>
@@ -91,11 +82,33 @@ describe('useSession', () => {
           : HttpResponse.json(buildUserResponse()),
       ),
     )
-    const session = useSession()
+    const queryClient = createTestQueryClient()
 
-    await expect(session.resolve()).rejects.toMatchObject({ status: 500 })
+    await expect(resolveSession(queryClient)).rejects.toMatchObject({ status: 500 })
     fail = false
 
-    await expect(session.resolve()).resolves.toMatchObject({ id: 'user-1' })
+    await expect(resolveSession(queryClient)).resolves.toMatchObject({ id: 'user-1' })
+  })
+
+  it('reloads a known user when refreshed', async () => {
+    countMeRequests(() => HttpResponse.json(buildUserResponse({ firstName: 'Augusta' })))
+    const queryClient = createTestQueryClient()
+    startSession(queryClient, buildAuthUser({ firstName: 'Ada' }))
+
+    await expect(refreshSession(queryClient)).resolves.toMatchObject({ firstName: 'Augusta' })
+    expect(currentUser(queryClient)?.firstName).toBe('Augusta')
+  })
+
+  it('forgets the user and every other cached query and mutation when it ends', () => {
+    const queryClient = createTestQueryClient()
+    startSession(queryClient, buildAuthUser())
+    queryClient.setQueryData(['account', 'me'], { id: 'user-1' })
+    queryClient.getMutationCache().build(queryClient, { mutationFn: () => Promise.resolve() })
+
+    endSession(queryClient)
+
+    expect(currentUser(queryClient)).toBeNull()
+    expect(queryClient.getQueryData(['account', 'me'])).toBeUndefined()
+    expect(queryClient.getMutationCache().getAll()).toHaveLength(0)
   })
 })

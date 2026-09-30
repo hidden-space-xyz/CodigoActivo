@@ -6,6 +6,6 @@
  */
 
 export interface HouseholdAssignmentRequest {
-  userId?: string;
-  activityRoleTypeId?: string;
+  userId: string;
+  activityRoleTypeId: string;
 }

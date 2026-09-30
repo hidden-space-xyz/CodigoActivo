@@ -1,202 +1,165 @@
-import { ref } from 'vue'
-import { flushPromises } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import {
-  useEventDetail,
-  useEventLeaderRoster,
-  useHomeEvents,
-  usePastEventCategories,
-  usePastEventsPaged,
-  usePastEventYears,
-  useUpcomingEventsPaged,
-} from '@/entities/event'
-import type { PastEventFilters } from '@/entities/event/model/types'
+import { eventKeys, eventList, eventPages, eventQueries } from '@/entities/event'
 import { FEATURED_FIRST_SORT } from '@/shared/api'
-import type { EventResponse } from '@/shared/api/generated/models'
 
-import { renderComposable } from '../../../../support/fixtures/entities/composable'
 import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import {
+  buildEventListItem,
+  buildEventResponse,
+  buildLeaderRosterActivity,
+  buildTermsDocumentState,
+} from '../../../../support/builders'
+import { queryOf } from '../../../../support/dom'
+import { createTestQueryClient } from '../../../../support/render'
 
-function queryOf(request: Request): Record<string, string> {
-  return Object.fromEntries(new URL(request.url).searchParams)
-}
-
-describe('useUpcomingEventsPaged', () => {
-  it('loads upcoming events page by page', async () => {
-    const pages: string[] = []
-    server.use(
-      http.get('/api/events', ({ request }) => {
-        const query = queryOf(request)
-        pages.push(query.page ?? '')
-        return HttpResponse.json(paged([{ id: `e${query.page ?? ''}` }], 2))
-      }),
-    )
-
-    const { result } = await renderComposable(() => useUpcomingEventsPaged())
-    await vi.waitFor(() => expect(result.items.value).toHaveLength(1))
-    expect(result.hasMore.value).toBe(true)
-    expect(result.total.value).toBe(2)
-
-    result.loadMore()
-    await vi.waitFor(() =>
-      expect(result.items.value.map((event) => event.id)).toEqual(['e1', 'e2']),
-    )
-    expect(result.hasMore.value).toBe(false)
-    expect(pages).toEqual(['1', '2'])
+describe('eventKeys', () => {
+  it('nests every public event query under the events root', () => {
+    expect(eventKeys.all).toEqual(['events'])
+    expect(eventKeys.upcoming()).toEqual(['events', 'upcoming'])
+    expect(eventKeys.past({ year: '2025', search: 'robot', categoryId: 'cat-1' })).toEqual([
+      'events',
+      'past',
+      '2025',
+      'robot',
+      'cat-1',
+    ])
+    expect(eventKeys.pastYears()).toEqual(['events', 'past-years'])
+    expect(eventKeys.pastCategories()).toEqual(['events', 'past-categories'])
+    expect(eventKeys.home()).toEqual(['events', 'board'])
+    expect(eventKeys.detail('e1')).toEqual(['events', 'detail', 'e1'])
+    expect(eventKeys.terms('e1')).toEqual(['events', 'terms', 'e1'])
+    expect(eventKeys.leaderRoster('e1', 'u1')).toEqual(['events', 'leader-roster', 'e1', 'u1'])
   })
 })
 
-describe('usePastEventYears and usePastEventCategories', () => {
-  it('start empty and expose the loaded filter options', async () => {
+describe('eventQueries', () => {
+  it('loads a whole event, or null when it does not exist', async () => {
     server.use(
+      http.get('/api/events/e1', () => HttpResponse.json(buildEventResponse({ id: 'e1' }))),
+      http.get('/api/events/missing', () => apiError(404)),
+    )
+    const client = createTestQueryClient()
+
+    await expect(client.fetchQuery(eventQueries.detail('e1'))).resolves.toMatchObject({
+      id: 'e1',
+    })
+    await expect(client.fetchQuery(eventQueries.detail('missing'))).resolves.toBeNull()
+    expect(eventQueries.detail('e1').queryKey).toEqual(eventKeys.detail('e1'))
+  })
+
+  it('loads the home board and the filter options of past events', async () => {
+    server.use(
+      http.get('/api/events', ({ request }) =>
+        queryOf(request.url).sort === FEATURED_FIRST_SORT
+          ? HttpResponse.json(paged([buildEventListItem({ id: 'e1' })]))
+          : HttpResponse.json(
+              paged([buildEventListItem({ id: 'e1' }), buildEventListItem({ id: 'e2' })]),
+            ),
+      ),
       http.get('/api/events/past-years', () => HttpResponse.json([2025])),
       http.get('/api/events/past-categories', () =>
         HttpResponse.json([{ id: 'cat-1', name: 'IA', color: '#123456' }]),
       ),
     )
+    const client = createTestQueryClient()
 
-    const { result } = await renderComposable(() => {
-      const years = usePastEventYears()
-      const categories = usePastEventCategories()
-      expect(years.years.value).toEqual([])
-      expect(categories.categories.value).toEqual([])
-      return { years, categories }
-    })
-
-    await vi.waitFor(() => expect(result.years.years.value).toEqual(['2025']))
-    await vi.waitFor(() =>
-      expect(result.categories.categories.value).toEqual([
-        { id: 'cat-1', name: 'IA', color: '#123456' },
-      ]),
-    )
-    expect(result.years.isLoading.value).toBe(false)
-    expect(result.categories.isError.value).toBe(false)
-  })
-
-  it('report errors', async () => {
-    server.use(
-      http.get('/api/events/past-years', () => apiError(500)),
-      http.get('/api/events/past-categories', () => apiError(500)),
-    )
-
-    const { result } = await renderComposable(() => ({
-      years: usePastEventYears(),
-      categories: usePastEventCategories(),
-    }))
-
-    await vi.waitFor(() => expect(result.years.isError.value).toBe(true))
-    await vi.waitFor(() => expect(result.categories.isError.value).toBe(true))
-  })
-})
-
-describe('usePastEventsPaged', () => {
-  it('waits for a year and reloads when the filters change', async () => {
-    const queries: Record<string, string>[] = []
-    server.use(
-      http.get('/api/events', ({ request }) => {
-        const query = queryOf(request)
-        queries.push(query)
-        return HttpResponse.json(paged([{ id: `${query.year}-${query.search ?? ''}` }]))
-      }),
-    )
-    const filters = ref<PastEventFilters>({ year: '', search: '', categoryId: '' })
-
-    const { result } = await renderComposable(() => usePastEventsPaged(filters))
-    await flushPromises()
-    expect(queries).toEqual([])
-    expect(result.items.value).toEqual([])
-
-    filters.value = { year: '2025', search: '', categoryId: '' }
-    await vi.waitFor(() => expect(result.items.value[0]?.id).toBe('2025-'))
-
-    filters.value = { year: '2025', search: 'robot', categoryId: 'cat-1' }
-    await vi.waitFor(() => expect(result.items.value[0]?.id).toBe('2025-robot'))
-
-    expect(queries.map((query) => [query.year, query.search, query.categoryTypeId])).toEqual([
-      ['2025', undefined, undefined],
-      ['2025', 'robot', 'cat-1'],
+    const home = await client.fetchQuery(eventQueries.home())
+    expect(home.featured?.id).toBe('e1')
+    expect(home.items.map((event) => event.id)).toEqual(['e2'])
+    await expect(client.fetchQuery(eventQueries.pastYears())).resolves.toEqual(['2025'])
+    await expect(client.fetchQuery(eventQueries.pastCategories())).resolves.toEqual([
+      { id: 'cat-1', name: 'IA', color: '#123456' },
     ])
   })
-})
 
-describe('useHomeEvents', () => {
-  it('exposes the featured event and the other upcoming events', async () => {
+  it('loads the terms state and the roster of the activities a user leads', async () => {
     server.use(
-      http.get('/api/events', ({ request }) =>
-        queryOf(request).sort === FEATURED_FIRST_SORT
-          ? HttpResponse.json(paged([{ id: 'e1' }]))
-          : HttpResponse.json(paged([{ id: 'e1' }, { id: 'e2' }])),
+      http.get('/api/events/e1/terms', () =>
+        HttpResponse.json({ documents: [buildTermsDocumentState()], signupBlocked: true }),
+      ),
+      http.get('/api/events/e1/leader-roster', () =>
+        HttpResponse.json([buildLeaderRosterActivity()]),
       ),
     )
+    const client = createTestQueryClient()
 
-    const { result } = await renderComposable(() => {
-      const home = useHomeEvents()
-      expect(home.featured.value).toBeNull()
-      expect(home.items.value).toEqual([])
-      return home
+    await expect(client.fetchQuery(eventQueries.terms('e1'))).resolves.toMatchObject({
+      signupBlocked: true,
+      documents: [{ id: 'terms-1' }],
     })
-
-    await vi.waitFor(() => expect(result.featured.value?.id).toBe('e1'))
-    expect(result.items.value.map((event) => event.id)).toEqual(['e2'])
-    expect(result.isLoading.value).toBe(false)
-    expect(result.isError.value).toBe(false)
-  })
-})
-
-describe('useEventDetail', () => {
-  it('loads the event for a reactive id', async () => {
-    server.use(
-      http.get('/api/events/:id', ({ params }) =>
-        HttpResponse.json<EventResponse>({ id: String(params.id), title: String(params.id) }),
-      ),
+    await expect(client.fetchQuery(eventQueries.leaderRoster('e1', 'u1'))).resolves.toEqual([
+      expect.objectContaining({ id: 'act-1' }),
+    ])
+    expect(eventQueries.leaderRoster('e1', 'u1').queryKey).toEqual(
+      eventKeys.leaderRoster('e1', 'u1'),
     )
-    const id = ref('e1')
-
-    const { result } = await renderComposable(() => useEventDetail(id))
-    await vi.waitFor(() => expect(result.event.value?.title).toBe('e1'))
-    expect(result.notFound.value).toBe(false)
-
-    id.value = 'e2'
-    await vi.waitFor(() => expect(result.event.value?.title).toBe('e2'))
-  })
-
-  it('flags a missing event as not found', async () => {
-    server.use(http.get('/api/events/missing', () => apiError(404)))
-
-    const { result } = await renderComposable(() => useEventDetail(() => 'missing'))
-
-    await vi.waitFor(() => expect(result.notFound.value).toBe(true))
-    expect(result.isError.value).toBe(false)
   })
 })
 
-describe('useEventLeaderRoster', () => {
-  it('stays idle without a user and keys the data by user', async () => {
-    const requests: string[] = []
+describe('eventPages', () => {
+  it('pages the upcoming events under their key', async () => {
+    const urls: string[] = []
     server.use(
-      http.get('/api/events/:id/leader-roster', ({ params }) => {
-        requests.push(String(params.id))
-        return HttpResponse.json([{ activityId: `led-by-${requests.length}` }])
+      http.get('/api/events', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildEventListItem()], 3))
       }),
     )
-    const userId = ref<string | null>(null)
+    const source = eventPages.upcoming()
 
-    const { result, queryClient } = await renderComposable(() =>
-      useEventLeaderRoster(() => 'e1', userId),
+    await expect(source.fetchPage(2, 10)).resolves.toMatchObject({ total: 3 })
+    expect(source.queryKey).toEqual(eventKeys.upcoming())
+    expect(queryOf(urls[0] ?? '')).toEqual({
+      scope: 'Upcoming',
+      sort: 'eventStartsAt',
+      page: '2',
+      pageSize: '10',
+    })
+  })
+
+  it('pages the past events of the filters under a key of those filters', async () => {
+    const urls: string[] = []
+    server.use(
+      http.get('/api/events', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildEventListItem()], 1))
+      }),
     )
-    await flushPromises()
-    expect(requests).toEqual([])
-    expect(result.data.value).toBeUndefined()
+    const filters = { year: '2025', search: 'robot', categoryId: '' }
+    const source = eventPages.past(filters)
 
-    userId.value = 'u1'
-    await vi.waitFor(() => expect(result.data.value?.[0]?.id).toBe('led-by-1'))
-    expect(queryClient.getQueryData(['events', 'leader-roster', 'e1', 'u1'])).toEqual(
-      result.data.value,
+    await expect(source.fetchPage(1, 25)).resolves.toMatchObject({
+      items: [{ status: 'finished' }],
+    })
+    expect(source.queryKey).toEqual(eventKeys.past(filters))
+    expect(queryOf(urls[0] ?? '')).toEqual({
+      scope: 'Past',
+      year: '2025',
+      search: 'robot',
+      sort: '-eventStartsAt',
+      page: '1',
+      pageSize: '25',
+    })
+  })
+})
+
+describe('eventList', () => {
+  it('pages the admin table under the list key', async () => {
+    const urls: string[] = []
+    server.use(
+      http.get('/api/events', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildEventListItem({ featured: true })], 1))
+      }),
     )
 
-    userId.value = 'u2'
-    await vi.waitFor(() => expect(result.data.value?.[0]?.id).toBe('led-by-2'))
-    expect(requests).toEqual(['e1', 'e1'])
+    await expect(eventList.fetchPage({ title: 'hack', page: 1 })).resolves.toMatchObject({
+      total: 1,
+      items: [{ id: 'event-1', featured: true }],
+    })
+    expect(queryOf(urls[0] ?? '')).toEqual({ title: 'hack', page: '1' })
+    expect(eventList.queryKey).toEqual(eventKeys.list())
+    expect(eventKeys.list()).toEqual(['events', 'list'])
   })
 })

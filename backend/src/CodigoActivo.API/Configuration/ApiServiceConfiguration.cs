@@ -95,6 +95,8 @@ internal static class ApiServiceConfiguration
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
+            options.SupportNonNullableReferenceTypes();
+            options.SchemaFilter<NonNullablePropertiesRequiredFilter>();
             options.OperationFilter<JsonResponseMediaTypeFilter>();
             options.OperationFilter<CamelCaseQueryParametersFilter>();
             options.DocumentFilter<ApiErrorResponseDocumentFilter>();

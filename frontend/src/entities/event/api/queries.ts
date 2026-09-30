@@ -1,13 +1,12 @@
-import { computed, toValue, type MaybeRefOrGetter } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { queryOptions } from '@tanstack/vue-query'
 
-import { usePagedList } from '@/shared/lib'
+import type { PagedListSource, ServerTableSource } from '@/shared/lib/paging'
 
-import type { PastEventFilters } from '../model/types'
-import { eventQueryKeys } from './query-keys'
+import type { EventListing, EventListParams, EventSummary, PastEventFilters } from '../model/types'
 import {
-  getEventByIdRequest,
   getEventLeaderRosterRequest,
+  getEventRequest,
+  getEventsPageRequest,
   getEventTermsStateRequest,
   getHomeEventsRequest,
   getPastEventCategoriesRequest,
@@ -16,125 +15,81 @@ import {
   getUpcomingEventsPageRequest,
 } from './requests'
 
-/** Infinite list of upcoming events ordered by start date, for the public events page. */
-export function useUpcomingEventsPaged() {
-  return usePagedList({
-    queryKey: () => eventQueryKeys.upcoming(),
+/** Query keys of events; `all` covers every one of them. */
+export const eventKeys = {
+  all: ['events'] as const,
+  upcoming: () => [...eventKeys.all, 'upcoming'] as const,
+  past: (filters: PastEventFilters) =>
+    [...eventKeys.all, 'past', filters.year, filters.search, filters.categoryId] as const,
+  pastYears: () => [...eventKeys.all, 'past-years'] as const,
+  pastCategories: () => [...eventKeys.all, 'past-categories'] as const,
+  home: () => [...eventKeys.all, 'board'] as const,
+  detail: (id: string) => [...eventKeys.all, 'detail', id] as const,
+  terms: (id: string) => [...eventKeys.all, 'terms', id] as const,
+  leaderRoster: (id: string, userId: string) =>
+    [...eventKeys.all, 'leader-roster', id, userId] as const,
+  list: () => [...eventKeys.all, 'list'] as const,
+}
+
+/** Query options of events. */
+export const eventQueries = {
+  /** A whole event, or `null` when it does not exist. */
+  detail: (id: string) =>
+    queryOptions({
+      queryKey: eventKeys.detail(id),
+      queryFn: () => getEventRequest(id),
+    }),
+  /** Home page board: the featured event plus up to three other upcoming events. */
+  home: () =>
+    queryOptions({
+      queryKey: eventKeys.home(),
+      queryFn: () => getHomeEventsRequest(),
+    }),
+  /** Years that have past events. */
+  pastYears: () =>
+    queryOptions({
+      queryKey: eventKeys.pastYears(),
+      queryFn: () => getPastEventYearsRequest(),
+    }),
+  /** Categories used by past events. */
+  pastCategories: () =>
+    queryOptions({
+      queryKey: eventKeys.pastCategories(),
+      queryFn: () => getPastEventCategoriesRequest(),
+    }),
+  /** The signed-in user's decision state for the event's terms documents. */
+  terms: (eventId: string) =>
+    queryOptions({
+      queryKey: eventKeys.terms(eventId),
+      queryFn: () => getEventTermsStateRequest(eventId),
+    }),
+  /**
+   * Activities of an event that `userId` leads, with their confirmed attendees; the key includes
+   * the user so one account's attendee data is never served to another session.
+   */
+  leaderRoster: (eventId: string, userId: string) =>
+    queryOptions({
+      queryKey: eventKeys.leaderRoster(eventId, userId),
+      queryFn: () => getEventLeaderRosterRequest(eventId),
+    }),
+}
+
+/** Public event lists, loaded page by page. */
+export const eventPages = {
+  /** Upcoming events ordered by start date. */
+  upcoming: (): PagedListSource<EventSummary> => ({
+    queryKey: eventKeys.upcoming(),
     fetchPage: (page, pageSize) => getUpcomingEventsPageRequest(page, pageSize),
-  })
+  }),
+  /** Past events of the chosen year, newest first, filtered by search and category. */
+  past: (filters: PastEventFilters): PagedListSource<EventSummary> => ({
+    queryKey: eventKeys.past(filters),
+    fetchPage: (page, pageSize) => getPastEventsPageRequest(filters, page, pageSize),
+  }),
 }
 
-/** Years that have past events, used as filter options; `years` is empty until loaded. */
-export function usePastEventYears() {
-  const query = useQuery({
-    queryKey: eventQueryKeys.pastYears(),
-    queryFn: () => getPastEventYearsRequest(),
-  })
-
-  return {
-    years: computed(() => query.data.value ?? []),
-    isLoading: query.isLoading,
-    isError: query.isError,
-  }
-}
-
-/** Categories used by past events, used as filter options; `categories` is empty until loaded. */
-export function usePastEventCategories() {
-  const query = useQuery({
-    queryKey: eventQueryKeys.pastCategories(),
-    queryFn: () => getPastEventCategoriesRequest(),
-  })
-
-  return {
-    categories: computed(() => query.data.value ?? []),
-    isLoading: query.isLoading,
-    isError: query.isError,
-  }
-}
-
-/**
- * Infinite list of past events for the selected filters, newest first. Empty `search` and
- * `categoryId` are not sent; nothing loads while `year` is empty.
- */
-export function usePastEventsPaged(filters: MaybeRefOrGetter<PastEventFilters>) {
-  const selected = computed(() => toValue(filters))
-
-  return usePagedList({
-    queryKey: () => {
-      const { year, search, categoryId } = selected.value
-      return eventQueryKeys.past(year, search, categoryId)
-    },
-    fetchPage: (page, pageSize) => getPastEventsPageRequest(selected.value, page, pageSize),
-    enabled: () => selected.value.year !== '',
-  })
-}
-
-/** Home page board: the featured event (or `null`) plus up to three other upcoming events. */
-export function useHomeEvents() {
-  const query = useQuery({
-    queryKey: eventQueryKeys.board(),
-    queryFn: () => getHomeEventsRequest(),
-  })
-
-  return {
-    featured: computed(() => query.data.value?.featured ?? null),
-    items: computed(() => query.data.value?.items ?? []),
-    isLoading: query.isLoading,
-    isError: query.isError,
-  }
-}
-
-/** Public event detail; `notFound` becomes true once the API answers 404 for the id. */
-export function useEventDetail(eventId: MaybeRefOrGetter<string>) {
-  const id = computed(() => toValue(eventId))
-
-  const query = useQuery({
-    queryKey: computed(() => eventQueryKeys.detail(id.value)),
-    queryFn: () => getEventByIdRequest(id.value),
-  })
-
-  const notFound = computed(() => !query.isLoading.value && query.data.value === null)
-
-  return {
-    event: query.data,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    notFound,
-  }
-}
-
-/**
- * The signed-in user's decision state for an event's terms documents. Disabled while `enabled()`
- * returns `false` (e.g. guests, or events without terms).
- */
-export function useEventTermsState(
-  eventId: MaybeRefOrGetter<string>,
-  enabled: MaybeRefOrGetter<boolean> = true,
-) {
-  const id = computed(() => toValue(eventId))
-
-  return useQuery({
-    queryKey: computed(() => eventQueryKeys.terms(id.value)),
-    queryFn: () => getEventTermsStateRequest(id.value),
-    enabled: computed(() => toValue(enabled)),
-  })
-}
-
-/**
- * Activities of an event that `userId` leads with a confirmed assignment, with their confirmed
- * attendees. Disabled while `userId` is `null`; the key includes the user so one account's
- * attendee data is never served to another session.
- */
-export function useEventLeaderRoster(
-  eventId: MaybeRefOrGetter<string>,
-  userId: MaybeRefOrGetter<string | null>,
-) {
-  const id = computed(() => toValue(eventId))
-  const user = computed(() => toValue(userId))
-
-  return useQuery({
-    queryKey: computed(() => eventQueryKeys.leaderRoster(id.value, user.value)),
-    queryFn: () => getEventLeaderRosterRequest(id.value),
-    enabled: computed(() => user.value !== null),
-  })
+/** Admin events table, paged, filtered and sorted by the API. */
+export const eventList: ServerTableSource<EventListing, EventListParams> = {
+  queryKey: eventKeys.list(),
+  fetchPage: (params) => getEventsPageRequest(params),
 }

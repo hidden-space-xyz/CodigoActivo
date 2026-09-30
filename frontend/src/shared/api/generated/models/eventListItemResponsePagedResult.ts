@@ -7,9 +7,8 @@
 import type { EventListItemResponse } from './eventListItemResponse';
 
 export interface EventListItemResponsePagedResult {
-  /** @nullable */
-  items?: EventListItemResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: EventListItemResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

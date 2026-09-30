@@ -16,9 +16,8 @@ export interface TimelineActivity {
   description: string
   location: string
   modality: string
-  /** `null` when the activity has no schedule; it is then listed apart from the timeline. */
-  start: Date | null
-  end: Date | null
+  start: Date
+  end: Date
   /** High-demand roles, which show a warning when chosen; empty until enrollments load. */
   highDemandRoleIds: string[]
   /** The current user's own enrollment, or `null` when not enrolled. */

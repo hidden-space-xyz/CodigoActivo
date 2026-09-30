@@ -125,19 +125,7 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     /// <returns>The signup phase at that moment.</returns>
     public SignupPhase SignupPhaseAt(DateTimeOffset now)
     {
-        if (now > SignupEndsAt)
-        {
-            return SignupPhase.Closed;
-        }
-
-        if (now >= SignupStartsAt)
-        {
-            return SignupPhase.Open;
-        }
-
-        return EarlySignupStartsAt is { } earlyStart && now >= earlyStart
-            ? SignupPhase.EarlyOnly
-            : SignupPhase.Closed;
+        return EventTimeline.SignupPhaseAt(EarlySignupStartsAt, SignupStartsAt, SignupEndsAt, now);
     }
 
     /// <summary>

@@ -2,10 +2,20 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { AppButton as Button, AppIcon } from '@/shared/ui'
-import { formatFileSize, useActionConfirm } from '@/shared/lib'
-import type { SendEmailPayload } from '../model/useSendEmail'
-import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES } from '../model/useSendEmail'
+import { useActionConfirm } from '@/shared/lib/feedback'
+import { useForm } from '@/shared/lib/form'
+import { formatFileSize } from '@/shared/lib/number'
+import { ActionButton } from '@/shared/ui/action-button'
+import { AppIcon } from '@/shared/ui/app-icon'
+
+import {
+  addAttachments,
+  MAX_ATTACHMENTS,
+  MAX_ATTACHMENTS_BYTES,
+  readEmailDraft,
+  toEmailDraft,
+} from '../model/email-form'
+import type { SendEmailPayload } from '../model/types'
 
 const SUBJECT_MAX_LENGTH = 200
 const BODY_MAX_LENGTH = 10000
@@ -34,10 +44,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { confirmAction } = useActionConfirm()
 
-const subject = ref('')
-const body = ref('')
-const attachments = ref<File[]>([])
-const submitted = ref(false)
+const form = useForm({ initial: toEmailDraft, read: readEmailDraft })
+const { draft, errors, invalid } = form
 const attachmentError = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -45,20 +53,14 @@ watch(
   () => props.visible,
   (open) => {
     if (!open) return
-    subject.value = ''
-    body.value = ''
-    attachments.value = []
-    submitted.value = false
+    form.reset()
     attachmentError.value = ''
   },
 )
 
 const recipientsWithoutConsent = computed(() => props.withoutConsent ?? 0)
 
-const subjectInvalid = computed(() => subject.value.trim() === '')
-const bodyInvalid = computed(() => body.value.trim() === '')
-
-const totalBytes = computed(() => attachments.value.reduce((sum, file) => sum + file.size, 0))
+const totalBytes = computed(() => draft.attachments.reduce((sum, file) => sum + file.size, 0))
 
 function pick(): void {
   fileInput.value?.click()
@@ -71,27 +73,21 @@ function onFilesPicked(event: Event): void {
   attachmentError.value = ''
   if (picked.length === 0) return
 
-  const merged = [...attachments.value, ...picked]
-  if (merged.length > MAX_ATTACHMENTS) {
-    attachmentError.value = t('features.sendEmail.attachments.tooMany', {
-      max: MAX_ATTACHMENTS,
-    })
+  const added = addAttachments(draft.attachments, picked)
+  if ('problem' in added) {
+    attachmentError.value =
+      added.problem === 'tooMany'
+        ? t('features.sendEmail.attachments.tooMany', { max: MAX_ATTACHMENTS })
+        : t('features.sendEmail.attachments.tooLarge', {
+            max: formatFileSize(MAX_ATTACHMENTS_BYTES),
+          })
     return
   }
-
-  const size = merged.reduce((sum, file) => sum + file.size, 0)
-  if (size > MAX_ATTACHMENTS_BYTES) {
-    attachmentError.value = t('features.sendEmail.attachments.tooLarge', {
-      max: formatFileSize(MAX_ATTACHMENTS_BYTES),
-    })
-    return
-  }
-
-  attachments.value = merged
+  draft.attachments = added.attachments
 }
 
 function removeAttachment(index: number): void {
-  attachments.value = attachments.value.filter((_, position) => position !== index)
+  draft.attachments = draft.attachments.filter((_, position) => position !== index)
   attachmentError.value = ''
 }
 
@@ -103,19 +99,14 @@ function close(): void {
 function send(): void {
   if (props.sending) return
 
-  submitted.value = true
-  if (subjectInvalid.value || bodyInvalid.value) return
+  const payload = form.submit()
+  if (!payload) return
 
   confirmAction({
     header: t('features.sendEmail.confirm.header'),
     message: t('features.sendEmail.confirm.message', { target: props.target }),
     acceptLabel: t('features.sendEmail.send'),
-    accept: () =>
-      emit('submit', {
-        subject: subject.value,
-        body: body.value,
-        attachments: attachments.value,
-      }),
+    accept: () => emit('submit', payload),
   })
 }
 </script>
@@ -152,30 +143,26 @@ function send(): void {
         <label for="send-email-subject">{{ $t('features.sendEmail.subject') }}</label>
         <el-input
           id="send-email-subject"
-          v-model="subject"
+          v-model="draft.subject"
           :maxlength="SUBJECT_MAX_LENGTH"
-          :class="{ 'ca-invalid': submitted && subjectInvalid }"
+          :class="{ 'ca-invalid': invalid('subject') }"
           :placeholder="$t('features.sendEmail.subjectPlaceholder')"
         />
-        <small v-if="submitted && subjectInvalid" class="form__error">
-          {{ $t('features.sendEmail.subjectRequired') }}
-        </small>
+        <small v-if="errors.subject" class="form__error">{{ errors.subject }}</small>
       </div>
 
       <div class="form__field">
         <label for="send-email-body">{{ $t('features.sendEmail.body') }}</label>
         <el-input
           id="send-email-body"
-          v-model="body"
+          v-model="draft.body"
           type="textarea"
           :maxlength="BODY_MAX_LENGTH"
-          :class="{ 'ca-invalid': submitted && bodyInvalid }"
+          :class="{ 'ca-invalid': invalid('body') }"
           :placeholder="$t('features.sendEmail.bodyPlaceholder')"
           :autosize="{ minRows: 6, maxRows: 12 }"
         />
-        <small v-if="submitted && bodyInvalid" class="form__error">
-          {{ $t('features.sendEmail.bodyRequired') }}
-        </small>
+        <small v-if="errors.body" class="form__error">{{ errors.body }}</small>
         <small v-else class="form__hint">{{ $t('features.sendEmail.bodyHint') }}</small>
       </div>
 
@@ -184,20 +171,20 @@ function send(): void {
           {{ $t('features.sendEmail.attachments.label') }}
         </div>
         <div class="attachments" role="group" aria-labelledby="send-email-attachments-label">
-          <Button
+          <ActionButton
             :label="$t('features.sendEmail.attachments.add')"
             icon="paperclip"
             plain
             size="small"
-            :disabled="sending || attachments.length >= MAX_ATTACHMENTS"
+            :disabled="sending || draft.attachments.length >= MAX_ATTACHMENTS"
             @click="pick"
           />
-          <span v-if="attachments.length > 0" class="attachments__summary">
+          <span v-if="draft.attachments.length > 0" class="attachments__summary">
             {{
               $t(
                 'features.sendEmail.attachments.summary',
-                { count: attachments.length, size: formatFileSize(totalBytes) },
-                attachments.length,
+                { count: draft.attachments.length, size: formatFileSize(totalBytes) },
+                draft.attachments.length,
               )
             }}
           </span>
@@ -211,12 +198,12 @@ function send(): void {
           tabindex="-1"
           @change="onFilesPicked"
         />
-        <ul v-if="attachments.length > 0" class="attachments__list">
-          <li v-for="(file, index) in attachments" :key="`${file.name}-${index}`">
+        <ul v-if="draft.attachments.length > 0" class="attachments__list">
+          <li v-for="(file, index) in draft.attachments" :key="`${file.name}-${index}`">
             <AppIcon name="file" />
             <span class="attachments__name">{{ file.name }}</span>
             <span class="attachments__size">{{ formatFileSize(file.size) }}</span>
-            <Button
+            <ActionButton
               icon="times"
               text
               circle
@@ -232,8 +219,8 @@ function send(): void {
     </form>
 
     <template #footer>
-      <Button :label="$t('common.cancel')" text :disabled="sending" @click="close" />
-      <Button
+      <ActionButton :label="$t('common.cancel')" text :disabled="sending" @click="close" />
+      <ActionButton
         :label="$t('features.sendEmail.send')"
         icon="send"
         type="primary"
@@ -283,12 +270,6 @@ function send(): void {
 .form__hint {
   color: var(--ca-text-dim);
   font-size: 12.5px;
-}
-
-.ca-invalid {
-  --el-input-border-color: var(--ca-danger);
-  --el-input-hover-border-color: var(--ca-danger);
-  --el-input-focus-border-color: var(--ca-danger);
 }
 
 .attachments {

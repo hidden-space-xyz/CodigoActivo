@@ -6,16 +6,12 @@
  */
 
 export interface HouseholdMemberAssignmentResponse {
-  activityId?: string;
-  userId?: string;
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
-  roleTypeId?: string;
-  /** @nullable */
-  roleName?: string | null;
-  statusId?: string;
-  /** @nullable */
-  statusName?: string | null;
+  activityId: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  roleTypeId: string;
+  roleName: string;
+  statusId: string;
+  statusName: string;
 }

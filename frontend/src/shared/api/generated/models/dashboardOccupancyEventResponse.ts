@@ -7,11 +7,9 @@
 import type { DashboardOccupancyActivityResponse } from './dashboardOccupancyActivityResponse';
 
 export interface DashboardOccupancyEventResponse {
-  eventId?: string;
-  /** @nullable */
-  title?: string | null;
-  confirmed?: number;
-  desired?: number;
-  /** @nullable */
-  activities?: DashboardOccupancyActivityResponse[] | null;
+  eventId: string;
+  title: string;
+  confirmed: number;
+  desired: number;
+  activities: DashboardOccupancyActivityResponse[];
 }

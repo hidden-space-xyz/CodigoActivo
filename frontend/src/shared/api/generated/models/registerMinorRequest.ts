@@ -7,10 +7,8 @@
 import type { Gender } from './gender';
 
 export interface RegisterMinorRequest {
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
-  birthDate?: string;
-  gender?: Gender;
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  gender: Gender;
 }

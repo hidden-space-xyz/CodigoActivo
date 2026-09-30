@@ -6,12 +6,9 @@
  */
 
 export interface ResourceTypeResponse {
-  id?: string;
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  description?: string | null;
-  /** @nullable */
-  color?: string | null;
-  isExternal?: boolean;
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  isExternal: boolean;
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useForgotPassword } from '@/features/auth'
-import { BaseButton, PageHead } from '@/shared/ui'
+import { useForgotPassword } from '../model/use-forgot-password'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { PageHead } from '@/shared/ui/page-head'
 
 const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
 </script>
@@ -39,9 +40,9 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
             {{ $t('pages.forgotPassword.error') }}
           </p>
 
-          <BaseButton type="submit" variant="primary" block :loading="isSubmitting">
+          <BrandButton type="submit" variant="primary" block :loading="isSubmitting">
             {{ $t('pages.forgotPassword.submit') }}
-          </BaseButton>
+          </BrandButton>
         </form>
 
         <div v-else class="forgot-sent" aria-live="polite">

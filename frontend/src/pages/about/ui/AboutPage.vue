@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { ActivityStep, useOrganizationContent, ValueCard } from '@/entities/organization'
 import { CONTACT } from '@/shared/config'
-import { AppIcon, BaseButton } from '@/shared/ui'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { BrandButton } from '@/shared/ui/brand-button'
 
-const { values, activities } = useOrganizationContent()
+import { ORGANIZATION_ACTIVITIES, ORGANIZATION_VALUES } from '../config/organization'
+import ActivityStep from './ActivityStep.vue'
+import ValueCard from './ValueCard.vue'
 
 const joinVisible = ref(false)
 </script>
@@ -27,7 +29,7 @@ const joinVisible = ref(false)
 
     <section class="about-values">
       <div class="ca-container--narrow about-values__grid">
-        <ValueCard v-for="value in values" :key="value.id" :value="value" />
+        <ValueCard v-for="value in ORGANIZATION_VALUES" :key="value.id" :value="value" />
       </div>
     </section>
 
@@ -39,7 +41,11 @@ const joinVisible = ref(false)
         <div>
           <h2 class="about-what__title">{{ $t('pages.about.what.title') }}</h2>
           <div class="about-what__list">
-            <ActivityStep v-for="activity in activities" :key="activity.id" :activity="activity" />
+            <ActivityStep
+              v-for="activity in ORGANIZATION_ACTIVITIES"
+              :key="activity.id"
+              :activity="activity"
+            />
           </div>
         </div>
       </div>
@@ -52,9 +58,9 @@ const joinVisible = ref(false)
           {{ $t('pages.about.cta.text') }}
         </p>
         <div class="about-cta__actions">
-          <BaseButton variant="primary" @click="joinVisible = true">
+          <BrandButton variant="primary" @click="joinVisible = true">
             {{ $t('pages.about.cta.join') }}
-          </BaseButton>
+          </BrandButton>
         </div>
       </div>
     </section>

@@ -75,6 +75,7 @@ export * from './eventRosterGuardianResponse';
 export * from './eventRosterParticipantResponse';
 export * from './eventRosterResponse';
 export * from './eventScope';
+export * from './eventStage';
 export * from './eventSummaryResponse';
 export * from './eventTermsDocumentRequest';
 export * from './eventTermsDocumentResponse';

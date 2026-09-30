@@ -6,9 +6,8 @@
  */
 
 export interface DashboardKpiResponse {
-  /** @nullable */
-  key?: string | null;
-  total?: number;
-  inRange?: number;
-  previousRange?: number;
+  key: string;
+  total: number;
+  inRange: number;
+  previousRange: number;
 }

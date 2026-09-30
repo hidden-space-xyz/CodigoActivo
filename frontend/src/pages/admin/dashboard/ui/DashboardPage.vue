@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import { useI18n } from 'vue-i18n'
 
-import { AdminPageHeader, DataState } from '@/shared/ui'
-import { useChartTheme } from '@/shared/lib'
+import { useChartTheme } from '@/shared/lib/chart'
+import { AdminPageHeader } from '@/shared/ui/admin-page-header'
+import { DataState } from '@/shared/ui/data-state'
 
-import { useDashboardRange } from '../model/useDashboardRange'
-import { useDashboardAnalytics } from '../model/useDashboardAnalytics'
-import * as charts from '../model/charts'
-import KpiCards from './KpiCards.vue'
-import RangeFilter from './RangeFilter.vue'
+import { dashboardQueries } from '../api/queries'
+import * as charts from '../lib/charts'
+import { useDashboardRange } from '../model/use-dashboard-range'
 import AnalyticsChart from './AnalyticsChart.vue'
+import KpiCards from './KpiCards.vue'
 import OccupancyCard from './OccupancyCard.vue'
+import RangeFilter from './RangeFilter.vue'
 
+const { t } = useI18n()
 const { preset, customRange, range, setPreset, setCustomRange } = useDashboardRange()
-const { data, isLoading, isError, isFetching } = useDashboardAnalytics(range)
+const { data, isLoading, isError, isFetching } = useQuery(() =>
+  dashboardQueries.analytics(range.value),
+)
 const { palette } = useChartTheme()
 
 const granularity = computed(() => data.value?.granularity ?? 'month')
@@ -25,10 +31,10 @@ const chartOptions = computed(() => {
     inscriptions: charts.barOptions(p, true),
     content: charts.barOptions(p, false),
     calendar: charts.barOptions(p, false),
-    usersByType: charts.doughnutOptions(p),
-    audience: charts.doughnutOptions(p),
-    participantsByGender: charts.doughnutOptions(p),
-    categories: charts.doughnutOptions(p),
+    usersByType: charts.doughnutOptions(p, t),
+    audience: charts.doughnutOptions(p, t),
+    participantsByGender: charts.doughnutOptions(p, t),
+    categories: charts.doughnutOptions(p, t),
   }
 })
 
@@ -40,55 +46,57 @@ const view = computed(() => {
   const topEvents = d?.topEvents ?? []
   return {
     userGrowth: {
-      data: charts.stackedAreaData(d?.userGrowth, g, p, charts.USER_TYPE_STYLE),
+      data: charts.stackedAreaData(d?.userGrowth, g, p, charts.USER_TYPE_STYLE, t),
       options: o.userGrowth,
       empty: !charts.hasSeriesData(d?.userGrowth),
     },
     inscriptions: {
-      data: charts.barSeriesData(d?.inscriptions, g, p, charts.INSCRIPTION_STATUS_STYLE),
+      data: charts.barSeriesData(d?.inscriptions, g, p, charts.INSCRIPTION_STATUS_STYLE, t),
       options: o.inscriptions,
       empty: !charts.hasSeriesData(d?.inscriptions),
     },
     content: {
-      data: charts.barSeriesData(d?.contentPublished, g, p, charts.CONTENT_STYLE),
+      data: charts.barSeriesData(d?.contentPublished, g, p, charts.CONTENT_STYLE, t),
       options: o.content,
       empty: !charts.hasSeriesData(d?.contentPublished),
     },
     calendar: {
-      data: charts.barSeriesData(d?.eventsCalendar, 'month', p, charts.CALENDAR_STYLE),
+      data: charts.barSeriesData(d?.eventsCalendar, 'month', p, charts.CALENDAR_STYLE, t),
       options: o.calendar,
       empty: !charts.hasSeriesData(d?.eventsCalendar),
     },
     usersByType: {
-      data: charts.doughnutData(d?.usersByType, p, charts.USER_TYPE_STYLE),
+      data: charts.doughnutData(d?.usersByType, p, t, charts.USER_TYPE_STYLE),
       options: o.usersByType,
       empty: !charts.hasSliceData(d?.usersByType),
     },
     audience: {
-      data: charts.doughnutData(d?.audienceComposition, p, charts.AUDIENCE_STYLE),
+      data: charts.doughnutData(d?.audienceComposition, p, t, charts.AUDIENCE_STYLE),
       options: o.audience,
       empty: !charts.hasSliceData(d?.audienceComposition),
     },
     participantsByGender: {
-      data: charts.doughnutData(d?.participantsByGender, p, charts.GENDER_STYLE),
+      data: charts.doughnutData(d?.participantsByGender, p, t, charts.GENDER_STYLE),
       options: o.participantsByGender,
       empty: !charts.hasSliceData(d?.participantsByGender),
     },
     categories: {
-      data: charts.doughnutData(d?.eventsByCategory, p),
+      data: charts.doughnutData(d?.eventsByCategory, p, t),
       options: o.categories,
       empty: !charts.hasSliceData(d?.eventsByCategory),
     },
     topEvents: {
       data: charts.rankingBarData(
-        topEvents.map((event) => charts.wrapLabel(event.title ?? '')),
-        topEvents.map((event) => event.confirmed ?? 0),
+        topEvents.map((event) => charts.wrapLabel(event.title)),
+        topEvents.map((event) => event.confirmed),
         p.orange,
         p,
+        t,
       ),
       options: charts.rankingOptions(
         p,
-        topEvents.map((event) => event.title ?? ''),
+        topEvents.map((event) => event.title),
+        t,
       ),
       empty: topEvents.length === 0,
     },
@@ -119,7 +127,7 @@ const view = computed(() => {
       :error-text="$t('pages.admin.dashboard.error')"
     >
       <div v-if="data" class="dashboard" :class="{ 'dashboard--refetching': isFetching }">
-        <KpiCards :kpis="data.kpis ?? []" />
+        <KpiCards :kpis="data.kpis" />
 
         <div class="dashboard__grid">
           <div class="g-7">
@@ -226,7 +234,7 @@ const view = computed(() => {
           </div>
 
           <div class="g-12">
-            <OccupancyCard :occupancy="data.occupancy ?? {}" />
+            <OccupancyCard :occupancy="data.occupancy" />
           </div>
         </div>
       </div>

@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { useSeo } from '@/shared/lib'
+import { useI18n } from 'vue-i18n'
 
-import { organizationJsonLd } from '../model/organizationJsonLd'
-import NewsSection from './sections/NewsSection.vue'
-import HomeEventsSection from './sections/HomeEventsSection.vue'
+import { useSeo } from '@/shared/lib/seo'
+
+import { organizationJsonLd } from '../lib/organization-json-ld'
 import HeroSection from './sections/HeroSection.vue'
+import HomeEventsSection from './sections/HomeEventsSection.vue'
+import NewsSection from './sections/NewsSection.vue'
 import SponsorsSection from './sections/SponsorsSection.vue'
 
-useSeo(() => ({ jsonLd: organizationJsonLd() }))
+const { t } = useI18n()
+
+useSeo(() => ({ jsonLd: organizationJsonLd(t) }))
 </script>
 
 <template>

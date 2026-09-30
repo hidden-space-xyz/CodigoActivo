@@ -6,8 +6,6 @@
  */
 
 export interface EventBadgeActivityResponse {
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  location?: string | null;
+  title: string;
+  location: string;
 }

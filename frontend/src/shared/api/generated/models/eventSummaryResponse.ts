@@ -7,18 +7,16 @@
 import type { EventRoleTypeSummaryResponse } from './eventRoleTypeSummaryResponse';
 
 export interface EventSummaryResponse {
-  eventId?: string;
-  /** @nullable */
-  title?: string | null;
-  activitiesCount?: number;
-  totalAssignments?: number;
-  requestedAssignments?: number;
-  confirmedAssignments?: number;
-  deniedAssignments?: number;
-  distinctVolunteers?: number;
-  ratingsCount?: number;
+  eventId: string;
+  title: string;
+  activitiesCount: number;
+  totalAssignments: number;
+  requestedAssignments: number;
+  confirmedAssignments: number;
+  deniedAssignments: number;
+  distinctVolunteers: number;
+  ratingsCount: number;
   /** @nullable */
   ratingsAverage?: number | null;
-  /** @nullable */
-  roleTypeBreakdown?: EventRoleTypeSummaryResponse[] | null;
+  roleTypeBreakdown: EventRoleTypeSummaryResponse[];
 }

@@ -1,11 +1,15 @@
-import { computed, reactive, ref, toValue, type MaybeRefOrGetter } from 'vue'
+import { computed, ref, toValue, type MaybeRefOrGetter } from 'vue'
 
-import { toDateOnly } from '@/shared/lib'
+import { toDateOnly } from '@/shared/lib/date'
+import { useForm, type FormProblem, type FormReading } from '@/shared/lib/form'
 
 import {
   parseDependentPerson,
   parseIndependentPerson,
-  personProblemMessage,
+  personProblemKey,
+  type DependentPerson,
+  type IndependentPerson,
+  type ParsedPerson,
   type PersonDraft,
   type PersonField,
   type PersonSubmission,
@@ -62,33 +66,53 @@ function pickDraft(values: Partial<Readonly<PersonDraft>>): Partial<PersonDraft>
   )
 }
 
+/** A person the form accepted, tagged with the rules that read it. */
+type ReadPerson =
+  | { readonly kind: 'independent'; readonly person: IndependentPerson }
+  | { readonly kind: 'dependent'; readonly person: DependentPerson }
+
+function toReading<T>(
+  parsed: ParsedPerson<T>,
+  tag: (person: T) => ReadPerson,
+): FormReading<PersonField, ReadPerson> {
+  const problems: Partial<Record<PersonField, FormProblem>> = {}
+  for (const field of Object.keys(parsed.problems) as PersonField[]) {
+    const problem = parsed.problems[field]
+    if (problem) problems[field] = personProblemKey(field, problem)
+  }
+  return { problems, value: parsed.person ? tag(parsed.person) : null }
+}
+
 /**
- * Form state for creating or editing a person under the rules of its kind. The draft is what the
- * inputs bind to; `errors` holds a translated message per refused field once the form was
- * submitted. Editing an independent account asks for `currentPassword` whenever its email, phone
- * or secondary phone changes (the email ignoring case), or after `rejectPassword` reports that the
- * server refused one. `submit` returns the normalized person, or `null` while something is wrong.
+ * Form state for creating or editing a person under the rules of its kind, built on `useForm`. The
+ * draft is what the inputs bind to; `errors` holds a translated message per refused field once the
+ * form was submitted. Editing an independent account asks for `currentPassword` whenever its
+ * email, phone or secondary phone changes (the email ignoring case), or after `rejectPassword`
+ * reports that the server refused one. `submit` returns the normalized person, or `null` while
+ * something is wrong.
  */
 export function usePersonForm(options: PersonFormOptions) {
-  const draft = reactive<PersonDraft>(emptyDraft())
-  const currentPassword = ref('')
-  const submitted = ref(false)
-  const passwordRejected = ref(false)
   const today = options.today ?? toDateOnly(new Date())
-
   const kind = computed(() => toValue(options.kind))
   const stored = computed(() => toValue(options.stored) ?? null)
-  const parsed = computed(() =>
-    kind.value === 'dependent'
-      ? {
-          kind: 'dependent' as const,
-          ...parseDependentPerson(draft, {
-            today,
-            storedBirthDate: stored.value?.birthDate ?? null,
-          }),
-        }
-      : { kind: 'independent' as const, ...parseIndependentPerson(draft) },
-  )
+  const currentPassword = ref('')
+  const passwordRejected = ref(false)
+
+  const form = useForm({
+    initial: emptyDraft,
+    read: (draft) =>
+      kind.value === 'dependent'
+        ? toReading(
+            parseDependentPerson(draft, {
+              today,
+              storedBirthDate: stored.value?.birthDate ?? null,
+            }),
+            (person) => ({ kind: 'dependent', person }),
+          )
+        : toReading(parseIndependentPerson(draft), (person) => ({ kind: 'independent', person })),
+  })
+  const { draft } = form
+
   const replacesContact = computed(() => {
     const previous = stored.value
     return (
@@ -102,21 +126,10 @@ export function usePersonForm(options: PersonFormOptions) {
     () => kind.value === 'independent' && (replacesContact.value || passwordRejected.value),
   )
   const passwordMissing = computed(() => requiresPassword.value && !currentPassword.value)
-  const errors = computed(() => {
-    const messages: Partial<Record<PersonField, string>> = {}
-    if (!submitted.value) return messages
-    const { problems } = parsed.value
-    for (const field of Object.keys(problems) as PersonField[]) {
-      const problem = problems[field]
-      if (problem) messages[field] = personProblemMessage(field, problem)
-    }
-    return messages
-  })
 
   function load(values?: Partial<Readonly<PersonDraft>> | null): void {
-    Object.assign(draft, emptyDraft(), values ? pickDraft(values) : {})
+    form.reset(values ? pickDraft(values) : {})
     currentPassword.value = ''
-    submitted.value = false
     passwordRejected.value = false
   }
 
@@ -125,15 +138,14 @@ export function usePersonForm(options: PersonFormOptions) {
   }
 
   function submit(): PersonSubmission | null {
-    submitted.value = true
-    const current = parsed.value
-    if (passwordMissing.value || !current.person) return null
-    if (current.kind === 'dependent') {
-      return { kind: 'dependent', person: current.person, currentPassword: null }
+    const read = form.submit()
+    if (passwordMissing.value || !read) return null
+    if (read.kind === 'dependent') {
+      return { kind: 'dependent', person: read.person, currentPassword: null }
     }
     return {
       kind: 'independent',
-      person: current.person,
+      person: read.person,
       currentPassword: requiresPassword.value ? currentPassword.value : null,
     }
   }
@@ -141,8 +153,8 @@ export function usePersonForm(options: PersonFormOptions) {
   return {
     draft,
     currentPassword,
-    submitted,
-    errors,
+    submitted: form.submitted,
+    errors: form.errors,
     requiresPassword,
     passwordMissing,
     load,

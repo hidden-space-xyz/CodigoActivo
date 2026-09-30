@@ -7,21 +7,18 @@
 import type { ResourceTypeResponse } from './resourceTypeResponse';
 
 export interface ResourceResponse {
-  id?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  subtitle?: string | null;
-  /** @nullable */
-  description?: string | null;
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
   /** @nullable */
   url?: string | null;
-  type?: ResourceTypeResponse;
-  createdAt?: string;
+  type: ResourceTypeResponse;
+  createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  createdBy?: string;
+  createdBy: string;
   /** @nullable */
   updatedBy?: string | null;
-  thumbnailId?: string;
+  thumbnailId: string;
 }

@@ -1,0 +1,304 @@
+<script setup lang="ts">
+import { ref, toRefs, watch } from 'vue'
+import { useRoute } from 'vue-router'
+
+import { useSession } from '@/entities/session'
+import { useLogout } from '@/features/logout'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { ThemeToggle } from '@/shared/ui/theme-toggle'
+
+import { ADMIN_NAV } from '../config/navigation'
+
+const route = useRoute()
+const { displayName } = toRefs(useSession())
+const logout = useLogout()
+
+const menuOpen = ref(false)
+
+watch(
+  () => route.fullPath,
+  () => {
+    menuOpen.value = false
+  },
+)
+</script>
+
+<template>
+  <div class="admin">
+    <aside class="admin__sidebar">
+      <RouterLink :to="{ name: 'home' }" class="admin__brand">{{
+        $t('common.brand.name')
+      }}</RouterLink>
+      <nav class="admin__nav">
+        <RouterLink
+          v-for="item in ADMIN_NAV"
+          :key="item.routeName"
+          :to="{ name: item.routeName }"
+          class="admin__link"
+          active-class="admin__link--active"
+        >
+          <AppIcon :name="item.icon" />
+          <span>{{ $t(item.labelKey) }}</span>
+        </RouterLink>
+      </nav>
+    </aside>
+
+    <div class="admin__body">
+      <header class="admin__topbar">
+        <button
+          type="button"
+          class="admin__burger"
+          :aria-label="$t('common.openMenu')"
+          :aria-expanded="menuOpen"
+          @click="menuOpen = true"
+        >
+          <AppIcon name="bars" />
+        </button>
+        <BrandButton variant="back" :to="{ name: 'home' }" class="admin__home">
+          {{ $t('widgets.adminShell.goToSite') }}
+        </BrandButton>
+        <div class="admin__user">
+          <ThemeToggle />
+          <span class="admin__username">{{ displayName }}</span>
+          <button
+            type="button"
+            class="admin__logout"
+            :title="$t('common.logout')"
+            @click="logout()"
+          >
+            {{ $t('common.logout') }}
+          </button>
+        </div>
+      </header>
+
+      <main class="admin__main">
+        <slot />
+      </main>
+    </div>
+
+    <el-drawer
+      v-model="menuOpen"
+      append-to-body
+      direction="ltr"
+      size="min(288px, 84vw)"
+      :title="$t('widgets.adminShell.menuTitle')"
+      :aria-label="$t('widgets.adminShell.menuTitle')"
+    >
+      <nav class="admin__nav">
+        <RouterLink
+          v-for="item in ADMIN_NAV"
+          :key="item.routeName"
+          :to="{ name: item.routeName }"
+          class="admin__link admin__link--drawer"
+          active-class="admin__link--active"
+          @click="menuOpen = false"
+        >
+          <AppIcon :name="item.icon" />
+          <span>{{ $t(item.labelKey) }}</span>
+        </RouterLink>
+        <RouterLink
+          :to="{ name: 'home' }"
+          class="admin__link admin__link--drawer"
+          @click="menuOpen = false"
+        >
+          <AppIcon name="home" />
+          <span>{{ $t('widgets.adminShell.goToSite') }}</span>
+        </RouterLink>
+      </nav>
+    </el-drawer>
+  </div>
+</template>
+
+<style scoped>
+.admin {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--ca-bg);
+  color: var(--ca-text);
+}
+
+.admin__sidebar {
+  border-right: 1px solid var(--ca-border);
+  background: var(--ca-bg-deep);
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.admin__brand {
+  font-family: var(--ca-font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: var(--ca-text-bright);
+  text-decoration: none;
+  padding: 0 8px;
+}
+
+.admin__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--ca-text-muted);
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 500;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.admin__link--drawer {
+  min-height: var(--ca-tap);
+  font-size: 16px;
+}
+
+.admin__link .app-icon {
+  font-size: 16px;
+}
+
+.admin__link:hover {
+  background: var(--ca-surface);
+  color: var(--ca-text);
+}
+
+.admin__link--active {
+  background: var(--ca-orange-soft);
+  color: var(--ca-orange-ink);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--ca-orange);
+}
+
+.admin__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin__topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--ca-border);
+  background: var(--ca-glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.admin__burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--ca-tap);
+  height: var(--ca-tap);
+  margin-left: -10px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ca-text);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.admin__home {
+  margin-right: auto;
+}
+
+.admin__user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.admin__username {
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin__logout {
+  flex: none;
+  background: transparent;
+  border: 1px solid var(--ca-border-strong);
+  color: var(--ca-text-muted);
+  padding: 7px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+
+.admin__logout:hover {
+  color: var(--ca-text);
+  border-color: var(--ca-orange);
+}
+
+.admin__main {
+  padding: 28px;
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .admin {
+    grid-template-columns: 1fr;
+  }
+
+  .admin__sidebar {
+    display: none;
+  }
+
+  .admin__burger {
+    display: inline-flex;
+  }
+
+  .admin__topbar {
+    padding: 10px var(--ca-gutter);
+    gap: 8px;
+  }
+
+  .admin__home {
+    display: none;
+  }
+
+  .admin__user {
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  .admin__main {
+    padding: 20px var(--ca-gutter);
+  }
+}
+
+@media (max-width: 640px) {
+  .admin__username {
+    display: none;
+  }
+}
+</style>

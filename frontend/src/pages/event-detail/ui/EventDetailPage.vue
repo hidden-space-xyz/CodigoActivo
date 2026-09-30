@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
-import { useEventDetail } from '@/entities/event'
+import { eventQueries, signupAccess, statusLabelKey } from '@/entities/event'
 import { useSession } from '@/entities/session'
-import { LeaderRosterPanel, useLeaderRoster } from '@/features/event-leader-roster'
+import { fileContentUrl } from '@/shared/api'
+import { formatDateRange, formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
+import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/rich-text'
+import { absoluteUrl, type SeoData, useSeo } from '@/shared/lib/seo'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { ColorTag } from '@/shared/ui/color-tag'
+import { RichTextContent } from '@/shared/ui/rich-text-content'
+
+import { useLeaderRoster } from '../model/use-leader-roster'
 import EventActivitiesTimeline from './EventActivitiesTimeline.vue'
-import { BaseButton, ColorTag } from '@/shared/ui'
-import RichTextContent from '@/shared/ui/RichTextContent.vue'
-import { i18n } from '@/shared/i18n'
-import { absoluteUrl, fileContentUrl, useSeo, type SeoData } from '@/shared/lib'
-import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/richtext'
+import LeaderRosterPanel from './LeaderRosterPanel.vue'
 
 const props = defineProps<{
   /** Event id from the `/events/:eventId` route param. */
@@ -20,7 +25,8 @@ const props = defineProps<{
 
 const route = useRoute()
 const { t } = useI18n()
-const { event, isLoading, notFound } = useEventDetail(() => props.eventId)
+const { data: event, isLoading } = useQuery(() => eventQueries.detail(props.eventId))
+const notFound = computed(() => !isLoading.value && event.value === null)
 const session = useSession()
 
 const tab = ref<'info' | 'activities' | 'attendees'>('info')
@@ -33,27 +39,33 @@ watch(canSeeAttendees, (visible) => {
 
 const hasDescription = computed(() => !isRichTextEmpty(event.value?.description))
 
-const signupAllowed = computed(() => {
-  const current = event.value
-  if (!current) return false
-  if (current.signupOpen) return true
-  return current.earlySignupOpen && (session.user?.earlySignupEligible ?? false)
-})
-
-const earlySignupOnly = computed(
-  () => (event.value?.earlySignupOpen ?? false) && !signupAllowed.value,
+const access = computed(() =>
+  event.value ? signupAccess(event.value, session.user?.earlySignupEligible ?? false) : 'closed',
 )
+const signupAllowed = computed(() => access.value === 'open')
+const earlySignupOnly = computed(() => access.value === 'earlyOnly')
 
 const infoRows = computed(() => {
   const current = event.value
   if (!current) return []
   return [
-    { label: t('pages.eventDetail.info.date'), value: current.dateLabel },
-    ...(current.earlySignupLabel
-      ? [{ label: t('pages.eventDetail.info.earlySignup'), value: current.earlySignupLabel }]
+    {
+      label: t('pages.eventDetail.info.date'),
+      value: formatDateRange(current.startsAt, current.endsAt),
+    },
+    ...(current.earlySignupStartsAt
+      ? [
+          {
+            label: t('pages.eventDetail.info.earlySignup'),
+            value: formatDateTime(current.earlySignupStartsAt),
+          },
+        ]
       : []),
-    { label: t('pages.eventDetail.info.signup'), value: current.signupLabel },
-    { label: t('common.status'), value: current.status.label },
+    {
+      label: t('pages.eventDetail.info.signup'),
+      value: formatDateTimeRange(current.signupStartsAt, current.signupEndsAt),
+    },
+    { label: t('common.status'), value: t(statusLabelKey(current.status)) },
   ]
 })
 
@@ -64,36 +76,31 @@ const seo = computed<SeoData | undefined>(() => {
   const current = event.value
   if (!current) return undefined
   const description = richTextExcerpt(current.description) || current.subtitle
-  const jsonLd: Record<string, unknown> | undefined = current.startsAt
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'Event',
-        name: current.title,
-        url: absoluteUrl(route.path),
-        startDate: current.startsAt,
-        organizer: { '@type': 'Organization', name: i18n.global.t('seo.siteName') },
-        location: {
-          '@type': 'Place',
-          name: i18n.global.t('seo.siteName'),
-          address: {
-            '@type': 'PostalAddress',
-            addressLocality: 'León',
-            addressCountry: 'ES',
-          },
-        },
-      }
-    : undefined
-  if (jsonLd) {
-    if (description) jsonLd.description = description
-    if (posterUrl.value) jsonLd.image = absoluteUrl(posterUrl.value)
-    if (current.endsAt) jsonLd.endDate = current.endsAt
-  }
   return {
     title: current.title,
-    description: description || undefined,
-    image: posterUrl.value || undefined,
+    description,
+    image: posterUrl.value,
     type: 'article',
-    jsonLd,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'Event',
+      name: current.title,
+      url: absoluteUrl(route.path),
+      startDate: current.startsAt,
+      endDate: current.endsAt,
+      description,
+      image: absoluteUrl(posterUrl.value),
+      organizer: { '@type': 'Organization', name: t('seo.siteName') },
+      location: {
+        '@type': 'Place',
+        name: t('seo.siteName'),
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: 'León',
+          addressCountry: 'ES',
+        },
+      },
+    },
   }
 })
 
@@ -104,9 +111,9 @@ useSeo(seo)
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BaseButton variant="back" :to="{ name: 'events' }">
+        <BrandButton variant="back" :to="{ name: 'events' }">
           {{ $t('pages.eventDetail.backToEvents') }}
-        </BaseButton>
+        </BrandButton>
       </div>
     </section>
 
@@ -120,7 +127,7 @@ useSeo(seo)
       <section class="detail-head">
         <div class="ca-container--narrow">
           <h1 class="detail-head__title">{{ event.title }}</h1>
-          <div v-if="event.subtitle" class="detail-head__slogan">
+          <div class="detail-head__slogan">
             {{ $t('pages.eventDetail.slogan', { subtitle: event.subtitle }) }}
           </div>
           <div v-if="event.categories.length" class="detail-head__cats">
@@ -170,7 +177,7 @@ useSeo(seo)
       <section v-if="tab === 'info'" class="detail-body">
         <div class="ca-container--narrow detail-body__grid">
           <div class="detail-body__main">
-            <img v-if="posterUrl" :src="posterUrl" :alt="event.title" class="detail-body__poster" />
+            <img :src="posterUrl" :alt="event.title" class="detail-body__poster" />
 
             <h2 class="detail-body__h2">{{ $t('pages.eventDetail.aboutEvent') }}</h2>
             <RichTextContent v-if="hasDescription" :content="event.description" />
@@ -188,9 +195,9 @@ useSeo(seo)
               </div>
             </dl>
             <p class="detail-panel__note">{{ $t('pages.eventDetail.panelNote') }}</p>
-            <BaseButton variant="primary" block @click="tab = 'activities'">
+            <BrandButton variant="primary" block @click="tab = 'activities'">
               {{ $t('pages.eventDetail.tabs.viewActivities') }}
-            </BaseButton>
+            </BrandButton>
           </aside>
         </div>
       </section>

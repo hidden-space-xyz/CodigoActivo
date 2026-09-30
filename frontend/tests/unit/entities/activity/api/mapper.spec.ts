@@ -1,20 +1,23 @@
 import { describe, expect, it } from 'vitest'
 
-import { toActivityDetail } from '@/entities/activity'
 import {
   toActivityAssignment,
+  toActivityDetail,
   toEventActivity,
   toHouseholdActivityAssignment,
   toHouseholdMember,
   toHouseholdSignupRoles,
   toOverlapCheck,
 } from '@/entities/activity/api/mapper'
-import type { ActivityResponse } from '@/shared/api/generated/models'
 
-import { buildUserResponse } from '../../../../support/fixtures/user'
-import { t } from '../../../../support/render'
+import {
+  buildActivityResponse,
+  buildAssignedActivity,
+  buildHouseholdAssignment,
+  buildUserResponse,
+} from '../../../../support/builders'
 
-const activity: ActivityResponse = {
+const activity = buildActivityResponse({
   id: 'activity-1',
   title: 'Robótica',
   description: '<p>Construye un robot</p>',
@@ -26,10 +29,9 @@ const activity: ActivityResponse = {
   thumbnailId: 'thumb-1',
   roleCapacities: [
     { activityRoleTypeId: 'role-participant', desiredCount: 20, isHighDemand: true },
-    { activityRoleTypeId: 'role-mentor', isHighDemand: false },
-    { desiredCount: 3, isHighDemand: true },
+    { activityRoleTypeId: 'role-mentor', desiredCount: 2, isHighDemand: false },
   ],
-}
+})
 
 describe('activity mapper', () => {
   it('maps a timeline activity keeping only high-demand role ids', () => {
@@ -45,20 +47,7 @@ describe('activity mapper', () => {
     })
   })
 
-  it('uses the translated fallback title and empty defaults for a bare timeline activity', () => {
-    expect(toEventActivity({})).toEqual({
-      id: '',
-      title: t('entities.activity.fallback.title'),
-      description: '',
-      location: '',
-      modality: '',
-      startsAt: null,
-      endsAt: null,
-      highDemandRoleIds: [],
-    })
-  })
-
-  it('maps the admin detail dropping capacities without a role id', () => {
+  it('maps the admin detail with every role capacity', () => {
     expect(toActivityDetail(activity)).toEqual({
       id: 'activity-1',
       title: 'Robótica',
@@ -70,79 +59,56 @@ describe('activity mapper', () => {
       thumbnailId: 'thumb-1',
       roleCapacities: [
         { roleTypeId: 'role-participant', desiredCount: 20 },
-        { roleTypeId: 'role-mentor', desiredCount: null },
+        { roleTypeId: 'role-mentor', desiredCount: 2 },
       ],
-    })
-    expect(toActivityDetail({})).toEqual({
-      id: '',
-      title: '',
-      description: '',
-      location: '',
-      modalityId: '',
-      startsAt: null,
-      endsAt: null,
-      thumbnailId: '',
-      roleCapacities: [],
     })
   })
 
-  it('maps signup roles skipping roles without id and translating missing names', () => {
+  it('maps the roles a household member may sign up for', () => {
     expect(
       toHouseholdSignupRoles({
         userId: 'user-1',
-        roles: [{ id: 'role-1', name: 'Participante' }, { id: 'role-2' }, { name: 'Sin id' }],
+        roles: [
+          { id: 'role-1', name: 'Participante' },
+          { id: 'role-2', name: 'Mentor' },
+        ],
       }),
     ).toEqual({
       userId: 'user-1',
       roles: [
         { id: 'role-1', name: 'Participante' },
-        { id: 'role-2', name: t('entities.activity.fallback.role') },
+        { id: 'role-2', name: 'Mentor' },
       ],
     })
-    expect(toHouseholdSignupRoles({})).toEqual({ userId: '', roles: [] })
   })
 
-  it('maps an own assignment and shows a dash for a missing status', () => {
+  it('maps an own signup to its status and role names', () => {
     expect(
-      toActivityAssignment({
-        activityId: 'activity-1',
-        status: { name: 'Confirmada' },
-        roleType: { name: 'Mentor' },
-      }),
+      toActivityAssignment(
+        buildAssignedActivity({
+          activityId: 'activity-1',
+          status: { id: 'status-2', name: 'Confirmada' },
+          roleType: { id: 'role-mentor', name: 'Mentor' },
+        }),
+      ),
     ).toEqual({ activityId: 'activity-1', status: 'Confirmada', roleName: 'Mentor' })
-    expect(toActivityAssignment({ status: { name: '' } })).toEqual({
-      activityId: '',
-      status: '—',
-      roleName: '',
-    })
-    expect(toActivityAssignment({})).toEqual({ activityId: '', status: '—', roleName: '' })
   })
 
-  it('maps a household assignment joining the member name', () => {
+  it('maps a household signup joining the member name', () => {
     expect(
-      toHouseholdActivityAssignment({
-        activityId: 'activity-1',
-        userId: 'child-1',
-        firstName: 'Byron',
-        lastName: 'King',
-        roleName: 'Participante',
-        statusName: 'Solicitada',
-      }),
+      toHouseholdActivityAssignment(
+        buildHouseholdAssignment({ activityId: 'activity-1', statusName: 'Confirmada' }),
+      ),
     ).toEqual({
       activityId: 'activity-1',
       userId: 'child-1',
       name: 'Byron King',
       roleName: 'Participante',
-      status: 'Solicitada',
+      status: 'Confirmada',
     })
-    expect(toHouseholdActivityAssignment({ lastName: 'King' })).toEqual({
-      activityId: '',
-      userId: '',
-      name: 'King',
-      roleName: '',
-      status: '',
-    })
-    expect(toHouseholdActivityAssignment({ firstName: 'Byron' }).name).toBe('Byron')
+    expect(toHouseholdActivityAssignment(buildHouseholdAssignment({ lastName: '' })).name).toBe(
+      'Byron',
+    )
   })
 
   it('reduces a minor to id and full name', () => {
@@ -150,10 +116,9 @@ describe('activity mapper', () => {
       id: 'child-1',
       name: 'Byron Lovelace',
     })
-    expect(toHouseholdMember({})).toEqual({ id: '', name: '' })
   })
 
-  it('maps the overlap check and defaults missing values', () => {
+  it('maps the overlap check', () => {
     expect(
       toOverlapCheck({
         hasOverlaps: true,
@@ -164,7 +129,6 @@ describe('activity mapper', () => {
             startsAt: '2026-10-01T10:00:00Z',
             endsAt: '2026-10-01T12:00:00Z',
           },
-          {},
         ],
       }),
     ).toEqual({
@@ -176,9 +140,7 @@ describe('activity mapper', () => {
           startsAt: '2026-10-01T10:00:00Z',
           endsAt: '2026-10-01T12:00:00Z',
         },
-        { activityId: '', title: '', startsAt: null, endsAt: null },
       ],
     })
-    expect(toOverlapCheck({})).toEqual({ hasOverlaps: false, overlaps: [] })
   })
 })

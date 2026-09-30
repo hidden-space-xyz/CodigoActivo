@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { logoMarkLarge } from '@/shared/branding'
 import { FOUNDING_YEAR } from '@/shared/config'
-import { BaseButton } from '@/shared/ui'
+import { BrandButton } from '@/shared/ui/brand-button'
 
 const { t } = useI18n()
 
@@ -26,12 +26,12 @@ const stats = [
         <p class="hero__subtitle">{{ $t('pages.home.hero.subtitle') }}</p>
 
         <div class="hero__actions">
-          <BaseButton :to="{ name: 'register' }" variant="primary">
+          <BrandButton :to="{ name: 'register' }" variant="primary">
             {{ $t('common.register') }}
-          </BaseButton>
-          <BaseButton :to="{ name: 'about' }" variant="ghost">
+          </BrandButton>
+          <BrandButton :to="{ name: 'about' }" variant="ghost">
             {{ $t('pages.home.hero.aboutCta') }}
-          </BaseButton>
+          </BrandButton>
         </div>
 
         <div class="hero__stats">

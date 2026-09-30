@@ -35,6 +35,46 @@ const componentApiContexts = [
   'CallExpression[callee.name="defineExpose"] > ObjectExpression > Property',
 ]
 
+const globalI18nImport = {
+  name: '@/shared/i18n',
+  importNames: ['i18n'],
+  message: 'Translate with `useI18n`, or pass a `Translate` to pure helpers.',
+}
+
+const imperativeFeedbackImport = {
+  name: 'element-plus',
+  importNames: ['ElMessage', 'ElMessageBox', 'ElNotification', 'ElLoading'],
+  message: 'Give feedback through `@/shared/lib/feedback`.',
+}
+
+const generatedClientPattern = {
+  group: ['@/shared/api/generated', '@/shared/api/generated/**'],
+  message: 'Only `api` segments use the generated client; map its DTOs to model types there.',
+}
+
+const viewOnlyImports = [
+  {
+    name: '@tanstack/vue-query',
+    importNames: ['useMutation', 'useQueryClient'],
+    message: 'Views bind to a model composable; mutations and cache access live in `model`.',
+  },
+  {
+    name: '@/shared/api',
+    importNames: [
+      'ApiError',
+      'FEATURED_FIRST_SORT',
+      'alsoInvalidates',
+      'createQueryClient',
+      'hasErrorCode',
+      'httpClient',
+      'resetCsrfToken',
+      'toPage',
+      'unwrapOrNull',
+    ],
+    message: 'Views only resolve file URLs; requests and API errors belong to `api` and `model`.',
+  },
+]
+
 export default withVueTs(
   {
     name: 'app/files',
@@ -149,6 +189,39 @@ export default withVueTs(
     },
   },
   {
+    name: 'app/architecture',
+    files: ['src/{pages,widgets,features,entities}/**/*.{ts,vue}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [globalI18nImport, imperativeFeedbackImport],
+          patterns: [generatedClientPattern],
+        },
+      ],
+    },
+  },
+  {
+    name: 'app/architecture-api-segments',
+    files: ['src/{pages,widgets,features,entities}/**/api/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { paths: [globalI18nImport, imperativeFeedbackImport] }],
+    },
+  },
+  {
+    name: 'app/architecture-views',
+    files: ['src/{pages,widgets,features,entities,shared}/**/*.vue'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [globalI18nImport, imperativeFeedbackImport, ...viewOnlyImports],
+          patterns: [generatedClientPattern],
+        },
+      ],
+    },
+  },
+  {
     ...disableTypeChecked,
     name: 'app/i18n-locales',
     files: ['src/shared/i18n/locales/*.json'],
@@ -167,14 +240,20 @@ export default withVueTs(
           extensions: ['.ts', '.vue'],
           // These namespaces are resolved through TranslationKey-typed maps or backend ErrorCode values.
           ignores: [
-            '/^nav\\./u',
-            '/^adminNav\\./u',
+            '/^widgets\\.siteHeader\\.nav\\./u',
+            '/^widgets\\.adminShell\\.nav\\./u',
             '/^seo\\.routes\\./u',
             '/^errors\\./u',
-            '/^features\\.account\\.certificates\\.sheet\\./u',
+            '/^pages\\.about\\.organization\\./u',
+            '/^pages\\.account\\.certificates\\.sheet\\./u',
+            '/^pages\\.admin\\.dashboard\\.(range\\.preset|series\\.)/u',
+            '/^pages\\.cookiePolicy\\.used\\.(kinds|session|twoFactor|csrf|theme|staleBuild)\\./u',
+            '/^pages\\.cookiePolicy\\.manage\\.(chrome|firefox|safariIos|safariMac|edge)$/u',
+            '/^pages\\.admin\\.eventRoster\\.rolePlural/u',
             '/^entities\\.event\\.status\\./u',
             '/^entities\\.user\\.gender\\./u',
             '/^entities\\.user\\.person\\./u',
+            '/\\.form\\.problems\\./u',
           ],
         },
       ],

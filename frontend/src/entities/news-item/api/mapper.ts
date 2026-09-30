@@ -1,26 +1,38 @@
-import type { NewsItemResponse, NewsListItemResponse } from '@/shared/api/generated/models'
-import { formatDate } from '@/shared/lib'
+import type {
+  CreateNewsItemRequest,
+  NewsItemResponse,
+  NewsListItemResponse,
+} from '@/shared/api/generated/models'
 
-import type { NewsItem, NewsSummary } from '../model/types'
+import type { NewsItem, NewsItemInput, NewsSummary } from '../model/types'
 
-/** Maps a list item for cards, formatting `createdAt` into the display `date`. */
+/** Maps a news item of a list. */
 export function toNewsSummary(response: NewsListItemResponse): NewsSummary {
   return {
-    id: response.id ?? '',
-    title: response.title ?? '',
-    subtitle: response.subtitle ?? '',
-    date: response.createdAt ? formatDate(response.createdAt) : '',
-    thumbnailId: response.thumbnailId ?? '',
-    featured: response.featured ?? false,
+    id: response.id,
+    title: response.title,
+    subtitle: response.subtitle,
+    createdAt: response.createdAt,
+    thumbnailId: response.thumbnailId,
+    featured: response.featured,
   }
 }
 
-/** Maps the full news item for the detail page, keeping the raw ISO timestamps as well. */
+/** Maps a whole news item; one never edited has no `updatedAt`. */
 export function toNewsItem(response: NewsItemResponse): NewsItem {
   return {
     ...toNewsSummary(response),
-    description: response.description ?? '',
-    publishedAt: response.createdAt ?? null,
+    description: response.description,
     updatedAt: response.updatedAt ?? null,
+  }
+}
+
+/** Builds the body that creates or replaces a news item; both endpoints take the same fields. */
+export function toNewsItemRequest(input: NewsItemInput): CreateNewsItemRequest {
+  return {
+    title: input.title,
+    subtitle: input.subtitle,
+    description: input.description,
+    thumbnailId: input.thumbnailId,
   }
 }

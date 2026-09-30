@@ -46,7 +46,13 @@
       "megabytes": "{value} MB"
     },
     "yes": "Sí",
-    "no": "No"
+    "no": "No",
+    "brand": {
+      "name": "Código Activo",
+      "nameStart": "Código",
+      "nameEnd": "Activo"
+    },
+    "openMenu": "Abrir menú"
   },
   "validation": {
     "passwordMin": "La contraseña debe tener al menos 12 caracteres.",
@@ -54,41 +60,6 @@
     "passwordsMismatch": "Las contraseñas no coinciden.",
     "nationalIdFormat": "Escribe 8 números y la letra (DNI) o X, Y o Z, 7 números y la letra (NIE).",
     "nationalIdLetter": "El número y la letra no concuerdan. Revisa que estén bien escritos."
-  },
-  "nav": {
-    "home": "Inicio",
-    "news": "Novedades",
-    "events": "Eventos",
-    "resources": "Recursos",
-    "about": "Nosotros"
-  },
-  "adminNav": {
-    "dashboard": "Métricas",
-    "events": "Eventos",
-    "news": "Novedades",
-    "partners": "Patrocinadores",
-    "resources": "Recursos",
-    "users": "Usuarios",
-    "settings": "Configuración"
-  },
-  "layout": {
-    "brandAria": "Código Activo",
-    "brandNameStart": "Código",
-    "brandNameEnd": "Activo",
-    "navAria": "Principal",
-    "footerTagline": "Programación para tod{'@'}s.",
-    "footerContact": "Contáctanos",
-    "footerFollow": "Síguenos",
-    "footerLegal": "Información legal",
-    "footerCookies": "Política de cookies",
-    "adminGoToSite": "Ir al sitio",
-    "openMenu": "Abrir menú",
-    "menuTitle": "Menú",
-    "adminMenuTitle": "Administración",
-    "socialInstagram": "Instagram",
-    "socialFacebook": "Facebook",
-    "socialLinkedIn": "LinkedIn",
-    "socialYouTube": "YouTube"
   },
   "seo": {
     "siteName": "Código Activo",
@@ -340,6 +311,44 @@
           "lead": "Antes de nada nos gusta conocer a quien se suma. Escríbenos un correo o llámanos y hablamos sin compromiso: te contamos cómo trabajamos y vemos juntos en qué te apetece participar.",
           "note": "Te responderemos lo antes posible."
         }
+      },
+      "organization": {
+        "values": {
+          "free": {
+            "title": "Gratuito",
+            "description": "Todas nuestras actividades son siempre sin coste para las familias."
+          },
+          "inclusive": {
+            "title": "Inclusivo",
+            "description": "Llevamos el código al mundo rural y a quien tiene menos acceso."
+          },
+          "community": {
+            "title": "En comunidad",
+            "description": "Voluntariado, familias y empresas que reman en la misma dirección."
+          },
+          "fun": {
+            "title": "Divertido",
+            "description": "Se aprende creando, jugando y compartiendo proyectos propios."
+          }
+        },
+        "activities": {
+          "workshops": {
+            "title": "Talleres de programación",
+            "description": "De Scratch y robótica a Python e inteligencia artificial, por edades."
+          },
+          "annualDay": {
+            "title": "El Día Código Activo",
+            "description": "Nuestro gran evento anual con un lema y un reto temático distinto cada año."
+          },
+          "meetAndCode": {
+            "title": "Meet and Code",
+            "description": "Participamos en la Semana Europea de la Programación con actividades para 8-18 años."
+          },
+          "competitions": {
+            "title": "Competiciones",
+            "description": "Preparamos a jóvenes para la Olimpiada Informática y otros campeonatos."
+          }
+        }
       }
     },
     "cookiePolicy": {
@@ -432,6 +441,147 @@
         "profile": "Perfil",
         "history": "Historial",
         "certificates": "Diplomas"
+      },
+      "certificates": {
+        "lead": "Al terminar un evento se emite un diploma por cada persona de tu unidad familiar cuya asistencia quedó confirmada. Ábrelo para verlo en grande o descárgalo en PNG o PDF.",
+        "empty": "Todavía no tienes diplomas. Aparecerán aquí en cuanto termine un evento en el que hayas participado con la asistencia confirmada.",
+        "error": "No se han podido cargar tus diplomas. Inténtalo de nuevo más tarde.",
+        "renderError": "No se ha podido generar el diploma. Inténtalo de nuevo.",
+        "view": "Ver diploma",
+        "png": "PNG",
+        "pdf": "PDF",
+        "download": "Descargar PNG",
+        "downloadPdf": "Descargar PDF",
+        "openAria": "Ver el diploma de {name} en {event}",
+        "fileNamePrefix": "diploma",
+        "dialog": {
+          "header": "Diploma de participación",
+          "hint": "Descárgalo como imagen PNG o como PDF: ambos en tamaño A4 apaisado y calidad de impresión."
+        },
+        "sheet": {
+          "eyebrow": "Diploma de participación",
+          "preamble": "Se certifica que",
+          "connector": "ha participado en",
+          "microtext": "Código Activo · Diploma de participación",
+          "sealTop": "Asociación Código Activo",
+          "sealBottom": "León · desde 2016",
+          "issuerLabel": "Otorga",
+          "issuerValue": "Código Activo · León",
+          "registryLabel": "Registro"
+        }
+      },
+      "deleteAccount": {
+        "title": "Eliminar mi cuenta",
+        "lead": "Al eliminar tu cuenta, tú y los menores a tu cargo perderéis el acceso para siempre: se anularán vuestras inscripciones y ya no podrás consultar vuestros diplomas. No podrás recuperar la cuenta después.",
+        "initialAdminNote": "Esta es la cuenta genérica de administración, así que no se puede eliminar.",
+        "action": "Eliminar mi cuenta",
+        "dialogHeader": "Eliminar mi cuenta",
+        "passwordIntro": "Para confirmar que eres tú, escribe tu contraseña actual. Después te pediremos tu código de verificación en dos pasos.",
+        "passwordLabel": "Tu contraseña",
+        "sendCode": "Enviar código",
+        "continue": "Continuar",
+        "codeSent": "Te hemos enviado un código a {email}. Escríbelo aquí para confirmar la eliminación.",
+        "authenticatorIntro": "Escribe el código que muestra ahora tu aplicación de autenticación. No te enviamos ningún correo.",
+        "codeLabel": "Código de confirmación",
+        "resendPrompt": "¿No te ha llegado?",
+        "resend": "Reenviar código",
+        "irreversible": "Entiendo que esta acción es irreversible y que también da de baja a los menores a mi cargo",
+        "submit": "Eliminar definitivamente",
+        "deletedSummary": "Cuenta eliminada",
+        "deletedDetail": "Tu cuenta se ha eliminado.",
+        "form": {
+          "problems": {
+            "passwordRequired": "Introduce tu contraseña."
+          }
+        }
+      },
+      "history": {
+        "lead": "Todas las inscripciones de tu unidad familiar, próximas y pasadas. Cuando un evento termina puedes valorarlo.",
+        "empty": "Todavía no tienes inscripciones en ningún evento.",
+        "error": "No se ha podido cargar tu historial. Inténtalo de nuevo más tarde.",
+        "upcoming": "Próximos eventos",
+        "past": "Eventos anteriores",
+        "activityCount": "ninguna actividad | 1 actividad | {count} actividades",
+        "rate": "Valorar",
+        "savedDetail": "Gracias por compartir tu opinión.",
+        "savedSummary": "Valoración guardada",
+        "dialog": {
+          "header": "Valorar evento",
+          "anonymousNotice": "Tu valoración se guarda sin vincularla a tu cuenta y no podrás modificarla después.",
+          "score": "Tu puntuación",
+          "clearScore": "Quitar puntuación"
+        }
+      },
+      "minors": {
+        "title": "Menores a mi cargo",
+        "lead": "Los menores a tu cargo no tienen cuenta propia: los inscribes tú a las actividades y las notificaciones llegan a tu correo.",
+        "add": "+ Añadir menor",
+        "empty": "No tienes menores a tu cargo. Puedes añadir los que quieras inscribir.",
+        "addHeader": "Añadir menor",
+        "editHeader": "Editar menor",
+        "deleteHeader": "Eliminar menor",
+        "deleteConfirm": "¿Seguro que quieres eliminar a {name}? Esta acción no se puede deshacer.",
+        "addedDetail": "El menor se ha registrado a tu cargo.",
+        "addedSummary": "Menor añadido",
+        "updatedDetail": "Los datos del menor se han guardado.",
+        "updatedSummary": "Menor actualizado",
+        "deletedDetail": "El menor se ha eliminado de tu cuenta.",
+        "deletedSummary": "Menor eliminado"
+      },
+      "profile": {
+        "lead": "Con estos datos te identificamos en la asociación. Mantén tu correo al día: es donde recibirás las confirmaciones de inscripción.",
+        "editData": "Editar datos",
+        "changePassword": "Cambiar contraseña",
+        "editDialogHeader": "Editar mis datos",
+        "contactChange": {
+          "message": "Con el correo inicias sesión y recibes los códigos de verificación. Para cambiarlo, o cambiar tus teléfonos, confirma por seguridad tu contraseña actual.",
+          "passwordLabel": "Tu contraseña actual",
+          "passwordRequired": "Introduce tu contraseña actual."
+        },
+        "currentPassword": "Contraseña actual",
+        "newPassword": "Nueva contraseña",
+        "confirmNewPassword": "Repite la nueva contraseña",
+        "passwordChangeFailed": "No se pudo cambiar. Revisa tu contraseña actual.",
+        "savedDetail": "Tu información se ha guardado.",
+        "savedSummary": "Datos actualizados",
+        "passwordUpdatedDetail": "Tu contraseña se ha actualizado.",
+        "passwordUpdatedSummary": "Contraseña cambiada"
+      },
+      "twoFactor": {
+        "title": "Verificación en dos pasos",
+        "lead": "Cada vez que inicies sesión te pediremos un código además de la contraseña. Puedes recibirlo por correo o generarlo con una aplicación de autenticación, que es más segura.",
+        "methodLabel": "Método actual",
+        "methods": {
+          "Email": "Código por correo electrónico",
+          "Authenticator": "Aplicación de autenticación"
+        },
+        "securityLabel": "Nivel de protección",
+        "securityEmail": "Básico: quien acceda a tu correo podría recibir el código.",
+        "securityAuthenticator": "Reforzado: el código solo existe en tu dispositivo.",
+        "useAuthenticator": "Usar una aplicación de autenticación",
+        "useEmail": "Volver al código por correo",
+        "setupHeader": "Configurar aplicación de autenticación",
+        "setupPasswordIntro": "Para cambiar tu método de verificación, confirma primero tu contraseña.",
+        "passwordLabel": "Tu contraseña",
+        "continue": "Continuar",
+        "scanIntro": "Escanea este código QR con tu aplicación de autenticación (Google Authenticator, Microsoft Authenticator, Aegis…) o introduce la clave a mano.",
+        "qrAlt": "Código QR para la aplicación de autenticación",
+        "manualKeyLabel": "Clave manual",
+        "codeIntro": "Después, escribe el código de 6 dígitos que muestra la aplicación para activarla.",
+        "codeLabel": "Código de la aplicación",
+        "confirm": "Activar",
+        "enabledSummary": "Aplicación activada",
+        "enabledDetail": "A partir de ahora te pediremos el código de tu aplicación al iniciar sesión.",
+        "disableHeader": "Volver al código por correo",
+        "disableIntro": "Confirma tu contraseña y el código actual de tu aplicación. A partir de entonces recibirás los códigos por correo electrónico.",
+        "disabledSummary": "Verificación por correo",
+        "disabledDetail": "Volverás a recibir el código de acceso por correo electrónico.",
+        "form": {
+          "problems": {
+            "passwordRequired": "Introduce tu contraseña.",
+            "codeRequired": "Introduce el código."
+          }
+        }
       }
     },
     "notFound": {
@@ -492,6 +642,24 @@
         "delete": {
           "header": "Eliminar recurso",
           "message": "¿Seguro que quieres eliminar \"{title}\"?"
+        },
+        "form": {
+          "editHeader": "Editar recurso",
+          "newHeader": "Nuevo recurso",
+          "title": "Título",
+          "subtitle": "Subtítulo",
+          "type": "Tipo",
+          "typePlaceholder": "Selecciona un tipo",
+          "typesLoadError": "No se pudieron cargar los tipos de recurso. Cierra el diálogo y vuelve a intentarlo.",
+          "description": "Descripción",
+          "url": "Enlace",
+          "urlPlaceholder": "https://…",
+          "problems": {
+            "typeRequired": "Selecciona el tipo de recurso.",
+            "descriptionRequired": "La descripción es obligatoria en los recursos internos.",
+            "urlRequired": "El enlace es obligatorio en los recursos externos.",
+            "urlInvalid": "El enlace debe ser una URL válida que empiece por http:// o https://."
+          }
         }
       },
       "partners": {
@@ -522,6 +690,18 @@
         "delete": {
           "header": "Eliminar patrocinador",
           "message": "¿Seguro que quieres eliminar a \"{name}\"? Esta acción no se puede deshacer."
+        },
+        "form": {
+          "editHeader": "Editar patrocinador",
+          "newHeader": "Nuevo patrocinador",
+          "fromDate": "Fecha de alta",
+          "tier": "Nivel (tier)",
+          "website": "Sitio web",
+          "urlPlaceholder": "https://…",
+          "problems": {
+            "nameRequired": "El nombre es obligatorio.",
+            "fromDateRequired": "La fecha de alta es obligatoria."
+          }
         }
       },
       "eventBadges": {
@@ -546,7 +726,6 @@
         "colAge": "Edad",
         "colContact": "Contacto",
         "colGuardian": "Tutor/a",
-        "roleFallback": "Participantes",
         "ageYears": "{age} años",
         "participantsCount": "1 inscrito | {count} inscritos"
       },
@@ -623,6 +802,29 @@
           "header": "Cambiar tipo de usuario",
           "typeLabel": "Tipo de usuario",
           "placeholder": "Selecciona un tipo"
+        },
+        "adminPassword": {
+          "label": "Tu contraseña",
+          "form": {
+            "problems": {
+              "passwordRequired": "Introduce tu contraseña."
+            }
+          }
+        },
+        "form": {
+          "contactChange": "Vas a cambiar el correo con el que esta persona inicia sesión y recibe sus códigos, o sus teléfonos. Por seguridad, confirma tu contraseña.",
+          "dependentContact": "Esta persona está a cargo de un responsable, así que no tiene correo, teléfono ni DNI/NIE propios: se usan los de su responsable.",
+          "editHeader": "Editar usuario"
+        },
+        "grantAdmin": {
+          "confirm": "Conceder",
+          "header": "Conceder rol de administrador",
+          "message": "Vas a dar permisos de administrador a {fullName}. Por seguridad, confirma tu contraseña."
+        },
+        "resetTwoFactor": {
+          "confirm": "Restablecer",
+          "header": "Restablecer la verificación en dos pasos",
+          "message": "Vas a restablecer la verificación en dos pasos de {fullName}: se eliminará su aplicación de autenticación, se levantará cualquier bloqueo y volverá a recibir el código por correo. Por seguridad, confirma tu contraseña."
         }
       },
       "events": {
@@ -663,17 +865,144 @@
         "delete": {
           "header": "Eliminar evento",
           "message": "¿Seguro que quieres eliminar \"{title}\"? Se perderán también sus actividades."
+        },
+        "form": {
+          "editHeader": "Editar evento",
+          "newHeader": "Nuevo evento",
+          "newCategory": "Nueva",
+          "categoriesPlaceholder": "Selecciona categorías",
+          "fields": {
+            "title": "Título",
+            "subtitle": "Subtítulo",
+            "categories": "Categorías",
+            "termsDocuments": "Términos y condiciones (opcional)",
+            "description": "Descripción",
+            "eventStart": "Inicio del evento",
+            "eventEnd": "Fin del evento",
+            "earlySignupStart": "Apertura de inscripción anticipada (opcional)",
+            "signupStart": "Apertura de inscripción",
+            "signupEnd": "Cierre de inscripción"
+          },
+          "termsPlaceholder": "Sin términos y condiciones",
+          "termsRequired": "Obligatorio",
+          "hints": {
+            "earlySignupStart": "Si la indicas, socios y patrocinadores podrán inscribirse desde esa fecha, antes que el resto.",
+            "termsDocuments": "Cada persona deberá decidir sobre estos documentos al apuntarse a su primera actividad del evento. Se añaden como obligatorios; desmarca los que sean opcionales. El orden de la lista es el orden en que se mostrarán. Se gestionan en Configuración."
+          },
+          "problems": {
+            "categoriesRequired": "Selecciona al menos una categoría.",
+            "eventStartRequired": "La fecha de inicio es obligatoria.",
+            "eventEndRequired": "La fecha de fin es obligatoria.",
+            "eventOrderInvalid": "El fin no puede ser anterior al inicio.",
+            "signupStartRequired": "La apertura de inscripción es obligatoria.",
+            "signupAfterEventEnd": "La inscripción debe abrir antes de que termine el evento.",
+            "signupEndRequired": "El cierre de inscripción es obligatorio.",
+            "signupOrderInvalid": "El cierre debe ser posterior a la apertura.",
+            "earlySignupOrderInvalid": "La inscripción anticipada debe abrir antes que la inscripción general."
+          }
+        },
+        "categoryDialog": {
+          "header": "Nueva categoría",
+          "createError": "No se pudo crear la categoría."
         }
       },
       "news": {
-        "title": "Novedades",
-        "subtitle": "Comunicaciones para la comunidad",
         "newLabel": "Añadir novedad",
-        "entityLabel": "novedad"
+        "search": {
+          "title": "Buscar título",
+          "subtitle": "Buscar subtítulo"
+        },
+        "columns": {
+          "title": "Título",
+          "subtitle": "Subtítulo",
+          "created": "Creado"
+        },
+        "delete": {
+          "header": "Eliminar novedad",
+          "message": "¿Seguro que quieres eliminar \"{title}\"? Esta acción no se puede deshacer."
+        },
+        "form": {
+          "editHeader": "Editar novedad",
+          "description": "Descripción",
+          "subtitle": "Subtítulo",
+          "title": "Título"
+        },
+        "feature": "Destacar",
+        "featured": "Destacado",
+        "empty": {
+          "none": "Aún no hay registros.",
+          "error": "No se pudieron cargar los registros."
+        },
+        "toasts": {
+          "saved": "Cambios guardados.",
+          "created": "Creado correctamente.",
+          "featured": "Destacado actualizado.",
+          "deleted": "Eliminado.",
+          "notFound": "Esta novedad ya no existe."
+        },
+        "header": {
+          "title": "Novedades",
+          "subtitle": "Comunicaciones para la comunidad"
+        }
       },
       "catalogs": {
-        "title": "Configuración",
-        "subtitle": "Catálogos configurables del sistema"
+        "eventCategories": {
+          "toasts": {
+            "created": "Categoría creada.",
+            "updated": "Categoría actualizada.",
+            "deleted": "Categoría eliminada."
+          },
+          "delete": {
+            "header": "Eliminar categoría",
+            "message": "¿Seguro que quieres eliminar \"{name}\"? Se quitará de los eventos que la usen."
+          },
+          "form": {
+            "editHeader": "Editar categoría",
+            "newHeader": "Nueva categoría"
+          },
+          "empty": {
+            "none": "Sin categorías.",
+            "error": "No se pudieron cargar las categorías."
+          },
+          "newButton": "Nueva",
+          "search": {
+            "color": "Buscar color",
+            "name": "Buscar nombre"
+          },
+          "title": "Categorías de eventos"
+        },
+        "termsDocuments": {
+          "form": {
+            "content": "Contenido",
+            "problems": {
+              "contentRequired": "El contenido es obligatorio."
+            },
+            "editHeader": "Editar términos y condiciones",
+            "newHeader": "Nuevos términos y condiciones"
+          },
+          "toasts": {
+            "created": "Términos y condiciones creados.",
+            "updated": "Términos y condiciones actualizados.",
+            "deleted": "Términos y condiciones eliminados."
+          },
+          "delete": {
+            "header": "Eliminar términos y condiciones",
+            "message": "¿Seguro que quieres eliminar \"{name}\"? Solo es posible si ningún evento los usa y nadie los ha aceptado."
+          },
+          "empty": {
+            "none": "Sin términos y condiciones.",
+            "error": "No se pudieron cargar los términos y condiciones."
+          },
+          "newButton": "Nuevos",
+          "title": "Términos y condiciones",
+          "search": {
+            "name": "Buscar nombre"
+          }
+        },
+        "header": {
+          "title": "Configuración",
+          "subtitle": "Catálogos configurables del sistema"
+        }
       },
       "eventDetail": {
         "back": "Volver a eventos",
@@ -708,7 +1037,8 @@
         "toast": {
           "activityCreated": "Actividad creada.",
           "activityUpdated": "Actividad actualizada.",
-          "activityDeleted": "Actividad eliminada."
+          "activityDeleted": "Actividad eliminada.",
+          "activityNotFound": "Esta actividad ya no existe."
         },
         "deleteConfirm": {
           "header": "Eliminar actividad",
@@ -779,6 +1109,32 @@
             "rowLabel": "Escribir un correo",
             "targetOne": "{fullName}",
             "targetFiltered": "el asistente que coincide con los filtros actuales | los {n} asistentes que coinciden con los filtros actuales"
+          }
+        },
+        "activities": {
+          "form": {
+            "editHeader": "Editar actividad",
+            "newHeader": "Nueva actividad",
+            "modalityPlaceholder": "Presencial / Online",
+            "noTargetPlaceholder": "Sin objetivo",
+            "hint": "Opcional. Al superarse, el listado avisará de que la actividad está muy solicitada; nunca se impide la inscripción.",
+            "fields": {
+              "title": "Título",
+              "description": "Descripción",
+              "modality": "Modalidad",
+              "location": "Ubicación o plataforma",
+              "start": "Inicio",
+              "end": "Fin",
+              "desiredCounts": "Número deseado de inscritos por rol"
+            },
+            "problems": {
+              "modalityRequired": "La modalidad es obligatoria.",
+              "locationRequired": "La ubicación es obligatoria.",
+              "startRequired": "La fecha y hora de inicio son obligatorias.",
+              "endRequired": "La fecha y hora de fin son obligatorias.",
+              "orderInvalid": "El fin debe ser posterior al inicio.",
+              "outsideEvent": "La actividad debe estar dentro de las fechas del evento."
+            }
           }
         }
       },
@@ -896,11 +1252,49 @@
       "resendCountdown": "pide otro código ({s}s)",
       "expiredTitle": "La verificación ha caducado",
       "expiredText": "Ha pasado demasiado tiempo desde que introdujiste la contraseña. Vuelve a iniciar sesión para recibir un código nuevo.",
-      "backToLogin": "Volver a iniciar sesión"
+      "backToLogin": "Volver a iniciar sesión",
+      "codeResentDetail": "Te hemos enviado un nuevo código. Revisa tu correo.",
+      "codeResentSummary": "Código enviado"
     },
     "register": {
       "title": "Únete a Código Activo",
-      "intro": "Regístrate y, si tienes menores a tu cargo, inscríbelos a todos en un solo paso."
+      "intro": "Regístrate y, si tienes menores a tu cargo, inscríbelos a todos en un solo paso.",
+      "ageGate": {
+        "heading": "Antes de empezar…",
+        "lead": "Para registrarte necesitas ser mayor de edad. Si tienes menores a tu cargo, podrás inscribirlos a todos durante el registro.",
+        "question": "¿Eres mayor de edad?",
+        "confirm": "Sí, soy mayor de edad",
+        "decline": "No, soy menor",
+        "blockedHeading": "Necesitas a tu padre, madre o tutor legal",
+        "blockedLead": "Los menores de edad no pueden registrarse por su cuenta. Pídele a tu padre, madre o tutor legal que cree su cuenta; durante su registro podrá inscribirte a ti y al resto de menores a su cargo."
+      },
+      "back": "Volver",
+      "form": {
+        "yourData": "Tus datos",
+        "contactTitle": "Contacto",
+        "accessTitle": "Acceso a tu cuenta",
+        "minorsTitle": "Menores a tu cargo",
+        "addMinor": "+ Añadir menor",
+        "minorsNote": "Opcional. Añade a los menores que quieras inscribir; solo necesitamos su nombre, su fecha de nacimiento y su género.",
+        "minorLegend": "Menor {n}",
+        "removeMinor": "Quitar menor",
+        "submit": "Completar registro"
+      },
+      "success": {
+        "title": "¡Registro completado!",
+        "minorsEnrolledBefore": "También has inscrito a",
+        "minorsEnrolled": "{n} menor | {n} menores",
+        "minorsEnrolledAfter": "a tu cargo.",
+        "thanks": "Te agradecemos que quieras colaborar con nosotros. Nos pondremos en contacto contigo lo antes posible para conocernos más.",
+        "reminder": "Recuerda que puedes inscribirte (y a los menores a tu cargo) a cualquier evento desde la sección de eventos.",
+        "verifyIntroBefore": "Te hemos enviado un correo electrónico de verificación a",
+        "verifyIntroAfter": ". Pulsa el enlace del mensaje para activar tu cuenta.",
+        "resendPrompt": "¿No has recibido el correo? Revisa la carpeta de spam o",
+        "resendCountdown": "reenviar el correo ({s}s)",
+        "resend": "reenviar el correo",
+        "viewEvents": "Ver eventos",
+        "registerAnother": "Registrar a otra persona"
+      }
     },
     "forgotPassword": {
       "eyebrow": "// contraseña",
@@ -934,7 +1328,8 @@
       "errorTitle": "No hemos podido verificar tu cuenta",
       "defaultError": "El enlace de verificación no es válido o ha caducado.",
       "hint": "Si el enlace ha caducado, pídenos un enlace nuevo y te lo enviaremos por correo.",
-      "resend": "Enviarme un enlace nuevo"
+      "resend": "Enviarme un enlace nuevo",
+      "incompleteLink": "El enlace de verificación no es válido o está incompleto."
     },
     "home": {
       "hero": {
@@ -998,8 +1393,7 @@
         "empty": "Este evento todavía no tiene actividades.",
         "signupClosed": "La inscripción no está abierta para este evento.",
         "earlySignupOnly": "Este evento está en periodo de inscripción anticipada, reservado a socios y patrocinadores. La inscripción general abrirá más adelante.",
-        "rolesLoadError": "No se pudieron cargar los roles de inscripción.",
-        "noSchedule": "Sin horario asignado"
+        "rolesLoadError": "No se pudieron cargar los roles de inscripción."
       },
       "household": {
         "header": "¿A quién quieres apuntar?",
@@ -1026,7 +1420,6 @@
         "unassignSummary": "Inscripción cancelada"
       },
       "card": {
-        "noSchedule": "Sin horario",
         "unassignMember": "Desapuntar",
         "loginToSignup": "Inicia sesión para apuntarte",
         "signupClosed": "La inscripción no está abierta.",
@@ -1038,133 +1431,8 @@
         "signupEnded": "El periodo de inscripción ha finalizado.",
         "loadingRoles": "Cargando roles…",
         "enrollSelf": "Apuntarme"
-      }
-    }
-  },
-  "features": {
-    "auth": {
-      "twoFactor": {
-        "codeResentSummary": "Código enviado",
-        "codeResentDetail": "Te hemos enviado un nuevo código. Revisa tu correo."
-      }
-    },
-    "manageEvents": {
-      "editHeader": "Editar evento",
-      "newHeader": "Nuevo evento",
-      "newCategory": "Nueva",
-      "categoriesPlaceholder": "Selecciona categorías",
-      "fields": {
-        "title": "Título",
-        "subtitle": "Subtítulo",
-        "categories": "Categorías",
-        "termsDocuments": "Términos y condiciones (opcional)",
-        "description": "Descripción",
-        "eventStart": "Inicio del evento",
-        "eventEnd": "Fin del evento",
-        "earlySignupStart": "Apertura de inscripción anticipada (opcional)",
-        "signupStart": "Apertura de inscripción",
-        "signupEnd": "Cierre de inscripción"
       },
-      "termsPlaceholder": "Sin términos y condiciones",
-      "termsRequired": "Obligatorio",
-      "hints": {
-        "earlySignupStart": "Si la indicas, socios y patrocinadores podrán inscribirse desde esa fecha, antes que el resto.",
-        "termsDocuments": "Cada persona deberá decidir sobre estos documentos al apuntarse a su primera actividad del evento. Se añaden como obligatorios; desmarca los que sean opcionales. El orden de la lista es el orden en que se mostrarán. Se gestionan en Configuración."
-      },
-      "errors": {
-        "categoriesRequired": "Selecciona al menos una categoría.",
-        "eventStartRequired": "La fecha de inicio es obligatoria.",
-        "eventEndRequired": "La fecha de fin es obligatoria.",
-        "eventOrderInvalid": "El fin no puede ser anterior al inicio.",
-        "signupStartRequired": "La apertura de inscripción es obligatoria.",
-        "signupAfterEventEnd": "La inscripción debe abrir antes de que termine el evento.",
-        "signupEndRequired": "El cierre de inscripción es obligatorio.",
-        "signupOrderInvalid": "El cierre debe ser posterior a la apertura.",
-        "earlySignupOrderInvalid": "La inscripción anticipada debe abrir antes que la inscripción general."
-      },
-      "categoryDialog": {
-        "header": "Nueva categoría",
-        "colorLabel": "Color",
-        "example": "Ejemplo",
-        "createError": "No se pudo crear la categoría."
-      }
-    },
-    "manageActivities": {
-      "editHeader": "Editar actividad",
-      "newHeader": "Nueva actividad",
-      "modalityPlaceholder": "Presencial / Online",
-      "noTargetPlaceholder": "Sin objetivo",
-      "hint": "Opcional. Al superarse, el listado avisará de que la actividad está muy solicitada; nunca se impide la inscripción.",
-      "fields": {
-        "title": "Título",
-        "description": "Descripción",
-        "modality": "Modalidad",
-        "location": "Ubicación o plataforma",
-        "start": "Inicio",
-        "end": "Fin",
-        "desiredCounts": "Número deseado de inscritos por rol"
-      },
-      "errors": {
-        "modalityRequired": "La modalidad es obligatoria.",
-        "locationRequired": "La ubicación es obligatoria.",
-        "startRequired": "La fecha y hora de inicio son obligatorias.",
-        "endRequired": "La fecha y hora de fin son obligatorias.",
-        "orderInvalid": "El fin debe ser posterior al inicio.",
-        "outsideEvent": "La actividad debe estar dentro de las fechas del evento."
-      }
-    },
-    "manageResources": {
-      "editHeader": "Editar recurso",
-      "newHeader": "Nuevo recurso",
-      "title": "Título",
-      "subtitle": "Subtítulo",
-      "type": "Tipo",
-      "typePlaceholder": "Selecciona un tipo",
-      "typesLoadError": "No se pudieron cargar los tipos de recurso. Cierra el diálogo y vuelve a intentarlo.",
-      "typeRequired": "Selecciona el tipo de recurso.",
-      "description": "Descripción",
-      "descriptionRequired": "La descripción es obligatoria en los recursos internos.",
-      "url": "Enlace",
-      "urlPlaceholder": "https://…",
-      "urlRequired": "El enlace es obligatorio en los recursos externos.",
-      "urlInvalid": "El enlace debe ser una URL válida que empiece por http:// o https://."
-    },
-    "managePartners": {
-      "editHeader": "Editar patrocinador",
-      "newHeader": "Nuevo patrocinador",
-      "nameRequired": "El nombre es obligatorio.",
-      "fromDate": "Fecha de alta",
-      "fromDateRequired": "La fecha de alta es obligatoria.",
-      "tier": "Nivel (tier)",
-      "website": "Sitio web",
-      "urlPlaceholder": "https://…"
-    },
-    "manageUsers": {
-      "editHeader": "Editar usuario",
-      "dependentContact": "Esta persona está a cargo de un responsable, así que no tiene correo, teléfono ni DNI/NIE propios: se usan los de su responsable.",
-      "contactChange": {
-        "message": "Vas a cambiar el correo con el que esta persona inicia sesión y recibe sus códigos, o sus teléfonos. Por seguridad, confirma tu contraseña.",
-        "passwordLabel": "Tu contraseña",
-        "passwordRequired": "Introduce tu contraseña."
-      },
-      "grantAdmin": {
-        "header": "Conceder rol de administrador",
-        "message": "Vas a dar permisos de administrador a {fullName}. Por seguridad, confirma tu contraseña.",
-        "passwordLabel": "Tu contraseña",
-        "passwordRequired": "Introduce tu contraseña.",
-        "confirm": "Conceder"
-      },
-      "resetTwoFactor": {
-        "header": "Restablecer la verificación en dos pasos",
-        "message": "Vas a restablecer la verificación en dos pasos de {fullName}: se eliminará su aplicación de autenticación, se levantará cualquier bloqueo y volverá a recibir el código por correo. Por seguridad, confirma tu contraseña.",
-        "passwordLabel": "Tu contraseña",
-        "passwordRequired": "Introduce tu contraseña.",
-        "confirm": "Restablecer"
-      }
-    },
-    "activitySignup": {
       "selfMember": "Yo",
-      "notAuthenticated": "No autenticado",
       "terms": {
         "header": "Términos y condiciones",
         "lead": "Antes de apuntarte, decide si aceptas estos documentos:",
@@ -1178,49 +1446,49 @@
         "confirm": "Confirmar y apuntarme",
         "missingRequired": "Debes marcar todos los documentos obligatorios para continuar.",
         "close": "Cerrar"
+      },
+      "leaderRoster": {
+        "notice": {
+          "title": "Datos personales confidenciales",
+          "body": "Como líder confirmado/a, ves a las personas confirmadas en las actividades que lideras. Usa estos datos solo para organizar la actividad y no los compartas. Cada listado deja de estar disponible cuando termina su actividad."
+        },
+        "loadError": "No se pudo cargar el listado de asistentes.",
+        "empty": "No lideras ninguna actividad en curso de este evento.",
+        "attendeesCount": "{n} asistente confirmado | {n} asistentes confirmados",
+        "peopleCount": "{n} persona | {n} personas",
+        "users": {
+          "title": "Usuarios",
+          "hint": "Con cuenta propia: contacta directamente con ellos."
+        },
+        "dependents": {
+          "title": "Dependientes",
+          "hint": "Menores inscritos por su tutor/a, con la edad que tendrán el día de la actividad. Contacta siempre con el tutor/a."
+        },
+        "columns": {
+          "firstName": "Nombre",
+          "lastName": "Apellidos",
+          "age": "Edad",
+          "email": "Correo",
+          "phone": "Teléfono",
+          "signedUpAt": "Inscripción",
+          "guardian": "Tutor/a",
+          "guardianEmail": "Correo del tutor/a",
+          "guardianPhone": "Teléfono del tutor/a"
+        },
+        "adult": "Adulto/a",
+        "ageYears": "{age} año | {age} años"
       }
-    },
-    "leaderRoster": {
-      "notice": {
-        "title": "Datos personales confidenciales",
-        "body": "Como líder confirmado/a, ves a las personas confirmadas en las actividades que lideras. Usa estos datos solo para organizar la actividad y no los compartas. Cada listado deja de estar disponible cuando termina su actividad."
-      },
-      "loadError": "No se pudo cargar el listado de asistentes.",
-      "empty": "No lideras ninguna actividad en curso de este evento.",
-      "attendeesCount": "{n} asistente confirmado | {n} asistentes confirmados",
-      "peopleCount": "{n} persona | {n} personas",
-      "users": {
-        "title": "Usuarios",
-        "hint": "Con cuenta propia: contacta directamente con ellos."
-      },
-      "dependents": {
-        "title": "Dependientes",
-        "hint": "Menores inscritos por su tutor/a, con la edad que tendrán el día de la actividad. Contacta siempre con el tutor/a."
-      },
-      "columns": {
-        "firstName": "Nombre",
-        "lastName": "Apellidos",
-        "age": "Edad",
-        "email": "Correo",
-        "phone": "Teléfono",
-        "signedUpAt": "Inscripción",
-        "guardian": "Tutor/a",
-        "guardianEmail": "Correo del tutor/a",
-        "guardianPhone": "Teléfono del tutor/a"
-      },
-      "adult": "Adulto/a",
-      "ageYears": "{age} año | {age} años"
-    },
+    }
+  },
+  "features": {
     "sendEmail": {
       "header": "Enviar correo",
       "target": "Destinatarios: {target}",
       "withoutConsentWarning": "Uno de los destinatarios no ha dado su consentimiento para recibir contenido promocional. Ten cuidado con lo que envías: limítate a información necesaria y no incluyas publicidad. | {count} de los destinatarios no han dado su consentimiento para recibir contenido promocional. Ten cuidado con lo que envías: limítate a información necesaria y no incluyas publicidad.",
       "subject": "Asunto",
       "subjectPlaceholder": "Asunto del correo",
-      "subjectRequired": "Escribe un asunto.",
       "body": "Mensaje",
       "bodyPlaceholder": "Escribe aquí el mensaje…",
-      "bodyRequired": "Escribe un mensaje.",
       "bodyHint": "Texto sin formato. Los saltos de línea se respetan.",
       "send": "Enviar",
       "attachments": {
@@ -1238,261 +1506,56 @@
       "toast": {
         "queued": "1 correo en cola de envío. Se entregará en unos instantes. | {count} correos en cola de envío. Se entregarán en unos instantes.",
         "skipped": "1 persona sin correo electrónico se ha omitido. | {count} personas sin correo electrónico se han omitido."
-      }
-    },
-    "manageCatalogs": {
-      "title": "Categorías de eventos",
-      "newButton": "Nueva",
-      "loadError": "No se pudieron cargar las categorías.",
-      "empty": "Sin categorías.",
-      "searchName": "Buscar nombre",
-      "color": "Color",
-      "searchColor": "Buscar color",
-      "editHeader": "Editar categoría",
-      "newHeader": "Nueva categoría",
-      "example": "Ejemplo",
-      "updated": "Categoría actualizada.",
-      "created": "Categoría creada.",
-      "deleted": "Categoría eliminada.",
-      "deleteHeader": "Eliminar categoría",
-      "deleteMessage": "¿Seguro que quieres eliminar \"{name}\"? Se quitará de los eventos que la usen.",
-      "terms": {
-        "title": "Términos y condiciones",
-        "newButton": "Nuevos",
-        "loadError": "No se pudieron cargar los términos y condiciones.",
-        "empty": "Sin términos y condiciones.",
-        "editHeader": "Editar términos y condiciones",
-        "newHeader": "Nuevos términos y condiciones",
-        "content": "Contenido",
-        "contentRequired": "El contenido es obligatorio.",
-        "updated": "Términos y condiciones actualizados.",
-        "created": "Términos y condiciones creados.",
-        "deleted": "Términos y condiciones eliminados.",
-        "deleteHeader": "Eliminar términos y condiciones",
-        "deleteMessage": "¿Seguro que quieres eliminar \"{name}\"? Solo es posible si ningún evento los usa y nadie los ha aceptado."
-      }
-    },
-    "account": {
-      "notAuthenticated": "No autenticado",
-      "profile": {
-        "lead": "Con estos datos te identificamos en la asociación. Mantén tu correo al día: es donde recibirás las confirmaciones de inscripción.",
-        "editData": "Editar datos",
-        "changePassword": "Cambiar contraseña",
-        "editDialogHeader": "Editar mis datos",
-        "contactChange": {
-          "message": "Con el correo inicias sesión y recibes los códigos de verificación. Para cambiarlo, o cambiar tus teléfonos, confirma por seguridad tu contraseña actual.",
-          "passwordLabel": "Tu contraseña actual",
-          "passwordRequired": "Introduce tu contraseña actual."
-        },
-        "currentPassword": "Contraseña actual",
-        "newPassword": "Nueva contraseña",
-        "confirmNewPassword": "Repite la nueva contraseña",
-        "passwordChangeFailed": "No se pudo cambiar. Revisa tu contraseña actual.",
-        "savedDetail": "Tu información se ha guardado.",
-        "savedSummary": "Datos actualizados",
-        "passwordUpdatedDetail": "Tu contraseña se ha actualizado.",
-        "passwordUpdatedSummary": "Contraseña cambiada"
-      },
-      "twoFactor": {
-        "title": "Verificación en dos pasos",
-        "lead": "Cada vez que inicies sesión te pediremos un código además de la contraseña. Puedes recibirlo por correo o generarlo con una aplicación de autenticación, que es más segura.",
-        "methodLabel": "Método actual",
-        "methods": {
-          "Email": "Código por correo electrónico",
-          "Authenticator": "Aplicación de autenticación"
-        },
-        "securityLabel": "Nivel de protección",
-        "securityEmail": "Básico: quien acceda a tu correo podría recibir el código.",
-        "securityAuthenticator": "Reforzado: el código solo existe en tu dispositivo.",
-        "useAuthenticator": "Usar una aplicación de autenticación",
-        "useEmail": "Volver al código por correo",
-        "setupHeader": "Configurar aplicación de autenticación",
-        "setupPasswordIntro": "Para cambiar tu método de verificación, confirma primero tu contraseña.",
-        "passwordLabel": "Tu contraseña",
-        "passwordRequired": "Introduce tu contraseña.",
-        "continue": "Continuar",
-        "scanIntro": "Escanea este código QR con tu aplicación de autenticación (Google Authenticator, Microsoft Authenticator, Aegis…) o introduce la clave a mano.",
-        "qrAlt": "Código QR para la aplicación de autenticación",
-        "manualKeyLabel": "Clave manual",
-        "codeIntro": "Después, escribe el código de 6 dígitos que muestra la aplicación para activarla.",
-        "codeLabel": "Código de la aplicación",
-        "codeRequired": "Introduce el código.",
-        "confirm": "Activar",
-        "enabledSummary": "Aplicación activada",
-        "enabledDetail": "A partir de ahora te pediremos el código de tu aplicación al iniciar sesión.",
-        "disableHeader": "Volver al código por correo",
-        "disableIntro": "Confirma tu contraseña y el código actual de tu aplicación. A partir de entonces recibirás los códigos por correo electrónico.",
-        "disabledSummary": "Verificación por correo",
-        "disabledDetail": "Volverás a recibir el código de acceso por correo electrónico."
-      },
-      "minors": {
-        "title": "Menores a mi cargo",
-        "lead": "Los menores a tu cargo no tienen cuenta propia: los inscribes tú a las actividades y las notificaciones llegan a tu correo.",
-        "add": "+ Añadir menor",
-        "empty": "No tienes menores a tu cargo. Puedes añadir los que quieras inscribir.",
-        "addHeader": "Añadir menor",
-        "editHeader": "Editar menor",
-        "deleteHeader": "Eliminar menor",
-        "deleteConfirm": "¿Seguro que quieres eliminar a {name}? Esta acción no se puede deshacer.",
-        "addedDetail": "El menor se ha registrado a tu cargo.",
-        "addedSummary": "Menor añadido",
-        "updatedDetail": "Los datos del menor se han guardado.",
-        "updatedSummary": "Menor actualizado",
-        "deletedDetail": "El menor se ha eliminado de tu cuenta.",
-        "deletedSummary": "Menor eliminado"
-      },
-      "deleteAccount": {
-        "title": "Eliminar mi cuenta",
-        "lead": "Al eliminar tu cuenta, tú y los menores a tu cargo perderéis el acceso para siempre: se anularán vuestras inscripciones y ya no podrás consultar vuestros diplomas. No podrás recuperar la cuenta después.",
-        "initialAdminNote": "Esta es la cuenta genérica de administración, así que no se puede eliminar.",
-        "action": "Eliminar mi cuenta",
-        "dialogHeader": "Eliminar mi cuenta",
-        "passwordIntro": "Para confirmar que eres tú, escribe tu contraseña actual. Después te pediremos tu código de verificación en dos pasos.",
-        "passwordLabel": "Tu contraseña",
-        "passwordRequired": "Introduce tu contraseña.",
-        "sendCode": "Enviar código",
-        "continue": "Continuar",
-        "codeSent": "Te hemos enviado un código a {email}. Escríbelo aquí para confirmar la eliminación.",
-        "authenticatorIntro": "Escribe el código que muestra ahora tu aplicación de autenticación. No te enviamos ningún correo.",
-        "codeLabel": "Código de confirmación",
-        "resendPrompt": "¿No te ha llegado?",
-        "resend": "Reenviar código",
-        "irreversible": "Entiendo que esta acción es irreversible y que también da de baja a los menores a mi cargo",
-        "submit": "Eliminar definitivamente",
-        "deletedSummary": "Cuenta eliminada",
-        "deletedDetail": "Tu cuenta se ha eliminado."
-      },
-      "history": {
-        "lead": "Todas las inscripciones de tu unidad familiar, próximas y pasadas. Cuando un evento termina puedes valorarlo.",
-        "empty": "Todavía no tienes inscripciones en ningún evento.",
-        "error": "No se ha podido cargar tu historial. Inténtalo de nuevo más tarde.",
-        "upcoming": "Próximos eventos",
-        "past": "Eventos anteriores",
-        "activityCount": "ninguna actividad | 1 actividad | {count} actividades",
-        "rate": "Valorar",
-        "savedDetail": "Gracias por compartir tu opinión.",
-        "savedSummary": "Valoración guardada",
-        "dialog": {
-          "header": "Valorar evento",
-          "anonymousNotice": "Tu valoración se guarda sin vincularla a tu cuenta y no podrás modificarla después.",
-          "score": "Tu puntuación",
-          "clearScore": "Quitar puntuación"
-        }
-      },
-      "certificates": {
-        "lead": "Al terminar un evento se emite un diploma por cada persona de tu unidad familiar cuya asistencia quedó confirmada. Ábrelo para verlo en grande o descárgalo en PNG o PDF.",
-        "empty": "Todavía no tienes diplomas. Aparecerán aquí en cuanto termine un evento en el que hayas participado con la asistencia confirmada.",
-        "error": "No se han podido cargar tus diplomas. Inténtalo de nuevo más tarde.",
-        "renderError": "No se ha podido generar el diploma. Inténtalo de nuevo.",
-        "view": "Ver diploma",
-        "png": "PNG",
-        "pdf": "PDF",
-        "download": "Descargar PNG",
-        "downloadPdf": "Descargar PDF",
-        "openAria": "Ver el diploma de {name} en {event}",
-        "fileNamePrefix": "diploma",
-        "dialog": {
-          "header": "Diploma de participación",
-          "hint": "Descárgalo como imagen PNG o como PDF: ambos en tamaño A4 apaisado y calidad de impresión."
-        },
-        "sheet": {
-          "eyebrow": "Diploma de participación",
-          "preamble": "Se certifica que",
-          "connector": "ha participado en",
-          "microtext": "Código Activo · Diploma de participación",
-          "sealTop": "Asociación Código Activo",
-          "sealBottom": "León · desde 2016",
-          "issuerLabel": "Otorga",
-          "issuerValue": "Código Activo · León",
-          "registryLabel": "Registro"
-        }
-      }
-    },
-    "register": {
-      "back": "Volver",
-      "ageGate": {
-        "heading": "Antes de empezar…",
-        "lead": "Para registrarte necesitas ser mayor de edad. Si tienes menores a tu cargo, podrás inscribirlos a todos durante el registro.",
-        "question": "¿Eres mayor de edad?",
-        "confirm": "Sí, soy mayor de edad",
-        "decline": "No, soy menor",
-        "blockedHeading": "Necesitas a tu padre, madre o tutor legal",
-        "blockedLead": "Los menores de edad no pueden registrarse por su cuenta. Pídele a tu padre, madre o tutor legal que cree su cuenta; durante su registro podrá inscribirte a ti y al resto de menores a su cargo."
       },
       "form": {
-        "yourData": "Tus datos",
-        "contactTitle": "Contacto",
-        "accessTitle": "Acceso a tu cuenta",
-        "minorsTitle": "Menores a tu cargo",
-        "addMinor": "+ Añadir menor",
-        "minorsNote": "Opcional. Añade a los menores que quieras inscribir; solo necesitamos su nombre, su fecha de nacimiento y su género.",
-        "minorLegend": "Menor {n}",
-        "removeMinor": "Quitar menor",
-        "submit": "Completar registro"
-      },
-      "success": {
-        "title": "¡Registro completado!",
-        "minorsEnrolledBefore": "También has inscrito a",
-        "minorsEnrolled": "{n} menor | {n} menores",
-        "minorsEnrolledAfter": "a tu cargo.",
-        "thanks": "Te agradecemos que quieras colaborar con nosotros. Nos pondremos en contacto contigo lo antes posible para conocernos más.",
-        "reminder": "Recuerda que puedes inscribirte (y a los menores a tu cargo) a cualquier evento desde la sección de eventos.",
-        "verifyIntroBefore": "Te hemos enviado un correo electrónico de verificación a",
-        "verifyIntroAfter": ". Pulsa el enlace del mensaje para activar tu cuenta.",
-        "resendPrompt": "¿No has recibido el correo? Revisa la carpeta de spam o",
-        "resendCountdown": "reenviar el correo ({s}s)",
-        "resend": "reenviar el correo",
-        "viewEvents": "Ver eventos",
-        "registerAnother": "Registrar a otra persona"
-      },
-      "toast": {
-        "linkResentDetail": "Te hemos enviado un nuevo enlace de verificación. Revisa tu correo.",
-        "linkResentSummary": "Correo reenviado"
-      },
-      "verify": {
-        "incompleteLink": "El enlace de verificación no es válido o está incompleto."
+        "problems": {
+          "subjectRequired": "Escribe un asunto.",
+          "bodyRequired": "Escribe un mensaje."
+        }
       }
     }
   },
   "widgets": {
-    "contentEntityPage": {
-      "table": {
-        "loadError": "No se pudieron cargar los registros.",
-        "empty": "Aún no hay registros."
+    "siteHeader": {
+      "nav": {
+        "home": "Inicio",
+        "news": "Novedades",
+        "events": "Eventos",
+        "resources": "Recursos",
+        "about": "Nosotros"
       },
-      "columns": {
-        "title": "Título",
-        "searchTitle": "Buscar título",
-        "subtitle": "Subtítulo",
-        "searchSubtitle": "Buscar subtítulo",
-        "created": "Creado"
+      "navAria": "Principal",
+      "menuTitle": "Menú"
+    },
+    "adminShell": {
+      "nav": {
+        "dashboard": "Métricas",
+        "events": "Eventos",
+        "news": "Novedades",
+        "partners": "Patrocinadores",
+        "resources": "Recursos",
+        "users": "Usuarios",
+        "settings": "Configuración"
       },
-      "featured": "Destacado",
-      "feature": "Destacar",
-      "dialog": {
-        "editHeader": "Editar {label}"
-      },
-      "form": {
-        "title": "Título",
-        "subtitle": "Subtítulo",
-        "description": "Descripción"
-      },
-      "confirm": {
-        "header": "Eliminar {label}",
-        "message": "¿Seguro que quieres eliminar \"{title}\"? Esta acción no se puede deshacer."
-      },
-      "toasts": {
-        "saved": "Cambios guardados.",
-        "created": "Creado correctamente.",
-        "featured": "Destacado actualizado.",
-        "deleted": "Eliminado.",
-        "notFound": "Esta {label} ya no existe."
+      "menuTitle": "Administración",
+      "goToSite": "Ir al sitio"
+    },
+    "siteFooter": {
+      "tagline": "Programación para tod{'@'}s.",
+      "contact": "Contáctanos",
+      "follow": "Síguenos",
+      "legal": "Información legal",
+      "cookies": "Política de cookies",
+      "social": {
+        "instagram": "Instagram",
+        "facebook": "Facebook",
+        "linkedIn": "LinkedIn",
+        "youTube": "YouTube"
       }
     }
   },
   "entities": {
     "event": {
-      "dateFallback": "Próximamente",
       "status": {
         "earlySignupOpen": "Inscripción anticipada",
         "signupOpen": "Inscripción abierta",
@@ -1529,44 +1592,6 @@
         "dateLabel": "Publicado"
       }
     },
-    "organization": {
-      "values": {
-        "free": {
-          "title": "Gratuito",
-          "description": "Todas nuestras actividades son siempre sin coste para las familias."
-        },
-        "inclusive": {
-          "title": "Inclusivo",
-          "description": "Llevamos el código al mundo rural y a quien tiene menos acceso."
-        },
-        "community": {
-          "title": "En comunidad",
-          "description": "Voluntariado, familias y empresas que reman en la misma dirección."
-        },
-        "fun": {
-          "title": "Divertido",
-          "description": "Se aprende creando, jugando y compartiendo proyectos propios."
-        }
-      },
-      "activities": {
-        "workshops": {
-          "title": "Talleres de programación",
-          "description": "De Scratch y robótica a Python e inteligencia artificial, por edades."
-        },
-        "annualDay": {
-          "title": "El Día Código Activo",
-          "description": "Nuestro gran evento anual con un lema y un reto temático distinto cada año."
-        },
-        "meetAndCode": {
-          "title": "Meet and Code",
-          "description": "Participamos en la Semana Europea de la Programación con actividades para 8-18 años."
-        },
-        "competitions": {
-          "title": "Competiciones",
-          "description": "Preparamos a jóvenes para la Olimpiada Informática y otros campeonatos."
-        }
-      }
-    },
     "file": {
       "thumbnail": {
         "alt": "Miniatura",
@@ -1576,12 +1601,6 @@
         "remove": "Quitar",
         "tooLarge": "La imagen supera el tamaño máximo de 10 MB.",
         "uploadFailed": "No se pudo subir la imagen."
-      }
-    },
-    "activity": {
-      "fallback": {
-        "title": "Actividad",
-        "role": "Rol"
       }
     },
     "user": {
@@ -1598,6 +1617,18 @@
         "sameAsPhone": "El teléfono secundario debe ser distinto del principal.",
         "birthDateInvalid": "Indica una fecha de nacimiento válida.",
         "birthDateNotMinor": "La fecha de nacimiento debe corresponder a un menor de edad."
+      }
+    },
+    "eventCategory": {
+      "fields": {
+        "color": "Color",
+        "example": "Ejemplo"
+      }
+    },
+    "account": {
+      "verification": {
+        "linkResentDetail": "Te hemos enviado un nuevo enlace de verificación. Revisa tu correo.",
+        "linkResentSummary": "Correo reenviado"
       }
     }
   }

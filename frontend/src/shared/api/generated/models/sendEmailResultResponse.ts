@@ -6,6 +6,6 @@
  */
 
 export interface SendEmailResultResponse {
-  queued?: number;
-  skipped?: number;
+  queued: number;
+  skipped: number;
 }

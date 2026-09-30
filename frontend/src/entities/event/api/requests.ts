@@ -3,7 +3,6 @@ import {
   getApiEvents,
   getApiEventsEventId,
   getApiEventsEventIdLeaderRoster,
-  getApiEventsEventIdRatings,
   getApiEventsEventIdTerms,
   getApiEventsPastCategories,
   getApiEventsPastYears,
@@ -11,65 +10,52 @@ import {
   postApiEvents,
   putApiEventsEventId,
 } from '@/shared/api/generated/endpoints/events/events'
-import {
-  getApiReportsDashboardAnalytics,
-  getApiReportsEventsEventIdAttendees,
-  getApiReportsEventsEventIdBadges,
-  getApiReportsEventsEventIdRoster,
-  getApiReportsEventsEventIdSummary,
-} from '@/shared/api/generated/endpoints/reports/reports'
-import type {
-  CreateEventRequest,
-  EventListItemResponse,
-  EventResponse,
-  GetApiEventsEventIdRatingsParams,
-  GetApiEventsParams,
-  GetApiReportsDashboardAnalyticsParams,
-  GetApiReportsEventsEventIdAttendeesParams,
-  UpdateEventRequest,
-} from '@/shared/api/generated/models'
 import { FEATURED_FIRST_SORT, toPage, unwrapOrNull } from '@/shared/api'
-import type { PagedListPage } from '@/shared/lib'
+import type { PagedListPage, ServerTablePage } from '@/shared/lib/paging'
 
 import type {
   EventCategoryTag,
   EventDetail,
+  EventInput,
+  EventListing,
+  EventListParams,
+  EventSummary,
   EventTermsState,
   HomeEvents,
   LeaderRosterActivity,
-  PastEvent,
   PastEventFilters,
-  UpcomingEvent,
 } from '../model/types'
 import {
   toCategoryTag,
   toEventDetail,
+  toEventListing,
+  toEventRequest,
+  toEventSummary,
   toEventTermsState,
   toLeaderRosterActivity,
-  toPastEvent,
-  toUpcomingEvent,
+  toPastEventSummary,
 } from './mapper'
 
-/** Fetches one page of upcoming events ordered by start date, mapped to card models. */
+/** Fetches one page of upcoming events ordered by start date. */
 export async function getUpcomingEventsPageRequest(
   page: number,
   pageSize: number,
-): Promise<PagedListPage<UpcomingEvent>> {
-  const result = await getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', page, pageSize })
-  const { items, total } = toPage(result)
-  return { items: items.map(toUpcomingEvent), total }
+): Promise<PagedListPage<EventSummary>> {
+  const response = await getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', page, pageSize })
+  const { items, total } = toPage(response)
+  return { items: items.map(toEventSummary), total }
 }
 
 /** Lists the years that have past events, as strings for select options. */
 export async function getPastEventYearsRequest(): Promise<readonly string[]> {
   const { data } = await getApiEventsPastYears()
-  return (data ?? []).map(String)
+  return data.map(String)
 }
 
-/** Lists categories used by past events, dropping entries without an id. */
+/** Lists the categories used by past events. */
 export async function getPastEventCategoriesRequest(): Promise<readonly EventCategoryTag[]> {
   const { data } = await getApiEventsPastCategories()
-  return (data ?? []).map(toCategoryTag).filter((category) => category.id)
+  return data.map(toCategoryTag)
 }
 
 /** Fetches one page of past events for a year, newest first, with optional search and category. */
@@ -77,8 +63,8 @@ export async function getPastEventsPageRequest(
   filters: PastEventFilters,
   page: number,
   pageSize: number,
-): Promise<PagedListPage<PastEvent>> {
-  const result = await getApiEvents({
+): Promise<PagedListPage<EventSummary>> {
+  const response = await getApiEvents({
     scope: 'Past',
     year: Number(filters.year),
     ...(filters.search ? { search: filters.search } : {}),
@@ -87,19 +73,13 @@ export async function getPastEventsPageRequest(
     page,
     pageSize,
   })
-  const { items, total } = toPage(result)
-  return { items: items.map(toPastEvent), total }
+  const { items, total } = toPage(response)
+  return { items: items.map(toPastEventSummary), total }
 }
 
-async function getFeaturedEventRequest(): Promise<UpcomingEvent | null> {
-  const { data } = await getApiEvents({ sort: FEATURED_FIRST_SORT, pageSize: 1 })
-  const first = data.items?.[0]
-  return first ? toUpcomingEvent(first) : null
-}
-
-/** Loads the public event detail; resolves to `null` when the event does not exist (404). */
-export async function getEventByIdRequest(id: string): Promise<EventDetail | null> {
-  const event = await unwrapOrNull<EventResponse>(getApiEventsEventId(id))
+/** Loads a whole event for its public page; resolves to `null` when it does not exist (404). */
+export async function getEventRequest(id: string): Promise<EventDetail | null> {
+  const event = await unwrapOrNull(getApiEventsEventId(id))
   return event ? toEventDetail(event) : null
 }
 
@@ -117,7 +97,7 @@ export async function getEventLeaderRosterRequest(
   eventId: string,
 ): Promise<readonly LeaderRosterActivity[]> {
   const { data } = await getApiEventsEventIdLeaderRoster(eventId)
-  return (data ?? []).map(toLeaderRosterActivity)
+  return data.map(toLeaderRosterActivity)
 }
 
 /**
@@ -125,82 +105,43 @@ export async function getEventLeaderRosterRequest(
  * featured one so it is not shown twice.
  */
 export async function getHomeEventsRequest(): Promise<HomeEvents> {
-  const [featured, upcomingPage] = await Promise.all([
-    getFeaturedEventRequest(),
+  const [featuredPage, upcomingPage] = await Promise.all([
+    getApiEvents({ sort: FEATURED_FIRST_SORT, pageSize: 1 }),
     getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', pageSize: 4 }),
   ])
-  const upcoming = (upcomingPage.data.items ?? []).map(toUpcomingEvent)
-  const items = upcoming.filter((event) => event.id !== featured?.id).slice(0, 3)
+  const [first] = toPage(featuredPage).items
+  const featured = first ? toEventSummary(first) : null
+  const items = toPage(upcomingPage)
+    .items.map(toEventSummary)
+    .filter((event) => event.id !== featured?.id)
+    .slice(0, 3)
   return { featured, items }
 }
 
-/** Fetches one page of the admin events table with raw list items (no card mapping). */
-export function getEventsAdminPageRequest(
-  params: GetApiEventsParams,
-): Promise<{ items: EventListItemResponse[]; total: number }> {
-  return getApiEvents(params).then(toPage)
+/** Fetches one page of the admin events table. */
+export async function getEventsPageRequest(
+  params: EventListParams,
+): Promise<ServerTablePage<EventListing>> {
+  const { items, total } = toPage(await getApiEvents(params))
+  return { items: items.map(toEventListing), total }
 }
 
-/** Loads the raw event for the admin editor; `null` when it does not exist (404). */
-export function getEventAdminRequest(id: string) {
-  return unwrapOrNull<EventResponse>(getApiEventsEventId(id))
+/** Creates an event. */
+export async function createEventRequest(input: EventInput): Promise<void> {
+  await postApiEvents(toEventRequest(input))
 }
 
-/** Creates an event and resolves to the created event. */
-export function createEventRequest(body: CreateEventRequest) {
-  return postApiEvents(body).then((r) => r.data)
+/** Replaces an event's editable data. */
+export async function updateEventRequest(id: string, input: EventInput): Promise<void> {
+  await putApiEventsEventId(id, toEventRequest(input))
 }
 
-/** Replaces an event and resolves to the updated event. */
-export function updateEventRequest(id: string, body: UpdateEventRequest) {
-  return putApiEventsEventId(id, body).then((r) => r.data)
+/** Deletes an event with its activities. */
+export async function deleteEventRequest(id: string): Promise<void> {
+  await deleteApiEventsEventId(id)
 }
 
-/** Deletes an event (admin only); resolves with the raw 204 response. */
-export function deleteEventRequest(id: string) {
-  return deleteApiEventsEventId(id)
-}
-
-/**
- * Makes the event the only featured one (any other featured event loses the flag) and resolves to
- * the updated event. Despite the name, calling it on the featured event does not unfeature it.
- */
-export function toggleEventFeatureRequest(id: string) {
-  return patchApiEventsEventIdFeature(id).then((r) => r.data)
-}
-
-/** Fetches one page of attendee ratings for an event. */
-export function getEventRatingsPageRequest(
-  eventId: string,
-  params: GetApiEventsEventIdRatingsParams,
-) {
-  return getApiEventsEventIdRatings(eventId, params).then(toPage)
-}
-
-/** Loads the admin report summary for an event. */
-export function getEventSummaryRequest(eventId: string) {
-  return getApiReportsEventsEventIdSummary(eventId).then((r) => r.data)
-}
-
-/** Fetches one page of the attendee report for an event. */
-export function getEventAttendeesPageRequest(
-  eventId: string,
-  params: GetApiReportsEventsEventIdAttendeesParams,
-) {
-  return getApiReportsEventsEventIdAttendees(eventId, params).then(toPage)
-}
-
-/** Loads one badge per attendee (name, guardian, activities) for printing (admin only). */
-export function getEventBadgesRequest(eventId: string) {
-  return getApiReportsEventsEventIdBadges(eventId).then((r) => r.data)
-}
-
-/** Loads participants grouped by activity, with contact and guardian data (admin only). */
-export function getEventRosterRequest(eventId: string) {
-  return getApiReportsEventsEventIdRoster(eventId).then((r) => r.data)
-}
-
-/** Loads admin dashboard analytics for a date range. */
-export function getDashboardAnalyticsRequest(params: GetApiReportsDashboardAnalyticsParams) {
-  return getApiReportsDashboardAnalytics(params).then((r) => r.data)
+/** Makes the event the only featured one; featuring the featured event again changes nothing. */
+export async function featureEventRequest(id: string): Promise<void> {
+  await patchApiEventsEventIdFeature(id)
 }

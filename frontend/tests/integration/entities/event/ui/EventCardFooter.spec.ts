@@ -15,7 +15,7 @@ describe('EventCardFooter', () => {
   ])('renders the %s status label with its color modifier', async (kind) => {
     const label = t(`entities.event.status.${kind}`)
     const { wrapper } = await renderWithProviders(EventCardFooter, {
-      props: { status: { kind, label } },
+      props: { status: kind },
     })
 
     const status = wrapper.find('.event-card-footer__status')

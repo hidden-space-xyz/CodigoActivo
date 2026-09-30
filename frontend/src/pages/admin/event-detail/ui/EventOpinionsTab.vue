@@ -1,59 +1,46 @@
 <script setup lang="ts">
-import { useEventRatingsTable } from '@/features/manage-events'
-import type { EventRatingListItemResponse } from '@/shared/api/generated/models'
-import type { TranslationKey } from '@/shared/i18n'
-import { DataState } from '@/shared/ui'
+import { DataState } from '@/shared/ui/data-state'
+
+import { ratingAnswers } from '../lib/rating-answers'
+import { useEventRatings } from '../model/use-event-ratings'
 
 const props = defineProps<{
-  /** Event whose attendee ratings and written feedback are listed. */
+  /** Event whose anonymous ratings and written feedback are listed. */
   eventId: string
   /** Whether this tab is selected; ratings are only fetched while it is. */
   active: boolean
 }>()
 
-const ratings = useEventRatingsTable(
+const table = useEventRatings(
   () => props.eventId,
   () => props.active,
 )
-
-function answers(rating: EventRatingListItemResponse): {
-  labelKey: TranslationKey
-  value: string
-}[] {
-  const candidates: { labelKey: TranslationKey; value: string }[] = [
-    { labelKey: 'entities.event.ratingQuestions.mostLiked', value: rating.mostLiked ?? '' },
-    { labelKey: 'entities.event.ratingQuestions.leastLiked', value: rating.leastLiked ?? '' },
-    { labelKey: 'entities.event.ratingQuestions.suggestions', value: rating.suggestions ?? '' },
-  ]
-
-  return candidates.filter((answer) => answer.value.trim() !== '')
-}
 </script>
 
 <template>
   <div>
     <DataState
-      :loading="ratings.table.loading.value && ratings.table.items.value.length === 0"
-      :error="ratings.table.isError.value"
-      :empty="ratings.table.total.value === 0 && !ratings.table.loading.value"
+      :loading="table.loading.value && table.items.value.length === 0"
+      :error="table.isError.value"
+      :empty="table.total.value === 0 && !table.loading.value"
       :empty-text="$t('pages.admin.eventDetail.opinions.empty')"
     >
       <p class="count">
-        {{ $t('pages.admin.eventDetail.opinions.count', ratings.table.total.value) }}
+        {{ $t('pages.admin.eventDetail.opinions.count', table.total.value) }}
       </p>
 
       <ul class="opinions">
-        <li v-for="rating in ratings.table.items.value" :key="rating.id" class="opinion">
+        <li v-for="rating in table.items.value" :key="rating.id" class="opinion">
           <div class="opinion__head">
             <span class="opinion__author">{{
               $t('pages.admin.eventDetail.opinions.anonymous')
             }}</span>
-            <el-rate :model-value="rating.score ?? 0" disabled :max="5" class="opinion__stars" />
-            <span class="opinion__score">{{ rating.score ?? 0 }}/5</span>
+            <el-rate :model-value="rating.score" disabled :max="5" class="opinion__stars" />
+            <span class="opinion__score">{{ rating.score }}/5</span>
           </div>
 
-          <dl v-if="answers(rating).length > 0" class="opinion__answers">
-            <template v-for="answer in answers(rating)" :key="answer.labelKey">
+          <dl v-if="ratingAnswers(rating).length > 0" class="opinion__answers">
+            <template v-for="answer in ratingAnswers(rating)" :key="answer.labelKey">
               <dt>{{ $t(answer.labelKey) }}</dt>
               <dd>{{ answer.value }}</dd>
             </template>
@@ -65,11 +52,11 @@ function answers(rating: EventRatingListItemResponse): {
       </ul>
 
       <el-pagination
-        v-if="ratings.table.total.value > 25 || ratings.table.first.value > 0"
-        v-bind="ratings.table.paginationProps.value"
+        v-if="table.total.value > 25 || table.first.value > 0"
+        v-bind="table.paginationProps.value"
         class="paginator"
-        @update:current-page="ratings.table.onCurrentPageChange"
-        @update:page-size="ratings.table.onPageSizeChange"
+        @update:current-page="table.onCurrentPageChange"
+        @update:page-size="table.onPageSizeChange"
       />
     </DataState>
   </div>

@@ -1,99 +1,26 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed } from 'vue'
+
+import { formatDateTime } from '@/shared/lib/date'
+import { ActionButton } from '@/shared/ui/action-button'
+import { AdminPageHeader } from '@/shared/ui/admin-page-header'
+import { ColorTag } from '@/shared/ui/color-tag'
 import {
-  AdminPageHeader,
-  AppButton as Button,
-  ColorTag,
   ColumnFilterDate,
   ColumnFilterSelect,
   ColumnSearch,
-  ListThumbnail,
-} from '@/shared/ui'
+  toSelectOptions,
+} from '@/shared/ui/column-filter'
+import { DataTable } from '@/shared/ui/data-table'
+import { ListThumbnail } from '@/shared/ui/list-thumbnail'
 
-import { useResourceTypesList } from '@/entities/catalog'
-import { ResourceFormDialog, useResourcesAdmin } from '@/features/manage-resources'
-import type {
-  CreateResourceRequest,
-  ResourceListItemResponse,
-  ResourceResponse,
-  UpdateResourceRequest,
-} from '@/shared/api/generated/models'
-import { formatDateTime, toSelectOptions, useCrudFeedback, useDeleteConfirm } from '@/shared/lib'
+import { useResourcesAdmin } from '../model/use-resources-admin'
+import ResourceFormDialog from './ResourceFormDialog.vue'
 
-const { t } = useI18n()
-const { table, create, update, remove, fetchOne } = useResourcesAdmin()
-const resourceTypes = useResourceTypesList()
-const feedback = useCrudFeedback()
-const { confirmDelete: requireDelete } = useDeleteConfirm()
+const { table, types, dialog, saving, save, confirmRemove } = useResourcesAdmin()
+const { visible, editing, loading, openCreate, openEdit } = dialog
 
-const dialogVisible = ref(false)
-const selected = ref<ResourceResponse | null>(null)
-const loadingDetail = ref(false)
-const saving = computed(() => create.isPending.value || update.isPending.value)
-
-const typeOptions = computed(() => toSelectOptions(resourceTypes.data.value))
-
-function openCreate(): void {
-  if (loadingDetail.value) return
-  selected.value = null
-  dialogVisible.value = true
-}
-
-async function openEdit(resource: ResourceListItemResponse): Promise<void> {
-  if (!resource.id || loadingDetail.value) return
-  loadingDetail.value = true
-  try {
-    const detail = await fetchOne(resource.id)
-    if (!detail) {
-      feedback.error(t('pages.admin.resources.toasts.notFound'))
-      return
-    }
-    selected.value = detail
-    dialogVisible.value = true
-  } catch (error) {
-    feedback.error(error)
-  } finally {
-    loadingDetail.value = false
-  }
-}
-
-function onSubmit(body: CreateResourceRequest | UpdateResourceRequest): void {
-  if (selected.value?.id) {
-    update.mutate(
-      { id: selected.value.id, body: body },
-      {
-        onSuccess: () => {
-          feedback.success(t('pages.admin.resources.toasts.updated'))
-          dialogVisible.value = false
-        },
-        onError: (error) => feedback.error(error),
-      },
-    )
-    return
-  }
-  create.mutate(body, {
-    onSuccess: () => {
-      feedback.success(t('pages.admin.resources.toasts.created'))
-      dialogVisible.value = false
-    },
-    onError: (error) => feedback.error(error),
-  })
-}
-
-function confirmDelete(resource: ResourceListItemResponse): void {
-  requireDelete({
-    header: t('pages.admin.resources.delete.header'),
-    message: t('pages.admin.resources.delete.message', { title: resource.title }),
-    accept: () => {
-      if (!resource.id) return
-      remove.mutate(resource.id, {
-        onSuccess: () => feedback.success(t('pages.admin.resources.toasts.deleted')),
-        onError: (error) => feedback.error(error),
-      })
-    },
-  })
-}
+const typeOptions = computed(() => toSelectOptions(types.data.value))
 </script>
 
 <template>
@@ -103,26 +30,21 @@ function confirmDelete(resource: ResourceListItemResponse): void {
       :subtitle="$t('pages.admin.resources.header.subtitle')"
     >
       <template #actions>
-        <Button
+        <ActionButton
           :label="$t('pages.admin.resources.newResource')"
           icon="plus"
           type="primary"
-          :disabled="loadingDetail"
+          :disabled="loading"
           @click="openCreate"
         />
       </template>
     </AdminPageHeader>
 
-    <el-table
-      v-loading="table.loading.value"
-      v-bind="table.tableProps.value"
-      @sort-change="table.onSortChange"
+    <DataTable
+      :table="table"
+      :empty-text="$t('pages.admin.resources.empty.none')"
+      :error-text="$t('pages.admin.resources.empty.error')"
     >
-      <template #empty>
-        <span v-if="table.isError.value">{{ $t('pages.admin.resources.empty.error') }}</span>
-        <span v-else>{{ $t('pages.admin.resources.empty.none') }}</span>
-      </template>
-
       <el-table-column :label="$t('common.image')" width="110">
         <template #default="{ row }">
           <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
@@ -159,7 +81,7 @@ function confirmDelete(resource: ResourceListItemResponse): void {
           />
         </template>
         <template #default="{ row }">
-          <ColorTag v-if="row.type?.name" :value="row.type.name" :color="row.type.color" />
+          <ColorTag v-if="row.type.name" :value="row.type.name" :color="row.type.color" />
           <span v-else>—</span>
         </template>
       </el-table-column>
@@ -198,50 +120,38 @@ function confirmDelete(resource: ResourceListItemResponse): void {
       <el-table-column :label="$t('common.actions')" width="120" align="center" fixed="right">
         <template #default="{ row }">
           <div class="ca-row-actions">
-            <Button
+            <ActionButton
               icon="pencil"
               type="success"
               text
               circle
               :aria-label="$t('common.edit')"
-              :disabled="loadingDetail"
+              :disabled="loading"
               @click="openEdit(row)"
             />
-            <Button
+            <ActionButton
               icon="trash"
               text
               circle
               type="danger"
               :aria-label="$t('common.delete')"
-              @click="confirmDelete(row)"
+              @click="confirmRemove(row)"
             />
           </div>
         </template>
       </el-table-column>
-    </el-table>
-
-    <el-pagination
-      v-bind="table.paginationProps.value"
-      class="table-pagination"
-      @current-change="table.onCurrentPageChange"
-      @size-change="table.onPageSizeChange"
-    />
+    </DataTable>
 
     <ResourceFormDialog
-      v-model:visible="dialogVisible"
-      :resource="selected"
+      v-model:visible="visible"
+      :resource="editing"
       :saving="saving"
-      @submit="onSubmit"
+      @submit="save"
     />
   </div>
 </template>
 
 <style scoped>
-.table-pagination {
-  margin-top: 14px;
-  justify-content: flex-end;
-}
-
 .url-cell {
   display: inline-block;
   max-width: 220px;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { BaseButton, SectionEyebrow } from '@/shared/ui'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { SectionEyebrow } from '@/shared/ui/section-eyebrow'
 </script>
 
 <template>
@@ -13,9 +14,9 @@ import { BaseButton, SectionEyebrow } from '@/shared/ui'
           {{ $t('pages.notFound.text') }}
         </p>
         <div class="not-found__actions">
-          <BaseButton variant="primary" :to="{ name: 'home' }">{{
+          <BrandButton variant="primary" :to="{ name: 'home' }">{{
             $t('common.backToHome')
-          }}</BaseButton>
+          }}</BrandButton>
         </div>
       </div>
     </section>

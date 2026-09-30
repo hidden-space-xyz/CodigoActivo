@@ -1,136 +1,80 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useAssignments } from '@/features/manage-activities'
-import { useEventAttendeesTable } from '@/features/manage-events'
+import { fullName, GENDERS, genderLabelKey } from '@/entities/user'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
-import {
-  useActivityRoleTypesList,
-  useAssignmentStatusTypesList,
-  useUserTypesList,
-} from '@/entities/catalog'
-import { genderLabel, genderOptions } from '@/entities/user'
-import type {
-  ActivityResponse,
-  EventAttendeeAssignmentResponse,
-  EventAttendeeResponse,
-} from '@/shared/api/generated/models'
-import { AppButton as Button, AppIcon, ColorTag, DataState } from '@/shared/ui'
-import type { CsvValue } from '@/shared/lib'
-import {
-  ageFrom,
-  formatDateTime,
-  fullName,
-  normalizeHexColor,
-  toSelectOptions,
-  todayIso,
-  useCrudFeedback,
-  useCsvExport,
-} from '@/shared/lib'
+import { normalizeHexColor } from '@/shared/lib/color'
+import { ageFrom, formatDateTime, todayIso } from '@/shared/lib/date'
+import { type CsvValue, useCsvExport } from '@/shared/lib/download'
+import { useCrudFeedback } from '@/shared/lib/feedback'
+import { ActionButton } from '@/shared/ui/action-button'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { ColorTag } from '@/shared/ui/color-tag'
+import { toSelectOptions } from '@/shared/ui/column-filter'
+import { DataState } from '@/shared/ui/data-state'
+
+import type { EventAttendee } from '../model/types'
+import { useAssignmentChanges } from '../model/use-assignment-changes'
+import { useEventAttendees } from '../model/use-event-attendees'
+import AssignmentChangeDialog from './AssignmentChangeDialog.vue'
 
 const props = defineProps<{
-  /** Event whose attendees and assignments are listed and managed. */
+  /** Event whose attendees and signups are listed and managed. */
   eventId: string
-  /** Whether this tab is selected; the attendee table only fetches while it is. */
+  /** Whether this tab is selected; the attendees list only loads while it is. */
   active: boolean
-  /** Event activities loaded by the parent page, used for the activity filter options. */
-  activities: ActivityResponse[]
-  /** Parent's activities request is loading; keeps the tab in its loading state. */
-  activitiesLoading: boolean
-  /** Parent's activities request failed; shows the tab's error state. */
-  activitiesError: boolean
 }>()
 
 const { t } = useI18n()
 const feedback = useCrudFeedback()
-const attendees = useEventAttendeesTable(
+const {
+  table,
+  searchText,
+  userTypeFilter,
+  genderFilter,
+  activityFilter,
+  roleFilter,
+  statusFilter,
+  filters,
+  hasActiveFilters,
+  sort,
+  ascending,
+  toggleSortDirection,
+  activities,
+  roles,
+  statuses,
+  userTypes,
+  statusColor,
+} = useEventAttendees(
   () => props.eventId,
   () => props.active,
 )
-const assignments = useAssignments(() => props.eventId)
+const {
+  roleDialog,
+  statusDialog,
+  changingRole,
+  changingStatus,
+  openRole,
+  openStatus,
+  applyRole,
+  applyStatus,
+} = useAssignmentChanges(() => props.eventId)
 const { sendToEventAttendees, usersAudience, eventAttendeesAudience } = useSendEmail()
-const statusTypes = useAssignmentStatusTypesList()
-const roleTypes = useActivityRoleTypesList()
-const userTypes = useUserTypesList()
-
-const searchText = ref('')
-let searchTimer: ReturnType<typeof setTimeout> | undefined
-
-watch(searchText, (value) => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    attendees.search.value = value
-  }, 300)
-})
-
-onBeforeUnmount(() => {
-  if (searchTimer) clearTimeout(searchTimer)
-})
-
-const TYPE_SORT = 'type,firstName'
 
 const sortOptions: { label: string; value: string }[] = [
   { label: t('common.name'), value: 'firstName' },
   { label: t('common.lastName'), value: 'lastName' },
   { label: t('common.birthDate'), value: 'birthDate' },
-  { label: t('pages.admin.eventDetail.attendees.type'), value: TYPE_SORT },
+  { label: t('pages.admin.eventDetail.attendees.type'), value: 'type,firstName' },
 ]
 
-const sortField = computed({
-  get: () => attendees.table.sortField.value ?? 'firstName',
-  set: (value: string) => {
-    attendees.table.sortField.value = value
-    attendees.table.first.value = 0
-  },
-})
-
-const sortAsc = computed(() => attendees.table.sortOrder.value !== -1)
-
-function toggleSortDirection(): void {
-  attendees.table.sortOrder.value = sortAsc.value ? -1 : 1
-  attendees.table.first.value = 0
-}
-
 const activityOptions = computed(() =>
-  props.activities.map((activity) => ({
-    label: activity.title ?? '—',
-    value: activity.id ?? '',
-  })),
+  (activities.data.value ?? []).map((activity) => ({ label: activity.title, value: activity.id })),
 )
-
 const typeOptions = computed(() => toSelectOptions(userTypes.data.value))
-
-const roleOptions = computed(() => toSelectOptions(roleTypes.data.value))
-
-const statusOptions = computed(() => toSelectOptions(statusTypes.data.value))
-
-const genders = genderOptions()
-
-function filterModel<T extends string>(source: Ref<T | null>) {
-  return computed<T | null>({
-    get: () => source.value,
-    set: (value) => {
-      source.value = value == null || (value as string) === '' ? null : value
-    },
-  })
-}
-
-const userTypeFilter = filterModel(attendees.userTypeId)
-const genderFilter = filterModel(attendees.gender)
-const activityFilter = filterModel(attendees.activityId)
-const roleFilter = filterModel(attendees.roleTypeId)
-const statusFilter = filterModel(attendees.statusId)
-
-const hasActiveFilters = computed(
-  () =>
-    searchText.value.trim() !== '' ||
-    attendees.userTypeId.value !== null ||
-    attendees.gender.value !== null ||
-    attendees.activityId.value !== null ||
-    attendees.roleTypeId.value !== null ||
-    attendees.statusId.value !== null,
-)
+const roleOptions = computed(() => toSelectOptions(roles.data.value))
+const statusOptions = computed(() => toSelectOptions(statuses.data.value))
 
 const exportHeaders = [
   t('pages.admin.eventDetail.attendees.export.columns.firstName'),
@@ -146,14 +90,14 @@ const exportHeaders = [
   t('pages.admin.eventDetail.attendees.export.columns.guardianSecondaryPhone'),
 ]
 
-function exportRow(attendee: EventAttendeeResponse): CsvValue[] {
+function exportRow(attendee: EventAttendee): CsvValue[] {
   return [
     attendee.firstName,
     attendee.lastName,
     attendee.email,
     attendee.phone,
     attendee.secondaryPhone,
-    attendee.gender ? genderLabel(attendee.gender) : null,
+    t(genderLabelKey(attendee.gender)),
     attendee.guardian?.firstName,
     attendee.guardian?.lastName,
     attendee.guardian?.email,
@@ -162,8 +106,8 @@ function exportRow(attendee: EventAttendeeResponse): CsvValue[] {
   ]
 }
 
-const { exporting, exportCsv } = useCsvExport<EventAttendeeResponse>({
-  fetchRows: attendees.fetchAllAttendees,
+const { exporting, exportCsv } = useCsvExport<EventAttendee>({
+  fetchRows: table.fetchAll,
   headers: exportHeaders,
   toRow: exportRow,
   filename: () => t('pages.admin.eventDetail.attendees.export.filename', { date: todayIso() }),
@@ -179,121 +123,28 @@ const {
   withoutConsent: emailWithoutConsent,
   open: openEmail,
   submit: submitEmail,
-} = useSendEmailDialog<EventAttendeeResponse>({
+} = useSendEmailDialog<EventAttendee>({
   idOf: (attendee) => attendee.userId,
   targetOne: (attendee) =>
     t('pages.admin.eventDetail.attendees.email.targetOne', { fullName: fullName(attendee) }),
-  targetAll: () =>
-    t('pages.admin.eventDetail.attendees.email.targetFiltered', attendees.table.total.value),
+  targetAll: () => t('pages.admin.eventDetail.attendees.email.targetFiltered', table.total.value),
   bulkPending: () => sendToEventAttendees.isPending.value,
   sendAll: (payload, handlers) =>
-    sendToEventAttendees.mutate(
-      {
-        eventId: props.eventId,
-        params: attendees.filterParams(),
-        payload,
-      },
-      handlers,
-    ),
+    sendToEventAttendees.mutate({ eventId: props.eventId, params: filters(), payload }, handlers),
   fetchAudience: (attendee) =>
     attendee
-      ? usersAudience({ id: attendee.userId ?? '' })
-      : eventAttendeesAudience(props.eventId, attendees.filterParams()),
+      ? usersAudience({ id: attendee.userId })
+      : eventAttendeesAudience(props.eventId, filters()),
   onError: (error) => feedback.error(error),
 })
 
-const statusColorById = computed(() => {
-  const map = new Map<string, string>()
-  for (const status of statusTypes.data.value ?? []) {
-    if (status.id) map.set(status.id, status.color ?? '')
-  }
-  return map
-})
-
-function statusColor(assignment: EventAttendeeAssignmentResponse): string | null {
-  return assignment.statusId ? (statusColorById.value.get(assignment.statusId) ?? null) : null
-}
-
-function typeName(attendee: EventAttendeeResponse): string {
-  return attendee.userTypeName || '—'
-}
-
-function attendeeVars(attendee: EventAttendeeResponse): Record<string, string> | undefined {
+function attendeeVars(attendee: EventAttendee): Record<string, string> | undefined {
   const color = normalizeHexColor(attendee.userTypeColor)
   return color ? { '--user-type': color } : undefined
 }
 
-function hasConflicts(attendee: EventAttendeeResponse): boolean {
-  return (attendee.assignments ?? []).some((assignment) => assignment.hasTimeConflict)
-}
-
-type DialogTarget = {
-  attendee: EventAttendeeResponse
-  assignment: EventAttendeeAssignmentResponse
-}
-
-const statusDialogVisible = ref(false)
-const statusTarget = ref<DialogTarget | null>(null)
-const selectedStatusId = ref<string | null>(null)
-
-function openChangeStatus(
-  attendee: EventAttendeeResponse,
-  assignment: EventAttendeeAssignmentResponse,
-): void {
-  statusTarget.value = { attendee, assignment }
-  selectedStatusId.value = assignment.statusId ?? null
-  statusDialogVisible.value = true
-}
-
-function submitChangeStatus(): void {
-  const target = statusTarget.value
-  if (!target?.attendee.userId || !target.assignment.activityId || !selectedStatusId.value) return
-  assignments.changeStatus.mutate(
-    {
-      activityId: target.assignment.activityId,
-      userId: target.attendee.userId,
-      body: { assignmentStatusId: selectedStatusId.value },
-    },
-    {
-      onSuccess: () => {
-        feedback.success(t('pages.admin.eventDetail.attendees.toast.statusUpdated'))
-        statusDialogVisible.value = false
-      },
-      onError: (error) => feedback.error(error),
-    },
-  )
-}
-
-const roleDialogVisible = ref(false)
-const roleTarget = ref<DialogTarget | null>(null)
-const selectedRoleId = ref<string | null>(null)
-
-function openChangeRole(
-  attendee: EventAttendeeResponse,
-  assignment: EventAttendeeAssignmentResponse,
-): void {
-  roleTarget.value = { attendee, assignment }
-  selectedRoleId.value = assignment.roleTypeId ?? null
-  roleDialogVisible.value = true
-}
-
-function submitChangeRole(): void {
-  const target = roleTarget.value
-  if (!target?.attendee.userId || !target.assignment.activityId || !selectedRoleId.value) return
-  assignments.changeRole.mutate(
-    {
-      activityId: target.assignment.activityId,
-      userId: target.attendee.userId,
-      body: { activityRoleTypeId: selectedRoleId.value },
-    },
-    {
-      onSuccess: () => {
-        feedback.success(t('pages.admin.eventDetail.attendees.toast.roleUpdated'))
-        roleDialogVisible.value = false
-      },
-      onError: (error) => feedback.error(error),
-    },
-  )
+function hasConflicts(attendee: EventAttendee): boolean {
+  return attendee.assignments.some((assignment) => assignment.hasTimeConflict)
 }
 </script>
 
@@ -325,10 +176,10 @@ function submitChangeRole(): void {
         class="toolbar__filter"
       >
         <el-option
-          v-for="option in genders"
-          :key="option.value"
-          :label="option.label"
-          :value="option.value"
+          v-for="gender in GENDERS"
+          :key="gender"
+          :label="$t(genderLabelKey(gender))"
+          :value="gender"
         />
       </el-select>
       <el-select
@@ -370,25 +221,25 @@ function submitChangeRole(): void {
           :value="option.value"
         />
       </el-select>
-      <Button
+      <ActionButton
         :label="$t('pages.admin.eventDetail.attendees.export.label')"
         :tooltip="$t('pages.admin.eventDetail.attendees.export.tooltip')"
         icon="download"
         :loading="exporting"
-        :disabled="attendees.table.total.value === 0"
+        :disabled="table.total.value === 0"
         @click="exportCsv"
       />
-      <Button
+      <ActionButton
         :label="$t('pages.admin.eventDetail.attendees.email.bulkLabel')"
         :tooltip="$t('pages.admin.eventDetail.attendees.email.bulkTooltip')"
         icon="envelope"
         class="ca-action-icon--email"
-        :disabled="attendees.table.total.value === 0"
+        :disabled="table.total.value === 0"
         @click="openEmail(null)"
       />
       <div class="toolbar__sort">
         <el-select
-          v-model="sortField"
+          v-model="sort"
           :aria-label="$t('pages.admin.eventDetail.attendees.sort.ariaSortBy')"
           class="toolbar__sort-select"
         >
@@ -399,12 +250,12 @@ function submitChangeRole(): void {
             :value="option.value"
           />
         </el-select>
-        <Button
-          :icon="sortAsc ? 'sort-amount-up-alt' : 'sort-amount-down'"
+        <ActionButton
+          :icon="ascending ? 'sort-amount-up-alt' : 'sort-amount-down'"
           text
           circle
           :aria-label="
-            sortAsc
+            ascending
               ? $t('pages.admin.eventDetail.attendees.sort.ascending')
               : $t('pages.admin.eventDetail.attendees.sort.descending')
           "
@@ -415,11 +266,10 @@ function submitChangeRole(): void {
 
     <DataState
       :loading="
-        (attendees.table.loading.value && attendees.table.items.value.length === 0) ||
-        activitiesLoading
+        (table.loading.value && table.items.value.length === 0) || activities.isLoading.value
       "
-      :error="attendees.table.isError.value || activitiesError"
-      :empty="attendees.table.total.value === 0 && !attendees.table.loading.value"
+      :error="table.isError.value || activities.isError.value"
+      :empty="table.total.value === 0 && !table.loading.value"
       :empty-text="
         hasActiveFilters
           ? $t('pages.admin.eventDetail.attendees.empty.noMatches')
@@ -427,12 +277,12 @@ function submitChangeRole(): void {
       "
     >
       <p class="count">
-        {{ $t('pages.admin.eventDetail.attendees.count', attendees.table.total.value) }}
+        {{ $t('pages.admin.eventDetail.attendees.count', table.total.value) }}
       </p>
 
       <ul class="attendees">
         <li
-          v-for="attendee in attendees.table.items.value"
+          v-for="attendee in table.items.value"
           :key="attendee.userId"
           class="attendee"
           :style="attendeeVars(attendee)"
@@ -448,10 +298,12 @@ function submitChangeRole(): void {
               <span
                 class="attendee__type"
                 :title="
-                  $t('pages.admin.eventDetail.attendees.typeTitle', { name: typeName(attendee) })
+                  $t('pages.admin.eventDetail.attendees.typeTitle', {
+                    name: attendee.userTypeName,
+                  })
                 "
               >
-                {{ typeName(attendee) }}
+                {{ attendee.userTypeName }}
               </span>
               <span
                 v-if="hasConflicts(attendee)"
@@ -493,7 +345,7 @@ function submitChangeRole(): void {
                   <AppIcon name="phone" /> {{ attendee.secondaryPhone }}
                 </span>
               </template>
-              <Button
+              <ActionButton
                 v-if="attendee.email"
                 icon="envelope"
                 text
@@ -508,12 +360,12 @@ function submitChangeRole(): void {
 
           <ul class="attendee__assignments">
             <li
-              v-for="assignment in attendee.assignments ?? []"
+              v-for="assignment in attendee.assignments"
               :key="assignment.activityId"
               class="assignment"
             >
-              <span class="assignment__title">{{ assignment.activityTitle || '—' }}</span>
-              <span class="assignment__role">{{ assignment.roleTypeName || '—' }}</span>
+              <span class="assignment__title">{{ assignment.activityTitle }}</span>
+              <span class="assignment__role">{{ assignment.roleName || '—' }}</span>
               <span
                 class="assignment__signed"
                 :title="$t('pages.admin.eventDetail.attendees.signedUpTitle')"
@@ -532,23 +384,23 @@ function submitChangeRole(): void {
                 </span>
               </span>
               <div class="assignment__actions">
-                <Button
+                <ActionButton
                   icon="tag"
                   text
                   circle
                   size="small"
                   class="ca-action-icon--assignment"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeRole')"
-                  @click="openChangeRole(attendee, assignment)"
+                  @click="openRole(attendee, assignment)"
                 />
-                <Button
+                <ActionButton
                   icon="sync"
                   text
                   circle
                   size="small"
                   class="ca-action-icon--assignment"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeStatus')"
-                  @click="openChangeStatus(attendee, assignment)"
+                  @click="openStatus(attendee, assignment)"
                 />
               </div>
             </li>
@@ -557,11 +409,11 @@ function submitChangeRole(): void {
       </ul>
 
       <el-pagination
-        v-if="attendees.table.total.value > 25 || attendees.table.first.value > 0"
-        v-bind="attendees.table.paginationProps.value"
+        v-if="table.total.value > 25 || table.first.value > 0"
+        v-bind="table.paginationProps.value"
         class="paginator"
-        @update:current-page="attendees.table.onCurrentPageChange"
-        @update:page-size="attendees.table.onPageSizeChange"
+        @update:current-page="table.onCurrentPageChange"
+        @update:page-size="table.onPageSizeChange"
       />
     </DataState>
 
@@ -573,100 +425,34 @@ function submitChangeRole(): void {
       @submit="submitEmail"
     />
 
-    <el-dialog
-      v-model="roleDialogVisible"
+    <AssignmentChangeDialog
+      v-model:visible="roleDialog.visible"
+      v-model:selected="roleDialog.selectedId"
       :title="$t('pages.admin.eventDetail.attendees.changeRole')"
-      width="min(92vw, 400px)"
-      append-to-body
-    >
-      <p class="dialog-context">
-        {{
-          $t('pages.admin.eventDetail.attendees.dialogContext', {
-            name: roleTarget ? fullName(roleTarget.attendee) : '',
-            activity: roleTarget?.assignment.activityTitle,
-          })
-        }}
-      </p>
-      <div class="form__field">
-        <label for="attendee-role">{{ $t('pages.admin.eventDetail.attendees.role') }}</label>
-        <el-select
-          id="attendee-role"
-          v-model="selectedRoleId"
-          :placeholder="$t('pages.admin.eventDetail.attendees.selectRole')"
-        >
-          <el-option
-            v-for="option in roleOptions"
-            :key="option.value"
-            :label="option.label"
-            :value="option.value"
-          />
-        </el-select>
-        <small v-if="roleOptions.length === 0" class="form__warning">
-          {{ $t('pages.admin.eventDetail.attendees.rolesLoadError') }}
-        </small>
-      </div>
-      <template #footer>
-        <Button
-          :label="$t('common.cancel')"
-          text
-          :disabled="assignments.changeRole.isPending.value"
-          @click="roleDialogVisible = false"
-        />
-        <Button
-          :label="$t('common.apply')"
-          type="primary"
-          :loading="assignments.changeRole.isPending.value"
-          :disabled="!selectedRoleId || roleOptions.length === 0"
-          @click="submitChangeRole"
-        />
-      </template>
-    </el-dialog>
+      :attendee-name="roleDialog.target ? fullName(roleDialog.target.attendee) : ''"
+      :activity-title="roleDialog.target?.assignment.activityTitle ?? ''"
+      :label="$t('pages.admin.eventDetail.attendees.role')"
+      input-id="attendee-role"
+      :placeholder="$t('pages.admin.eventDetail.attendees.selectRole')"
+      :options="roleOptions"
+      :unavailable-text="$t('pages.admin.eventDetail.attendees.rolesLoadError')"
+      :applying="changingRole"
+      @apply="applyRole"
+    />
 
-    <el-dialog
-      v-model="statusDialogVisible"
+    <AssignmentChangeDialog
+      v-model:visible="statusDialog.visible"
+      v-model:selected="statusDialog.selectedId"
       :title="$t('pages.admin.eventDetail.attendees.changeStatus')"
-      width="min(92vw, 400px)"
-      append-to-body
-    >
-      <p class="dialog-context">
-        {{
-          $t('pages.admin.eventDetail.attendees.dialogContext', {
-            name: statusTarget ? fullName(statusTarget.attendee) : '',
-            activity: statusTarget?.assignment.activityTitle,
-          })
-        }}
-      </p>
-      <div class="form__field">
-        <label for="attendee-status">{{ $t('common.status') }}</label>
-        <el-select
-          id="attendee-status"
-          v-model="selectedStatusId"
-          :placeholder="$t('pages.admin.eventDetail.attendees.selectStatus')"
-        >
-          <el-option
-            v-for="option in statusOptions"
-            :key="option.value"
-            :label="option.label"
-            :value="option.value"
-          />
-        </el-select>
-      </div>
-      <template #footer>
-        <Button
-          :label="$t('common.cancel')"
-          text
-          :disabled="assignments.changeStatus.isPending.value"
-          @click="statusDialogVisible = false"
-        />
-        <Button
-          :label="$t('common.apply')"
-          type="primary"
-          :loading="assignments.changeStatus.isPending.value"
-          :disabled="!selectedStatusId"
-          @click="submitChangeStatus"
-        />
-      </template>
-    </el-dialog>
+      :attendee-name="statusDialog.target ? fullName(statusDialog.target.attendee) : ''"
+      :activity-title="statusDialog.target?.assignment.activityTitle ?? ''"
+      :label="$t('common.status')"
+      input-id="attendee-status"
+      :placeholder="$t('pages.admin.eventDetail.attendees.selectStatus')"
+      :options="statusOptions"
+      :applying="changingStatus"
+      @apply="applyStatus"
+    />
   </div>
 </template>
 
@@ -861,29 +647,6 @@ function submitChangeRole(): void {
   display: flex;
   gap: 2px;
   justify-self: end;
-}
-
-.dialog-context {
-  font-size: 13.5px;
-  color: var(--ca-text-muted);
-  margin: 0 0 14px;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__warning {
-  font-size: 12.5px;
-  color: var(--ca-danger-ink);
 }
 
 @media (max-width: 768px) {

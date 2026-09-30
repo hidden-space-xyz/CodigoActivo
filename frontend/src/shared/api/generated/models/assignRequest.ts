@@ -7,7 +7,7 @@
 import type { TermsDecisionRequest } from './termsDecisionRequest';
 
 export interface AssignRequest {
-  activityRoleTypeId?: string;
+  activityRoleTypeId: string;
   /** @nullable */
   termsDecisions?: TermsDecisionRequest[] | null;
 }

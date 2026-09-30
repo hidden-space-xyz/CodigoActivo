@@ -10,11 +10,9 @@ import type { UserStatusResponse } from './userStatusResponse';
 import type { UserTypeSummaryResponse } from './userTypeSummaryResponse';
 
 export interface UserResponse {
-  id?: string;
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
+  id: string;
+  firstName: string;
+  lastName: string;
   /** @nullable */
   email?: string | null;
   /** @nullable */
@@ -25,11 +23,11 @@ export interface UserResponse {
   birthDate?: string | null;
   /** @nullable */
   nationalId?: string | null;
-  promotionalConsent?: boolean;
-  gender?: Gender;
+  promotionalConsent: boolean;
+  gender: Gender;
   /** @nullable */
   lastLoginAt?: string | null;
-  createdAt?: string;
+  createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
   /** @nullable */
@@ -38,9 +36,10 @@ export interface UserResponse {
   parentName?: string | null;
   /** @nullable */
   dependentCount?: number | null;
-  status?: UserStatusResponse;
-  isAdmin?: boolean;
-  isInitialAdmin?: boolean;
+  status: UserStatusResponse;
+  isAdmin: boolean;
+  isInitialAdmin: boolean;
   type?: UserTypeSummaryResponse;
-  twoFactorMethod?: TwoFactorMethod;
+  twoFactorMethod: TwoFactorMethod;
+  earlySignupEligible: boolean;
 }

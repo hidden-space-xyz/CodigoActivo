@@ -6,19 +6,16 @@
  */
 
 export interface NewsItemResponse {
-  id?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  subtitle?: string | null;
-  /** @nullable */
-  description?: string | null;
-  createdAt?: string;
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  createdBy?: string;
+  createdBy: string;
   /** @nullable */
   updatedBy?: string | null;
-  thumbnailId?: string;
-  featured?: boolean;
+  thumbnailId: string;
+  featured: boolean;
 }

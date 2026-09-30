@@ -6,10 +6,10 @@
  */
 
 export interface DashboardSummaryResponse {
-  events?: number;
-  activities?: number;
-  resources?: number;
-  news?: number;
-  partners?: number;
-  users?: number;
+  events: number;
+  activities: number;
+  resources: number;
+  news: number;
+  partners: number;
+  users: number;
 }

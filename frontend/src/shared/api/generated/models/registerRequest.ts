@@ -8,20 +8,14 @@ import type { Gender } from './gender';
 import type { RegisterMinorRequest } from './registerMinorRequest';
 
 export interface RegisterRequest {
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
-  /** @nullable */
-  email?: string | null;
-  /** @nullable */
-  phone?: string | null;
-  /** @nullable */
-  password?: string | null;
-  /** @nullable */
-  nationalId?: string | null;
-  gender?: Gender;
-  promotionalConsent?: boolean;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  nationalId: string;
+  gender: Gender;
+  promotionalConsent: boolean;
   /** @nullable */
   minors?: RegisterMinorRequest[] | null;
   /** @nullable */

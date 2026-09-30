@@ -8,17 +8,12 @@ import type { EventBadgeActivityResponse } from './eventBadgeActivityResponse';
 import type { EventBadgeGuardianResponse } from './eventBadgeGuardianResponse';
 
 export interface EventBadgeResponse {
-  userId?: string;
-  /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
-  /** @nullable */
-  userTypeName?: string | null;
-  /** @nullable */
-  userTypeColor?: string | null;
-  createdAt?: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  userTypeName: string;
+  userTypeColor: string;
+  createdAt: string;
   guardian?: EventBadgeGuardianResponse;
-  /** @nullable */
-  activities?: EventBadgeActivityResponse[] | null;
+  activities: EventBadgeActivityResponse[];
 }

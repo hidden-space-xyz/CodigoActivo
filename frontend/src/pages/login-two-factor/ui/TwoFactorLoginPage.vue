@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { useTwoFactorLogin } from '@/features/auth'
-import { AppIcon, BaseButton, PageHead } from '@/shared/ui'
+import { useTwoFactorLogin } from '../model/use-two-factor-login'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { PageHead } from '@/shared/ui/page-head'
 
 const {
   form,
@@ -49,9 +51,9 @@ const {
             {{ $t('pages.loginTwoFactor.expiredText') }}
           </p>
           <div class="two-factor-panel__actions">
-            <BaseButton :to="loginRoute" variant="primary">
+            <BrandButton :to="loginRoute" variant="primary">
               {{ $t('pages.loginTwoFactor.backToLogin') }}
-            </BaseButton>
+            </BrandButton>
           </div>
         </div>
 
@@ -111,13 +113,13 @@ const {
             {{ errorMessage }}
           </p>
 
-          <BaseButton type="submit" variant="primary" block :loading="isSubmitting">
+          <BrandButton type="submit" variant="primary" block :loading="isSubmitting">
             {{ $t('pages.loginTwoFactor.submit') }}
-          </BaseButton>
+          </BrandButton>
 
           <p v-if="method === 'Email'" class="two-factor-resend">
             {{ $t('pages.loginTwoFactor.resendPrompt') }}
-            <BaseButton
+            <BrandButton
               variant="link"
               class="two-factor-resend__button"
               :disabled="resendCooldown > 0 || isResending"
@@ -129,7 +131,7 @@ const {
                   ? $t('pages.loginTwoFactor.resendCountdown', { s: resendCooldown })
                   : $t('pages.loginTwoFactor.resend')
               }}
-            </BaseButton>
+            </BrandButton>
           </p>
         </form>
 

@@ -6,6 +6,5 @@
  */
 
 export interface AuthenticatorSetupRequest {
-  /** @nullable */
-  currentPassword?: string | null;
+  currentPassword: string;
 }

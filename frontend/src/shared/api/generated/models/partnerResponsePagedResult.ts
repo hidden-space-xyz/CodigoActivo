@@ -7,9 +7,8 @@
 import type { PartnerResponse } from './partnerResponse';
 
 export interface PartnerResponsePagedResult {
-  /** @nullable */
-  items?: PartnerResponse[] | null;
-  total?: number;
-  page?: number;
-  pageSize?: number;
+  items: PartnerResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
 }

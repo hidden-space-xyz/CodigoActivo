@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import type { EventStatus } from '../model/types'
+import { statusLabelKey } from '../model/status'
+import type { EventStatusKind } from '../model/types'
 
 defineProps<{
-  /** Status whose `kind` picks the label color. */
-  status: EventStatus
+  /** Stage of the event, which picks the label and its color. */
+  status: EventStatusKind
 }>()
 </script>
 
 <template>
   <div class="event-card-footer">
-    <span class="event-card-footer__status" :class="`event-card-footer__status--${status.kind}`">
-      {{ status.label }}
+    <span class="event-card-footer__status" :class="`event-card-footer__status--${status}`">
+      {{ $t(statusLabelKey(status)) }}
     </span>
   </div>
 </template>

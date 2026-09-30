@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { useResetPassword } from '@/features/auth'
-import { useLinkFragment } from '@/shared/lib'
-import { BaseButton, PageHead } from '@/shared/ui'
+import { useResetPassword } from '../model/use-reset-password'
+import { useLinkFragment } from '@/shared/lib/navigation'
+import { BrandButton } from '@/shared/ui/brand-button'
+import { PageHead } from '@/shared/ui/page-head'
 
 const linkParam = useLinkFragment()
 
@@ -25,12 +26,12 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             {{ $t('pages.resetPassword.invalidText') }}
           </p>
           <div class="reset-panel__actions">
-            <BaseButton :to="{ name: 'forgot-password' }" variant="primary">
+            <BrandButton :to="{ name: 'forgot-password' }" variant="primary">
               {{ $t('pages.resetPassword.requestNewLink') }}
-            </BaseButton>
-            <BaseButton :to="{ name: 'home' }" variant="ghost">{{
+            </BrandButton>
+            <BrandButton :to="{ name: 'home' }" variant="ghost">{{
               $t('common.backToHome')
-            }}</BaseButton>
+            }}</BrandButton>
           </div>
         </div>
 
@@ -41,9 +42,9 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             {{ $t('pages.resetPassword.successText') }}
           </p>
           <div class="reset-panel__actions">
-            <BaseButton :to="{ name: 'login' }" variant="primary">{{
+            <BrandButton :to="{ name: 'login' }" variant="primary">{{
               $t('common.login')
-            }}</BaseButton>
+            }}</BrandButton>
           </div>
         </div>
 
@@ -86,9 +87,9 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             {{ $t('pages.resetPassword.requestNewLink') }}
           </RouterLink>
 
-          <BaseButton type="submit" variant="primary" block :loading="isSubmitting">
+          <BrandButton type="submit" variant="primary" block :loading="isSubmitting">
             {{ $t('pages.resetPassword.submit') }}
-          </BaseButton>
+          </BrandButton>
         </form>
       </div>
     </section>

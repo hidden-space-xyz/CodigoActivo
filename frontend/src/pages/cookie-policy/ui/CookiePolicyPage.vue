@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { CONTACT } from '@/shared/config'
-import { PageHead } from '@/shared/ui'
+import { PageHead } from '@/shared/ui/page-head'
 
-import { useCookiePolicyContent } from '../model/content'
-
-const { entries, browserGuides, authorityUrl, cookieGuideUrl } = useCookiePolicyContent()
+import { AUTHORITY_URL, BROWSER_GUIDES, COOKIE_GUIDE_URL, STORAGE_ENTRIES } from '../config/storage'
 </script>
 
 <template>
@@ -30,20 +28,20 @@ const { entries, browserGuides, authorityUrl, cookieGuideUrl } = useCookiePolicy
             </h2>
             <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.used.text') }}</p>
             <ul class="cookie-policy__entries">
-              <li v-for="entry in entries" :key="entry.name" class="cookie-policy__entry">
+              <li v-for="entry in STORAGE_ENTRIES" :key="entry.name" class="cookie-policy__entry">
                 <div class="cookie-policy__entry-head">
                   <code class="cookie-policy__name">{{ entry.name }}</code>
-                  <span class="cookie-policy__kind">{{ entry.kind }}</span>
+                  <span class="cookie-policy__kind">{{ $t(entry.kindKey) }}</span>
                 </div>
                 <dl class="cookie-policy__facts">
                   <dt class="cookie-policy__fact-label">
                     {{ $t('pages.cookiePolicy.used.purpose') }}
                   </dt>
-                  <dd class="cookie-policy__fact-value">{{ entry.purpose }}</dd>
+                  <dd class="cookie-policy__fact-value">{{ $t(entry.purposeKey) }}</dd>
                   <dt class="cookie-policy__fact-label">
                     {{ $t('pages.cookiePolicy.used.duration') }}
                   </dt>
-                  <dd class="cookie-policy__fact-value">{{ entry.duration }}</dd>
+                  <dd class="cookie-policy__fact-value">{{ $t(entry.durationKey) }}</dd>
                 </dl>
               </li>
             </ul>
@@ -60,7 +58,7 @@ const { entries, browserGuides, authorityUrl, cookieGuideUrl } = useCookiePolicy
             >
               <template #guide>
                 <a
-                  :href="cookieGuideUrl"
+                  :href="COOKIE_GUIDE_URL"
                   target="_blank"
                   rel="noopener"
                   class="cookie-policy__link"
@@ -86,9 +84,9 @@ const { entries, browserGuides, authorityUrl, cookieGuideUrl } = useCookiePolicy
             <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.manage.text') }}</p>
             <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.manage.browsers') }}</p>
             <ul class="cookie-policy__guides">
-              <li v-for="guide in browserGuides" :key="guide.url">
+              <li v-for="guide in BROWSER_GUIDES" :key="guide.url">
                 <a :href="guide.url" target="_blank" rel="noopener" class="cookie-policy__link">{{
-                  guide.label
+                  $t(guide.labelKey)
                 }}</a>
               </li>
             </ul>
@@ -164,7 +162,7 @@ const { entries, browserGuides, authorityUrl, cookieGuideUrl } = useCookiePolicy
                   </template>
                   <template #authority>
                     <a
-                      :href="authorityUrl"
+                      :href="AUTHORITY_URL"
                       target="_blank"
                       rel="noopener"
                       class="cookie-policy__link"

@@ -6,5 +6,5 @@
  */
 
 export interface AccountDeletionStatusResponse {
-  allowed?: boolean;
+  allowed: boolean;
 }

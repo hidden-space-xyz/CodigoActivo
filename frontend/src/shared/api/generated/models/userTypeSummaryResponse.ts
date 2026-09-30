@@ -6,9 +6,7 @@
  */
 
 export interface UserTypeSummaryResponse {
-  id?: string;
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  color?: string | null;
+  id: string;
+  name: string;
+  color: string;
 }

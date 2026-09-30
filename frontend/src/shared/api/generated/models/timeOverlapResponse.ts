@@ -7,7 +7,6 @@
 import type { OverlappingActivityResponse } from './overlappingActivityResponse';
 
 export interface TimeOverlapResponse {
-  hasOverlaps?: boolean;
-  /** @nullable */
-  overlaps?: OverlappingActivityResponse[] | null;
+  hasOverlaps: boolean;
+  overlaps: OverlappingActivityResponse[];
 }

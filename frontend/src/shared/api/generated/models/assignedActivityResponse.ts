@@ -8,14 +8,12 @@ import type { AssignedActivityRoleResponse } from './assignedActivityRoleRespons
 import type { AssignedActivityStatusResponse } from './assignedActivityStatusResponse';
 
 export interface AssignedActivityResponse {
-  activityId?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  description?: string | null;
-  activityStartsAt?: string;
-  activityEndsAt?: string;
-  eventId?: string;
-  roleType?: AssignedActivityRoleResponse;
-  status?: AssignedActivityStatusResponse;
+  activityId: string;
+  title: string;
+  description: string;
+  activityStartsAt: string;
+  activityEndsAt: string;
+  eventId: string;
+  roleType: AssignedActivityRoleResponse;
+  status: AssignedActivityStatusResponse;
 }

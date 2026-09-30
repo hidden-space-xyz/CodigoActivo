@@ -10,13 +10,19 @@ namespace CodigoActivo.Domain.Events;
 public static class EarlySignup
 {
     /// <summary>
+    /// Gets the membership types entitled to the early signup: members and sponsors.
+    /// </summary>
+    public static IReadOnlyList<Guid> EntitledUserTypeIds { get; } =
+    [SeedIds.UserTypes.Member, SeedIds.UserTypes.Sponsor];
+
+    /// <summary>
     /// Tells whether a membership type is entitled to the early signup.
     /// </summary>
     /// <param name="userTypeId">Membership type of the account, or of the guardian of a dependent.</param>
     /// <returns><see langword="true"/> when the type is entitled.</returns>
     public static bool IsEntitled(Guid userTypeId)
     {
-        return userTypeId == SeedIds.UserTypes.Member || userTypeId == SeedIds.UserTypes.Sponsor;
+        return EntitledUserTypeIds.Contains(userTypeId);
     }
 
     /// <summary>

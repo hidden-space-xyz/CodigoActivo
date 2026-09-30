@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AppButton as Button } from '@/shared/ui'
-import { fileContentUrl } from '@/shared/lib'
 
 import { getThumbnailNameRequest } from '../api/requests'
+import { fileContentUrl } from '@/shared/api'
+import { ActionButton } from '@/shared/ui/action-button'
 
 const { t } = useI18n()
 
@@ -112,7 +112,7 @@ onBeforeUnmount(revokeObjectUrl)
     </div>
 
     <div class="thumb__controls">
-      <Button
+      <ActionButton
         :label="
           previewUrl ? $t('entities.file.thumbnail.change') : $t('entities.file.thumbnail.select')
         "
@@ -120,7 +120,7 @@ onBeforeUnmount(revokeObjectUrl)
         size="small"
         @click="pick"
       />
-      <Button
+      <ActionButton
         v-if="pickedFile"
         :label="$t('entities.file.thumbnail.remove')"
         text

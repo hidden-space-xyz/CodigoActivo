@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { EventCategoriesSection, TermsDocumentsSection } from '@/features/manage-catalogs'
-import { AdminPageHeader } from '@/shared/ui'
+import { AdminPageHeader } from '@/shared/ui/admin-page-header'
+
+import EventCategoriesSection from './EventCategoriesSection.vue'
+import TermsDocumentsSection from './TermsDocumentsSection.vue'
 </script>
 
 <template>
   <div>
     <AdminPageHeader
-      :title="$t('pages.admin.catalogs.title')"
-      :subtitle="$t('pages.admin.catalogs.subtitle')"
+      :title="$t('pages.admin.catalogs.header.title')"
+      :subtitle="$t('pages.admin.catalogs.header.subtitle')"
     />
 
     <div class="catalogs-grid">

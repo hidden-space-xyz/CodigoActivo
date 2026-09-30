@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import App from '@/app/App.vue'
-import { useSession } from '@/entities/session'
 
-import { buildUserResponse } from '../../support/fixtures/user'
 import { renderApp, renderWithProviders, t } from '../../support/render'
 import { http, HttpResponse, server } from '../../support/server'
+import { buildUserResponse } from '../../support/builders'
+import { sessionOf } from '../../support/session'
 
 describe('App', () => {
   it('renders public pages inside the default layout and resolves the session on mount', async () => {
@@ -17,13 +17,16 @@ describe('App', () => {
       }),
     )
 
-    const { wrapper } = await renderWithProviders(App, { route: '/about', attach: true })
+    const { wrapper, queryClient } = await renderWithProviders(App, {
+      route: '/about',
+      attach: true,
+    })
 
     expect(wrapper.find('.layout').exists()).toBe(true)
     expect(wrapper.find('header.header').exists()).toBe(true)
     expect(wrapper.find('main.layout__main [data-testid="route-stub"]').exists()).toBe(true)
     expect(wrapper.find('.admin').exists()).toBe(false)
-    await vi.waitFor(() => expect(useSession().displayName).toBe('Grace'))
+    await vi.waitFor(() => expect(sessionOf(queryClient).displayName).toBe('Grace'))
     expect(meCalls).toBe(1)
     await vi.waitFor(() =>
       expect(wrapper.find('.header__greeting').text()).toBe(

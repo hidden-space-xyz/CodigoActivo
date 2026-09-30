@@ -1,165 +1,103 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+
+import { activityQueries } from '@/entities/activity'
+import { eventQueries } from '@/entities/event'
+import { formatDateTimeRange } from '@/shared/lib/date'
+import { formatNumber } from '@/shared/lib/number'
+import { ActionButton } from '@/shared/ui/action-button'
+import { AdminPageHeader } from '@/shared/ui/admin-page-header'
+import { BrandButton } from '@/shared/ui/brand-button'
 import {
-  AdminPageHeader,
-  AppButton as Button,
-  BaseButton,
   ColumnFilterDate,
   ColumnFilterSelect,
   ColumnSearch,
-  ListThumbnail,
-} from '@/shared/ui'
+  toSelectOptions,
+} from '@/shared/ui/column-filter'
+import { DataTable } from '@/shared/ui/data-table'
+import { ListThumbnail } from '@/shared/ui/list-thumbnail'
 
-import { ActivityFormDialog, useActivities } from '@/features/manage-activities'
-import { useActivityModalityTypesList, useActivityRoleTypesList } from '@/entities/catalog'
-import { toActivityDetail, type ActivityDetail } from '@/entities/activity'
-import { useEvent, useEventSummary } from '@/features/manage-events'
+import { eventReportQueries } from '../api/queries'
+import { useEventActivitiesAdmin } from '../model/use-event-activities-admin'
+import ActivityFormDialog from './ActivityFormDialog.vue'
 import EventAttendeesTab from './EventAttendeesTab.vue'
 import EventOpinionsTab from './EventOpinionsTab.vue'
-import type {
-  ActivityResponse,
-  CreateActivityRequest,
-  UpdateActivityRequest,
-} from '@/shared/api/generated/models'
-import {
-  formatDateTimeRange,
-  formatNumber,
-  toSelectOptions,
-  useCrudFeedback,
-  useDeleteConfirm,
-} from '@/shared/lib'
 
-const route = useRoute()
-const router = useRouter()
+const props = defineProps<{
+  /** Event id from the `/admin/events/:eventId` route param. */
+  eventId: string
+}>()
+
 const { t } = useI18n()
-const eventId = computed(() => String(route.params.eventId))
-
-const feedback = useCrudFeedback()
-const { confirmDelete: requireDelete } = useDeleteConfirm()
-
+const router = useRouter()
 const activeTab = ref<string | number>('activities')
 
-const event = useEvent(eventId)
-const summary = useEventSummary(eventId)
-const activities = useActivities(eventId)
-const modalityTypes = useActivityModalityTypesList()
-const roleTypes = useActivityRoleTypesList()
-
-const summaryCards = computed(() => {
-  const data = summary.data.value
-  const cards = [
-    { label: t('pages.admin.eventDetail.tabs.activities'), value: data?.activitiesCount ?? 0 },
-  ]
-  for (const role of data?.roleTypeBreakdown ?? []) {
-    cards.push({ label: role.roleTypeName ?? '—', value: role.approvedAssignments ?? 0 })
-  }
-  return cards
-})
-
-const ratingsCount = computed(() => summary.data.value?.ratingsCount ?? 0)
-
-const ratingsAverage = computed(() => {
-  const average = summary.data.value?.ratingsAverage
-  return average == null ? '—' : formatNumber(Number(average.toFixed(1)))
-})
-
-const modalityOptions = computed(() => toSelectOptions(modalityTypes.data.value))
-
-function onModalityFilter(value: string | boolean | null): void {
-  activities.modalityTypeId.value = typeof value === 'string' ? value : null
-}
-
-const activityDialogVisible = ref(false)
-const selectedActivity = ref<ActivityDetail | null>(null)
-const activitySaving = computed(
-  () => activities.create.isPending.value || activities.update.isPending.value,
+const event = useQuery(() => eventQueries.detail(props.eventId))
+const stats = useQuery(() => eventReportQueries.stats(props.eventId))
+const modalities = useQuery(activityQueries.modalities())
+const roles = useQuery(activityQueries.roles())
+const { table, modalityId, dialog, saving, save, confirmRemove } = useEventActivitiesAdmin(
+  () => props.eventId,
 )
+const { visible, editing, loading, openCreate, openEdit } = dialog
 
-function openCreateActivity(): void {
-  selectedActivity.value = null
-  activityDialogVisible.value = true
+const summaryCards = computed(() => [
+  {
+    label: t('pages.admin.eventDetail.tabs.activities'),
+    value: stats.data.value?.activitiesCount ?? 0,
+  },
+  ...(stats.data.value?.roles ?? []).map((role) => ({
+    label: role.name || '—',
+    value: role.approved,
+  })),
+])
+const ratingsCount = computed(() => stats.data.value?.ratingsCount ?? 0)
+const ratingsAverage = computed(() => {
+  const average = stats.data.value?.ratingsAverage
+  return average === null || average === undefined ? '—' : formatNumber(Number(average.toFixed(1)))
+})
+
+const modalityOptions = computed(() => toSelectOptions(modalities.data.value))
+
+function filterByModality(value: string | boolean | null): void {
+  modalityId.value = typeof value === 'string' ? value : null
 }
 
 function openBadges(): void {
-  void router.push({ name: 'admin-event-badges', params: { eventId: eventId.value } })
+  void router.push({ name: 'admin-event-badges', params: { eventId: props.eventId } })
 }
 
 function openRoster(): void {
-  void router.push({ name: 'admin-event-roster', params: { eventId: eventId.value } })
-}
-
-async function openEditActivity(activity: ActivityResponse): Promise<void> {
-  selectedActivity.value = toActivityDetail(activity)
-  activityDialogVisible.value = true
-  if (!activity.id) return
-  try {
-    const fresh = await activities.fetchOne(activity.id)
-    if (fresh) selectedActivity.value = fresh
-  } catch {}
-}
-
-function onActivitySubmit(body: CreateActivityRequest | UpdateActivityRequest): void {
-  if (selectedActivity.value?.id) {
-    activities.update.mutate(
-      { id: selectedActivity.value.id, body: body },
-      {
-        onSuccess: () => {
-          feedback.success(t('pages.admin.eventDetail.toast.activityUpdated'))
-          activityDialogVisible.value = false
-        },
-        onError: (error) => feedback.error(error),
-      },
-    )
-    return
-  }
-  activities.create.mutate(body, {
-    onSuccess: () => {
-      feedback.success(t('pages.admin.eventDetail.toast.activityCreated'))
-      activityDialogVisible.value = false
-    },
-    onError: (error) => feedback.error(error),
-  })
-}
-
-function confirmDeleteActivity(activity: ActivityResponse): void {
-  requireDelete({
-    header: t('pages.admin.eventDetail.deleteConfirm.header'),
-    message: t('pages.admin.eventDetail.deleteConfirm.message', { title: activity.title }),
-    accept: () => {
-      if (!activity.id) return
-      activities.remove.mutate(activity.id, {
-        onSuccess: () => feedback.success(t('pages.admin.eventDetail.toast.activityDeleted')),
-        onError: (error) => feedback.error(error),
-      })
-    },
-  })
+  void router.push({ name: 'admin-event-roster', params: { eventId: props.eventId } })
 }
 </script>
 
 <template>
   <div>
-    <BaseButton variant="back" :to="{ name: 'admin-events' }" class="back">
+    <BrandButton variant="back" :to="{ name: 'admin-events' }" class="back">
       {{ $t('pages.admin.eventDetail.back') }}
-    </BaseButton>
+    </BrandButton>
 
     <AdminPageHeader
       :title="event.data.value?.title ?? $t('pages.admin.eventDetail.headerFallback')"
       :subtitle="event.data.value?.subtitle ?? ''"
     >
       <template #actions>
-        <Button
+        <ActionButton
           :label="$t('pages.admin.eventDetail.newActivity')"
           icon="plus"
-          @click="openCreateActivity"
+          :disabled="loading"
+          @click="openCreate"
         />
-        <Button
+        <ActionButton
           :label="$t('pages.admin.eventDetail.printBadges')"
           icon="print"
           @click="openBadges"
         />
-        <Button
+        <ActionButton
           :label="$t('pages.admin.eventDetail.printRoster')"
           icon="list"
           @click="openRoster"
@@ -185,18 +123,11 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 
     <el-tabs v-model="activeTab" class="tabs">
       <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.activities')" name="activities">
-        <el-table
-          v-loading="activities.table.loading.value"
-          v-bind="activities.table.tableProps.value"
-          @sort-change="activities.table.onSortChange"
+        <DataTable
+          :table="table"
+          :empty-text="$t('pages.admin.eventDetail.empty.none')"
+          :error-text="$t('pages.admin.eventDetail.empty.error')"
         >
-          <template #empty>
-            <span v-if="activities.table.isError.value">
-              {{ $t('pages.admin.eventDetail.empty.error') }}
-            </span>
-            <span v-else>{{ $t('pages.admin.eventDetail.empty.none') }}</span>
-          </template>
-
           <el-table-column :label="$t('common.image')" width="110">
             <template #default="{ row }">
               <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
@@ -205,80 +136,68 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
           <el-table-column prop="title" min-width="200" sortable="custom">
             <template #header>
               <ColumnSearch
-                v-model="activities.table.columnFilter('title').value"
+                v-model="table.columnFilter('title').value"
                 :label="$t('pages.admin.eventDetail.columns.title')"
                 :placeholder="$t('pages.admin.eventDetail.columns.searchTitle')"
-                @apply="activities.table.onFilter"
+                @apply="table.onFilter"
               />
             </template>
           </el-table-column>
           <el-table-column prop="activityStartsAt" min-width="210" sortable="custom">
             <template #header>
               <ColumnFilterDate
-                v-model="activities.table.columnFilter('activityDate').value"
+                v-model="table.columnFilter('activityDate').value"
                 :label="$t('pages.admin.eventDetail.columns.schedule')"
-                @apply="activities.table.onFilter"
+                @apply="table.onFilter"
               />
             </template>
             <template #default="{ row }">
-              {{ formatDateTimeRange(row.activityStartsAt, row.activityEndsAt) }}
+              {{ formatDateTimeRange(row.startsAt, row.endsAt) }}
             </template>
           </el-table-column>
           <el-table-column prop="modalityName" min-width="180" sortable="custom">
             <template #header>
               <ColumnFilterSelect
-                :model-value="activities.modalityTypeId.value"
+                :model-value="modalityId"
                 :label="$t('pages.admin.eventDetail.columns.modality')"
                 :options="modalityOptions"
-                @update:model-value="onModalityFilter"
+                @update:model-value="filterByModality"
               />
             </template>
             <template #default="{ row }">
               <div class="modality-cell">
-                <span class="modality-cell__type">{{ row.modalityName || '—' }}</span>
-                <span v-if="row.location" class="modality-cell__loc">{{ row.location }}</span>
+                <span class="modality-cell__type">{{ row.modality }}</span>
+                <span class="modality-cell__loc">{{ row.location }}</span>
               </div>
             </template>
           </el-table-column>
           <el-table-column :label="$t('common.actions')" width="120" align="center" fixed="right">
             <template #default="{ row }">
               <div class="ca-row-actions">
-                <Button
+                <ActionButton
                   icon="pencil"
                   type="success"
                   text
                   circle
                   :aria-label="$t('common.edit')"
-                  @click="openEditActivity(row)"
+                  :disabled="loading"
+                  @click="openEdit(row)"
                 />
-                <Button
+                <ActionButton
                   icon="trash"
                   text
                   circle
                   type="danger"
                   :aria-label="$t('common.delete')"
-                  @click="confirmDeleteActivity(row)"
+                  @click="confirmRemove(row)"
                 />
               </div>
             </template>
           </el-table-column>
-        </el-table>
-
-        <el-pagination
-          v-bind="activities.table.paginationProps.value"
-          class="paginator"
-          @update:current-page="activities.table.onCurrentPageChange"
-          @update:page-size="activities.table.onPageSizeChange"
-        />
+        </DataTable>
       </el-tab-pane>
       <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.attendees')" name="attendees">
-        <EventAttendeesTab
-          :event-id="eventId"
-          :active="activeTab === 'attendees'"
-          :activities="activities.options.data.value ?? []"
-          :activities-loading="activities.options.isLoading.value"
-          :activities-error="activities.options.isError.value"
-        />
+        <EventAttendeesTab :event-id="eventId" :active="activeTab === 'attendees'" />
       </el-tab-pane>
       <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.opinions')" name="opinions">
         <EventOpinionsTab :event-id="eventId" :active="activeTab === 'opinions'" />
@@ -286,14 +205,14 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
     </el-tabs>
 
     <ActivityFormDialog
-      v-model:visible="activityDialogVisible"
-      :activity="selectedActivity"
-      :modality-types="modalityTypes.data.value ?? []"
-      :role-types="roleTypes.data.value ?? []"
-      :saving="activitySaving"
-      :event-start="event.data.value?.eventStartsAt ?? null"
-      :event-end="event.data.value?.eventEndsAt ?? null"
-      @submit="onActivitySubmit"
+      v-model:visible="visible"
+      :activity="editing"
+      :modalities="modalities.data.value ?? []"
+      :roles="roles.data.value ?? []"
+      :saving="saving"
+      :event-start="event.data.value?.startsAt ?? null"
+      :event-end="event.data.value?.endsAt ?? null"
+      @submit="save"
     />
   </div>
 </template>
@@ -337,11 +256,6 @@ function confirmDeleteActivity(activity: ActivityResponse): void {
 
 .tabs {
   margin-bottom: 30px;
-}
-
-.paginator {
-  margin-top: 14px;
-  justify-content: flex-end;
 }
 
 .modality-cell {

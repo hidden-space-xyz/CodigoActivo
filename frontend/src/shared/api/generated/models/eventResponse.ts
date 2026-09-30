@@ -5,32 +5,29 @@
  * OpenAPI spec version: 1.0
  */
 import type { EventCategoryResponse } from './eventCategoryResponse';
+import type { EventStage } from './eventStage';
 import type { EventTermsDocumentResponse } from './eventTermsDocumentResponse';
 
 export interface EventResponse {
-  id?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  subtitle?: string | null;
-  /** @nullable */
-  description?: string | null;
-  eventStartsAt?: string;
-  eventEndsAt?: string;
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  eventStartsAt: string;
+  eventEndsAt: string;
   /** @nullable */
   earlySignupStartsAt?: string | null;
-  signupStartsAt?: string;
-  signupEndsAt?: string;
-  createdAt?: string;
+  signupStartsAt: string;
+  signupEndsAt: string;
+  createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  createdBy?: string;
+  createdBy: string;
   /** @nullable */
   updatedBy?: string | null;
-  thumbnailId?: string;
-  featured?: boolean;
-  /** @nullable */
-  categories?: EventCategoryResponse[] | null;
-  /** @nullable */
-  termsDocuments?: EventTermsDocumentResponse[] | null;
+  thumbnailId: string;
+  featured: boolean;
+  categories: EventCategoryResponse[];
+  termsDocuments: EventTermsDocumentResponse[];
+  stage: EventStage;
 }

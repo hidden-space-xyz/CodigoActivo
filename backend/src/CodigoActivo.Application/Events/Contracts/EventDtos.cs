@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Validation;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Events.Contracts;
 
@@ -23,6 +24,7 @@ namespace CodigoActivo.Application.Events.Contracts;
 /// <param name="Featured">Whether featured.</param>
 /// <param name="Categories">The categories value.</param>
 /// <param name="TermsDocuments">The terms documents linked to this event, ordered for display.</param>
+/// <param name="Stage">Where the event stands, by the server clock, when the response is built.</param>
 public record EventResponse(
     Guid Id,
     string Title,
@@ -40,7 +42,8 @@ public record EventResponse(
     Guid ThumbnailId,
     bool Featured,
     IReadOnlyList<EventCategoryResponse> Categories,
-    IReadOnlyList<EventTermsDocumentResponse> TermsDocuments
+    IReadOnlyList<EventTermsDocumentResponse> TermsDocuments,
+    EventStage Stage
 )
 {
     /// <summary>
@@ -64,7 +67,8 @@ public record EventResponse(
             Guid.Empty,
             false,
             [],
-            []
+            [],
+            default
         ) { }
 }
 
@@ -86,6 +90,7 @@ public record EventResponse(
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="Featured">Whether featured.</param>
 /// <param name="Categories">The categories value.</param>
+/// <param name="Stage">Where the event stands, by the server clock, when the response is built.</param>
 public record EventListItemResponse(
     Guid Id,
     string Title,
@@ -101,7 +106,8 @@ public record EventListItemResponse(
     Guid? UpdatedBy,
     Guid ThumbnailId,
     bool Featured,
-    IReadOnlyList<EventCategoryResponse> Categories
+    IReadOnlyList<EventCategoryResponse> Categories,
+    EventStage Stage
 )
 {
     /// <summary>
@@ -123,7 +129,8 @@ public record EventListItemResponse(
             null,
             Guid.Empty,
             false,
-            []
+            [],
+            default
         ) { }
 }
 

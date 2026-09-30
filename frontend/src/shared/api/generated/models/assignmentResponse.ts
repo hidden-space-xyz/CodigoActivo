@@ -7,10 +7,10 @@
 import type { AssignmentStatusResponse } from './assignmentStatusResponse';
 
 export interface AssignmentResponse {
-  userId?: string;
-  activityId?: string;
-  roleTypeId?: string;
+  userId: string;
+  activityId: string;
+  roleTypeId: string;
   /** @nullable */
   roleTypeName?: string | null;
-  status?: AssignmentStatusResponse;
+  status: AssignmentStatusResponse;
 }

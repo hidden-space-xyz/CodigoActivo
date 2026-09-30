@@ -7,9 +7,7 @@
 import type { EventRosterActivityResponse } from './eventRosterActivityResponse';
 
 export interface EventRosterResponse {
-  eventId?: string;
-  /** @nullable */
-  title?: string | null;
-  /** @nullable */
-  activities?: EventRosterActivityResponse[] | null;
+  eventId: string;
+  title: string;
+  activities: EventRosterActivityResponse[];
 }

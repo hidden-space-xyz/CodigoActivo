@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import type { UpcomingEvent } from '../model/types'
-import { CardDate, ColorTag, ListThumbnail } from '@/shared/ui'
+import { formatDateRange } from '@/shared/lib/date'
+import { CardDate } from '@/shared/ui/card-date'
+import { ColorTag } from '@/shared/ui/color-tag'
+import { ListThumbnail } from '@/shared/ui/list-thumbnail'
+
+import type { EventSummary } from '../model/types'
 import EventCardFooter from './EventCardFooter.vue'
 
 defineProps<{
   /** Upcoming event rendered as a card linking to its detail page. */
-  event: UpcomingEvent
+  event: EventSummary
 }>()
 </script>
 
@@ -16,9 +20,12 @@ defineProps<{
   >
     <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
 
-    <CardDate :label="$t('entities.event.card.dateLabel')" :value="event.date" />
+    <CardDate
+      :label="$t('entities.event.card.dateLabel')"
+      :value="formatDateRange(event.startsAt, event.endsAt)"
+    />
     <h3 class="event-card__title">{{ event.title }}</h3>
-    <div v-if="event.slogan" class="event-card__slogan">«{{ event.slogan }}»</div>
+    <div v-if="event.subtitle" class="event-card__slogan">«{{ event.subtitle }}»</div>
 
     <div v-if="event.categories.length" class="event-card__cats">
       <ColorTag

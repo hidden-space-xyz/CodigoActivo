@@ -9,7 +9,7 @@ import type { EventAttendeeGuardianResponse } from './eventAttendeeGuardianRespo
 import type { Gender } from './gender';
 
 export interface EventAttendeeResponse {
-  userId?: string;
+  userId: string;
   /** @nullable */
   firstName?: string | null;
   /** @nullable */
@@ -22,12 +22,9 @@ export interface EventAttendeeResponse {
   secondaryPhone?: string | null;
   /** @nullable */
   birthDate?: string | null;
-  gender?: Gender;
-  /** @nullable */
-  userTypeName?: string | null;
-  /** @nullable */
-  userTypeColor?: string | null;
+  gender: Gender;
+  userTypeName: string;
+  userTypeColor: string;
   guardian?: EventAttendeeGuardianResponse;
-  /** @nullable */
-  assignments?: EventAttendeeAssignmentResponse[] | null;
+  assignments: EventAttendeeAssignmentResponse[];
 }
