@@ -42,7 +42,7 @@ public interface IOrphanFileCleaner
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class OrphanFileCleaner(
-    IFileRepository files,
+    IStoredFileRepository files,
     IUnitOfWork uow,
     IFileStorage storage,
     ICacheInvalidator cacheInvalidator,

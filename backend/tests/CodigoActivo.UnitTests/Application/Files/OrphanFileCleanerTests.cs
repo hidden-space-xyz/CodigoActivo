@@ -13,7 +13,7 @@ namespace CodigoActivo.UnitTests.Application.Files;
 
 public sealed class OrphanFileCleanerTests
 {
-    private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IFileStorage storage = Substitute.For<IFileStorage>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
@@ -30,9 +30,9 @@ public sealed class OrphanFileCleanerTests
         );
     }
 
-    private static FileEntity NewFile(string name = "photo.png", string extension = "png")
+    private static StoredFile NewFile(string name = "photo.png", string extension = "png")
     {
-        return Persisted.As<FileEntity>(
+        return Persisted.As<StoredFile>(
             new
             {
                 Id = Guid.NewGuid(),
@@ -44,7 +44,7 @@ public sealed class OrphanFileCleanerTests
         );
     }
 
-    private void FileFound(FileEntity file)
+    private void FileFound(StoredFile file)
     {
         files.Finds(file);
     }
@@ -66,7 +66,7 @@ public sealed class OrphanFileCleanerTests
             .Returns([.. inUse]);
     }
 
-    private void StoredFilesAre(params FileEntity[] all)
+    private void StoredFilesAre(params StoredFile[] all)
     {
         files
             .ListByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
@@ -74,7 +74,7 @@ public sealed class OrphanFileCleanerTests
             {
                 var ids = ci.Arg<IReadOnlyCollection<Guid>>();
                 Assert.NotNull(ids);
-                List<FileEntity> matches = [.. all.Where(file => ids.Contains(file.Id))];
+                List<StoredFile> matches = [.. all.Where(file => ids.Contains(file.Id))];
                 return matches;
             });
     }

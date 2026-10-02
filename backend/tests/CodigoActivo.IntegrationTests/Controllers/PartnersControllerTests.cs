@@ -226,7 +226,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<Partner>(id);
         stored.Should().BeNull();
-        var file = await FindAsync<FileEntity>(thumbnailId);
+        var file = await FindAsync<StoredFile>(thumbnailId);
         file.Should()
             .BeNull("the deleted partner's thumbnail is orphaned and must be cascade-deleted");
     }

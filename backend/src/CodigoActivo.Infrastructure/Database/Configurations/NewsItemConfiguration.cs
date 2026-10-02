@@ -25,9 +25,10 @@ public class NewsItemConfiguration : IEntityTypeConfiguration<NewsItem>
         builder.Property(a => a.CreatedAt).IsRequired();
 
         builder.HasIndex(a => a.CreatedAt);
+        builder.HasIndex(a => a.Featured).IsUnique().HasFilter("featured");
 
         builder
-            .HasOne<FileEntity>()
+            .HasOne<StoredFile>()
             .WithMany()
             .HasForeignKey(a => a.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

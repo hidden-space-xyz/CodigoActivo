@@ -663,7 +663,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "activity_user_role_assignments",
+                name: "assignments",
                 columns: table => new
                 {
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -674,27 +674,27 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_activity_user_role_assignments", x => new { x.user_id, x.activity_id, x.activity_role_type_id });
+                    table.PrimaryKey("pk_assignments", x => new { x.user_id, x.activity_id, x.activity_role_type_id });
                     table.ForeignKey(
-                        name: "fk_activity_user_role_assignments_activities_activity_id",
+                        name: "fk_assignments_activities_activity_id",
                         column: x => x.activity_id,
                         principalTable: "activities",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_activity_user_role_assignments_activity_role_types_activity",
+                        name: "fk_assignments_activity_role_types_activity_role_type_id",
                         column: x => x.activity_role_type_id,
                         principalTable: "activity_role_types",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_activity_user_role_assignments_assignment_status_types_assi",
+                        name: "fk_assignments_assignment_status_types_assignment_status_id",
                         column: x => x.assignment_status_id,
                         principalTable: "assignment_status_types",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_activity_user_role_assignments_users_user_id",
+                        name: "fk_assignments_users_user_id",
                         column: x => x.user_id,
                         principalTable: "users",
                         principalColumn: "id",
@@ -749,30 +749,30 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_activity_user_role_assignments_activity_id",
-                table: "activity_user_role_assignments",
-                column: "activity_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_activity_user_role_assignments_activity_role_type_id",
-                table: "activity_user_role_assignments",
-                column: "activity_role_type_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_activity_user_role_assignments_assignment_status_id",
-                table: "activity_user_role_assignments",
-                column: "assignment_status_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_activity_user_role_assignments_user_id_activity_id",
-                table: "activity_user_role_assignments",
-                columns: new[] { "user_id", "activity_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ix_assignment_status_types_name",
                 table: "assignment_status_types",
                 column: "name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_assignments_activity_id",
+                table: "assignments",
+                column: "activity_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_assignments_activity_role_type_id",
+                table: "assignments",
+                column: "activity_role_type_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_assignments_assignment_status_id",
+                table: "assignments",
+                column: "assignment_status_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_assignments_user_id_activity_id",
+                table: "assignments",
+                columns: new[] { "user_id", "activity_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -842,6 +842,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "event_starts_at");
 
             migrationBuilder.CreateIndex(
+                name: "ix_events_featured",
+                table: "events",
+                column: "featured",
+                unique: true,
+                filter: "featured");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_events_thumbnail_id",
                 table: "events",
                 column: "thumbnail_id");
@@ -865,6 +872,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "ix_news_created_by",
                 table: "news",
                 column: "created_by");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_news_featured",
+                table: "news",
+                column: "featured",
+                unique: true,
+                filter: "featured");
 
             migrationBuilder.CreateIndex(
                 name: "ix_news_thumbnail_id",
@@ -984,7 +998,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "activity_role_capacities");
 
             migrationBuilder.DropTable(
-                name: "activity_user_role_assignments");
+                name: "assignments");
 
             migrationBuilder.DropTable(
                 name: "deleted_accounts");

@@ -43,7 +43,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = ThumbnailId,
@@ -100,8 +100,8 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                     }
                 )
             );
-            db.ActivityUserRoleAssignments.AddRange(
-                Persisted.As<ActivityUserRoleAssignment>(
+            db.Assignments.AddRange(
+                Persisted.As<Assignment>(
                     new
                     {
                         UserId = TestSeedData.Users.MemberId,
@@ -110,7 +110,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                         AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
                     }
                 ),
-                Persisted.As<ActivityUserRoleAssignment>(
+                Persisted.As<Assignment>(
                     new
                     {
                         UserId = TestSeedData.Users.MemberChildId,
@@ -238,7 +238,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
             .BeNull("the minors under the guardianship go with the account");
         await Factory.QueryAsync(async db =>
         {
-            (await db.ActivityUserRoleAssignments.CountAsync(Ct)).Should().Be(0);
+            (await db.Assignments.CountAsync(Ct)).Should().Be(0);
             (await db.EventRatings.CountAsync(Ct))
                 .Should()
                 .Be(
@@ -431,7 +431,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = ThumbnailId,
@@ -477,7 +477,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = ThumbnailId,

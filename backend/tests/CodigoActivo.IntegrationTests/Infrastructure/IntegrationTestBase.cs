@@ -120,7 +120,7 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = id,

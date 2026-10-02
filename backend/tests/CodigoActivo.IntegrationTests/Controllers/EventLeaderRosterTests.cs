@@ -64,7 +64,7 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         );
     }
 
-    private static ActivityUserRoleAssignment Assignment(
+    private static Assignment NewAssignment(
         Guid userId,
         Guid activityId,
         Guid roleTypeId,
@@ -72,7 +72,7 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         int minutesAfterSeed = 0
     )
     {
-        return Persisted.As<ActivityUserRoleAssignment>(
+        return Persisted.As<Assignment>(
             new
             {
                 UserId = userId,
@@ -135,12 +135,12 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
     /// confirmed attendee; the second event has another activity. The seeded member's own
     /// assignments are left to each test.
     /// </summary>
-    private Task SeedEventsAsync(params ActivityUserRoleAssignment[] memberAssignments)
+    private Task SeedEventsAsync(params Assignment[] memberAssignments)
     {
         return Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = ThumbnailId,
@@ -189,64 +189,64 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
                     }
                 )
             );
-            db.ActivityUserRoleAssignments.AddRange(
-                Assignment(
+            db.Assignments.AddRange(
+                NewAssignment(
                     CoLeaderId,
                     LedActivityId,
                     SeedIds.ActivityRoleTypes.Leader,
                     SeedIds.AssignmentStatusTypes.Confirmed,
                     1
                 ),
-                Assignment(
+                NewAssignment(
                     AdultParticipantId,
                     LedActivityId,
                     SeedIds.ActivityRoleTypes.Participant,
                     SeedIds.AssignmentStatusTypes.Confirmed,
                     2
                 ),
-                Assignment(
+                NewAssignment(
                     VolunteerId,
                     LedActivityId,
                     SeedIds.ActivityRoleTypes.Volunteer,
                     SeedIds.AssignmentStatusTypes.Confirmed,
                     3
                 ),
-                Assignment(
+                NewAssignment(
                     GuardedChildId,
                     LedActivityId,
                     SeedIds.ActivityRoleTypes.Participant,
                     SeedIds.AssignmentStatusTypes.Confirmed,
                     4
                 ),
-                Assignment(
+                NewAssignment(
                     TestSeedData.Users.MemberChildId,
                     LedActivityId,
                     SeedIds.ActivityRoleTypes.Participant,
                     SeedIds.AssignmentStatusTypes.Confirmed,
                     5
                 ),
-                Assignment(
+                NewAssignment(
                     RequestedId,
                     LedActivityId,
                     SeedIds.ActivityRoleTypes.Participant,
                     SeedIds.AssignmentStatusTypes.Requested,
                     6
                 ),
-                Assignment(
+                NewAssignment(
                     DeniedId,
                     LedActivityId,
                     SeedIds.ActivityRoleTypes.Volunteer,
                     SeedIds.AssignmentStatusTypes.Denied,
                     7
                 ),
-                Assignment(
+                NewAssignment(
                     SiblingOnlyId,
                     SiblingActivityId,
                     SeedIds.ActivityRoleTypes.Participant,
                     SeedIds.AssignmentStatusTypes.Confirmed,
                     8
                 ),
-                Assignment(
+                NewAssignment(
                     SiblingOnlyId,
                     OtherEventActivityId,
                     SeedIds.ActivityRoleTypes.Participant,
@@ -254,21 +254,17 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
                     9
                 )
             );
-            db.ActivityUserRoleAssignments.AddRange(memberAssignments);
+            db.Assignments.AddRange(memberAssignments);
             return Task.CompletedTask;
         });
     }
 
-    private static ActivityUserRoleAssignment MemberAssignment(
-        Guid activityId,
-        Guid roleTypeId,
-        Guid statusId
-    )
+    private static Assignment MemberAssignment(Guid activityId, Guid roleTypeId, Guid statusId)
     {
-        return Assignment(TestSeedData.Users.MemberId, activityId, roleTypeId, statusId);
+        return NewAssignment(TestSeedData.Users.MemberId, activityId, roleTypeId, statusId);
     }
 
-    private static ActivityUserRoleAssignment MemberLeadsTheActivity()
+    private static Assignment MemberLeadsTheActivity()
     {
         return MemberAssignment(
             LedActivityId,
@@ -473,7 +469,7 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         var whileConfirmed = await GetRosterAsync(client, EventId);
 
         await Factory.SeedAsync(db =>
-            db.ActivityUserRoleAssignments.Where(a =>
+            db.Assignments.Where(a =>
                     a.UserId == TestSeedData.Users.MemberId && a.ActivityId == LedActivityId
                 )
                 .ExecuteUpdateAsync(
@@ -506,7 +502,7 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
     public async Task LeaderRosterAdministratorWhoLeadsGetsOnlyTheLedActivity()
     {
         await SeedEventsAsync(
-            Assignment(
+            NewAssignment(
                 TestSeedData.Users.AdminId,
                 SiblingActivityId,
                 SeedIds.ActivityRoleTypes.Leader,
@@ -533,12 +529,12 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             await db
-                .ActivityUserRoleAssignments.Where(a =>
+                .Assignments.Where(a =>
                     a.UserId == TestSeedData.Users.MemberChildId && a.ActivityId == LedActivityId
                 )
                 .ExecuteDeleteAsync(Ct);
-            db.ActivityUserRoleAssignments.Add(
-                Assignment(
+            db.Assignments.Add(
+                NewAssignment(
                     TestSeedData.Users.MemberChildId,
                     LedActivityId,
                     SeedIds.ActivityRoleTypes.Leader,

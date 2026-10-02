@@ -145,7 +145,7 @@ public sealed class DemoDataSeeder(
         var passwordHash = passwordHasher.Hash(
             Convert.ToBase64String(RandomNumberGenerator.GetBytes(DemoPasswordBytes))
         );
-        var files = new List<FileEntity>();
+        var files = new List<StoredFile>();
         var users = BuildUsers(now, clock.Today, passwordHash);
         var (categoryTypes, categoryIdByName) = BuildCategoryTypes();
         var termsDocuments = BuildTermsDocuments();
@@ -277,7 +277,7 @@ public sealed class DemoDataSeeder(
     private static DemoSchedule BuildSchedule(
         IClock clock,
         DateTimeOffset now,
-        List<FileEntity> files,
+        List<StoredFile> files,
         Dictionary<string, Guid> categoryIdByName
     )
     {
@@ -311,7 +311,7 @@ public sealed class DemoDataSeeder(
                 now.AddDays(-1)
             );
             var descriptionImageId = NewFile(files, $"evento-{label}-galeria.jpg", now);
-            var eventAssignments = new List<ActivityUserRoleAssignment>();
+            var eventAssignments = new List<Assignment>();
 
             var ev = Event.Create(
                 new EventContent(
@@ -388,7 +388,7 @@ public sealed class DemoDataSeeder(
         return new DemoSchedule(events, activities, ratings);
     }
 
-    private static List<NewsItem> BuildNews(DateTimeOffset now, List<FileEntity> files)
+    private static List<NewsItem> BuildNews(DateTimeOffset now, List<StoredFile> files)
     {
         return DemoNews
             .Select(
@@ -416,7 +416,7 @@ public sealed class DemoDataSeeder(
             .ToList();
     }
 
-    private static List<Resource> BuildResources(DateTimeOffset now, List<FileEntity> files)
+    private static List<Resource> BuildResources(DateTimeOffset now, List<StoredFile> files)
     {
         var internalResources = DemoResources.Select(
             (seed, index) =>
@@ -461,7 +461,7 @@ public sealed class DemoDataSeeder(
     private static List<Partner> BuildPartners(
         IClock clock,
         DateTimeOffset now,
-        List<FileEntity> files
+        List<StoredFile> files
     )
     {
         return DemoPartners
@@ -498,9 +498,9 @@ public sealed class DemoDataSeeder(
         return now.AddDays(-daysAgo).AddHours(index % 12);
     }
 
-    private static Guid NewFile(List<FileEntity> files, string name, DateTimeOffset now)
+    private static Guid NewFile(List<StoredFile> files, string name, DateTimeOffset now)
     {
-        var file = FileEntity.Upload(name, "jpg", DemoAuthorId, now);
+        var file = StoredFile.Upload(name, "jpg", DemoAuthorId, now);
         files.Add(file);
         return file.Id;
     }
@@ -560,7 +560,7 @@ public sealed class DemoDataSeeder(
     private static List<EventRating> BuildRatings(
         int eventIndex,
         Guid eventId,
-        List<ActivityUserRoleAssignment> eventAssignments
+        List<Assignment> eventAssignments
     )
     {
         if (eventIndex % 4 is 3)
@@ -2521,7 +2521,7 @@ public sealed class DemoDataSeeder(
 
 internal sealed record DemoGraph(
     List<User> Users,
-    List<FileEntity> Files,
+    List<StoredFile> Files,
     List<EventCategoryType> CategoryTypes,
     List<TermsDocument> TermsDocuments,
     List<Event> Events,

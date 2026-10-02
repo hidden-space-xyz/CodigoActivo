@@ -6,15 +6,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
 /// <summary>
-/// Defines the Entity Framework mapping for file.
+/// Defines the Entity Framework mapping for stored file.
 /// </summary>
-public class FileConfiguration : IEntityTypeConfiguration<FileEntity>
+public class StoredFileConfiguration : IEntityTypeConfiguration<StoredFile>
 {
     /// <summary>
-    /// Configures the database mapping for file.
+    /// Configures the database mapping for stored file.
     /// </summary>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
-    public void Configure(EntityTypeBuilder<FileEntity> builder)
+    public void Configure(EntityTypeBuilder<StoredFile> builder)
     {
         builder.HasKey(f => f.Id);
 

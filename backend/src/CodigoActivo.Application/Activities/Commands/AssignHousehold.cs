@@ -127,8 +127,7 @@ public sealed class AssignHouseholdCommandHandler(
         {
             await uow.SaveChangesAsync(ct);
         }
-        catch (UniqueConstraintViolationException ex)
-            when (ex.EntityType == typeof(ActivityUserRoleAssignment))
+        catch (UniqueConstraintViolationException ex) when (ex.EntityType == typeof(Assignment))
         {
             return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
         }

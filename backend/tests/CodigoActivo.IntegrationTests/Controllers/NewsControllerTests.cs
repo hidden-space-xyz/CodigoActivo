@@ -194,9 +194,9 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync($"/api/news/{id}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var oldFile = await FindAsync<FileEntity>(oldThumbnailId);
+        var oldFile = await FindAsync<StoredFile>(oldThumbnailId);
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
-        var newFile = await FindAsync<FileEntity>(newThumbnailId);
+        var newFile = await FindAsync<StoredFile>(newThumbnailId);
         newFile.Should().NotBeNull();
     }
 
@@ -222,7 +222,7 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync($"/api/news/{id}", withoutImage, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var file = await FindAsync<FileEntity>(embeddedFileId);
+        var file = await FindAsync<StoredFile>(embeddedFileId);
         file.Should()
             .BeNull(
                 "an image dropped from the description is orphaned and must be cascade-deleted"
@@ -269,7 +269,7 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<NewsItem>(id);
         stored.Should().BeNull();
-        var file = await FindAsync<FileEntity>(thumbnailId);
+        var file = await FindAsync<StoredFile>(thumbnailId);
         file.Should()
             .BeNull("the deleted news item's thumbnail is orphaned and must be cascade-deleted");
     }
@@ -293,7 +293,7 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.DeleteWithCsrfAsync($"/api/news/{doomedId}", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var file = await FindAsync<FileEntity>(sharedThumbnailId);
+        var file = await FindAsync<StoredFile>(sharedThumbnailId);
         file.Should()
             .NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
         var survivor = await FindAsync<NewsItem>(survivorId);

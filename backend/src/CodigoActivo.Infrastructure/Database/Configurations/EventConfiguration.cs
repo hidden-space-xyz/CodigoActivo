@@ -26,9 +26,10 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
 
         builder.HasIndex(e => e.EventStartsAt);
         builder.HasIndex(e => e.EventEndsAt);
+        builder.HasIndex(e => e.Featured).IsUnique().HasFilter("featured");
 
         builder
-            .HasOne<FileEntity>()
+            .HasOne<StoredFile>()
             .WithMany()
             .HasForeignKey(e => e.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

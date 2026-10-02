@@ -27,7 +27,7 @@ public class PartnerConfiguration : IEntityTypeConfiguration<Partner>
         builder.HasIndex(p => new { p.Tier, p.FromDate });
 
         builder
-            .HasOne<FileEntity>()
+            .HasOne<StoredFile>()
             .WithMany()
             .HasForeignKey(p => p.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

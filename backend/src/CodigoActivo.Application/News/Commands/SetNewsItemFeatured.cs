@@ -42,8 +42,17 @@ public sealed class SetNewsItemFeaturedCommandHandler(
             return Error.NotFound(ErrorCode.NewsItemNotFound);
         }
 
-        FeaturedSelection.Choose(chosen, await news.ListFeaturedAsync(ct));
-        await uow.SaveChangesAsync(ct);
+        await uow.ExecuteInTransactionAsync(
+            async attempt =>
+            {
+                FeaturedSelection.UnfeatureAllBut(chosen, await news.ListFeaturedAsync(attempt));
+                await uow.SaveChangesAsync(attempt);
+                chosen.Feature();
+                await uow.SaveChangesAsync(attempt);
+                return true;
+            },
+            ct
+        );
 
         await cacheInvalidator.InvalidateAsync(CacheTags.News);
         return Result.Success();

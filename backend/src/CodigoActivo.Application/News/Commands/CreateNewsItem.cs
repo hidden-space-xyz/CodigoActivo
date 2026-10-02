@@ -28,7 +28,7 @@ public sealed record CreateNewsItemCommand(CreateNewsItemRequest Request, Guid U
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class CreateNewsItemCommandHandler(
     INewsItemRepository news,
-    IFileRepository files,
+    IStoredFileRepository files,
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator

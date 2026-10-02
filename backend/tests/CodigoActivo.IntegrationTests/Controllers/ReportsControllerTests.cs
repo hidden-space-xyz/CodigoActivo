@@ -73,26 +73,26 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             db.Activities.Add(BuildActivity(ActivityAId, "Taller", ActivityAThumbnailId));
             db.Activities.Add(BuildActivity(ActivityBId, "Charla", ActivityBThumbnailId));
 
-            db.ActivityUserRoleAssignments.AddRange(
-                Assignment(
+            db.Assignments.AddRange(
+                NewAssignment(
                     ActivityAId,
                     TestSeedData.Users.MemberChildId,
                     SeedIds.ActivityRoleTypes.Volunteer,
                     SeedIds.AssignmentStatusTypes.Confirmed
                 ),
-                Assignment(
+                NewAssignment(
                     ActivityBId,
                     TestSeedData.Users.AdminId,
                     SeedIds.ActivityRoleTypes.Leader,
                     SeedIds.AssignmentStatusTypes.Confirmed
                 ),
-                Assignment(
+                NewAssignment(
                     ActivityBId,
                     TestSeedData.Users.PendingId,
                     SeedIds.ActivityRoleTypes.Participant,
                     SeedIds.AssignmentStatusTypes.Requested
                 ),
-                Assignment(
+                NewAssignment(
                     ActivityBId,
                     TestSeedData.Users.BlockedId,
                     SeedIds.ActivityRoleTypes.Leader,
@@ -129,9 +129,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         );
     }
 
-    private static FileEntity Thumbnail(Guid id)
+    private static StoredFile Thumbnail(Guid id)
     {
-        return Persisted.As<FileEntity>(
+        return Persisted.As<StoredFile>(
             new
             {
                 Id = id,
@@ -143,14 +143,14 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         );
     }
 
-    private static ActivityUserRoleAssignment Assignment(
+    private static Assignment NewAssignment(
         Guid activityId,
         Guid userId,
         Guid roleTypeId,
         Guid statusId
     )
     {
-        return Persisted.As<ActivityUserRoleAssignment>(
+        return Persisted.As<Assignment>(
             new
             {
                 ActivityId = activityId,
@@ -199,8 +199,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
         {
-            db.ActivityUserRoleAssignments.Add(
-                Assignment(
+            db.Assignments.Add(
+                NewAssignment(
                     ActivityAId,
                     TestSeedData.Users.AdminId,
                     SeedIds.ActivityRoleTypes.Volunteer,
@@ -248,8 +248,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             db.Activities.Add(
                 BuildActivity(ActivityCId, "Cierre", ActivityCThumbnailId, At.AddHours(1))
             );
-            db.ActivityUserRoleAssignments.Add(
-                Assignment(
+            db.Assignments.Add(
+                NewAssignment(
                     ActivityCId,
                     TestSeedData.Users.MemberChildId,
                     SeedIds.ActivityRoleTypes.Participant,
@@ -315,8 +315,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             db.Activities.Add(
                 BuildActivity(ActivityCId, "Cierre", ActivityCThumbnailId, At.AddHours(1))
             );
-            db.ActivityUserRoleAssignments.Add(
-                Assignment(
+            db.Assignments.Add(
+                NewAssignment(
                     ActivityCId,
                     TestSeedData.Users.MemberChildId,
                     SeedIds.ActivityRoleTypes.Participant,
@@ -410,8 +410,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             db.Activities.Add(
                 BuildActivity(ActivityCId, "Cierre", ActivityCThumbnailId, At.AddHours(1))
             );
-            db.ActivityUserRoleAssignments.Add(
-                Assignment(
+            db.Assignments.Add(
+                NewAssignment(
                     ActivityCId,
                     TestSeedData.Users.MemberChildId,
                     SeedIds.ActivityRoleTypes.Participant,
@@ -570,8 +570,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
         {
-            db.ActivityUserRoleAssignments.Add(
-                Assignment(
+            db.Assignments.Add(
+                NewAssignment(
                     ActivityBId,
                     TestSeedData.Users.MemberChildId,
                     SeedIds.ActivityRoleTypes.Participant,

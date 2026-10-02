@@ -181,7 +181,7 @@ public sealed class AssignActivityCommandHandlerTests
         uow.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>
                 throw new UniqueConstraintViolationException(
-                    typeof(ActivityUserRoleAssignment),
+                    typeof(Assignment),
                     new InvalidOperationException("duplicate")
                 )
             );

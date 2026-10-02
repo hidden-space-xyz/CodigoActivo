@@ -20,7 +20,7 @@ namespace CodigoActivo.Application.Activities;
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ActivityValidator(
     IEventRepository events,
-    IFileRepository files,
+    IStoredFileRepository files,
     IReadStore readStore,
     IQueryExecutor executor,
     IClock clock

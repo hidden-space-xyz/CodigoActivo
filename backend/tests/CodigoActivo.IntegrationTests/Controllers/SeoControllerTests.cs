@@ -39,7 +39,7 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = thumbnailId,

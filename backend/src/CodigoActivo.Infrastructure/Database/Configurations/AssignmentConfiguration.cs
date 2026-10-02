@@ -6,16 +6,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
 /// <summary>
-/// Defines the Entity Framework mapping for activity user role assignment.
+/// Defines the Entity Framework mapping for assignment.
 /// </summary>
-public class ActivityUserRoleAssignmentConfiguration
-    : IEntityTypeConfiguration<ActivityUserRoleAssignment>
+public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
 {
     /// <summary>
-    /// Configures the database mapping for activity user role assignment.
+    /// Configures the database mapping for assignment.
     /// </summary>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
-    public void Configure(EntityTypeBuilder<ActivityUserRoleAssignment> builder)
+    public void Configure(EntityTypeBuilder<Assignment> builder)
     {
         builder.HasKey(x => new
         {

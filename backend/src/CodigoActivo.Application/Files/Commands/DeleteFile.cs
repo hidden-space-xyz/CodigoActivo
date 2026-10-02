@@ -22,7 +22,7 @@ public sealed record DeleteFileCommand(Guid FileId) : ICommand<Result>;
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class DeleteFileCommandHandler(
-    IFileRepository files,
+    IStoredFileRepository files,
     IUnitOfWork uow,
     IFileStorage storage,
     ICacheInvalidator cacheInvalidator

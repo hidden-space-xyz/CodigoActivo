@@ -4,7 +4,7 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
 
-public sealed class FileEntityTests
+public sealed class StoredFileTests
 {
     private static readonly DateTimeOffset Now = new(2026, 3, 4, 5, 6, 7, TimeSpan.Zero);
 
@@ -13,7 +13,7 @@ public sealed class FileEntityTests
     {
         var uploaderId = Guid.NewGuid();
 
-        var file = FileEntity.Upload("foto.png", "png", uploaderId, Now);
+        var file = StoredFile.Upload("foto.png", "png", uploaderId, Now);
 
         file.Id.Should().NotBeEmpty();
         file.Name.Should().Be("foto.png");
@@ -27,7 +27,7 @@ public sealed class FileEntityTests
     {
         var uploaderId = Guid.NewGuid();
         var id = Guid.NewGuid();
-        var file = FileEntity.Upload("foto.png", "png", uploaderId, Now, id);
+        var file = StoredFile.Upload("foto.png", "png", uploaderId, Now, id);
 
         file.Replace("nueva.jpg", "jpg", Now.AddHours(1));
 

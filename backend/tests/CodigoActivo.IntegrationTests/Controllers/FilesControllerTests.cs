@@ -51,7 +51,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         created.UploadedAt.Should().Be(Factory.Clock.UtcNow);
         response.Headers.Location!.ToString().Should().EndWith($"/api/files/{created.Id}");
 
-        var stored = await FindAsync<FileEntity>(created.Id);
+        var stored = await FindAsync<StoredFile>(created.Id);
         stored!.Extension.Should().Be("png");
         stored.UploadedBy.Should().Be(TestSeedData.Users.AdminId);
     }
@@ -174,7 +174,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = id,
@@ -242,7 +242,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         updated!.Id.Should().Be(created.Id);
         updated.Name.Should().Be("new.png");
 
-        var stored = await FindAsync<FileEntity>(created.Id);
+        var stored = await FindAsync<StoredFile>(created.Id);
         stored!.Name.Should().Be("new.png");
         stored.Extension.Should().Be("png");
     }
@@ -256,7 +256,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.DeleteWithCsrfAsync($"/api/files/{created.Id}", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await FindAsync<FileEntity>(created.Id);
+        var stored = await FindAsync<StoredFile>(created.Id);
         stored.Should().BeNull();
 
         using var followUp = await CreateClient()
@@ -272,7 +272,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = thumbnailId,
@@ -304,7 +304,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.DeleteWithCsrfAsync($"/api/files/{created.Id}", Ct);
 
         await response.ShouldBeConflictAsync(ErrorCode.FileInUse);
-        var stored = await FindAsync<FileEntity>(created.Id);
+        var stored = await FindAsync<StoredFile>(created.Id);
         stored
             .Should()
             .NotBeNull("a file embedded in a rich-text description must survive deletion");

@@ -26,7 +26,7 @@ public sealed record UpdateFileCommand(Guid FileId, FileUpload? Upload) : IComma
 /// <param name="validator">The validator value.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdateFileCommandHandler(
-    IFileRepository files,
+    IStoredFileRepository files,
     IUnitOfWork uow,
     IFileStorage storage,
     IClock clock,

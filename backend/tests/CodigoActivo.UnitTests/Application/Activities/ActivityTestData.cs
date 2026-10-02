@@ -181,7 +181,7 @@ internal static class ActivityTestData
         };
     }
 
-    public static ActivityUserRoleAssignment SignUp(
+    public static Assignment SignUp(
         this Activity activity,
         Guid userId,
         Guid? roleTypeId = null,
@@ -231,7 +231,7 @@ internal static class ActivityTestData
     }
 
     public static bool MatchesAssignment(
-        ActivityUserRoleAssignment? assignment,
+        Assignment? assignment,
         Guid userId,
         Guid activityId,
         Guid roleTypeId,

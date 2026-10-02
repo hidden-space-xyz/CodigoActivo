@@ -28,7 +28,7 @@ public sealed record CreatePartnerCommand(CreatePartnerRequest Request, Guid Use
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class CreatePartnerCommandHandler(
     IPartnerRepository partners,
-    IFileRepository files,
+    IStoredFileRepository files,
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator

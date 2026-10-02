@@ -30,7 +30,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = ThumbnailId,
@@ -80,22 +80,22 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
                 )
             );
 
-            db.ActivityUserRoleAssignments.AddRange(
-                Assignment(TestSeedData.Users.MemberId, SeedIds.AssignmentStatusTypes.Confirmed),
-                Assignment(
+            db.Assignments.AddRange(
+                NewAssignment(TestSeedData.Users.MemberId, SeedIds.AssignmentStatusTypes.Confirmed),
+                NewAssignment(
                     TestSeedData.Users.MemberChildId,
                     SeedIds.AssignmentStatusTypes.Confirmed
                 ),
-                Assignment(TestSeedData.Users.PendingId, SeedIds.AssignmentStatusTypes.Requested)
+                NewAssignment(TestSeedData.Users.PendingId, SeedIds.AssignmentStatusTypes.Requested)
             );
 
             return Task.CompletedTask;
         });
     }
 
-    private static ActivityUserRoleAssignment Assignment(Guid userId, Guid statusId)
+    private static Assignment NewAssignment(Guid userId, Guid statusId)
     {
-        return Persisted.As<ActivityUserRoleAssignment>(
+        return Persisted.As<Assignment>(
             new
             {
                 ActivityId = ActivityId,

@@ -23,7 +23,7 @@ public sealed class UpdateEventCommandHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
-    private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly ITermsDocumentRepository termsDocuments =
         Substitute.For<ITermsDocumentRepository>();
     private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();

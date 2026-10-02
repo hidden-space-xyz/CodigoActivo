@@ -25,7 +25,7 @@ public sealed class DemoDataSeederTests
         graph = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher());
     }
 
-    private List<ActivityUserRoleAssignment> Assignments =>
+    private List<Assignment> Assignments =>
         [.. graph.Activities.SelectMany(activity => activity.Assignments)];
 
     private List<EventTermsDocument> EventTermsDocuments =>

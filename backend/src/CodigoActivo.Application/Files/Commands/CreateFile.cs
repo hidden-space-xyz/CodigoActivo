@@ -23,7 +23,7 @@ public sealed record CreateFileCommand(FileUpload? Upload, Guid UserId) : IComma
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="validator">The validator value.</param>
 public sealed class CreateFileCommandHandler(
-    IFileRepository files,
+    IStoredFileRepository files,
     IUnitOfWork uow,
     IFileStorage storage,
     IClock clock,
@@ -50,7 +50,7 @@ public sealed class CreateFileCommandHandler(
         }
 
         var format = detection.Value;
-        var file = FileEntity.Upload(
+        var file = StoredFile.Upload(
             FileNaming.SanitizeName(upload!.FileName),
             format.Extension,
             command.UserId,
