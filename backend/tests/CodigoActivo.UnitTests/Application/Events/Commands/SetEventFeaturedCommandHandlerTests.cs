@@ -15,7 +15,7 @@ namespace CodigoActivo.UnitTests.Application.Events.Commands;
 public sealed class SetEventFeaturedCommandHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>().RunsTransactions();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly SetEventFeaturedCommandHandler sut;
 
@@ -54,7 +54,11 @@ public sealed class SetEventFeaturedCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         chosen.Featured.Should().BeTrue();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await uow.Received(1)
+            .ExecuteInTransactionAsync(
+                Arg.Any<Func<CancellationToken, Task<bool>>>(),
+                Arg.Any<CancellationToken>()
+            );
         await cacheInvalidator
             .Received(1)
             .InvalidateAsync(
@@ -82,5 +86,25 @@ public sealed class SetEventFeaturedCommandHandlerTests
         previous.Featured.Should().BeFalse();
         chosen.UpdatedAt.Should().BeNull();
         previous.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsyncOtherEventFeaturedSavesItsUnfeaturingBeforeFeaturingTheChosenOne()
+    {
+        var chosen = NewEvent();
+        var previous = NewEvent(featured: true);
+        events.GetByIdAsync(chosen.Id, Arg.Any<CancellationToken>()).Returns(chosen);
+        events.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([previous]);
+        var saved = new List<(bool Previous, bool Chosen)>();
+        uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => saved.Add((previous.Featured, chosen.Featured)));
+
+        var result = await sut.HandleAsync(
+            new SetEventFeaturedCommand(chosen.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        saved.Should().Equal((false, false), (false, true));
     }
 }

@@ -21,7 +21,7 @@ public sealed class UpdateActivityCommandHandlerTests
 {
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
     private readonly FakeReadStore readStore = new();
     private readonly TestClock clock = new();

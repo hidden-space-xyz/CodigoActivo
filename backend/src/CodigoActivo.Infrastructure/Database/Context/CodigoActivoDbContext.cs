@@ -66,10 +66,9 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<ActivityRoleType> ActivityRoleTypes => Set<ActivityRoleType>();
 
     /// <summary>
-    /// Gets the activity user role assignments value.
+    /// Gets the assignments value.
     /// </summary>
-    public DbSet<ActivityUserRoleAssignment> ActivityUserRoleAssignments =>
-        Set<ActivityUserRoleAssignment>();
+    public DbSet<Assignment> Assignments => Set<Assignment>();
 
     /// <summary>
     /// Gets the activity role capacities value.
@@ -129,7 +128,7 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// <summary>
     /// Gets the files value.
     /// </summary>
-    public DbSet<FileEntity> Files => Set<FileEntity>();
+    public DbSet<StoredFile> Files => Set<StoredFile>();
 
     /// <summary>
     /// Gets the partners value.

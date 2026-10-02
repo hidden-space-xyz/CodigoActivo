@@ -16,7 +16,7 @@ namespace CodigoActivo.UnitTests.Application.Files.Commands;
 
 public sealed class UpdateFileCommandHandlerTests
 {
-    private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IFileStorage storage = Substitute.For<IFileStorage>();
     private readonly TestClock clock = new();

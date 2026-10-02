@@ -47,7 +47,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             )
         );
         db.Files.Add(
-            Persisted.As<FileEntity>(
+            Persisted.As<StoredFile>(
                 new
                 {
                     Id = ThumbId,
@@ -506,8 +506,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 }
             )
         );
-        ctx.ActivityUserRoleAssignments.Add(
-            Persisted.As<ActivityUserRoleAssignment>(
+        ctx.Assignments.Add(
+            Persisted.As<Assignment>(
                 new
                 {
                     UserId = user.Id,
@@ -555,7 +555,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         }
 
         await using var verify = postgres.CreateContext();
-        var stored = await verify.ActivityUserRoleAssignments.SingleAsync(Ct);
+        var stored = await verify.Assignments.SingleAsync(Ct);
         stored.UserId.Should().Be(user.Id);
         stored.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
         stored.CreatedAt.Should().Be(Fixed);
@@ -570,8 +570,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var seed = postgres.CreateContext())
         {
             seed.AddRange(user, ev, activity);
-            seed.ActivityUserRoleAssignments.Add(
-                Persisted.As<ActivityUserRoleAssignment>(
+            seed.Assignments.Add(
+                Persisted.As<Assignment>(
                     new
                     {
                         UserId = user.Id,
@@ -596,7 +596,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         }
 
         await using var verify = postgres.CreateContext();
-        var stored = await verify.ActivityUserRoleAssignments.SingleAsync(Ct);
+        var stored = await verify.Assignments.SingleAsync(Ct);
         stored.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
         stored.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
         stored.CreatedAt.Should().Be(Fixed);
@@ -611,8 +611,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var seed = postgres.CreateContext())
         {
             seed.AddRange(user, ev, activity);
-            seed.ActivityUserRoleAssignments.Add(
-                Persisted.As<ActivityUserRoleAssignment>(
+            seed.Assignments.Add(
+                Persisted.As<Assignment>(
                     new
                     {
                         UserId = user.Id,
@@ -633,7 +633,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         }
 
         await using var verify = postgres.CreateContext();
-        (await verify.ActivityUserRoleAssignments.CountAsync(Ct)).Should().Be(0);
+        (await verify.Assignments.CountAsync(Ct)).Should().Be(0);
     }
 
     [Fact]
@@ -646,8 +646,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var otherEvent = NewEvent("Otro");
         var activity = NewActivity(ev.Id);
         ctx.AddRange(guardian, child, ev, otherEvent, activity);
-        ctx.ActivityUserRoleAssignments.Add(
-            Persisted.As<ActivityUserRoleAssignment>(
+        ctx.Assignments.Add(
+            Persisted.As<Assignment>(
                 new
                 {
                     UserId = child.Id,
@@ -692,7 +692,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         );
         ctx.AddRange(ev, newsItem);
         await ctx.SaveChangesAsync(Ct);
-        var repo = new FileRepository(ctx);
+        var repo = new StoredFileRepository(ctx);
 
         (await repo.IsInUseAsync(ThumbId, Ct)).Should().BeTrue();
         (await repo.IsInUseAsync(eventEmbeddedFileId, Ct)).Should().BeTrue();
@@ -723,7 +723,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         );
         ctx.AddRange(ev, newsItem, resource);
         await ctx.SaveChangesAsync(Ct);
-        var repo = new FileRepository(ctx);
+        var repo = new StoredFileRepository(ctx);
 
         var inUse = await repo.GetInUseAsync(
             [
@@ -750,7 +750,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task GetInUseAsyncEmptyInputReturnsEmpty()
     {
         await using var ctx = postgres.CreateContext();
-        var repo = new FileRepository(ctx);
+        var repo = new StoredFileRepository(ctx);
 
         var inUse = await repo.GetInUseAsync([], Ct);
 

@@ -23,36 +23,36 @@ public sealed class FeaturedSelectionTests
     }
 
     [Fact]
-    public void ChooseOthersFeaturedLeavesOnlyTheChosenOneFeatured()
+    public void UnfeatureAllButOthersFeaturedUnfeaturesThemAndLeavesTheChosenOneAsItWas()
     {
         var chosen = NewNewsItem();
         var first = NewNewsItem(featured: true);
         var second = NewNewsItem(featured: true);
 
-        FeaturedSelection.Choose(chosen, [first, second]);
+        FeaturedSelection.UnfeatureAllBut(chosen, [first, second]);
 
-        chosen.Featured.Should().BeTrue();
+        chosen.Featured.Should().BeFalse();
         first.Featured.Should().BeFalse();
         second.Featured.Should().BeFalse();
     }
 
     [Fact]
-    public void ChooseChosenAlreadyFeaturedKeepsItFeatured()
+    public void UnfeatureAllButChosenAlreadyFeaturedKeepsItFeatured()
     {
         var chosen = NewNewsItem(featured: true);
 
-        FeaturedSelection.Choose(chosen, [chosen]);
+        FeaturedSelection.UnfeatureAllBut(chosen, [chosen]);
 
         chosen.Featured.Should().BeTrue();
     }
 
     [Fact]
-    public void ChooseNothingFeaturedFeaturesTheChosenOne()
+    public void UnfeatureAllButNothingFeaturedChangesNothing()
     {
         var chosen = NewNewsItem();
 
-        FeaturedSelection.Choose(chosen, []);
+        FeaturedSelection.UnfeatureAllBut(chosen, []);
 
-        chosen.Featured.Should().BeTrue();
+        chosen.Featured.Should().BeFalse();
     }
 }

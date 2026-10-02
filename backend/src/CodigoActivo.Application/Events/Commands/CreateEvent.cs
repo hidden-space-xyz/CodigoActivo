@@ -31,7 +31,7 @@ public sealed record CreateEventCommand(CreateEventRequest Request, Guid UserId)
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class CreateEventCommandHandler(
     IEventRepository events,
-    IFileRepository files,
+    IStoredFileRepository files,
     ITermsDocumentRepository termsDocuments,
     EventCategoryChecker categoryChecker,
     IClock clock,

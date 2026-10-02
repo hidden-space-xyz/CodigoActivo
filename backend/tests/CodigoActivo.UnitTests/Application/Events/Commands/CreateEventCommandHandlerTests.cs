@@ -20,7 +20,7 @@ namespace CodigoActivo.UnitTests.Application.Events.Commands;
 public sealed class CreateEventCommandHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly ITermsDocumentRepository termsDocuments =
         Substitute.For<ITermsDocumentRepository>();
     private readonly IEventCategoryTypeRepository categoryTypes =

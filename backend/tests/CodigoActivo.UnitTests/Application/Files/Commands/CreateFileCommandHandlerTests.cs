@@ -14,7 +14,7 @@ namespace CodigoActivo.UnitTests.Application.Files.Commands;
 
 public sealed class CreateFileCommandHandlerTests
 {
-    private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IFileStorage storage = Substitute.For<IFileStorage>();
     private readonly TestClock clock = new();
@@ -32,10 +32,10 @@ public sealed class CreateFileCommandHandlerTests
         );
     }
 
-    private async Task<List<FileEntity>> CaptureAddedFilesAsync()
+    private async Task<List<StoredFile>> CaptureAddedFilesAsync()
     {
-        var added = new List<FileEntity>();
-        await files.AddAsync(Arg.Do<FileEntity>(added.Add), Arg.Any<CancellationToken>());
+        var added = new List<StoredFile>();
+        await files.AddAsync(Arg.Do<StoredFile>(added.Add), Arg.Any<CancellationToken>());
         return added;
     }
 

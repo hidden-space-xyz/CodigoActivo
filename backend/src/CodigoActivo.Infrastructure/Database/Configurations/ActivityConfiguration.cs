@@ -41,7 +41,7 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne<FileEntity>()
+            .HasOne<StoredFile>()
             .WithMany()
             .HasForeignKey(a => a.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

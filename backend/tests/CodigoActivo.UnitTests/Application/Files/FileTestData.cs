@@ -32,9 +32,9 @@ internal static class FileTestData
         return new(new byte[32], writable: false);
     }
 
-    public static FileEntity NewFile(string name = "photo.png", string extension = "png")
+    public static StoredFile NewFile(string name = "photo.png", string extension = "png")
     {
-        return Persisted.As<FileEntity>(
+        return Persisted.As<StoredFile>(
             new
             {
                 Id = Guid.NewGuid(),
@@ -58,7 +58,7 @@ internal static class FileTestData
         };
     }
 
-    public static void FileFound(this IFileRepository files, FileEntity file)
+    public static void FileFound(this IStoredFileRepository files, StoredFile file)
     {
         files.Finds(file);
         files
@@ -66,7 +66,7 @@ internal static class FileTestData
             .Returns([file]);
     }
 
-    public static void FileMissing(this IFileRepository files)
+    public static void FileMissing(this IStoredFileRepository files)
     {
         files.Finds(null);
         files
@@ -74,7 +74,7 @@ internal static class FileTestData
             .Returns([]);
     }
 
-    public static void FileReferenced(this IFileRepository files, bool referenced)
+    public static void FileReferenced(this IStoredFileRepository files, bool referenced)
     {
         files.IsInUseAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(referenced);
     }

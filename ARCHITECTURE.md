@@ -42,7 +42,7 @@ aggregate roots.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
   `DeletedAccount`, `Event` (with its categories and terms links), `Activity` (with its role capacities and
   signups), `EventTermsAcceptance`, `EventRating`, `NewsItem`, `Resource`, `Partner`, `TermsDocument`,
-  `EventCategoryType` and `FileEntity`. Their state has private setters: factories create them, returning
+  `EventCategoryType` and `StoredFile`. Their state has private setters: factories create them, returning
   `Result<T>` when a rule can fail, and behavior methods own the invariants and the transitions
   (`User.Verify`, `User.RecordPasswordFailure`, `Activity.RequestAssignment`, `Activity.ChangeAssignmentStatus`,
   `Event.Feature`). Child entities change only through their root. For people, `CreateIndependent`,
@@ -62,7 +62,11 @@ aggregate roots.
   commits staged changes once and turns a PostgreSQL unique violation into `UniqueConstraintViolationException`,
   naming the entity whose table rejected the commit, so a handler can answer a lost race instead of failing. A
   person holds at most one assignment per activity (unique index on `user_id`, `activity_id`); the signup
-  commands answer a concurrent duplicate with `ActivityAssignmentAlreadyExists` (409).
+  commands answer a concurrent duplicate with `ActivityAssignmentAlreadyExists` (409). At most one event and one
+  news item are featured (unique index on `featured`, filtered to featured rows). PostgreSQL checks it row by
+  row and EF Core cannot order moving the flag between rows within one save, so `SetEventFeatured` and
+  `SetNewsItemFeatured` save the unfeaturing of the current item before featuring the chosen one, in one
+  transaction; a concurrent featuring that loses the race fails instead of leaving two items featured.
 - `IUnitOfWork.ExecuteInTransactionAsync` runs work in one explicit transaction and, when PostgreSQL aborts it
   to resolve a deadlock, runs it again (three attempts in total) after discarding what the failed attempt
   staged. `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`),

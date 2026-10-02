@@ -15,9 +15,9 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
 {
     private static readonly DateTimeOffset SeededAt = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-    private static FileEntity Thumbnail(Guid id)
+    private static StoredFile Thumbnail(Guid id)
     {
-        return Persisted.As<FileEntity>(
+        return Persisted.As<StoredFile>(
             new
             {
                 Id = id,
@@ -82,8 +82,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
                     }
                 )
             );
-            db.ActivityUserRoleAssignments.Add(
-                Persisted.As<ActivityUserRoleAssignment>(
+            db.Assignments.Add(
+                Persisted.As<Assignment>(
                     new
                     {
                         UserId = userId,
@@ -367,8 +367,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
                     }
                 )
             );
-            db.ActivityUserRoleAssignments.Add(
-                Persisted.As<ActivityUserRoleAssignment>(
+            db.Assignments.Add(
+                Persisted.As<Assignment>(
                     new
                     {
                         UserId = userId,

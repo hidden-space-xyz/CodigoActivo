@@ -28,7 +28,7 @@ public sealed class AccountErasureStore(CodigoActivoDbContext context) : IAccoun
             $"""
             SELECT id FROM users WHERE parent_id = {accountId} FOR UPDATE;
             SELECT a.user_id
-            FROM activity_user_role_assignments AS a
+            FROM assignments AS a
             JOIN users AS u ON u.id = a.user_id
             WHERE u.id = {accountId} OR u.parent_id = {accountId}
             FOR UPDATE OF a;

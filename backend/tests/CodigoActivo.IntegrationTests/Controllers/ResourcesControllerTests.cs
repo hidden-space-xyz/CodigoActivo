@@ -490,9 +490,9 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync($"/api/resources/{id}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var oldFile = await FindAsync<FileEntity>(oldThumbnailId);
+        var oldFile = await FindAsync<StoredFile>(oldThumbnailId);
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
-        var newFile = await FindAsync<FileEntity>(newThumbnailId);
+        var newFile = await FindAsync<StoredFile>(newThumbnailId);
         newFile.Should().NotBeNull();
     }
 
@@ -611,7 +611,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<Resource>(id);
         stored.Should().BeNull();
-        var file = await FindAsync<FileEntity>(thumbnailId);
+        var file = await FindAsync<StoredFile>(thumbnailId);
         file.Should()
             .BeNull("the deleted resource's thumbnail is orphaned and must be cascade-deleted");
     }

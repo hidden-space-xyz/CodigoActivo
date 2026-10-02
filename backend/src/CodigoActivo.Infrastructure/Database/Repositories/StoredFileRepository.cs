@@ -10,18 +10,18 @@ namespace CodigoActivo.Infrastructure.Database.Repositories;
 /// Stores and loads uploaded files, and tells which of them the content still references.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
-public class FileRepository(CodigoActivoDbContext context)
-    : AggregateRepository<FileEntity>(context),
-        IFileRepository
+public class StoredFileRepository(CodigoActivoDbContext context)
+    : AggregateRepository<StoredFile>(context),
+        IStoredFileRepository
 {
     /// <inheritdoc />
-    public Task<FileEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public Task<StoredFile?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return Set.FirstOrDefaultAsync(file => file.Id == id, ct);
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<FileEntity>> ListByIdsAsync(
+    public async Task<IReadOnlyList<StoredFile>> ListByIdsAsync(
         IReadOnlyCollection<Guid> ids,
         CancellationToken ct = default
     )

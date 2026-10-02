@@ -6,7 +6,7 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
 
-public sealed class UserEntityTests
+public sealed class UserTests
 {
     private static readonly DateTimeOffset Seeded = new(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);

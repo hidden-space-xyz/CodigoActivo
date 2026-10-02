@@ -54,7 +54,7 @@ public static class RepositoryStubs
             .Returns(termsDocument);
     }
 
-    public static void Finds(this IFileRepository files, FileEntity? file)
+    public static void Finds(this IStoredFileRepository files, StoredFile? file)
     {
         files.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(file);
     }
@@ -69,7 +69,7 @@ public static class RepositoryStubs
         activities.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(activity);
     }
 
-    public static void ThumbnailExists(this IFileRepository files, bool exists)
+    public static void ThumbnailExists(this IStoredFileRepository files, bool exists)
     {
         files.ExistsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(exists);
     }

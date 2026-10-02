@@ -18,7 +18,7 @@ public sealed class CreateResourceCommandHandlerTests
 {
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
     private readonly FakeReadStore readStore = new();
-    private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();

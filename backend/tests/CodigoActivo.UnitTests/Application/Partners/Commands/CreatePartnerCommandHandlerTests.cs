@@ -16,7 +16,7 @@ namespace CodigoActivo.UnitTests.Application.Partners.Commands;
 public sealed class CreatePartnerCommandHandlerTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
-    private readonly IFileRepository files = Substitute.For<IFileRepository>();
+    private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestClock clock = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();

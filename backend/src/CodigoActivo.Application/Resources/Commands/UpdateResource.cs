@@ -39,7 +39,7 @@ public sealed class UpdateResourceCommandHandler(
     IResourceRepository resources,
     IReadStore readStore,
     IQueryExecutor executor,
-    IFileRepository files,
+    IStoredFileRepository files,
     IOrphanFileCleaner orphanCleaner,
     IClock clock,
     IUnitOfWork uow,

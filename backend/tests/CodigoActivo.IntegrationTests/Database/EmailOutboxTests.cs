@@ -74,7 +74,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var callerContext = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
-        var staged = Persisted.As<FileEntity>(
+        var staged = Persisted.As<StoredFile>(
             new
             {
                 Id = Guid.NewGuid(),
@@ -90,7 +90,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
 
         queued.Should().BeTrue();
         (await PendingAsync()).Should().ContainSingle();
-        callerContext.ChangeTracker.Entries<FileEntity>().Should().NotBeEmpty();
+        callerContext.ChangeTracker.Entries<StoredFile>().Should().NotBeEmpty();
         var persisted = await Factory.QueryAsync(db =>
             db.Files.AnyAsync(file => file.Id == staged.Id, Ct)
         );

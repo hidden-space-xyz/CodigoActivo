@@ -25,7 +25,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Activity", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.Activity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -107,7 +107,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("activities", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityModalityType", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.ActivityModalityType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -129,7 +129,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("activity_modality_types", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityRoleCapacity", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.ActivityRoleCapacity", b =>
                 {
                     b.Property<Guid>("ActivityId")
                         .HasColumnType("uuid")
@@ -152,7 +152,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("activity_role_capacities", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityRoleType", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.ActivityRoleType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -179,7 +179,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("activity_role_types", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityUserRoleAssignment", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.Assignment", b =>
                 {
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -202,25 +202,25 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnName("created_at");
 
                     b.HasKey("UserId", "ActivityId", "ActivityRoleTypeId")
-                        .HasName("pk_activity_user_role_assignments");
+                        .HasName("pk_assignments");
 
                     b.HasIndex("ActivityId")
-                        .HasDatabaseName("ix_activity_user_role_assignments_activity_id");
+                        .HasDatabaseName("ix_assignments_activity_id");
 
                     b.HasIndex("ActivityRoleTypeId")
-                        .HasDatabaseName("ix_activity_user_role_assignments_activity_role_type_id");
+                        .HasDatabaseName("ix_assignments_activity_role_type_id");
 
                     b.HasIndex("AssignmentStatusId")
-                        .HasDatabaseName("ix_activity_user_role_assignments_assignment_status_id");
+                        .HasDatabaseName("ix_assignments_assignment_status_id");
 
                     b.HasIndex("UserId", "ActivityId")
                         .IsUnique()
-                        .HasDatabaseName("ix_activity_user_role_assignments_user_id_activity_id");
+                        .HasDatabaseName("ix_assignments_user_id_activity_id");
 
-                    b.ToTable("activity_user_role_assignments", (string)null);
+                    b.ToTable("assignments", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.AssignmentStatusType", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.AssignmentStatusType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -253,187 +253,35 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("assignment_status_types", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.DeletedAccount", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Data")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("data");
-
-                    b.Property<DateTimeOffset>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_deleted_accounts");
-
-                    b.HasIndex("DeletedAt")
-                        .HasDatabaseName("ix_deleted_accounts_deleted_at");
-
-                    b.ToTable("deleted_accounts", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.DisposableEmailDomain", b =>
-                {
-                    b.Property<string>("Domain")
-                        .HasMaxLength(253)
-                        .HasColumnType("character varying(253)")
-                        .HasColumnName("domain");
-
-                    b.HasKey("Domain")
-                        .HasName("pk_disposable_email_domains");
-
-                    b.ToTable("disposable_email_domains", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContent", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.EventCategories.EventCategoryType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<byte[]>("HtmlBody")
+                    b.Property<string>("Color")
                         .IsRequired()
-                        .HasColumnType("bytea")
-                        .HasColumnName("html_body");
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("color");
 
-                    b.Property<byte[]>("Subject")
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("bytea")
-                        .HasColumnName("subject");
-
-                    b.Property<byte[]>("TextBody")
-                        .IsRequired()
-                        .HasColumnType("bytea")
-                        .HasColumnName("text_body");
+                        .HasColumnType("text")
+                        .HasColumnName("name");
 
                     b.HasKey("Id")
-                        .HasName("pk_email_outbox_contents");
+                        .HasName("pk_event_category_types");
 
-                    b.ToTable("email_outbox_contents", (string)null);
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_event_category_types_name");
+
+                    b.ToTable("event_category_types", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContentPart", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("ContentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("content_id");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("content_type");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("display_order");
-
-                    b.Property<string>("Disposition")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("disposition");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("file_name");
-
-                    b.Property<string>("InlineContentId")
-                        .HasColumnType("text")
-                        .HasColumnName("inline_content_id");
-
-                    b.Property<byte[]>("Payload")
-                        .IsRequired()
-                        .HasColumnType("bytea")
-                        .HasColumnName("payload");
-
-                    b.HasKey("Id")
-                        .HasName("pk_email_outbox_content_parts");
-
-                    b.HasIndex("ContentId")
-                        .HasDatabaseName("ix_email_outbox_content_parts_content_id");
-
-                    b.ToTable("email_outbox_content_parts", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<int>("AttemptCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("attempt_count");
-
-                    b.Property<Guid>("ContentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("content_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("kind");
-
-                    b.Property<string>("LastError")
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("last_error");
-
-                    b.Property<DateTimeOffset?>("LockedUntil")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("locked_until");
-
-                    b.Property<DateTimeOffset>("NextAttemptAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("next_attempt_at");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer")
-                        .HasColumnName("priority");
-
-                    b.Property<string>("ToAddress")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("to_address");
-
-                    b.Property<string>("ToName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("to_name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_email_outbox_messages");
-
-                    b.HasIndex("ContentId")
-                        .HasDatabaseName("ix_email_outbox_messages_content_id");
-
-                    b.HasIndex("Priority", "NextAttemptAt")
-                        .HasDatabaseName("ix_email_outbox_messages_priority_next_attempt_at");
-
-                    b.ToTable("email_outbox_messages", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Events.Event", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -511,6 +359,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("EventStartsAt")
                         .HasDatabaseName("ix_events_event_starts_at");
 
+                    b.HasIndex("Featured")
+                        .IsUnique()
+                        .HasDatabaseName("ix_events_featured")
+                        .HasFilter("featured");
+
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_events_thumbnail_id");
 
@@ -520,7 +373,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("events", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategory", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Events.EventCategory", b =>
                 {
                     b.Property<Guid>("EventId")
                         .HasColumnType("uuid")
@@ -539,35 +392,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("event_categories", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategoryType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(9)
-                        .HasColumnType("character varying(9)")
-                        .HasColumnName("color");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_event_category_types");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_event_category_types_name");
-
-                    b.ToTable("event_category_types", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventRating", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Events.EventRating", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -606,7 +431,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("event_ratings", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsAcceptance", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsAcceptance", b =>
                 {
                     b.Property<Guid>("EventId")
                         .HasColumnType("uuid")
@@ -640,7 +465,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("event_terms_acceptances", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsDocument", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsDocument", b =>
                 {
                     b.Property<Guid>("EventId")
                         .HasColumnType("uuid")
@@ -667,7 +492,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("event_terms_documents", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Files.StoredFile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -701,7 +526,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("files", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.NewsItem", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.News.NewsItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -756,6 +581,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_news_created_by");
 
+                    b.HasIndex("Featured")
+                        .IsUnique()
+                        .HasDatabaseName("ix_news_featured")
+                        .HasFilter("featured");
+
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_news_thumbnail_id");
 
@@ -765,7 +595,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("news", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Partner", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Partners.Partner", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -827,7 +657,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("partners", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Resource", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Resources.Resource", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -898,7 +728,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("resources", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ResourceType", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Resources.ResourceType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -935,7 +765,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("resource_types", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.TermsDocument", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.TermsDocuments.TermsDocument", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -962,7 +792,31 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("terms_documents", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Users.DeletedAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("data");
+
+                    b.Property<DateTimeOffset>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_deleted_accounts");
+
+                    b.HasIndex("DeletedAt")
+                        .HasDatabaseName("ix_deleted_accounts_deleted_at");
+
+                    b.ToTable("deleted_accounts", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1142,7 +996,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserSession", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Users.UserSession", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1170,7 +1024,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("user_sessions", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserStatusType", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Users.UserStatusType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1203,7 +1057,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("user_status_types", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserType", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Users.UserType", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1236,112 +1090,460 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("user_types", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Activity", b =>
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.DisposableEmailDomain", b =>
                 {
-                    b.HasOne("CodigoActivo.Domain.Entities.ActivityModalityType", "ActivityModalityType")
-                        .WithMany("Activities")
+                    b.Property<string>("Domain")
+                        .HasMaxLength(253)
+                        .HasColumnType("character varying(253)")
+                        .HasColumnName("domain");
+
+                    b.HasKey("Domain")
+                        .HasName("pk_disposable_email_domains");
+
+                    b.ToTable("disposable_email_domains", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxContent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<byte[]>("HtmlBody")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("html_body");
+
+                    b.Property<byte[]>("Subject")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("subject");
+
+                    b.Property<byte[]>("TextBody")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("text_body");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_outbox_contents");
+
+                    b.ToTable("email_outbox_contents", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxContentPart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ContentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("content_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content_type");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("disposition");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("InlineContentId")
+                        .HasColumnType("text")
+                        .HasColumnName("inline_content_id");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("payload");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_outbox_content_parts");
+
+                    b.HasIndex("ContentId")
+                        .HasDatabaseName("ix_email_outbox_content_parts_content_id");
+
+                    b.ToTable("email_outbox_content_parts", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<Guid>("ContentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("content_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer")
+                        .HasColumnName("priority");
+
+                    b.Property<string>("ToAddress")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("to_address");
+
+                    b.Property<string>("ToName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("to_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_outbox_messages");
+
+                    b.HasIndex("ContentId")
+                        .HasDatabaseName("ix_email_outbox_messages_content_id");
+
+                    b.HasIndex("Priority", "NextAttemptAt")
+                        .HasDatabaseName("ix_email_outbox_messages_priority_next_attempt_at");
+
+                    b.ToTable("email_outbox_messages", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.Activity", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Activities.ActivityModalityType", null)
+                        .WithMany()
                         .HasForeignKey("ActivityModalityTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_activities_activity_modality_types_activity_modality_type_id");
 
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("CreatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_activities_users_created_by");
 
-                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
-                        .WithMany("Activities")
+                    b.HasOne("CodigoActivo.Domain.Events.Event", null)
+                        .WithMany()
                         .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_activities_events_event_id");
 
-                    b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
+                    b.HasOne("CodigoActivo.Domain.Files.StoredFile", null)
                         .WithMany()
                         .HasForeignKey("ThumbnailId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_activities_files_thumbnail_id");
 
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_activities_users_updated_by");
-
-                    b.Navigation("ActivityModalityType");
-
-                    b.Navigation("Event");
-
-                    b.Navigation("Thumbnail");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityRoleCapacity", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.ActivityRoleCapacity", b =>
                 {
-                    b.HasOne("CodigoActivo.Domain.Entities.Activity", "Activity")
+                    b.HasOne("CodigoActivo.Domain.Activities.Activity", null)
                         .WithMany("RoleCapacities")
                         .HasForeignKey("ActivityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_activity_role_capacities_activities_activity_id");
 
-                    b.HasOne("CodigoActivo.Domain.Entities.ActivityRoleType", "ActivityRoleType")
+                    b.HasOne("CodigoActivo.Domain.Activities.ActivityRoleType", null)
                         .WithMany()
                         .HasForeignKey("ActivityRoleTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_activity_role_capacities_activity_role_types_activity_role_");
-
-                    b.Navigation("Activity");
-
-                    b.Navigation("ActivityRoleType");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityUserRoleAssignment", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.Assignment", b =>
                 {
-                    b.HasOne("CodigoActivo.Domain.Entities.Activity", "Activity")
+                    b.HasOne("CodigoActivo.Domain.Activities.Activity", null)
                         .WithMany("Assignments")
                         .HasForeignKey("ActivityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_activity_user_role_assignments_activities_activity_id");
+                        .HasConstraintName("fk_assignments_activities_activity_id");
 
-                    b.HasOne("CodigoActivo.Domain.Entities.ActivityRoleType", "ActivityRoleType")
-                        .WithMany("Assignments")
+                    b.HasOne("CodigoActivo.Domain.Activities.ActivityRoleType", null)
+                        .WithMany()
                         .HasForeignKey("ActivityRoleTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_activity_user_role_assignments_activity_role_types_activity");
+                        .HasConstraintName("fk_assignments_activity_role_types_activity_role_type_id");
 
-                    b.HasOne("CodigoActivo.Domain.Entities.AssignmentStatusType", "AssignmentStatus")
-                        .WithMany("Assignments")
+                    b.HasOne("CodigoActivo.Domain.Activities.AssignmentStatusType", null)
+                        .WithMany()
                         .HasForeignKey("AssignmentStatusId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_activity_user_role_assignments_assignment_status_types_assi");
+                        .HasConstraintName("fk_assignments_assignment_status_types_assignment_status_id");
 
-                    b.HasOne("CodigoActivo.Domain.Entities.User", "User")
-                        .WithMany("Assignments")
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_activity_user_role_assignments_users_user_id");
-
-                    b.Navigation("Activity");
-
-                    b.Navigation("ActivityRoleType");
-
-                    b.Navigation("AssignmentStatus");
-
-                    b.Navigation("User");
+                        .HasConstraintName("fk_assignments_users_user_id");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContentPart", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Events.Event", b =>
                 {
-                    b.HasOne("CodigoActivo.Domain.Entities.EmailOutboxContent", "Content")
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_events_users_created_by");
+
+                    b.HasOne("CodigoActivo.Domain.Files.StoredFile", null)
+                        .WithMany()
+                        .HasForeignKey("ThumbnailId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_events_files_thumbnail_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_events_users_updated_by");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Events.EventCategory", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.EventCategories.EventCategoryType", null)
+                        .WithMany()
+                        .HasForeignKey("EventCategoryTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_categories_event_category_types_event_category_type_id");
+
+                    b.HasOne("CodigoActivo.Domain.Events.Event", null)
+                        .WithMany("Categories")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_categories_events_event_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Events.EventRating", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Events.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_ratings_events_event_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsAcceptance", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Events.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_events_event_id");
+
+                    b.HasOne("CodigoActivo.Domain.TermsDocuments.TermsDocument", null)
+                        .WithMany()
+                        .HasForeignKey("TermsDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_terms_documents_terms_document_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_users_user_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsDocument", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Events.Event", null)
+                        .WithMany("TermsDocuments")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_documents_events_event_id");
+
+                    b.HasOne("CodigoActivo.Domain.TermsDocuments.TermsDocument", null)
+                        .WithMany()
+                        .HasForeignKey("TermsDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_documents_terms_documents_terms_document_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Files.StoredFile", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_files_users_uploaded_by");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.News.NewsItem", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_news_users_created_by");
+
+                    b.HasOne("CodigoActivo.Domain.Files.StoredFile", null)
+                        .WithMany()
+                        .HasForeignKey("ThumbnailId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_news_files_thumbnail_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_news_users_updated_by");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Partners.Partner", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_partners_users_created_by");
+
+                    b.HasOne("CodigoActivo.Domain.Files.StoredFile", null)
+                        .WithMany()
+                        .HasForeignKey("ThumbnailId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_partners_files_thumbnail_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_partners_users_updated_by");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Resources.Resource", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_resources_users_created_by");
+
+                    b.HasOne("CodigoActivo.Domain.Resources.ResourceType", null)
+                        .WithMany()
+                        .HasForeignKey("ResourceTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_resources_resource_types_resource_type_id");
+
+                    b.HasOne("CodigoActivo.Domain.Files.StoredFile", null)
+                        .WithMany()
+                        .HasForeignKey("ThumbnailId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_resources_files_thumbnail_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_resources_users_updated_by");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_users_users_parent_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.UserStatusType", null)
+                        .WithMany()
+                        .HasForeignKey("UserStatusTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_users_user_status_types_user_status_type_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.UserType", null)
+                        .WithMany()
+                        .HasForeignKey("UserTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_users_user_types_user_type_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Users.UserSession", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_sessions_users_user_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxContentPart", b =>
+                {
+                    b.HasOne("CodigoActivo.Infrastructure.Communication.EmailOutboxContent", "Content")
                         .WithMany("Parts")
                         .HasForeignKey("ContentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1351,9 +1553,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Content");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxMessage", b =>
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxMessage", b =>
                 {
-                    b.HasOne("CodigoActivo.Domain.Entities.EmailOutboxContent", "Content")
+                    b.HasOne("CodigoActivo.Infrastructure.Communication.EmailOutboxContent", "Content")
                         .WithMany()
                         .HasForeignKey("ContentId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1363,311 +1565,23 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Content");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_events_users_created_by");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
-                        .WithMany()
-                        .HasForeignKey("ThumbnailId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_events_files_thumbnail_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_events_users_updated_by");
-
-                    b.Navigation("Thumbnail");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategory", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.EventCategoryType", "EventCategoryType")
-                        .WithMany("Events")
-                        .HasForeignKey("EventCategoryTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_categories_event_category_types_event_category_type_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
-                        .WithMany("Categories")
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_categories_events_event_id");
-
-                    b.Navigation("Event");
-
-                    b.Navigation("EventCategoryType");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventRating", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
-                        .WithMany("Ratings")
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_ratings_events_event_id");
-
-                    b.Navigation("Event");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsAcceptance", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
-                        .WithMany()
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_terms_acceptances_events_event_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.TermsDocument", null)
-                        .WithMany()
-                        .HasForeignKey("TermsDocumentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_terms_acceptances_terms_documents_terms_document_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_terms_acceptances_users_user_id");
-
-                    b.Navigation("Event");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventTermsDocument", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.Event", "Event")
-                        .WithMany("TermsDocuments")
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_terms_documents_events_event_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.TermsDocument", "TermsDocument")
-                        .WithMany()
-                        .HasForeignKey("TermsDocumentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_terms_documents_terms_documents_terms_document_id");
-
-                    b.Navigation("Event");
-
-                    b.Navigation("TermsDocument");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.FileEntity", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UploadedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_files_users_uploaded_by");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.NewsItem", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_news_users_created_by");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
-                        .WithMany()
-                        .HasForeignKey("ThumbnailId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_news_files_thumbnail_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_news_users_updated_by");
-
-                    b.Navigation("Thumbnail");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Partner", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_partners_users_created_by");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
-                        .WithMany()
-                        .HasForeignKey("ThumbnailId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_partners_files_thumbnail_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_partners_users_updated_by");
-
-                    b.Navigation("Thumbnail");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Resource", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_resources_users_created_by");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.ResourceType", "ResourceType")
-                        .WithMany("Resources")
-                        .HasForeignKey("ResourceTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_resources_resource_types_resource_type_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.FileEntity", "Thumbnail")
-                        .WithMany()
-                        .HasForeignKey("ThumbnailId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_resources_files_thumbnail_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_resources_users_updated_by");
-
-                    b.Navigation("ResourceType");
-
-                    b.Navigation("Thumbnail");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.User", "Parent")
-                        .WithMany("Children")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_users_users_parent_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.UserStatusType", "UserStatusType")
-                        .WithMany("Users")
-                        .HasForeignKey("UserStatusTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_users_user_status_types_user_status_type_id");
-
-                    b.HasOne("CodigoActivo.Domain.Entities.UserType", "UserType")
-                        .WithMany("Users")
-                        .HasForeignKey("UserTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_users_user_types_user_type_id");
-
-                    b.Navigation("Parent");
-
-                    b.Navigation("UserStatusType");
-
-                    b.Navigation("UserType");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserSession", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_user_sessions_users_user_id");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Activity", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.Activity", b =>
                 {
                     b.Navigation("Assignments");
 
                     b.Navigation("RoleCapacities");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityModalityType", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Events.Event", b =>
                 {
-                    b.Navigation("Activities");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ActivityRoleType", b =>
-                {
-                    b.Navigation("Assignments");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.AssignmentStatusType", b =>
-                {
-                    b.Navigation("Assignments");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EmailOutboxContent", b =>
-                {
-                    b.Navigation("Parts");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.Event", b =>
-                {
-                    b.Navigation("Activities");
-
                     b.Navigation("Categories");
-
-                    b.Navigation("Ratings");
 
                     b.Navigation("TermsDocuments");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.EventCategoryType", b =>
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxContent", b =>
                 {
-                    b.Navigation("Events");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.ResourceType", b =>
-                {
-                    b.Navigation("Resources");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.User", b =>
-                {
-                    b.Navigation("Assignments");
-
-                    b.Navigation("Children");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserStatusType", b =>
-                {
-                    b.Navigation("Users");
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Entities.UserType", b =>
-                {
-                    b.Navigation("Users");
+                    b.Navigation("Parts");
                 });
 #pragma warning restore 612, 618
         }

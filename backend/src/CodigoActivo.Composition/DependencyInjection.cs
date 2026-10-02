@@ -539,7 +539,7 @@ public static class DependencyInjection
         services.AddScoped<IResourceRepository, ResourceRepository>();
         services.AddScoped<INewsItemRepository, NewsItemRepository>();
         services.AddScoped<IPartnerRepository, PartnerRepository>();
-        services.AddScoped<IFileRepository, FileRepository>();
+        services.AddScoped<IStoredFileRepository, StoredFileRepository>();
         services.AddScoped<IEventCategoryTypeRepository, EventCategoryTypeRepository>();
         services.AddScoped<ITermsDocumentRepository, TermsDocumentRepository>();
         services.AddScoped<IDashboardCountsReader, DashboardCountsReader>();

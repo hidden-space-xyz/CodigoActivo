@@ -31,7 +31,7 @@ public sealed record UpdatePartnerCommand(Guid PartnerId, UpdatePartnerRequest R
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdatePartnerCommandHandler(
     IPartnerRepository partners,
-    IFileRepository files,
+    IStoredFileRepository files,
     IOrphanFileCleaner orphanCleaner,
     IClock clock,
     IUnitOfWork uow,

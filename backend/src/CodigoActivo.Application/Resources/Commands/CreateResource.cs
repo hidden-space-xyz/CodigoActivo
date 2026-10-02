@@ -33,7 +33,7 @@ public sealed class CreateResourceCommandHandler(
     IResourceRepository resources,
     IReadStore readStore,
     IQueryExecutor executor,
-    IFileRepository files,
+    IStoredFileRepository files,
     IClock clock,
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator

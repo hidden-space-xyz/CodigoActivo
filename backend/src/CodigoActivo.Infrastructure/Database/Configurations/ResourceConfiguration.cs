@@ -33,7 +33,7 @@ public class ResourceConfiguration : IEntityTypeConfiguration<Resource>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder
-            .HasOne<FileEntity>()
+            .HasOne<StoredFile>()
             .WithMany()
             .HasForeignKey(r => r.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);

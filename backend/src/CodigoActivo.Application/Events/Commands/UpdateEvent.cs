@@ -38,7 +38,7 @@ public sealed record UpdateEventCommand(Guid EventId, UpdateEventRequest Request
 public sealed class UpdateEventCommandHandler(
     IEventRepository events,
     IActivityRepository activities,
-    IFileRepository files,
+    IStoredFileRepository files,
     ITermsDocumentRepository termsDocuments,
     IOrphanFileCleaner orphanCleaner,
     EventCategoryChecker categoryChecker,

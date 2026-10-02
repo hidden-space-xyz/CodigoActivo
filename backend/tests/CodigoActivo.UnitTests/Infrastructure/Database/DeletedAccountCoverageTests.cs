@@ -23,7 +23,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
 
     private static readonly string[] CopiedReferences =
     [
-        "ActivityUserRoleAssignment.UserId",
+        "Assignment.UserId",
         "EventTermsAcceptance.UserId",
         "User.ParentId",
     ];
@@ -36,7 +36,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         "Activity.UpdatedBy",
         "Event.CreatedBy",
         "Event.UpdatedBy",
-        "FileEntity.UploadedBy",
+        "StoredFile.UploadedBy",
         "NewsItem.CreatedBy",
         "NewsItem.UpdatedBy",
         "Partner.CreatedBy",
@@ -47,11 +47,11 @@ public sealed class DeletedAccountCoverageTests : IDisposable
 
     private static readonly string[] CopiedAssignmentProperties =
     [
-        nameof(ActivityUserRoleAssignment.UserId),
-        nameof(ActivityUserRoleAssignment.ActivityId),
-        nameof(ActivityUserRoleAssignment.ActivityRoleTypeId),
-        nameof(ActivityUserRoleAssignment.AssignmentStatusId),
-        nameof(ActivityUserRoleAssignment.CreatedAt),
+        nameof(Assignment.UserId),
+        nameof(Assignment.ActivityId),
+        nameof(Assignment.ActivityRoleTypeId),
+        nameof(Assignment.AssignmentStatusId),
+        nameof(Assignment.CreatedAt),
     ];
 
     private static readonly string[] CopiedDecisionProperties =
@@ -155,9 +155,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     [Fact]
     public void EveryAssignmentAndTermsDecisionPropertyIsCopied()
     {
-        PropertiesOf<ActivityUserRoleAssignment>()
-            .Should()
-            .BeEquivalentTo(CopiedAssignmentProperties, Decide);
+        PropertiesOf<Assignment>().Should().BeEquivalentTo(CopiedAssignmentProperties, Decide);
         PropertiesOf<EventTermsAcceptance>()
             .Should()
             .BeEquivalentTo(CopiedDecisionProperties, Decide);

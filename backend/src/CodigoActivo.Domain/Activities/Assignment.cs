@@ -3,11 +3,11 @@ namespace CodigoActivo.Domain.Activities;
 /// <summary>
 /// Signup of a person to an activity with a role and a status; part of the activity aggregate.
 /// </summary>
-public class ActivityUserRoleAssignment
+public class Assignment
 {
-    private ActivityUserRoleAssignment() { }
+    private Assignment() { }
 
-    internal ActivityUserRoleAssignment(
+    internal Assignment(
         Guid userId,
         Guid activityId,
         Guid activityRoleTypeId,

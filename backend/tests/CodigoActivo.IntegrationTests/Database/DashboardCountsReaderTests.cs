@@ -76,7 +76,7 @@ public sealed class DashboardCountsReaderTests(PostgresContainerFixture postgres
     {
         ctx.Users.Add(NewUser(AuthorId, "Author"));
         ctx.Files.Add(
-            Persisted.As<FileEntity>(
+            Persisted.As<StoredFile>(
                 new
                 {
                     Id = ThumbId,

@@ -104,7 +104,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         );
     }
 
-    private static ActivityUserRoleAssignment NewAssignment(
+    private static Assignment NewAssignment(
         Guid userId,
         Guid activityId,
         Guid roleId,
@@ -112,7 +112,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         DateTimeOffset createdAt
     )
     {
-        return Persisted.As<ActivityUserRoleAssignment>(
+        return Persisted.As<Assignment>(
             new
             {
                 UserId = userId,
@@ -163,7 +163,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             );
 
             db.Files.Add(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = ThumbnailId,
@@ -228,7 +228,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     SeedIds.ActivityModalityTypes.Presencial
                 )
             );
-            db.ActivityUserRoleAssignments.AddRange(
+            db.Assignments.AddRange(
                 NewAssignment(
                     TestSeedData.Users.MemberId,
                     ClimbingId,
@@ -423,7 +423,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         (await FindAsync<User>(TestSeedData.Users.BlockedId)).Should().NotBeNull();
         await Factory.QueryAsync(async db =>
         {
-            (await db.ActivityUserRoleAssignments.Select(a => a.UserId).ToListAsync(Ct))
+            (await db.Assignments.Select(a => a.UserId).ToListAsync(Ct))
                 .Should()
                 .Equal(TestSeedData.Users.BlockedId);
             (await db.EventTermsAcceptances.Select(a => a.UserId).ToListAsync(Ct))
@@ -590,7 +590,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().NotBeNull();
         await Factory.QueryAsync(async db =>
         {
-            (await db.ActivityUserRoleAssignments.CountAsync(Ct)).Should().Be(2);
+            (await db.Assignments.CountAsync(Ct)).Should().Be(2);
             (await db.EventTermsAcceptances.CountAsync(Ct))
                 .Should()
                 .Be(4, "the guardian's decisions are theirs and stay");
@@ -781,7 +781,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 )
             );
             db.Files.AddRange(
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = UploadId,
@@ -791,7 +791,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                         UploadedBy = child,
                     }
                 ),
-                Persisted.As<FileEntity>(
+                Persisted.As<StoredFile>(
                     new
                     {
                         Id = OtherUploadId,
@@ -822,8 +822,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         var resource = (await FindAsync<Resource>(ResourceId))!;
         resource.CreatedBy.Should().Be(other);
         resource.UpdatedBy.Should().Be(heir);
-        (await FindAsync<FileEntity>(UploadId))!.UploadedBy.Should().Be(heir);
-        (await FindAsync<FileEntity>(OtherUploadId))!.UploadedBy.Should().Be(other);
+        (await FindAsync<StoredFile>(UploadId))!.UploadedBy.Should().Be(heir);
+        (await FindAsync<StoredFile>(OtherUploadId))!.UploadedBy.Should().Be(other);
         (await FindAsync<User>(member)).Should().BeNull();
         (await FindAsync<User>(child)).Should().BeNull();
     }
@@ -1168,7 +1168,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     transaction
                 ),
                 LockedRows.Assignments => new NpgsqlCommand(
-                    "SELECT 1 FROM activity_user_role_assignments WHERE user_id = @id FOR UPDATE NOWAIT",
+                    "SELECT 1 FROM assignments WHERE user_id = @id FOR UPDATE NOWAIT",
                     connection,
                     transaction
                 ),

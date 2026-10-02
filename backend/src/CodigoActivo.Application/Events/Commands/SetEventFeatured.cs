@@ -42,8 +42,17 @@ public sealed class SetEventFeaturedCommandHandler(
             return Error.NotFound(ErrorCode.EventNotFound);
         }
 
-        FeaturedSelection.Choose(chosen, await events.ListFeaturedAsync(ct));
-        await uow.SaveChangesAsync(ct);
+        await uow.ExecuteInTransactionAsync(
+            async attempt =>
+            {
+                FeaturedSelection.UnfeatureAllBut(chosen, await events.ListFeaturedAsync(attempt));
+                await uow.SaveChangesAsync(attempt);
+                chosen.Feature();
+                await uow.SaveChangesAsync(attempt);
+                return true;
+            },
+            ct
+        );
 
         await cacheInvalidator.InvalidateAsync(CacheTags.Events);
         return Result.Success();

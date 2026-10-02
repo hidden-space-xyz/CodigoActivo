@@ -5,7 +5,7 @@ namespace CodigoActivo.Domain.Files;
 /// <summary>
 /// Stores and loads uploaded files, and tells which of them the content still references.
 /// </summary>
-public interface IFileRepository : IRepository<FileEntity>
+public interface IStoredFileRepository : IRepository<StoredFile>
 {
     /// <summary>
     /// Loads a file to change it.
@@ -13,7 +13,7 @@ public interface IFileRepository : IRepository<FileEntity>
     /// <param name="id">Identifier of the file.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the file, or <see langword="null"/> when it does not exist.</returns>
-    public Task<FileEntity?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    public Task<StoredFile?> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
     /// Loads the files that exist among the given ones.
@@ -21,7 +21,7 @@ public interface IFileRepository : IRepository<FileEntity>
     /// <param name="ids">Identifiers of the files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the existing files.</returns>
-    public Task<IReadOnlyList<FileEntity>> ListByIdsAsync(
+    public Task<IReadOnlyList<StoredFile>> ListByIdsAsync(
         IReadOnlyCollection<Guid> ids,
         CancellationToken ct = default
     );

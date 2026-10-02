@@ -15,7 +15,7 @@ namespace CodigoActivo.UnitTests.Application.News.Commands;
 public sealed class SetNewsItemFeaturedCommandHandlerTests
 {
     private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>().RunsTransactions();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly SetNewsItemFeaturedCommandHandler sut;
 
@@ -56,7 +56,11 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         chosen.Featured.Should().BeTrue();
         await news.Received(1).GetByIdAsync(chosen.Id, Arg.Any<CancellationToken>());
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await uow.Received(1)
+            .ExecuteInTransactionAsync(
+                Arg.Any<Func<CancellationToken, Task<bool>>>(),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -77,6 +81,26 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
         previous.Featured.Should().BeFalse();
         chosen.UpdatedAt.Should().BeNull();
         previous.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsyncOtherItemFeaturedSavesItsUnfeaturingBeforeFeaturingTheChosenOne()
+    {
+        var chosen = NewNewsItem();
+        var previous = NewNewsItem(featured: true);
+        news.Finds(chosen);
+        news.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([previous]);
+        var saved = new List<(bool Previous, bool Chosen)>();
+        uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => saved.Add((previous.Featured, chosen.Featured)));
+
+        var result = await sut.HandleAsync(
+            new SetNewsItemFeaturedCommand(chosen.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        saved.Should().Equal((false, false), (false, true));
     }
 
     [Fact]

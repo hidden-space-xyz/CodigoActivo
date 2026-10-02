@@ -10,7 +10,7 @@ namespace CodigoActivo.Domain.Activities;
 public class Activity : AuditableEntity, IAggregateRoot
 {
     private readonly List<ActivityRoleCapacity> roleCapacities = [];
-    private readonly List<ActivityUserRoleAssignment> assignments = [];
+    private readonly List<Assignment> assignments = [];
 
     private Activity() { }
 
@@ -62,7 +62,7 @@ public class Activity : AuditableEntity, IAggregateRoot
     /// <summary>
     /// Gets the signups of the activity.
     /// </summary>
-    public IReadOnlyCollection<ActivityUserRoleAssignment> Assignments => assignments;
+    public IReadOnlyCollection<Assignment> Assignments => assignments;
 
     /// <summary>
     /// Creates an activity in an event.
@@ -114,7 +114,7 @@ public class Activity : AuditableEntity, IAggregateRoot
     /// </summary>
     /// <param name="userId">Identifier of the person.</param>
     /// <returns>The signup, or <see langword="null"/> when the person is not signed up.</returns>
-    public ActivityUserRoleAssignment? AssignmentOf(Guid userId)
+    public Assignment? AssignmentOf(Guid userId)
     {
         return assignments.FirstOrDefault(assignment => assignment.UserId == userId);
     }
@@ -134,13 +134,7 @@ public class Activity : AuditableEntity, IAggregateRoot
         }
 
         assignments.Add(
-            new ActivityUserRoleAssignment(
-                userId,
-                Id,
-                roleTypeId,
-                SeedIds.AssignmentStatusTypes.Requested,
-                now
-            )
+            new Assignment(userId, Id, roleTypeId, SeedIds.AssignmentStatusTypes.Requested, now)
         );
         return Result.Success();
     }
@@ -180,7 +174,7 @@ public class Activity : AuditableEntity, IAggregateRoot
 
         assignments.Remove(assignment);
         assignments.Add(
-            new ActivityUserRoleAssignment(
+            new Assignment(
                 userId,
                 Id,
                 roleTypeId,

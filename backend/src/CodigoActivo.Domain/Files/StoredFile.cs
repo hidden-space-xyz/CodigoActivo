@@ -6,9 +6,9 @@ namespace CodigoActivo.Domain.Files;
 /// Uploaded file: its original name, the format detected from its content and who uploaded it.
 /// Replacing the content keeps the identity and the uploader.
 /// </summary>
-public class FileEntity : IdentifiableEntity, IAggregateRoot
+public class StoredFile : IdentifiableEntity, IAggregateRoot
 {
-    private FileEntity() { }
+    private StoredFile() { }
 
     /// <summary>
     /// Gets the original name, already sanitized.
@@ -39,7 +39,7 @@ public class FileEntity : IdentifiableEntity, IAggregateRoot
     /// <param name="now">Current time.</param>
     /// <param name="id">Stable identifier for seeded files; a new one otherwise.</param>
     /// <returns>The new file.</returns>
-    public static FileEntity Upload(
+    public static StoredFile Upload(
         string name,
         string extension,
         Guid uploaderId,
@@ -47,7 +47,7 @@ public class FileEntity : IdentifiableEntity, IAggregateRoot
         Guid? id = null
     )
     {
-        var file = new FileEntity { Id = id ?? Guid.NewGuid(), UploadedBy = uploaderId };
+        var file = new StoredFile { Id = id ?? Guid.NewGuid(), UploadedBy = uploaderId };
         file.Replace(name, extension, now);
         return file;
     }

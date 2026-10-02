@@ -89,8 +89,8 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             );
             if (assignmentStatusId is { } statusId)
             {
-                db.ActivityUserRoleAssignments.Add(
-                    Persisted.As<ActivityUserRoleAssignment>(
+                db.Assignments.Add(
+                    Persisted.As<Assignment>(
                         new
                         {
                             UserId = TestSeedData.Users.MemberId,
@@ -104,8 +104,8 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
 
             if (childAssignmentStatusId is { } childStatusId)
             {
-                db.ActivityUserRoleAssignments.Add(
-                    Persisted.As<ActivityUserRoleAssignment>(
+                db.Assignments.Add(
+                    Persisted.As<Assignment>(
                         new
                         {
                             UserId = TestSeedData.Users.MemberChildId,
@@ -121,9 +121,9 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         });
     }
 
-    private static FileEntity Thumbnail(Guid id)
+    private static StoredFile Thumbnail(Guid id)
     {
-        return Persisted.As<FileEntity>(
+        return Persisted.As<StoredFile>(
             new
             {
                 Id = id,

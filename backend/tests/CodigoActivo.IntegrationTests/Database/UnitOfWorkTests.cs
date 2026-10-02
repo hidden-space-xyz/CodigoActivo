@@ -4,6 +4,7 @@ using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.IntegrationTests.Infrastructure;
@@ -31,7 +32,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
 
         db.Users.Add(NewUser(UserId, UserEmail));
         db.Files.Add(
-            Persisted.As<FileEntity>(
+            Persisted.As<StoredFile>(
                 new
                 {
                     Id = FileId,
@@ -77,9 +78,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
                 }
             )
         );
-        db.ActivityUserRoleAssignments.Add(
-            Assignment(ActivityId, SeedIds.ActivityRoleTypes.Participant)
-        );
+        db.Assignments.Add(NewAssignment(ActivityId, SeedIds.ActivityRoleTypes.Participant));
         await db.SaveChangesAsync(Ct);
     }
 
@@ -105,9 +104,45 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         );
     }
 
-    private static ActivityUserRoleAssignment Assignment(Guid activityId, Guid roleTypeId)
+    private static Event FeaturedEvent()
     {
-        return Persisted.As<ActivityUserRoleAssignment>(
+        return Persisted.As<Event>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Title = "Destacado",
+                Subtitle = "Sub",
+                EventStartsAt = new DateOnly(2026, 7, 1),
+                EventEndsAt = new DateOnly(2026, 7, 2),
+                SignupStartsAt = Fixed,
+                SignupEndsAt = Fixed.AddDays(30),
+                Featured = true,
+                ThumbnailId = FileId,
+                CreatedAt = Fixed,
+                CreatedBy = UserId,
+            }
+        );
+    }
+
+    private static NewsItem FeaturedNewsItem()
+    {
+        return Persisted.As<NewsItem>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Title = "Destacada",
+                Subtitle = "Sub",
+                Featured = true,
+                ThumbnailId = FileId,
+                CreatedAt = Fixed,
+                CreatedBy = UserId,
+            }
+        );
+    }
+
+    private static Assignment NewAssignment(Guid activityId, Guid roleTypeId)
+    {
+        return Persisted.As<Assignment>(
             new
             {
                 UserId = UserId,
@@ -123,15 +158,13 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task SaveChangesAsyncSecondAssignmentOfAUserToAnActivityThrowsForAssignments()
     {
         await using var db = postgres.CreateContext();
-        db.ActivityUserRoleAssignments.Add(
-            Assignment(ActivityId, SeedIds.ActivityRoleTypes.Leader)
-        );
+        db.Assignments.Add(NewAssignment(ActivityId, SeedIds.ActivityRoleTypes.Leader));
         IUnitOfWork uow = db;
 
         var act = () => uow.SaveChangesAsync(Ct);
 
         var thrown = await act.Should().ThrowAsync<UniqueConstraintViolationException>();
-        thrown.Which.EntityType.Should().Be<ActivityUserRoleAssignment>();
+        thrown.Which.EntityType.Should().Be<Assignment>();
         thrown.Which.InnerException.Should().BeOfType<DbUpdateException>();
     }
 
@@ -149,12 +182,39 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
+    public async Task SaveChangesAsyncSecondFeaturedEventNamesTheEventEntity()
+    {
+        await using var db = postgres.CreateContext();
+        var seeded = await db.Events.SingleAsync(e => e.Id == EventId, Ct);
+        seeded.Feature();
+        await db.SaveChangesAsync(Ct);
+        db.Events.Add(FeaturedEvent());
+        IUnitOfWork uow = db;
+
+        var act = () => uow.SaveChangesAsync(Ct);
+
+        var thrown = await act.Should().ThrowAsync<UniqueConstraintViolationException>();
+        thrown.Which.EntityType.Should().Be<Event>();
+    }
+
+    [Fact]
+    public async Task SaveChangesAsyncSecondFeaturedNewsItemNamesTheNewsItemEntity()
+    {
+        await using var db = postgres.CreateContext();
+        db.News.AddRange(FeaturedNewsItem(), FeaturedNewsItem());
+        IUnitOfWork uow = db;
+
+        var act = () => uow.SaveChangesAsync(Ct);
+
+        var thrown = await act.Should().ThrowAsync<UniqueConstraintViolationException>();
+        thrown.Which.EntityType.Should().Be<NewsItem>();
+    }
+
+    [Fact]
     public async Task SaveChangesAsyncOtherDatabaseErrorsAreNotTranslated()
     {
         await using var db = postgres.CreateContext();
-        db.ActivityUserRoleAssignments.Add(
-            Assignment(Guid.NewGuid(), SeedIds.ActivityRoleTypes.Participant)
-        );
+        db.Assignments.Add(NewAssignment(Guid.NewGuid(), SeedIds.ActivityRoleTypes.Participant));
         IUnitOfWork uow = db;
 
         var act = () => uow.SaveChangesAsync(Ct);
@@ -167,14 +227,12 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using (var db = postgres.CreateContext())
         {
-            var current = await db.ActivityUserRoleAssignments.SingleAsync(
+            var current = await db.Assignments.SingleAsync(
                 a => a.UserId == UserId && a.ActivityId == ActivityId,
                 Ct
             );
-            db.ActivityUserRoleAssignments.Remove(current);
-            db.ActivityUserRoleAssignments.Add(
-                Assignment(ActivityId, SeedIds.ActivityRoleTypes.Volunteer)
-            );
+            db.Assignments.Remove(current);
+            db.Assignments.Add(NewAssignment(ActivityId, SeedIds.ActivityRoleTypes.Volunteer));
             IUnitOfWork uow = db;
 
             await uow.SaveChangesAsync(Ct);
@@ -182,9 +240,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
 
         await using var verify = postgres.CreateContext();
         var stored = await verify
-            .ActivityUserRoleAssignments.Where(a =>
-                a.UserId == UserId && a.ActivityId == ActivityId
-            )
+            .Assignments.Where(a => a.UserId == UserId && a.ActivityId == ActivityId)
             .ToListAsync(Ct);
         stored
             .Should()

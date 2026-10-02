@@ -9,7 +9,7 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
 
-public sealed class CatalogEntityTests
+public sealed class CatalogTests
 {
     [Fact]
     public void TermsDocumentCreateThenRewriteTrimsNameAndKeepsContent()

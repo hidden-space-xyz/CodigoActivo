@@ -645,9 +645,9 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync($"/api/events/{id}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var oldFile = await FindAsync<FileEntity>(oldThumbnailId);
+        var oldFile = await FindAsync<StoredFile>(oldThumbnailId);
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
-        var newFile = await FindAsync<FileEntity>(newThumbnailId);
+        var newFile = await FindAsync<StoredFile>(newThumbnailId);
         newFile.Should().NotBeNull();
     }
 
@@ -667,7 +667,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<Event>(id);
         stored.Should().BeNull();
-        var file = await FindAsync<FileEntity>(thumbnailId);
+        var file = await FindAsync<StoredFile>(thumbnailId);
         file.Should()
             .BeNull("the deleted event's thumbnail is orphaned and must be cascade-deleted");
     }

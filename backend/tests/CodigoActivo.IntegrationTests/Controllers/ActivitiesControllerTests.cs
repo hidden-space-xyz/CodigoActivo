@@ -469,8 +469,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             );
             foreach (var activityId in new[] { crowded, covered })
             {
-                db.ActivityUserRoleAssignments.Add(
-                    Persisted.As<ActivityUserRoleAssignment>(
+                db.Assignments.Add(
+                    Persisted.As<Assignment>(
                         new
                         {
                             UserId = TestSeedData.Users.MemberId,
@@ -481,8 +481,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                         }
                     )
                 );
-                db.ActivityUserRoleAssignments.Add(
-                    Persisted.As<ActivityUserRoleAssignment>(
+                db.Assignments.Add(
+                    Persisted.As<Assignment>(
                         new
                         {
                             UserId = TestSeedData.Users.MemberChildId,
@@ -493,8 +493,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                         }
                     )
                 );
-                db.ActivityUserRoleAssignments.Add(
-                    Persisted.As<ActivityUserRoleAssignment>(
+                db.Assignments.Add(
+                    Persisted.As<Assignment>(
                         new
                         {
                             UserId = TestSeedData.Users.PendingId,
@@ -633,7 +633,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<Activity>(id);
         stored.Should().BeNull();
-        var file = await FindAsync<FileEntity>(activityThumb);
+        var file = await FindAsync<StoredFile>(activityThumb);
         file.Should()
             .BeNull("the deleted activity's thumbnail is orphaned and must be cascade-deleted");
     }
@@ -649,7 +649,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.DeleteWithCsrfAsync($"/api/activities/{id}", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var file = await FindAsync<FileEntity>(thumb);
+        var file = await FindAsync<StoredFile>(thumb);
         file.Should()
             .NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
     }

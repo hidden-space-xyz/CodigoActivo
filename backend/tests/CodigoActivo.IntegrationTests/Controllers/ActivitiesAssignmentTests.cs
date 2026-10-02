@@ -112,8 +112,8 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         return Factory.SeedAsync(db =>
         {
-            db.ActivityUserRoleAssignments.Add(
-                Persisted.As<ActivityUserRoleAssignment>(
+            db.Assignments.Add(
+                Persisted.As<Assignment>(
                     new
                     {
                         ActivityId = activityId,
@@ -127,10 +127,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         });
     }
 
-    private Task<ActivityUserRoleAssignment?> FindAssignmentAsync(Guid activityId, Guid userId)
+    private Task<Assignment?> FindAssignmentAsync(Guid activityId, Guid userId)
     {
         return Factory.QueryAsync(db =>
-            db.ActivityUserRoleAssignments.FirstOrDefaultAsync(
+            db.Assignments.FirstOrDefaultAsync(
                 a => a.ActivityId == activityId && a.UserId == userId,
                 Ct
             )
@@ -183,7 +183,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
             .Single(r => r.StatusCode == HttpStatusCode.Conflict)
             .ShouldBeConflictAsync(ErrorCode.ActivityAssignmentAlreadyExists);
         var stored = await Factory.QueryAsync(db =>
-            db.ActivityUserRoleAssignments.CountAsync(
+            db.Assignments.CountAsync(
                 a => a.ActivityId == activityId && a.UserId == TestSeedData.Users.MemberId,
                 Ct
             )
