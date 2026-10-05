@@ -42,6 +42,12 @@ public sealed class DemoDataSeeder(
     /// </summary>
     private const int DemoPasswordBytes = 32;
 
+    /// <summary>
+    /// Largest demo image accepted from the image service, the same as the default upload limit, so
+    /// an oversized response is refused instead of being buffered in memory.
+    /// </summary>
+    private const int MaxDemoImageBytes = 10 * 1024 * 1024;
+
     private const int AdultCount = 20;
     private const int MemberAdultCount = 14;
     private const int ChildCount = 5;
@@ -615,7 +621,11 @@ public sealed class DemoDataSeeder(
 
     private async Task DownloadImagesAsync(IReadOnlyCollection<Guid> fileIds, CancellationToken ct)
     {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+        using var http = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(20),
+            MaxResponseContentBufferSize = MaxDemoImageBytes,
+        };
         using var throttle = new SemaphoreSlim(8, 8);
         await Task.WhenAll(fileIds.Select(id => DownloadImageAsync(http, throttle, id, ct)));
     }

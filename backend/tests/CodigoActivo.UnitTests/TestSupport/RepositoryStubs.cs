@@ -17,6 +17,7 @@ public static class RepositoryStubs
     {
         users.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(user);
         users.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
+        users.LockAsync(Arg.Any<User>(), Arg.Any<CancellationToken>()).Returns(user is not null);
     }
 
     public static void Finds(this IPartnerRepository partners, Partner? partner)

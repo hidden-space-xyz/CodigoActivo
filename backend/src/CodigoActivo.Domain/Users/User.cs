@@ -7,7 +7,8 @@ namespace CodigoActivo.Domain.Users;
 /// independent account, which logs in and needs an email, a phone and a DNI or NIE, or a dependent
 /// of a guardian, which has none of those and needs a birth date instead. Create them with
 /// <see cref="CreateIndependent"/> and <see cref="CreateDependent"/>, and edit them with
-/// <see cref="PlanProfileChange"/> and <see cref="ApplyProfileChange"/>, which own those rules.
+/// <see cref="PlanProfileChange"/> and <see cref="ApplyProfileChange"/>, which own those rules, or
+/// with <see cref="ApplyProfileChangeConfirmingEmail"/> when a new email must be confirmed first.
 /// </summary>
 public class User : IdentifiableEntity, IAggregateRoot
 {
@@ -27,6 +28,22 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// Gets the email value.
     /// </summary>
     public string? Email { get; private set; }
+
+    /// <summary>
+    /// Gets the email the holder asked to move the account to. It replaces <see cref="Email"/> only
+    /// once the code emailed to it is confirmed.
+    /// </summary>
+    public string? PendingEmail { get; private set; }
+
+    /// <summary>
+    /// Gets the hash of the emailed code that confirms the pending email.
+    /// </summary>
+    public string? EmailChangeCodeHash { get; private set; }
+
+    /// <summary>
+    /// Gets when the code that confirms the pending email expires.
+    /// </summary>
+    public DateTimeOffset? EmailChangeExpiresAt { get; private set; }
 
     /// <summary>
     /// Gets the phone value.
@@ -308,12 +325,70 @@ public class User : IdentifiableEntity, IAggregateRoot
     }
 
     /// <summary>
-    /// Applies a change planned for this account by <see cref="PlanProfileChange"/>.
+    /// Applies a change planned for this account by <see cref="PlanProfileChange"/>. A new email
+    /// replaces the stored one at once and drops any email change still waiting for confirmation.
     /// </summary>
     /// <param name="change">Change planned for this account.</param>
     /// <param name="now">Current timestamp, stored as the update time.</param>
     /// <exception cref="ArgumentException">The change was planned for another account.</exception>
     public void ApplyProfileChange(ProfileChange change, DateTimeOffset now)
+    {
+        EnsurePlannedHere(change);
+        if (change.NewEmail is not null)
+        {
+            ClearEmailChange();
+        }
+
+        Apply(change);
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Applies a change the holder of this account planned with <see cref="PlanProfileChange"/>
+    /// except its new email: the account keeps the stored one until
+    /// <see cref="ConfirmEmailChange"/> proves, with the code emailed to the new address, that the
+    /// holder controls it. A later request replaces this one.
+    /// </summary>
+    /// <param name="change">Change planned for this account; it must replace the email.</param>
+    /// <param name="codeHash">Hash of the code emailed to the new address.</param>
+    /// <param name="now">Current timestamp, stored as the update time.</param>
+    /// <param name="lifetime">How long the emailed code stays valid.</param>
+    /// <exception cref="ArgumentException">
+    /// The change was planned for another account or keeps the email.
+    /// </exception>
+    public void ApplyProfileChangeConfirmingEmail(
+        ProfileChange change,
+        string codeHash,
+        DateTimeOffset now,
+        TimeSpan lifetime
+    )
+    {
+        EnsurePlannedHere(change);
+        ArgumentException.ThrowIfNullOrWhiteSpace(codeHash);
+        PendingEmail =
+            change.NewEmail
+            ?? throw new ArgumentException("The profile change keeps the email.", nameof(change));
+        EmailChangeCodeHash = codeHash;
+        EmailChangeExpiresAt = now + lifetime;
+        ApplyKeepingEmail(change);
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Moves the account to the pending email once the code emailed to it was accepted.
+    /// </summary>
+    /// <param name="now">Current timestamp, stored as the update time.</param>
+    /// <exception cref="InvalidOperationException">No email change is waiting.</exception>
+    public void ConfirmEmailChange(DateTimeOffset now)
+    {
+        Email =
+            PendingEmail
+            ?? throw new InvalidOperationException("No email change is waiting for confirmation.");
+        ClearEmailChange();
+        UpdatedAt = now;
+    }
+
+    private void EnsurePlannedHere(ProfileChange change)
     {
         ArgumentNullException.ThrowIfNull(change);
         if (!ReferenceEquals(change.Account, this))
@@ -323,9 +398,13 @@ public class User : IdentifiableEntity, IAggregateRoot
                 nameof(change)
             );
         }
+    }
 
-        Apply(change);
-        UpdatedAt = now;
+    private void ClearEmailChange()
+    {
+        PendingEmail = null;
+        EmailChangeCodeHash = null;
+        EmailChangeExpiresAt = null;
     }
 
     private Result<ProfileChange> PlanIndependentChange(PersonDetails details, Guid? guardianId)
@@ -394,6 +473,15 @@ public class User : IdentifiableEntity, IAggregateRoot
 
     private void Apply(ProfileChange change)
     {
+        ApplyKeepingEmail(change);
+        if (change.Contact is { } contact)
+        {
+            Email = contact.Email;
+        }
+    }
+
+    private void ApplyKeepingEmail(ProfileChange change)
+    {
         FirstName = change.FirstName;
         LastName = change.LastName;
         Gender = change.Gender;
@@ -401,7 +489,6 @@ public class User : IdentifiableEntity, IAggregateRoot
         PromotionalConsent = change.PromotionalConsent;
         if (change.Contact is { } contact)
         {
-            Email = contact.Email;
             Phone = contact.Phone;
             SecondaryPhone = contact.SecondaryPhone;
             return;
@@ -626,15 +713,28 @@ public class User : IdentifiableEntity, IAggregateRoot
     }
 
     /// <summary>
-    /// Stores the protected secret of an authenticator that still has to be confirmed.
+    /// Stores the protected secret of an authenticator that still has to be confirmed. An account
+    /// that already uses an authenticator must return to email first, which takes a current code of
+    /// that authenticator, so a session and the password alone can never replace it.
     /// </summary>
     /// <param name="protectedKey">Protected shared secret.</param>
     /// <param name="now">Current timestamp.</param>
     /// <param name="lifetime">How long the enrollment can be confirmed.</param>
-    public void BeginAuthenticatorSetup(string protectedKey, DateTimeOffset now, TimeSpan lifetime)
+    /// <returns>A failed result when the account already uses an authenticator.</returns>
+    public Result BeginAuthenticatorSetup(
+        string protectedKey,
+        DateTimeOffset now,
+        TimeSpan lifetime
+    )
     {
+        if (TwoFactorMethod is TwoFactorMethod.Authenticator)
+        {
+            return Error.Conflict(ErrorCode.AuthenticatorAlreadyEnabled);
+        }
+
         PendingAuthenticatorKey = protectedKey;
         PendingAuthenticatorExpiresAt = now + lifetime;
+        return Result.Success();
     }
 
     /// <summary>
@@ -648,12 +748,19 @@ public class User : IdentifiableEntity, IAggregateRoot
     }
 
     /// <summary>
-    /// Promotes the pending authenticator to the active second factor.
+    /// Promotes the pending authenticator to the active second factor. An enrollment left pending
+    /// never replaces an authenticator that is already active.
     /// </summary>
     /// <param name="usedStep">Time step of the code that confirmed the enrollment.</param>
     /// <param name="now">Current timestamp.</param>
-    public void EnableAuthenticator(long usedStep, DateTimeOffset now)
+    /// <returns>A failed result when the account already uses an authenticator.</returns>
+    public Result EnableAuthenticator(long usedStep, DateTimeOffset now)
     {
+        if (TwoFactorMethod is TwoFactorMethod.Authenticator)
+        {
+            return Error.Conflict(ErrorCode.AuthenticatorAlreadyEnabled);
+        }
+
         AuthenticatorKey = PendingAuthenticatorKey;
         AuthenticatorLastUsedStep = usedStep;
         PendingAuthenticatorKey = null;
@@ -661,6 +768,7 @@ public class User : IdentifiableEntity, IAggregateRoot
         TwoFactorMethod = TwoFactorMethod.Authenticator;
         ClearLoginCode();
         UpdatedAt = now;
+        return Result.Success();
     }
 
     /// <summary>
@@ -750,6 +858,13 @@ public class User : IdentifiableEntity, IAggregateRoot
     public bool IsPendingVerification => UserStatusTypeId == SeedIds.UserStatusTypes.Pending;
 
     /// <summary>
+    /// Gets a value indicating whether the account keeps its email against anyone else who claims
+    /// it. An account nobody verified does not: a new registration with the address replaces it,
+    /// and so does an account whose holder confirms the address as their new email.
+    /// </summary>
+    public bool OwnsEmail => !IsPendingVerification;
+
+    /// <summary>
     /// Gets the hash of the verification code while the code can still be used.
     /// </summary>
     /// <param name="now">Current time.</param>
@@ -777,6 +892,16 @@ public class User : IdentifiableEntity, IAggregateRoot
     public string? UsablePasswordResetCodeHash(DateTimeOffset now)
     {
         return PasswordResetExpiresAt >= now ? PasswordResetCodeHash : null;
+    }
+
+    /// <summary>
+    /// Gets the hash of the code that confirms the pending email while the code can still be used.
+    /// </summary>
+    /// <param name="now">Current time.</param>
+    /// <returns>The hash, or <see langword="null"/> when no change waits or its code expired.</returns>
+    public string? UsableEmailChangeCodeHash(DateTimeOffset now)
+    {
+        return EmailChangeExpiresAt >= now ? EmailChangeCodeHash : null;
     }
 
     /// <summary>

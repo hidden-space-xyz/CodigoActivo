@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using AwesomeAssertions;
 using CodigoActivo.Application.Common.Querying;
 using Xunit;
@@ -16,6 +17,18 @@ public sealed class SortMapTests
     private static List<Row> Rows(params Row[] rows)
     {
         return [.. rows];
+    }
+
+    private static List<string> OrderingCalls(Expression expression)
+    {
+        var calls = new List<string>();
+        while (expression is MethodCallExpression call)
+        {
+            calls.Insert(0, call.Method.Name);
+            expression = call.Arguments[0];
+        }
+
+        return calls;
     }
 
     [Theory]
@@ -75,6 +88,29 @@ public sealed class SortMapTests
         var ordered = FullMap().Apply(rows.AsQueryable(), "nope,-a,other").ToList();
 
         ordered.Select(r => r.A).Should().ContainInOrder(2, 1);
+    }
+
+    [Fact]
+    public void ApplyRepeatedKeysKeepOnlyTheFirstOccurrenceOfEachKey()
+    {
+        var rows = Rows(
+            new Row(1, 5, 1, "x"),
+            new Row(2, 1, 2, "y"),
+            new Row(2, 9, 3, "z"),
+            new Row(1, 2, 4, "w")
+        );
+        var sort = string.Join(",", Enumerable.Repeat("-a,a,A,b,-B", 5_000));
+
+        var query = FullMap().Apply(rows.AsQueryable(), sort);
+
+        OrderingCalls(query.Expression)
+            .Should()
+            .Equal(
+                nameof(Queryable.OrderByDescending),
+                nameof(Queryable.ThenBy),
+                nameof(Queryable.ThenBy)
+            );
+        query.ToList().Select(r => r.Id).Should().ContainInOrder(2, 3, 4, 1);
     }
 
     [Fact]

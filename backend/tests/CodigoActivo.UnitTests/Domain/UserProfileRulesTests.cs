@@ -397,4 +397,103 @@ public sealed class UserProfileRulesTests
         act.Should().Throw<ArgumentException>();
         other.UpdatedAt.Should().BeNull();
     }
+
+    private static ProfileChange NewEmailChange(User account, string email = "new@test.com")
+    {
+        return account
+            .PlanProfileChange(AdultDetails(email, phone: "600999999"), null, Today)
+            .Value;
+    }
+
+    private static User AdultChangingEmail()
+    {
+        var account = StoredAdult();
+        account.ApplyProfileChangeConfirmingEmail(
+            NewEmailChange(account),
+            "hash",
+            Now,
+            TimeSpan.FromMinutes(15)
+        );
+        return account;
+    }
+
+    [Fact]
+    public void ApplyProfileChangeConfirmingEmailKeepsTheEmailUntilItIsConfirmed()
+    {
+        var account = AdultChangingEmail();
+
+        account.Email.Should().Be("ana@test.com");
+        account.Phone.Should().Be("600999999");
+        account.PendingEmail.Should().Be("new@test.com");
+        account.UsableEmailChangeCodeHash(Now.AddMinutes(15)).Should().Be("hash");
+        account.UsableEmailChangeCodeHash(Now.AddMinutes(16)).Should().BeNull();
+        account.UpdatedAt.Should().Be(Now);
+
+        account.ConfirmEmailChange(Now.AddMinutes(1));
+
+        account.Email.Should().Be("new@test.com");
+        account.PendingEmail.Should().BeNull();
+        account.EmailChangeCodeHash.Should().BeNull();
+        account.EmailChangeExpiresAt.Should().BeNull();
+        account.UpdatedAt.Should().Be(Now.AddMinutes(1));
+    }
+
+    [Fact]
+    public void ApplyProfileChangeConfirmingEmailOfAChangeKeepingTheEmailThrows()
+    {
+        var account = StoredAdult();
+        var change = account.PlanProfileChange(AdultDetails(phone: "600999999"), null, Today).Value;
+
+        var act = () =>
+            account.ApplyProfileChangeConfirmingEmail(
+                change,
+                "hash",
+                Now,
+                TimeSpan.FromMinutes(15)
+            );
+
+        act.Should().Throw<ArgumentException>();
+        account.Phone.Should().Be("600111222");
+        account.PendingEmail.Should().BeNull();
+        account.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void ApplyProfileChangeNewEmailDropsTheChangeWaitingForConfirmation()
+    {
+        var account = AdultChangingEmail();
+
+        account.ApplyProfileChange(NewEmailChange(account, "set-directly@test.com"), Now);
+
+        account.Email.Should().Be("set-directly@test.com");
+        account.PendingEmail.Should().BeNull();
+        account.UsableEmailChangeCodeHash(Now).Should().BeNull();
+    }
+
+    [Fact]
+    public void ApplyProfileChangeKeepingTheEmailKeepsTheChangeWaitingForConfirmation()
+    {
+        var account = AdultChangingEmail();
+
+        account.ApplyProfileChange(
+            account.PlanProfileChange(AdultDetails(), null, Today).Value,
+            Now
+        );
+
+        account.Email.Should().Be("ana@test.com");
+        account.PendingEmail.Should().Be("new@test.com");
+        account.UsableEmailChangeCodeHash(Now).Should().Be("hash");
+    }
+
+    [Fact]
+    public void ConfirmEmailChangeWithoutAChangeWaitingThrows()
+    {
+        var account = StoredAdult();
+
+        var act = () => account.ConfirmEmailChange(Now);
+
+        act.Should().Throw<InvalidOperationException>();
+        account.Email.Should().Be("ana@test.com");
+        account.UpdatedAt.Should().BeNull();
+    }
 }

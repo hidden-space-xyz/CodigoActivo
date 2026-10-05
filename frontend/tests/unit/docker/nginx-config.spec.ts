@@ -36,7 +36,7 @@ const securityHeaderNames = [
 const proxiedLocationHeaders = [
   'location = /sitemap.xml',
   'location = /robots.txt',
-  'location ~* ^/api/auth/(login|register|forgot-password|[^/]+/(verify|resend-verification|reset-password))/?$',
+  'location ~* ^/api/auth/(login|register|forgot-password|resend-verification|[^/]+/(verify|reset-password|confirm-email))/?$',
   'location ~* ^/api/users/[^/]+/(password|admin)/?$',
   'location /api/',
 ]
@@ -557,6 +557,16 @@ describe('nginx server hardening', () => {
 
   it('hides the server version', () => {
     expect(statementsOf(defaultConf, 'server_tokens')).toEqual(['server_tokens off;'])
+  })
+
+  it('listens on IPv4 only and refuses clients whose address is IPv6', () => {
+    const guard = findBlock(
+      extractBlocks(defaultConf, 'if'),
+      (block) => block.header === 'if ($remote_addr ~ ":")',
+    )
+
+    expect(statementsOf(defaultConf, 'listen')).toEqual(['listen 8080;'])
+    expect(statements(guard.body)).toEqual(['return 403;'])
   })
 
   it('rejects source maps in the asset and application locations', () => {

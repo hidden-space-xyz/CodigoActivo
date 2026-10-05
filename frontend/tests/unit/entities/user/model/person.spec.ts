@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  isSameEmail,
   minorBirthDateRange,
   parseDependentPerson,
   parseIndependentPerson,
@@ -144,6 +145,17 @@ describe('minorBirthDateRange', () => {
     expect(
       parseDependentPerson(child({ birthDate: '2008-07-04' }), { today: TODAY }).person,
     ).toBeNull()
+  })
+})
+
+describe('isSameEmail', () => {
+  it.each([
+    [' Ada@Example.test ', 'ada@example.test', true],
+    ['ada@example.test', 'ada.new@example.test', false],
+    ['', null, true],
+    [undefined, 'ada@example.test', false],
+  ])('compares %j with %j ignoring spacing and case', (first, second, same) => {
+    expect(isSameEmail(first, second)).toBe(same)
   })
 })
 

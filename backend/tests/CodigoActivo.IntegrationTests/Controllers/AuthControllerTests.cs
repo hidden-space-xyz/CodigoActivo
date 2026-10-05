@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Contracts;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -52,15 +53,34 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             NewAdultRequest(),
             Ct
         );
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
-        return (body!.Adult.Id, Factory.EmailSender.LastOtpSentTo(NewAdultEmail));
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var adult = await FindByEmailAsync(NewAdultEmail);
+        return (adult!.Id, Factory.EmailSender.LastOtpSentTo(NewAdultEmail));
+    }
+
+    private Task<User?> FindByEmailAsync(string email)
+    {
+        return Factory.QueryAsync(db =>
+            Task.FromResult(db.Users.SingleOrDefault(u => u.Email == email))
+        );
     }
 
     private Task<int> CountNewAdultsAsync()
     {
         return Factory.QueryAsync(db =>
             Task.FromResult(db.Users.Count(u => u.Email == NewAdultEmail))
+        );
+    }
+
+    private static Task<HttpResponseMessage> ResendVerificationAsync(
+        HttpClient client,
+        string email
+    )
+    {
+        return client.PostJsonAsync(
+            "/api/auth/resend-verification",
+            new ResendVerificationRequest(email),
+            Ct
         );
     }
 
@@ -80,29 +100,19 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task RegisterNewAdultReturnsCreatedSendsOtpAndPersistsPending()
+    public async Task RegisterNewAdultAnswersNoContentSendsOtpAndPersistsPending()
     {
         var client = CreateClient();
 
         var response = await client.PostJsonAsync("/api/auth/register", NewAdultRequest(), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        response.Headers.Location.Should().NotBeNull();
-        var raw = await response.Content.ReadAsStringAsync(Ct);
-        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
-        body!.Minors.Should().BeEmpty();
-        body.Adult.Email.Should().Be(NewAdultEmail);
-        body.Adult.Status.Id.Should().Be(SeedIds.UserStatusTypes.Pending);
-        body.Adult.Gender.Should().Be(Gender.Female);
-        body.Adult.IsAdmin.Should().BeFalse();
-        body.Adult.Type.Should().BeNull();
-
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await response.Content.ReadAsStringAsync(Ct)).Should().BeEmpty();
         var otp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
-        raw.Should()
-            .NotContain($"\"{otp}\"", "the OTP must never be returned in the HTTP response");
 
-        var stored = await FindAsync<User>(body.Adult.Id);
+        var stored = await FindByEmailAsync(NewAdultEmail);
         stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        stored.IsAdmin.Should().BeFalse();
         stored.Gender.Should().Be(Gender.Female);
         stored.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         stored.OtpCodeHash.Should().NotBeNullOrEmpty();
@@ -132,17 +142,14 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
-        body!.Minors.Should().HaveCount(1);
-        body.Minors[0].Type.Should().BeNull();
-
-        var storedAdult = await FindAsync<User>(body.Adult.Id);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var storedAdult = await FindByEmailAsync(NewAdultEmail);
         storedAdult!.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
 
-        var storedMinor = await FindAsync<User>(body.Minors[0].Id);
-        storedMinor!.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
-        storedMinor.ParentId.Should().Be(body.Adult.Id);
+        var storedMinor = await Factory.QueryAsync(db =>
+            Task.FromResult(db.Users.Single(u => u.ParentId == storedAdult.Id))
+        );
+        storedMinor.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
         storedMinor.Gender.Should().Be(Gender.Other);
     }
 
@@ -281,9 +288,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
-        var stored = await FindAsync<User>(body!.Adult.Id);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var stored = await FindByEmailAsync(NewAdultEmail);
         stored!.NationalId.Should().Be(TestSeedData.MemberNationalId);
         stored.Phone.Should().Be("+34600000002");
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
@@ -292,7 +298,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task RegisterEmailOfAnotherAccountReturnsConflict()
+    public async Task RegisterEmailOfAVerifiedAccountAnswersAlikeAndOnlyNotifiesItsHolder()
     {
         var client = CreateClient();
 
@@ -302,8 +308,42 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        await response.ShouldBeConflictAsync(ErrorCode.UserEmailAlreadyInUse);
-        (await CountNewAdultsAsync()).Should().Be(0);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var notice = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
+        notice.ToAddress.Should().Be(TestSeedData.MemberEmail);
+        notice.Subject.Should().Be(AppStrings.EmailsEmailInUseSubject);
+        (
+            await Factory.QueryAsync(db =>
+                Task.FromResult(db.Users.Count(u => u.Email == TestSeedData.MemberEmail))
+            )
+        )
+            .Should()
+            .Be(1);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.FirstName.Should().Be("Marta");
+    }
+
+    [Fact]
+    public async Task RegisterEmailOfAnUnverifiedAccountReplacesItAndKeepsItsLegalCopy()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(email: TestSeedData.PendingEmail),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().BeNull();
+        var replacement = await FindByEmailAsync(TestSeedData.PendingEmail);
+        replacement!.FirstName.Should().Be("Nadia");
+        replacement.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        (await FindAsync<DeletedAccount>(TestSeedData.Users.PendingId)).Should().NotBeNull();
+        Factory
+            .EmailSender.Sent.Should()
+            .ContainSingle()
+            .Which.TextBody.Should()
+            .Contain($"verify-account#userId={replacement.Id}&code=");
     }
 
     [Theory]
@@ -347,11 +387,12 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindByEmailAsync("new.adult@mailinator.com")).Should().NotBeNull();
     }
 
     [Fact]
-    public async Task RegisterSecondaryPhoneIsStoredAndReturned()
+    public async Task RegisterSecondaryPhoneIsStored()
     {
         var client = CreateClient();
 
@@ -361,11 +402,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
-        body!.Adult.Phone.Should().Be("+34600000099");
-        body.Adult.SecondaryPhone.Should().Be("+34700000099");
-        (await FindAsync<User>(body.Adult.Id))!.SecondaryPhone.Should().Be("+34700000099");
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var stored = await FindByEmailAsync(NewAdultEmail);
+        stored!.Phone.Should().Be("+34600000099");
+        stored.SecondaryPhone.Should().Be("+34700000099");
     }
 
     [Theory]
@@ -426,12 +466,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var body = await response.ReadJsonAsync<RegisterResponse>(Ct);
-        body!.Adult.NationalId.Should().Be(NewAdultNationalId);
-        body.Adult.PromotionalConsent.Should().BeTrue();
-        body.Adult.BirthDate.Should().BeNull();
-        var stored = await FindAsync<User>(body.Adult.Id);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var stored = await FindByEmailAsync(NewAdultEmail);
         stored!.NationalId.Should().Be(NewAdultNationalId);
         stored.PromotionalConsent.Should().BeTrue();
         stored.BirthDate.Should().BeNull();
@@ -549,18 +585,15 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResendVerificationWithinCooldownRejected()
+    public async Task ResendVerificationWithinCooldownAnswersAlikeAndSendsNothing()
     {
         var client = CreateClient();
-        var (userId, _) = await RegisterPendingAdultAsync(client);
+        await RegisterPendingAdultAsync(client);
 
-        var response = await client.PostJsonAsync(
-            $"/api/auth/{userId}/resend-verification",
-            body: null,
-            Ct
-        );
+        var response = await ResendVerificationAsync(client, NewAdultEmail);
 
-        await response.ShouldBeConflictAsync(ErrorCode.OtpResendCooldownActive);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory.EmailSender.Sent.Should().HaveCount(1);
     }
 
     [Fact]
@@ -570,11 +603,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var (userId, _) = await RegisterPendingAdultAsync(client);
 
         Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
-        var resend = await client.PostJsonAsync(
-            $"/api/auth/{userId}/resend-verification",
-            body: null,
-            Ct
-        );
+        var resend = await ResendVerificationAsync(client, " New.Adult@CodigoActivo.test ");
 
         resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
         Factory.EmailSender.Sent.Should().HaveCount(2);
@@ -595,11 +624,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var (userId, firstOtp) = await RegisterPendingAdultAsync(client);
 
         Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
-        using var resend = await client.PostJsonAsync(
-            $"/api/auth/{userId}/resend-verification",
-            body: null,
-            Ct
-        );
+        using var resend = await ResendVerificationAsync(client, NewAdultEmail);
         resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var secondOtp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
         secondOtp.Should().NotBe(firstOtp);
@@ -619,18 +644,29 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         verify.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    [Fact]
-    public async Task ResendVerificationActiveUserRejected()
+    [Theory]
+    [InlineData(TestSeedData.MemberEmail)]
+    [InlineData("nobody@codigoactivo.test")]
+    public async Task ResendVerificationWithoutAPendingAccountAnswersAlikeAndSendsNothing(
+        string email
+    )
     {
         var client = CreateClient();
 
-        var response = await client.PostJsonAsync(
-            $"/api/auth/{TestSeedData.Users.MemberId}/resend-verification",
-            body: null,
-            Ct
-        );
+        var response = await ResendVerificationAsync(client, email);
 
-        await response.ShouldBeConflictAsync(ErrorCode.OtpResendNotAllowed);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ResendVerificationMalformedEmailReturnsValidationError()
+    {
+        var client = CreateClient();
+
+        var response = await ResendVerificationAsync(client, "not-an-email");
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]

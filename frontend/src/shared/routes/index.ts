@@ -28,6 +28,7 @@ interface RouteNamedMap {
   login: NamedRoute<'login', '/login'>
   'login-two-factor': NamedRoute<'login-two-factor', '/login/verify'>
   'verify-account': NamedRoute<'verify-account', '/verify-account'>
+  'confirm-email': NamedRoute<'confirm-email', '/confirm-email'>
   'forgot-password': NamedRoute<'forgot-password', '/forgot-password'>
   'reset-password': NamedRoute<'reset-password', '/reset-password'>
   account: NamedRoute<'account', '/account'>

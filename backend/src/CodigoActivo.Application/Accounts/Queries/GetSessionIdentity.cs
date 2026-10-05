@@ -14,8 +14,10 @@ public sealed record GetSessionIdentityQuery(Guid UserId, Guid SessionId)
     : IQuery<SessionIdentity?>;
 
 /// <summary>
-/// Resolves the account behind a live session: an active account with a password whose session
-/// row exists and has not expired.
+/// Resolves the account behind a live session: an active account with a password that is not
+/// locked after repeated wrong passwords, whose session row exists and has not expired. Locking an
+/// account also deletes its sessions; checking the lock here keeps a session the deletion missed
+/// from outliving it.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -45,6 +47,7 @@ public sealed class GetSessionIdentityQueryHandler(
                     candidate.Id == query.UserId
                     && candidate.UserStatusTypeId == SeedIds.UserStatusTypes.Active
                     && candidate.PasswordHash != null
+                    && candidate.PasswordLockedAt == null
                     && readStore.UserSessions.Any(row =>
                         row.Id == query.SessionId
                         && row.UserId == candidate.Id

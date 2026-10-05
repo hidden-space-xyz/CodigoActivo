@@ -5,7 +5,6 @@ import type {
   EventHistoryResponse,
   RegisterMinorRequest,
   RegisterRequest,
-  RegisterResponse,
   SaveEventRatingRequest,
   UpdateUserRequest,
   UserResponse,
@@ -24,7 +23,6 @@ import type {
   AccountHistoryEntry,
   AccountProfile,
   AuthenticatorSetup,
-  RegistrationResult,
 } from '../model/types'
 
 /** Maps the signed-in user to their profile; missing contact details become empty text. */
@@ -163,9 +161,4 @@ export function toSaveEventRatingRequest(input: EventRatingInput): SaveEventRati
 /** Builds the body that registers an adult together with their minors. */
 export function toRegisterRequest(input: RegistrationInput): RegisterRequest {
   return { ...input.adult, password: input.password, minors: input.minors.map(toMinorRequest) }
-}
-
-/** Reduces the register response to what the success step needs. */
-export function toRegistrationResult(response: RegisterResponse): RegistrationResult {
-  return { adultId: response.adult.id, minorCount: response.minors.length }
 }

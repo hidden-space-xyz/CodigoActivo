@@ -130,6 +130,18 @@ public sealed class GetSessionIdentityQueryHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncAccountLockedAfterWrongPasswordsReturnsNull()
+    {
+        var user = NewUserRow(passwordLockedAt: Now.AddMinutes(-1));
+        store.Users.Add(user);
+        store.UserSessions.Add(Session(user.Id, Now.AddDays(1)));
+
+        var identity = await QueryAsync(user.Id);
+
+        identity.Should().BeNull();
+    }
+
+    [Fact]
     public async Task HandleAsyncAccountWithoutPasswordReturnsNull()
     {
         var user = NewUserRow(passwordHash: null);

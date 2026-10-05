@@ -19,4 +19,9 @@ public enum AccountDeletionOrigin
     /// A guardian deleted one of their dependents.
     /// </summary>
     Guardian = 3,
+
+    /// <summary>
+    /// Another account claimed the email of this account, which nobody had verified.
+    /// </summary>
+    EmailClaimed = 4,
 }

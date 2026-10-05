@@ -31,7 +31,13 @@ public sealed class AccountSecurityNotifier(
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task NotifyAsync(User user, AccountSecurityChange change, CancellationToken ct)
     {
-        return SendAsync(user.Email, user.FirstName, change, maskedNewEmail: null, ct);
+        return SendAsync(
+            user.Email,
+            AccountEmails.RecipientName(user),
+            change,
+            maskedNewEmail: null,
+            ct
+        );
     }
 
     /// <summary>

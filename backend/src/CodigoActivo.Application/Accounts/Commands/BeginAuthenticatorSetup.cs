@@ -19,7 +19,8 @@ public sealed record BeginAuthenticatorSetupCommand(Guid UserId, AuthenticatorSe
 /// <summary>
 /// Executes the command that creates a new shared secret. The user re-enters their password so a
 /// stolen session cannot replace the second factor, and the secret only becomes active once
-/// <see cref="ConfirmAuthenticatorCommandHandler"/> sees a code generated from it.
+/// <see cref="ConfirmAuthenticatorCommandHandler"/> sees a code generated from it. An account that
+/// already uses an authenticator is refused: it returns to email first, which takes a current code.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -67,11 +68,16 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
         }
 
         var secret = totp.GenerateSecret();
-        user.BeginAuthenticatorSetup(
+        var begun = user.BeginAuthenticatorSetup(
             protector.Protect(secret),
             clock.UtcNow,
             options.SetupLifetime
         );
+        if (begun.IsFailure)
+        {
+            return begun.Error!;
+        }
+
         await uow.SaveChangesAsync(ct);
 
         var account = user.Email ?? user.Id.ToString();

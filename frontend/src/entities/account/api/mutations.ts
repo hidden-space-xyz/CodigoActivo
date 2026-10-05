@@ -16,6 +16,7 @@ import {
   beginAuthenticatorSetupRequest,
   changeAccountPasswordRequest,
   confirmAuthenticatorRequest,
+  confirmEmailChangeRequest,
   deleteAccountChildRequest,
   deleteAccountRequest,
   disableAuthenticatorRequest,
@@ -31,9 +32,9 @@ import {
 } from './requests'
 
 /**
- * Mutation options of the account. Changes to the second factor refresh the profile, changes to
- * the household refresh the children and a rating refreshes the history; the rest touch nothing
- * cached, or leave it to the caller.
+ * Mutation options of the account. Changes to the second factor and a confirmed email change
+ * refresh the profile, changes to the household refresh the children and a rating refreshes the
+ * history; the rest touch nothing cached, or leave it to the caller.
  */
 export const accountMutations = {
   /** Saves the profile of `userId` and resolves to the stored one. */
@@ -92,7 +93,7 @@ export const accountMutations = {
         saveAccountEventRatingRequest(eventId, input),
       meta: { invalidates: [accountKeys.history()] },
     }),
-  /** Registers an adult with their minors and resolves to what the success step shows. */
+  /** Registers an adult with their minors; the API answers alike for a known email. */
   register: () =>
     mutationOptions({
       mutationFn: (input: RegistrationInput) => registerRequest(input),
@@ -102,9 +103,16 @@ export const accountMutations = {
       mutationFn: ({ userId, otp }: { userId: string; otp: string }) =>
         verifyAccountRequest(userId, otp),
     }),
+  /** Emails a new verification link to the pending account of an address, if there is one. */
   resendVerification: () =>
     mutationOptions({
-      mutationFn: (userId: string) => resendVerificationRequest(userId),
+      mutationFn: (email: string) => resendVerificationRequest(email),
+    }),
+  confirmEmailChange: () =>
+    mutationOptions({
+      mutationFn: ({ userId, code }: { userId: string; code: string }) =>
+        confirmEmailChangeRequest(userId, code),
+      meta: { invalidates: [accountKeys.profile()] },
     }),
   forgotPassword: () =>
     mutationOptions({

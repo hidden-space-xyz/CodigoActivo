@@ -3,12 +3,12 @@ import { onMounted } from 'vue'
 
 import { useAccountVerification } from '../model/use-account-verification'
 import { useLinkFragment } from '@/shared/lib/navigation'
-import { AppIcon } from '@/shared/ui/app-icon'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
+import { StatusPanel } from '@/shared/ui/status-panel'
 
 const linkParam = useLinkFragment()
-const { state, errorMessage, verify, resend, canResend, isResending } = useAccountVerification()
+const { state, errorMessage, verify, resendForm, resend, isResending } = useAccountVerification()
 
 onMounted(() => {
   verify(linkParam('userId'), linkParam('code'))
@@ -24,54 +24,58 @@ onMounted(() => {
 
     <section class="verify-body">
       <div class="ca-container--narrow">
-        <div class="verify-card" :class="`verify-card--${state}`">
-          <template v-if="state === 'verifying'">
-            <span class="verify-card__icon" aria-hidden="true">
-              <AppIcon name="spinner" spin />
-            </span>
-            <p class="verify-card__text" aria-live="polite">
-              {{ $t('pages.verifyAccount.verifying') }}
-            </p>
-          </template>
+        <StatusPanel
+          v-if="state === 'verifying'"
+          state="pending"
+          :text="$t('pages.verifyAccount.verifying')"
+        />
 
-          <template v-else-if="state === 'success'">
-            <div class="verify-card__icon verify-card__icon--ok" aria-hidden="true">✓</div>
-            <h2 class="verify-card__title">{{ $t('pages.verifyAccount.successTitle') }}</h2>
-            <p class="verify-card__text">
-              {{ $t('pages.verifyAccount.successText') }}
-            </p>
+        <StatusPanel
+          v-else-if="state === 'success'"
+          state="success"
+          :title="$t('pages.verifyAccount.successTitle')"
+          :text="$t('pages.verifyAccount.successText')"
+        >
+          <template #actions>
             <BrandButton :to="{ name: 'login' }" variant="primary">{{
               $t('common.login')
             }}</BrandButton>
           </template>
+        </StatusPanel>
 
-          <template v-else>
-            <div class="verify-card__icon verify-card__icon--error" aria-hidden="true">!</div>
-            <h2 class="verify-card__title">{{ $t('pages.verifyAccount.errorTitle') }}</h2>
-            <p class="verify-card__text" role="alert">
-              {{ errorMessage ?? $t('pages.verifyAccount.defaultError') }}
-            </p>
-            <p v-if="canResend" class="verify-card__hint">
-              {{ $t('pages.verifyAccount.hint') }}
-            </p>
-            <p v-else class="verify-card__hint">
-              {{ $t('pages.verifyAccount.incompleteHint') }}
-            </p>
-            <div class="verify-card__actions">
-              <BrandButton
-                v-if="canResend"
-                variant="primary"
-                :loading="isResending"
-                @click="resend"
-              >
-                {{ $t('pages.verifyAccount.resend') }}
-              </BrandButton>
-              <BrandButton :to="{ name: 'home' }" variant="ghost">{{
-                $t('common.backToHome')
-              }}</BrandButton>
-            </div>
+        <StatusPanel
+          v-else
+          state="error"
+          :title="$t('pages.verifyAccount.errorTitle')"
+          :text="errorMessage ?? $t('pages.verifyAccount.defaultError')"
+          :hint="$t('pages.verifyAccount.hint')"
+        >
+          <form class="verify-resend" @submit.prevent="resend">
+            <label class="verify-resend__label" for="verify-resend-email">{{
+              $t('common.emailLong')
+            }}</label>
+            <el-input
+              id="verify-resend-email"
+              v-model="resendForm.email"
+              type="email"
+              inputmode="email"
+              autocomplete="email"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              :maxlength="256"
+              required
+            />
+            <BrandButton type="submit" variant="primary" block :loading="isResending">
+              {{ $t('pages.verifyAccount.resend') }}
+            </BrandButton>
+          </form>
+          <template #actions>
+            <BrandButton :to="{ name: 'home' }" variant="ghost">{{
+              $t('common.backToHome')
+            }}</BrandButton>
           </template>
-        </div>
+        </StatusPanel>
       </div>
     </section>
   </div>
@@ -82,75 +86,18 @@ onMounted(() => {
   padding: 24px var(--ca-gutter) 80px;
 }
 
-.verify-card {
-  max-width: 540px;
-  margin: 0 auto;
-  text-align: center;
-  background: var(--ca-bg-elevated);
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 20px;
-  padding: 44px 36px;
-}
-
-.verify-card__icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
+.verify-resend {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  margin: 0 auto 20px;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 360px;
+  margin: 20px auto 0;
+  text-align: left;
 }
 
-.verify-card__icon--ok {
-  background: var(--ca-success-soft);
-  border: 1px solid var(--ca-success);
-  color: var(--ca-success);
-}
-
-.verify-card__icon--error {
-  background: var(--ca-danger-soft);
-  border: 1px solid var(--ca-danger);
-  color: var(--ca-danger);
-  font-weight: 700;
-}
-
-.verify-card__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 24px;
-  color: var(--ca-text-bright);
-}
-
-.verify-card__text {
-  margin-top: 10px;
-  font-size: 15.5px;
-  line-height: 1.6;
+.verify-resend__label {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--ca-text-muted);
-}
-
-.verify-card__hint {
-  margin-top: 12px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--ca-text-muted);
-}
-
-.verify-card__actions {
-  display: flex;
-  gap: 14px;
-  justify-content: center;
-  margin-top: 24px;
-  flex-wrap: wrap;
-}
-
-.verify-card--success :deep(.base-button),
-.verify-card--verifying {
-  margin-top: 0;
-}
-
-.verify-card--success .base-button {
-  margin-top: 24px;
 }
 </style>

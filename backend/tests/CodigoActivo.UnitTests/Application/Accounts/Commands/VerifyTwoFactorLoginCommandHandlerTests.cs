@@ -30,7 +30,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     {
         sut = new VerifyTwoFactorLoginCommandHandler(
             users,
-            uow,
+            uow.RunsTransactions(),
             clock,
             new OtpValidator(new FakePasswordHasher()),
             new AuthenticatorCodeVerifier(
@@ -216,6 +216,60 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
                 $"The second factor of an account was locked after {options.MaxFailedAttempts} wrong codes"
             )
             .And.NotContain(user.Id.ToString());
+    }
+
+    [Fact]
+    public async Task HandleAsyncChecksTheCodeWithTheAccountRowLocked()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+
+        await VerifyAsync(user.Id, "000000");
+
+        Received.InOrder(() =>
+        {
+            _ = uow.ExecuteInTransactionAsync(
+                Arg.Any<Func<CancellationToken, Task<Result>>>(),
+                Arg.Any<CancellationToken>()
+            );
+            _ = users.LockAsync(user, Arg.Any<CancellationToken>());
+            _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
+    public async Task HandleAsyncLockoutStoredByAParallelAttemptRefusesTheCode()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+        users
+            .LockAsync(user, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                Persisted.Overwrite(
+                    user,
+                    new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(15) }
+                );
+                return true;
+            });
+
+        var result = await VerifyAsync(user.Id, "123456");
+
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        user.LastLoginAt.Should().BeNull();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncAccountGoneOnceLockedReturnsNotFound()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+        users.LockAsync(user, Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await VerifyAsync(user.Id, "123456");
+
+        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

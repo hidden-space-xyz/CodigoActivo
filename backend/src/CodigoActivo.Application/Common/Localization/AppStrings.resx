@@ -88,6 +88,51 @@ Equipo de Código Activo</value>
   <data name="emails.verification.ignoreNote" xml:space="preserve">
     <value>Si no has creado una cuenta en Código Activo, puedes ignorar este mensaje.</value>
   </data>
+  <data name="emails.emailChange.subject" xml:space="preserve">
+    <value>Confirma tu nuevo correo de Código Activo</value>
+  </data>
+  <data name="emails.emailChange.heading" xml:space="preserve">
+    <value>Confirma tu nuevo correo</value>
+  </data>
+  <data name="emails.emailChange.introText" xml:space="preserve">
+    <value>Se ha pedido usar esta dirección en una cuenta de Código Activo. Para confirmarla puedes abrir este enlace:</value>
+  </data>
+  <data name="emails.emailChange.introHtml" xml:space="preserve">
+    <value>Se ha pedido usar esta dirección en una cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Para confirmarla, pulsa el botón:</value>
+  </data>
+  <data name="emails.emailChange.buttonLabel" xml:space="preserve">
+    <value>Confirmar mi correo</value>
+  </data>
+  <data name="emails.emailChange.expiryText" xml:space="preserve">
+    <value>El enlace caduca en {0} minutos. Hasta que lo abras, la cuenta sigue usando su correo anterior.</value>
+  </data>
+  <data name="emails.emailChange.expiryHtml" xml:space="preserve">
+    <value>El enlace caduca en &lt;b&gt;{0} minutos&lt;/b&gt;. Hasta que lo abras, la cuenta sigue usando su correo anterior.</value>
+  </data>
+  <data name="emails.emailChange.ignoreNote" xml:space="preserve">
+    <value>Si no has pedido este cambio, puedes ignorar este mensaje: la cuenta no cambiará.</value>
+  </data>
+  <data name="emails.emailInUse.subject" xml:space="preserve">
+    <value>Ya tienes una cuenta en Código Activo</value>
+  </data>
+  <data name="emails.emailInUse.heading" xml:space="preserve">
+    <value>Ya tienes una cuenta</value>
+  </data>
+  <data name="emails.emailInUse.introText" xml:space="preserve">
+    <value>Alguien ha intentado usar esta dirección para otra cuenta de Código Activo. Como ya tiene una, no se ha creado ni cambiado nada.</value>
+  </data>
+  <data name="emails.emailInUse.introHtml" xml:space="preserve">
+    <value>Alguien ha intentado usar esta dirección para otra cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Como ya tiene una, no se ha creado ni cambiado nada.</value>
+  </data>
+  <data name="emails.emailInUse.buttonLabel" xml:space="preserve">
+    <value>Iniciar sesión</value>
+  </data>
+  <data name="emails.emailInUse.recovery" xml:space="preserve">
+    <value>Si has sido tú y no recuerdas la contraseña, puedes restablecerla desde «¿Has olvidado tu contraseña?», en la página de inicio de sesión.</value>
+  </data>
+  <data name="emails.emailInUse.ignoreNote" xml:space="preserve">
+    <value>Si no has sido tú, puedes ignorar este mensaje.</value>
+  </data>
   <data name="emails.passwordReset.subject" xml:space="preserve">
     <value>Restablece tu contraseña de Código Activo</value>
   </data>

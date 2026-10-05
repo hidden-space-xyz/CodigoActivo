@@ -24,6 +24,29 @@ public interface IAccountEmailComposer
     );
 
     /// <summary>
+    /// Composes the message that confirms the new email an account holder asked for.
+    /// </summary>
+    /// <param name="recipient">New address receiving the message.</param>
+    /// <param name="userId">Identifier of the account.</param>
+    /// <param name="code">One-time confirmation code.</param>
+    /// <param name="lifetime">Validity of the code.</param>
+    /// <returns>The composed message.</returns>
+    public EmailMessage EmailChangeConfirmation(
+        EmailRecipient recipient,
+        Guid userId,
+        string code,
+        TimeSpan lifetime
+    );
+
+    /// <summary>
+    /// Composes the notice that someone tried to use an address that already has an account for
+    /// another one, sent instead of the link that would verify the address.
+    /// </summary>
+    /// <param name="recipient">Holder of the account that has the address.</param>
+    /// <returns>The composed message.</returns>
+    public EmailMessage EmailInUse(EmailRecipient recipient);
+
+    /// <summary>
     /// Composes the message that lets an account holder choose a new password.
     /// </summary>
     /// <param name="recipient">Account holder receiving the message.</param>

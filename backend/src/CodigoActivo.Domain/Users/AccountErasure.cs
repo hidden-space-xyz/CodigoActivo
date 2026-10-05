@@ -30,4 +30,17 @@ public sealed record AccountErasure(
             : AccountDeletionOrigin.Administrator;
         return new AccountErasure(origin, actorId, now);
     }
+
+    /// <summary>
+    /// Describes the deletion of an account nobody verified whose email another account takes: a
+    /// new registration with the address, or an account whose holder confirmed it as their new
+    /// email.
+    /// </summary>
+    /// <param name="claimantId">Identifier of the account that takes the email.</param>
+    /// <param name="now">Current time.</param>
+    /// <returns>The description of the deletion.</returns>
+    public static AccountErasure ForClaimedEmail(Guid claimantId, DateTimeOffset now)
+    {
+        return new AccountErasure(AccountDeletionOrigin.EmailClaimed, claimantId, now);
+    }
 }

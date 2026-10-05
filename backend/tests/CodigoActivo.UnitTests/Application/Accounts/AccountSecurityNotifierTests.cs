@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Localization;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
@@ -28,7 +29,7 @@ public sealed class AccountSecurityNotifierTests
         );
     }
 
-    private static User NewUser(string? email = "owner@test.com")
+    private static User NewUser(string? email = "owner@test.com", Guid? statusId = null)
     {
         return Persisted.As<User>(
             new
@@ -38,8 +39,34 @@ public sealed class AccountSecurityNotifierTests
                 LastName = "Test",
                 Email = email,
                 BirthDate = new DateOnly(1990, 1, 1),
+                UserStatusTypeId = statusId ?? SeedIds.UserStatusTypes.Active,
             }
         );
+    }
+
+    [Fact]
+    public async Task NotifyAsyncGreetsAVerifiedOwnerByName()
+    {
+        var user = NewUser();
+
+        await sut.NotifyAsync(user, AccountSecurityChange.PasswordLocked, CancellationToken.None);
+
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.ToName.Should().Be("Owner");
+        message.TextBody.Should().Contain("Owner");
+    }
+
+    [Fact]
+    public async Task NotifyAsyncGreetsNobodyAtAnAddressNobodyVerified()
+    {
+        var user = NewUser(statusId: SeedIds.UserStatusTypes.Pending);
+
+        await sut.NotifyAsync(user, AccountSecurityChange.PasswordLocked, CancellationToken.None);
+
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.ToName.Should().BeEmpty();
+        message.TextBody.Should().NotContain("Owner");
+        message.HtmlBody.Should().NotContain("Owner");
     }
 
     [Fact]

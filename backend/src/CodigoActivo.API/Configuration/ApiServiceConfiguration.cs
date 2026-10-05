@@ -18,11 +18,9 @@ internal static class ApiServiceConfiguration
     private static readonly IPNetwork[] TrustedProxyNetworks =
     [
         new(IPAddress.Parse("127.0.0.0"), 8),
-        new(IPAddress.Parse("::1"), 128),
         new(IPAddress.Parse("10.0.0.0"), 8),
         new(IPAddress.Parse("172.16.0.0"), 12),
         new(IPAddress.Parse("192.168.0.0"), 16),
-        new(IPAddress.Parse("fc00::"), 7),
     ];
 
     internal static void AddApiServices(this WebApplicationBuilder builder)

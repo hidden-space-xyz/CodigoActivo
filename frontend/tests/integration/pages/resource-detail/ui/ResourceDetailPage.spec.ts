@@ -115,4 +115,13 @@ describe('resource detail page', () => {
     await vi.waitFor(() => expect(window.location.hash).toBe('#guia-externa'))
     expect(metaContent('meta[name="robots"]')).toBe('noindex')
   })
+
+  it('shows the resource instead of navigating to a link that is not a web address', async () => {
+    serveResource(buildResourceResponse({ url: 'javascript:alert(document.domain)' }))
+
+    const { wrapper } = await renderPage()
+
+    expect(wrapper.find('.detail-state').exists()).toBe(false)
+    expect(wrapper.find('h1').text()).toBe('Guía de Python')
+  })
 })

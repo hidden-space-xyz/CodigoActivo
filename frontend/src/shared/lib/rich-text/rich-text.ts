@@ -13,6 +13,8 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import Underline from '@tiptap/extension-underline'
 import StarterKit from '@tiptap/starter-kit'
 
+import { hasControlCharacter } from '@/shared/lib/navigation'
+
 const EMPTY_DOC: JSONContent = { type: 'doc', content: [] }
 /** Serialized empty Tiptap document, stored when a rich-text field is left blank. */
 export const EMPTY_DOC_JSON = JSON.stringify(EMPTY_DOC)
@@ -274,10 +276,10 @@ function sanitizeMark(
 const URL_SCHEME = /^[a-z][a-z0-9+.-]*:/i
 
 /**
- * The link target an editor link may point to, or `null` when it is not allowed: absolute
- * http/https URLs without credentials, `mailto:` and `tel:` links, root-relative paths and
- * fragments. With `assumeHttps`, an address typed without a scheme, such as `example.com/page`,
- * gets `https://` in front.
+ * The target a link may point to, or `null` when it is not allowed: absolute http/https URLs
+ * without credentials, `mailto:` and `tel:` links, root-relative paths and fragments, never with a
+ * control character. With `assumeHttps`, an address typed without a scheme, such as
+ * `example.com/page`, gets `https://` in front.
  */
 export function normalizeLink(value: string, assumeHttps = true): string | null {
   const trimmed = value.trim()
@@ -285,7 +287,9 @@ export function normalizeLink(value: string, assumeHttps = true): string | null 
     assumeHttps && trimmed && !URL_SCHEME.test(trimmed) && !/^[/#]/.test(trimmed)
       ? `https://${trimmed}`
       : trimmed
-  if (!href || href.startsWith('//') || href.startsWith('/\\')) return null
+  if (!href || hasControlCharacter(href) || href.startsWith('//') || href.startsWith('/\\')) {
+    return null
+  }
   if (href.startsWith('/') || href.startsWith('#')) return href
   try {
     const parsed = new URL(href)

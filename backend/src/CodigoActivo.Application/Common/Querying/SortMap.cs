@@ -51,14 +51,19 @@ public sealed class SortMap<T>
     }
 
     /// <summary>
-    /// Applies the sort map rules to the supplied target.
+    /// Applies the sort map rules to the supplied target. Only the first occurrence of each known
+    /// key is kept, so the client cannot grow the ordering, and with it the expression tree EF Core
+    /// walks recursively, beyond one term per key.
     /// </summary>
     /// <param name="source">Source sequence to query.</param>
     /// <param name="sort">The sort value.</param>
     /// <returns>The resulting t value.</returns>
     public IQueryable<T> Apply(IQueryable<T> source, string? sort)
     {
-        var terms = ParseAll(sort).Where(term => selectors.ContainsKey(term.Key)).ToList();
+        var terms = ParseAll(sort)
+            .Where(term => selectors.ContainsKey(term.Key))
+            .DistinctBy(term => term.Key, StringComparer.OrdinalIgnoreCase)
+            .ToList();
         if (terms.Count is 0)
         {
             terms = [.. defaults];

@@ -54,10 +54,11 @@ describe('accountMutations', () => {
     }
   })
 
-  it('refreshes the profile after a second-factor change and the history after a rating', async () => {
+  it('refreshes the profile after a second-factor or email change and the history after a rating', async () => {
     server.use(
       http.post('/api/auth/two-factor/authenticator/confirm', () => noContent()),
       http.post('/api/auth/two-factor/email', () => noContent()),
+      http.patch('/api/auth/:userId/confirm-email', () => noContent()),
       http.post('/api/events/:eventId/rating', () => noContent()),
     )
 
@@ -70,6 +71,10 @@ describe('accountMutations', () => {
       currentPassword: 'Str0ngPass!23',
       code: '123456',
     })
+    const emailConfirmed = cachedAccount()
+    await new MutationObserver(emailConfirmed.client, accountMutations.confirmEmailChange()).mutate(
+      { userId: 'user-1', code: 'code-1' },
+    )
     const rated = cachedAccount()
     await new MutationObserver(rated.client, accountMutations.rateEvent()).mutate({
       eventId: 'event-1',
@@ -78,6 +83,7 @@ describe('accountMutations', () => {
 
     expect(confirmed.invalidated()).toEqual([true, false, false, false])
     expect(disabled.invalidated()).toEqual([true, false, false, false])
+    expect(emailConfirmed.invalidated()).toEqual([true, false, false, false])
     expect(rated.invalidated()).toEqual([false, false, true, false])
   })
 })

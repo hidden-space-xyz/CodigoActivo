@@ -16,9 +16,11 @@ Registry and reads configuration from a sibling `.env` file; it does not require
 | `api`   | `ghcr.io/hidden-space-xyz/codigoactivo-backend:latest`  | ASP.NET Core on `api:8080`; reachable only by the Compose networks               |
 | `web`   | `ghcr.io/hidden-space-xyz/codigoactivo-frontend:latest` | Unprivileged nginx serving the SPA and proxying API/SEO routes; host port `8080` |
 
-The shipped mapping is `8080:8080`, so `web` listens on **all host interfaces** over plain HTTP; put it
-behind a TLS-terminating reverse proxy and restrict direct access to `8080` with a firewall or network policy.
-Networks: `frontend` (shared by `web` and `api`) and internal-only `backend` (shared by `api` and `db`).
+The shipped mapping is `0.0.0.0:8080:8080`, so `web` listens on **all host IPv4 interfaces** over plain HTTP;
+put it behind a TLS-terminating reverse proxy and restrict direct access to `8080` with a firewall or network
+policy. Networks: `frontend` (shared by `web` and `api`) and internal-only `backend` (shared by `api` and
+`db`), both with IPv6 disabled. The application accepts IPv4 clients only: see
+[TLS and proxy boundary](#tls-and-proxy-boundary).
 
 | Volume               | Contents                                                           |
 | -------------------- | ------------------------------------------------------------------ |
@@ -35,7 +37,9 @@ subject to that retention. Queued email is persisted in `db-data`, not held in m
 [Email delivery](#email-delivery).
 
 Both application containers run as non-root, drop Linux capabilities, use `no-new-privileges` and have
-read-only root filesystems with explicit writable mounts. Health checks target `/api/auth/csrf` (API) and
+read-only root filesystems with explicit writable mounts. `db` also uses `no-new-privileges` and keeps only
+the capabilities its entrypoint needs to fix the volume ownership and switch to the `postgres` user
+(`CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SETGID`, `SETUID`). Health checks target `/api/auth/csrf` (API) and
 `/healthz` (nginx).
 
 nginx gzips text responses of 1 KiB or more on the fly, both static files and proxied API responses; the API
@@ -85,9 +89,11 @@ the external proxy must overwrite `X-Forwarded-Proto` rather than append to it; 
 `http`, so it skips HSTS and forwards `http` to the API. The API accepts one forwarded hop, redirects HTTP to
 HTTPS in Production, and sets secure `__Host-` cookies; nginx emits HSTS only when its normalized scheme is
 HTTPS. The API honours
-`X-Forwarded-For`/`X-Forwarded-Proto` only from loopback and private peers (RFC 1918 and `fc00::/7`), so a
-proxy or container network outside those ranges makes it ignore both headers, which in Production means an
-HTTPS redirect loop and a single shared rate-limit partition for every client. `APP_BASE_URL`
+`X-Forwarded-For`/`X-Forwarded-Proto` only from IPv4 loopback and private peers (`127.0.0.0/8` and RFC 1918),
+so a proxy or container network outside those ranges makes it ignore both headers, which in Production means
+an HTTPS redirect loop and a single shared rate-limit partition for every client. IPv6 is not supported: the
+external proxy must listen on IPv4 only and the public name must have no `AAAA` record, because nginx
+answers 403 to every request whose client address, read from `X-Forwarded-For`, is IPv6. `APP_BASE_URL`
 controls links in email and the URLs generated in `/sitemap.xml` and `/robots.txt`; it must match the public
 origin.
 
@@ -183,6 +189,9 @@ restarts refill them, replicas multiply them.
 | `EmailGuard:MaxTrackedRecipients`    | Maximum address budgets held in memory                                   | `50000` |
 | `EmailGuard:SweepIntervalMinutes`    | Idle-budget cleanup interval                                             | `5`     |
 | `EmailGuard:AlertIntervalMinutes`    | Minimum interval between repeated guard alerts                           | `15`    |
+
+Verification and reset mail cannot spend the last half of `GlobalCredentialReserve`, which stays for
+second-factor codes, and second-factor codes have per-address budgets of their own.
 
 Pending mail survives a restart: rows are claimed with `FOR UPDATE SKIP LOCKED` and a lease, in priority
 order (2FA/verification/reset codes first, ordinary automatic mail next, administrator bulk mail last), by

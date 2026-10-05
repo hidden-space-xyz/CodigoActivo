@@ -174,6 +174,87 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
+    public void TryConsumeVerificationAndResetMailCannotDipIntoTheLoginCodeReserve()
+    {
+        var limiter = new EmailSendLimiter(Options(), new TestClock());
+
+        for (var i = 0; i < 8; i++)
+        {
+            var kind = i % 2 == 0 ? EmailKind.AccountVerification : EmailKind.PasswordReset;
+            limiter
+                .TryConsume(kind, $"spray{i.ToString(CultureInfo.InvariantCulture)}@example.test")
+                .Scope.Should()
+                .Be(EmailLimitScope.None);
+        }
+
+        limiter
+            .TryConsume(EmailKind.AccountVerification, "spray-more@example.test")
+            .Scope.Should()
+            .Be(EmailLimitScope.Global, "anonymous credential mail stops before the login reserve");
+        limiter
+            .TryConsume(EmailKind.PasswordReset, "spray-more@example.test")
+            .Scope.Should()
+            .Be(EmailLimitScope.Global);
+        limiter
+            .TryConsume(EmailKind.TwoFactorCode, "returning@example.test")
+            .Scope.Should()
+            .Be(EmailLimitScope.None, "a correct password still gets its login code");
+        limiter
+            .TryConsume(EmailKind.TwoFactorCode, "another@example.test")
+            .Scope.Should()
+            .Be(EmailLimitScope.None);
+        limiter
+            .TryConsume(EmailKind.TwoFactorCode, "third@example.test")
+            .Scope.Should()
+            .Be(EmailLimitScope.Global);
+    }
+
+    [Fact]
+    public void TryConsumeResetMailFloodingAnAddressLeavesItsLoginCodesDeliverable()
+    {
+        var limiter = new EmailSendLimiter(Options(), new TestClock());
+
+        for (var i = 0; i < 3; i++)
+        {
+            limiter
+                .TryConsume(EmailKind.PasswordReset, Recipient)
+                .Scope.Should()
+                .Be(EmailLimitScope.None);
+        }
+
+        limiter
+            .TryConsume(EmailKind.PasswordReset, Recipient)
+            .Scope.Should()
+            .Be(EmailLimitScope.Recipient);
+        limiter
+            .TryConsume(EmailKind.TwoFactorCode, Recipient)
+            .Scope.Should()
+            .Be(EmailLimitScope.None, "login codes have their own budget for each address");
+    }
+
+    [Fact]
+    public void TryConsumeLoginCodesStayBoundedByTheirOwnRecipientBudget()
+    {
+        var limiter = new EmailSendLimiter(Options(), new TestClock());
+
+        for (var i = 0; i < 3; i++)
+        {
+            limiter
+                .TryConsume(EmailKind.TwoFactorCode, Recipient)
+                .Scope.Should()
+                .Be(EmailLimitScope.None);
+        }
+
+        limiter
+            .TryConsume(EmailKind.TwoFactorCode, "MEMBER+tag@example.test")
+            .Scope.Should()
+            .Be(EmailLimitScope.Recipient);
+        Consume(limiter, Recipient)
+            .Should()
+            .Be(EmailLimitScope.None, "other mail keeps the budget of its own");
+    }
+
+    [Fact]
     public void TryConsumeReserveWiderThanTheGlobalBurstStillDeliversAutomaticMail()
     {
         var limiter = new EmailSendLimiter(

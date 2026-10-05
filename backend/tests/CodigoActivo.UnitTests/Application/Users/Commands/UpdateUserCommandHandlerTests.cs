@@ -5,6 +5,7 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
@@ -29,27 +30,41 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly RecordingEmailSender emailSender = new();
     private readonly RecordingLogger<AccountSecurityNotifier> notifierLogger = new();
+    private readonly RecordingLogger<EmailChangeLinkIssuer> issuerLogger = new();
     private readonly FakeDisposableEmailDomainRepository disposableDomains = new();
+    private readonly AccountVerificationOptions verification = new();
     private readonly User actingUser;
     private readonly UpdateUserCommandHandler sut;
 
     public UpdateUserCommandHandlerTests()
     {
-        actingUser = NewUser();
+        actingUser = NewUser(email: "acting@test.com");
         Persisted.Overwrite(actingUser, new { PasswordHash = hasher.Hash(ActingPassword) });
+        var composer = new AccountEmailComposer(
+            new ApplicationOptions { BaseUrl = "https://app.test" },
+            clock
+        );
         sut = new UpdateUserCommandHandler(
             users,
             PasswordGuards.Create(hasher, uow, clock),
             clock,
             uow,
             cacheInvalidator,
-            new AccountSecurityNotifier(
-                emailSender,
-                clock,
-                new AccountEmailComposer(new ApplicationOptions(), clock),
-                notifierLogger
-            ),
-            new DisposableEmailChecker(disposableDomains)
+            new AccountSecurityNotifier(emailSender, clock, composer, notifierLogger),
+            new DisposableEmailChecker(disposableDomains),
+            new EmailChangeLinkIssuer(
+                users,
+                hasher,
+                verification,
+                new AccountEmails(
+                    emailSender,
+                    composer,
+                    verification,
+                    new PasswordResetOptions(),
+                    new TwoFactorOptions()
+                ),
+                issuerLogger
+            )
         );
     }
 
@@ -58,6 +73,34 @@ public sealed class UpdateUserCommandHandlerTests
         return sut.HandleAsync(
             new UpdateUserCommand(userId, actingUser.Id, request),
             TestContext.Current.CancellationToken
+        );
+    }
+
+    private void EditOwnAccount(User? newAddressHolder = null)
+    {
+        users.FindReturns(actingUser, actingUser);
+        users
+            .GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(newAddressHolder);
+    }
+
+    private static UpdateUserRequest ContactChange(
+        string email,
+        string phone = "555-0100",
+        string firstName = "Ana"
+    )
+    {
+        return new UpdateUserRequest(
+            firstName,
+            "Lopez",
+            email,
+            phone,
+            null,
+            AdultNationalId,
+            false,
+            Gender.Female,
+            null,
+            ActingPassword
         );
     }
 
@@ -535,5 +578,125 @@ public sealed class UpdateUserCommandHandlerTests
         user.PromotionalConsent.Should().BeFalse();
         await AssertActingUserNotLoadedAsync();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncOwnNewEmailWaitsForTheLinkEmailedToIt()
+    {
+        EditOwnAccount();
+        clock.UtcNow = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
+
+        var result = await HandleAsync(
+            actingUser.Id,
+            ContactChange("  New@Test.com ", firstName: "Anabel")
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        actingUser.FirstName.Should().Be("Anabel");
+        actingUser.Email.Should().Be("acting@test.com");
+        actingUser.PendingEmail.Should().Be("new@test.com");
+        actingUser.EmailChangeExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);
+        var link = emailSender.Sent.Should().ContainSingle().Subject;
+        link.Kind.Should().Be(EmailKind.AccountVerification);
+        link.ToAddress.Should().Be("new@test.com");
+        link.ToName.Should().BeEmpty();
+        link.TextBody.Should()
+            .Contain($"https://app.test/confirm-email#userId={actingUser.Id}&code=");
+        actingUser.EmailChangeCodeHash.Should().Be(hasher.Hash(emailSender.LastCode()));
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncOwnNewEmailOwnedByAnotherAccountNotifiesItsHolderInstead()
+    {
+        EditOwnAccount(NewUser(email: "taken@test.com"));
+
+        var result = await HandleAsync(
+            actingUser.Id,
+            ContactChange("taken@test.com", firstName: "Anabel")
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        actingUser.FirstName.Should().Be("Anabel");
+        actingUser.Email.Should().Be("acting@test.com");
+        actingUser.UsableEmailChangeCodeHash(clock.UtcNow).Should().NotBeNull();
+        var notice = emailSender.Sent.Should().ContainSingle().Subject;
+        notice.ToAddress.Should().Be("taken@test.com");
+        notice.Subject.Should().Be(AppStrings.EmailsEmailInUseSubject);
+        notice.TextBody.Should().NotContain("confirm-email");
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .EmailExistsAsync(default!, default, TestContext.Current.CancellationToken);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncOwnNewEmailOfAnUnverifiedAccountGetsTheLink()
+    {
+        EditOwnAccount(NewUser(email: "taken@test.com", statusId: SeedIds.UserStatusTypes.Pending));
+
+        var result = await HandleAsync(actingUser.Id, ContactChange("taken@test.com"));
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender
+            .Sent.Should()
+            .ContainSingle()
+            .Which.TextBody.Should()
+            .Contain($"confirm-email#userId={actingUser.Id}&code=");
+    }
+
+    [Fact]
+    public async Task HandleAsyncOwnNewEmailAndPhoneAppliesThePhoneAndWarnsOnlyAboutIt()
+    {
+        EditOwnAccount();
+
+        var result = await HandleAsync(
+            actingUser.Id,
+            ContactChange("new@test.com", phone: "555-0199")
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        actingUser.Phone.Should().Be("555-0199");
+        actingUser.Email.Should().Be("acting@test.com");
+        emailSender
+            .Sent.Select(message => message.ToAddress)
+            .Should()
+            .Equal("new@test.com", "acting@test.com");
+        var alert = emailSender.Sent[1];
+        alert.Kind.Should().Be(EmailKind.SecurityAlert);
+        alert.TextBody.Should().NotContain("n***@test.com");
+    }
+
+    [Fact]
+    public async Task HandleAsyncOwnNewEmailRefusedByTheLimiterChangesNothing()
+    {
+        EditOwnAccount();
+        emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
+
+        var result = await HandleAsync(
+            actingUser.Id,
+            ContactChange("new@test.com", firstName: "Anabel")
+        );
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendCooldownActive);
+        actingUser.FirstName.Should().Be("Ana");
+        actingUser.PendingEmail.Should().BeNull();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncOwnNewEmailWhoseLinkCannotBeQueuedLogsAndChangesNothing()
+    {
+        EditOwnAccount();
+        emailSender.ThrowOnSend = new InvalidOperationException("outbox unavailable");
+
+        var result = await HandleAsync(actingUser.Id, ContactChange("new@test.com"));
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.EmailSendFailed);
+        actingUser.PendingEmail.Should().BeNull();
+        var entry = issuerLogger.LevelEntries.Should().ContainSingle().Subject;
+        entry.Level.Should().Be(LogLevel.Error);
+        entry.Message.Should().StartWith("Sending a AccountVerification email failed");
+        await AssertNotSavedAsync();
     }
 }

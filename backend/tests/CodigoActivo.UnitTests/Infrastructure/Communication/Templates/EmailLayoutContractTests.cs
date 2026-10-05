@@ -26,6 +26,8 @@ public sealed class EmailLayoutContractTests
         return
         [
             "verification",
+            "emailChange",
+            "emailInUse",
             "passwordReset",
             "loginCode",
             "decisionConfirmed",
@@ -110,6 +112,14 @@ public sealed class EmailLayoutContractTests
                 Site,
                 TimeSpan.FromMinutes(15)
             ),
+            "emailChange" => EmailChangeEmail.Create(
+                "ada@test.com",
+                string.Empty,
+                $"{Site}/confirm-email",
+                Site,
+                TimeSpan.FromMinutes(15)
+            ),
+            "emailInUse" => EmailInUseEmail.Create("ada@test.com", "Ada", $"{Site}/login", Site),
             "passwordReset" => PasswordResetEmail.Create(
                 "ada@test.com",
                 "Ada",

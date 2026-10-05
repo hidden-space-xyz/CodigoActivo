@@ -65,7 +65,7 @@ public sealed class EnumBindingTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Theory]

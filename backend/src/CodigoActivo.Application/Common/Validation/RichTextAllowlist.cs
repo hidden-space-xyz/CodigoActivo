@@ -250,6 +250,7 @@ public static partial class RichTextAllowlist
         var href = value.GetString()!.Trim();
         if (
             href.Length is 0
+            || href.Any(char.IsControl)
             || href.StartsWith("//", StringComparison.Ordinal)
             || href.StartsWith("/\\", StringComparison.Ordinal)
         )
@@ -354,28 +355,28 @@ public static partial class RichTextAllowlist
     }
 
     [GeneratedRegex(
-        "^/api/files/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/content$",
+        @"^/api/files/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/content\z",
         RegexOptions.None,
         matchTimeoutMilliseconds: 1000
     )]
     private static partial Regex FileContentUrl();
 
     [GeneratedRegex(
-        @"^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|rgba?\(\s*\d{1,3}%?\s*(,\s*\d{1,3}%?\s*){2}(,\s*(0|1|0?\.\d+)\s*)?\))$",
+        @"^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|rgba?\(\s*\d{1,3}%?\s*(,\s*\d{1,3}%?\s*){2}(,\s*(0|1|0?\.\d+)\s*)?\))\z",
         RegexOptions.None,
         matchTimeoutMilliseconds: 1000
     )]
     private static partial Regex Color();
 
-    [GeneratedRegex("^[a-zA-Z0-9_+.-]{1,40}$", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"^[a-zA-Z0-9_+.-]{1,40}\z", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex CodeLanguage();
 
-    [GeneratedRegex("^[1aAiI]$", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"^[1aAiI]\z", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ListType();
 
-    [GeneratedRegex("^[a-z ]{0,100}$", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"^[a-z ]{0,100}\z", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex LinkRel();
 
-    [GeneratedRegex(@"^[\w -]{0,100}$", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"^[\w -]{0,100}\z", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex CssClasses();
 }

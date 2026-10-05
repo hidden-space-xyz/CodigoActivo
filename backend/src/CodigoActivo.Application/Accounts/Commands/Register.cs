@@ -17,7 +17,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Carries the input required to register.
 /// </summary>
 /// <param name="Request">Validated client request data.</param>
-public sealed record RegisterCommand(RegisterRequest Request) : ICommand<Result<Guid>>;
+public sealed record RegisterCommand(RegisterRequest Request) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to register.
@@ -31,6 +31,7 @@ public sealed record RegisterCommand(RegisterRequest Request) : ICommand<Result<
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="disposableEmails">Checker that refuses addresses of disposable email providers.</param>
+/// <param name="emailClaims">Committer that replaces an unverified account holding the email.</param>
 public sealed class RegisterCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
@@ -40,37 +41,77 @@ public sealed class RegisterCommandHandler(
     AccountEmails accountEmails,
     ILogger<RegisterCommandHandler> logger,
     ICacheInvalidator cacheInvalidator,
-    DisposableEmailChecker disposableEmails
-) : ICommandHandler<RegisterCommand, Result<Guid>>
+    DisposableEmailChecker disposableEmails,
+    EmailClaims emailClaims
+) : ICommandHandler<RegisterCommand, Result>
 {
-    private const int MaxMinorRegistrations = 20;
-
     /// <summary>
     /// Handles the request to register. <see cref="User.CreateIndependent"/> and
-    /// <see cref="User.CreateDependent"/> decide which details the adult and each minor need;
-    /// this handler adds the checks that need I/O: a disposable or already registered email.
+    /// <see cref="User.CreateDependent"/> decide which details the adult and each minor need, and a
+    /// disposable email is refused. Every other outcome answers alike, so the response never tells
+    /// whether the address has an account: a new address gets the verification link; an address
+    /// whose account <see cref="User.OwnsEmail"/> gets a notice instead and nothing is created; an
+    /// address held by an account nobody verified gets the link of a new account that replaces it.
+    /// The password and the code are hashed before the address is looked up, so every outcome does
+    /// the same expensive work.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifier of the new adult account, or an application error on failure.</returns>
-    public async Task<Result<Guid>> HandleAsync(
-        RegisterCommand command,
-        CancellationToken ct = default
-    )
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    public async Task<Result> HandleAsync(RegisterCommand command, CancellationToken ct = default)
     {
-        var request = command.Request;
+        var planned = PlanHousehold(command.Request);
+        if (planned.IsFailure)
+        {
+            return planned.Error!;
+        }
+
+        var (adult, minors) = planned.Value;
+        var email = adult.Email!;
+        if (await disposableEmails.IsDisposableAsync(email, ct))
+        {
+            return Error.Validation(ErrorCode.DisposableEmailNotAllowed);
+        }
+
+        var now = clock.UtcNow;
+        var otpCode = AccountTokens.Create();
+        adult.AssignPassword(hasher.Hash(command.Request.Password));
+        adult.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
+
+        var holder = await users.GetByEmailAsync(email, ct);
+        if (holder is { OwnsEmail: true })
+        {
+            await TrySendEmailInUseNoticeAsync(holder, ct);
+            return Result.Success();
+        }
+
+        await users.AddAsync(adult, ct);
+        foreach (var child in minors)
+        {
+            await users.AddAsync(child, ct);
+        }
+
+        if (await emailClaims.TryCommitAsync(adult, holder, now, ct))
+        {
+            await cacheInvalidator.InvalidateAsync(CacheTags.Users);
+            await TrySendVerificationEmailAsync(adult, otpCode, ct);
+        }
+
+        return Result.Success();
+    }
+
+    private Result<NewHousehold> PlanHousehold(RegisterRequest request)
+    {
         var minorRequests = request.Minors ?? [];
         if (
             string.IsNullOrWhiteSpace(request.Password)
-            || minorRequests.Count > MaxMinorRegistrations
+            || minorRequests.Count > Household.MaxDependents
         )
         {
             return Error.Validation(ErrorCode.RequestValidationFailed);
         }
 
-        var today = clock.Today;
         var now = clock.UtcNow;
-
         var created = User.CreateIndependent(
             new PersonDetails(
                 request.FirstName,
@@ -101,7 +142,7 @@ public sealed class RegisterCommandHandler(
                     minor.Gender,
                     BirthDate: minor.BirthDate
                 ),
-                today,
+                clock.Today,
                 now
             );
             if (child.IsFailure)
@@ -112,33 +153,23 @@ public sealed class RegisterCommandHandler(
             minors.Add(child.Value);
         }
 
-        var email = adult.Email!;
-        if (await disposableEmails.IsDisposableAsync(email, ct))
+        return new NewHousehold(adult, minors);
+    }
+
+    private async Task TrySendEmailInUseNoticeAsync(User holder, CancellationToken ct)
+    {
+        try
         {
-            return Error.Validation(ErrorCode.DisposableEmailNotAllowed);
+            await accountEmails.SendEmailInUseNoticeAsync(holder, ct);
         }
-
-        if (await users.EmailExistsAsync(email, ct: ct))
+        catch (EmailRateLimitedException)
         {
-            return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
+            return;
         }
-
-        adult.AssignPassword(hasher.Hash(request.Password));
-        var otpCode = AccountTokens.Create();
-        adult.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
-
-        await users.AddAsync(adult, ct);
-        foreach (var child in minors)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            await users.AddAsync(child, ct);
+            logger.EmailSendFailed(EmailKind.AccountVerification, ex);
         }
-
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Users);
-
-        await TrySendVerificationEmailAsync(adult, otpCode, ct);
-
-        return adult.Id;
     }
 
     private async Task TrySendVerificationEmailAsync(
@@ -163,4 +194,6 @@ public sealed class RegisterCommandHandler(
             await uow.SaveChangesAsync(ct);
         }
     }
+
+    private sealed record NewHousehold(User Adult, IReadOnlyList<User> Minors);
 }

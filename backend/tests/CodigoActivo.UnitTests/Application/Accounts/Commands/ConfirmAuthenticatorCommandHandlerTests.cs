@@ -126,6 +126,28 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncPendingKeyNeverReplacesAnActiveAuthenticator()
+    {
+        var user = PendingUser();
+        Persisted.Overwrite(
+            user,
+            new
+            {
+                TwoFactorMethod = TwoFactorMethod.Authenticator,
+                AuthenticatorKey = FakeSecretProtector.Prefix + "ACTIVEKEY",
+            }
+        );
+        totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(99);
+
+        var result = await ConfirmAsync(user.Id, "123456");
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorAlreadyEnabled);
+        user.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + "ACTIVEKEY");
+        emailSender.Sent.Should().BeEmpty();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
     public async Task HandleAsyncCorrectCodeActivatesAuthenticatorAndRemembersTheStep()
     {
         var user = PendingUser();

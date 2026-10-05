@@ -840,6 +840,14 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("email");
 
+                    b.Property<string>("EmailChangeCodeHash")
+                        .HasColumnType("text")
+                        .HasColumnName("email_change_code_hash");
+
+                    b.Property<DateTimeOffset?>("EmailChangeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_change_expires_at");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text")
@@ -932,6 +940,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Property<string>("PendingAuthenticatorKey")
                         .HasColumnType("text")
                         .HasColumnName("pending_authenticator_key");
+
+                    b.Property<string>("PendingEmail")
+                        .HasColumnType("text")
+                        .HasColumnName("pending_email");
 
                     b.Property<string>("Phone")
                         .HasColumnType("text")

@@ -225,6 +225,28 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncLockoutStoredByAParallelAttemptRefusesTheRightCode()
+    {
+        var user = Signed();
+        users
+            .LockAsync(user, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                Persisted.Overwrite(
+                    user,
+                    new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(15) }
+                );
+                return true;
+            });
+
+        var result = await DeleteAsync(user.Id);
+
+        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        AssertNothingRemoved();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
     public async Task HandleAsyncWrongEmailCodeCountsTheFailureAndKeepsTheAccount()
     {
         var user = Signed();

@@ -23,7 +23,18 @@ public sealed class AddChildCommandHandlerTests
 
     public AddChildCommandHandlerTests()
     {
-        sut = new AddChildCommandHandler(users, clock, uow, cacheInvalidator);
+        sut = new AddChildCommandHandler(users, clock, uow.RunsTransactions(), cacheInvalidator);
+    }
+
+    private Task<Result<Guid>> AddAsync(Guid parentId)
+    {
+        return sut.HandleAsync(
+            new AddChildCommand(
+                parentId,
+                new RegisterMinorRequest("Kid", "Doe", MinorDob, Gender.Male)
+            ),
+            TestContext.Current.CancellationToken
+        );
     }
 
     private Task<int> AssertNotSavedAsync()
@@ -67,6 +78,65 @@ public sealed class AddChildCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ErrorCode.UserChildBirthDateNotMinor);
         await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncGuardianAtTheDependentLimitReturnsConflict()
+    {
+        var parent = NewUser();
+        users.FindReturns(parent);
+        users
+            .CountDependentsAsync(parent.Id, Arg.Any<CancellationToken>())
+            .Returns(Household.MaxDependents);
+
+        var result = await AddAsync(parent.Id);
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserChildLimitReached);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncCountsTheDependentsWithTheGuardianRowLocked()
+    {
+        var parent = NewUser();
+        users.FindReturns(parent);
+        users
+            .CountDependentsAsync(parent.Id, Arg.Any<CancellationToken>())
+            .Returns(Household.MaxDependents - 1);
+
+        var result = await AddAsync(parent.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        Received.InOrder(() =>
+        {
+            _ = uow.ExecuteInTransactionAsync(
+                Arg.Any<Func<CancellationToken, Task<Result>>>(),
+                Arg.Any<CancellationToken>()
+            );
+            _ = users.LockAsync(parent, Arg.Any<CancellationToken>());
+            _ = users.CountDependentsAsync(parent.Id, Arg.Any<CancellationToken>());
+            _ = users.AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+            _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
+    public async Task HandleAsyncGuardianGoneOnceLockedReturnsNotFound()
+    {
+        var parent = NewUser();
+        users.FindReturns(parent);
+        users.LockAsync(parent, Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await AddAsync(parent.Id);
+
+        result.ShouldFail(ErrorKind.NotFound, ErrorCode.ParentUserNotFound);
+        await AssertNotSavedAsync();
+        await cacheInvalidator
+            .DidNotReceiveWithAnyArgs()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
     }
 
     [Fact]

@@ -151,6 +151,45 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncStepAcceptedByAParallelRequestIsRejected()
+    {
+        var user = users.FindReturns(NewUserWithAuthenticator(Secret, lastUsedStep: 50));
+        totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(51);
+        users
+            .LockAsync(user, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                Persisted.Overwrite(user, new { AuthenticatorLastUsedStep = 51L });
+                return true;
+            });
+
+        var result = await DisableAsync(user.Id);
+
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAuthenticatorRemovedByAParallelRequestReturnsConflict()
+    {
+        var user = users.FindReturns(NewUserWithAuthenticator(Secret));
+        users
+            .LockAsync(user, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                user.UseEmailTwoFactor(clock.UtcNow);
+                return true;
+            });
+
+        var result = await DisableAsync(user.Id);
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorNotEnabled);
+        totp.DidNotReceiveWithAnyArgs().MatchStep(default!, default!, default);
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task HandleAsyncReplayedCodeIsRejected()
     {
         var user = users.FindReturns(NewUserWithAuthenticator(Secret, lastUsedStep: 50));

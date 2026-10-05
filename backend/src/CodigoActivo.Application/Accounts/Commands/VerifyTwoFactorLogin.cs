@@ -16,9 +16,11 @@ public sealed record VerifyTwoFactorLoginCommand(Guid UserId, string Code) : ICo
 
 /// <summary>
 /// Executes the second step of the login. Wrong codes are counted and lock the account's second
-/// factor for a while once the limit is reached, so short codes cannot be brute forced. An account
-/// locked after repeated wrong passwords is refused like an expired challenge, even when its
-/// challenge ticket was obtained before the lock, so no session is opened on a locked account.
+/// factor for a while once the limit is reached, so short codes cannot be brute forced. Each check
+/// runs with the account row locked and reloaded, so parallel attempts are counted one after another
+/// and a code or an authenticator time step is accepted only once. An account locked after repeated
+/// wrong passwords is refused like an expired challenge, even when its challenge ticket was obtained
+/// before the lock, so no session is opened on a locked account.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -54,6 +56,19 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
+        return await uow.ExecuteInTransactionAsync(
+            attempt => VerifyLockedAsync(user, command.Code, attempt),
+            ct
+        );
+    }
+
+    private async Task<Result> VerifyLockedAsync(User user, string code, CancellationToken ct)
+    {
+        if (!await users.LockAsync(user, ct))
+        {
+            return Error.NotFound(ErrorCode.UserNotFound);
+        }
+
         if (user.IsPasswordLocked())
         {
             return Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired);
@@ -69,11 +84,11 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
         var accepted = user.TwoFactorMethod switch
         {
             TwoFactorMethod.Authenticator => (
-                usedStep = authenticatorCodes.Match(user.AuthenticatorKey, command.Code)
+                usedStep = authenticatorCodes.Match(user.AuthenticatorKey, code)
             )
                 is { } matched
                 && user.AcceptsAuthenticatorStep(matched),
-            _ => otpValidator.IsCodeValid(command.Code, user.UsableLoginCodeHash(now)),
+            _ => otpValidator.IsCodeValid(code, user.UsableLoginCodeHash(now)),
         };
 
         if (!accepted)

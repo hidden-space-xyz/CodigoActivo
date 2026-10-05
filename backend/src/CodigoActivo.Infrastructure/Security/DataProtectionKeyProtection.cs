@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CodigoActivo.Infrastructure.Security;
 
@@ -34,7 +36,8 @@ public static class DataProtectionKeyProtection
 
     /// <summary>
     /// Persists the key ring to <paramref name="keysDirectory"/> and encrypts every key with the
-    /// Ed25519 certificate stored next to it, creating that certificate on first use.
+    /// Ed25519 certificate stored next to it, creating that certificate on first use. Keys found in
+    /// the directory that the certificate does not protect are ignored when the ring is read.
     /// </summary>
     /// <param name="dataProtection">Data Protection builder to configure.</param>
     /// <param name="services">Service collection that receives the certificate store.</param>
@@ -64,6 +67,16 @@ public static class DataProtectionKeyProtection
         services.Configure<KeyManagementOptions>(options =>
             options.XmlEncryptor = new Ed25519AesGcmXmlEncryptor(certificateStore)
         );
+        services
+            .AddOptions<KeyManagementOptions>()
+            .PostConfigure<IServiceProvider>(
+                (options, provider) =>
+                    options.XmlRepository = new Ed25519KeyRingRepository(
+                        options.XmlRepository!,
+                        provider.GetService<ILogger<Ed25519KeyRingRepository>>()
+                            ?? NullLogger<Ed25519KeyRingRepository>.Instance
+                    )
+            );
         return certificateStore;
     }
 }

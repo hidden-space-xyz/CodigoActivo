@@ -342,6 +342,11 @@ public enum ErrorCode
     UserParentReassignmentForbidden,
 
     /// <summary>
+    /// Selects the user child limit reached option.
+    /// </summary>
+    UserChildLimitReached,
+
+    /// <summary>
     /// Selects the user parent not allowed for adult option.
     /// </summary>
     UserParentNotAllowedForAdult,
@@ -420,11 +425,6 @@ public enum ErrorCode
     OtpInvalidOrExpired,
 
     /// <summary>
-    /// Selects the otp resend not allowed option.
-    /// </summary>
-    OtpResendNotAllowed,
-
-    /// <summary>
     /// Selects the otp resend cooldown active option.
     /// </summary>
     OtpResendCooldownActive,
@@ -468,6 +468,11 @@ public enum ErrorCode
     /// Selects the authenticator not enabled option.
     /// </summary>
     AuthenticatorNotEnabled,
+
+    /// <summary>
+    /// Selects the authenticator already enabled option.
+    /// </summary>
+    AuthenticatorAlreadyEnabled,
 
     /// <summary>
     /// Selects the email no recipients option.

@@ -19,9 +19,11 @@ export type RegistrationStep = 'age-gate' | 'form' | 'success'
 const RESEND_COOLDOWN_SECONDS = 60
 
 /**
- * Drives the registration flow through its steps, scrolling to the top on each change. Every new
- * account must verify its email, so after registering, resending the email is locked by a
- * 60-second cooldown (restarted on every resend). `reset` clears the form and returns to the age gate.
+ * Drives the registration flow through its steps, scrolling to the top on each change. The API
+ * answers alike whether or not the email already has an account, so the result step only repeats
+ * what was submitted. Every new account must verify its email, so after registering, resending the
+ * email to the submitted address is locked by a 60-second cooldown (restarted on every resend).
+ * `reset` clears the form and returns to the age gate.
  */
 export function useRegistration() {
   const { t } = useI18n()
@@ -29,17 +31,15 @@ export function useRegistration() {
 
   const step = ref<RegistrationStep>('age-gate')
   const form = reactive<RegistrationForm>(createEmptyRegistrationForm())
-  const createdUserId = ref<string | null>(null)
   const submittedEmail = ref('')
   const submittedMinorCount = ref(0)
   const cooldown = useCountdown(RESEND_COOLDOWN_SECONDS)
 
   const mutation = useMutation({
     ...accountMutations.register(),
-    onSuccess: (result) => {
-      createdUserId.value = result.adultId
-      submittedEmail.value = form.email.trim()
-      submittedMinorCount.value = result.minorCount || form.minors.length
+    onSuccess: (_, input) => {
+      submittedEmail.value = input.adult.email
+      submittedMinorCount.value = input.minors.length
       step.value = 'success'
       cooldown.start()
       scrollToTop()
@@ -79,9 +79,10 @@ export function useRegistration() {
   }
 
   function resend(): void {
-    const userId = createdUserId.value
-    if (!userId || cooldown.remaining.value > 0 || resendMutation.isPending.value) return
-    resendMutation.mutate(userId)
+    if (!submittedEmail.value || cooldown.remaining.value > 0 || resendMutation.isPending.value) {
+      return
+    }
+    resendMutation.mutate(submittedEmail.value)
   }
 
   function reset(): void {
@@ -89,7 +90,6 @@ export function useRegistration() {
     resendMutation.reset()
     cooldown.stop()
     Object.assign(form, createEmptyRegistrationForm())
-    createdUserId.value = null
     submittedEmail.value = ''
     submittedMinorCount.value = 0
     step.value = 'age-gate'

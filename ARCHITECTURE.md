@@ -49,9 +49,10 @@ aggregate roots.
   `CreateDependent` and `PlanProfileChange`/`ApplyProfileChange` decide which details an independent account or
   a dependent needs and answer each broken rule with one `ErrorCode`.
 - Rules that span aggregates are domain policies (`SignupRoles`, `EarlySignup`, `TermsConsent`,
-  `FeaturedSelection`, `AccountErasure`, `InitialAdministrator`, `LegalCopy`). Handlers load, call the domain,
-  persist and run the effects after the commit; the checks that need I/O are Application collaborators
-  (`SignupGate`, `TermsGate`, `ActivityValidator`, `EventCategoryChecker`, `DisposableEmailChecker`).
+  `FeaturedSelection`, `AccountErasure`, `InitialAdministrator`, `LegalCopy`, `Household`). Handlers load,
+  call the domain, persist and run the effects after the commit; the checks that need I/O are Application
+  collaborators (`SignupGate`, `TermsGate`, `ActivityValidator`, `EventCategoryChecker`,
+  `DisposableEmailChecker`).
 - Aggregates reference each other by ID, never through navigations. The EF configuration keeps the foreign keys
   and cascades with `HasOne<T>().WithMany().HasForeignKey(...)`.
 - The fixed catalogs (user status and type, activity role and modality, signup status and resource type) are
@@ -70,9 +71,11 @@ aggregate roots.
 - `IUnitOfWork.ExecuteInTransactionAsync` runs work in one explicit transaction and, when PostgreSQL aborts it
   to resolve a deadlock, runs it again (three attempts in total) after discarding what the failed attempt
   staged. `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`),
-  so parallel attempts lose no increment and only one of them sees the account lock.
-- Users are deleted only through `AccountEraser`, used by `DeleteUser` and `DeleteOwnAccount`. In one such
-  transaction it locks the household, stores the legal copy (composed by `LegalCopy` and serialized by
+  so parallel attempts lose no increment and only one of them sees the account lock. Second-factor checks and
+  adding a dependent lock and reload the account the same way (`IUserRepository.LockAsync`).
+- Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
+  which replaces an unverified account whose email a registration or a confirmed email change takes. In one
+  such transaction it locks the household, stores the legal copy (composed by `LegalCopy` and serialized by
   Infrastructure as JSON with `SchemaVersion` 1), hands the content credited to the household over to the
   initial administrator and removes the account; any other change staged in the unit of work commits with it.
   `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, is the safety

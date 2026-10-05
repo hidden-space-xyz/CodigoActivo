@@ -2,8 +2,10 @@ import { ref, type Ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
+import { useSession } from '@/entities/session'
 import {
   fullName,
+  isSameEmail,
   userList,
   userMutations,
   userQueries,
@@ -28,10 +30,13 @@ export interface UserRelationFilter {
  * dialogs that edit a user (loaded whole first), change their type, grant the admin role or
  * return their second factor to email. The last two, and any edit that replaces contact details,
  * need the signed-in admin's password: a refused one is shown in the dialog instead of a toast.
- * Revoking the admin role and deleting (after confirmation) act at once. Call it in `setup`.
+ * An admin's new email for their own account waits for the link emailed to it, as the success
+ * toast says. Revoking the admin role and deleting (after confirmation) act at once. Call it in
+ * `setup`.
  */
 export function useUsersAdmin() {
   const { t } = useI18n()
+  const session = useSession()
   const queryClient = useQueryClient()
   const feedback = useCrudFeedback()
   const { confirmDelete } = useDeleteConfirm()
@@ -119,9 +124,13 @@ export function useUsersAdmin() {
     const user = editDialog.editing.value
     if (!user) return
     editError.value = ''
+    const ownEmailChange = user.id === session.user?.id && !isSameEmail(input.email, user.email)
+    const successMessage = ownEmailChange
+      ? t('pages.admin.users.toasts.emailChangeSent', { email: input.email })
+      : t('pages.admin.users.toasts.updated')
     update.mutate(
       { id: user.id, input },
-      passwordAware(editError, t('pages.admin.users.toasts.updated'), editDialog.close),
+      passwordAware(editError, successMessage, editDialog.close),
     )
   }
 

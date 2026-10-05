@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { resourceQueries } from '@/entities/resource'
 import { fileContentUrl } from '@/shared/api'
-import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/rich-text'
+import { isRichTextEmpty, normalizeLink, richTextExcerpt } from '@/shared/lib/rich-text'
 import { type SeoData, useSeo } from '@/shared/lib/seo'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { RichTextContent } from '@/shared/ui/rich-text-content'
@@ -20,6 +20,7 @@ const { t } = useI18n()
 const { data: resource, isLoading } = useQuery(() => resourceQueries.detail(props.resourceId))
 const notFound = computed(() => !isLoading.value && resource.value === null)
 
+const redirectUrl = computed(() => normalizeLink(resource.value?.url ?? '', false))
 const posterUrl = computed(() => fileContentUrl(resource.value?.thumbnailId))
 const hasDescription = computed(() => !isRichTextEmpty(resource.value?.description))
 
@@ -27,7 +28,7 @@ const seo = computed<SeoData | undefined>(() => {
   if (notFound.value) return { title: t('pages.resourceDetail.seoNotFound'), noindex: true }
   const current = resource.value
   if (!current) return undefined
-  if (current.url) return { title: current.title, noindex: true }
+  if (redirectUrl.value) return { title: current.title, noindex: true }
   const description = richTextExcerpt(current.description) || current.subtitle
   return {
     title: current.title,
@@ -40,8 +41,7 @@ const seo = computed<SeoData | undefined>(() => {
 useSeo(seo)
 
 watchEffect(() => {
-  const url = resource.value?.url
-  if (url) window.location.replace(url)
+  if (redirectUrl.value) window.location.replace(redirectUrl.value)
 })
 </script>
 
@@ -61,7 +61,7 @@ watchEffect(() => {
       {{ $t('pages.resourceDetail.notFound') }}
     </p>
 
-    <p v-else-if="resource.url" class="detail-state ca-container--narrow">
+    <p v-else-if="redirectUrl" class="detail-state ca-container--narrow">
       {{ $t('pages.resourceDetail.redirecting') }}
     </p>
 

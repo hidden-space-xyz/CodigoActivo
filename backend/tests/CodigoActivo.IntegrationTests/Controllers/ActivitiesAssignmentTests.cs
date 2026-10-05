@@ -4,6 +4,7 @@ using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -300,6 +301,29 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         member!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
         var child = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId);
         child!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Participant);
+    }
+
+    [Fact]
+    public async Task AssignHouseholdListLongerThanAnyHouseholdReturnsBadRequest()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        var client = await LoginAsMemberAsync();
+        var request = new AssignHouseholdRequest([
+            .. Enumerable
+                .Range(0, Household.MaxMembers + 1)
+                .Select(_ => new HouseholdAssignmentRequest(
+                    Guid.NewGuid(),
+                    SeedIds.ActivityRoleTypes.Participant
+                )),
+        ]);
+
+        var response = await client.PostJsonAsync(
+            $"/api/activities/{activityId}/assign-household",
+            request,
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]

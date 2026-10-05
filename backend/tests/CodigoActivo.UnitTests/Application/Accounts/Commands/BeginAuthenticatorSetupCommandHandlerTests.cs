@@ -113,6 +113,19 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncAuthenticatorAlreadyActiveReturnsConflictWithoutAPendingKey()
+    {
+        var user = users.FindReturns(NewUserWithAuthenticator(Secret));
+
+        var result = await SetupAsync(user.Id, "password123");
+
+        result.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorAlreadyEnabled);
+        user.PendingAuthenticatorKey.Should().BeNull();
+        user.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + Secret);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
     public async Task HandleAsyncUserWithoutEmailLabelsTheAccountWithItsIdentifier()
     {
         var user = users.FindReturns(NewUser(email: null));

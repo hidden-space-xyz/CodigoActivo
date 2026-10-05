@@ -2,13 +2,12 @@ import type { VueWrapper } from '@vue/test-utils'
 import { ElSelect } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { Gender, RegisterResponse } from '@/shared/api/generated/models'
+import type { Gender } from '@/shared/api/generated/models'
 import { i18n } from '@/shared/i18n'
 
 import { renderApp, t } from '../../../../support/render'
-import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
+import { apiError, http, noContent, server, TEST_CSRF_TOKEN } from '../../../../support/server'
 import { useHomeApi } from '../../../../support/api/home'
-import { buildUserResponse } from '../../../../support/builders'
 
 function page(wrapper: VueWrapper) {
   return wrapper.get('main')
@@ -69,16 +68,12 @@ describe('register page', () => {
 
   it('registers an adult with a minor and asks to verify the email', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
-    const response: RegisterResponse = {
-      adult: buildUserResponse({ id: 'adult-1' }),
-      minors: [buildUserResponse({ id: 'minor-1' })],
-    }
-    const received = serveRegister(() => HttpResponse.json(response, { status: 201 }))
+    const received = serveRegister(noContent)
     const resent: unknown[] = []
     server.use(
-      http.post('/api/auth/:userId/resend-verification', ({ params }) => {
-        resent.push(params.userId)
-        return new HttpResponse(null, { status: 204 })
+      http.post('/api/auth/resend-verification', async ({ request }) => {
+        resent.push(await request.json())
+        return noContent()
       }),
     )
 
@@ -128,7 +123,7 @@ describe('register page', () => {
     expect(resend().text()).toBe(t('pages.register.success.resend'))
 
     await resend().trigger('click')
-    await vi.waitFor(() => expect(resent).toEqual(['adult-1']))
+    await vi.waitFor(() => expect(resent).toEqual([{ email: 'ada@example.test' }]))
     await vi.waitFor(() =>
       expect(document.body.querySelector('.el-notification')?.textContent).toContain(
         t('entities.account.verification.linkResentDetail'),
@@ -140,9 +135,7 @@ describe('register page', () => {
   })
 
   it('always asks to verify the email and restarts the flow on demand', async () => {
-    serveRegister(() =>
-      HttpResponse.json({ adult: buildUserResponse(), minors: [] }, { status: 201 }),
-    )
+    serveRegister(noContent)
     const { wrapper } = await renderApp('/register')
     await clickButton(wrapper, t('pages.register.ageGate.confirm'))
     await fillAdult(wrapper)
@@ -158,23 +151,6 @@ describe('register page', () => {
     expect(page(wrapper).text()).toContain(t('pages.register.ageGate.question'))
     await clickButton(wrapper, t('pages.register.ageGate.confirm'))
     expect((wrapper.get('#reg-firstname').element as HTMLInputElement).value).toBe('')
-  })
-
-  it('keeps the form and shows the API error when the email is already in use', async () => {
-    serveRegister(() => apiError(409, 'UserEmailAlreadyInUse'))
-    const { wrapper } = await renderApp('/register')
-    await clickButton(wrapper, t('pages.register.ageGate.confirm'))
-    await fillAdult(wrapper)
-
-    await wrapper.find('form').trigger('submit')
-
-    await vi.waitFor(() =>
-      expect(document.body.querySelector('.el-notification')?.textContent).toContain(
-        t('errors.UserEmailAlreadyInUse'),
-      ),
-    )
-    expect(wrapper.find('form').exists()).toBe(true)
-    expect((wrapper.get('#reg-firstname').element as HTMLInputElement).value).toBe('Ada')
   })
 
   it('keeps the form and explains that disposable email addresses are refused', async () => {
@@ -195,7 +171,7 @@ describe('register page', () => {
   })
 
   it('does not call the API when the form is invalid', async () => {
-    const received = serveRegister(() => HttpResponse.json({}, { status: 201 }))
+    const received = serveRegister(noContent)
     const { wrapper } = await renderApp('/register')
     await clickButton(wrapper, t('pages.register.ageGate.confirm'))
 
