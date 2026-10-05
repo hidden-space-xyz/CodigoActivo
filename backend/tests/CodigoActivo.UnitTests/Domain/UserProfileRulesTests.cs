@@ -287,9 +287,9 @@ public sealed class UserProfileRulesTests
             account,
             new
             {
-                Email = (string?)null,
-                Phone = (string?)null,
-                SecondaryPhone = (string?)null,
+                Email = default(string?),
+                Phone = default(string?),
+                SecondaryPhone = default(string?),
             }
         );
 

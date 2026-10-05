@@ -192,11 +192,15 @@ public sealed class ValidationAttributesTests : IDisposable
     [Fact]
     public void IsValidRichTextBeyondMaxDepthReturnsFalse()
     {
-        var nested = "{\"type\":\"paragraph\"}";
-        for (var i = 0; i < RichTextAllowlist.MaxDepth; i++)
-        {
-            nested = "{\"type\":\"blockquote\",\"content\":[" + nested + "]}";
-        }
+        var nested =
+            string.Concat(
+                Enumerable.Repeat(
+                    "{\"type\":\"blockquote\",\"content\":[",
+                    RichTextAllowlist.MaxDepth
+                )
+            )
+            + "{\"type\":\"paragraph\"}"
+            + string.Concat(Enumerable.Repeat("]}", RichTextAllowlist.MaxDepth));
 
         new RichTextAttribute().IsValid(Doc(nested)).Should().BeFalse();
     }

@@ -83,7 +83,7 @@ public sealed class UserTests
     public void VerifyPendingUserLeavesLastLoginUntouched()
     {
         var user = NewPendingUser();
-        Persisted.Overwrite(user, new { LastLoginAt = (DateTimeOffset?)null });
+        Persisted.Overwrite(user, new { LastLoginAt = default(DateTimeOffset?) });
 
         user.Verify(Now);
 
@@ -118,7 +118,7 @@ public sealed class UserTests
     public void RegisterLoginPendingUserStampsSuppliedLastLoginTime()
     {
         var user = NewPendingUser();
-        Persisted.Overwrite(user, new { LastLoginAt = (DateTimeOffset?)null });
+        Persisted.Overwrite(user, new { LastLoginAt = default(DateTimeOffset?) });
 
         user.RegisterLogin(Now);
 
