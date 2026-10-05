@@ -88,6 +88,25 @@ public sealed class ChangePasswordCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncNewPasswordSameAsCurrentReturnsBadRequestWithoutCountingAnAttempt()
+    {
+        var user = NewUser();
+        Persisted.Overwrite(user, new { PasswordHash = hasher.Hash("correct") });
+        users.FindReturns(user);
+        var request = new ChangePasswordRequest("correct", "correct");
+
+        var result = await sut.HandleAsync(
+            new ChangePasswordCommand(Guid.NewGuid(), request),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserNewPasswordSameAsCurrent);
+        user.PasswordFailedAttempts.Should().Be(0);
+        await AssertNotSavedAsync();
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task HandleAsyncIncorrectCurrentPasswordReturnsBadRequest()
     {
         var user = NewUser();

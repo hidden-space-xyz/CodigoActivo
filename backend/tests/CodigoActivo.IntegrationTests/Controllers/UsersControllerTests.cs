@@ -979,7 +979,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await response.ReadJsonAsync<UserResponse>(Ct);
         created!.ParentId.Should().Be(TestSeedData.Users.MemberId);
         created.ParentName.Should().Be("Marta Miembro");
@@ -1028,6 +1028,21 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "NewStr0ngPass!");
+    }
+
+    [Fact]
+    public async Task ChangePasswordToTheSamePasswordReturnsBadRequest()
+    {
+        var client = await LoginAsMemberAsync();
+        var request = new ChangePasswordRequest(TestSeedData.Password, TestSeedData.Password);
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/password",
+            request,
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserNewPasswordSameAsCurrent);
     }
 
     [Fact]

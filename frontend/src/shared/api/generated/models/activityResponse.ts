@@ -21,7 +21,4 @@ export interface ActivityResponse {
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  createdBy: string;
-  /** @nullable */
-  updatedBy?: string | null;
 }

@@ -26,7 +26,7 @@ describe('event detail mapper', () => {
         { name: 'Volunteer', approved: 7 },
         { name: '', approved: 1 },
       ],
-      ratingsCount: 2,
+      scoredRatingsCount: 2,
       ratingsAverage: 4.25,
     })
     expect(toEventStats(buildSummary({ ratingsAverage: null })).ratingsAverage).toBeNull()
@@ -98,5 +98,9 @@ describe('event detail mapper', () => {
       leastLiked: '',
       suggestions: '',
     })
+  })
+
+  it('maps a rating without a score as unscored', () => {
+    expect(toEventRating(buildRating({ score: null })).score).toBeNull()
   })
 })

@@ -55,7 +55,7 @@ describe('ThumbnailField', () => {
   })
 
   it('previews the stored thumbnail and shows its file name', async () => {
-    const requested = serveFileNames({ 'file-1': { name: 'poster', extension: '.png' } })
+    const requested = serveFileNames({ 'file-1': { name: 'poster.png', extension: 'png' } })
 
     const { wrapper } = await renderWithProviders(ThumbnailField, {
       props: { existingThumbnailId: 'file-1' },
@@ -152,7 +152,7 @@ describe('ThumbnailField', () => {
   })
 
   it('restores the stored thumbnail when the picked image is removed', async () => {
-    const requested = serveFileNames({ 'file-1': { name: 'poster', extension: '.png' } })
+    const requested = serveFileNames({ 'file-1': { name: 'poster.png', extension: 'png' } })
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:picked')
     const revoke = vi.spyOn(URL, 'revokeObjectURL')
     const { wrapper } = await renderWithProviders(ThumbnailField, {
@@ -192,8 +192,8 @@ describe('ThumbnailField', () => {
 
   it('follows changes of the stored thumbnail id and drops a picked image', async () => {
     const requested = serveFileNames({
-      'file-1': { name: 'uno', extension: '.png' },
-      'file-2': { name: 'dos', extension: '.jpg' },
+      'file-1': { name: 'uno.png', extension: 'png' },
+      'file-2': { name: 'dos.jpg', extension: 'jpg' },
     })
     const { wrapper } = await renderWithProviders(ThumbnailField, {
       props: { existingThumbnailId: 'file-1' },

@@ -114,6 +114,9 @@ public sealed class UserProfileRulesTests
         "12345678Z",
         ErrorCode.SecondaryPhoneSameAsPrimary
     )]
+    [InlineData("ana@test.com", "123", null, "12345678Z", ErrorCode.UserPhoneInvalid)]
+    [InlineData("ana@test.com", "abc", null, "12345678Z", ErrorCode.UserPhoneInvalid)]
+    [InlineData("ana@test.com", "600111222", "6+00111222", "12345678Z", ErrorCode.UserPhoneInvalid)]
     [InlineData("ana@test.com", "600111222", null, null, ErrorCode.UserNationalIdRequired)]
     [InlineData("ana@test.com", "600111222", null, " - ", ErrorCode.UserNationalIdRequired)]
     [InlineData("ana@test.com", "600111222", null, "12345678A", ErrorCode.RequestValidationFailed)]

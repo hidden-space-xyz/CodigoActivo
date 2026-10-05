@@ -5,6 +5,7 @@ using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.EventCategories.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -15,13 +16,19 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
 {
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
+    private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly DeleteEventCategoryTypeCommandHandler sut;
 
     public DeleteEventCategoryTypeCommandHandlerTests()
     {
-        sut = new DeleteEventCategoryTypeCommandHandler(categoryTypes, uow, cacheInvalidator);
+        sut = new DeleteEventCategoryTypeCommandHandler(
+            categoryTypes,
+            events,
+            uow,
+            cacheInvalidator
+        );
     }
 
     [Fact]
@@ -36,6 +43,27 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncOnlyCategoryOfSomeEventReturnsConflict()
+    {
+        var categoryType = EventCategoryType.Create("Talleres", "#112233");
+        categoryTypes.Finds(categoryType);
+        events
+            .HasEventWithOnlyCategoryAsync(categoryType.Id, Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var result = await sut.HandleAsync(
+            new DeleteEventCategoryTypeCommand(categoryType.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
+        result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeOnlyCategoryOfEvent);
+        categoryTypes.DidNotReceiveWithAnyArgs().Remove(default!);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }

@@ -91,13 +91,13 @@ public record RegisterRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,
     [Required] [MaxLength(120)] [NotBlank] string LastName,
     [Required] [EmailAddress] [MaxLength(256)] string Email,
-    [Required] [Phone] [MaxLength(40)] string Phone,
+    [Required] [MaxLength(40)] string Phone,
     [Required] [MinLength(12)] [MaxLength(128)] [NotBlank] string Password,
     [Required] [MaxLength(12)] [NotBlank] [SpanishNationalId] string NationalId,
     [EnumDataType(typeof(Gender))] Gender Gender,
     bool PromotionalConsent,
     [MaxLength(20)] IReadOnlyList<RegisterMinorRequest>? Minors,
-    [Phone] [MaxLength(40)] string? SecondaryPhone = null
+    [MaxLength(40)] string? SecondaryPhone = null
 );
 
 /// <summary>

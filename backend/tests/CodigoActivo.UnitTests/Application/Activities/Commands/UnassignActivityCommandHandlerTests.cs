@@ -113,6 +113,24 @@ public sealed class UnassignActivityCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncStartedActivityWithOpenWindowReturnsAlreadyStarted()
+    {
+        var activityId = Guid.NewGuid();
+        clock.UtcNow = ActivityStartsAt.AddMinutes(1);
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, ActivityEndsAt);
+        var assignment = activity.SignUp(Guid.NewGuid());
+
+        var result = await sut.HandleAsync(
+            new UnassignActivityCommand(activityId, assignment.UserId, IsAdmin: false),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
+        result.Error.Code.Should().Be(ErrorCode.ActivityAlreadyStarted);
+        activity.Assignments.Should().Contain(assignment);
+    }
+
+    [Fact]
     public async Task HandleAsyncWindowOpenForMemberRemovesAssignment()
     {
         var activityId = Guid.NewGuid();

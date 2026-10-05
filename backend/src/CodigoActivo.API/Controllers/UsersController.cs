@@ -194,6 +194,7 @@ public class UsersController : ApiControllerBase
     /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPost("{userId:guid}/children")]
     [AllowOnlySelf]
+    [ProducesResponseType<UserResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<UserResponse>> AddChildAsync(
         Guid userId,
         [FromBody] RegisterMinorRequest request,
@@ -202,9 +203,10 @@ public class UsersController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return await ToOkAfterAsync(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new AddChildCommand(userId, request), ct),
-            id => getById.HandleAsync(new GetUserByIdQuery(id), ct)
+            id => getById.HandleAsync(new GetUserByIdQuery(id), ct),
+            id => $"/api/users/{id}"
         );
     }
 

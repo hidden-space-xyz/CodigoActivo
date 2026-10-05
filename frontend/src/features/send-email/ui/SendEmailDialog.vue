@@ -28,6 +28,11 @@ const props = defineProps<{
   /** Disables sending and closing while an email is in flight. */
   sending: boolean
   /**
+   * Addresses the email will reach, shown and confirmed instead of the selection size; zero blocks
+   * sending. `null` while the audience is loading or when it could not be loaded.
+   */
+  recipients?: number | null
+  /**
    * Recipients without promotional consent; above zero shows a non-blocking warning. `null` while
    * the audience is loading or when it could not be loaded, which hides the warning.
    */
@@ -59,6 +64,8 @@ watch(
 )
 
 const recipientsWithoutConsent = computed(() => props.withoutConsent ?? 0)
+const knownRecipients = computed(() => props.recipients ?? null)
+const nobodyReachable = computed(() => knownRecipients.value === 0)
 
 const totalBytes = computed(() => draft.attachments.reduce((sum, file) => sum + file.size, 0))
 
@@ -97,14 +104,18 @@ function close(): void {
 }
 
 function send(): void {
-  if (props.sending) return
+  if (props.sending || nobodyReachable.value) return
 
   const payload = form.submit()
   if (!payload) return
 
+  const count = knownRecipients.value
   confirmAction({
     header: t('features.sendEmail.confirm.header'),
-    message: t('features.sendEmail.confirm.message', { target: props.target }),
+    message:
+      count === null
+        ? t('features.sendEmail.confirm.message', { target: props.target })
+        : t('features.sendEmail.confirm.messageCount', { count }, count),
     acceptLabel: t('features.sendEmail.send'),
     accept: () => emit('submit', payload),
   })
@@ -122,6 +133,9 @@ function send(): void {
     @update:model-value="close"
   >
     <p class="target">{{ $t('features.sendEmail.target', { target }) }}</p>
+    <p v-if="knownRecipients !== null" class="target">
+      {{ $t('features.sendEmail.recipients', { count: knownRecipients }, knownRecipients) }}
+    </p>
 
     <el-alert
       v-if="recipientsWithoutConsent > 0"
@@ -225,6 +239,7 @@ function send(): void {
         icon="send"
         type="primary"
         :loading="sending"
+        :disabled="nobodyReachable"
         @click="send"
       />
     </template>

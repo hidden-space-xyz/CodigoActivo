@@ -6,6 +6,7 @@ import { applyRouteSeo } from '@/shared/lib/seo'
 
 import { installAccessGuard } from './guards'
 import { routes } from './routes'
+import { installSessionExpiry } from './session-expiry'
 
 /** What the application router is built on: its history and the query client of the session. */
 interface AppRouterOptions {
@@ -15,8 +16,8 @@ interface AppRouterOptions {
 
 /**
  * Router over the application routes. It restores the saved scroll position on back/forward and
- * otherwise scrolls smoothly to the top, checks `meta.access` before every navigation and applies
- * the route SEO after each successful one.
+ * otherwise scrolls smoothly to the top, checks `meta.access` before every navigation, applies the
+ * route SEO after each successful one and leaves for login when the API reports the session lost.
  */
 export function createAppRouter(options: AppRouterOptions): Router {
   const router = createRouter({
@@ -29,6 +30,7 @@ export function createAppRouter(options: AppRouterOptions): Router {
   })
 
   installAccessGuard(router, options.queryClient)
+  installSessionExpiry(router, options.queryClient)
   router.afterEach((to, _from, failure) => {
     if (!failure) applyRouteSeo(to)
   })

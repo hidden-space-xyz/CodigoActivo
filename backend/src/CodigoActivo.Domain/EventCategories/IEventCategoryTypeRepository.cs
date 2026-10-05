@@ -16,7 +16,7 @@ public interface IEventCategoryTypeRepository : IRepository<EventCategoryType>
     public Task<EventCategoryType?> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
-    /// Tells whether another category already uses a name.
+    /// Tells whether another category already uses a name, ignoring letter case.
     /// </summary>
     /// <param name="name">Name to look for, already trimmed.</param>
     /// <param name="exceptId">Category to ignore, when renaming it.</param>

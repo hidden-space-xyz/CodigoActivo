@@ -3,6 +3,7 @@ import { watch } from 'vue'
 
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import type { Partner, PartnerInput } from '@/entities/partner'
+import { isDayAfter } from '@/shared/lib/date'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
 
@@ -74,6 +75,7 @@ async function save(): Promise<void> {
           v-model="draft.fromDate"
           type="date"
           :format="DATE_FORMAT"
+          :disabled-date="(date: Date) => isDayAfter(date, new Date())"
           :class="{ 'ca-invalid': errors.fromDate }"
         />
         <small v-if="errors.fromDate" class="form__error">{{ errors.fromDate }}</small>

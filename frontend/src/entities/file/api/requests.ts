@@ -22,10 +22,13 @@ export async function uploadThumbnailRequest(
   return response.data.id ?? ''
 }
 
-/** Resolves the display file name (name plus extension); empty when the file no longer exists. */
+/**
+ * Resolves the display file name, the original name as uploaded (it already carries its extension);
+ * empty when the file no longer exists.
+ */
 export async function getThumbnailNameRequest(id: string): Promise<string> {
   const meta = await unwrapOrNull<FileResponse>(getApiFilesFileId(id))
-  return `${meta?.name ?? ''}${meta?.extension ?? ''}`
+  return meta?.name ?? ''
 }
 
 /** Uploads a new file and resolves to its id, or `undefined` if the API omitted it. */

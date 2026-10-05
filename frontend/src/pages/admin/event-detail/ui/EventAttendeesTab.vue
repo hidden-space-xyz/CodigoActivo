@@ -120,6 +120,7 @@ const {
   visible: emailDialogVisible,
   target: emailTarget,
   sending: emailSending,
+  recipients: emailRecipients,
   withoutConsent: emailWithoutConsent,
   open: openEmail,
   submit: submitEmail,
@@ -421,6 +422,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
       v-model:visible="emailDialogVisible"
       :target="emailTarget"
       :sending="emailSending"
+      :recipients="emailRecipients"
       :without-consent="emailWithoutConsent"
       @submit="submitEmail"
     />

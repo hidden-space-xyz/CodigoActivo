@@ -174,8 +174,13 @@ const {
             <small v-if="errors.email" class="acc-form__error">{{ errors.email }}</small>
           </div>
           <div class="acc-form__consent acc-form__field--wide">
-            <el-checkbox id="p-promotional-consent" v-model="draft.promotionalConsent" />
-            <label for="p-promotional-consent">{{ $t('common.promotionalConsentOption') }}</label>
+            <el-checkbox
+              id="p-promotional-consent"
+              v-model="draft.promotionalConsent"
+              class="ca-checkbox-text acc-form__consent-label"
+            >
+              {{ $t('common.promotionalConsentOption') }}
+            </el-checkbox>
           </div>
           <div v-if="requiresPassword" class="acc-form__field acc-form__field--wide">
             <label for="p-current">{{
@@ -335,7 +340,7 @@ const {
   margin-bottom: 14px;
 }
 
-.acc-form__consent label {
+.acc-form__consent-label {
   font-size: 13px;
   line-height: 1.5;
   color: var(--ca-text-muted);

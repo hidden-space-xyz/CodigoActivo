@@ -11,7 +11,7 @@ const items = computed(() => data.value?.items ?? [])
 </script>
 
 <template>
-  <section v-if="isLoading || featured" class="home-section">
+  <section v-if="isLoading || featured || items.length" class="home-section">
     <div class="ca-container">
       <div class="home-section__head">
         <h2 class="home-section__title">{{ $t('pages.home.events.title') }}</h2>
@@ -21,8 +21,8 @@ const items = computed(() => data.value?.items ?? [])
       </div>
 
       <p v-if="isLoading" class="home-section__loading">{{ $t('common.loading') }}</p>
-      <template v-else-if="featured">
-        <FeaturedEventCard :event="featured" />
+      <template v-else>
+        <FeaturedEventCard v-if="featured" :event="featured" />
         <div v-if="items.length" class="home-section__grid">
           <EventCard v-for="event in items" :key="event.id" :event="event" />
         </div>

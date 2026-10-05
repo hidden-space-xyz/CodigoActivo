@@ -24,6 +24,7 @@ describe('toUser', () => {
       gender: 'Female',
       isAdmin: true,
       isInitialAdmin: false,
+      usesAuthenticator: false,
       parentId: null,
       parentName: '',
       dependentCount: 0,
@@ -42,6 +43,12 @@ describe('toUser', () => {
       parentName: 'Ada Lovelace',
       dependentCount: 0,
     })
+  })
+
+  it('tells whether sign-ins are confirmed with an authenticator app', () => {
+    expect(toUser(buildUserResponse({ twoFactorMethod: 'Authenticator' })).usesAuthenticator).toBe(
+      true,
+    )
   })
 
   it('reads a user without a type as having none', () => {

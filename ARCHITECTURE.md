@@ -142,7 +142,8 @@ Expected failures are values, not exceptions: command and single-item query hand
 `Result<T>` with an `ErrorCode`; controllers translate them through `ApiControllerBase`. All client-visible
 failures use `ApiErrorResponse(Title, Status, Code, TraceId)`, including model validation, authorization,
 CSRF and unhandled exceptions. HTTP mappings: 400 validation, 401 unauthenticated, 403 forbidden, 404 not
-found, 409 conflict, 500 unexpected.
+found, 409 conflict, 500 unexpected. A path under `/api` that matches no endpoint answers 404
+`EndpointNotFound` to anyone, and every create answers 201 with the new resource and its `Location`.
 
 `ErrorCode` is serialized as a string and is part of the frontend contract; the API registers the string enum
 converter for MVC and for the responses it writes directly, since the Domain carries no serialization
@@ -221,7 +222,9 @@ minors and admin user forms only bind fields and show its messages.
 - Route names and params are typed in `shared/routes`. Route guards resolve authentication and administrator
   access before entering protected pages; detail pages receive their path params as props.
 - The session is the `GET /api/auth/me` query in the TanStack Query cache, read through `useSession`; ending it
-  clears every other cached query. Pinia is not used.
+  clears every other cached query. Pinia is not used. A query or mutation the API refuses because the
+  session is gone (`AuthenticationRequired`, `CurrentUserNotFound`) ends it too, and protected pages then
+  return to login (`app/router/session-expiry.ts`).
 - Login is two pages: the password form navigates to `/login/verify`, which reads the pending challenge from
   `GET /api/auth/login/two-factor` (held in a cookie, so a reload survives) and only stores the user in the
   session once the second factor is accepted.

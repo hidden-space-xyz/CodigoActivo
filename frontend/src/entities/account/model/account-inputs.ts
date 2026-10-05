@@ -57,8 +57,8 @@ export interface MinorInput {
 
 /** Rating form values for an attended event; empty comments are sent as `null`. */
 export interface EventRatingInput {
-  /** Stars from 0 to 5; `0` means the user cleared the score. */
-  score: number
+  /** Stars from 1 to 5, or `null` when the user leaves the event unscored. */
+  score: number | null
   mostLiked: string
   leastLiked: string
   suggestions: string

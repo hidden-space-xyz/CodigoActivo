@@ -52,8 +52,8 @@ export function useDeleteAccount() {
     ...accountMutations.deleteAccount(),
     onSuccess: async () => {
       reset()
-      await logoutRequest().catch(() => undefined)
       endSession(queryClient)
+      await logoutRequest().catch(() => undefined)
       await router.push({ name: 'home' })
       feedback.success(
         t('pages.account.deleteAccount.deletedDetail'),

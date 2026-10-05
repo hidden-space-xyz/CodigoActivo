@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,83 +19,21 @@ public sealed class NotBlankAttribute : ValidationAttribute
 }
 
 /// <summary>
-/// Applies json string validation or authorization to the annotated target.
+/// Accepts only rich-text JSON documents made of allowed nodes, marks and attributes, as checked by
+/// <see cref="RichTextAllowlist"/>. Values that are not strings are left to other attributes.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-public sealed class JsonStringAttribute : ValidationAttribute
+public sealed class RichTextAttribute : ValidationAttribute
 {
-    private static readonly JsonDocumentOptions ParseOptions = new()
-    {
-        AllowDuplicateProperties = false,
-    };
+    /// <summary>
+    /// Gets or sets whether image nodes are allowed; text-only fields set it to <see langword="false"/>.
+    /// </summary>
+    public bool AllowImages { get; set; } = true;
 
     /// <inheritdoc />
     public override bool IsValid(object? value)
     {
-        if (value is not string text)
-        {
-            return true;
-        }
-
-        try
-        {
-            JsonDocument.Parse(text, ParseOptions).Dispose();
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
-}
-
-/// <summary>
-/// Refuses a rich-text document that contains an image node, for fields that must hold text only.
-/// Malformed JSON passes here and is left to <see cref="JsonStringAttribute"/>.
-/// </summary>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-public sealed class NoRichTextImagesAttribute : ValidationAttribute
-{
-    private static readonly JsonDocumentOptions ParseOptions = new()
-    {
-        AllowDuplicateProperties = false,
-    };
-
-    /// <inheritdoc />
-    public override bool IsValid(object? value)
-    {
-        if (value is not string text)
-        {
-            return true;
-        }
-
-        try
-        {
-            using var document = JsonDocument.Parse(text, ParseOptions);
-            return !ContainsImage(document.RootElement);
-        }
-        catch (JsonException)
-        {
-            return true;
-        }
-    }
-
-    private static bool ContainsImage(JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            JsonValueKind.Object => IsImage(element)
-                || element.EnumerateObject().Any(property => ContainsImage(property.Value)),
-            JsonValueKind.Array => element.EnumerateArray().Any(ContainsImage),
-            _ => false,
-        };
-    }
-
-    private static bool IsImage(JsonElement element)
-    {
-        return element.TryGetProperty("type", out var type)
-            && type.ValueKind is JsonValueKind.String
-            && string.Equals(type.GetString(), "image", StringComparison.Ordinal);
+        return value is not string text || RichTextAllowlist.IsAllowed(text, AllowImages);
     }
 }
 

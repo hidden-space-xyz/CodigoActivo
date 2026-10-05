@@ -69,12 +69,17 @@ public sealed class SaveEventRatingCommandHandler(
 
         var rating = EventRating.Submit(
             ev.Id,
-            request.Score!.Value,
+            request.Score,
             request.MostLiked,
             request.LeastLiked,
             request.Suggestions
         );
-        await ratings.AddAsync(rating, ct);
+        if (rating.IsFailure)
+        {
+            return rating.Error!;
+        }
+
+        await ratings.AddAsync(rating.Value, ct);
         await uow.SaveChangesAsync(ct);
 
         return Result.Success();

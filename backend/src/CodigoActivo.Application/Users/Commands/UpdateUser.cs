@@ -115,6 +115,7 @@ public sealed class UpdateUserCommandHandler(
                 previousEmail,
                 user.FirstName,
                 change.NewEmail,
+                change.ReplacesPhones,
                 ct
             );
         }

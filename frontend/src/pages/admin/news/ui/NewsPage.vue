@@ -78,7 +78,12 @@ const { visible, editing, loading, openCreate, openEdit } = dialog
         </template>
         <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="160" align="center" fixed="right">
+      <el-table-column
+        :label="$t('common.actions')"
+        width="160"
+        align="center"
+        :fixed="table.actionsFixed.value"
+      >
         <template #default="{ row }">
           <div class="ca-row-actions">
             <ActionButton

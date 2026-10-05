@@ -96,7 +96,7 @@ describe('RichTextEditor', () => {
     expect(wrapper.find('.rt__error').exists()).toBe(false)
   })
 
-  it('emits the serialized document on user edits', async () => {
+  it('emits the serialized document on user edits, keeping only what the API accepts', async () => {
     const { wrapper, editor } = await renderEditor()
 
     editor.chain().focus('end').insertContent('!').run()
@@ -104,13 +104,7 @@ describe('RichTextEditor', () => {
 
     expect(lastEmitted(wrapper)).toEqual({
       type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          attrs: { textAlign: null },
-          content: [{ type: 'text', text: 'Hello world!' }],
-        },
-      ],
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello world!' }] }],
     })
   })
 
@@ -256,6 +250,31 @@ describe('RichTextEditor', () => {
     await settle()
 
     expect(marks(wrapper)).toEqual([])
+  })
+
+  it('adds https to addresses typed without a scheme and refuses unsafe links', async () => {
+    const prompt = vi.spyOn(window, 'prompt')
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => undefined)
+    const { wrapper, editor } = await renderEditor()
+    await selectAll(editor)
+    const link = button(wrapper, t('editor.link'))
+
+    prompt.mockReturnValueOnce('ejemplo.org/eventos')
+    await link.trigger('click')
+    await settle()
+
+    expect(firstBlock(wrapper)?.content?.[0]?.marks?.[0]).toMatchObject({
+      type: 'link',
+      attrs: { href: 'https://ejemplo.org/eventos' },
+    })
+
+    const updates = wrapper.emitted('update:modelValue')?.length
+    prompt.mockReturnValueOnce('javascript:alert(1)')
+    await link.trigger('click')
+    await settle()
+
+    expect(alert).toHaveBeenCalledWith(t('editor.linkInvalid'))
+    expect(wrapper.emitted('update:modelValue')?.length).toBe(updates)
   })
 
   it('inserts a table and edits it from the table toolbar', async () => {

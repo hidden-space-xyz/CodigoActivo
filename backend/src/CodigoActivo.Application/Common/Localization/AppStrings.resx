@@ -199,8 +199,14 @@ Equipo de Código Activo</value>
   <data name="emails.securityAlert.adminRevoked" xml:space="preserve">
     <value>Tu cuenta ya no tiene permisos de administración.</value>
   </data>
-  <data name="emails.securityAlert.identifiersChanged" xml:space="preserve">
-    <value>Se ha cambiado el correo electrónico o el teléfono de tu cuenta. Te avisamos en esta dirección porque era la anterior.</value>
+  <data name="emails.securityAlert.emailChanged" xml:space="preserve">
+    <value>Se ha cambiado el correo electrónico de tu cuenta. Te avisamos en esta dirección porque era la anterior.</value>
+  </data>
+  <data name="emails.securityAlert.phoneChanged" xml:space="preserve">
+    <value>Se ha cambiado el teléfono de contacto de tu cuenta.</value>
+  </data>
+  <data name="emails.securityAlert.emailAndPhoneChanged" xml:space="preserve">
+    <value>Se han cambiado el correo electrónico y el teléfono de contacto de tu cuenta. Te avisamos en esta dirección porque era la anterior.</value>
   </data>
   <data name="emails.securityAlert.passwordLocked" xml:space="preserve">
     <value>Hemos bloqueado tu cuenta tras varios intentos seguidos con una contraseña incorrecta y hemos cerrado todas tus sesiones. Para volver a entrar tienes que restablecer la contraseña desde «¿Has olvidado tu contraseña?».</value>
@@ -215,7 +221,7 @@ Equipo de Código Activo</value>
     <value>Un miembro de la asociación ha revisado {0} en esta actividad y la ha aprobado. La plaza queda reservada.</value>
   </data>
   <data name="emails.activityDecision.confirmedNote" xml:space="preserve">
-    <value>Si finalmente no fuera posible asistir, te agradecemos que la anules con la mayor antelación posible desde tu área personal, para que otra persona pueda ocupar la plaza.</value>
+    <value>Si finalmente no fuera posible asistir, te agradecemos que la anules cuanto antes desde la página del evento mientras la inscripción siga abierta, para que otra persona pueda ocupar la plaza. Si ya se ha cerrado, avísanos por los medios de contacto de nuestra web.</value>
   </data>
   <data name="emails.activityDecision.confirmedButtonLabel" xml:space="preserve">
     <value>Ver el evento</value>

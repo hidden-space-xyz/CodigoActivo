@@ -173,6 +173,7 @@ public class ActivitiesController : ApiControllerBase
     /// <returns>An HTTP response containing an activity, or an error response.</returns>
     [HttpPost("{eventId:guid}")]
     [AllowOnlyAdmin]
+    [ProducesResponseType<ActivityResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<ActivityResponse>> CreateAsync(
         Guid eventId,
         [FromBody] CreateActivityRequest request,

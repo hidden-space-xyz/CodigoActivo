@@ -272,6 +272,15 @@ describe('useServerTable', () => {
     expect(result.paginationProps.value.layout).toBe('prev, pager, next')
     expect(result.paginationProps.value.pagerCount).toBe(5)
     expect(result.tableProps.value.scrollbarAlwaysOn).toBe(true)
+    expect(result.actionsFixed.value).toBe(false)
+  })
+
+  it('keeps the actions column in view on wider viewports', async () => {
+    const { result } = await mountComposable(() =>
+      useServerTable<Row>({ queryKey: ['wide'], fetchPage: fixedPage(0) }),
+    )
+
+    expect(result.actionsFixed.value).toBe('right')
   })
 })
 

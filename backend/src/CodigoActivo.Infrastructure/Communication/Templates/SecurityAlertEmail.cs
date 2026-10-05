@@ -101,8 +101,10 @@ public static class SecurityAlertEmail
             AccountSecurityChange.TwoFactorReset => AppStrings.EmailsSecurityAlertTwoFactorReset,
             AccountSecurityChange.AdminGranted => AppStrings.EmailsSecurityAlertAdminGranted,
             AccountSecurityChange.AdminRevoked => AppStrings.EmailsSecurityAlertAdminRevoked,
-            AccountSecurityChange.IdentifiersChanged =>
-                AppStrings.EmailsSecurityAlertIdentifiersChanged,
+            AccountSecurityChange.EmailChanged => AppStrings.EmailsSecurityAlertEmailChanged,
+            AccountSecurityChange.PhoneChanged => AppStrings.EmailsSecurityAlertPhoneChanged,
+            AccountSecurityChange.EmailAndPhoneChanged =>
+                AppStrings.EmailsSecurityAlertEmailAndPhoneChanged,
             AccountSecurityChange.PasswordLocked => AppStrings.EmailsSecurityAlertPasswordLocked,
             _ => throw new ArgumentOutOfRangeException(nameof(change), change, null),
         };

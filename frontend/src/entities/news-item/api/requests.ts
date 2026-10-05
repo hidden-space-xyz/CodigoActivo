@@ -37,11 +37,15 @@ export async function getNewsByYearPageRequest(
   return { items: items.map(toNewsSummary), total }
 }
 
-/** Fetches four news items, featured first, and splits off the first one as the highlight. */
+/**
+ * Fetches the latest news items, featured first. The first one becomes the highlight only when it
+ * is featured; up to three of the rest fill the grid.
+ */
 export async function getHomeNewsRequest(): Promise<HomeNews> {
   const response = await getApiNews({ sort: FEATURED_FIRST_SORT, pageSize: 4 })
-  const [featured = null, ...items] = toPage(response).items.map(toNewsSummary)
-  return { featured, items }
+  const news = toPage(response).items.map(toNewsSummary)
+  const featured = news[0]?.featured ? news[0] : null
+  return { featured, items: news.filter((item) => item !== featured).slice(0, 3) }
 }
 
 /** Loads a whole news item; resolves to `null` when it does not exist (404). */

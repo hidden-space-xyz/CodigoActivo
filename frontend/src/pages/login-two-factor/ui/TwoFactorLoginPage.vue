@@ -88,11 +88,14 @@ const {
           </div>
 
           <div class="two-factor-keep">
-            <el-checkbox id="two-factor-keep-signed-in" v-model="form.keepSignedIn" />
             <div class="two-factor-keep__text">
-              <label for="two-factor-keep-signed-in" class="two-factor-keep__label">{{
-                $t('pages.loginTwoFactor.keepSignedIn')
-              }}</label>
+              <el-checkbox
+                id="two-factor-keep-signed-in"
+                v-model="form.keepSignedIn"
+                class="ca-checkbox-text two-factor-keep__label"
+              >
+                {{ $t('pages.loginTwoFactor.keepSignedIn') }}
+              </el-checkbox>
               <i18n-t
                 keypath="pages.loginTwoFactor.keepSignedInHint"
                 tag="p"
@@ -211,11 +214,10 @@ const {
 
 .two-factor-keep__text {
   min-width: 0;
-  padding-top: 5px;
 }
 
-.two-factor-keep__label {
-  display: block;
+.two-factor-keep .two-factor-keep__label {
+  display: flex;
   font-size: 14px;
   font-weight: 600;
   line-height: 1.5;
@@ -224,7 +226,7 @@ const {
 }
 
 .two-factor-keep__hint {
-  margin: 4px 0 0;
+  margin: 4px 0 0 24px;
   font-size: 13px;
   line-height: 1.55;
   color: var(--ca-text-muted);

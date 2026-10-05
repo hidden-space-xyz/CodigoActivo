@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
+import { isEventRatingEmpty } from '@/entities/account'
 import type { EventRatingInput } from '@/entities/account'
 import { BrandButton } from '@/shared/ui/brand-button'
 
@@ -14,7 +15,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  /** Fired with the score (0 when cleared) and free-text answers on submit. */
+  /** Fired on submit with the score (`null` without stars) and the free-text answers. */
   submit: [EventRatingInput]
   /** Fired on cancel or when the dialog is dismissed. */
   close: []
@@ -22,18 +23,26 @@ const emit = defineEmits<{
 
 const MAX_ANSWER_LENGTH = 2000
 
-const form = reactive<EventRatingInput>({
-  score: 0,
+const form = reactive({
+  stars: 0,
   mostLiked: '',
   leastLiked: '',
   suggestions: '',
 })
 
+const rating = computed<EventRatingInput>(() => ({
+  score: form.stars > 0 ? form.stars : null,
+  mostLiked: form.mostLiked,
+  leastLiked: form.leastLiked,
+  suggestions: form.suggestions,
+}))
+const empty = computed(() => isEventRatingEmpty(rating.value))
+
 watch(
   () => props.visible,
   (visible) => {
     if (!visible) return
-    form.score = 0
+    form.stars = 0
     form.mostLiked = ''
     form.leastLiked = ''
     form.suggestions = ''
@@ -42,12 +51,8 @@ watch(
 )
 
 function onSubmit(): void {
-  emit('submit', {
-    score: form.score,
-    mostLiked: form.mostLiked,
-    leastLiked: form.leastLiked,
-    suggestions: form.suggestions,
-  })
+  if (empty.value) return
+  emit('submit', rating.value)
 }
 </script>
 
@@ -66,8 +71,8 @@ function onSubmit(): void {
       <div class="acc-form__field">
         <label for="rating-score">{{ $t('pages.account.history.dialog.score') }}</label>
         <div class="acc-rating__stars">
-          <el-rate id="rating-score" v-model="form.score" />
-          <BrandButton v-if="form.score > 0" variant="link" type="button" @click="form.score = 0">{{
+          <el-rate id="rating-score" v-model="form.stars" />
+          <BrandButton v-if="form.stars > 0" variant="link" type="button" @click="form.stars = 0">{{
             $t('pages.account.history.dialog.clearScore')
           }}</BrandButton>
         </div>
@@ -108,12 +113,16 @@ function onSubmit(): void {
         />
       </div>
 
+      <p v-if="empty" class="acc-rating__hint">
+        {{ $t('pages.account.history.dialog.emptyHint') }}
+      </p>
+
       <div class="acc-form__actions">
         <BrandButton variant="link" type="button" @click="emit('close')">
           {{ $t('common.cancel') }}
         </BrandButton>
-        <BrandButton variant="primary" type="submit" :loading="saving">
-          {{ $t('common.save') }}
+        <BrandButton variant="primary" type="submit" :disabled="empty" :loading="saving">
+          {{ $t('pages.account.history.dialog.submit') }}
         </BrandButton>
       </div>
     </form>
@@ -132,6 +141,13 @@ function onSubmit(): void {
   color: var(--ca-text-dim);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.acc-rating__hint {
+  margin: 0 0 8px;
+  color: var(--ca-text-dim);
+  font-size: 13px;
+  text-align: right;
 }
 
 .acc-rating__stars {

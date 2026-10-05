@@ -184,6 +184,7 @@ public class EventsController : ApiControllerBase
     /// <returns>An HTTP response containing an event, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
+    [ProducesResponseType<EventResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<EventResponse>> CreateAsync(
         [FromBody] CreateEventRequest request,
         [FromServices] CreateEventCommandHandler handler,
@@ -317,6 +318,7 @@ public class EventsController : ApiControllerBase
     /// <returns>An HTTP response containing an event category type, or an error response.</returns>
     [HttpPost("categoryType")]
     [AllowOnlyAdmin]
+    [ProducesResponseType<EventCategoryTypeResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
         [FromBody] CreateEventCategoryTypeRequest request,
         [FromServices] CreateEventCategoryTypeCommandHandler handler,
@@ -324,9 +326,10 @@ public class EventsController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return await ToOkAfterAsync(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new CreateEventCategoryTypeCommand(request), ct),
-            id => getById.HandleAsync(new GetEventCategoryTypeByIdQuery(id), ct)
+            id => getById.HandleAsync(new GetEventCategoryTypeByIdQuery(id), ct),
+            id => $"/api/events/categoryType/{id}"
         );
     }
 
@@ -388,6 +391,7 @@ public class EventsController : ApiControllerBase
     /// <returns>An HTTP response containing a terms document, or an error response.</returns>
     [HttpPost("termsDocument")]
     [AllowOnlyAdmin]
+    [ProducesResponseType<TermsDocumentResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<TermsDocumentResponse>> CreateTermsDocumentAsync(
         [FromBody] CreateTermsDocumentRequest request,
         [FromServices] CreateTermsDocumentCommandHandler handler,
@@ -395,9 +399,10 @@ public class EventsController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return await ToOkAfterAsync(
+        return await ToCreatedAfterAsync(
             await handler.HandleAsync(new CreateTermsDocumentCommand(request), ct),
-            id => getById.HandleAsync(new GetTermsDocumentByIdQuery(id), ct)
+            id => getById.HandleAsync(new GetTermsDocumentByIdQuery(id), ct),
+            id => $"/api/events/termsDocument/{id}"
         );
     }
 

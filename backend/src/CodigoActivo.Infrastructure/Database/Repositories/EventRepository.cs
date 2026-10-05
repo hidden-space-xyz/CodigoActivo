@@ -35,4 +35,18 @@ public class EventRepository(CodigoActivoDbContext context)
             ct
         );
     }
+
+    /// <inheritdoc />
+    public Task<bool> HasEventWithOnlyCategoryAsync(
+        Guid categoryTypeId,
+        CancellationToken ct = default
+    )
+    {
+        return Set.AnyAsync(
+            e =>
+                e.Categories.Count == 1
+                && e.Categories.Any(category => category.EventCategoryTypeId == categoryTypeId),
+            ct
+        );
+    }
 }

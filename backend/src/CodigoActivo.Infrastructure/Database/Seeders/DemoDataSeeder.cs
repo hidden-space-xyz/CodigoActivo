@@ -519,9 +519,15 @@ public sealed class DemoDataSeeder(
         DateTimeOffset now
     )
     {
+        var windowEnd = signupClosesAt < now ? signupClosesAt : now;
+        if (windowEnd <= signupOpensAt)
+        {
+            return;
+        }
+
+        var windowHours = Math.Max(1, (int)(windowEnd - signupOpensAt).TotalHours);
         var leaderAdult = globalIndex * 3 % MemberAdultCount;
         var baseAdult = globalIndex * 3 % AdultCount;
-        var windowDays = Math.Max(1, (signupClosesAt - signupOpensAt).Days);
 
         int OtherAdult(int offset)
         {
@@ -540,15 +546,11 @@ public sealed class DemoDataSeeder(
 
         for (var slot = 0; slot < picks.Length; slot++)
         {
-            var signedUpAt = signupOpensAt
-                .AddDays((globalIndex + slot) % windowDays)
-                .AddHours(slot);
-            var userId = UserId(picks[slot].UserIndex);
-            activity.RequestAssignment(
-                userId,
-                picks[slot].RoleTypeId,
-                signedUpAt < now ? signedUpAt : now
+            var signedUpAt = signupOpensAt.AddHours(
+                ((globalIndex * 37) + (slot * 101)) % windowHours
             );
+            var userId = UserId(picks[slot].UserIndex);
+            activity.RequestAssignment(userId, picks[slot].RoleTypeId, signedUpAt);
             var statusId = ResolveAssignmentStatus(globalIndex, slot);
             if (statusId != SeedIds.AssignmentStatusTypes.Requested)
             {
@@ -584,13 +586,9 @@ public sealed class DemoDataSeeder(
         {
             var seed = DemoRatings[((eventIndex * 3) + slot) % DemoRatings.Length];
             ratings.Add(
-                EventRating.Submit(
-                    eventId,
-                    seed.Score,
-                    seed.MostLiked,
-                    seed.LeastLiked,
-                    seed.Suggestions
-                )
+                EventRating
+                    .Submit(eventId, seed.Score, seed.MostLiked, seed.LeastLiked, seed.Suggestions)
+                    .Value
             );
         }
 
@@ -978,9 +976,10 @@ public sealed class DemoDataSeeder(
                     + "participante (kits, portátiles, herramientas) debe devolverse al final de cada sesión en el mismo estado en el que "
                     + "se entregó; cualquier incidencia debe comunicarse a la persona responsable de la actividad en el momento en que se "
                     + "produzca.",
-                "Si no vas a poder asistir a una sesión, avísanos con la mayor antelación posible desde tu cuenta o respondiendo al correo "
-                    + "de confirmación. Las plazas son limitadas y una ausencia comunicada a tiempo permite que otra persona pueda "
-                    + "aprovecharla. La inscripción podrá cancelarse en caso de ausencias reiteradas sin justificar.",
+                "Si no vas a poder asistir a una sesión, anula tu inscripción con la mayor antelación posible desde la página del "
+                    + "evento mientras la inscripción siga abierta o, si ya se ha cerrado, avísanos por los medios de contacto de la web. "
+                    + "Las plazas son limitadas y una ausencia comunicada a tiempo permite que otra persona pueda aprovecharla. La "
+                    + "inscripción podrá cancelarse en caso de ausencias reiteradas sin justificar.",
                 "Al inscribirte en la primera actividad de un evento aceptas estas normas para todas las actividades de ese evento. "
                     + "La aceptación queda registrada junto a tu inscripción y puedes consultar el texto vigente en cualquier momento "
                     + "desde la página del evento.",

@@ -30,8 +30,6 @@ public static class ResourceProjections
             },
             CreatedAt = resource.CreatedAt,
             UpdatedAt = resource.UpdatedAt,
-            CreatedBy = resource.CreatedBy,
-            UpdatedBy = resource.UpdatedBy,
             ThumbnailId = resource.ThumbnailId,
         };
 
@@ -56,8 +54,6 @@ public static class ResourceProjections
         },
         CreatedAt = resource.CreatedAt,
         UpdatedAt = resource.UpdatedAt,
-        CreatedBy = resource.CreatedBy,
-        UpdatedBy = resource.UpdatedBy,
         ThumbnailId = resource.ThumbnailId,
     };
 

@@ -38,7 +38,6 @@ export function buildEventListItem(
     signupEndsAt: FAR_FUTURE,
     ...AUDIT,
     updatedAt: null,
-    updatedBy: null,
     thumbnailId: THUMBNAIL_ID,
     featured: false,
     categories: [buildEventCategory()],

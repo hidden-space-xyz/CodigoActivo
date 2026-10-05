@@ -44,71 +44,168 @@ public sealed class ValidationAttributesTests : IDisposable
         new NotBlankAttribute().IsValid("Acme").Should().BeTrue();
     }
 
-    [Fact]
-    public void IsValidJsonStringNonStringValuesReturnsTrue()
+    private const string FileUrl = "/api/files/0f8fad5b-d9cb-469f-a165-70867728950e/content";
+
+    private static string Doc(string content)
     {
-        new JsonStringAttribute().IsValid(42).Should().BeTrue();
-        new JsonStringAttribute().IsValid(null).Should().BeTrue();
+        return "{\"type\":\"doc\",\"content\":[" + content + "]}";
     }
 
-    [Theory]
-    [InlineData("{}")]
-    [InlineData("\"just a string\"")]
-    [InlineData("null")]
-    public void IsValidWellFormedJsonReturnsTrue(string value)
+    private static string Paragraph(string marks)
     {
-        new JsonStringAttribute().IsValid(value).Should().BeTrue();
-    }
-
-    [Theory]
-    [InlineData("{")]
-    [InlineData("not json")]
-    [InlineData("{\"a\":}")]
-    [InlineData("")]
-    public void IsValidMalformedJsonReturnsFalse(string value)
-    {
-        new JsonStringAttribute().IsValid(value).Should().BeFalse();
-    }
-
-    [Theory]
-    [InlineData("{\"type\":\"doc\",\"type\":\"image\"}")]
-    [InlineData("{\"content\":[{\"text\":\"a\",\"text\":\"b\"}]}")]
-    public void IsValidJsonRepeatingAPropertyNameReturnsFalse(string value)
-    {
-        new JsonStringAttribute().IsValid(value).Should().BeFalse();
+        return "{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Hola\",\"marks\":["
+            + marks
+            + "]}]}";
     }
 
     [Theory]
     [InlineData(42)]
     [InlineData(null)]
-    public void IsValidNoRichTextImagesNonStringValuesReturnsTrue(object? value)
+    public void IsValidRichTextNonStringValuesReturnsTrue(object? value)
     {
-        new NoRichTextImagesAttribute().IsValid(value).Should().BeTrue();
+        new RichTextAttribute().IsValid(value).Should().BeTrue();
     }
 
     [Theory]
     [InlineData("{}")]
-    [InlineData("not json")]
-    [InlineData(
-        "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"image\"}]}]}"
-    )]
-    [InlineData("{\"type\":\"doc\",\"content\":[{\"type\":\"table\",\"attrs\":{\"type\":1}}]}")]
-    public void IsValidNoRichTextImagesTextOnlyOrMalformedJsonReturnsTrue(string value)
+    [InlineData("{\"type\":\"doc\"}")]
+    [InlineData("{\"type\":\"doc\",\"content\":[]}")]
+    public void IsValidRichTextEmptyDocumentsReturnsTrue(string value)
     {
-        new NoRichTextImagesAttribute().IsValid(value).Should().BeTrue();
+        new RichTextAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsValidRichTextEditorOutputReturnsTrue()
+    {
+        var value = Doc(
+            "{\"type\":\"heading\",\"attrs\":{\"level\":2,\"textAlign\":\"center\"},\"content\":[{\"type\":\"text\",\"text\":\"Título\"}]},"
+                + "{\"type\":\"paragraph\",\"attrs\":{\"textAlign\":null},\"content\":[{\"type\":\"text\",\"text\":\"Enlace\",\"marks\":[{\"type\":\"link\",\"attrs\":{\"href\":\"https://example.org/a\",\"target\":\"_blank\",\"rel\":\"noopener nofollow\",\"class\":null,\"title\":null}},{\"type\":\"bold\"}]},{\"type\":\"hardBreak\"},{\"type\":\"text\",\"text\":\"Color\",\"marks\":[{\"type\":\"textStyle\",\"attrs\":{\"color\":\"#ff0000\"}},{\"type\":\"highlight\",\"attrs\":{\"color\":\"rgb(255, 255, 0)\"}}]}]},"
+                + "{\"type\":\"image\",\"attrs\":{\"src\":\""
+                + FileUrl
+                + "\",\"alt\":\"foto.png\",\"title\":null,\"width\":null,\"height\":null,\"textAlign\":null}},"
+                + "{\"type\":\"orderedList\",\"attrs\":{\"start\":1,\"type\":null},\"content\":[{\"type\":\"listItem\",\"content\":[{\"type\":\"paragraph\"}]}]},"
+                + "{\"type\":\"table\",\"content\":[{\"type\":\"tableRow\",\"content\":[{\"type\":\"tableHeader\",\"attrs\":{\"colspan\":1,\"rowspan\":1,\"colwidth\":[120]},\"content\":[{\"type\":\"paragraph\"}]}]}]},"
+                + "{\"type\":\"codeBlock\",\"attrs\":{\"language\":null},\"content\":[{\"type\":\"text\",\"text\":\"x\"}]},"
+                + "{\"type\":\"blockquote\",\"content\":[{\"type\":\"paragraph\"}]},{\"type\":\"horizontalRule\"}"
+        );
+
+        new RichTextAttribute().IsValid(value).Should().BeTrue();
     }
 
     [Theory]
-    [InlineData("{\"type\":\"image\"}")]
-    [InlineData(
-        "{\"type\":\"doc\",\"content\":[{\"type\":\"image\",\"attrs\":{\"src\":\"/api/files/0f8fad5b-d9cb-469f-a165-70867728950e/content\"}}]}"
-    )]
-    [InlineData(
-        "{\"type\":\"doc\",\"content\":[{\"type\":\"table\",\"content\":[{\"type\":\"tableRow\",\"content\":[{\"type\":\"tableCell\",\"content\":[{\"type\":\"image\"}]}]}]}]}"
-    )]
-    public void IsValidNoRichTextImagesAnyImageNodeReturnsFalse(string value)
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"mailto:info@example.org\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"tel:+34600000000\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"/events\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"#seccion\"}}")]
+    [InlineData("{\"type\":\"textStyle\",\"attrs\":{\"color\":\"#abc\"}}")]
+    public void IsValidRichTextSafeMarksReturnsTrue(string mark)
     {
-        new NoRichTextImagesAttribute().IsValid(value).Should().BeFalse();
+        new RichTextAttribute().IsValid(Doc(Paragraph(mark))).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"javascript:alert(1)\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\" JavaScript:alert(1)\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"data:text/html,x\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"//evil.example\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"/\\\\evil.example\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"https://user:pass@evil.example\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":null}}")]
+    [InlineData("{\"type\":\"link\"}")]
+    [InlineData(
+        "{\"type\":\"link\",\"attrs\":{\"href\":\"https://a.example\",\"target\":\"_self\"}}"
+    )]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"https://a.example\",\"onclick\":\"x\"}}")]
+    [InlineData("{\"type\":\"textStyle\",\"attrs\":{\"color\":\"red;background:url(x)\"}}")]
+    [InlineData("{\"type\":\"highlight\",\"attrs\":{\"color\":\"expression(alert(1))\"}}")]
+    [InlineData("{\"type\":\"script\"}")]
+    [InlineData("{\"type\":\"bold\",\"extra\":true}")]
+    [InlineData("\"bold\"")]
+    public void IsValidRichTextUnsafeMarksReturnsFalse(string mark)
+    {
+        new RichTextAttribute().IsValid(Doc(Paragraph(mark))).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("{\"type\":\"image\",\"attrs\":{\"src\":\"https://evil.example/x.png\"}}")]
+    [InlineData("{\"type\":\"image\",\"attrs\":{\"src\":\"/api/files/not-a-guid/content\"}}")]
+    [InlineData("{\"type\":\"image\",\"attrs\":{\"src\":null}}")]
+    [InlineData("{\"type\":\"image\"}")]
+    [InlineData("{\"type\":\"iframe\",\"attrs\":{\"src\":\"https://evil.example\"}}")]
+    [InlineData("{\"type\":\"paragraph\",\"attrs\":{\"style\":\"color:red\"}}")]
+    [InlineData("{\"type\":\"paragraph\",\"attrs\":{\"textAlign\":\"middle\"}}")]
+    [InlineData("{\"type\":\"heading\",\"attrs\":{\"level\":7}}")]
+    [InlineData("{\"type\":\"heading\",\"attrs\":{\"level\":\"2\"}}")]
+    [InlineData("{\"type\":\"tableCell\",\"attrs\":{\"colspan\":0}}")]
+    [InlineData("{\"type\":\"tableCell\",\"attrs\":{\"colwidth\":[\"100px\"]}}")]
+    [InlineData("{\"type\":\"codeBlock\",\"attrs\":{\"language\":\"<script>\"}}")]
+    [InlineData("{\"type\":\"paragraph\",\"html\":\"<b>x</b>\"}")]
+    [InlineData("{\"type\":\"paragraph\",\"text\":\"x\"}")]
+    [InlineData("{\"type\":\"text\"}")]
+    [InlineData("{\"type\":\"text\",\"text\":1}")]
+    [InlineData("{\"type\":\"text\",\"text\":\"x\",\"content\":[]}")]
+    [InlineData("{\"type\":\"paragraph\",\"content\":{}}")]
+    [InlineData("{\"type\":\"paragraph\",\"marks\":{}}")]
+    [InlineData("{\"type\":\"paragraph\",\"attrs\":[]}")]
+    [InlineData("{\"type\":1}")]
+    [InlineData("[]")]
+    public void IsValidRichTextUnsafeNodesReturnsFalse(string node)
+    {
+        new RichTextAttribute().IsValid(Doc(node)).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("")]
+    [InlineData("null")]
+    [InlineData("\"just a string\"")]
+    [InlineData("{\"type\":\"paragraph\"}")]
+    [InlineData("{\"type\":\"doc\",\"type\":\"doc\"}")]
+    [InlineData("{\"content\":[]}")]
+    public void IsValidRichTextMalformedOrForeignJsonReturnsFalse(string value)
+    {
+        new RichTextAttribute().IsValid(value).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsValidRichTextWithoutImagesRefusesImageNodes()
+    {
+        var value = Doc("{\"type\":\"image\",\"attrs\":{\"src\":\"" + FileUrl + "\"}}");
+
+        new RichTextAttribute().IsValid(value).Should().BeTrue();
+        new RichTextAttribute { AllowImages = false }
+            .IsValid(value)
+            .Should()
+            .BeFalse();
+        new RichTextAttribute { AllowImages = false }
+            .IsValid(Doc(Paragraph("{\"type\":\"bold\"}")))
+            .Should()
+            .BeTrue();
+    }
+
+    [Fact]
+    public void IsValidRichTextBeyondMaxDepthReturnsFalse()
+    {
+        var nested = "{\"type\":\"paragraph\"}";
+        for (var i = 0; i < RichTextAllowlist.MaxDepth; i++)
+        {
+            nested = "{\"type\":\"blockquote\",\"content\":[" + nested + "]}";
+        }
+
+        new RichTextAttribute().IsValid(Doc(nested)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsValidRichTextBeyondMaxNodesReturnsFalse()
+    {
+        var paragraphs = string.Join(
+            ",",
+            Enumerable.Repeat("{\"type\":\"paragraph\"}", RichTextAllowlist.MaxNodes)
+        );
+
+        new RichTextAttribute().IsValid(Doc(paragraphs)).Should().BeFalse();
     }
 
     [Fact]

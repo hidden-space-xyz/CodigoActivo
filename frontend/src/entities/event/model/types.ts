@@ -167,8 +167,8 @@ export interface EventInput {
 
 /** Filters, sort and page of the admin events table. */
 export interface EventListParams {
-  readonly title?: string
-  readonly subtitle?: string
+  /** Text matched against the title or the subtitle. */
+  readonly search?: string
   readonly categoryTypeId?: string
   readonly eventDateFrom?: string
   readonly eventDateTo?: string

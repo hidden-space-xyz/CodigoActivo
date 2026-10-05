@@ -23,7 +23,8 @@ public sealed record ResetTwoFactorCommand(
 /// <summary>
 /// Executes the command that returns a user's second factor to email, forgetting their
 /// authenticator and clearing any lockout. This is the recovery path for a lost authenticator,
-/// so the administrator re-enters their own password first.
+/// so the administrator re-enters their own password first. The owner is told only when an
+/// authenticator was dropped, since clearing a lockout alone changes nothing about how they log in.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
@@ -67,9 +68,13 @@ public sealed class ResetTwoFactorCommandHandler(
             return Error.NotFound(ErrorCode.UserNotFound);
         }
 
-        user.ResetTwoFactor(clock.UtcNow);
+        var leftAuthenticator = user.ResetTwoFactor(clock.UtcNow);
         await uow.SaveChangesAsync(ct);
-        await securityNotifier.NotifyAsync(user, AccountSecurityChange.TwoFactorReset, ct);
+        if (leftAuthenticator)
+        {
+            await securityNotifier.NotifyAsync(user, AccountSecurityChange.TwoFactorReset, ct);
+        }
+
         return Result.Success();
     }
 }

@@ -131,7 +131,7 @@ function initialFilters<TParams>(
  * previous page visible while fetching, and returns ready-to-bind `tableProps`/`paginationProps`
  * plus event handlers. Sort, page-size and `extraParams` changes, `onFilter` and `clearFilters` go
  * back to the first page; an empty page beyond the end jumps to the last one. Narrow viewports get
- * a compact paginator. `fetchAll` collects every row matching the current filters and sort, e.g.
+ * a compact paginator and an actions column that scrolls with the rest instead of covering it. `fetchAll` collects every row matching the current filters and sort, e.g.
  * for CSV export.
  */
 export function useServerTable<T, TParams = Record<string, unknown>>(
@@ -223,6 +223,8 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     scrollbarAlwaysOn: narrow.value,
   }))
 
+  const actionsFixed = computed<'right' | false>(() => (narrow.value ? false : 'right'))
+
   const paginationProps = computed(() => ({
     currentPage: Math.floor(first.value / rows.value) + 1,
     pageSize: rows.value,
@@ -284,6 +286,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     loading: tableQuery.isFetching,
     isError: tableQuery.isError,
     isNarrow: narrow,
+    actionsFixed,
     first,
     rows,
     sortField,

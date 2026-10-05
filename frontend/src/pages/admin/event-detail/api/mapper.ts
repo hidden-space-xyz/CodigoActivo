@@ -15,7 +15,7 @@ export function toEventStats(summary: EventSummaryResponse): EventStats {
       name: role.roleTypeName ?? '',
       approved: role.approvedAssignments,
     })),
-    ratingsCount: summary.ratingsCount,
+    scoredRatingsCount: summary.scoredRatingsCount,
     ratingsAverage: summary.ratingsAverage ?? null,
   }
 }
@@ -64,7 +64,7 @@ export function toEventAttendee(attendee: EventAttendeeResponse): EventAttendee 
 export function toEventRating(rating: EventRatingListItemResponse): EventRating {
   return {
     id: rating.id,
-    score: rating.score,
+    score: rating.score ?? null,
     mostLiked: rating.mostLiked ?? '',
     leastLiked: rating.leastLiked ?? '',
     suggestions: rating.suggestions ?? '',

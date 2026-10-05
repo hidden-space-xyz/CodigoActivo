@@ -24,6 +24,7 @@ import {
 } from '../../../../../support/builders'
 import { findButtons, notificationTexts } from '../../../../../support/dom'
 import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
+import { formatDateRange } from '@/shared/lib/date'
 
 const ADMIN_EVENT = {
   title: 'Hackathon',
@@ -125,11 +126,21 @@ describe('EventsAdminPage', () => {
         featured: true,
         earlySignupStartsAt: '2026-08-20T08:00:00Z',
       }),
-      buildAdminEventListItem({ id: 'ev-2', title: 'Workshop', categories: [] }),
+      buildAdminEventListItem({
+        id: 'ev-2',
+        title: 'Workshop',
+        categories: [],
+        eventStartsAt: '2026-11-07',
+        eventEndsAt: '2026-11-07',
+      }),
     ])
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Workshop'))
     const text = wrapper.text()
+    expect(wrapper.find('.subtitle-cell').text()).toBe('Code all night')
+    expect(text).toContain(formatDateRange('2026-10-10', '2026-10-12'))
+    expect(text).toContain(formatDateRange('2026-11-07', '2026-11-07'))
+    expect(formatDateRange('2026-11-07', '2026-11-07')).not.toContain('–')
     expect(text).toContain(t('pages.admin.events.header.title'))
     expect(text).toContain('Hackathon')
     expect(text).toContain(t('pages.admin.events.tag.featured'))
@@ -171,12 +182,11 @@ describe('EventsAdminPage', () => {
     const urls: URL[] = []
     const { wrapper } = await renderPage([buildAdminEventListItem()], urls)
 
-    const [title, subtitle] = wrapper.findAllComponents(ColumnSearch)
+    const searches = wrapper.findAllComponents(ColumnSearch)
+    expect(searches).toHaveLength(1)
     const [eventDate, signup] = wrapper.findAllComponents(ColumnFilterDate)
-    title?.vm.$emit('update:modelValue', 'hack')
-    title?.vm.$emit('apply')
-    subtitle?.vm.$emit('update:modelValue', 'night')
-    subtitle?.vm.$emit('apply')
+    searches[0]?.vm.$emit('update:modelValue', 'hack')
+    searches[0]?.vm.$emit('apply')
     const category = wrapper.findComponent(ColumnFilterSelect)
     category.vm.$emit('update:modelValue', 'cat-2')
     category.vm.$emit('apply')
@@ -187,8 +197,7 @@ describe('EventsAdminPage', () => {
 
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('signupTo')).toBe('2026-09-30'))
     const last = urls.at(-1)
-    expect(last?.searchParams.get('title')).toBe('hack')
-    expect(last?.searchParams.get('subtitle')).toBe('night')
+    expect(last?.searchParams.get('search')).toBe('hack')
     expect(last?.searchParams.get('categoryTypeId')).toBe('cat-2')
     expect(last?.searchParams.get('eventDateFrom')).toBe('2026-10-01')
     expect(last?.searchParams.get('eventDateTo')).toBe('2026-10-31')

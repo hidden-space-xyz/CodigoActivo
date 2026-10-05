@@ -4,6 +4,8 @@ import type { EventActivity } from '@/entities/activity'
 import { toTimeline, toTimelineActivities } from '@/pages/event-detail/lib/timeline'
 import type { TimelineActivity } from '@/pages/event-detail/model/types'
 
+const NOW = new Date('2026-01-01T00:00:00Z')
+
 function eventActivity(overrides: Partial<EventActivity> = {}): EventActivity {
   return {
     id: 'activity-1',
@@ -27,6 +29,7 @@ function timelineActivity(id: string, start: string, end: string): TimelineActiv
     modality: '',
     start: new Date(start),
     end: new Date(end),
+    started: false,
     highDemandRoleIds: [],
     assignment: null,
     household: [],
@@ -48,6 +51,7 @@ describe('toTimelineActivities', () => {
         },
       ],
       true,
+      NOW,
     )
 
     expect(first).toEqual({
@@ -58,6 +62,7 @@ describe('toTimelineActivities', () => {
       modality: 'Presencial',
       start: new Date('2099-06-10T09:00:00Z'),
       end: new Date('2099-06-10T11:00:00Z'),
+      started: false,
       highDemandRoleIds: ['role-participant'],
       assignment: { status: 'Confirmada', roleName: 'Mentor' },
       household: [
@@ -68,9 +73,31 @@ describe('toTimelineActivities', () => {
   })
 
   it('hides the high-demand roles until the own signups are known', () => {
-    const [activity] = toTimelineActivities([eventActivity()], [], [], false)
+    const [activity] = toTimelineActivities([eventActivity()], [], [], false, NOW)
 
     expect(activity?.highDemandRoleIds).toEqual([])
+  })
+
+  it('marks the activities that begin at or before now as started', () => {
+    const now = new Date('2099-06-10T10:00:00Z')
+
+    const activities = toTimelineActivities(
+      [
+        eventActivity({ id: 'before', startsAt: '2099-06-10T09:00:00Z' }),
+        eventActivity({ id: 'now', startsAt: '2099-06-10T10:00:00Z' }),
+        eventActivity({ id: 'after', startsAt: '2099-06-10T10:00:01Z' }),
+      ],
+      [],
+      [],
+      true,
+      now,
+    )
+
+    expect(activities.map((activity) => [activity.id, activity.started])).toEqual([
+      ['before', true],
+      ['now', true],
+      ['after', false],
+    ])
   })
 })
 

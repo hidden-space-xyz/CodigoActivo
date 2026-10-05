@@ -27,6 +27,8 @@ const props = defineProps<{
   earlyOnly?: boolean
   /** The user manages household members, so enrollment goes through the household dialog. */
   hasHousehold: boolean
+  /** People the household dialog offers, the user included; once all are enrolled it is hidden. */
+  householdSize?: number
   /** Day of the timeline group; the schedule omits the date when the activity starts that day. */
   referenceDate?: Date | null
 }>()
@@ -55,16 +57,28 @@ watch(
   { immediate: true },
 )
 
-const closedMessage = computed(() =>
-  props.earlyOnly
+const open = computed(() => props.signupOpen && !props.activity.started)
+const householdComplete = computed(
+  () =>
+    (props.householdSize ?? 0) > 0 && props.activity.household.length >= (props.householdSize ?? 0),
+)
+
+const closedMessage = computed(() => {
+  if (props.activity.started) return t('pages.eventDetail.card.activityStarted')
+  return props.earlyOnly
     ? t('pages.eventDetail.card.earlySignupOnly')
-    : t('pages.eventDetail.card.signupClosed'),
+    : t('pages.eventDetail.card.signupClosed')
+})
+const lockedMessage = computed(() =>
+  props.activity.started
+    ? t('pages.eventDetail.card.activityStarted')
+    : t('pages.eventDetail.card.signupEnded'),
 )
 
 const selectedRoleHighDemand = computed(
   () =>
     props.authenticated &&
-    props.signupOpen &&
+    open.value &&
     !props.hasHousehold &&
     !props.activity.assignment &&
     !!selectedRoleId.value &&
@@ -117,7 +131,7 @@ function onSignup(): void {
           </el-tag>
         </span>
         <button
-          v-if="signupOpen"
+          v-if="open"
           type="button"
           class="act__member-remove"
           :aria-label="$t('pages.eventDetail.card.unassignMember')"
@@ -143,11 +157,14 @@ function onSignup(): void {
       </template>
 
       <template v-else-if="hasHousehold">
-        <template v-if="!signupOpen">
-          <span v-if="!activity.household.length" class="act__note">
+        <template v-if="!open">
+          <span v-if="!activity.household.length || activity.started" class="act__note">
             {{ closedMessage }}
           </span>
         </template>
+        <span v-else-if="householdComplete" class="act__note">
+          {{ $t('pages.eventDetail.household.allInscribed') }}
+        </span>
         <ActionButton
           v-else
           :label="
@@ -167,15 +184,15 @@ function onSignup(): void {
           {{ $t('pages.eventDetail.card.enrolledAs', { role: activity.assignment.roleName }) }}
         </span>
         <ActionButton
-          v-if="signupOpen"
+          v-if="open"
           :label="$t('pages.eventDetail.card.unassignSelf')"
           size="small"
           :loading="busy"
           @click="emit('unassign')"
         />
-        <span v-else class="act__note">{{ $t('pages.eventDetail.card.signupEnded') }}</span>
+        <span v-else class="act__note">{{ lockedMessage }}</span>
       </template>
-      <template v-else-if="!signupOpen">
+      <template v-else-if="!open">
         <span class="act__note">{{ closedMessage }}</span>
       </template>
       <template v-else>

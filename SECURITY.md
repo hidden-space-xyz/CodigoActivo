@@ -26,7 +26,9 @@ authentication are not supported.
 - Every authenticated request revalidates account status, password fingerprint, administrator flag and the
   `sid` row in one query, and rejects the ticket when any of them is missing or expired. Blocking or demoting
   a user takes effect on existing sessions; changing or resetting the password invalidates them and deletes
-  that user's session rows.
+  that user's session rows. When the API answers `AuthenticationRequired` or `CurrentUserNotFound` to a
+  signed-in SPA, or right after the user changes their password, the SPA drops its cached session and data
+  and sends protected pages back to login.
 - `POST /api/auth/logout` deletes the row of the presented session before clearing the cookies, so a copy of
   that cookie stops working immediately instead of lasting until its expiry. It is idempotent: it asks for no
   valid session, only the CSRF token, and always answers 204 after clearing the session and challenge
@@ -142,7 +144,7 @@ policy must state the two-year retention.
 
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also clears any
-lockout. Losing the Data Protection keys makes stored authenticator secrets unreadable; affected users then
+lockout; the user is only notified when the reset removed an authenticator. Losing the Data Protection keys makes stored authenticator secrets unreadable; affected users then
 need the same administrator reset.
 
 ### CSRF
@@ -189,10 +191,13 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
 - Expected failures use a string `ErrorCode`; all failures return
   `ApiErrorResponse(Title, Status, Code, TraceId)` without stack traces or internal details.
 - User-supplied links allow only absolute HTTP(S) URLs without embedded credentials.
-- Rich-text JSON is checked against node, mark, attribute, nesting and size allowlists; embedded images may
-  only reference this application's UUID-based file endpoint. Terms documents are text only: their editor
-  has no image option and drops images from loaded or pasted content, and the API refuses a description with
-  an image node (`RequestValidationFailed`).
+- Rich-text JSON (`[RichText]`, `RichTextAllowlist`) may only use the editor's nodes, marks and attributes,
+  at most 50 levels deep and 5,000 nodes. Its links may point to absolute HTTP(S) URLs without credentials,
+  `mailto:`, `tel:`, root-relative paths (never `//` or `/\`, which browsers read as another host) and
+  fragments; embedded images may only reference this application's UUID-based file endpoint; colors are hex
+  or `rgb()`/`rgba()`. The editor saves only what the API accepts and the SPA renders through the same
+  allowlist. Terms documents are text only: their editor has no image option and drops images from loaded
+  or pasted content, and the API refuses a description with an image node (`RequestValidationFailed`).
 - User-controlled values inserted into email templates are HTML-encoded; administrator-authored bodies are
   plain text rendered inside the branded template.
 
@@ -247,12 +252,14 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
 ### Event rating anonymity
 
 `event_ratings` stores the answer under a random v4 `Guid`, with no user id or timestamps: `id`, `event_id`,
-`score`, `most_liked`, `least_liked`, `suggestions`. `POST /api/events/{eventId}/rating` requires the event
-to exist and have ended and the caller (or a dependent) to have confirmed attendance, but does not track who
-already rated an event: the same attendee may submit more than once, and every accepted call appends one row
-through the standard repository-plus-`IUnitOfWork` write path. There is no per-user submission cap besides
-the general 300-requests/minute-per-authenticated-user budget described above; every accepted submission,
-repeats included, counts toward that event's rating count and average.
+`score` (1–5, or null when only answers were written), `most_liked`, `least_liked`, `suggestions`.
+`POST /api/events/{eventId}/rating` requires the event to exist and have ended, the caller (or a dependent) to
+have confirmed attendance and the rating to carry a score or an answer (`EventRatingEmpty`), but does not
+track who already rated an event: the same attendee may submit more than once, and every accepted call
+appends one row through the standard repository-plus-`IUnitOfWork` write path. There is no per-user
+submission cap besides the general 300-requests/minute-per-authenticated-user budget described above; every
+accepted submission, repeats included, counts toward that event's rating count, and the scored ones toward
+its average. The SPA can only stop a second submission while the history stays open.
 
 Account deletion keeps past ratings, since their content carries no author reference. Ratings are plain
 inserts, so `event_ratings`' physical row order (and `xmin`) reflects write order.
@@ -374,8 +381,9 @@ list; until a first list is stored, every domain is accepted.
 Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
 returned to email, or reset by an administrator), its administrator flag or its email or phones queues a
 notification to the affected account after commit, from the handler, whoever asked for the change. The notice
-names the change and its timestamp and carries no code, secret or link that performs an action; an email or
-phone change is reported to the **previous** address and only ever quotes the new one masked. These messages are
+names the change and its timestamp and carries no code, secret or link that performs an action; an email
+change is reported to the **previous** address and only ever quotes the new one masked, and a phone change
+only states that the phone changed, without quoting it. These messages are
 ordinary automatic mail, not credential mail, so they spend the shared budget without touching the credential
 reserve that login codes rely on.
 

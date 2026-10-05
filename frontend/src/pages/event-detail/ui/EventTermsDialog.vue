@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { TermsDecisionInput } from '@/entities/activity'
@@ -17,18 +17,23 @@ const props = defineProps<{
 const emit = defineEmits<{
   /** Fired with `false` when the dialog is closed or dismissed without confirming. */
   'update:visible': [value: boolean]
-  /** Fired with one decision per document in `documents` once every required one is checked. */
+  /**
+   * Fired with one decision per document in `documents` once every required one is checked;
+   * confirming earlier only reveals which ones are missing.
+   */
   confirm: [decisions: TermsDecisionInput[]]
 }>()
 
 const { t } = useI18n()
 
 const checked = reactive<Record<string, boolean>>({})
+const attempted = ref(false)
 
 watch(
   () => props.visible,
   (open) => {
     if (!open) return
+    attempted.value = false
     for (const key of Object.keys(checked)) delete checked[key]
     for (const document of props.documents) checked[document.id] = false
   },
@@ -66,6 +71,7 @@ function close(): void {
 }
 
 function confirm(): void {
+  attempted.value = true
   if (missingRequired.value) return
   emit(
     'confirm',
@@ -118,17 +124,12 @@ function confirm(): void {
         </div>
       </li>
     </ul>
-    <p v-if="missingRequired" class="terms-dialog__warning">
+    <p v-if="attempted && missingRequired" class="terms-dialog__warning" role="alert">
       {{ t('pages.eventDetail.terms.missingRequired') }}
     </p>
     <template #footer>
       <ActionButton :label="t('common.cancel')" text @click="close" />
-      <ActionButton
-        :label="t('pages.eventDetail.terms.confirm')"
-        type="primary"
-        :disabled="missingRequired"
-        @click="confirm"
-      />
+      <ActionButton :label="t('pages.eventDetail.terms.confirm')" type="primary" @click="confirm" />
     </template>
   </el-dialog>
 

@@ -1,4 +1,6 @@
+using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
+using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.API.Configuration;
 
@@ -26,5 +28,11 @@ internal static class ApiRequestPipeline
         app.UseMiddleware<CsrfValidationMiddleware>();
         app.UseOutputCache();
         app.MapControllers();
+        app.MapFallback(
+                "/api/{**path}",
+                context => context.WriteApiErrorAsync(Error.NotFound(ErrorCode.EndpointNotFound))
+            )
+            .AllowAnonymous()
+            .ExcludeFromDescription();
     }
 }

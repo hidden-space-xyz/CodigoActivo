@@ -72,6 +72,8 @@ function readProblems(draft: EventDraft): Partial<Record<EventField, FormProblem
     problems.signupEndsAt = 'pages.admin.events.form.problems.signupEndRequired'
   } else if (signupStartsAt && signupEndsAt <= signupStartsAt) {
     problems.signupEndsAt = 'pages.admin.events.form.problems.signupOrderInvalid'
+  } else if (isDayAfter(signupEndsAt, endsAt)) {
+    problems.signupEndsAt = 'pages.admin.events.form.problems.signupEndAfterEventEnd'
   }
   if (earlySignupStartsAt && signupStartsAt && earlySignupStartsAt >= signupStartsAt) {
     problems.earlySignupStartsAt = 'pages.admin.events.form.problems.earlySignupOrderInvalid'
@@ -82,7 +84,8 @@ function readProblems(draft: EventDraft): Partial<Record<EventField, FormProblem
 /**
  * Reads the event dialog. Title, subtitle, a category and every date but the early signup are
  * required; the event cannot end before it starts, signup must open before the event ends and
- * close after it opens, and early signup must open before the general signup. Event days are sent
+ * close after it opens and no later than the event's last day, and early signup must open before
+ * the general signup. Event days are sent
  * as ISO days, signup moments as ISO instants and an empty description as an empty rich-text
  * document. The thumbnail is resolved separately when saving.
  */

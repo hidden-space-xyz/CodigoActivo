@@ -17,7 +17,8 @@ internal sealed record ContactDetails(string Email, string Phone, string? Second
     /// <param name="details">Details as supplied.</param>
     /// <returns>
     /// The contact details, <see cref="ErrorCode.UserContactInfoRequired"/> without an email or a
-    /// phone, or <see cref="ErrorCode.SecondaryPhoneSameAsPrimary"/> when both phones are equal.
+    /// phone, <see cref="ErrorCode.UserPhoneInvalid"/> when a phone is not a <see cref="PhoneNumber"/>,
+    /// or <see cref="ErrorCode.SecondaryPhoneSameAsPrimary"/> when both phones are equal.
     /// </returns>
     public static Result<ContactDetails> From(PersonDetails details)
     {
@@ -29,6 +30,14 @@ internal sealed record ContactDetails(string Email, string Phone, string? Second
         }
 
         var secondaryPhone = details.SecondaryPhone.NormalizeOrNull();
+        if (
+            !PhoneNumber.IsValid(phone)
+            || (secondaryPhone is not null && !PhoneNumber.IsValid(secondaryPhone))
+        )
+        {
+            return Error.Validation(ErrorCode.UserPhoneInvalid);
+        }
+
         if (string.Equals(secondaryPhone, phone, StringComparison.Ordinal))
         {
             return Error.Validation(ErrorCode.SecondaryPhoneSameAsPrimary);

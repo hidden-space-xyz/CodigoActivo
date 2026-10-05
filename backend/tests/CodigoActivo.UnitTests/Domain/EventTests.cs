@@ -156,6 +156,31 @@ public sealed class EventTests
     }
 
     [Fact]
+    public void ScheduleCreateSignupClosingAfterLastDayReturnsSignupEndsAfterEvent()
+    {
+        var schedule = EventSchedule.Create(
+            EventStart,
+            EventEnd,
+            null,
+            SignupStart,
+            new DateTimeOffset(2026, 8, 4, 0, 0, 0, TimeSpan.Zero)
+        );
+
+        schedule.ShouldFail(ErrorKind.Validation, ErrorCode.EventSignupEndsAfterEvent);
+    }
+
+    [Fact]
+    public void ScheduleCreateSignupClosingOnLastDaySucceeds()
+    {
+        var closesAt = new DateTimeOffset(2026, 8, 3, 23, 0, 0, TimeSpan.Zero);
+
+        var schedule = EventSchedule.Create(EventStart, EventEnd, null, SignupStart, closesAt);
+
+        schedule.IsSuccess.Should().BeTrue();
+        schedule.Value.SignupEndsAt.Should().Be(closesAt);
+    }
+
+    [Fact]
     public void ScheduleCreateSignupOpeningOnLastDaySucceeds()
     {
         var opensAt = new DateTimeOffset(2026, 8, 3, 10, 0, 0, TimeSpan.Zero);
@@ -488,7 +513,7 @@ public sealed class EventTests
     {
         var eventId = Guid.NewGuid();
 
-        var rating = EventRating.Submit(eventId, 4, "   ", string.Empty, null);
+        var rating = EventRating.Submit(eventId, 4, "   ", string.Empty, null).Value;
 
         rating.Id.Should().NotBeEmpty();
         rating.EventId.Should().Be(eventId);
@@ -501,11 +526,32 @@ public sealed class EventTests
     [Fact]
     public void RatingSubmitAnswersWithSpacesStoresThemTrimmed()
     {
-        var rating = EventRating.Submit(Guid.NewGuid(), 5, " Bien ", "La cola  ", "  Más talleres");
+        var rating = EventRating
+            .Submit(Guid.NewGuid(), 5, " Bien ", "La cola  ", "  Más talleres")
+            .Value;
 
         rating.MostLiked.Should().Be("Bien");
         rating.LeastLiked.Should().Be("La cola");
         rating.Suggestions.Should().Be("Más talleres");
+    }
+
+    [Fact]
+    public void RatingSubmitWithoutScoreKeepsTheAnswers()
+    {
+        var rating = EventRating.Submit(Guid.NewGuid(), null, null, null, "Más talleres").Value;
+
+        rating.Score.Should().BeNull();
+        rating.Suggestions.Should().Be("Más talleres");
+    }
+
+    [Fact]
+    public void RatingSubmitWithoutScoreOrAnswersReturnsEmptyError()
+    {
+        var result = EventRating.Submit(Guid.NewGuid(), null, "  ", string.Empty, null);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
+        result.Error.Code.Should().Be(ErrorCode.EventRatingEmpty);
     }
 
     [Fact]

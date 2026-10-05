@@ -192,13 +192,16 @@ describe('useSendEmailDialog', () => {
     })
 
     expect(result.withoutConsent.value).toBeNull()
+    expect(result.recipients.value).toBeNull()
     result.open(null)
     expect(result.withoutConsent.value).toBeNull()
     await flushPromises()
     expect(result.withoutConsent.value).toBe(2)
+    expect(result.recipients.value).toBe(2)
 
     result.open({ id: 'user-1', name: 'Ada' })
     expect(result.withoutConsent.value).toBeNull()
+    expect(result.recipients.value).toBeNull()
     await flushPromises()
     expect(result.withoutConsent.value).toBe(0)
     expect(fetchAudience.mock.calls).toEqual([[null], [{ id: 'user-1', name: 'Ada' }]])
@@ -221,6 +224,7 @@ describe('useSendEmailDialog', () => {
     await flushPromises()
 
     expect(result.withoutConsent.value).toBe(1)
+    expect(result.recipients.value).toBe(1)
   })
 
   it('leaves the audience unknown when it cannot be loaded or has no recipient id', async () => {

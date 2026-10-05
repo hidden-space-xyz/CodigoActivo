@@ -82,6 +82,7 @@ public class ResourcesController : ApiControllerBase
     /// <returns>An HTTP response containing a resource, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
+    [ProducesResponseType<ResourceResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<ResourceResponse>> CreateAsync(
         [FromBody] CreateResourceRequest request,
         [FromServices] CreateResourceCommandHandler handler,

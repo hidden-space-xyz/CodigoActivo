@@ -85,7 +85,8 @@ const SameOriginImage = Image.extend({
 
 /**
  * Tiptap extensions shared by the editor and the HTML renderer, as fresh instances on each call.
- * Links open in a new tab and pasted images are accepted only from the same origin; with
+ * Links open in a new tab and only take targets `normalizeLink` allows, addresses typed without a
+ * scheme becoming https; pasted images are accepted only from the same origin, and with
  * `images: false` there is no image node, so pasted images are dropped.
  */
 export function richTextExtensions(options: RichTextOptions = {}): AnyExtension[] {
@@ -99,6 +100,9 @@ export function richTextExtensions(options: RichTextOptions = {}): AnyExtension[
     Link.configure({
       openOnClick: false,
       autolink: true,
+      defaultProtocol: 'https',
+      isAllowedUri: (url, { defaultValidate }) =>
+        defaultValidate(url) && normalizeLink(url, false) !== null,
       HTMLAttributes: { rel: 'noopener nofollow', target: '_blank' },
     }),
     TextAlign.configure({
@@ -126,7 +130,7 @@ export function renderRichTextHtml(value?: string | null): string {
 
 /**
  * Parses stored rich text into a sanitized Tiptap document. Only allow-listed nodes, marks and
- * attributes survive (http/https/mailto/tel links, `/api/files/{id}/content` images unless
+ * attributes survive (links accepted by `normalizeLink`, `/api/files/{id}/content` images unless
  * `images: false`, `#rrggbb` colors), within node, depth and character limits. Anything that is not
  * a JSON document yields an empty document.
  */
@@ -135,13 +139,18 @@ export function parseRichText(value?: string | null, options: RichTextOptions = 
   try {
     const parsed: unknown = JSON.parse(value)
     if (parsed && typeof parsed === 'object' && (parsed as JSONContent).type === 'doc') {
-      return sanitizeRichText(
-        parsed,
-        options.images === false ? TEXT_ONLY_NODE_TYPES : SAFE_NODE_TYPES,
-      )
+      return cleanRichText(parsed, options)
     }
   } catch {}
   return { type: 'doc', content: [] }
+}
+
+/**
+ * Keeps only what `parseRichText` keeps from an editor document, so what the editor saves is
+ * exactly what the API accepts and the page shows.
+ */
+export function cleanRichText(value: JSONContent, options: RichTextOptions = {}): JSONContent {
+  return sanitizeRichText(value, options.images === false ? TEXT_ONLY_NODE_TYPES : SAFE_NODE_TYPES)
 }
 
 interface SanitizeState {
@@ -183,6 +192,7 @@ function sanitizeNode(value: JSONContent, state: SanitizeState, depth: number): 
   }
 
   const attrs = sanitizeNodeAttrs(value.type, value.attrs)
+  if (value.type === 'image' && !attrs?.src) return null
   if (attrs) clean.attrs = attrs
 
   const content = (value.content ?? [])
@@ -247,7 +257,7 @@ function sanitizeMark(
 ): NonNullable<JSONContent['marks']>[number] | null {
   if (!mark || typeof mark.type !== 'string' || !SAFE_MARK_TYPES.has(mark.type)) return null
   if (mark.type === 'link') {
-    const href = safeLink(mark.attrs?.href)
+    const href = typeof mark.attrs?.href === 'string' ? normalizeLink(mark.attrs.href, false) : null
     return href
       ? { type: 'link', attrs: { href, target: '_blank', rel: 'noopener noreferrer nofollow' } }
       : null
@@ -261,19 +271,27 @@ function sanitizeMark(
   return { type: mark.type }
 }
 
-function safeLink(value: unknown): string | null {
-  if (typeof value !== 'string') return null
-  const href = value.trim()
-  if (!href || href.startsWith('//')) return null
+const URL_SCHEME = /^[a-z][a-z0-9+.-]*:/i
+
+/**
+ * The link target an editor link may point to, or `null` when it is not allowed: absolute
+ * http/https URLs without credentials, `mailto:` and `tel:` links, root-relative paths and
+ * fragments. With `assumeHttps`, an address typed without a scheme, such as `example.com/page`,
+ * gets `https://` in front.
+ */
+export function normalizeLink(value: string, assumeHttps = true): string | null {
+  const trimmed = value.trim()
+  const href =
+    assumeHttps && trimmed && !URL_SCHEME.test(trimmed) && !/^[/#]/.test(trimmed)
+      ? `https://${trimmed}`
+      : trimmed
+  if (!href || href.startsWith('//') || href.startsWith('/\\')) return null
+  if (href.startsWith('/') || href.startsWith('#')) return href
   try {
-    const parsed = new URL(href, window.location.origin)
-    if (!['http:', 'https:', 'mailto:', 'tel:'].includes(parsed.protocol)) return null
-    if (
-      (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
-      (parsed.username || parsed.password)
-    )
-      return null
-    return href
+    const parsed = new URL(href)
+    if (parsed.protocol === 'mailto:' || parsed.protocol === 'tel:') return href
+    const web = parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    return web && parsed.hostname && !parsed.username && !parsed.password ? href : null
   } catch {
     return null
   }

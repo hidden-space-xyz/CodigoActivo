@@ -42,8 +42,6 @@ public static class ActivityProjections
                 .ToList(),
             CreatedAt = activity.CreatedAt,
             UpdatedAt = activity.UpdatedAt,
-            CreatedBy = activity.CreatedBy,
-            UpdatedBy = activity.UpdatedBy,
         };
 
     /// <summary>

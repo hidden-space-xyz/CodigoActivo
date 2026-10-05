@@ -41,7 +41,7 @@ function serveResources(items: ResourceListItemResponse[] = [listItem()]) {
       return HttpResponse.json(paged(items))
     }),
     http.get('/api/resources/types', () => HttpResponse.json([internalType, externalType])),
-    http.get('/api/files/:id', () => HttpResponse.json({ name: 'cover', extension: '.png' })),
+    http.get('/api/files/:id', () => HttpResponse.json({ name: 'cover.png', extension: 'png' })),
   )
   return urls
 }

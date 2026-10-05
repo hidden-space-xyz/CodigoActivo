@@ -29,4 +29,16 @@ public interface IEventRepository : IRepository<Event>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="true"/> when some event links it.</returns>
     public Task<bool> LinksTermsDocumentAsync(Guid termsDocumentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Tells whether some event has a category as its only one, so removing that category would
+    /// leave the event without any.
+    /// </summary>
+    /// <param name="categoryTypeId">Identifier of the category.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when some event has no other category.</returns>
+    public Task<bool> HasEventWithOnlyCategoryAsync(
+        Guid categoryTypeId,
+        CancellationToken ct = default
+    );
 }

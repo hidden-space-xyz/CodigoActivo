@@ -81,8 +81,6 @@ public sealed class ProjectionsTests
         response.SignupEndsAt.Should().Be(Updated);
         response.CreatedAt.Should().Be(Created);
         response.UpdatedAt.Should().Be(Updated);
-        response.CreatedBy.Should().Be(@event.CreatedBy);
-        response.UpdatedBy.Should().Be(@event.UpdatedBy);
         response.ThumbnailId.Should().Be(@event.ThumbnailId);
         response.Featured.Should().BeTrue();
         response
@@ -122,8 +120,6 @@ public sealed class ProjectionsTests
                     Updated,
                     Created,
                     Updated,
-                    @event.CreatedBy,
-                    @event.UpdatedBy,
                     @event.ThumbnailId,
                     true,
                     [new EventCategoryResponse(categoryTypeId, "Tech", "#111")],
@@ -131,6 +127,8 @@ public sealed class ProjectionsTests
                 )
             );
         typeof(EventListItemResponse).GetProperty("Description").Should().BeNull();
+        typeof(EventListItemResponse).GetProperty("CreatedBy").Should().BeNull();
+        typeof(EventListItemResponse).GetProperty("UpdatedBy").Should().BeNull();
     }
 
     [Fact]
@@ -163,8 +161,6 @@ public sealed class ProjectionsTests
                     "https://acme.test",
                     Created,
                     Updated,
-                    partner.CreatedBy,
-                    partner.UpdatedBy,
                     partner.ThumbnailId
                 )
             );
@@ -210,8 +206,6 @@ public sealed class ProjectionsTests
         response.ThumbnailId.Should().Be(activity.ThumbnailId);
         response.CreatedAt.Should().Be(Created);
         response.UpdatedAt.Should().Be(Updated);
-        response.CreatedBy.Should().Be(activity.CreatedBy);
-        response.UpdatedBy.Should().Be(activity.UpdatedBy);
     }
 
     private static UserRow NewUser(

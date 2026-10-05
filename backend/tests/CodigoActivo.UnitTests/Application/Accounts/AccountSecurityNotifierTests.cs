@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
@@ -80,12 +81,46 @@ public sealed class AccountSecurityNotifierTests
             "old@test.com",
             "Owner",
             "brandnew@test.com",
+            false,
             CancellationToken.None
         );
 
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be("old@test.com");
         message.TextBody.Should().Contain("b***@test.com").And.NotContain("brandnew@test.com");
+        message.TextBody.Should().Contain(AppStrings.EmailsSecurityAlertEmailChanged);
+    }
+
+    [Fact]
+    public async Task NotifyIdentifiersChangedAsyncPhoneOnlyNamesThePhoneWithoutQuotingAnAddress()
+    {
+        await sut.NotifyIdentifiersChangedAsync(
+            "owner@test.com",
+            "Owner",
+            null,
+            true,
+            CancellationToken.None
+        );
+
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.ToAddress.Should().Be("owner@test.com");
+        message.TextBody.Should().Contain(AppStrings.EmailsSecurityAlertPhoneChanged);
+        message.TextBody.Should().NotContain(AppStrings.EmailsSecurityAlertEmailChanged);
+    }
+
+    [Fact]
+    public async Task NotifyIdentifiersChangedAsyncEmailAndPhoneNamesBoth()
+    {
+        await sut.NotifyIdentifiersChangedAsync(
+            "old@test.com",
+            "Owner",
+            "brandnew@test.com",
+            true,
+            CancellationToken.None
+        );
+
+        var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.TextBody.Should().Contain(AppStrings.EmailsSecurityAlertEmailAndPhoneChanged);
     }
 
     [Fact]

@@ -178,8 +178,8 @@ export async function getAccountCertificatesRequest(): Promise<readonly AccountC
 }
 
 /**
- * Submits the user's rating for an event (`POST`). The submission is single and anonymous: it
- * cannot be edited afterwards, and a second attempt for the same event fails.
+ * Submits an anonymous rating for an event (`POST`). Nothing links it to the account, so it cannot
+ * be edited afterwards and every accepted call adds another rating.
  */
 export async function saveAccountEventRatingRequest(
   eventId: string,

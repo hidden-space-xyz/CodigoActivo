@@ -27,7 +27,7 @@ describe('eventReportQueries', () => {
 
     await expect(
       createTestQueryClient().fetchQuery(eventReportQueries.stats('e1')),
-    ).resolves.toMatchObject({ activitiesCount: 3, ratingsCount: 2 })
+    ).resolves.toMatchObject({ activitiesCount: 3, scoredRatingsCount: 2 })
   })
 })
 

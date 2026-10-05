@@ -1,9 +1,11 @@
 import { generateJSON, type JSONContent } from '@tiptap/core'
 import { describe, expect, it } from 'vitest'
 import {
+  cleanRichText,
   EMPTY_DOC_JSON,
   isRichTextBlank,
   isRichTextEmpty,
+  normalizeLink,
   parseRichText,
   renderRichTextHtml,
   richTextExcerpt,
@@ -121,6 +123,7 @@ describe('parseRichText', () => {
         'mailto:a@b.test',
         'tel:+34600',
         '/relative',
+        '#seccion',
       ]) {
         expect(marksOf({ type: 'link', attrs: { href: ` ${href} ` } })).toEqual([
           { type: 'link', attrs: { href, target: '_blank', rel: 'noopener noreferrer nofollow' } },
@@ -132,6 +135,9 @@ describe('parseRichText', () => {
       for (const attrs of [
         { href: 'javascript:alert(1)' },
         { href: '//evil.test' },
+        { href: '/\\evil.test' },
+        { href: 'relative/page' },
+        { href: 'data:text/html,x' },
         { href: '' },
         { href: 42 },
         { href: 'https://user:pass@example.test' },
@@ -215,7 +221,13 @@ describe('parseRichText', () => {
       expect(attrsOf({ type: 'image', attrs: { src: FILE_URL, alt: 5 } })).toEqual({
         src: FILE_URL,
       })
-      expect(attrsOf({ type: 'image', attrs: { src: 'https://evil.test/x.png' } })).toBe(undefined)
+    })
+
+    it('drops images that do not point to a stored file', () => {
+      expect(
+        parseRichText(doc({ type: 'image', attrs: { src: 'https://evil.test/x.png' } })),
+      ).toEqual({ type: 'doc' })
+      expect(parseRichText(doc(paragraph(text('a')), { type: 'image' })).content).toHaveLength(1)
     })
 
     it('bounds table cell spans and column widths', () => {
@@ -366,5 +378,78 @@ describe('richTextExcerpt', () => {
   it('returns short text unchanged and uses a 160 character default', () => {
     expect(richTextExcerpt(doc(paragraph(text('short'))))).toBe('short')
     expect(richTextExcerpt(doc(paragraph(text('x '.repeat(100)))))).toHaveLength(160)
+  })
+})
+
+describe('normalizeLink', () => {
+  it('adds https to addresses typed without a scheme', () => {
+    expect(normalizeLink(' ejemplo.org/eventos ')).toBe('https://ejemplo.org/eventos')
+    expect(normalizeLink('ejemplo.org', false)).toBeNull()
+  })
+
+  it('keeps web, mail and phone links, root paths and fragments', () => {
+    for (const href of ['https://a.test', 'http://a.test/x', 'mailto:a@b.test', 'tel:+34600']) {
+      expect(normalizeLink(href)).toBe(href)
+    }
+    expect(normalizeLink('/eventos')).toBe('/eventos')
+    expect(normalizeLink('#arriba')).toBe('#arriba')
+  })
+
+  it('refuses other schemes, other hosts and credentials', () => {
+    for (const href of [
+      '',
+      '   ',
+      'javascript:alert(1)',
+      'ftp://a.test',
+      '//evil.test',
+      'https://user:pass@a.test',
+    ]) {
+      expect(normalizeLink(href)).toBeNull()
+    }
+  })
+})
+
+describe('cleanRichText', () => {
+  it('keeps only the allowed content of an editor document', () => {
+    expect(
+      cleanRichText({
+        type: 'doc',
+        content: [
+          { type: 'paragraph', attrs: { textAlign: null }, content: [text('Hola')] },
+          { type: 'image', attrs: { src: FILE_URL } },
+        ],
+      }),
+    ).toEqual({
+      type: 'doc',
+      content: [
+        { type: 'paragraph', content: [text('Hola')] },
+        { type: 'image', attrs: { src: FILE_URL } },
+      ],
+    })
+  })
+
+  it('drops images when images are not allowed', () => {
+    expect(
+      cleanRichText(
+        { type: 'doc', content: [{ type: 'image', attrs: { src: FILE_URL } }] },
+        { images: false },
+      ),
+    ).toEqual({ type: 'doc' })
+  })
+})
+
+describe('richTextExtensions links', () => {
+  it('only lets the editor create links to allowed targets', () => {
+    const link = richTextExtensions().find((extension) => extension.name === 'link')
+    const isAllowedUri = link?.options.isAllowedUri as (
+      url: string,
+      context: { defaultValidate: (url: string) => boolean },
+    ) => boolean
+    const context = { defaultValidate: () => true }
+
+    expect(isAllowedUri('https://ejemplo.org', context)).toBe(true)
+    expect(isAllowedUri('/eventos', context)).toBe(true)
+    expect(isAllowedUri('ftp://ejemplo.org', context)).toBe(false)
+    expect(isAllowedUri('https://ejemplo.org', { defaultValidate: () => false })).toBe(false)
   })
 })

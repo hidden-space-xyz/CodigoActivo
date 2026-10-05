@@ -32,7 +32,7 @@ function servePartners(items: PartnerResponse[] = [buildPartnerResponse()]) {
       return HttpResponse.json(paged(items))
     }),
     http.get('/api/files/:id', ({ params }) =>
-      HttpResponse.json({ id: String(params.id), name: 'logo', extension: '.png' }),
+      HttpResponse.json({ id: String(params.id), name: 'logo.png', extension: 'png' }),
     ),
   )
   return urls

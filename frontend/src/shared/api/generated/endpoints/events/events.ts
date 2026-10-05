@@ -145,12 +145,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiEventsMutationOptions(options), queryClient);
     }
-    export type postApiEventsResponse200 = {
+    export type postApiEventsResponse201 = {
   data: EventResponse
-  status: 200
+  status: 201
 }
 
-export type postApiEventsResponseSuccess = (postApiEventsResponse200) & {
+export type postApiEventsResponseSuccess = (postApiEventsResponse201) & {
   headers: Headers;
 };
 ;
@@ -752,12 +752,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiEventsCategoryTypeMutationOptions(options), queryClient);
     }
-    export type postApiEventsCategoryTypeResponse200 = {
+    export type postApiEventsCategoryTypeResponse201 = {
   data: EventCategoryTypeResponse
-  status: 200
+  status: 201
 }
 
-export type postApiEventsCategoryTypeResponseSuccess = (postApiEventsCategoryTypeResponse200) & {
+export type postApiEventsCategoryTypeResponseSuccess = (postApiEventsCategoryTypeResponse201) & {
   headers: Headers;
 };
 ;
@@ -936,12 +936,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiEventsTermsDocumentMutationOptions(options), queryClient);
     }
-    export type postApiEventsTermsDocumentResponse200 = {
+    export type postApiEventsTermsDocumentResponse201 = {
   data: TermsDocumentResponse
-  status: 200
+  status: 201
 }
 
-export type postApiEventsTermsDocumentResponseSuccess = (postApiEventsTermsDocumentResponse200) & {
+export type postApiEventsTermsDocumentResponseSuccess = (postApiEventsTermsDocumentResponse201) & {
   headers: Headers;
 };
 ;

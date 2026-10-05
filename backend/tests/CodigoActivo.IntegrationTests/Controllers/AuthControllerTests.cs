@@ -368,6 +368,27 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         (await FindAsync<User>(body.Adult.Id))!.SecondaryPhone.Should().Be("+34700000099");
     }
 
+    [Theory]
+    [InlineData("abc", null)]
+    [InlineData("123", null)]
+    [InlineData("+34600000099", "6+0")]
+    public async Task RegisterMalformedPhoneReturnsPhoneInvalid(
+        string phone,
+        string? secondaryPhone
+    )
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(phone: phone, secondaryPhone: secondaryPhone),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserPhoneInvalid);
+        (await CountNewAdultsAsync()).Should().Be(0);
+    }
+
     [Fact]
     public async Task RegisterSecondaryPhoneEqualToPhoneReturnsBadRequest()
     {

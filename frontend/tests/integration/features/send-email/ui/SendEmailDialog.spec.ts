@@ -25,13 +25,19 @@ import { formatFileSize } from '@/shared/lib/number'
 const TITLE = 'features.sendEmail.header'
 
 async function renderDialog(
-  props: { target?: string; sending?: boolean; withoutConsent?: number | null } = {},
+  props: {
+    target?: string
+    sending?: boolean
+    recipients?: number | null
+    withoutConsent?: number | null
+  } = {},
 ) {
   const rendered = await renderWithProviders(SendEmailDialog, {
     props: {
       visible: false,
       target: props.target ?? 'Ada Lovelace',
       sending: props.sending ?? false,
+      recipients: props.recipients ?? null,
       withoutConsent: props.withoutConsent ?? null,
     },
     attach: true,
@@ -131,6 +137,36 @@ describe('SendEmailDialog', () => {
     expect(emitted?.subject).toBe(' Welcome ')
     expect(emitted?.body).toBe('Hello\nthere')
     expect(emitted?.attachments.map((file) => file.name)).toEqual(['file-0.txt', 'file-1.txt'])
+  })
+
+  it('states and confirms how many addresses the email reaches once the audience is known', async () => {
+    const { wrapper, dialog } = await renderDialog({ target: 'los 28 usuarios', recipients: 22 })
+
+    expect(dialog.textContent).toContain(tp('features.sendEmail.recipients', 22, { count: 22 }))
+    await typeInto('#send-email-subject', 'Hola')
+    await typeInto('#send-email-body', 'Texto')
+    await click(findButton(t('features.sendEmail.send'), dialog))
+
+    expect(messageBox().textContent).toContain(
+      tp('features.sendEmail.confirm.messageCount', 22, { count: 22 }),
+    )
+    await acceptMessageBox()
+    expect(wrapper.emitted('submit')).toHaveLength(1)
+  })
+
+  it('blocks sending when nobody in the selection has an email address', async () => {
+    const { wrapper, dialog } = await renderDialog({ recipients: 0 })
+
+    expect(dialog.textContent).toContain(tp('features.sendEmail.recipients', 0, { count: 0 }))
+    const send = findButton(t('features.sendEmail.send'), dialog)
+    expect(send.disabled).toBe(true)
+    await typeInto('#send-email-subject', 'Hola')
+    await typeInto('#send-email-body', 'Texto')
+    dialog.querySelector('form')?.dispatchEvent(new Event('submit'))
+    await flushPromises()
+
+    expect(document.body.querySelector('.el-message-box')).toBeNull()
+    expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
   it('does not emit when the confirmation is cancelled', async () => {

@@ -30,6 +30,7 @@ const {
   assigned,
   household,
   hasHousehold,
+  members,
   membershipReady,
   signupRoles,
   selfRoles,
@@ -65,6 +66,7 @@ const items = computed(() =>
     assigned.data.value ?? [],
     household.data.value ?? [],
     membershipReady.value,
+    new Date(),
   ),
 )
 const clusters = computed(() => toTimeline(items.value))
@@ -127,6 +129,7 @@ const clusters = computed(() => toTimeline(items.value))
                 :signup-open="signupOpen"
                 :early-only="earlyOnly"
                 :has-household="hasHousehold"
+                :household-size="members.length"
                 :busy="busyId === act.id"
                 @signup="onSignup(act, $event)"
                 @household="openHousehold(act)"
@@ -158,8 +161,11 @@ const clusters = computed(() => toTimeline(items.value))
               v-if="!row.alreadyAssigned"
               :id="`hh-${row.userId}`"
               v-model="row.include"
-            />
-            <label :for="`hh-${row.userId}`" class="household__name">{{ row.name }}</label>
+              class="ca-checkbox-text household__name"
+            >
+              {{ row.name }}
+            </el-checkbox>
+            <span v-else class="household__name">{{ row.name }}</span>
           </div>
           <span v-if="row.alreadyAssigned" class="household__already">
             {{ $t('pages.eventDetail.household.alreadyAs', { role: row.assignedRole }) }}

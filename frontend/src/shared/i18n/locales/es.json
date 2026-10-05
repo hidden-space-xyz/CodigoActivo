@@ -52,11 +52,16 @@
       "nameStart": "Código",
       "nameEnd": "Activo"
     },
-    "openMenu": "Abrir menú"
+    "openMenu": "Abrir menú",
+    "sessionEnded": {
+      "title": "Sesión cerrada",
+      "message": "Tu sesión ha terminado. Vuelve a iniciar sesión para continuar."
+    }
   },
   "validation": {
     "passwordMin": "La contraseña debe tener al menos 12 caracteres.",
     "newPasswordMin": "La nueva contraseña debe tener al menos 12 caracteres.",
+    "newPasswordSameAsCurrent": "La nueva contraseña debe ser distinta de la actual.",
     "passwordsMismatch": "Las contraseñas no coinciden.",
     "nationalIdFormat": "Escribe 8 números y la letra (DNI) o X, Y o Z, 7 números y la letra (NIE).",
     "nationalIdLetter": "El número y la letra no concuerdan. Revisa que estén bien escritos."
@@ -88,8 +93,8 @@
         "description": "Qué cookies y datos guarda la web de Código Activo en tu navegador, para qué sirven, cuánto duran y cómo eliminarlos."
       },
       "register": {
-        "title": "Hazte socio",
-        "description": "Hazte socio de Código Activo y participa en nuestros talleres y eventos de programación para tod{'@'}s."
+        "title": "Crear cuenta",
+        "description": "Crea tu cuenta en Código Activo para apuntarte, junto a los menores a tu cargo, a nuestros talleres y eventos de programación para tod{'@'}s."
       },
       "login": {
         "title": "Iniciar sesión"
@@ -175,7 +180,8 @@
     "rowRemove": "− Fila",
     "headerCell": "Cabecera",
     "uploadError": "No se pudo subir la imagen.",
-    "linkPrompt": "URL del enlace (déjalo vacío para quitarlo):",
+    "linkPrompt": "Dirección del enlace, por ejemplo https://ejemplo.org, mailto:hola{'@'}ejemplo.org o /eventos (déjalo vacío para quitarlo):",
+    "linkInvalid": "Ese enlace no está permitido. Usa una dirección web (https://…), un correo (mailto:…), un teléfono (tel:…) o una ruta de esta web que empiece por /.",
     "placeholder": "Escribe aquí…"
   },
   "errors": {
@@ -186,6 +192,7 @@
     "ActivityModalityTypeNotFound": "La modalidad de la actividad no es válida.",
     "ActivitySignupClosed": "La inscripción a esta actividad está cerrada.",
     "ActivitySignupEarlyOnly": "La inscripción general todavía no ha comenzado. En este periodo solo pueden inscribirse socios y patrocinadores.",
+    "ActivityAlreadyStarted": "Esta actividad ya ha empezado, así que no se pueden hacer cambios en sus inscripciones.",
     "ActivityRoleNotAllowed": "Este rol no está permitido para este usuario.",
     "ActivityAssignmentAlreadyExists": "Esta persona ya está asignada a la actividad.",
     "ActivityHouseholdAssignmentsRequired": "Debes asignar al menos un integrante del grupo familiar.",
@@ -202,13 +209,16 @@
     "EventActivitiesOutsideNewRange": "Hay actividades fuera del nuevo rango de fechas del evento.",
     "EventCategoryTypeNotFound": "La categoría del evento no es válida.",
     "EventCategoryTypeNameAlreadyExists": "Ya existe una categoría con ese nombre.",
+    "EventCategoryTypeOnlyCategoryOfEvent": "No se puede eliminar: hay eventos cuya única categoría es esta. Asígnales otra categoría antes de eliminarla.",
     "EventThumbnailNotFound": "No se encontró la imagen del evento.",
     "EventCategoriesRequired": "Debes seleccionar al menos una categoría para el evento.",
     "EventScheduleRequired": "Debes indicar un horario para el evento.",
     "EventScheduleInvalidRange": "El horario del evento no es válido.",
     "EventEarlySignupNotBeforeSignup": "La inscripción anticipada debe abrir antes que la inscripción general.",
+    "EventSignupEndsAfterEvent": "La inscripción debe cerrarse como muy tarde el último día del evento.",
     "EventRatingNotFinished": "Solo puedes valorar eventos que ya han terminado.",
     "EventRatingAttendanceRequired": "Solo puedes valorar eventos en los que has participado con una inscripción confirmada.",
+    "EventRatingEmpty": "Puntúa el evento o responde al menos a una de las preguntas antes de enviar tu valoración.",
     "EventTermsAcceptanceRequired": "Debes aceptar los términos y condiciones del evento para apuntarte.",
     "EventTermsDocumentDuplicated": "No puedes vincular el mismo documento de términos y condiciones más de una vez.",
     "TermsDocumentNotFound": "No se encontraron los términos y condiciones.",
@@ -241,6 +251,7 @@
     "UserChildBirthDateNotMinor": "La fecha de nacimiento indicada no corresponde a un menor de edad.",
     "UserPasswordNotSet": "El usuario no tiene una contraseña configurada.",
     "UserCurrentPasswordIncorrect": "La contraseña actual no es correcta.",
+    "UserNewPasswordSameAsCurrent": "La nueva contraseña debe ser distinta de la actual.",
     "UserParentNotAllowedForAdult": "Una cuenta propia no puede tener un responsable.",
     "UserBirthDateNotAllowedForAdult": "Una cuenta propia no guarda fecha de nacimiento: solo la tienen los menores a cargo de un responsable.",
     "UserChildBirthDateRequired": "Debes indicar la fecha de nacimiento del menor.",
@@ -249,6 +260,7 @@
     "UserNationalIdRequired": "Debes indicar el DNI o NIE.",
     "UserEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
     "SecondaryPhoneSameAsPrimary": "El teléfono secundario debe ser distinto del principal.",
+    "UserPhoneInvalid": "El teléfono no es válido. Usa solo números (entre 7 y 15), con espacios, guiones o un prefijo con +.",
     "DisposableEmailNotAllowed": "Por motivos de seguridad no se permite usar direcciones de correo electrónico temporales o desechables. Utiliza una dirección de correo permanente.",
     "InvalidCredentials": "El correo electrónico o la contraseña no son correctos.",
     "UserAccountBlocked": "Tu cuenta está bloqueada. Contacta al administrador.",
@@ -274,6 +286,7 @@
     "EmailAttachmentsTooLarge": "Los archivos adjuntos superan el tamaño máximo permitido.",
     "EmailSendFailed": "No se ha podido enviar el correo. Revisa la configuración del servidor SMTP.",
     "AuthenticationRequired": "Debes iniciar sesión para continuar.",
+    "EndpointNotFound": "La operación solicitada no existe.",
     "AccessDenied": "No tienes permiso para realizar esta acción.",
     "InvalidCsrfToken": "La sesión ha expirado. Recarga la página e inténtalo de nuevo.",
     "RequestValidationFailed": "Los datos enviados no son válidos. Revisa el formulario e inténtalo de nuevo.",
@@ -503,13 +516,16 @@
         "past": "Eventos anteriores",
         "activityCount": "ninguna actividad | 1 actividad | {count} actividades",
         "rate": "Valorar",
+        "rated": "Valorado",
         "savedDetail": "Gracias por compartir tu opinión.",
         "savedSummary": "Valoración guardada",
         "dialog": {
           "header": "Valorar evento",
-          "anonymousNotice": "Tu valoración se guarda sin vincularla a tu cuenta y no podrás modificarla después.",
-          "score": "Tu puntuación",
-          "clearScore": "Quitar puntuación"
+          "anonymousNotice": "Tu valoración es anónima: no se vincula a tu cuenta, así que no podrás modificarla ni retirarla una vez enviada.",
+          "score": "Tu puntuación (opcional)",
+          "clearScore": "Quitar puntuación",
+          "emptyHint": "Puntúa el evento o responde al menos a una pregunta para enviar tu valoración.",
+          "submit": "Enviar valoración"
         }
       },
       "minors": {
@@ -544,7 +560,7 @@
         "passwordChangeFailed": "No se pudo cambiar. Revisa tu contraseña actual.",
         "savedDetail": "Tu información se ha guardado.",
         "savedSummary": "Datos actualizados",
-        "passwordUpdatedDetail": "Tu contraseña se ha actualizado.",
+        "passwordUpdatedDetail": "Por seguridad hemos cerrado todas tus sesiones. Inicia sesión con la nueva contraseña.",
         "passwordUpdatedSummary": "Contraseña cambiada"
       },
       "twoFactor": {
@@ -700,7 +716,8 @@
           "urlPlaceholder": "https://…",
           "problems": {
             "nameRequired": "El nombre es obligatorio.",
-            "fromDateRequired": "La fecha de alta es obligatoria."
+            "fromDateRequired": "La fecha de alta es obligatoria.",
+            "fromDateFuture": "La fecha de alta no puede ser posterior a hoy."
           }
         }
       },
@@ -800,6 +817,7 @@
         },
         "typeDialog": {
           "header": "Cambiar tipo de usuario",
+          "lead": "Elige el nuevo tipo de {fullName}.",
           "typeLabel": "Tipo de usuario",
           "placeholder": "Selecciona un tipo"
         },
@@ -824,7 +842,8 @@
         "resetTwoFactor": {
           "confirm": "Restablecer",
           "header": "Restablecer la verificación en dos pasos",
-          "message": "Vas a restablecer la verificación en dos pasos de {fullName}: se eliminará su aplicación de autenticación, se levantará cualquier bloqueo y volverá a recibir el código por correo. Por seguridad, confirma tu contraseña."
+          "message": "Vas a restablecer la verificación en dos pasos de {fullName}: se eliminará su aplicación de autenticación, se levantará cualquier bloqueo y volverá a recibir el código por correo. Por seguridad, confirma tu contraseña.",
+          "messageEmail": "Vas a restablecer la verificación en dos pasos de {fullName}: ya recibe los códigos por correo, así que solo se levantará cualquier bloqueo de sus códigos. Por seguridad, confirma tu contraseña."
         }
       },
       "events": {
@@ -838,10 +857,8 @@
           "none": "Aún no hay eventos."
         },
         "columns": {
-          "title": "Título",
-          "searchTitle": "Buscar título",
-          "subtitle": "Subtítulo",
-          "searchSubtitle": "Buscar subtítulo",
+          "event": "Evento",
+          "searchEvent": "Buscar por título o subtítulo",
           "categories": "Categorías",
           "duration": "Duración",
           "signup": "Inscripción"
@@ -898,6 +915,7 @@
             "signupAfterEventEnd": "La inscripción debe abrir antes de que termine el evento.",
             "signupEndRequired": "El cierre de inscripción es obligatorio.",
             "signupOrderInvalid": "El cierre debe ser posterior a la apertura.",
+            "signupEndAfterEventEnd": "La inscripción debe cerrar como muy tarde el último día del evento.",
             "earlySignupOrderInvalid": "La inscripción anticipada debe abrir antes que la inscripción general."
           }
         },
@@ -1016,12 +1034,13 @@
           "opinions": "Opiniones"
         },
         "summary": {
-          "ratings": "Sin valoraciones | Media de 1 valoración | Media de {count} valoraciones"
+          "ratings": "Sin puntuaciones | Media de 1 puntuación | Media de {count} puntuaciones"
         },
         "opinions": {
           "empty": "Este evento todavía no tiene valoraciones.",
           "count": "Ninguna valoración | 1 valoración | {count} valoraciones",
           "anonymous": "Valoración anónima",
+          "noScore": "Sin puntuación",
           "noAnswers": "Sin comentarios."
         },
         "empty": {
@@ -1201,8 +1220,8 @@
         },
         "occupancy": {
           "title": "Ocupación de próximas actividades",
-          "subtitle": "Plazas confirmadas frente al aforo previsto · pulsa un evento para ver sus actividades",
-          "summary": "Media global {overall} · {confirmed} de {desired} plazas",
+          "subtitle": "Plazas cubiertas con inscripciones confirmadas en los roles con aforo · pulsa un evento para ver sus actividades",
+          "summary": "Ocupación total {overall} · {confirmed} de {desired} plazas cubiertas",
           "empty": "No hay próximas actividades con aforo definido."
         },
         "series": {
@@ -1285,8 +1304,8 @@
         "minorsEnrolledBefore": "También has inscrito a",
         "minorsEnrolled": "{n} menor | {n} menores",
         "minorsEnrolledAfter": "a tu cargo.",
-        "thanks": "Te agradecemos que quieras colaborar con nosotros. Nos pondremos en contacto contigo lo antes posible para conocernos más.",
-        "reminder": "Recuerda que puedes inscribirte (y a los menores a tu cargo) a cualquier evento desde la sección de eventos.",
+        "thanks": "Gracias por unirte a Código Activo.",
+        "reminder": "Cuando actives tu cuenta podrás apuntarte, junto a los menores a tu cargo, a cualquier evento desde la sección de eventos.",
         "verifyIntroBefore": "Te hemos enviado un correo electrónico de verificación a",
         "verifyIntroAfter": ". Pulsa el enlace del mensaje para activar tu cuenta.",
         "resendPrompt": "¿No has recibido el correo? Revisa la carpeta de spam o",
@@ -1329,7 +1348,8 @@
       "defaultError": "El enlace de verificación no es válido o ha caducado.",
       "hint": "Si el enlace ha caducado, pídenos un enlace nuevo y te lo enviaremos por correo.",
       "resend": "Enviarme un enlace nuevo",
-      "incompleteLink": "El enlace de verificación no es válido o está incompleto."
+      "incompleteLink": "El enlace de verificación no es válido o está incompleto.",
+      "incompleteHint": "Abre el enlace directamente desde el correo de verificación. Si lo copias, asegúrate de copiarlo entero."
     },
     "home": {
       "hero": {
@@ -1339,6 +1359,7 @@
         "titleHighlight": "tod{'@'}s",
         "subtitle": "Acercamos el código y el pensamiento computacional a niñas, niños y jóvenes de 8 a 18 años. Gratis, divertido y desde León.",
         "aboutCta": "Conócenos",
+        "eventsCta": "Ver eventos",
         "stats": {
           "years": "años",
           "free": "gratuito"
@@ -1399,7 +1420,7 @@
         "header": "¿A quién quieres apuntar?",
         "leadBefore": "Marca a las personas que quieras apuntar a",
         "leadAfter": "y elige el rol de cada una.",
-        "alreadyAs": "Ya inscrito como {role}",
+        "alreadyAs": "Ya tiene inscripción como {role}",
         "allInscribed": "Toda tu familia ya está inscrita en esta actividad.",
         "enroll": "Apuntar"
       },
@@ -1410,14 +1431,20 @@
         "enrollAnyway": "Apuntarme igualmente"
       },
       "toast": {
-        "signupSuccess": "Te has apuntado a la actividad.",
+        "signupSuccess": "Hemos recibido tu solicitud. Te avisaremos por correo cuando se revise.",
         "signupSent": "Inscripción enviada",
         "signupFailed": "No se pudo apuntar",
         "missingRole": "Falta el rol",
         "missingRoleDetail": "Selecciona un rol para cada integrante que quieras apuntar.",
-        "householdSuccess": "Habéis quedado apuntados a la actividad.",
+        "householdSuccess": "Hemos recibido la solicitud. Te avisaremos por correo cuando se revise. | Hemos recibido las {count} solicitudes. Te avisaremos por correo cuando se revisen.",
         "unassignSuccess": "Se ha eliminado la inscripción.",
         "unassignSummary": "Inscripción cancelada"
+      },
+      "unassignConfirm": {
+        "header": "Anular inscripción",
+        "self": "¿Quieres anular tu inscripción en «{activity}»? Tu plaza quedará libre para otra persona.",
+        "member": "¿Quieres anular la inscripción de {name} en «{activity}»? Su plaza quedará libre para otra persona.",
+        "accept": "Anular inscripción"
       },
       "card": {
         "unassignMember": "Desapuntar",
@@ -1426,16 +1453,17 @@
         "earlySignupOnly": "Solo socios y patrocinadores por ahora.",
         "enrollAnother": "Apuntar a otro miembro",
         "enrollFamily": "Apuntar a mi familia",
-        "enrolledAs": "Inscrito como {role}",
+        "enrolledAs": "Tu inscripción: {role}",
         "unassignSelf": "Desapuntarme",
         "signupEnded": "El periodo de inscripción ha finalizado.",
+        "activityStarted": "Esta actividad ya ha empezado.",
         "loadingRoles": "Cargando roles…",
         "enrollSelf": "Apuntarme"
       },
       "selfMember": "Yo",
       "terms": {
         "header": "Términos y condiciones",
-        "lead": "Antes de apuntarte, decide si aceptas estos documentos:",
+        "lead": "Antes de completar la inscripción, indica si aceptas estos documentos:",
         "required": "Obligatorio",
         "optional": "Opcional",
         "openDocument": "Ver el contenido de {name}",
@@ -1443,7 +1471,7 @@
         "checkboxLabel": "Acepto {name}",
         "accept": "Aceptar",
         "reject": "Rechazar",
-        "confirm": "Confirmar y apuntarme",
+        "confirm": "Confirmar inscripción",
         "missingRequired": "Debes marcar todos los documentos obligatorios para continuar.",
         "close": "Cerrar"
       },
@@ -1484,6 +1512,7 @@
     "sendEmail": {
       "header": "Enviar correo",
       "target": "Destinatarios: {target}",
+      "recipients": "Nadie de esta selección tiene correo electrónico, así que no se puede enviar el mensaje. | El mensaje llegará a 1 dirección de correo. | El mensaje llegará a {count} direcciones de correo: quien no tiene correo electrónico, como los menores, no lo recibe.",
       "withoutConsentWarning": "Uno de los destinatarios no ha dado su consentimiento para recibir contenido promocional. Ten cuidado con lo que envías: limítate a información necesaria y no incluyas publicidad. | {count} de los destinatarios no han dado su consentimiento para recibir contenido promocional. Ten cuidado con lo que envías: limítate a información necesaria y no incluyas publicidad.",
       "subject": "Asunto",
       "subjectPlaceholder": "Asunto del correo",
@@ -1501,7 +1530,8 @@
       },
       "confirm": {
         "header": "¿Enviar el correo?",
-        "message": "El correo se enviará a {target}. Esta acción no se puede deshacer. Cada persona recibe su propio mensaje y no ve al resto de destinatarios."
+        "message": "El correo se enviará a {target}. Esta acción no se puede deshacer. Cada persona recibe su propio mensaje y no ve al resto de destinatarios.",
+        "messageCount": "El correo se enviará a 1 dirección. Esta acción no se puede deshacer. | El correo se enviará a {count} direcciones. Esta acción no se puede deshacer. Cada persona recibe su propio mensaje y no ve al resto de destinatarios."
       },
       "toast": {
         "queued": "1 correo en cola de envío. Se entregará en unos instantes. | {count} correos en cola de envío. Se entregarán en unos instantes.",
@@ -1614,6 +1644,7 @@
         "required": "Este campo es obligatorio.",
         "genderRequired": "Selecciona un género.",
         "emailFormat": "El correo no tiene un formato válido.",
+        "phoneFormat": "Escribe un teléfono de 7 a 15 cifras; puedes usar espacios, guiones y un prefijo con +.",
         "sameAsPhone": "El teléfono secundario debe ser distinto del principal.",
         "birthDateInvalid": "Indica una fecha de nacimiento válida.",
         "birthDateNotMinor": "La fecha de nacimiento debe corresponder a un menor de edad."

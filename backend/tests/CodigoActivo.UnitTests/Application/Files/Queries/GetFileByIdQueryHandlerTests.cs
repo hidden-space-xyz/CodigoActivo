@@ -30,9 +30,7 @@ public sealed class GetFileByIdQueryHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result
-            .Value.Should()
-            .Be(new FileResponse(file.Id, "acta.pdf", "pdf", file.UploadedAt, file.UploadedBy));
+        result.Value.Should().Be(new FileResponse(file.Id, "acta.pdf", "pdf", file.UploadedAt));
     }
 
     [Fact]

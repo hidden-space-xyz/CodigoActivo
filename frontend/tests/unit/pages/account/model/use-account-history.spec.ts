@@ -92,6 +92,34 @@ describe('useAccountHistory', () => {
     await vi.waitFor(() => expect(historyRequests).toBe(2))
   })
 
+  it('remembers the events rated while it is in use, and only after the rating is saved', async () => {
+    server.use(
+      http.get('/api/me/event-history', () => HttpResponse.json([])),
+      http.post('/api/events/:eventId/rating', ({ params }) =>
+        params.eventId === 'event-1'
+          ? new HttpResponse(null, { status: 204 })
+          : apiError(400, 'EventRatingEmpty'),
+      ),
+    )
+
+    const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
+    expect(result.isRated('event-1')).toBe(false)
+
+    await result.saveRating.mutateAsync({
+      eventId: 'event-1',
+      input: { score: 5, mostLiked: '', leastLiked: '', suggestions: '' },
+    })
+    await expect(
+      result.saveRating.mutateAsync({
+        eventId: 'event-2',
+        input: { score: null, mostLiked: 'Todo', leastLiked: '', suggestions: '' },
+      }),
+    ).rejects.toMatchObject({ code: 'EventRatingEmpty' })
+
+    expect(result.isRated('event-1')).toBe(true)
+    expect(result.isRated('event-2')).toBe(false)
+  })
+
   it('exposes the error when the rating cannot be saved', async () => {
     server.use(
       http.get('/api/me/event-history', () => HttpResponse.json([])),
@@ -103,7 +131,7 @@ describe('useAccountHistory', () => {
     await expect(
       result.saveRating.mutateAsync({
         eventId: 'event-1',
-        input: { score: 0, mostLiked: '', leastLiked: '', suggestions: '' },
+        input: { score: null, mostLiked: 'Todo', leastLiked: '', suggestions: '' },
       }),
     ).rejects.toMatchObject({ status: 400, code: 'EventNotFound' })
   })

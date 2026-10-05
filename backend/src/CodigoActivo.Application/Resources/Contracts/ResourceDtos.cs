@@ -37,8 +37,6 @@ public record ResourceTypeResponse(
 /// <param name="Type">The type value.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="CreatedBy">The created by value.</param>
-/// <param name="UpdatedBy">The updated by value.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 public record ResourceResponse(
     Guid Id,
@@ -49,8 +47,6 @@ public record ResourceResponse(
     ResourceTypeResponse Type,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    Guid CreatedBy,
-    Guid? UpdatedBy,
     Guid ThumbnailId
 )
 {
@@ -67,8 +63,6 @@ public record ResourceResponse(
             new ResourceTypeResponse(),
             default,
             null,
-            Guid.Empty,
-            null,
             Guid.Empty
         ) { }
 }
@@ -83,8 +77,6 @@ public record ResourceResponse(
 /// <param name="Type">The type value.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="CreatedBy">The created by value.</param>
-/// <param name="UpdatedBy">The updated by value.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 public record ResourceListItemResponse(
     Guid Id,
@@ -94,8 +86,6 @@ public record ResourceListItemResponse(
     ResourceTypeResponse Type,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    Guid CreatedBy,
-    Guid? UpdatedBy,
     Guid ThumbnailId
 )
 {
@@ -110,8 +100,6 @@ public record ResourceListItemResponse(
             null,
             new ResourceTypeResponse(),
             default,
-            null,
-            Guid.Empty,
             null,
             Guid.Empty
         ) { }
@@ -129,7 +117,7 @@ public record ResourceListItemResponse(
 public record CreateResourceRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] [MaxLength(262144)] string? Description,
+    [RichText] [MaxLength(262144)] string? Description,
     [HttpUrl] [MaxLength(500)] string? Url,
     Guid ResourceTypeId,
     Guid ThumbnailId
@@ -147,7 +135,7 @@ public record CreateResourceRequest(
 public record UpdateResourceRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] [MaxLength(262144)] string? Description,
+    [RichText] [MaxLength(262144)] string? Description,
     [HttpUrl] [MaxLength(500)] string? Url,
     Guid ResourceTypeId,
     Guid ThumbnailId

@@ -46,6 +46,19 @@ describe('home page', () => {
     ])
   })
 
+  it('invites a signed-in user to the events instead of registering', async () => {
+    useHomeApi()
+    const { wrapper, router } = await renderApp('/', { user: {} })
+    const hero = wrapper.get('.hero')
+
+    const links = hero.findAll('.hero__actions a')
+    expect(links.map((link) => link.attributes('href'))).toEqual([
+      router.resolve({ name: 'events' }).href,
+      router.resolve({ name: 'about' }).href,
+    ])
+    expect(links[0]?.text()).toBe(t('pages.home.hero.eventsCta'))
+  })
+
   it('requests the featured-first news items, events and sponsors', async () => {
     const { requests } = useHomeApi()
     await renderApp('/')
@@ -55,7 +68,7 @@ describe('home page', () => {
     expect(queries).toEqual(
       expect.arrayContaining([
         { sort: '-featured,-createdAt', pageSize: '4' },
-        { sort: '-featured,-createdAt', pageSize: '1' },
+        { featured: 'true', scope: 'Upcoming', pageSize: '1' },
         { scope: 'Upcoming', sort: 'eventStartsAt', pageSize: '4' },
         { pageSize: '100', sort: 'tier,-fromDate' },
       ]),
@@ -123,6 +136,23 @@ describe('home page', () => {
       router.resolve({ name: 'events' }).href,
     )
     expect(sectionTitles(wrapper)).toEqual([t('pages.home.events.title')])
+  })
+
+  it('shows the latest news items and upcoming events without highlights when none is featured', async () => {
+    useHomeApi({
+      news: [
+        buildNewsListItem({ id: 'a1', title: 'Reciente' }),
+        buildNewsListItem({ id: 'a2', title: 'Anterior' }),
+      ],
+      upcomingEvents: [buildEventListItem({ id: 'e1', title: 'Próximo' })],
+    })
+    const { wrapper } = await renderApp('/')
+
+    await vi.waitFor(() => expect(wrapper.findAll('.home-section')).toHaveLength(2))
+    expect(wrapper.find('.featured').exists()).toBe(false)
+    const [news, events] = wrapper.findAll('.home-section')
+    expect(events?.findAll('.home-section__grid > *')).toHaveLength(1)
+    expect(news?.findAll('.home-section__grid > *')).toHaveLength(2)
   })
 
   it('hides the grids when there is only a featured item', async () => {

@@ -37,7 +37,6 @@ export function buildResourceListItem(
     ...AUDIT,
     createdAt: '2026-03-02T10:00:00Z',
     updatedAt: null,
-    updatedBy: null,
     thumbnailId: 'thumb-resource',
     ...overrides,
   }

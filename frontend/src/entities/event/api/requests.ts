@@ -10,7 +10,7 @@ import {
   postApiEvents,
   putApiEventsEventId,
 } from '@/shared/api/generated/endpoints/events/events'
-import { FEATURED_FIRST_SORT, toPage, unwrapOrNull } from '@/shared/api'
+import { toPage, unwrapOrNull } from '@/shared/api'
 import type { PagedListPage, ServerTablePage } from '@/shared/lib/paging'
 
 import type {
@@ -101,12 +101,12 @@ export async function getEventLeaderRosterRequest(
 }
 
 /**
- * Builds the home board: the featured-first event plus up to three upcoming events, excluding the
- * featured one so it is not shown twice.
+ * Builds the home board: the featured event while it has not finished, plus up to three upcoming
+ * events, excluding the featured one so it is not shown twice.
  */
 export async function getHomeEventsRequest(): Promise<HomeEvents> {
   const [featuredPage, upcomingPage] = await Promise.all([
-    getApiEvents({ sort: FEATURED_FIRST_SORT, pageSize: 1 }),
+    getApiEvents({ featured: true, scope: 'Upcoming', pageSize: 1 }),
     getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', pageSize: 4 }),
   ])
   const [first] = toPage(featuredPage).items

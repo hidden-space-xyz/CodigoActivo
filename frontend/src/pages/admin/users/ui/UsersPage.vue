@@ -131,6 +131,7 @@ const {
   visible: emailDialogVisible,
   target: emailTarget,
   sending: emailSending,
+  recipients: emailRecipients,
   withoutConsent: emailWithoutConsent,
   open: openEmail,
   submit: submitEmail,
@@ -342,7 +343,12 @@ const {
           />
         </template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="240" align="center" fixed="right">
+      <el-table-column
+        :label="$t('common.actions')"
+        width="240"
+        align="center"
+        :fixed="table.actionsFixed.value"
+      >
         <template #default="{ row }">
           <div class="ca-row-actions">
             <ActionButton
@@ -420,7 +426,11 @@ const {
       v-model:visible="resetVisible"
       :title="$t('pages.admin.users.resetTwoFactor.header')"
       :message="
-        $t('pages.admin.users.resetTwoFactor.message', { fullName: fullName(resetUser ?? {}) })
+        resetUser?.usesAuthenticator
+          ? $t('pages.admin.users.resetTwoFactor.message', { fullName: fullName(resetUser) })
+          : $t('pages.admin.users.resetTwoFactor.messageEmail', {
+              fullName: fullName(resetUser ?? {}),
+            })
       "
       :confirm-label="$t('pages.admin.users.resetTwoFactor.confirm')"
       input-id="reset-two-factor-password"
@@ -442,6 +452,7 @@ const {
       v-model:visible="emailDialogVisible"
       :target="emailTarget"
       :sending="emailSending"
+      :recipients="emailRecipients"
       :without-consent="emailWithoutConsent"
       @submit="submitEmail"
     />

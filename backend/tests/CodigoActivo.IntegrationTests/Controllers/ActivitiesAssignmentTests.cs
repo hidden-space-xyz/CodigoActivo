@@ -159,6 +159,44 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task AssignSelfMemberStartedActivityWithOpenSignupReturnsBadRequest()
+    {
+        var (_, activityId) = await SeedActivityAsync(
+            activityStart: new DateTimeOffset(2026, 7, 4, 10, 0, 0, TimeSpan.Zero),
+            activityEnd: new DateTimeOffset(2026, 7, 4, 13, 0, 0, TimeSpan.Zero)
+        );
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
+            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.ActivityAlreadyStarted);
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UnassignSelfMemberStartedActivityKeepsAssignment()
+    {
+        var (_, activityId) = await SeedActivityAsync(
+            activityStart: new DateTimeOffset(2026, 7, 4, 10, 0, 0, TimeSpan.Zero),
+            activityEnd: new DateTimeOffset(2026, 7, 4, 13, 0, 0, TimeSpan.Zero)
+        );
+        await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberId);
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/unassign",
+            ct: Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.ActivityAlreadyStarted);
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task AssignConcurrentSignupsWithDifferentRolesKeepASingleAssignment()
     {
         var (_, activityId) = await SeedActivityAsync();

@@ -22,7 +22,7 @@ function field(id: string): HTMLTextAreaElement {
 }
 
 describe('EventRatingDialog', () => {
-  it('shows the event title and the anonymity notice, and always opens with an empty form', async () => {
+  it('shows the event title and the anonymity notice, and opens with an empty form it does not send', async () => {
     const wrapper = await renderDialog()
 
     const [dialog] = openDialogs()
@@ -33,12 +33,26 @@ describe('EventRatingDialog', () => {
     expect(field('rating-least').value).toBe('')
     expect(field('rating-suggestions').value).toBe('')
     expect(findButtons(t('pages.account.history.dialog.clearScore'), document.body)).toHaveLength(0)
+    expect(dialog?.textContent).toContain(t('pages.account.history.dialog.emptyHint'))
+    expect(findButton(t('pages.account.history.dialog.submit'), document.body).disabled).toBe(true)
 
     await wrapper.find('form').trigger('submit')
 
+    expect(wrapper.emitted('submit')).toBeUndefined()
+  })
+
+  it('sends written answers without a score', async () => {
+    const wrapper = await renderDialog()
+
+    await typeInto('#rating-suggestions', '   ', document)
+    expect(findButton(t('pages.account.history.dialog.submit'), document.body).disabled).toBe(true)
+    await typeInto('#rating-suggestions', 'Más talleres', document)
+    await wrapper.find('form').trigger('submit')
+
     expect(wrapper.emitted('submit')).toEqual([
-      [{ score: 0, mostLiked: '', leastLiked: '', suggestions: '' }],
+      [{ score: null, mostLiked: '', leastLiked: '', suggestions: 'Más talleres' }],
     ])
+    expect(openDialogs()[0]?.textContent).not.toContain(t('pages.account.history.dialog.emptyHint'))
   })
 
   it('lets the user set and clear the score and fill free-text answers before submitting', async () => {
@@ -90,7 +104,8 @@ describe('EventRatingDialog', () => {
   it('shows a busy save button while the rating is stored', async () => {
     await renderDialog({ saving: true })
 
-    const save = findButton(t('common.save'), document.body)
+    await typeInto('#rating-most', 'Todo', document)
+    const save = findButton(t('pages.account.history.dialog.submit'), document.body)
     expect(save.getAttribute('aria-busy')).toBe('true')
     expect(save.disabled).toBe(true)
   })

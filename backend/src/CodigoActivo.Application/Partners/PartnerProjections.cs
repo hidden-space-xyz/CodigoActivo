@@ -22,8 +22,6 @@ public static class PartnerProjections
             Website = partner.Web,
             CreatedAt = partner.CreatedAt,
             UpdatedAt = partner.UpdatedAt,
-            CreatedBy = partner.CreatedBy,
-            UpdatedBy = partner.UpdatedBy,
             ThumbnailId = partner.ThumbnailId,
         };
 }

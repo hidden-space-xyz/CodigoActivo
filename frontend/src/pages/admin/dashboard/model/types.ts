@@ -33,7 +33,7 @@ interface TopEvent {
   readonly confirmed: number
 }
 
-/** Confirmed versus desired places of one activity. */
+/** Places filled by confirmed people versus desired places of one activity, capped per role. */
 interface OccupancyActivity {
   readonly id: string
   readonly title: string
@@ -42,7 +42,7 @@ interface OccupancyActivity {
   readonly desired: number
 }
 
-/** Confirmed versus desired places of one event, with its activities. */
+/** Filled versus desired places of one event, with its activities. */
 interface OccupancyEvent {
   readonly id: string
   readonly title: string
@@ -51,7 +51,7 @@ interface OccupancyEvent {
   readonly activities: readonly OccupancyActivity[]
 }
 
-/** Confirmed versus desired places, overall and per event. */
+/** Filled versus desired places, overall and per event. */
 export interface Occupancy {
   readonly confirmed: number
   readonly desired: number

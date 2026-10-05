@@ -11,7 +11,7 @@ const recent = computed(() => data.value?.items ?? [])
 </script>
 
 <template>
-  <section v-if="isLoading || featured" class="home-section">
+  <section v-if="isLoading || featured || recent.length" class="home-section">
     <div class="ca-container">
       <div class="home-section__head">
         <h2 class="home-section__title">{{ $t('pages.home.news.title') }}</h2>
@@ -21,8 +21,8 @@ const recent = computed(() => data.value?.items ?? [])
       </div>
 
       <p v-if="isLoading" class="home-section__loading">{{ $t('common.loading') }}</p>
-      <template v-else-if="featured">
-        <FeaturedNewsCard :news-item="featured" />
+      <template v-else>
+        <FeaturedNewsCard v-if="featured" :news-item="featured" />
         <div v-if="recent.length" class="home-section__grid">
           <NewsCard v-for="newsItem in recent" :key="newsItem.id" :news-item="newsItem" />
         </div>

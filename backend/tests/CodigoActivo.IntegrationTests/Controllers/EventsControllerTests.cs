@@ -827,7 +827,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PostJsonAsync("/api/events/categoryType", request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await response.ReadJsonAsync<EventCategoryTypeResponse>(Ct);
         created!.Name.Should().Be("Innovación");
 
@@ -884,6 +884,97 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
                 .ToListAsync(Ct)
         );
         remaining.Should().Equal(keptId);
+    }
+
+    [Fact]
+    public async Task DeleteCategoryTypeOnlyCategoryOfAnEventReturnsConflictAndKeepsIt()
+    {
+        var id = await SeedCategoryTypeAsync("Única");
+        var eventId = await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            categoryTypeIds: [id]
+        );
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.DeleteWithCsrfAsync($"/api/events/categoryType/{id}", Ct);
+
+        await response.ShouldBeConflictAsync(ErrorCode.EventCategoryTypeOnlyCategoryOfEvent);
+        (await FindAsync<EventCategoryType>(id)).Should().NotBeNull();
+        var remaining = await Factory.QueryAsync(db =>
+            db.EventCategories.Where(c => c.EventId == eventId)
+                .Select(c => c.EventCategoryTypeId)
+                .ToListAsync(Ct)
+        );
+        remaining.Should().Equal(id);
+    }
+
+    [Theory]
+    [InlineData("talleres")]
+    [InlineData("TALLERES")]
+    public async Task CreateCategoryTypeNameDifferingOnlyInCaseReturnsConflict(string name)
+    {
+        await SeedCategoryTypeAsync("Talleres");
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PostJsonAsync(
+            "/api/events/categoryType",
+            new CreateEventCategoryTypeRequest(name, "#3366cc"),
+            Ct
+        );
+
+        await response.ShouldBeConflictAsync(ErrorCode.EventCategoryTypeNameAlreadyExists);
+    }
+
+    [Fact]
+    public async Task CreateCategoryTypeNameWithLikeWildcardsIsComparedLiterally()
+    {
+        await SeedCategoryTypeAsync("Robótica");
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PostJsonAsync(
+            "/api/events/categoryType",
+            new CreateEventCategoryTypeRequest("Rob_tica%", "#3366cc"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task CreateSignupClosingAfterTheEventReturnsBadRequest()
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var categoryId = await SeedCategoryTypeAsync("Taller");
+        var client = await LoginAsAdminAsync();
+        var request = BuildCreate(
+            thumbnailId,
+            [categoryId],
+            signupEnd: new DateTimeOffset(2026, 8, 12, 0, 0, 0, TimeSpan.Zero)
+        );
+
+        var response = await client.PostJsonAsync("/api/events", request, Ct);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EventSignupEndsAfterEvent);
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("https://user:secret@evil.example")]
+    public async Task CreateDescriptionWithUnsafeLinkReturnsBadRequest(string href)
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var categoryId = await SeedCategoryTypeAsync("Taller");
+        var client = await LoginAsAdminAsync();
+        var description =
+            "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"x\",\"marks\":[{\"type\":\"link\",\"attrs\":{\"href\":\""
+            + href
+            + "\"}}]}]}]}";
+        var request = BuildCreate(thumbnailId, [categoryId]) with { Description = description };
+
+        var response = await client.PostJsonAsync("/api/events", request, Ct);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]

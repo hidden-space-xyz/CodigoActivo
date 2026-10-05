@@ -382,6 +382,31 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncStartedActivityWithOpenWindowReturnsAlreadyStarted()
+    {
+        var activityId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        clock.UtcNow = ActivityStartsAt;
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, ActivityEndsAt);
+        users.TargetUser(userId, SeedIds.UserTypes.Participant);
+
+        var result = await sut.HandleAsync(
+            new AssignActivityCommand(
+                activityId,
+                userId,
+                userId,
+                new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+                IsAdmin: false
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
+        result.Error.Code.Should().Be(ErrorCode.ActivityAlreadyStarted);
+        activity.Assignments.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task HandleAsyncMemberAtExactSignupStartIsOpenAndPersists()
     {
         var activityId = Guid.NewGuid();

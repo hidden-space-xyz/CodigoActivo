@@ -106,7 +106,7 @@ public sealed class UpdateUserCommandHandlerTests
             "F",
             "L",
             "dup@test.com",
-            "555",
+            "555-0199",
             null,
             AdultNationalId,
             false,
@@ -135,7 +135,7 @@ public sealed class UpdateUserCommandHandlerTests
             "  New  ",
             "  Name  ",
             "  NEW@test.com  ",
-            "  999  ",
+            "  600 999 999  ",
             null,
             AdultNationalId,
             false,
@@ -150,7 +150,7 @@ public sealed class UpdateUserCommandHandlerTests
         user.FirstName.Should().Be("New");
         user.LastName.Should().Be("Name");
         user.Email.Should().Be("new@test.com");
-        user.Phone.Should().Be("999");
+        user.Phone.Should().Be("600 999 999");
         user.Gender.Should().Be(Gender.Female);
         user.ParentId.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
@@ -275,7 +275,7 @@ public sealed class UpdateUserCommandHandlerTests
         entry.Level.Should().Be(LogLevel.Warning);
         entry
             .Message.Should()
-            .Be("A IdentifiersChanged security notification was dropped by the email limiter")
+            .Be("A EmailChanged security notification was dropped by the email limiter")
             .And.NotContain(id.ToString());
     }
 

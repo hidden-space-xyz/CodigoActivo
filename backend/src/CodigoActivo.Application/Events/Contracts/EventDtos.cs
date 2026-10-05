@@ -18,8 +18,6 @@ namespace CodigoActivo.Application.Events.Contracts;
 /// <param name="SignupEndsAt">The signup ends at value.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="CreatedBy">The created by value.</param>
-/// <param name="UpdatedBy">The updated by value.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="Featured">Whether featured.</param>
 /// <param name="Categories">The categories value.</param>
@@ -37,8 +35,6 @@ public record EventResponse(
     DateTimeOffset SignupEndsAt,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    Guid CreatedBy,
-    Guid? UpdatedBy,
     Guid ThumbnailId,
     bool Featured,
     IReadOnlyList<EventCategoryResponse> Categories,
@@ -63,8 +59,6 @@ public record EventResponse(
             default,
             null,
             Guid.Empty,
-            null,
-            Guid.Empty,
             false,
             [],
             [],
@@ -85,8 +79,6 @@ public record EventResponse(
 /// <param name="SignupEndsAt">The signup ends at value.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="CreatedBy">The created by value.</param>
-/// <param name="UpdatedBy">The updated by value.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="Featured">Whether featured.</param>
 /// <param name="Categories">The categories value.</param>
@@ -102,8 +94,6 @@ public record EventListItemResponse(
     DateTimeOffset SignupEndsAt,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    Guid CreatedBy,
-    Guid? UpdatedBy,
     Guid ThumbnailId,
     bool Featured,
     IReadOnlyList<EventCategoryResponse> Categories,
@@ -124,8 +114,6 @@ public record EventListItemResponse(
             default,
             default,
             default,
-            null,
-            Guid.Empty,
             null,
             Guid.Empty,
             false,
@@ -166,7 +154,7 @@ public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Col
 public record CreateEventRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] [MaxLength(262144)] string Description,
+    [RichText] [MaxLength(262144)] string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
     DateTimeOffset? EarlySignupStartsAt,
@@ -194,7 +182,7 @@ public record CreateEventRequest(
 public record UpdateEventRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] [MaxLength(262144)] string Description,
+    [RichText] [MaxLength(262144)] string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
     DateTimeOffset? EarlySignupStartsAt,

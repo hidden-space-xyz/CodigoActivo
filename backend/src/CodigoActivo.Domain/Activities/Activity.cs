@@ -110,6 +110,16 @@ public class Activity : AuditableEntity, IAggregateRoot
     }
 
     /// <summary>
+    /// Tells whether the activity has already begun, so people can no longer join or leave it.
+    /// </summary>
+    /// <param name="now">Current time.</param>
+    /// <returns><see langword="true"/> from the moment the activity starts.</returns>
+    public bool HasStartedBy(DateTimeOffset now)
+    {
+        return now >= ActivityStartsAt;
+    }
+
+    /// <summary>
     /// Finds the signup of a person.
     /// </summary>
     /// <param name="userId">Identifier of the person.</param>

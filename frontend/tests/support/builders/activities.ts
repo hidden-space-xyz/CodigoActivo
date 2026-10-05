@@ -26,7 +26,6 @@ export function buildActivityResponse(overrides: Partial<ActivityResponse> = {})
     roleCapacities: [{ activityRoleTypeId: 'role-1', desiredCount: 4, isHighDemand: false }],
     ...AUDIT,
     updatedAt: null,
-    updatedBy: null,
     ...overrides,
   }
 }

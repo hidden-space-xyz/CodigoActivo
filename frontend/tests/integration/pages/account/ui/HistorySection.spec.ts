@@ -11,6 +11,7 @@ import { buildHistoryActivityResponse, buildHistoryResponse } from '../../../../
 import {
   click,
   findButton,
+  findButtons,
   notificationTexts,
   openDialog,
   openDialogs,
@@ -125,6 +126,26 @@ describe('HistorySection', () => {
     expect(upcoming.querySelector('.acc-history__actions')).toBeNull()
   })
 
+  it('counts each activity once however many household members joined it', async () => {
+    serveHistory([
+      buildHistoryResponse({
+        eventId: 'family',
+        title: 'Día en familia',
+        activities: [
+          buildHistoryActivityResponse({ activityId: 'a1' }),
+          buildHistoryActivityResponse({ activityId: 'a1', userId: 'child-1', isSelf: false }),
+          buildHistoryActivityResponse({ activityId: 'a2', userId: 'child-1', isSelf: false }),
+        ],
+      }),
+    ])
+
+    await renderSection()
+
+    expect(eventItem('Día en familia').textContent).toContain(
+      i18n.global.t('pages.account.history.activityCount', 2),
+    )
+  })
+
   it('hides a group that has no events', async () => {
     serveHistory([PAST_WITH_ACTIVITY])
 
@@ -187,7 +208,7 @@ describe('HistorySection', () => {
     }
   })
 
-  it('keeps the rate button after the rating was saved and the history refreshed', async () => {
+  it('marks the event as rated once its rating is saved and the history refreshed', async () => {
     const history = serveHistory()
     server.use(
       http.post('/api/events/:eventId/rating', () => new HttpResponse(null, { status: 204 })),
@@ -195,10 +216,17 @@ describe('HistorySection', () => {
     await renderSection()
 
     await click(findButton(t('pages.account.history.rate'), eventItem('Taller de otoño')))
-    await click(findButton(t('common.save'), openDialog(t('pages.account.history.dialog.header'))))
+    const dialog = openDialog(t('pages.account.history.dialog.header'))
+    await typeInto('#rating-most', 'Todo', dialog)
+    await click(findButton(t('pages.account.history.dialog.submit'), dialog))
 
     await vi.waitFor(() => expect(history.count()).toBe(2))
-    expect(findButton(t('pages.account.history.rate'), eventItem('Taller de otoño'))).toBeTruthy()
+    const entry = eventItem('Taller de otoño')
+    expect(findButtons(t('pages.account.history.rate'), entry)).toHaveLength(0)
+    expect(findButton(t('pages.account.history.rated'), entry).disabled).toBe(true)
+    expect(
+      findButton(t('pages.account.history.rate'), eventItem('Hackathon de Primavera')),
+    ).toBeTruthy()
   })
 
   it('opens the dialog empty, saves the rating, confirms it and refreshes the history', async () => {
@@ -219,7 +247,7 @@ describe('HistorySection', () => {
     expect(dialog.querySelector<HTMLTextAreaElement>('#rating-most')?.value).toBe('')
     await click(dialog.querySelectorAll('.el-rate__item')[2] as Element)
     await typeInto('#rating-most', '  Los retos  ', dialog)
-    await click(findButton(t('common.save'), dialog))
+    await click(findButton(t('pages.account.history.dialog.submit'), dialog))
 
     await vi.waitFor(() => expect(received).toBeDefined())
     expect(received).toEqual({
@@ -239,7 +267,8 @@ describe('HistorySection', () => {
 
     await click(findButton(t('pages.account.history.rate'), eventItem('Taller de otoño')))
     const dialog = openDialog(t('pages.account.history.dialog.header'))
-    await click(findButton(t('common.save'), dialog))
+    await typeInto('#rating-least', 'Nada', dialog)
+    await click(findButton(t('pages.account.history.dialog.submit'), dialog))
 
     await vi.waitFor(() => expect(notificationTexts()).toHaveLength(1))
     expect(notificationTexts()[0]).toContain(t('errors.EventNotFound'))
@@ -273,7 +302,9 @@ describe('HistorySection', () => {
     await renderSection()
 
     await click(findButton(t('pages.account.history.rate'), eventItem('Sin id')))
-    await click(findButton(t('common.save'), openDialog(t('pages.account.history.dialog.header'))))
+    const dialog = openDialog(t('pages.account.history.dialog.header'))
+    await typeInto('#rating-most', 'Todo', dialog)
+    await click(findButton(t('pages.account.history.dialog.submit'), dialog))
 
     expect(saved).not.toHaveBeenCalled()
     expect(openDialogs()).toHaveLength(1)

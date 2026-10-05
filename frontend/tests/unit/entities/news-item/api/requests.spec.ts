@@ -76,6 +76,21 @@ describe('news requests', () => {
     await expect(getHomeNewsRequest()).resolves.toEqual({ featured: null, items: [] })
   })
 
+  it('shows the latest three news items without a highlight when none is featured', async () => {
+    server.use(
+      http.get('/api/news', () =>
+        HttpResponse.json(
+          paged(['a1', 'a2', 'a3', 'a4'].map((id) => buildNewsListItem({ id, featured: false }))),
+        ),
+      ),
+    )
+
+    const home = await getHomeNewsRequest()
+
+    expect(home.featured).toBeNull()
+    expect(home.items.map((item) => item.id)).toEqual(['a1', 'a2', 'a3'])
+  })
+
   it('loads a whole news item, resolving null when it does not exist', async () => {
     server.use(
       http.get('/api/news/a1', () => HttpResponse.json(buildNewsItemResponse({ id: 'a1' }))),

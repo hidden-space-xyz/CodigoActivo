@@ -17,6 +17,7 @@ function buildTimelineActivity(overrides: Partial<TimelineActivity> = {}): Timel
     modality: 'Presencial',
     start: new Date(2099, 5, 10, 9, 0),
     end: new Date(2099, 5, 10, 11, 0),
+    started: false,
     highDemandRoleIds: [],
     assignment: null,
     household: [],
@@ -33,6 +34,7 @@ interface CardProps {
   signupOpen?: boolean
   earlyOnly?: boolean
   hasHousehold?: boolean
+  householdSize?: number
   referenceDate?: Date | null
 }
 
@@ -194,6 +196,43 @@ describe('ActivityTimelineCard with an existing enrollment', () => {
   })
 })
 
+describe('ActivityTimelineCard once the activity started', () => {
+  it('neither signs up nor withdraws, and says why', async () => {
+    const { wrapper } = await renderCard({ activity: buildTimelineActivity({ started: true }) })
+
+    expect(wrapper.find('.act__note').text()).toBe(t('pages.eventDetail.card.activityStarted'))
+    expect(wrapper.find('.el-button').exists()).toBe(false)
+
+    const enrolled = await renderCard({
+      activity: buildTimelineActivity({
+        started: true,
+        assignment: { status: 'Confirmada', roleName: 'Participante' },
+      }),
+    })
+    expect(enrolled.wrapper.findAll('.act__note').map((note) => note.text())).toEqual([
+      t('pages.eventDetail.card.enrolledAs', { role: 'Participante' }),
+      t('pages.eventDetail.card.activityStarted'),
+    ])
+  })
+
+  it('lists the enrolled household members without withdrawal', async () => {
+    const { wrapper } = await renderCard({
+      hasHousehold: true,
+      activity: buildTimelineActivity({
+        started: true,
+        household: [
+          { userId: 'child-1', name: 'Byron King', roleName: 'Voluntario', status: 'Pendiente' },
+        ],
+      }),
+    })
+
+    expect(wrapper.find('.act__member').exists()).toBe(true)
+    expect(wrapper.find('.act__member-remove').exists()).toBe(false)
+    expect(wrapper.find('.act__note').text()).toBe(t('pages.eventDetail.card.activityStarted'))
+    expect(wrapper.find('.el-button').exists()).toBe(false)
+  })
+})
+
 describe('ActivityTimelineCard for households', () => {
   const household = [
     { userId: 'user-1', name: 'Ada Lovelace', roleName: 'Participante', status: 'Confirmada' },
@@ -220,6 +259,18 @@ describe('ActivityTimelineCard for households', () => {
 
     await buttonByText(wrapper, t('pages.eventDetail.card.enrollAnother')).trigger('click')
     expect(wrapper.emitted('household')).toHaveLength(1)
+  })
+
+  it('stops offering the household dialog once everyone is enrolled', async () => {
+    const { wrapper } = await renderCard({
+      hasHousehold: true,
+      householdSize: 2,
+      activity: buildTimelineActivity({ household }),
+    })
+
+    expect(wrapper.find('.act__note').text()).toBe(t('pages.eventDetail.household.allInscribed'))
+    expect(wrapper.find('.el-button').exists()).toBe(false)
+    expect(wrapper.findAll('.act__member-remove')).toHaveLength(2)
   })
 
   it('disables withdrawal while busy', async () => {

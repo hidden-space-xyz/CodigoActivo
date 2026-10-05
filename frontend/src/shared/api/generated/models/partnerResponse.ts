@@ -15,8 +15,5 @@ export interface PartnerResponse {
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  createdBy: string;
-  /** @nullable */
-  updatedBy?: string | null;
   thumbnailId: string;
 }

@@ -36,6 +36,11 @@ public enum ErrorCode
     ActivitySignupEarlyOnly,
 
     /// <summary>
+    /// Selects the activity already started option.
+    /// </summary>
+    ActivityAlreadyStarted,
+
+    /// <summary>
     /// Selects the activity role not allowed option.
     /// </summary>
     ActivityRoleNotAllowed,
@@ -116,6 +121,11 @@ public enum ErrorCode
     EventCategoryTypeNameAlreadyExists,
 
     /// <summary>
+    /// Selects the event category type only category of event option.
+    /// </summary>
+    EventCategoryTypeOnlyCategoryOfEvent,
+
+    /// <summary>
     /// Selects the event thumbnail not found option.
     /// </summary>
     EventThumbnailNotFound,
@@ -141,6 +151,11 @@ public enum ErrorCode
     EventEarlySignupNotBeforeSignup,
 
     /// <summary>
+    /// Selects the event signup ends after event option.
+    /// </summary>
+    EventSignupEndsAfterEvent,
+
+    /// <summary>
     /// Selects the event rating not finished option.
     /// </summary>
     EventRatingNotFinished,
@@ -149,6 +164,11 @@ public enum ErrorCode
     /// Selects the event rating attendance required option.
     /// </summary>
     EventRatingAttendanceRequired,
+
+    /// <summary>
+    /// Selects the event rating empty option.
+    /// </summary>
+    EventRatingEmpty,
 
     /// <summary>
     /// Selects the event terms acceptance required option.
@@ -312,6 +332,11 @@ public enum ErrorCode
     UserCurrentPasswordIncorrect,
 
     /// <summary>
+    /// Selects the user new password same as current option.
+    /// </summary>
+    UserNewPasswordSameAsCurrent,
+
+    /// <summary>
     /// Selects the user parent reassignment forbidden option.
     /// </summary>
     UserParentReassignmentForbidden,
@@ -352,6 +377,11 @@ public enum ErrorCode
     /// Selects the option for a secondary phone equal to the main phone of the same account.
     /// </summary>
     SecondaryPhoneSameAsPrimary,
+
+    /// <summary>
+    /// Selects the user phone invalid option.
+    /// </summary>
+    UserPhoneInvalid,
 
     /// <summary>
     /// Selects the option for an email address whose domain is on the disposable email domain list,
@@ -478,6 +508,11 @@ public enum ErrorCode
     /// Selects the authentication required option.
     /// </summary>
     AuthenticationRequired,
+
+    /// <summary>
+    /// Selects the endpoint not found option.
+    /// </summary>
+    EndpointNotFound,
 
     /// <summary>
     /// Selects the access denied option.

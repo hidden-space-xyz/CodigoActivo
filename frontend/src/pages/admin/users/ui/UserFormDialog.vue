@@ -196,8 +196,13 @@ function save(): void {
           <small v-if="errors.email" class="form__error">{{ errors.email }}</small>
         </div>
         <div class="form__consent">
-          <el-checkbox id="user-promotional-consent" v-model="draft.promotionalConsent" />
-          <label for="user-promotional-consent">{{ $t('common.promotionalConsentOption') }}</label>
+          <el-checkbox
+            id="user-promotional-consent"
+            v-model="draft.promotionalConsent"
+            class="ca-checkbox-text form__consent-label"
+          >
+            {{ $t('common.promotionalConsentOption') }}
+          </el-checkbox>
         </div>
       </template>
       <div v-if="requiresPassword" class="form__field">
@@ -263,7 +268,7 @@ function save(): void {
   gap: 10px;
 }
 
-.form__consent label {
+.form__consent-label {
   font-size: 13px;
   line-height: 1.5;
   color: var(--ca-text-muted);

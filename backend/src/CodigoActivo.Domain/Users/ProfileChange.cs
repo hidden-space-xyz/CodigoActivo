@@ -29,17 +29,17 @@ public sealed class ProfileChange
             && !string.Equals(contact.Email, account.Email, StringComparison.Ordinal)
                 ? contact.Email
                 : null;
-        ReplacesContact =
+        ReplacesPhones =
             contact is not null
             && (
-                NewEmail is not null
-                || !string.Equals(contact.Phone, account.Phone, StringComparison.Ordinal)
+                !string.Equals(contact.Phone, account.Phone, StringComparison.Ordinal)
                 || !string.Equals(
                     contact.SecondaryPhone,
                     account.SecondaryPhone,
                     StringComparison.Ordinal
                 )
             );
+        ReplacesContact = NewEmail is not null || ReplacesPhones;
     }
 
     /// <summary>
@@ -59,6 +59,11 @@ public sealed class ProfileChange
     /// which lets whoever makes it take the account over or redirect its contact details.
     /// </summary>
     public bool ReplacesContact { get; }
+
+    /// <summary>
+    /// Gets whether the change replaces the phone or the secondary phone of the account.
+    /// </summary>
+    public bool ReplacesPhones { get; }
 
     internal User Account { get; }
 

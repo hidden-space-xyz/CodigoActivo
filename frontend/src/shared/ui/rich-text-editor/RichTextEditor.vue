@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import type { JSONContent } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { useI18n } from 'vue-i18n'
 
 import { AppIcon } from '@/shared/ui/app-icon'
 import { fileContentUrl } from '@/shared/api'
-import { parseRichText, richTextExtensions, serializeRichText } from '@/shared/lib/rich-text'
+import {
+  cleanRichText,
+  normalizeLink,
+  parseRichText,
+  richTextExtensions,
+  serializeRichText,
+} from '@/shared/lib/rich-text'
 
 const { t } = useI18n()
 
@@ -25,7 +32,10 @@ const props = defineProps<{
   upload?: (file: File) => Promise<string | undefined>
 }>()
 const emit = defineEmits<{
-  /** Fired with the serialized JSON document on every user edit, not on external value updates. */
+  /**
+   * Fired with the serialized JSON document on every user edit, not on external value updates. It
+   * carries only the content the API accepts, as `parseRichText` keeps it.
+   */
   'update:modelValue': [value: string]
 }>()
 
@@ -46,8 +56,12 @@ const editor = useEditor({
       'aria-multiline': 'true',
     },
   },
-  onUpdate: ({ editor }) => emit('update:modelValue', serializeRichText(editor.getJSON())),
+  onUpdate: ({ editor }) => emit('update:modelValue', currentValue(editor.getJSON())),
 })
+
+function currentValue(json: JSONContent): string {
+  return serializeRichText(cleanRichText(json, contentOptions))
+}
 
 watch(
   () => props.modelValue,
@@ -55,7 +69,7 @@ watch(
     const instance = editor.value
     if (!instance) return
     const incoming = serializeRichText(parseRichText(value, contentOptions))
-    if (incoming !== serializeRichText(instance.getJSON())) {
+    if (incoming !== currentValue(instance.getJSON())) {
       instance.commands.setContent(parseRichText(value, contentOptions), { emitUpdate: false })
     }
   },
@@ -106,8 +120,13 @@ function toggleLink(): void {
   const url = window.prompt(t('editor.linkPrompt'), previous)
   if (url === null) return
   const chain = instance.chain().focus().extendMarkRange('link')
-  if (url.trim() === '') chain.unsetLink().run()
-  else chain.setLink({ href: url.trim() }).run()
+  if (url.trim() === '') {
+    chain.unsetLink().run()
+    return
+  }
+  const href = normalizeLink(url)
+  if (href) chain.setLink({ href }).run()
+  else window.alert(t('editor.linkInvalid'))
 }
 
 function insertTable(): void {

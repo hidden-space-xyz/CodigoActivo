@@ -210,7 +210,7 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         var withImage = new UpdateNewsItemRequest(
             "Con imagen",
             "Sub",
-            $"{{\"img\":\"/api/files/{embeddedFileId}/content\"}}",
+            $"{{\"type\":\"doc\",\"content\":[{{\"type\":\"image\",\"attrs\":{{\"src\":\"/api/files/{embeddedFileId}/content\"}}}}]}}",
             thumbnailId
         );
         using (var seeded = await client.PutJsonAsync($"/api/news/{id}", withImage, Ct))

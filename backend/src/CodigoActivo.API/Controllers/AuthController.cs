@@ -55,6 +55,7 @@ public class AuthController : ApiControllerBase
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [ProducesResponseType<RegisterResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<RegisterResponse>> RegisterAsync(
         [FromBody] RegisterRequest request,
         [FromServices] RegisterCommandHandler handler,

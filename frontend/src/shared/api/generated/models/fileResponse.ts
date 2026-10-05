@@ -10,5 +10,4 @@ export interface FileResponse {
   name: string;
   extension: string;
   uploadedAt: string;
-  uploadedBy: string;
 }

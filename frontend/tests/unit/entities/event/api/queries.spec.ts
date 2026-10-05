@@ -154,11 +154,11 @@ describe('eventList', () => {
       }),
     )
 
-    await expect(eventList.fetchPage({ title: 'hack', page: 1 })).resolves.toMatchObject({
+    await expect(eventList.fetchPage({ search: 'hack', page: 1 })).resolves.toMatchObject({
       total: 1,
       items: [{ id: 'event-1', featured: true }],
     })
-    expect(queryOf(urls[0] ?? '')).toEqual({ title: 'hack', page: '1' })
+    expect(queryOf(urls[0] ?? '')).toEqual({ search: 'hack', page: '1' })
     expect(eventList.queryKey).toEqual(eventKeys.list())
     expect(eventKeys.list()).toEqual(['events', 'list'])
   })

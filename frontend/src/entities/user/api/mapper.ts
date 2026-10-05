@@ -31,6 +31,7 @@ export function toUser(user: UserResponse): User {
     gender: user.gender,
     isAdmin: user.isAdmin,
     isInitialAdmin: user.isInitialAdmin,
+    usesAuthenticator: user.twoFactorMethod === 'Authenticator',
     parentId: user.parentId ?? null,
     parentName: user.parentName ?? '',
     dependentCount: user.dependentCount ?? 0,

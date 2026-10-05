@@ -25,7 +25,7 @@ public record TermsDocumentResponse(Guid Id, string Name, string Description)
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 public record CreateTermsDocumentRequest(
     [Required] [MaxLength(120)] [NotBlank] string Name,
-    [Required] [JsonString] [NoRichTextImages] [MaxLength(262144)] string Description
+    [Required] [RichText(AllowImages = false)] [MaxLength(262144)] string Description
 );
 
 /// <summary>
@@ -35,5 +35,5 @@ public record CreateTermsDocumentRequest(
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 public record UpdateTermsDocumentRequest(
     [Required] [MaxLength(120)] [NotBlank] string Name,
-    [Required] [JsonString] [NoRichTextImages] [MaxLength(262144)] string Description
+    [Required] [RichText(AllowImages = false)] [MaxLength(262144)] string Description
 );
