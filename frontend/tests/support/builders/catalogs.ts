@@ -27,7 +27,6 @@ export function buildFileResponse(overrides: Partial<FileResponse> = {}): FileRe
     name: 'cover',
     extension: '.png',
     uploadedAt: '2026-01-01T10:00:00Z',
-    uploadedBy: 'admin-1',
     ...overrides,
   }
 }

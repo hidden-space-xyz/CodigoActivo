@@ -26,7 +26,7 @@ import {
   EVENT_ID,
   THUMBNAIL_ID,
 } from '../../../../../support/builders'
-import { findButtons, notificationTexts } from '../../../../../support/dom'
+import { findButtons, notificationTexts, tp } from '../../../../../support/dom'
 import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
 
 const ADMIN_EVENT = {
@@ -134,6 +134,7 @@ describe('EventDetailPage', () => {
     expect(cards[1]).toBe('7Volunteer')
     expect(cards[2]).toContain('4,3')
     expect(cards[2]).toContain('/5')
+    expect(cards[2]).toContain(tp('pages.admin.eventDetail.summary.ratings', 2))
     expect(text).toContain('Robotics')
     expect(text).toContain('Painting')
     expect(text).toContain('On site')
@@ -148,7 +149,8 @@ describe('EventDetailPage', () => {
         HttpResponse.json(
           buildSummary({
             activitiesCount: 0,
-            ratingsCount: 0,
+            ratingsCount: 1,
+            scoredRatingsCount: 0,
             ratingsAverage: null,
             roleTypeBreakdown: [
               { roleTypeId: 'role-1', roleTypeName: null, approvedAssignments: 0 },
@@ -173,6 +175,7 @@ describe('EventDetailPage', () => {
     expect(cards[1]).toBe('0—')
     expect(cards[2]).not.toContain('/5')
     expect(cards[2]).toContain('—')
+    expect(cards[2]).toContain(tp('pages.admin.eventDetail.summary.ratings', 0))
   })
 
   it('shows an error when activities cannot be loaded', async () => {

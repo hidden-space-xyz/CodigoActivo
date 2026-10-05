@@ -13,7 +13,6 @@ export function buildNewsListItem(
     ...AUDIT,
     createdAt: '2026-02-01T10:00:00Z',
     updatedAt: null,
-    updatedBy: null,
     thumbnailId: 'thumb-news-item',
     featured: false,
     ...overrides,

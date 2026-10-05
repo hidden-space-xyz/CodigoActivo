@@ -211,10 +211,22 @@ public static class AppStrings
     public static string EmailsSecurityAlertHeading => Get("emails.securityAlert.heading");
 
     /// <summary>
-    /// Gets the emails security alert identifiers changed value.
+    /// Gets the emails security alert email changed value.
     /// </summary>
-    public static string EmailsSecurityAlertIdentifiersChanged =>
-        Get("emails.securityAlert.identifiersChanged");
+    public static string EmailsSecurityAlertEmailChanged =>
+        Get("emails.securityAlert.emailChanged");
+
+    /// <summary>
+    /// Gets the emails security alert phone changed value.
+    /// </summary>
+    public static string EmailsSecurityAlertPhoneChanged =>
+        Get("emails.securityAlert.phoneChanged");
+
+    /// <summary>
+    /// Gets the emails security alert email and phone changed value.
+    /// </summary>
+    public static string EmailsSecurityAlertEmailAndPhoneChanged =>
+        Get("emails.securityAlert.emailAndPhoneChanged");
 
     /// <summary>
     /// Gets the emails security alert intro html value.

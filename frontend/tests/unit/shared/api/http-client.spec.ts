@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ApiError, httpClient, resetCsrfToken } from '@/shared/api'
+import { ApiError, httpClient, isSessionLost, resetCsrfToken } from '@/shared/api'
 import { ErrorCode } from '@/shared/api/generated/models'
 
 import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../support/server'
@@ -384,5 +384,26 @@ describe('ApiError', () => {
     expect(error.status).toBe(418)
     expect(error.traceId).toBe('trace-9')
     expect(error.code).toBe(ErrorCode.EventNotFound)
+  })
+})
+
+describe('isSessionLost', () => {
+  it('recognizes a missing, ended or orphaned session', () => {
+    expect(isSessionLost(new ApiError(401, 'x', undefined, ErrorCode.AuthenticationRequired))).toBe(
+      true,
+    )
+    expect(isSessionLost(new ApiError(401, 'x', undefined, ErrorCode.CurrentUserNotFound))).toBe(
+      true,
+    )
+  })
+
+  it('ignores wrong credentials, other statuses and other errors', () => {
+    expect(isSessionLost(new ApiError(401, 'x', undefined, ErrorCode.InvalidCredentials))).toBe(
+      false,
+    )
+    expect(isSessionLost(new ApiError(403, 'x', undefined, ErrorCode.AuthenticationRequired))).toBe(
+      false,
+    )
+    expect(isSessionLost(new Error('offline'))).toBe(false)
   })
 })

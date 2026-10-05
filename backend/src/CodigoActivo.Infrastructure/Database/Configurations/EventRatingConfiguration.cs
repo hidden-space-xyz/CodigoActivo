@@ -17,7 +17,6 @@ public class EventRatingConfiguration : IEntityTypeConfiguration<EventRating>
     {
         builder.HasKey(r => r.Id);
 
-        builder.Property(r => r.Score).IsRequired();
         builder.Property(r => r.MostLiked).HasMaxLength(EventRating.MaxAnswerLength);
         builder.Property(r => r.LeastLiked).HasMaxLength(EventRating.MaxAnswerLength);
         builder.Property(r => r.Suggestions).HasMaxLength(EventRating.MaxAnswerLength);

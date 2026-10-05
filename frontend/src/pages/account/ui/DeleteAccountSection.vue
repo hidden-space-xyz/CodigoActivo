@@ -89,10 +89,13 @@ const {
             </BrandButton>
           </p>
           <div class="acc-danger__consent">
-            <el-checkbox id="del-accept" v-model="draft.accepted" />
-            <label for="del-accept" class="acc-danger__consent-label">{{
-              $t('pages.account.deleteAccount.irreversible')
-            }}</label>
+            <el-checkbox
+              id="del-accept"
+              v-model="draft.accepted"
+              class="ca-checkbox-text acc-danger__consent-label"
+            >
+              {{ $t('pages.account.deleteAccount.irreversible') }}
+            </el-checkbox>
           </div>
         </template>
 

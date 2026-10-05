@@ -131,12 +131,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiResourcesMutationOptions(options), queryClient);
     }
-    export type postApiResourcesResponse200 = {
+    export type postApiResourcesResponse201 = {
   data: ResourceResponse
-  status: 200
+  status: 201
 }
 
-export type postApiResourcesResponseSuccess = (postApiResourcesResponse200) & {
+export type postApiResourcesResponseSuccess = (postApiResourcesResponse201) & {
   headers: Headers;
 };
 ;

@@ -54,7 +54,7 @@ const summaryCards = computed(() => [
     value: role.approved,
   })),
 ])
-const ratingsCount = computed(() => stats.data.value?.ratingsCount ?? 0)
+const scoredRatingsCount = computed(() => stats.data.value?.scoredRatingsCount ?? 0)
 const ratingsAverage = computed(() => {
   const average = stats.data.value?.ratingsAverage
   return average === null || average === undefined ? '—' : formatNumber(Number(average.toFixed(1)))
@@ -113,10 +113,10 @@ function openRoster(): void {
       <div class="summary__card">
         <div class="summary__value">
           {{ ratingsAverage }}
-          <span v-if="ratingsCount > 0" class="summary__unit">/5</span>
+          <span v-if="scoredRatingsCount > 0" class="summary__unit">/5</span>
         </div>
         <div class="summary__label">
-          {{ $t('pages.admin.eventDetail.summary.ratings', ratingsCount) }}
+          {{ $t('pages.admin.eventDetail.summary.ratings', scoredRatingsCount) }}
         </div>
       </div>
     </div>
@@ -171,7 +171,12 @@ function openRoster(): void {
               </div>
             </template>
           </el-table-column>
-          <el-table-column :label="$t('common.actions')" width="120" align="center" fixed="right">
+          <el-table-column
+            :label="$t('common.actions')"
+            width="120"
+            align="center"
+            :fixed="table.actionsFixed.value"
+          >
             <template #default="{ row }">
               <div class="ca-row-actions">
                 <ActionButton

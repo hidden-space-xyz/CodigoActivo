@@ -10,8 +10,9 @@ interface RoleStats {
 export interface EventStats {
   readonly activitiesCount: number
   readonly roles: readonly RoleStats[]
-  readonly ratingsCount: number
-  /** Mean score out of 5; `null` until someone rates the event. */
+  /** Ratings that carry a score, the only ones the average covers. */
+  readonly scoredRatingsCount: number
+  /** Mean score out of 5; `null` until a rating carries a score. */
   readonly ratingsAverage: number | null
 }
 
@@ -77,7 +78,8 @@ export interface AttendeeListParams extends AttendeeFilters {
 /** Anonymous rating of an event; unanswered questions are empty. */
 export interface EventRating {
   readonly id: string
-  readonly score: number
+  /** Stars from 1 to 5; `null` when the attendee only wrote answers. */
+  readonly score: number | null
   readonly mostLiked: string
   readonly leastLiked: string
   readonly suggestions: string

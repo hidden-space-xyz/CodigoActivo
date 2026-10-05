@@ -75,7 +75,8 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         int confirmed,
         Guid eventId,
         string eventTitle = "Evento",
-        string title = "Actividad"
+        string title = "Actividad",
+        int confirmedLeaders = 0
     )
     {
         var activity = new ActivityRow
@@ -107,7 +108,24 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
 
         for (var i = 0; i < confirmed; i++)
         {
-            activity.Assignments.Add(new AssignmentRow { AssignmentStatusId = Confirmed });
+            activity.Assignments.Add(
+                new AssignmentRow
+                {
+                    AssignmentStatusId = Confirmed,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                }
+            );
+        }
+
+        for (var i = 0; i < confirmedLeaders; i++)
+        {
+            activity.Assignments.Add(
+                new AssignmentRow
+                {
+                    AssignmentStatusId = Confirmed,
+                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
+                }
+            );
         }
 
         return activity;
@@ -320,6 +338,40 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         occEvent.Activities[0].Title.Should().Be("Taller de septiembre");
         occEvent.Activities[0].Confirmed.Should().Be(3);
         occEvent.Activities[0].Desired.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task HandleAsyncOccupancyCountsEachRoleUpToItsDesiredSeats()
+    {
+        var eventId = new Guid("cccccccc-0000-0000-0000-000000000003");
+        store.Activities.AddRange([
+            AnalyticsActivity(
+                Utc(2026, 9, 1),
+                Utc(2026, 5, 1),
+                desired: 2,
+                confirmed: 4,
+                eventId: eventId,
+                title: "Muy solicitada",
+                confirmedLeaders: 3
+            ),
+            AnalyticsActivity(
+                Utc(2026, 9, 2),
+                Utc(2026, 5, 1),
+                desired: 4,
+                confirmed: 1,
+                eventId: eventId,
+                title: "Con plazas libres"
+            ),
+        ]);
+
+        var r = await Analytics(new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31));
+
+        r.Occupancy.Confirmed.Should().Be(3);
+        r.Occupancy.Desired.Should().Be(6);
+        var occEvent = r.Occupancy.Events.Should().ContainSingle().Subject;
+        occEvent.Confirmed.Should().Be(3);
+        occEvent.Desired.Should().Be(6);
+        occEvent.Activities.Select(a => (a.Confirmed, a.Desired)).Should().Equal((2, 2), (1, 4));
     }
 
     private Task<DashboardAnalyticsResponse> Analytics(DateOnly? from, DateOnly? to)

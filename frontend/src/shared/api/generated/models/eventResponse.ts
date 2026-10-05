@@ -22,9 +22,6 @@ export interface EventResponse {
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  createdBy: string;
-  /** @nullable */
-  updatedBy?: string | null;
   thumbnailId: string;
   featured: boolean;
   categories: EventCategoryResponse[];

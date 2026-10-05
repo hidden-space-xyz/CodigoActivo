@@ -28,8 +28,11 @@ public class EventCategoryTypeRepository(CodigoActivoDbContext context)
     {
         return Set.AnyAsync(
             categoryType =>
-                categoryType.Name == name
-                && (exceptId == null || categoryType.Id != exceptId.Value),
+                EF.Functions.ILike(
+                    categoryType.Name,
+                    LikePattern.Literal(name),
+                    LikePattern.EscapeCharacter
+                ) && (exceptId == null || categoryType.Id != exceptId.Value),
             ct
         );
     }

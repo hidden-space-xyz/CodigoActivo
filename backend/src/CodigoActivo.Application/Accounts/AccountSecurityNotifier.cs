@@ -35,28 +35,30 @@ public sealed class AccountSecurityNotifier(
     }
 
     /// <summary>
-    /// Notifies the address the account used before its email or phone was replaced. The new
-    /// address is only ever quoted masked.
+    /// Notifies the address the account used before its email or phones were replaced, naming what
+    /// changed. The new address is only ever quoted masked.
     /// </summary>
     /// <param name="previousEmail">Address the account had before the change.</param>
     /// <param name="recipientName">The recipient name value.</param>
-    /// <param name="newEmail">Address the account has now, quoted masked or not at all.</param>
+    /// <param name="newEmail">Address the account has now when it changed, quoted masked.</param>
+    /// <param name="phonesChanged">Whether the phone or the secondary phone changed.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task NotifyIdentifiersChangedAsync(
         string? previousEmail,
         string recipientName,
         string? newEmail,
+        bool phonesChanged,
         CancellationToken ct
     )
     {
-        return SendAsync(
-            previousEmail,
-            recipientName,
-            AccountSecurityChange.IdentifiersChanged,
-            newEmail?.MaskEmail(),
-            ct
-        );
+        var change = (newEmail, phonesChanged) switch
+        {
+            (null, _) => AccountSecurityChange.PhoneChanged,
+            (_, true) => AccountSecurityChange.EmailAndPhoneChanged,
+            _ => AccountSecurityChange.EmailChanged,
+        };
+        return SendAsync(previousEmail, recipientName, change, newEmail?.MaskEmail(), ct);
     }
 
     private async Task SendAsync(

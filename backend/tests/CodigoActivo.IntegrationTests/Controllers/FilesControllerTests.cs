@@ -47,7 +47,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var created = await response.ReadJsonAsync<FileResponse>(Ct);
         created!.Name.Should().Be("picture.png");
         created.Extension.Should().Be("png");
-        created.UploadedBy.Should().Be(TestSeedData.Users.AdminId);
         created.UploadedAt.Should().Be(Factory.Clock.UtcNow);
         response.Headers.Location!.ToString().Should().EndWith($"/api/files/{created.Id}");
 

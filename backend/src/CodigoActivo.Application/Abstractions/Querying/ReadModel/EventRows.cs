@@ -77,8 +77,8 @@ public sealed class EventRatingRow
     /// <summary>Gets the rated event.</summary>
     public EventRow Event { get; init; } = null!;
 
-    /// <summary>Gets the score.</summary>
-    public int Score { get; init; }
+    /// <summary>Gets the score, or <see langword="null"/> when the participant gave none.</summary>
+    public int? Score { get; init; }
 
     /// <summary>Gets what the participant liked most.</summary>
     public string? MostLiked { get; init; }

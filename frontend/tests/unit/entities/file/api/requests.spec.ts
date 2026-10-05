@@ -82,20 +82,14 @@ describe('file requests', () => {
   })
 
   describe('getThumbnailNameRequest', () => {
-    it('joins the name and extension', async () => {
+    it('returns the stored name, which already carries the extension', async () => {
       server.use(
         http.get('/api/files/file-1', () =>
-          HttpResponse.json({ name: 'poster', extension: '.png' }),
+          HttpResponse.json({ name: 'poster.png', extension: 'png' }),
         ),
       )
 
       await expect(getThumbnailNameRequest('file-1')).resolves.toBe('poster.png')
-    })
-
-    it('returns what is available when parts are missing', async () => {
-      server.use(http.get('/api/files/file-2', () => HttpResponse.json({ name: 'poster' })))
-
-      await expect(getThumbnailNameRequest('file-2')).resolves.toBe('poster')
     })
 
     it('returns an empty name when the file no longer exists', async () => {

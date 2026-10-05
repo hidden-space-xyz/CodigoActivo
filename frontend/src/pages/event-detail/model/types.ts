@@ -18,6 +18,8 @@ export interface TimelineActivity {
   modality: string
   start: Date
   end: Date
+  /** The activity has already begun, so signups and withdrawals are closed for it. */
+  started: boolean
   /** High-demand roles, which show a warning when chosen; empty until enrollments load. */
   highDemandRoleIds: string[]
   /** The current user's own enrollment, or `null` when not enrolled. */

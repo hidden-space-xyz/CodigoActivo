@@ -66,6 +66,7 @@ public class PartnersController : ApiControllerBase
     /// <returns>An HTTP response containing a partner, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
+    [ProducesResponseType<PartnerResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<PartnerResponse>> CreateAsync(
         [FromBody] CreatePartnerRequest request,
         [FromServices] CreatePartnerCommandHandler handler,

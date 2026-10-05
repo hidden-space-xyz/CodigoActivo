@@ -14,13 +14,15 @@ export interface TimelineCluster {
 
 /**
  * Merges an event's activities with the signups of the user and their household. High-demand roles
- * are only flagged once `showDemand` says the user's own signups are known.
+ * are only flagged once `showDemand` says the user's own signups are known, and activities that
+ * begin at or before `now` are marked as started.
  */
 export function toTimelineActivities(
   activities: readonly EventActivity[],
   assignments: readonly ActivityAssignment[],
   householdAssignments: readonly HouseholdActivityAssignment[],
   showDemand: boolean,
+  now: Date,
 ): TimelineActivity[] {
   const ownByActivity = new Map<string, { status: string; roleName: string }>()
   for (const assignment of assignments) {
@@ -49,6 +51,7 @@ export function toTimelineActivities(
     modality: activity.modality,
     start: new Date(activity.startsAt),
     end: new Date(activity.endsAt),
+    started: new Date(activity.startsAt).getTime() <= now.getTime(),
     highDemandRoleIds: showDemand ? [...activity.highDemandRoleIds] : [],
     assignment: ownByActivity.get(activity.id) ?? null,
     household: householdByActivity.get(activity.id) ?? [],

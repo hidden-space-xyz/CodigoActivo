@@ -23,7 +23,7 @@ import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 function serveTypes(types: ResourceTypeResponse[] = [internalType, externalType]) {
   server.use(
     http.get('/api/resources/types', () => HttpResponse.json(types)),
-    http.get('/api/files/:id', () => HttpResponse.json({ name: 'cover', extension: '.png' })),
+    http.get('/api/files/:id', () => HttpResponse.json({ name: 'cover.png', extension: 'png' })),
   )
 }
 

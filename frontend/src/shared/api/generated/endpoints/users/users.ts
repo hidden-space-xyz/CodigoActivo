@@ -763,12 +763,12 @@ export function usePostApiUsersUserIdTwoFactorReset<TData = Awaited<ReturnType<t
 
 
 
-export type postApiUsersUserIdChildrenResponse200 = {
+export type postApiUsersUserIdChildrenResponse201 = {
   data: UserResponse
-  status: 200
+  status: 201
 }
 
-export type postApiUsersUserIdChildrenResponseSuccess = (postApiUsersUserIdChildrenResponse200) & {
+export type postApiUsersUserIdChildrenResponseSuccess = (postApiUsersUserIdChildrenResponse201) & {
   headers: Headers;
 };
 ;

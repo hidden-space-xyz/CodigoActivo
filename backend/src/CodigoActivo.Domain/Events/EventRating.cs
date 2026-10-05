@@ -3,14 +3,15 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Domain.Events;
 
 /// <summary>
-/// Anonymous rating of an event given by one of its participants: a score and optional answers.
+/// Anonymous rating of an event given by one of its participants: an optional score and optional
+/// answers, never all of them missing.
 /// </summary>
 public class EventRating : IdentifiableEntity, IAggregateRoot
 {
     /// <summary>
     /// Lowest score allowed.
     /// </summary>
-    public const int MinScore = 0;
+    public const int MinScore = 1;
 
     /// <summary>
     /// Highest score allowed.
@@ -30,9 +31,9 @@ public class EventRating : IdentifiableEntity, IAggregateRoot
     public Guid EventId { get; private set; }
 
     /// <summary>
-    /// Gets the score.
+    /// Gets the score, or <see langword="null"/> when the participant only answered the questions.
     /// </summary>
-    public int Score { get; private set; }
+    public int? Score { get; private set; }
 
     /// <summary>
     /// Gets what the participant liked most.
@@ -50,23 +51,24 @@ public class EventRating : IdentifiableEntity, IAggregateRoot
     public string? Suggestions { get; private set; }
 
     /// <summary>
-    /// Records a rating of an event. Blank answers are stored as missing.
+    /// Records a rating of an event. Blank answers are stored as missing, and a rating without a score
+    /// or any answer is refused.
     /// </summary>
     /// <param name="eventId">Identifier of the rated event.</param>
-    /// <param name="score">Score.</param>
+    /// <param name="score">Score, or <see langword="null"/> when the participant gave none.</param>
     /// <param name="mostLiked">What the participant liked most.</param>
     /// <param name="leastLiked">What the participant liked least.</param>
     /// <param name="suggestions">Suggestions.</param>
-    /// <returns>The new rating.</returns>
-    public static EventRating Submit(
+    /// <returns>The new rating, or <see cref="ErrorCode.EventRatingEmpty"/> when it carries nothing.</returns>
+    public static Result<EventRating> Submit(
         Guid eventId,
-        int score,
+        int? score,
         string? mostLiked,
         string? leastLiked,
         string? suggestions
     )
     {
-        return new EventRating
+        var rating = new EventRating
         {
             EventId = eventId,
             Score = score,
@@ -74,5 +76,13 @@ public class EventRating : IdentifiableEntity, IAggregateRoot
             LeastLiked = leastLiked.NormalizeOrNull(),
             Suggestions = suggestions.NormalizeOrNull(),
         };
+
+        return
+            rating.Score is null
+            && rating.MostLiked is null
+            && rating.LeastLiked is null
+            && rating.Suggestions is null
+            ? Error.Validation(ErrorCode.EventRatingEmpty)
+            : rating;
     }
 }

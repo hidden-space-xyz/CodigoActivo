@@ -52,7 +52,7 @@ function serveNews(items: NewsListItemResponse[] = [listItem()]) {
       urls.push(request.url)
       return HttpResponse.json(paged(items))
     }),
-    http.get('/api/files/:id', () => HttpResponse.json({ name: 'cover', extension: '.png' })),
+    http.get('/api/files/:id', () => HttpResponse.json({ name: 'cover.png', extension: 'png' })),
   )
   return urls
 }

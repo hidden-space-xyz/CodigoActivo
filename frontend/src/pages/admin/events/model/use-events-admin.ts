@@ -29,8 +29,7 @@ export function useEventsAdmin() {
     ...eventList,
     defaultSort: { field: 'eventStartsAt', order: 1 },
     columns: {
-      title: { type: 'text' },
-      subtitle: { type: 'text' },
+      search: { type: 'text' },
       category: { param: 'categoryTypeId' },
       eventDate: { type: 'dateRange', fromParam: 'eventDateFrom', toParam: 'eventDateTo' },
       signup: { type: 'dateRange', fromParam: 'signupFrom', toParam: 'signupTo' },

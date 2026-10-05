@@ -376,12 +376,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiFilesFileIdContentMutationOptions(options), queryClient);
     }
-    export type postApiFilesResponse200 = {
+    export type postApiFilesResponse201 = {
   data: FileResponse
-  status: 200
+  status: 201
 }
 
-export type postApiFilesResponseSuccess = (postApiFilesResponse200) & {
+export type postApiFilesResponseSuccess = (postApiFilesResponse201) & {
   headers: Headers;
 };
 ;

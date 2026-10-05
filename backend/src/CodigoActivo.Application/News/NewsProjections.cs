@@ -21,8 +21,6 @@ public static class NewsProjections
             Description = newsItem.Description,
             CreatedAt = newsItem.CreatedAt,
             UpdatedAt = newsItem.UpdatedAt,
-            CreatedBy = newsItem.CreatedBy,
-            UpdatedBy = newsItem.UpdatedBy,
             ThumbnailId = newsItem.ThumbnailId,
             Featured = newsItem.Featured,
         };
@@ -38,8 +36,6 @@ public static class NewsProjections
             Subtitle = newsItem.Subtitle,
             CreatedAt = newsItem.CreatedAt,
             UpdatedAt = newsItem.UpdatedAt,
-            CreatedBy = newsItem.CreatedBy,
-            UpdatedBy = newsItem.UpdatedBy,
             ThumbnailId = newsItem.ThumbnailId,
             Featured = newsItem.Featured,
         };

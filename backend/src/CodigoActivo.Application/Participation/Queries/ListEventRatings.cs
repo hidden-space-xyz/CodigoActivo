@@ -24,7 +24,7 @@ public sealed class ListEventRatingsQueryHandler(IReadStore readStore, IQueryExe
 {
     private static readonly SortMap<EventRatingListItemResponse> Sort =
         new SortMap<EventRatingListItemResponse>()
-            .Add("score", r => r.Score)
+            .Add("score", r => r.Score ?? 0)
             .Default("-score")
             .Tie(r => r.Id);
 

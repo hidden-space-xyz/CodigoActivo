@@ -156,14 +156,14 @@ public record UpdateUserRequest(
     [Required] [MaxLength(120)] [NotBlank] string FirstName,
     [Required] [MaxLength(120)] [NotBlank] string LastName,
     [EmailAddress] [MaxLength(256)] string? Email,
-    [Phone] [MaxLength(40)] string? Phone,
+    [MaxLength(40)] string? Phone,
     [NotDefaultOrFutureDate] DateOnly? BirthDate,
     [MaxLength(12)] [SpanishNationalId] string? NationalId,
     bool PromotionalConsent,
     [EnumDataType(typeof(Gender))] Gender Gender,
     Guid? ParentId,
     [MaxLength(128)] string? CurrentPassword,
-    [Phone] [MaxLength(40)] string? SecondaryPhone = null
+    [MaxLength(40)] string? SecondaryPhone = null
 );
 
 /// <summary>

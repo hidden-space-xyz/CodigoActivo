@@ -210,6 +210,63 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task SaveRatingZeroScoreReturnsBadRequest()
+    {
+        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.PostJsonAsync(
+            $"/api/events/{EventId}/rating",
+            new SaveEventRatingRequest(0, "Bien", null, null),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SaveRatingWithoutScoreOrAnswersReturnsEmptyError()
+    {
+        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.PostJsonAsync(
+            $"/api/events/{EventId}/rating",
+            new SaveEventRatingRequest(null, " ", null, null),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EventRatingEmpty);
+        await Factory.QueryAsync(async db =>
+        {
+            (await db.EventRatings.AnyAsync(r => r.EventId == EventId, Ct)).Should().BeFalse();
+            return true;
+        });
+    }
+
+    [Fact]
+    public async Task SaveRatingAnswersWithoutScorePersistsUnscoredRating()
+    {
+        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.PostJsonAsync(
+            $"/api/events/{EventId}/rating",
+            new SaveEventRatingRequest(null, null, null, "Más talleres"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await Factory.QueryAsync(async db =>
+        {
+            var rating = await db.EventRatings.SingleAsync(r => r.EventId == EventId, Ct);
+            rating.Score.Should().BeNull();
+            rating.Suggestions.Should().Be("Más talleres");
+            return true;
+        });
+    }
+
+    [Fact]
     public async Task SaveRatingPastEventWithConfirmedAssignmentReturnsNoContentAndPersistsAnonymousRating()
     {
         await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
@@ -498,7 +555,56 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
         summary!.RatingsCount.Should().Be(2);
+        summary.ScoredRatingsCount.Should().Be(2);
         summary.RatingsAverage.Should().Be(3.5);
+    }
+
+    [Fact]
+    public async Task EventSummaryWithUnscoredRatingsAveragesOnlyScoredOnes()
+    {
+        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await Factory.SeedAsync(db =>
+        {
+            db.EventRatings.AddRange(
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 4 }),
+                Persisted.As<EventRating>(new { EventId = EventId, Suggestions = "Más talleres" })
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/reports/events/{EventId}/summary"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var summary = await response.ReadJsonAsync<EventSummaryResponse>(Ct);
+        summary!.RatingsCount.Should().Be(2);
+        summary.ScoredRatingsCount.Should().Be(1);
+        summary.RatingsAverage.Should().Be(4);
+    }
+
+    [Fact]
+    public async Task RatingsDefaultSortListsUnscoredRatingsLast()
+    {
+        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await Factory.SeedAsync(db =>
+        {
+            db.EventRatings.AddRange(
+                Persisted.As<EventRating>(new { EventId = EventId, Suggestions = "Sin nota" }),
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 2 }),
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 })
+            );
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(TestUri.Rel($"/api/events/{EventId}/ratings"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<EventRatingListItemResponse>>(Ct);
+        page!.Items.Select(i => i.Score).Should().Equal(5, 2, null);
     }
 
     [Fact]

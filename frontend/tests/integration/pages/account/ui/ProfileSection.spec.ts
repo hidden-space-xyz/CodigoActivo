@@ -2,6 +2,7 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { ElDialog, ElSelect } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
+import { currentUser } from '@/entities/session'
 import { genderLabelKey } from '@/entities/user'
 import ProfileSection from '@/pages/account/ui/ProfileSection.vue'
 import type { UserResponse } from '@/shared/api/generated/models'
@@ -438,6 +439,21 @@ describe('ProfileSection', () => {
     expect(patched).not.toHaveBeenCalled()
   })
 
+  it('rejects a new password equal to the current one', async () => {
+    serveProfile()
+    await renderSection()
+
+    const dialog = await submitPassword(
+      'a-long-password-1',
+      'a-long-password-1',
+      'a-long-password-1',
+    )
+
+    expect(dialog.querySelector('.acc-form__error')?.textContent.trim()).toBe(
+      t('validation.newPasswordSameAsCurrent'),
+    )
+  })
+
   it('rejects a confirmation that does not match the new password', async () => {
     serveProfile()
     await renderSection()
@@ -449,16 +465,21 @@ describe('ProfileSection', () => {
     )
   })
 
-  it('changes the password, confirms it and resets the form on reopening', async () => {
+  it('changes the password, then ends the session and asks to sign in again', async () => {
     serveProfile()
     let received: { path: string; body: unknown } | undefined
+    const logout = vi.fn()
     server.use(
       http.patch('/api/users/:userId/password', async ({ request }) => {
         received = { path: new URL(request.url).pathname, body: await request.json() }
         return new HttpResponse(null, { status: 204 })
       }),
+      http.post('/api/auth/logout', () => {
+        logout()
+        return new HttpResponse(null, { status: 204 })
+      }),
     )
-    await renderSection()
+    const { router, queryClient } = await renderSection()
 
     await submitPassword('old-password', 'a-long-password-1', 'a-long-password-1')
 
@@ -467,8 +488,20 @@ describe('ProfileSection', () => {
       path: '/api/users/user-1/password',
       body: { currentPassword: 'old-password', newPassword: 'a-long-password-1' },
     })
-    await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'))
+    expect(openDialogs()).toHaveLength(0)
+    expect(currentUser(queryClient)).toBeNull()
+    expect(logout).toHaveBeenCalledOnce()
     expect(notificationTexts().join()).toContain(t('pages.account.profile.passwordUpdatedSummary'))
+    expect(notificationTexts().join()).toContain(t('pages.account.profile.passwordUpdatedDetail'))
+  })
+
+  it('resets the password form on reopening', async () => {
+    serveProfile()
+    await renderSection()
+
+    const dialog = await submitPassword('current', 'short', 'short')
+    await click(findButton(t('common.cancel'), dialog))
 
     const reopened = await openPasswordDialog()
     expect(reopened.querySelector<HTMLInputElement>('#p-cur')?.value).toBe('')
@@ -488,7 +521,7 @@ describe('ProfileSection', () => {
 
     await vi.waitFor(() =>
       expect(dialog.querySelector('.acc-form__error')?.textContent.trim()).toBe(
-        t('pages.account.profile.passwordChangeFailed'),
+        t('errors.UserCurrentPasswordIncorrect'),
       ),
     )
     expect(openDialogs()).toHaveLength(1)

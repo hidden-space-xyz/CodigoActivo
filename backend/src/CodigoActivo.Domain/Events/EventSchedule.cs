@@ -4,8 +4,8 @@ namespace CodigoActivo.Domain.Events;
 
 /// <summary>
 /// Days an event runs and the window in which people sign up to its activities. The signup
-/// closes after it opens, an early signup opens before the regular one, and the regular signup
-/// opens no later than the last day of the event.
+/// closes after it opens, an early signup opens before the regular one, and the signup closes no
+/// later than the last day of the event.
 /// </summary>
 public sealed record EventSchedule
 {
@@ -89,6 +89,11 @@ public sealed record EventSchedule
         if (DateOnly.FromDateTime(signupStart.UtcDateTime) > eventEnd)
         {
             return Error.Validation(ErrorCode.EventScheduleInvalidRange);
+        }
+
+        if (DateOnly.FromDateTime(signupEnd.UtcDateTime) > eventEnd)
+        {
+            return Error.Validation(ErrorCode.EventSignupEndsAfterEvent);
         }
 
         return new EventSchedule(

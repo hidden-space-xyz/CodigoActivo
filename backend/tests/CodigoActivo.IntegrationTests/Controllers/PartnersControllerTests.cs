@@ -175,6 +175,24 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task CreateFutureFromDateReturnsValidationError()
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new CreatePartnerRequest(
+            "Futuro",
+            Factory.Clock.Today.AddDays(1),
+            1,
+            null,
+            thumbnailId
+        );
+
+        var response = await client.PostJsonAsync("/api/partners", request, Ct);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
     public async Task CreateMissingCsrfTokenIsRejected()
     {
         var client = await LoginAsAdminAsync();

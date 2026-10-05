@@ -410,7 +410,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("most_liked");
 
-                    b.Property<int>("Score")
+                    b.Property<int?>("Score")
                         .HasColumnType("integer")
                         .HasColumnName("score");
 

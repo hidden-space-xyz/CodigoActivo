@@ -41,9 +41,20 @@ public enum AccountSecurityChange
     AdminRevoked,
 
     /// <summary>
-    /// Selects the option for a replaced email or phone.
+    /// Selects the option for a replaced email, told to the previous address.
     /// </summary>
-    IdentifiersChanged,
+    EmailChanged,
+
+    /// <summary>
+    /// Selects the option for a replaced phone or secondary phone.
+    /// </summary>
+    PhoneChanged,
+
+    /// <summary>
+    /// Selects the option for a replaced email and phone in the same edit, told to the previous
+    /// address.
+    /// </summary>
+    EmailAndPhoneChanged,
 
     /// <summary>
     /// Selects the account locked after repeated wrong passwords option.

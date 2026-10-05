@@ -38,7 +38,7 @@ describe('useEventsAdmin', () => {
     await vi.waitFor(() => expect(result.table.items.value).toHaveLength(1))
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'eventStartsAt' })
 
-    result.table.columnFilter('title').value = 'hack'
+    result.table.columnFilter('search').value = 'hack'
     result.table.columnFilter('category').value = 'cat-2'
     result.table.columnFilter('eventDate').value = ['2026-10-01', '2026-10-31']
     result.table.columnFilter('signup').value = ['2026-09-01', null]
@@ -49,7 +49,7 @@ describe('useEventsAdmin', () => {
       page: '1',
       pageSize: '25',
       sort: 'eventStartsAt',
-      title: 'hack',
+      search: 'hack',
       categoryTypeId: 'cat-2',
       eventDateFrom: '2026-10-01',
       eventDateTo: '2026-10-31',

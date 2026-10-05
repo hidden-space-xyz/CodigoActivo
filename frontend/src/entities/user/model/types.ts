@@ -29,6 +29,8 @@ export interface User {
   readonly isAdmin: boolean
   /** The generic administrator created on first start: it can be neither deleted nor demoted. */
   readonly isInitialAdmin: boolean
+  /** Sign-ins are confirmed with an authenticator app instead of emailed codes. */
+  readonly usesAuthenticator: boolean
   readonly parentId: string | null
   readonly parentName: string
   readonly dependentCount: number

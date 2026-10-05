@@ -16,7 +16,7 @@ import {
   getUpcomingEventsPageRequest,
   updateEventRequest,
 } from '@/entities/event/api/requests'
-import { ApiError, FEATURED_FIRST_SORT } from '@/shared/api'
+import { ApiError } from '@/shared/api'
 import type {
   EventCategoryTypeResponse,
   EventListItemResponse,
@@ -175,14 +175,16 @@ describe('event requests', () => {
   })
 
   describe('getHomeEventsRequest', () => {
-    it('combines the featured event with up to three other upcoming events', async () => {
+    it('combines the unfinished featured event with up to three other upcoming events', async () => {
       const queries: Record<string, string>[] = []
       server.use(
         http.get('/api/events', ({ request }) => {
           const query = queryOf(request)
           queries.push(query)
-          if (query.sort === FEATURED_FIRST_SORT) {
-            return HttpResponse.json(paged([buildEventListItem({ id: 'e2', title: 'Destacado' })]))
+          if (query.featured === 'true') {
+            return HttpResponse.json(
+              paged([buildEventListItem({ id: 'e2', title: 'Destacado', featured: true })]),
+            )
           }
           return HttpResponse.json(
             paged([
@@ -202,7 +204,7 @@ describe('event requests', () => {
       expect(home.items.map((event) => event.id)).toEqual(['e1', 'e3', 'e4'])
       expect(queries).toEqual(
         expect.arrayContaining([
-          { sort: FEATURED_FIRST_SORT, pageSize: '1' },
+          { featured: 'true', scope: 'Upcoming', pageSize: '1' },
           { scope: 'Upcoming', sort: 'eventStartsAt', pageSize: '4' },
         ]),
       )

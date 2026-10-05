@@ -40,7 +40,10 @@ public sealed class GetEventSummaryQueryHandler(IReadStore readStore, IQueryExec
                     e.Title,
                     ActivitiesCount = e.Activities.Count,
                     RatingsCount = e.Ratings.Count,
-                    RatingsAverage = e.Ratings.Average(rating => (double?)rating.Score),
+                    ScoredRatingsCount = e.Ratings.Count(rating => rating.Score != null),
+                    RatingsAverage = e
+                        .Ratings.Where(rating => rating.Score != null)
+                        .Average(rating => (double?)rating.Score),
                 }),
             ct
         );
@@ -94,6 +97,7 @@ public sealed class GetEventSummaryQueryHandler(IReadStore readStore, IQueryExec
             stats?.Denied ?? 0,
             stats?.DistinctUsers ?? 0,
             ev.RatingsCount,
+            ev.ScoredRatingsCount,
             ev.RatingsAverage,
             roleTypeBreakdown
         );

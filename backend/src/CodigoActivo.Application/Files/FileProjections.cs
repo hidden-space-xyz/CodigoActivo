@@ -16,7 +16,6 @@ public static class FileProjections
         file.Id,
         file.Name,
         file.Extension,
-        file.UploadedAt,
-        file.UploadedBy
+        file.UploadedAt
     );
 }

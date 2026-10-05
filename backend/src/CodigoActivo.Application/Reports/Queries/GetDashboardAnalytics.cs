@@ -159,7 +159,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
             ct
         );
 
-        var activityRows = await executor.ToListAsync(
+        var activityCapacities = await executor.ToListAsync(
             readStore.Activities.Select(a => new
             {
                 a.Id,
@@ -168,13 +168,32 @@ public sealed class GetDashboardAnalyticsQueryHandler(
                 a.ActivityStartsAt,
                 a.EventId,
                 EventTitle = a.Event.Title,
-                Desired = a.RoleCapacities.Sum(c => (int?)c.DesiredCount) ?? 0,
-                Confirmed = a.Assignments.Count(x =>
-                    x.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
-                ),
+                Roles = a
+                    .RoleCapacities.Select(c => new
+                    {
+                        c.DesiredCount,
+                        Confirmed = a.Assignments.Count(x =>
+                            x.ActivityRoleTypeId == c.ActivityRoleTypeId
+                            && x.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                        ),
+                    })
+                    .ToList(),
             }),
             ct
         );
+        var activityRows = activityCapacities
+            .Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.CreatedAt,
+                a.ActivityStartsAt,
+                a.EventId,
+                a.EventTitle,
+                Desired = a.Roles.Sum(role => role.DesiredCount),
+                Confirmed = a.Roles.Sum(role => Math.Min(role.Confirmed, role.DesiredCount)),
+            })
+            .ToList();
 
         (int[] PerBucket, int Before) Distribute(IEnumerable<DateTimeOffset> createdAts)
         {

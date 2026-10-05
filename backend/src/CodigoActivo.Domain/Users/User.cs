@@ -679,15 +679,19 @@ public class User : IdentifiableEntity, IAggregateRoot
 
     /// <summary>
     /// Returns the second factor to its default state: email, no authenticator, no lock and no
-    /// open challenge. Used by administrators when a user loses access to their authenticator.
+    /// open challenge. Used by administrators when a user loses access to their authenticator or
+    /// locked their second factor.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
-    public void ResetTwoFactor(DateTimeOffset now)
+    /// <returns><see langword="true"/> when the account used an authenticator and now uses email.</returns>
+    public bool ResetTwoFactor(DateTimeOffset now)
     {
+        var leftAuthenticator = TwoFactorMethod is not TwoFactorMethod.Email;
         UseEmailTwoFactor(now);
         ClearLoginCode();
         TwoFactorFailedAttempts = 0;
         TwoFactorLockedUntil = null;
+        return leftAuthenticator;
     }
 
     /// <summary>

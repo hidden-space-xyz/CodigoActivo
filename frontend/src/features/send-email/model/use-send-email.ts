@@ -92,9 +92,9 @@ export interface SendEmailDialogOptions<T> {
 
 /**
  * State for `SendEmailDialog` on a list page. `open(row)` targets one recipient and `open(null)`
- * the whole filtered audience. Opening also loads that audience: `withoutConsent` counts the
- * recipients without promotional consent, and stays `null` while loading, after a failure or once
- * a newer `open` superseded the request. After sending, toasts report the queued and skipped
+ * the whole filtered audience. Opening also loads that audience: `recipients` counts the addresses
+ * the email will reach and `withoutConsent` those without promotional consent; both stay `null`
+ * while loading, after a failure or once a newer `open` superseded the request. After sending, toasts report the queued and skipped
  * counts, and the dialog closes only if at least one email was accepted for delivery.
  */
 export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
@@ -103,17 +103,19 @@ export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
 
   const visible = ref(false)
   const recipient = shallowRef<T | null>(null)
-  const withoutConsent = ref<number | null>(null)
+  const audience = shallowRef<EmailAudience | null>(null)
+  const recipients = computed(() => audience.value?.recipients ?? null)
+  const withoutConsent = computed(() => audience.value?.withoutConsent ?? null)
   let audienceRequest = 0
 
   function loadAudience(next: T | null): void {
     audienceRequest += 1
     const request = audienceRequest
-    withoutConsent.value = null
+    audience.value = null
     if (next !== null && !options.idOf(next)) return
     void options.fetchAudience(next).then(
-      (audience) => {
-        if (request === audienceRequest) withoutConsent.value = audience.withoutConsent
+      (loaded) => {
+        if (request === audienceRequest) audience.value = loaded
       },
       () => undefined,
     )
@@ -152,5 +154,5 @@ export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
     options.sendAll(payload, handlers)
   }
 
-  return { visible, recipient, target, sending, withoutConsent, open, submit }
+  return { visible, recipient, target, sending, recipients, withoutConsent, open, submit }
 }

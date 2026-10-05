@@ -67,6 +67,16 @@ describe('EventOpinionsTab', () => {
     expect(wrapper.findComponent(ElPagination).exists()).toBe(false)
   })
 
+  it('shows a rating without a score as unscored', async () => {
+    const { wrapper } = await renderTab([buildRating({ score: null })])
+
+    await vi.waitFor(() => expect(wrapper.findAll('li.opinion')).toHaveLength(1))
+    expect(wrapper.find('.opinion__score').text()).toBe(
+      t('pages.admin.eventDetail.opinions.noScore'),
+    )
+    expect(wrapper.findComponent(ElRate).exists()).toBe(false)
+  })
+
   it('shows the empty and error states', async () => {
     const empty = await renderTab([])
     await vi.waitFor(() =>

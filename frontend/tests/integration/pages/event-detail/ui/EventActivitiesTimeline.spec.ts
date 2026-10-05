@@ -16,12 +16,16 @@ import {
 } from '../../../../support/api/signup'
 import { buildAssignedActivity, buildHouseholdAssignment } from '../../../../support/builders'
 import {
+  acceptMessageBox,
+  cancelMessageBox,
   click,
   findButton,
   findButtons,
   findDialog,
+  messageBox,
   notifications,
   textOf,
+  tp,
 } from '../../../../support/dom'
 import { formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
 
@@ -204,7 +208,12 @@ describe('activities timeline layout', () => {
     expect(calls.assign[0]?.path).toBe('loose/user-1')
 
     card.vm.$emit('unassign')
+    await vi.waitFor(() => expect(messageBox()).toBeDefined())
+    await acceptMessageBox()
+    await vi.waitFor(() => expect(calls.unassign).toHaveLength(1))
     card.vm.$emit('unassign-member', 'child-1')
+    await vi.waitFor(() => expect(messageBox()).toBeDefined())
+    await acceptMessageBox()
     await vi.waitFor(() => expect(calls.unassign).toHaveLength(2))
     expect(calls.unassign).toEqual(['loose/user-1', 'loose/child-1'])
 
@@ -554,7 +563,10 @@ describe('activities timeline self signup', () => {
       expect(found).toBeDefined()
       return found as HTMLElement
     })
-    expect(findButton(t('pages.eventDetail.terms.confirm'), dialog).disabled).toBe(true)
+    expect(dialog.textContent).not.toContain(t('pages.eventDetail.terms.missingRequired'))
+    await click(findButton(t('pages.eventDetail.terms.confirm'), dialog))
+    expect(dialog.textContent).toContain(t('pages.eventDetail.terms.missingRequired'))
+    expect(calls.assign).toEqual([])
 
     await click(dialog.querySelector<HTMLElement>('.el-dialog__headerbtn') as HTMLElement)
     await vi.waitFor(() => expect(findDialog(t('pages.eventDetail.terms.header'))).toBeUndefined())
@@ -632,6 +644,11 @@ describe('activities timeline withdrawal', () => {
     expect(wrapper.find('.act__head .el-tag').text()).toBe('Confirmada')
 
     await click(findButton(t('pages.eventDetail.card.unassignSelf')))
+    await vi.waitFor(() => expect(messageBox()).toBeDefined())
+    expect(textOf(messageBox())).toContain(
+      t('pages.eventDetail.unassignConfirm.self', { activity: 'Taller de robótica' }),
+    )
+    await acceptMessageBox()
 
     await vi.waitFor(() => expect(calls.unassign).toEqual(['activity-1/user-1']))
     const toast = await waitForNotification(t('pages.eventDetail.toast.unassignSummary'))
@@ -646,8 +663,25 @@ describe('activities timeline withdrawal', () => {
       expect(findButtons(t('pages.eventDetail.card.unassignSelf')).length > 0).toBe(true),
     )
     await click(findButton(t('pages.eventDetail.card.unassignSelf')))
+    await vi.waitFor(() => expect(messageBox()).toBeDefined())
+    await acceptMessageBox()
 
     await waitForNotification(t('common.error'))
+  })
+
+  it('keeps the signup when the withdrawal is not confirmed', async () => {
+    const { calls } = serveSignupApi({ assigned })
+
+    await renderTimeline()
+    await vi.waitFor(() =>
+      expect(findButtons(t('pages.eventDetail.card.unassignSelf')).length > 0).toBe(true),
+    )
+    await click(findButton(t('pages.eventDetail.card.unassignSelf')))
+    await vi.waitFor(() => expect(messageBox()).toBeDefined())
+    await cancelMessageBox()
+    await flushPromises()
+
+    expect(calls.unassign).toEqual([])
   })
 })
 
@@ -702,7 +736,7 @@ describe('activities timeline household signup', () => {
       },
     })
     const toast = await waitForNotification(t('pages.eventDetail.toast.signupSent'))
-    expect(toast?.message).toBe(t('pages.eventDetail.toast.householdSuccess'))
+    expect(toast?.message).toBe(tp('pages.eventDetail.toast.householdSuccess', 2))
     expect(findDialog(t('pages.eventDetail.household.header'))).toBeUndefined()
   })
 
@@ -766,7 +800,7 @@ describe('activities timeline household signup', () => {
     expect(calls.household).toEqual([])
   })
 
-  it('marks members already enrolled and disables enrolling when everyone is in', async () => {
+  it('marks members already enrolled and offers only the rest', async () => {
     serveSignupApi({
       children: [CHILD],
       household: [
@@ -776,11 +810,6 @@ describe('activities timeline household signup', () => {
           firstName: 'Ada',
           lastName: 'Lovelace',
           statusName: 'Confirmada',
-        }),
-        buildHouseholdAssignment({
-          activityId: 'activity-1',
-          roleName: 'Voluntario',
-          statusName: 'Pendiente',
         }),
         buildHouseholdAssignment({ activityId: 'activity-other', userId: 'ghost' }),
       ],
@@ -799,8 +828,42 @@ describe('activities timeline household signup', () => {
 
     expect([...dialog.querySelectorAll('.household__already')].map(textOf)).toEqual([
       t('pages.eventDetail.household.alreadyAs', { role: 'Participante' }),
-      t('pages.eventDetail.household.alreadyAs', { role: 'Voluntario' }),
     ])
+    expect(dialog.querySelectorAll('input[type="checkbox"]')).toHaveLength(1)
+    expect(findButton(t('pages.eventDetail.household.enroll'), dialog).disabled).toBe(false)
+  })
+
+  it('hides the household button once everyone is enrolled', async () => {
+    serveSignupApi({
+      children: [CHILD],
+      household: [
+        buildHouseholdAssignment({
+          activityId: 'activity-1',
+          userId: 'user-1',
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          statusName: 'Confirmada',
+        }),
+        buildHouseholdAssignment({
+          activityId: 'activity-1',
+          roleName: 'Voluntario',
+          statusName: 'Pendiente',
+        }),
+      ],
+    })
+
+    const { wrapper } = await renderTimeline()
+    await vi.waitFor(() =>
+      expect(wrapper.find('.act').text()).toContain(t('pages.eventDetail.household.allInscribed')),
+    )
+    expect(findButtons(t('pages.eventDetail.card.enrollAnother'))).toHaveLength(0)
+
+    wrapper.findComponent(ActivityTimelineCard).vm.$emit('household')
+    const dialog = await vi.waitFor(() => {
+      const found = findDialog(t('pages.eventDetail.household.header'))
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
     expect(dialog.querySelectorAll('input[type="checkbox"]')).toHaveLength(0)
     expect(textOf(dialog.querySelector('.household__note'))).toBe(
       t('pages.eventDetail.household.allInscribed'),
@@ -826,6 +889,14 @@ describe('activities timeline household signup', () => {
     const { wrapper } = await renderTimeline()
     await vi.waitFor(() => expect(wrapper.find('.act__member-remove').exists()).toBe(true))
     await wrapper.find('.act__member-remove').trigger('click')
+    await vi.waitFor(() => expect(messageBox()).toBeDefined())
+    expect(textOf(messageBox())).toContain(
+      t('pages.eventDetail.unassignConfirm.member', {
+        name: 'Byron King',
+        activity: 'Taller de robótica',
+      }),
+    )
+    await acceptMessageBox()
 
     await vi.waitFor(() => expect(calls.unassign).toEqual(['activity-1/child-1']))
   })

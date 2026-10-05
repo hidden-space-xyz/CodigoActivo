@@ -29,9 +29,9 @@ export function useHomeApi(data: HomeApiData = {}) {
       const params = new URL(request.url).searchParams
       requests.push(params)
       const items =
-        params.get('scope') === 'Upcoming'
-          ? (data.upcomingEvents ?? [])
-          : (data.featuredEvents ?? [])
+        params.get('featured') === 'true'
+          ? (data.featuredEvents ?? [])
+          : (data.upcomingEvents ?? [])
       return HttpResponse.json(paged(items))
     }),
     http.get('/api/partners', ({ request }) => {

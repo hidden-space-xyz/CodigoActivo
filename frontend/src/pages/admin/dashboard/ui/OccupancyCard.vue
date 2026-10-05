@@ -10,8 +10,9 @@ import type { Occupancy } from '../model/types'
 
 const props = defineProps<{
   /**
-   * Confirmed versus desired places, overall and per event with expandable activities. Items
-   * without a desired count show no percentage.
+   * Filled versus desired places, overall and per event with expandable activities. Each role
+   * counts up to its desired number, so no item goes above 100%; items without a desired count show
+   * no percentage.
    */
   occupancy: Occupancy
 }>()
@@ -62,10 +63,7 @@ function percent(confirmed: number, desired: number): number | null {
           <span class="occupancy__meter">
             <span
               class="occupancy__fill"
-              :class="{
-                'occupancy__fill--over': (percent(event.confirmed, event.desired) ?? 0) > 100,
-              }"
-              :style="{ width: `${Math.min(percent(event.confirmed, event.desired) ?? 0, 100)}%` }"
+              :style="{ width: `${percent(event.confirmed, event.desired) ?? 0}%` }"
             />
           </span>
           <span class="occupancy__pct">{{ percent(event.confirmed, event.desired) ?? '—' }}%</span>
@@ -82,13 +80,7 @@ function percent(confirmed: number, desired: number): number | null {
             <span class="occupancy__meter occupancy__meter--sm">
               <span
                 class="occupancy__fill"
-                :class="{
-                  'occupancy__fill--over':
-                    (percent(activity.confirmed, activity.desired) ?? 0) > 100,
-                }"
-                :style="{
-                  width: `${Math.min(percent(activity.confirmed, activity.desired) ?? 0, 100)}%`,
-                }"
+                :style="{ width: `${percent(activity.confirmed, activity.desired) ?? 0}%` }"
               />
             </span>
             <span class="occupancy__activity-pct">
@@ -188,10 +180,6 @@ function percent(confirmed: number, desired: number): number | null {
   border-radius: 999px;
   background: var(--ca-lime);
   transition: width 0.3s ease;
-}
-
-.occupancy__fill--over {
-  background: var(--ca-warning);
 }
 
 .occupancy__pct {

@@ -240,7 +240,10 @@ async function save(): Promise<void> {
             v-model="draft.signupEndsAt"
             type="datetime"
             :format="DATE_TIME_FORMAT"
-            :disabled-date="(date: Date) => isDayBefore(date, draft.signupStartsAt)"
+            :disabled-date="
+              (date: Date) =>
+                isDayBefore(date, draft.signupStartsAt) || isDayAfter(date, draft.endsAt)
+            "
             :class="{ 'ca-invalid': invalid('signupEndsAt') }"
           />
           <small v-if="errors.signupEndsAt" class="form__error">{{ errors.signupEndsAt }}</small>

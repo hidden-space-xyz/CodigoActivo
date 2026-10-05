@@ -14,12 +14,13 @@ import {
   inputValue,
   openDialog,
   pickFiles,
+  propOf,
   typeInto,
 } from '../../../../../support/dom'
 
 async function renderDialog(partner: Partner | null = null) {
   server.use(
-    http.get('/api/files/:id', () => HttpResponse.json({ name: 'logo', extension: '.png' })),
+    http.get('/api/files/:id', () => HttpResponse.json({ name: 'logo.png', extension: 'png' })),
   )
   const rendered = await renderWithProviders(PartnerFormDialog, {
     props: { visible: false, partner, saving: false },
@@ -55,6 +56,17 @@ describe('PartnerFormDialog', () => {
     openDialog(t('pages.admin.partners.form.editHeader'))
     expect(inputValue('#partner-name')).toBe('Acme')
     expect(inputValue('#partner-website')).toBe('https://acme.test')
+  })
+
+  it('does not let the start day be picked after today', async () => {
+    const { wrapper } = await renderDialog()
+    const disabled = propOf(wrapper.findComponent(ElDatePicker), 'disabledDate') as (
+      date: Date,
+    ) => boolean
+    const today = new Date()
+
+    expect(disabled(today)).toBe(false)
+    expect(disabled(new Date(today.getFullYear() + 1, 0, 1))).toBe(true)
   })
 
   it('emits a cleared visibility when cancelled', async () => {

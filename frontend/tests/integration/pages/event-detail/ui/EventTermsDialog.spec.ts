@@ -1,3 +1,4 @@
+import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
 import EventTermsDialog from '@/pages/event-detail/ui/EventTermsDialog.vue'
@@ -76,25 +77,42 @@ describe('EventTermsDialog document list', () => {
 })
 
 describe('EventTermsDialog confirmation gate', () => {
-  it('disables confirm while a required document is unchecked and enables it once checked', async () => {
-    await renderDialog([REQUIRED_DOC, OPTIONAL_DOC])
+  it('points out the unchecked required documents only after trying to confirm', async () => {
+    const { wrapper } = await renderDialog([REQUIRED_DOC, OPTIONAL_DOC])
 
-    const confirmButton = findButton(t('pages.eventDetail.terms.confirm'))
-    expect(confirmButton.disabled).toBe(true)
-    expect(document.body.querySelector('.terms-dialog__warning')).not.toBeNull()
+    expect(document.body.querySelector('.terms-dialog__warning')).toBeNull()
+    await click(findButton(t('pages.eventDetail.terms.confirm')))
+
+    expect(wrapper.emitted('confirm')).toBeUndefined()
+    const warning = document.body.querySelector('.terms-dialog__warning')
+    expect(textOf(warning)).toBe(t('pages.eventDetail.terms.missingRequired'))
+    expect(warning?.getAttribute('role')).toBe('alert')
 
     await click(termsCheckbox(document.body, REQUIRED_DOC.id))
 
-    expect(confirmButton.disabled).toBe(false)
+    expect(document.body.querySelector('.terms-dialog__warning')).toBeNull()
+  })
+
+  it('forgets an earlier attempt when it opens again', async () => {
+    const { wrapper } = await renderDialog([REQUIRED_DOC])
+    await click(findButton(t('pages.eventDetail.terms.confirm')))
+    expect(document.body.querySelector('.terms-dialog__warning')).not.toBeNull()
+
+    await wrapper.setProps({ visible: false })
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+
     expect(document.body.querySelector('.terms-dialog__warning')).toBeNull()
   })
 
   it('does not require checking optional documents', async () => {
-    await renderDialog([REQUIRED_DOC, OPTIONAL_DOC])
+    const { wrapper } = await renderDialog([REQUIRED_DOC, OPTIONAL_DOC])
     await click(termsCheckbox(document.body, REQUIRED_DOC.id))
 
-    const confirmButton = findButton(t('pages.eventDetail.terms.confirm'))
-    expect(confirmButton.disabled).toBe(false)
+    await click(findButton(t('pages.eventDetail.terms.confirm')))
+
+    expect(wrapper.emitted('confirm')).toHaveLength(1)
+    expect(document.body.querySelector('.terms-dialog__warning')).toBeNull()
   })
 })
 
@@ -118,20 +136,20 @@ describe('EventTermsDialog document preview', () => {
 
   it('checks the document when accepted from the preview and unchecks it when rejected', async () => {
     await renderDialog([REQUIRED_DOC])
-    const confirmButton = findButton(t('pages.eventDetail.terms.confirm'))
+    const checkbox = termsCheckbox(document.body, REQUIRED_DOC.id) as HTMLInputElement
 
     await click(findButton(REQUIRED_DOC.name))
     let preview = findDialog(REQUIRED_DOC.name)
     await click(findButton(t('pages.eventDetail.terms.accept'), preview))
 
     expect(findDialog(REQUIRED_DOC.name)).toBeUndefined()
-    expect(confirmButton.disabled).toBe(false)
+    expect(checkbox.checked).toBe(true)
 
     await click(findButton(REQUIRED_DOC.name))
     preview = findDialog(REQUIRED_DOC.name)
     await click(findButton(t('pages.eventDetail.terms.reject'), preview))
 
-    expect(confirmButton.disabled).toBe(true)
+    expect(checkbox.checked).toBe(false)
   })
 })
 

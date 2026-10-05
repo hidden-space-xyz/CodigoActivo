@@ -35,8 +35,13 @@ const table = useEventRatings(
             <span class="opinion__author">{{
               $t('pages.admin.eventDetail.opinions.anonymous')
             }}</span>
-            <el-rate :model-value="rating.score" disabled :max="5" class="opinion__stars" />
-            <span class="opinion__score">{{ rating.score }}/5</span>
+            <template v-if="rating.score !== null">
+              <el-rate :model-value="rating.score" disabled :max="5" class="opinion__stars" />
+              <span class="opinion__score">{{ rating.score }}/5</span>
+            </template>
+            <span v-else class="opinion__score">{{
+              $t('pages.admin.eventDetail.opinions.noScore')
+            }}</span>
           </div>
 
           <dl v-if="ratingAnswers(rating).length > 0" class="opinion__answers">

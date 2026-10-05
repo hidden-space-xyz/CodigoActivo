@@ -261,9 +261,25 @@
   --el-checkbox-disabled-input-fill: var(--ca-bg-deep);
 }
 
-.el-checkbox:has(+ label) {
-  --el-checkbox-height: 20px;
+.el-checkbox.ca-checkbox-text {
+  height: auto;
   margin-right: 0;
+  align-items: flex-start;
+  white-space: normal;
+  font-weight: inherit;
+}
+
+.el-checkbox.ca-checkbox-text .el-checkbox__input {
+  margin-top: 3px;
+}
+
+.el-checkbox.ca-checkbox-text .el-checkbox__label,
+.el-checkbox.ca-checkbox-text.is-checked .el-checkbox__label {
+  padding-left: 10px;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
 }
 
 .el-radio {

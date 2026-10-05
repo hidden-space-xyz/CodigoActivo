@@ -83,6 +83,7 @@ public class NewsController : ApiControllerBase
     /// <returns>An HTTP response containing a news item, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
+    [ProducesResponseType<NewsItemResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<NewsItemResponse>> CreateAsync(
         [FromBody] CreateNewsItemRequest request,
         [FromServices] CreateNewsItemCommandHandler handler,

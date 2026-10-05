@@ -13,10 +13,9 @@ export function omit<T extends object, K extends keyof T>(value: T, ...keys: K[]
   return copy
 }
 
-/** Audit fields every persisted resource carries; `updatedAt`/`updatedBy` stay unset. */
+/** Audit field every persisted resource carries; `updatedAt` stays unset. */
 export const AUDIT = {
   createdAt: '2026-01-01T10:00:00Z',
-  createdBy: 'admin-1',
 } as const
 
 /** Far-away timestamps so time-dependent behavior does not depend on the day the suite runs. */

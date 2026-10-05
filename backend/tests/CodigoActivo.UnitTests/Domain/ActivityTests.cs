@@ -174,6 +174,24 @@ public sealed class ActivityTests
         plan.Value.Items.Should().Equal(participants, volunteers);
     }
 
+    [Theory]
+    [InlineData(-1, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    public void HasStartedByComparesWithStartTime(int minutesAfterStart, bool started)
+    {
+        var activity = Activity.Create(
+            Guid.NewGuid(),
+            new ActivityDetails("Taller", "{}", "Sala", Guid.NewGuid(), Guid.NewGuid()),
+            Schedule(),
+            Plan(),
+            Guid.NewGuid(),
+            Now
+        );
+
+        activity.HasStartedBy(StartsAt.AddMinutes(minutesAfterStart)).Should().Be(started);
+    }
+
     [Fact]
     public void CreateDetailsWithSpacesStoresTrimmedDetailsCapacitiesAndAuthor()
     {

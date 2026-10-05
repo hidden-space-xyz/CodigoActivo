@@ -144,4 +144,23 @@ public sealed class ResetTwoFactorCommandHandlerTests
         message.ToAddress.Should().Be(user.Email);
         message.TextBody.Should().NotContain("protected:secret").And.NotContain(ActingPassword);
     }
+
+    [Fact]
+    public async Task HandleAsyncEmailUserOnlyClearsTheLockWithoutNotifying()
+    {
+        var user = NewUser();
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorFailedAttempts = 5, TwoFactorLockedUntil = clock.UtcNow.AddMinutes(10) }
+        );
+        users.FindReturns(actingAdmin, user);
+
+        var result = await HandleAsync(user.Id, ActingPassword);
+
+        result.IsSuccess.Should().BeTrue();
+        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.TwoFactorLockedUntil.Should().BeNull();
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        emailSender.Sent.Should().BeEmpty();
+    }
 }

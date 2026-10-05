@@ -25,6 +25,19 @@ export function hasErrorCode(error: unknown, code: ErrorCode): boolean {
   return error instanceof ApiError && error.code === code
 }
 
+/**
+ * Whether `error` says the request carried no valid session: it expired, was ended from elsewhere
+ * or its user no longer exists. A wrong password is reported with another code and never matches.
+ */
+export function isSessionLost(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 401 &&
+    (error.code === ErrorCode.AuthenticationRequired ||
+      error.code === ErrorCode.CurrentUserNotFound)
+  )
+}
+
 let csrfToken: string | null = null
 let csrfHeaderName = 'X-CSRF-TOKEN'
 let csrfTokenPromise: Promise<void> | null = null

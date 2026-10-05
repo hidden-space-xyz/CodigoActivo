@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
 import { eventCategoryQueries } from '@/entities/event-category'
-import { formatDate, formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
+import { formatDateRange, formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
 import { ColorTag } from '@/shared/ui/color-tag'
@@ -53,12 +53,12 @@ const categoryOptions = computed(() => toSelectOptions(categories.data.value))
         </template>
       </el-table-column>
 
-      <el-table-column prop="title" sortable="custom" min-width="190">
+      <el-table-column prop="title" sortable="custom" min-width="200">
         <template #header>
           <ColumnSearch
-            v-model="table.columnFilter('title').value"
-            :label="$t('pages.admin.events.columns.title')"
-            :placeholder="$t('pages.admin.events.columns.searchTitle')"
+            v-model="table.columnFilter('search').value"
+            :label="$t('pages.admin.events.columns.event')"
+            :placeholder="$t('pages.admin.events.columns.searchEvent')"
             @apply="table.onFilter"
           />
         </template>
@@ -69,21 +69,11 @@ const categoryOptions = computed(() => toSelectOptions(categories.data.value))
               {{ $t('pages.admin.events.tag.featured') }}
             </el-tag>
           </span>
+          <small class="subtitle-cell">{{ row.subtitle }}</small>
         </template>
       </el-table-column>
 
-      <el-table-column prop="subtitle" sortable="custom" min-width="160">
-        <template #header>
-          <ColumnSearch
-            v-model="table.columnFilter('subtitle').value"
-            :label="$t('pages.admin.events.columns.subtitle')"
-            :placeholder="$t('pages.admin.events.columns.searchSubtitle')"
-            @apply="table.onFilter"
-          />
-        </template>
-      </el-table-column>
-
-      <el-table-column prop="categories" sortable="custom" min-width="160">
+      <el-table-column prop="categories" sortable="custom" min-width="150">
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('category').value"
@@ -105,7 +95,7 @@ const categoryOptions = computed(() => toSelectOptions(categories.data.value))
         </template>
       </el-table-column>
 
-      <el-table-column prop="eventStartsAt" sortable="custom" min-width="175">
+      <el-table-column prop="eventStartsAt" sortable="custom" min-width="140">
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('eventDate').value"
@@ -114,7 +104,7 @@ const categoryOptions = computed(() => toSelectOptions(categories.data.value))
           />
         </template>
         <template #default="{ row }">
-          {{ formatDate(row.startsAt) }} – {{ formatDate(row.endsAt) }}
+          {{ formatDateRange(row.startsAt, row.endsAt) }}
         </template>
       </el-table-column>
 
@@ -138,7 +128,12 @@ const categoryOptions = computed(() => toSelectOptions(categories.data.value))
         </template>
       </el-table-column>
 
-      <el-table-column :label="$t('common.actions')" width="200" align="center" fixed="right">
+      <el-table-column
+        :label="$t('common.actions')"
+        width="170"
+        align="center"
+        :fixed="table.actionsFixed.value"
+      >
         <template #default="{ row }">
           <div class="ca-row-actions">
             <ActionButton
@@ -196,6 +191,12 @@ const categoryOptions = computed(() => toSelectOptions(categories.data.value))
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.subtitle-cell {
+  display: block;
+  margin-top: 2px;
+  color: var(--ca-text-muted);
 }
 
 .cats-cell {

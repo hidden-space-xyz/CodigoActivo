@@ -60,6 +60,7 @@ export function buildSummary(overrides: Partial<EventSummaryResponse> = {}): Eve
     deniedAssignments: 1,
     distinctVolunteers: 5,
     ratingsCount: 2,
+    scoredRatingsCount: 2,
     ratingsAverage: 4.25,
     roleTypeBreakdown: [
       { roleTypeId: 'role-1', roleTypeName: 'Volunteer', approvedAssignments: 7 },

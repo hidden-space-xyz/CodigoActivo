@@ -59,6 +59,17 @@ public sealed class ChangePasswordCommandHandler(
         }
 
         if (
+            string.Equals(
+                command.Request.NewPassword,
+                command.Request.CurrentPassword,
+                StringComparison.Ordinal
+            )
+        )
+        {
+            return Error.Validation(ErrorCode.UserNewPasswordSameAsCurrent);
+        }
+
+        if (
             !await passwordAttempts.VerifyReauthenticationAsync(
                 user,
                 command.Request.CurrentPassword,

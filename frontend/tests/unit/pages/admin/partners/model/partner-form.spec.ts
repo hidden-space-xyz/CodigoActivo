@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { readPartnerDraft, toPartnerDraft } from '@/pages/admin/partners/model/partner-form'
 
@@ -42,6 +42,18 @@ describe('readPartnerDraft', () => {
       problems: {},
       value: { name: 'Initech', fromDate: '2025-06-07', tier: 0, website: null },
     })
+  })
+
+  it('refuses a start day after today and accepts today', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 5, 12, 0))
+    const draft = { name: 'Initech', tier: 1, website: '' }
+
+    expect(readPartnerDraft({ ...draft, fromDate: new Date(2026, 9, 6) })).toEqual({
+      problems: { fromDate: 'pages.admin.partners.form.problems.fromDateFuture' },
+      value: null,
+    })
+    expect(readPartnerDraft({ ...draft, fromDate: new Date(2026, 9, 5) }).problems).toEqual({})
   })
 
   it('keeps the trimmed website', () => {

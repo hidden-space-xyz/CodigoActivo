@@ -352,8 +352,9 @@ public sealed class UserTests
         var user = NewPendingUser();
         Persisted.Overwrite(user, new { PasswordFailedAttempts = 5, PasswordLockedAt = Now });
 
-        user.ResetTwoFactor(Now);
+        var leftAuthenticator = user.ResetTwoFactor(Now);
 
+        leftAuthenticator.Should().BeFalse();
         user.IsPasswordLocked().Should().BeTrue();
     }
 
@@ -369,8 +370,9 @@ public sealed class UserTests
             new { TwoFactorFailedAttempts = 4, TwoFactorLockedUntil = Now.AddMinutes(10) }
         );
 
-        user.ResetTwoFactor(Now);
+        var leftAuthenticator = user.ResetTwoFactor(Now);
 
+        leftAuthenticator.Should().BeTrue();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
         user.AuthenticatorKey.Should().BeNull();
         user.LoginCodeHash.Should().BeNull();

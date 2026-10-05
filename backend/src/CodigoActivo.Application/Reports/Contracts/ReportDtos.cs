@@ -13,8 +13,9 @@ namespace CodigoActivo.Application.Reports.Contracts;
 /// <param name="ConfirmedAssignments">The confirmed assignments value.</param>
 /// <param name="DeniedAssignments">The denied assignments value.</param>
 /// <param name="DistinctVolunteers">The distinct volunteers value.</param>
-/// <param name="RatingsCount">Number of ratings allowed or reported.</param>
-/// <param name="RatingsAverage">The ratings average value.</param>
+/// <param name="RatingsCount">Number of ratings received, with or without a score.</param>
+/// <param name="ScoredRatingsCount">Number of ratings that carry a score, the ones the average covers.</param>
+/// <param name="RatingsAverage">Mean score of the scored ratings, or <see langword="null"/> without any.</param>
 /// <param name="RoleTypeBreakdown">The role type breakdown value.</param>
 public record EventSummaryResponse(
     Guid EventId,
@@ -26,6 +27,7 @@ public record EventSummaryResponse(
     int DeniedAssignments,
     int DistinctVolunteers,
     int RatingsCount,
+    int ScoredRatingsCount,
     double? RatingsAverage,
     IReadOnlyList<EventRoleTypeSummaryResponse> RoleTypeBreakdown
 );
@@ -300,8 +302,8 @@ public record DashboardTopEventResponse(Guid EventId, string Title, int Confirme
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="Title">The title value.</param>
 /// <param name="StartsAt">The starts at value.</param>
-/// <param name="Confirmed">The confirmed value.</param>
-/// <param name="Desired">The desired value.</param>
+/// <param name="Confirmed">Seats filled by confirmed people, counting each role up to its desired number.</param>
+/// <param name="Desired">Seats wanted, summed over the roles with a desired number.</param>
 public record DashboardOccupancyActivityResponse(
     Guid ActivityId,
     string Title,
@@ -315,8 +317,8 @@ public record DashboardOccupancyActivityResponse(
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Title">The title value.</param>
-/// <param name="Confirmed">The confirmed value.</param>
-/// <param name="Desired">The desired value.</param>
+/// <param name="Confirmed">Seats filled across its activities, never above each role's desired number.</param>
+/// <param name="Desired">Seats wanted across its activities.</param>
 /// <param name="Activities">The activities value.</param>
 public record DashboardOccupancyEventResponse(
     Guid EventId,
@@ -329,8 +331,8 @@ public record DashboardOccupancyEventResponse(
 /// <summary>
 /// Contains the dashboard occupancy data returned by the API.
 /// </summary>
-/// <param name="Confirmed">The confirmed value.</param>
-/// <param name="Desired">The desired value.</param>
+/// <param name="Confirmed">Seats filled across every upcoming activity, never above each role's desired number.</param>
+/// <param name="Desired">Seats wanted across every upcoming activity.</param>
 /// <param name="Events">The events value.</param>
 public record DashboardOccupancyResponse(
     int Confirmed,

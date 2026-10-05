@@ -24,7 +24,7 @@ internal static class ActivityTestData
     public static readonly DateTimeOffset ActivityStartsAt = new(
         2026,
         7,
-        20,
+        31,
         16,
         0,
         0,
@@ -33,7 +33,7 @@ internal static class ActivityTestData
     public static readonly DateTimeOffset ActivityEndsAt = new(
         2026,
         7,
-        20,
+        31,
         18,
         30,
         0,
@@ -73,8 +73,8 @@ internal static class ActivityTestData
             new ActivityDetails(title, "{}", "Sala", Guid.NewGuid(), Guid.NewGuid()),
             ActivitySchedule
                 .Create(
-                    new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
-                    new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 7, 31, 10, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 7, 31, 12, 0, 0, TimeSpan.Zero),
                     EventStartsAt,
                     EventEndsAt,
                     TimeZoneInfo.Utc

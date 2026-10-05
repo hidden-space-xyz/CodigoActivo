@@ -14,7 +14,6 @@ export function buildPartnerResponse(overrides: Partial<PartnerResponse> = {}): 
     ...AUDIT,
     createdAt: '2024-03-15T10:00:00Z',
     updatedAt: null,
-    updatedBy: null,
     ...overrides,
   }
 }

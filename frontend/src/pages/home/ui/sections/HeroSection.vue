@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { useSession } from '@/entities/session'
 import { logoMarkLarge } from '@/shared/branding'
 import { FOUNDING_YEAR } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 const { t } = useI18n()
+const session = useSession()
 
 const stats = [
   { value: '8–18', label: t('pages.home.hero.stats.years'), color: 'var(--ca-orange-ink)' },
@@ -26,7 +28,10 @@ const stats = [
         <p class="hero__subtitle">{{ $t('pages.home.hero.subtitle') }}</p>
 
         <div class="hero__actions">
-          <BrandButton :to="{ name: 'register' }" variant="primary">
+          <BrandButton v-if="session.isAuthenticated" :to="{ name: 'events' }" variant="primary">
+            {{ $t('pages.home.hero.eventsCta') }}
+          </BrandButton>
+          <BrandButton v-else :to="{ name: 'register' }" variant="primary">
             {{ $t('common.register') }}
           </BrandButton>
           <BrandButton :to="{ name: 'about' }" variant="ghost">

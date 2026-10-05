@@ -21,7 +21,9 @@ describe('newsQueries', () => {
   it('loads the years, the home block and a whole news item', async () => {
     server.use(
       http.get('/api/news/years', () => HttpResponse.json([2026])),
-      http.get('/api/news', () => HttpResponse.json(paged([buildNewsListItem()]))),
+      http.get('/api/news', () =>
+        HttpResponse.json(paged([buildNewsListItem({ featured: true })])),
+      ),
       http.get('/api/news/a1', () => HttpResponse.json(buildNewsItemResponse({ id: 'a1' }))),
       http.get('/api/news/missing', () => apiError(404)),
     )

@@ -390,6 +390,9 @@ describe('admin users page', () => {
 
     await click(findButton(t('pages.admin.users.aria.changeType')))
     const dialog = openDialog(t(TYPE_TITLE))
+    expect(dialog.textContent).toContain(
+      t('pages.admin.users.typeDialog.lead', { fullName: 'Ada Lovelace' }),
+    )
     const select = wrapper
       .findAllComponents(ElSelect)
       .find(
@@ -729,6 +732,17 @@ describe('admin users page', () => {
     expect(isDialogOpen(t(EMAIL_TITLE))).toBe(true)
   })
 
+  it('warns that resetting drops the authenticator app of a user who has one', async () => {
+    serveUsers([buildUserResponse({ ...ada, twoFactorMethod: 'Authenticator' })])
+    const { wrapper } = await renderPage()
+
+    await click(findButton(t('pages.admin.users.aria.resetTwoFactor'), rowElement(wrapper, 0)))
+
+    expect(openDialog(t(RESET_2FA_TITLE)).textContent).toContain(
+      t('pages.admin.users.resetTwoFactor.message', { fullName: 'Ada Lovelace' }),
+    )
+  })
+
   it('resets the second factor of a user after confirming the admin password', async () => {
     serveUsers([ada])
     const requests: unknown[] = []
@@ -743,7 +757,7 @@ describe('admin users page', () => {
     await click(findButton(t('pages.admin.users.aria.resetTwoFactor'), rowElement(wrapper, 0)))
     const dialog = openDialog(t(RESET_2FA_TITLE))
     expect(dialog.textContent).toContain(
-      t('pages.admin.users.resetTwoFactor.message', { fullName: 'Ada Lovelace' }),
+      t('pages.admin.users.resetTwoFactor.messageEmail', { fullName: 'Ada Lovelace' }),
     )
 
     await click(findButton(t('pages.admin.users.resetTwoFactor.confirm'), dialog))

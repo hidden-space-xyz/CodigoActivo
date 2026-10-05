@@ -28,7 +28,11 @@ public class TermsDocumentRepository(CodigoActivoDbContext context)
     {
         return Set.AnyAsync(
             document =>
-                document.Name == name && (exceptId == null || document.Id != exceptId.Value),
+                EF.Functions.ILike(
+                    document.Name,
+                    LikePattern.Literal(name),
+                    LikePattern.EscapeCharacter
+                ) && (exceptId == null || document.Id != exceptId.Value),
             ct
         );
     }

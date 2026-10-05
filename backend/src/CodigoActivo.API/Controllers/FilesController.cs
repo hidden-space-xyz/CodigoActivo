@@ -89,6 +89,7 @@ public class FilesController : ApiControllerBase
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
     [EnableRateLimiting(SecurityPolicies.FileUploads)]
+    [ProducesResponseType<FileResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<FileResponse>> CreateAsync(
         IFormFile? file,
         [FromServices] CreateFileCommandHandler handler,

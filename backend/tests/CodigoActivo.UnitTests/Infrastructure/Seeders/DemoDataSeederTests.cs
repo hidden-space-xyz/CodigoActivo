@@ -66,7 +66,7 @@ public sealed class DemoDataSeederTests
         graph.Users.Should().HaveCount(25);
         graph.Events.Should().HaveCount(20);
         graph.Activities.Should().HaveCount(100);
-        Assignments.Should().HaveCount(500);
+        Assignments.Should().HaveCount(475, "the last event has not opened its signup yet");
         graph.Ratings.Should().HaveCount(36);
         graph.News.Should().HaveCount(10);
         graph.Resources.Should().HaveCount(20);
@@ -200,12 +200,40 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultEachActivityHasFiveDistinctUsers()
     {
+        var openEventIds = graph
+            .Events.Where(ev => ev.SignupStartsAt < clock.UtcNow)
+            .Select(ev => ev.Id)
+            .ToHashSet();
         var byActivity = Assignments.GroupBy(x => x.ActivityId).ToList();
 
-        byActivity.Should().HaveSameCount(graph.Activities);
+        byActivity
+            .Should()
+            .HaveCount(graph.Activities.Count(activity => openEventIds.Contains(activity.EventId)));
         byActivity
             .Should()
             .OnlyContain(g => g.Select(x => x.UserId).Distinct().Take(6).Count() == 5);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultSignupsFallInsideTheOpenSignupWindow()
+    {
+        var events = graph.Events.ToDictionary(ev => ev.Id);
+
+        graph
+            .Activities.Where(activity => activity.Assignments.Count > 0)
+            .Should()
+            .OnlyContain(activity =>
+                events[activity.EventId].SignupStartsAt < clock.UtcNow
+                && activity.Assignments.All(assignment =>
+                    assignment.CreatedAt >= events[activity.EventId].SignupStartsAt
+                    && assignment.CreatedAt <= events[activity.EventId].SignupEndsAt
+                    && assignment.CreatedAt <= clock.UtcNow
+                )
+            );
+        graph
+            .Activities.Where(activity => events[activity.EventId].SignupStartsAt >= clock.UtcNow)
+            .Should()
+            .OnlyContain(activity => activity.Assignments.Count == 0);
     }
 
     [Fact]
@@ -503,7 +531,9 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultRatingScoresAndAnswersAreWithinContract()
     {
-        graph.Ratings.Should().OnlyContain(r => r.Score >= 0 && r.Score <= 5);
+        graph
+            .Ratings.Should()
+            .OnlyContain(r => r.Score >= EventRating.MinScore && r.Score <= EventRating.MaxScore);
         graph
             .Ratings.Should()
             .OnlyContain(r =>

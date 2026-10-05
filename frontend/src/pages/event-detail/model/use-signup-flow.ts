@@ -10,7 +10,7 @@ import type {
 } from '@/entities/activity'
 import { eventKeys } from '@/entities/event'
 import { hasErrorCode } from '@/shared/api'
-import { useCrudFeedback } from '@/shared/lib/feedback'
+import { useActionConfirm, useCrudFeedback } from '@/shared/lib/feedback'
 
 import type { TimelineActivity } from './types'
 import type { useEventActivities } from './use-event-activities'
@@ -48,13 +48,15 @@ interface SignupFlowOptions {
  * Signup flow of an event's activities. Signing oneself up first checks for overlapping
  * activities and asks for confirmation when there are some; signing the household up asks for a
  * role per member. Either way, pending terms documents are offered before sending, and a signup
- * the API refuses for missing terms reopens them. Only one activity is busy at a time. Call it in
+ * the API refuses for missing terms reopens them. Withdrawals ask for confirmation first, and
+ * activities that already started accept neither. Only one activity is busy at a time. Call it in
  * `setup`.
  */
 export function useSignupFlow(options: SignupFlowOptions) {
   const { t } = useI18n()
   const router = useRouter()
   const feedback = useCrudFeedback()
+  const { confirmAction } = useActionConfirm()
   const queryClient = useQueryClient()
   const { assign, assignHousehold, unassign, verifyOverlaps, termsState, members, rolesFor } =
     options.activities
@@ -153,7 +155,7 @@ export function useSignupFlow(options: SignupFlowOptions) {
         onSuccess: () => {
           householdDialog.visible = false
           feedback.success(
-            t('pages.eventDetail.toast.householdSuccess'),
+            t('pages.eventDetail.toast.householdSuccess', assignments.length),
             t('pages.eventDetail.toast.signupSent'),
           )
         },
@@ -177,7 +179,7 @@ export function useSignupFlow(options: SignupFlowOptions) {
   }
 
   async function onSignup(activity: TimelineActivity, roleId: string): Promise<void> {
-    if (!options.signupOpen()) return
+    if (!options.signupOpen() || activity.started) return
     busyId.value = activity.id
     try {
       const overlap = await verifyOverlaps(activity.id)
@@ -251,8 +253,7 @@ export function useSignupFlow(options: SignupFlowOptions) {
     signUpHousehold(activity.id, assignments)
   }
 
-  function onUnassignMember(activity: TimelineActivity, memberId: string): void {
-    if (!options.signupOpen()) return
+  function withdraw(activity: TimelineActivity, memberId: string): void {
     busyId.value = activity.id
     unassign.mutate(
       { activityId: activity.id, userId: memberId },
@@ -271,6 +272,26 @@ export function useSignupFlow(options: SignupFlowOptions) {
         },
       },
     )
+  }
+
+  function onUnassignMember(activity: TimelineActivity, memberId: string): void {
+    if (!options.signupOpen() || activity.started) return
+    const member = activity.household.find((assigned) => assigned.userId === memberId)
+    const message =
+      member && memberId !== options.activities.userId.value
+        ? t('pages.eventDetail.unassignConfirm.member', {
+            name: member.name,
+            activity: activity.title,
+          })
+        : t('pages.eventDetail.unassignConfirm.self', { activity: activity.title })
+    confirmAction({
+      header: t('pages.eventDetail.unassignConfirm.header'),
+      message,
+      acceptLabel: t('pages.eventDetail.unassignConfirm.accept'),
+      accept: () => {
+        withdraw(activity, memberId)
+      },
+    })
   }
 
   function onUnassign(activity: TimelineActivity): void {

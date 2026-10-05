@@ -26,8 +26,6 @@ public static class EventProjections
             SignupEndsAt = @event.SignupEndsAt,
             CreatedAt = @event.CreatedAt,
             UpdatedAt = @event.UpdatedAt,
-            CreatedBy = @event.CreatedBy,
-            UpdatedBy = @event.UpdatedBy,
             ThumbnailId = @event.ThumbnailId,
             Featured = @event.Featured,
             Categories = @event
@@ -66,8 +64,6 @@ public static class EventProjections
             SignupEndsAt = @event.SignupEndsAt,
             CreatedAt = @event.CreatedAt,
             UpdatedAt = @event.UpdatedAt,
-            CreatedBy = @event.CreatedBy,
-            UpdatedBy = @event.UpdatedBy,
             ThumbnailId = @event.ThumbnailId,
             Featured = @event.Featured,
             Categories = @event

@@ -59,6 +59,12 @@ describe('parseIndependentPerson', () => {
     [{ email: ' ' }, { email: 'required' }],
     [{ email: 'ada@example' }, { email: 'emailFormat' }],
     [{ phone: '' }, { phone: 'required' }],
+    [{ phone: 'abc' }, { phone: 'phoneFormat' }],
+    [{ phone: '123456' }, { phone: 'phoneFormat' }],
+    [{ phone: '1234567890123456' }, { phone: 'phoneFormat' }],
+    [{ phone: '600+000000' }, { phone: 'phoneFormat' }],
+    [{ phone: '++34600000000' }, { phone: 'phoneFormat' }],
+    [{ secondaryPhone: '6000/00000' }, { secondaryPhone: 'phoneFormat' }],
     [{ secondaryPhone: ' 600000000' }, { secondaryPhone: 'sameAsPhone' }],
     [{ nationalId: ' ' }, { nationalId: 'required' }],
     [{ nationalId: 'X123' }, { nationalId: 'nationalIdFormat' }],
@@ -66,6 +72,13 @@ describe('parseIndependentPerson', () => {
   ] as const)('refuses %o with %o and no person', (overrides, problems) => {
     expect(parseIndependentPerson(adult(overrides))).toEqual({ problems, person: null })
   })
+
+  it.each(['+34 600 000 000', '(+34) 600-111-222', '600.11.12.13', '1234567', '123456789012345'])(
+    'accepts the phone %s',
+    (phone) => {
+      expect(parseIndependentPerson(adult({ phone })).problems).toEqual({})
+    },
+  )
 })
 
 describe('parseDependentPerson', () => {
@@ -141,6 +154,7 @@ describe('personProblemKey', () => {
     ['nationalId', 'required', 'validation.nationalIdFormat'],
     ['birthDate', 'required', 'entities.user.person.birthDateInvalid'],
     ['email', 'emailFormat', 'entities.user.person.emailFormat'],
+    ['phone', 'phoneFormat', 'entities.user.person.phoneFormat'],
     ['secondaryPhone', 'sameAsPhone', 'entities.user.person.sameAsPhone'],
     ['nationalId', 'nationalIdLetter', 'validation.nationalIdLetter'],
     ['birthDate', 'futureDate', 'entities.user.person.birthDateInvalid'],

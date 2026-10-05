@@ -51,8 +51,11 @@ onMounted(() => {
             <p class="verify-card__text" role="alert">
               {{ errorMessage ?? $t('pages.verifyAccount.defaultError') }}
             </p>
-            <p class="verify-card__hint">
+            <p v-if="canResend" class="verify-card__hint">
               {{ $t('pages.verifyAccount.hint') }}
+            </p>
+            <p v-else class="verify-card__hint">
+              {{ $t('pages.verifyAccount.incompleteHint') }}
             </p>
             <div class="verify-card__actions">
               <BrandButton

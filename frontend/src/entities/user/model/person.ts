@@ -8,6 +8,9 @@ import type { UpdateUserInput } from './types'
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 const ADULT_AGE = 18
+const PHONE_MIN_DIGITS = 7
+const PHONE_MAX_DIGITS = 15
+const PHONE_SEPARATORS = ' -.()'
 
 /**
  * Editable fields of a person as a form binds them: plain text, the birth date as `YYYY-MM-DD` or
@@ -35,12 +38,14 @@ export type DependentDraft = Pick<PersonDraft, 'firstName' | 'lastName' | 'gende
 export type PersonField = Exclude<keyof PersonDraft, 'promotionalConsent'>
 
 /**
- * Why a field is refused: missing, a malformed email, a secondary phone equal to the phone, a
- * DNI/NIE with the wrong shape or control letter, or a birth date in the future or of an adult.
+ * Why a field is refused: missing, a malformed email or phone, a secondary phone equal to the
+ * phone, a DNI/NIE with the wrong shape or control letter, or a birth date in the future or of an
+ * adult.
  */
 export type PersonProblem =
   | 'required'
   | 'emailFormat'
+  | 'phoneFormat'
   | 'sameAsPhone'
   | 'nationalIdFormat'
   | 'nationalIdLetter'
@@ -105,6 +110,7 @@ export type PersonSubmission =
 const PROBLEM_MESSAGES: Record<PersonProblem, TranslationKey> = {
   required: 'entities.user.person.required',
   emailFormat: 'entities.user.person.emailFormat',
+  phoneFormat: 'entities.user.person.phoneFormat',
   sameAsPhone: 'entities.user.person.sameAsPhone',
   nationalIdFormat: 'validation.nationalIdFormat',
   nationalIdLetter: 'validation.nationalIdLetter',
@@ -134,6 +140,17 @@ function nationalIdProblem(value: string): PersonProblem | undefined {
   return error ? NATIONAL_ID_PROBLEMS[error] : undefined
 }
 
+function isPhoneValid(phone: string): boolean {
+  let digits = 0
+  let plus = false
+  for (const character of phone) {
+    if (character >= '0' && character <= '9') digits += 1
+    else if (character === '+' && !plus && digits === 0) plus = true
+    else if (!PHONE_SEPARATORS.includes(character)) return false
+  }
+  return digits >= PHONE_MIN_DIGITS && digits <= PHONE_MAX_DIGITS
+}
+
 function ageOn(birthDate: string, today: string): number {
   const [birthYear = 0, birthMonth = 0, birthDay = 0] = birthDate.split('-').map(Number)
   const [year = 0, month = 0, day = 0] = today.split('-').map(Number)
@@ -151,7 +168,9 @@ function birthDateProblem(value: string | null, rules: DependentRules): PersonPr
 
 /**
  * Checks and normalizes an independent account: names, gender, a valid DNI/NIE, an email with an
- * address shape, a phone, and an optional secondary phone different from the phone.
+ * address shape, a phone, and an optional secondary phone different from the phone. Phones take 7
+ * to 15 digits with optional spaces, dots, hyphens and parentheses and a leading `+`, as the API
+ * requires.
  */
 export function parseIndependentPerson(draft: IndependentDraft): ParsedPerson<IndependentPerson> {
   const problems = namesProblems(draft)
@@ -163,7 +182,9 @@ export function parseIndependentPerson(draft: IndependentDraft): ParsedPerson<In
   if (!email) problems.email = 'required'
   else if (!EMAIL_PATTERN.test(email)) problems.email = 'emailFormat'
   if (!phone) problems.phone = 'required'
-  if (secondaryPhone && secondaryPhone === phone) problems.secondaryPhone = 'sameAsPhone'
+  else if (!isPhoneValid(phone)) problems.phone = 'phoneFormat'
+  if (secondaryPhone && !isPhoneValid(secondaryPhone)) problems.secondaryPhone = 'phoneFormat'
+  else if (secondaryPhone && secondaryPhone === phone) problems.secondaryPhone = 'sameAsPhone'
   if (Object.keys(problems).length > 0 || !draft.gender) return { problems, person: null }
   return {
     problems,

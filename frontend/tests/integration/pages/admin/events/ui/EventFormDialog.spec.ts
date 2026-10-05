@@ -259,6 +259,11 @@ describe('EventFormDialog', () => {
     expect(disabled(dates.earlySignup, new Date(2026, 8, 1))).toBe(false)
     expect(disabled(dates.signupEnd, new Date(2026, 7, 31))).toBe(true)
     expect(disabled(dates.signupEnd, new Date(2026, 8, 1))).toBe(false)
+
+    await setDate(dates.eventEnd, new Date(2026, 9, 12))
+
+    expect(disabled(dates.signupEnd, new Date(2026, 9, 12))).toBe(false)
+    expect(disabled(dates.signupEnd, new Date(2026, 9, 13))).toBe(true)
   })
 
   it('shows the upload error and does not submit when the thumbnail upload fails', async () => {

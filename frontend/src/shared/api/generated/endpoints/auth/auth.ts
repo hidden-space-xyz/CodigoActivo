@@ -132,12 +132,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiAuthCsrfMutationOptions(options), queryClient);
     }
-    export type postApiAuthRegisterResponse200 = {
+    export type postApiAuthRegisterResponse201 = {
   data: RegisterResponse
-  status: 200
+  status: 201
 }
 
-export type postApiAuthRegisterResponseSuccess = (postApiAuthRegisterResponse200) & {
+export type postApiAuthRegisterResponseSuccess = (postApiAuthRegisterResponse201) & {
   headers: Headers;
 };
 ;

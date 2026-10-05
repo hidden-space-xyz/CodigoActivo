@@ -369,8 +369,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -634,8 +634,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -1707,8 +1707,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -1924,8 +1924,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -2001,8 +2001,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -2460,8 +2460,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -2717,8 +2717,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -2966,8 +2966,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -3421,8 +3421,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -3900,8 +3900,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
@@ -4032,7 +4032,6 @@
           "activityEndsAt",
           "activityStartsAt",
           "createdAt",
-          "createdBy",
           "description",
           "eventId",
           "id",
@@ -4094,15 +4093,6 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "updatedBy": {
-            "type": "string",
-            "format": "uuid",
             "nullable": true
           }
         },
@@ -5137,6 +5127,7 @@
           "ActivityModalityTypeNotFound",
           "ActivitySignupClosed",
           "ActivitySignupEarlyOnly",
+          "ActivityAlreadyStarted",
           "ActivityRoleNotAllowed",
           "ActivityAssignmentAlreadyExists",
           "ActivityHouseholdAssignmentsRequired",
@@ -5153,13 +5144,16 @@
           "EventActivitiesOutsideNewRange",
           "EventCategoryTypeNotFound",
           "EventCategoryTypeNameAlreadyExists",
+          "EventCategoryTypeOnlyCategoryOfEvent",
           "EventThumbnailNotFound",
           "EventCategoriesRequired",
           "EventScheduleRequired",
           "EventScheduleInvalidRange",
           "EventEarlySignupNotBeforeSignup",
+          "EventSignupEndsAfterEvent",
           "EventRatingNotFinished",
           "EventRatingAttendanceRequired",
+          "EventRatingEmpty",
           "EventTermsAcceptanceRequired",
           "EventTermsDocumentDuplicated",
           "TermsDocumentNotFound",
@@ -5192,6 +5186,7 @@
           "UserChildBirthDateNotMinor",
           "UserPasswordNotSet",
           "UserCurrentPasswordIncorrect",
+          "UserNewPasswordSameAsCurrent",
           "UserParentReassignmentForbidden",
           "UserParentNotAllowedForAdult",
           "UserBirthDateNotAllowedForAdult",
@@ -5200,6 +5195,7 @@
           "UserNationalIdRequired",
           "UserEmailAlreadyInUse",
           "SecondaryPhoneSameAsPrimary",
+          "UserPhoneInvalid",
           "DisposableEmailNotAllowed",
           "InvalidCredentials",
           "UserAccountBlocked",
@@ -5225,6 +5221,7 @@
           "EmailAttachmentsTooLarge",
           "EmailSendFailed",
           "AuthenticationRequired",
+          "EndpointNotFound",
           "AccessDenied",
           "InvalidCsrfToken",
           "RequestValidationFailed",
@@ -5747,7 +5744,6 @@
         "required": [
           "categories",
           "createdAt",
-          "createdBy",
           "eventEndsAt",
           "eventStartsAt",
           "featured",
@@ -5801,15 +5797,6 @@
             "format": "date-time",
             "nullable": true
           },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "updatedBy": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
@@ -5861,8 +5848,7 @@
       },
       "EventRatingListItemResponse": {
         "required": [
-          "id",
-          "score"
+          "id"
         ],
         "type": "object",
         "properties": {
@@ -5872,7 +5858,8 @@
           },
           "score": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "nullable": true
           },
           "mostLiked": {
             "type": "string",
@@ -5923,7 +5910,6 @@
         "required": [
           "categories",
           "createdAt",
-          "createdBy",
           "description",
           "eventEndsAt",
           "eventStartsAt",
@@ -5980,15 +5966,6 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "updatedBy": {
-            "type": "string",
-            "format": "uuid",
             "nullable": true
           },
           "thumbnailId": {
@@ -6200,6 +6177,7 @@
           "ratingsCount",
           "requestedAssignments",
           "roleTypeBreakdown",
+          "scoredRatingsCount",
           "title",
           "totalAssignments"
         ],
@@ -6237,6 +6215,10 @@
             "format": "int32"
           },
           "ratingsCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scoredRatingsCount": {
             "type": "integer",
             "format": "int32"
           },
@@ -6360,8 +6342,7 @@
           "extension",
           "id",
           "name",
-          "uploadedAt",
-          "uploadedBy"
+          "uploadedAt"
         ],
         "type": "object",
         "properties": {
@@ -6378,10 +6359,6 @@
           "uploadedAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "uploadedBy": {
-            "type": "string",
-            "format": "uuid"
           }
         },
         "additionalProperties": false
@@ -6676,7 +6653,6 @@
       "NewsItemResponse": {
         "required": [
           "createdAt",
-          "createdBy",
           "description",
           "featured",
           "id",
@@ -6708,15 +6684,6 @@
             "format": "date-time",
             "nullable": true
           },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "updatedBy": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
-          },
           "thumbnailId": {
             "type": "string",
             "format": "uuid"
@@ -6730,7 +6697,6 @@
       "NewsListItemResponse": {
         "required": [
           "createdAt",
-          "createdBy",
           "featured",
           "id",
           "subtitle",
@@ -6756,15 +6722,6 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "updatedBy": {
-            "type": "string",
-            "format": "uuid",
             "nullable": true
           },
           "thumbnailId": {
@@ -6837,7 +6794,6 @@
       "PartnerResponse": {
         "required": [
           "createdAt",
-          "createdBy",
           "fromDate",
           "id",
           "name",
@@ -6872,15 +6828,6 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "updatedBy": {
-            "type": "string",
-            "format": "uuid",
             "nullable": true
           },
           "thumbnailId": {
@@ -7046,7 +6993,6 @@
       "ResourceListItemResponse": {
         "required": [
           "createdAt",
-          "createdBy",
           "id",
           "subtitle",
           "thumbnailId",
@@ -7079,15 +7025,6 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "updatedBy": {
-            "type": "string",
-            "format": "uuid",
             "nullable": true
           },
           "thumbnailId": {
@@ -7130,7 +7067,6 @@
       "ResourceResponse": {
         "required": [
           "createdAt",
-          "createdBy",
           "description",
           "id",
           "subtitle",
@@ -7167,15 +7103,6 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "createdBy": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "updatedBy": {
-            "type": "string",
-            "format": "uuid",
             "nullable": true
           },
           "thumbnailId": {

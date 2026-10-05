@@ -148,4 +148,13 @@ describe('readEventDraft', () => {
 
     expect(reading.problems).toEqual({})
   })
+
+  it('refuses signup that closes after the last day of the event', () => {
+    const reading = readEventDraft(validDraft({ signupEndsAt: new Date(2026, 9, 13, 0, 30) }))
+
+    expect(reading).toEqual({
+      problems: { signupEndsAt: 'pages.admin.events.form.problems.signupEndAfterEventEnd' },
+      value: null,
+    })
+  })
 })

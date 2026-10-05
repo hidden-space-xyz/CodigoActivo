@@ -19,8 +19,6 @@ namespace CodigoActivo.Application.Activities.Contracts;
 /// <param name="RoleCapacities">The role capacities value.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="CreatedBy">The created by value.</param>
-/// <param name="UpdatedBy">The updated by value.</param>
 public record ActivityResponse(
     Guid Id,
     string Title,
@@ -34,9 +32,7 @@ public record ActivityResponse(
     Guid ThumbnailId,
     IReadOnlyList<ActivityRoleCapacityResponse> RoleCapacities,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt,
-    Guid CreatedBy,
-    Guid? UpdatedBy
+    DateTimeOffset? UpdatedAt
 )
 {
     /// <summary>
@@ -56,8 +52,6 @@ public record ActivityResponse(
             Guid.Empty,
             [],
             default,
-            null,
-            Guid.Empty,
             null
         ) { }
 }

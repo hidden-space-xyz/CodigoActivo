@@ -12,7 +12,7 @@ import { BrandButton } from '@/shared/ui/brand-button'
 
 const { t } = useI18n()
 const feedback = useCrudFeedback()
-const { history, entries, upcoming, past, saveRating } = useAccountHistory()
+const { history, entries, upcoming, past, saveRating, isRated } = useAccountHistory()
 
 const expanded = ref<Record<string, boolean>>({})
 
@@ -22,6 +22,10 @@ function toggle(eventId: string): void {
 
 function isExpanded(eventId: string): boolean {
   return expanded.value[eventId] === true
+}
+
+function activityCount(entry: AccountHistoryEntry): number {
+  return new Set(entry.activities.map((activity) => activity.activityId)).size
 }
 
 function statusSeverity(name: string): 'success' | 'danger' | 'info' {
@@ -99,13 +103,16 @@ const groups = computed(() => [
                     <span class="acc-history__name">{{ entry.title }}</span>
                     <span class="acc-history__meta">
                       {{ formatDateRange(entry.startsAt, entry.endsAt) }} ·
-                      {{ $t('pages.account.history.activityCount', entry.activities.length) }}
+                      {{ $t('pages.account.history.activityCount', activityCount(entry)) }}
                     </span>
                   </span>
                 </button>
 
                 <div v-if="entry.canRate" class="acc-history__actions">
-                  <BrandButton variant="ghost" @click="openRating(entry)">
+                  <BrandButton v-if="isRated(entry.eventId)" variant="ghost" disabled>
+                    {{ $t('pages.account.history.rated') }}
+                  </BrandButton>
+                  <BrandButton v-else variant="ghost" @click="openRating(entry)">
                     {{ $t('pages.account.history.rate') }}
                   </BrandButton>
                 </div>

@@ -7,7 +7,7 @@ import { formatDateTime } from '@/shared/lib/date'
 import { renderWithProviders, t } from '../../../../../support/render'
 
 const occupancy: Occupancy = {
-  confirmed: 45,
+  confirmed: 50,
   desired: 60,
   events: [
     {
@@ -20,20 +20,20 @@ const occupancy: Occupancy = {
           id: 'activity-1',
           title: 'Robótica',
           startsAt: '2099-06-10T09:00:00Z',
-          confirmed: 12,
+          confirmed: 10,
           desired: 10,
         },
         {
           id: 'activity-2',
           title: 'Sin aforo',
           startsAt: '2099-06-10T12:00:00Z',
-          confirmed: 3,
+          confirmed: 0,
           desired: 0,
         },
       ],
     },
-    { id: 'event-2', title: 'Campamento', confirmed: 50, desired: 20, activities: [] },
-    { id: 'event-3', title: 'Sin aforo', confirmed: 1, desired: 0, activities: [] },
+    { id: 'event-2', title: 'Campamento', confirmed: 20, desired: 20, activities: [] },
+    { id: 'event-3', title: 'Sin aforo', confirmed: 0, desired: 0, activities: [] },
   ],
 }
 
@@ -42,8 +42,8 @@ describe('OccupancyCard', () => {
     const { wrapper } = await renderWithProviders(OccupancyCard, { props: { occupancy } })
 
     const summary = wrapper.find('.occupancy__overall')
-    expect(summary.find('strong').text()).toBe('75%')
-    expect(summary.text()).toContain('45')
+    expect(summary.find('strong').text()).toBe('83%')
+    expect(summary.text()).toContain('50')
     expect(summary.text()).toContain('60')
 
     const rows = wrapper.findAll('.occupancy__row')
@@ -52,9 +52,8 @@ describe('OccupancyCard', () => {
       'Campamento',
       'Sin aforo',
     ])
-    expect(rows.map((row) => row.find('.occupancy__pct').text())).toEqual(['75%', '250%', '—%'])
+    expect(rows.map((row) => row.find('.occupancy__pct').text())).toEqual(['75%', '100%', '—%'])
     expect(rows[0]?.find('.occupancy__fill').attributes('style')).toContain('width: 75%')
-    expect(rows[1]?.find('.occupancy__fill').classes()).toContain('occupancy__fill--over')
     expect(rows[1]?.find('.occupancy__fill').attributes('style')).toContain('width: 100%')
     expect(rows[2]?.find('.occupancy__fill').attributes('style')).toContain('width: 0%')
   })
@@ -72,9 +71,9 @@ describe('OccupancyCard', () => {
     expect(activities[0]?.find('.occupancy__activity-date').text()).toBe(
       formatDateTime('2099-06-10T09:00:00Z'),
     )
-    expect(activities[0]?.find('.occupancy__activity-pct').text()).toContain('120%')
-    expect(activities[0]?.find('.occupancy__activity-plazas').text()).toBe('(12/10)')
-    expect(activities[0]?.find('.occupancy__fill').classes()).toContain('occupancy__fill--over')
+    expect(activities[0]?.find('.occupancy__activity-pct').text()).toContain('100%')
+    expect(activities[0]?.find('.occupancy__activity-plazas').text()).toBe('(10/10)')
+    expect(activities[0]?.find('.occupancy__fill').attributes('style')).toContain('width: 100%')
     expect(activities[1]?.find('.occupancy__activity-pct').text()).toContain('—%')
 
     await firstRow()?.trigger('click')

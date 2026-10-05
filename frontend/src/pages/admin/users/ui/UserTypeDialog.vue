@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import type { User } from '@/entities/user'
+import { fullName, type User } from '@/entities/user'
 import { ActionButton } from '@/shared/ui/action-button'
 import type { SelectOption } from '@/shared/ui/column-filter'
 
@@ -39,6 +39,9 @@ function apply(): void {
     :title="$t('pages.admin.users.typeDialog.header')"
     width="min(92vw, 420px)"
   >
+    <p class="form__lead">
+      {{ $t('pages.admin.users.typeDialog.lead', { fullName: fullName(user ?? {}) }) }}
+    </p>
     <div class="form__field">
       <label for="user-type">{{ $t('pages.admin.users.typeDialog.typeLabel') }}</label>
       <el-select
@@ -69,6 +72,12 @@ function apply(): void {
 </template>
 
 <style scoped>
+.form__lead {
+  margin: 0 0 14px;
+  color: var(--ca-text-muted);
+  font-size: 14px;
+}
+
 .form__field {
   display: flex;
   flex-direction: column;

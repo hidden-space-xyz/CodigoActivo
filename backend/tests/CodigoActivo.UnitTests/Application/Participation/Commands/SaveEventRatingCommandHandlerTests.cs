@@ -199,4 +199,52 @@ public sealed class SaveEventRatingCommandHandlerTests
         await ratings.Received(2).AddAsync(Arg.Any<EventRating>(), Arg.Any<CancellationToken>());
         await uow.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task HandleAsyncEmptySubmissionReturnsValidationErrorWithoutSaving()
+    {
+        SeedFinishedEvent();
+        SeedConfirmedAssignment(UserId);
+
+        var result = await sut.HandleAsync(
+            new SaveEventRatingCommand(
+                EventId,
+                UserId,
+                new SaveEventRatingRequest(null, "  ", null, string.Empty)
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
+        result.Error.Code.Should().Be(ErrorCode.EventRatingEmpty);
+        await ratings
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncAnswersWithoutScoreAddsUnscoredRating()
+    {
+        SeedFinishedEvent();
+        SeedConfirmedAssignment(UserId);
+
+        var result = await sut.HandleAsync(
+            new SaveEventRatingCommand(
+                EventId,
+                UserId,
+                new SaveEventRatingRequest(null, null, null, "Más talleres")
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await ratings
+            .Received(1)
+            .AddAsync(
+                Arg.Is<EventRating>(r => r.Score == null && r.Suggestions == "Más talleres"),
+                Arg.Any<CancellationToken>()
+            );
+    }
 }

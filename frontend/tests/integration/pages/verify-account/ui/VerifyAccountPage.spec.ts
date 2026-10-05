@@ -69,6 +69,8 @@ describe('verify account page', () => {
 
     expect(wrapper.text()).toContain(t('pages.verifyAccount.errorTitle'))
     expect(wrapper.get('[role="alert"]').text()).toBe(t('pages.verifyAccount.incompleteLink'))
+    expect(wrapper.text()).toContain(t('pages.verifyAccount.incompleteHint'))
+    expect(wrapper.text()).not.toContain(t('pages.verifyAccount.hint'))
     expect(resendButton(wrapper)).toBeUndefined()
     expect(calls).toHaveLength(0)
   })

@@ -182,7 +182,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
             new CreateTermsDocumentRequest(name, "{}"),
             Ct
         );
-        created.StatusCode.Should().Be(HttpStatusCode.OK);
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
 
         using var after = await admin.GetAsync(TestUri.Rel("/api/events/termsDocument"), Ct);
         var page = await after.ReadJsonAsync<PagedResult<TermsDocumentResponse>>(Ct);

@@ -12,8 +12,6 @@ namespace CodigoActivo.Application.News.Contracts;
 /// <param name="Description">The description value.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="CreatedBy">The created by value.</param>
-/// <param name="UpdatedBy">The updated by value.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="Featured">Whether featured.</param>
 public record NewsItemResponse(
@@ -23,8 +21,6 @@ public record NewsItemResponse(
     string Description,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    Guid CreatedBy,
-    Guid? UpdatedBy,
     Guid ThumbnailId,
     bool Featured
 )
@@ -41,8 +37,6 @@ public record NewsItemResponse(
             default,
             null,
             Guid.Empty,
-            null,
-            Guid.Empty,
             false
         ) { }
 }
@@ -55,8 +49,6 @@ public record NewsItemResponse(
 /// <param name="Subtitle">The subtitle value.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="CreatedBy">The created by value.</param>
-/// <param name="UpdatedBy">The updated by value.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="Featured">Whether featured.</param>
 public record NewsListItemResponse(
@@ -65,8 +57,6 @@ public record NewsListItemResponse(
     string Subtitle,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    Guid CreatedBy,
-    Guid? UpdatedBy,
     Guid ThumbnailId,
     bool Featured
 )
@@ -75,17 +65,7 @@ public record NewsListItemResponse(
     /// Initializes an empty news list item response for serialization.
     /// </summary>
     public NewsListItemResponse()
-        : this(
-            Guid.Empty,
-            string.Empty,
-            string.Empty,
-            default,
-            null,
-            Guid.Empty,
-            null,
-            Guid.Empty,
-            false
-        ) { }
+        : this(Guid.Empty, string.Empty, string.Empty, default, null, Guid.Empty, false) { }
 }
 
 /// <summary>
@@ -98,7 +78,7 @@ public record NewsListItemResponse(
 public record CreateNewsItemRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] [MaxLength(262144)] string Description,
+    [RichText] [MaxLength(262144)] string Description,
     Guid ThumbnailId
 );
 
@@ -112,6 +92,6 @@ public record CreateNewsItemRequest(
 public record UpdateNewsItemRequest(
     [Required] [MaxLength(200)] [NotBlank] string Title,
     [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [JsonString] [MaxLength(262144)] string Description,
+    [RichText] [MaxLength(262144)] string Description,
     Guid ThumbnailId
 );

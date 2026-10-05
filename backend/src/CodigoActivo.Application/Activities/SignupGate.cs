@@ -8,8 +8,8 @@ namespace CodigoActivo.Application.Activities;
 
 /// <summary>
 /// Checks that the signup of the event of an activity is open for the people signing up, following
-/// <see cref="Event.SignupPhaseAt"/> and <see cref="EarlySignup"/>. Administrators are not bound by
-/// it.
+/// <see cref="Event.SignupPhaseAt"/> and <see cref="EarlySignup"/>, and that the activity has not
+/// started yet. Administrators are not bound by it.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
@@ -38,15 +38,22 @@ public sealed class SignupGate(IEventRepository events, IUserRepository users, I
             return Result.Success();
         }
 
+        var now = clock.UtcNow;
         var ev = await events.GetByIdAsync(activity.EventId, ct);
-        return ev?.SignupPhaseAt(clock.UtcNow) switch
+        var phase = ev?.SignupPhaseAt(now) ?? SignupPhase.Closed;
+        if (phase is SignupPhase.Closed)
         {
-            SignupPhase.Open => Result.Success(),
-            SignupPhase.EarlyOnly => await AllEntitledToEarlySignupAsync(userIds, ct)
-                ? Result.Success()
-                : Error.Validation(ErrorCode.ActivitySignupEarlyOnly),
-            _ => Error.Validation(ErrorCode.ActivitySignupClosed),
-        };
+            return Error.Validation(ErrorCode.ActivitySignupClosed);
+        }
+
+        if (activity.HasStartedBy(now))
+        {
+            return Error.Validation(ErrorCode.ActivityAlreadyStarted);
+        }
+
+        return phase is SignupPhase.Open || await AllEntitledToEarlySignupAsync(userIds, ct)
+            ? Result.Success()
+            : Error.Validation(ErrorCode.ActivitySignupEarlyOnly);
     }
 
     private async Task<bool> AllEntitledToEarlySignupAsync(

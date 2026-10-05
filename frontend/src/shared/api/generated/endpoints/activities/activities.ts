@@ -882,12 +882,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiActivitiesModalityTypesMutationOptions(options), queryClient);
     }
-    export type postApiActivitiesEventIdResponse200 = {
+    export type postApiActivitiesEventIdResponse201 = {
   data: ActivityResponse
-  status: 200
+  status: 201
 }
 
-export type postApiActivitiesEventIdResponseSuccess = (postApiActivitiesEventIdResponse200) & {
+export type postApiActivitiesEventIdResponseSuccess = (postApiActivitiesEventIdResponse201) & {
   headers: Headers;
 };
 ;
