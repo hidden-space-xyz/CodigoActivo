@@ -138,6 +138,12 @@ export const routes: readonly RouteRecordRaw[] = [
     meta: { seo: { titleKey: 'seo.routes.verifyAccount.title', noindex: true } },
   },
   {
+    path: '/confirm-email',
+    name: 'confirm-email',
+    component: () => import('@/pages/confirm-email').then((m) => m.ConfirmEmailPage),
+    meta: { seo: { titleKey: 'seo.routes.confirmEmail.title', noindex: true } },
+  },
+  {
     path: '/forgot-password',
     name: 'forgot-password',
     component: () => import('@/pages/forgot-password').then((m) => m.ForgotPasswordPage),

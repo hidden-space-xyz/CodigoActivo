@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Contracts;
@@ -49,6 +50,21 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
             new TwoFactorLoginRequest(code, keepSignedIn),
             Ct
         );
+    }
+
+    private static async Task<HttpResponseMessage> PresentPreparedAsync(
+        HttpClient client,
+        string csrfToken,
+        string code
+    )
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, TwoFactorUrl);
+        request.Headers.Add("X-CSRF-TOKEN", csrfToken);
+        request.Content = JsonContent.Create(
+            new TwoFactorLoginRequest(code),
+            options: TestJson.Options
+        );
+        return await client.SendAsync(request, Ct);
     }
 
     private Task SeedAuthenticatorAsync(
@@ -238,6 +254,58 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         var signedIn = await LoginAsMemberAsync();
         using var me = await signedIn.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
         me.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task TwoFactorParallelWrongCodesCountEveryAttemptBeforeTheLock()
+    {
+        const int Threshold = 5;
+        var client = await StartMemberChallengeAsync();
+        var token = await client.FetchCsrfTokenAsync(Ct);
+
+        var responses = await Task.WhenAll(
+            Enumerable
+                .Range(0, Threshold * 3)
+                .Select(_ => PresentPreparedAsync(client, token, "000000"))
+        );
+
+        var wrongCodes = responses.Count(response =>
+            response.StatusCode == HttpStatusCode.BadRequest
+        );
+        foreach (var response in responses)
+        {
+            response.Dispose();
+        }
+
+        wrongCodes.Should().Be(Threshold, "no wrong code may be checked once the lock is stored");
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.TwoFactorLockedUntil.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
+    }
+
+    [Fact]
+    public async Task TwoFactorParallelRequestsWithOneAuthenticatorCodeOpenOneSession()
+    {
+        await SeedAuthenticatorAsync(TestSeedData.Users.MemberId);
+        var client = CreateClient();
+        await PassPasswordStepAsync(client, TestSeedData.MemberCredentials);
+        var token = await client.FetchCsrfTokenAsync(Ct);
+        var code = CurrentCode();
+
+        var responses = await Task.WhenAll(
+            Enumerable.Range(0, 6).Select(_ => PresentPreparedAsync(client, token, code))
+        );
+
+        var accepted = responses.Count(response => response.StatusCode == HttpStatusCode.OK);
+        foreach (var response in responses)
+        {
+            response.Dispose();
+        }
+
+        accepted.Should().Be(1, "a time step is accepted only once");
+        var sessions = await Factory.QueryAsync(db =>
+            db.UserSessions.CountAsync(s => s.UserId == TestSeedData.Users.MemberId, Ct)
+        );
+        sessions.Should().Be(1);
     }
 
     [Fact]
@@ -502,6 +570,27 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.AuthenticatorSetupExpired);
+    }
+
+    [Fact]
+    public async Task AuthenticatorSetupWithAnActiveAuthenticatorIsRefusedEvenWithThePassword()
+    {
+        await SeedAuthenticatorAsync(TestSeedData.Users.MemberId);
+        var client = CreateClient();
+        await PassPasswordStepAsync(client, TestSeedData.MemberCredentials);
+        using var signedIn = await PresentAsync(client, CurrentCode());
+        signedIn.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var setup = await client.PostJsonAsync(
+            SetupUrl,
+            new AuthenticatorSetupRequest(TestSeedData.Password),
+            Ct
+        );
+
+        await setup.ShouldBeConflictAsync(ErrorCode.AuthenticatorAlreadyEnabled);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.PendingAuthenticatorKey.Should().BeNull();
+        stored.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + Secret);
     }
 
     [Fact]

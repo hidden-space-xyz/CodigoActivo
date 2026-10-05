@@ -21,6 +21,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
+    private readonly FakePasswordHasher hasher = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly PasswordResetOptions passwordReset = new();
@@ -33,7 +34,7 @@ public sealed class ForgotPasswordCommandHandlerTests
             users,
             uow,
             clock,
-            new FakePasswordHasher(),
+            hasher,
             passwordReset,
             new AccountEmails(
                 emailSender,
@@ -80,6 +81,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
+        hasher.Hashes.Should().Be(1, "every request hashes a code, so timing tells nothing");
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }

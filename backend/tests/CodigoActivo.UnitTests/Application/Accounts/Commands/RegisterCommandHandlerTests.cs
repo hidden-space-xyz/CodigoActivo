@@ -1,11 +1,14 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Localization;
+using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
@@ -20,11 +23,14 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 public sealed class RegisterCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly IDeletedAccountRepository deletedAccounts =
+        Substitute.For<IDeletedAccountRepository>();
+    private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
+    private readonly FakePasswordHasher hasher = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
-    private readonly PasswordResetOptions passwordReset = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
     private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly FakeDisposableEmailDomainRepository disposableDomains = new();
@@ -36,19 +42,25 @@ public sealed class RegisterCommandHandlerTests
             users,
             uow,
             clock,
-            new FakePasswordHasher(),
+            hasher,
             verification,
             new AccountEmails(
                 emailSender,
                 new AccountEmailComposer(application, new TestClock()),
                 verification,
-                passwordReset,
+                new PasswordResetOptions(),
                 new TwoFactorOptions()
             ),
             NullLogger<RegisterCommandHandler>.Instance,
             cacheInvalidator,
-            new DisposableEmailChecker(disposableDomains)
+            new DisposableEmailChecker(disposableDomains),
+            new EmailClaims(AccountErasers.Create(users, deletedAccounts, erasureStore, uow), uow)
         );
+    }
+
+    private Task<Result> HandleAsync(RegisterRequest request)
+    {
+        return sut.HandleAsync(new RegisterCommand(request), TestContext.Current.CancellationToken);
     }
 
     private async Task<List<User>> CaptureAddedUsersAsync()
@@ -56,6 +68,13 @@ public sealed class RegisterCommandHandlerTests
         var added = new List<User>();
         await users.AddAsync(Arg.Do<User>(added.Add), Arg.Any<CancellationToken>());
         return added;
+    }
+
+    private User HolderOfTheAddress(Guid statusId)
+    {
+        var holder = NewUser(email: "ana@test.com", statusId: statusId);
+        users.GetByEmailAsync("ana@test.com", Arg.Any<CancellationToken>()).Returns(holder);
+        return holder;
     }
 
     private static RegisterRequest NewRegister(
@@ -91,17 +110,17 @@ public sealed class RegisterCommandHandlerTests
         return new("  Leo  ", "  Ruiz  ", birthDate ?? MinorBirthDate, gender);
     }
 
-    private void ExistsReturns(params bool[] seq)
-    {
-        users
-            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(seq[0], [.. seq.Skip(1)]);
-    }
-
     private Task<int> AssertNotSavedAsync()
     {
         return uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private ValueTask AssertNotInvalidatedAsync()
+    {
+        return cacheInvalidator
+            .DidNotReceive()
+            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
     }
 
     private static bool IsPendingParticipantAdult(User? user)
@@ -140,23 +159,14 @@ public sealed class RegisterCommandHandlerTests
     public async Task HandleAsyncNewAdultStoresNationalIdAndConsentButNoBirthDate()
     {
         var added = await CaptureAddedUsersAsync();
-        ExistsReturns(false);
 
-        var result = await sut.HandleAsync(
-            new RegisterCommand(
-                NewRegister(
-                    nationalId: " x-1234567-l ",
-                    promotionalConsent: true,
-                    minors: [NewMinor()]
-                )
-            ),
-            TestContext.Current.CancellationToken
+        var result = await HandleAsync(
+            NewRegister(nationalId: " x-1234567-l ", promotionalConsent: true, minors: [NewMinor()])
         );
 
         result.IsSuccess.Should().BeTrue();
         added.Should().HaveCount(2);
         var adult = added[0];
-        result.Value.Should().Be(adult.Id);
         adult.NationalId.Should().Be("X1234567L");
         adult.PromotionalConsent.Should().BeTrue();
         adult.BirthDate.Should().BeNull();
@@ -169,18 +179,13 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task HandleAsyncBrokenProfileRuleIsRefusedWithoutAddingAnyone()
     {
-        ExistsReturns(false);
-
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(secondaryPhone: " +34123456789 ")),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister(secondaryPhone: " +34123456789 "));
 
         result.ShouldFail(ErrorKind.Validation, ErrorCode.SecondaryPhoneSameAsPrimary);
         await AssertNotSavedAsync();
         await users
             .DidNotReceiveWithAnyArgs()
-            .EmailExistsAsync(default!, default, TestContext.Current.CancellationToken);
+            .GetByEmailAsync(default!, TestContext.Current.CancellationToken);
         await users
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
@@ -189,32 +194,103 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task HandleAsyncBlankPasswordReturnsBadRequest()
     {
-        ExistsReturns(false);
-
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(password: "   ")),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister(password: "   "));
 
         result.ShouldFail(ErrorKind.Validation, ErrorCode.RequestValidationFailed);
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncEmailInUseReturnsConflict()
+    public async Task HandleAsyncAddressOwnedByAnAccountGetsANoticeAndNothingIsCreated()
     {
-        ExistsReturns(true);
+        var holder = HolderOfTheAddress(SeedIds.UserStatusTypes.Active);
 
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister()),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister(minors: [NewMinor()]));
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserEmailAlreadyInUse);
+        result.IsSuccess.Should().BeTrue();
+        hasher.Hashes.Should().Be(2, "every outcome hashes the password and the code");
+        var notice = emailSender.Sent.Should().ContainSingle().Subject;
+        notice.Kind.Should().Be(EmailKind.AccountVerification);
+        notice.ToAddress.Should().Be(holder.Email);
+        notice.Subject.Should().Be(AppStrings.EmailsEmailInUseSubject);
+        notice.TextBody.Should().NotContain("verify-account");
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
         await AssertNotSavedAsync();
-        await cacheInvalidator
-            .DidNotReceive()
-            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+        await AssertNotInvalidatedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncNoticeRefusedByTheLimiterStillSucceeds()
+    {
+        HolderOfTheAddress(SeedIds.UserStatusTypes.Active);
+        emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
+
+        var result = await HandleAsync(NewRegister());
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncNoticeThatCannotBeQueuedStillSucceeds()
+    {
+        HolderOfTheAddress(SeedIds.UserStatusTypes.Blocked);
+        emailSender.ThrowOnSend = new InvalidOperationException("outbox unavailable");
+
+        var result = await HandleAsync(NewRegister());
+
+        result.IsSuccess.Should().BeTrue();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAddressOfAnUnverifiedAccountReplacesItWithTheNewOne()
+    {
+        var holder = HolderOfTheAddress(SeedIds.UserStatusTypes.Pending);
+        var added = await CaptureAddedUsersAsync();
+
+        var result = await HandleAsync(NewRegister());
+
+        result.IsSuccess.Should().BeTrue();
+        var adult = added.Should().ContainSingle().Subject;
+        adult.Id.Should().NotBe(holder.Id);
+        users.Received(1).Remove(holder);
+        await erasureStore
+            .Received(1)
+            .CaptureLegalCopyAsync(
+                holder.Id,
+                Arg.Is<AccountErasure>(erasure =>
+                    erasure.Origin == AccountDeletionOrigin.EmailClaimed
+                    && erasure.ActorId == adult.Id
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        emailSender
+            .Sent.Should()
+            .ContainSingle()
+            .Which.TextBody.Should()
+            .Contain($"verify-account#userId={adult.Id}&code=");
+    }
+
+    [Fact]
+    public async Task HandleAsyncAddressTakenByAConcurrentRegistrationSendsNothing()
+    {
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ =>
+                throw new UniqueConstraintViolationException(
+                    typeof(User),
+                    new InvalidOperationException("duplicate")
+                )
+            );
+
+        var result = await HandleAsync(NewRegister());
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+        await AssertNotInvalidatedAsync();
     }
 
     [Theory]
@@ -226,16 +302,13 @@ public sealed class RegisterCommandHandlerTests
     {
         disposableDomains.Add("mailinator.com");
 
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(email: email)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister(email: email));
 
         result.ShouldFail(ErrorKind.Validation, ErrorCode.DisposableEmailNotAllowed);
         await AssertNotSavedAsync();
         await users
             .DidNotReceiveWithAnyArgs()
-            .EmailExistsAsync(default!, default, TestContext.Current.CancellationToken);
+            .GetByEmailAsync(default!, TestContext.Current.CancellationToken);
         await users
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
@@ -246,12 +319,8 @@ public sealed class RegisterCommandHandlerTests
     public async Task HandleAsyncEmailOutsideTheDisposableListIsRegistered()
     {
         disposableDomains.Add("mailinator.com");
-        ExistsReturns(false);
 
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(email: "ana@notmailinator.com")),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister(email: "ana@notmailinator.com"));
 
         result.IsSuccess.Should().BeTrue();
         disposableDomains
@@ -265,12 +334,7 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task HandleAsyncMinorWithAdultBirthDateReturnsBadRequest()
     {
-        ExistsReturns(false, false);
-
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(minors: [NewMinor(birthDate: AdultBirthDate)])),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister(minors: [NewMinor(birthDate: AdultBirthDate)]));
 
         result.ShouldFail(ErrorKind.Validation, ErrorCode.UserChildBirthDateNotMinor);
         await AssertNotSavedAsync();
@@ -282,13 +346,9 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task HandleAsyncTooManyMinorsReturnsBadRequest()
     {
-        ExistsReturns(false, false);
         var minors = Enumerable.Range(0, 21).Select(_ => NewMinor()).ToList();
 
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(minors: minors)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister(minors: minors));
 
         result.ShouldFail(ErrorKind.Validation, ErrorCode.RequestValidationFailed);
         await AssertNotSavedAsync();
@@ -298,18 +358,12 @@ public sealed class RegisterCommandHandlerTests
     public async Task HandleAsyncFirstOrdinaryUserIsNotPromotedToAdmin()
     {
         clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
-        ExistsReturns(false);
         var added = await CaptureAddedUsersAsync();
 
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister()),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister());
 
         result.IsSuccess.Should().BeTrue();
-        var adult = added.Should().ContainSingle().Which;
-        result.Value.Should().Be(adult.Id);
-
+        added.Should().ContainSingle();
         await users
             .Received(1)
             .AddAsync(
@@ -323,21 +377,22 @@ public sealed class RegisterCommandHandlerTests
     public async Task HandleAsyncNewAdultSendsGuidOtpHashedAtRestAndInvalidatesCache()
     {
         var added = await CaptureAddedUsersAsync();
-        ExistsReturns(false, false);
 
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister()),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister());
 
         result.IsSuccess.Should().BeTrue();
+        hasher.Hashes.Should().Be(2);
         emailSender.Sent.Should().HaveCount(1);
         var code = emailSender.LastCode();
         code.Should().MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
 
         var email = emailSender.Sent[0];
         email.ToAddress.Should().Be("ana@test.com");
-        email.ToName.Should().Be("Ana");
+        email
+            .ToName.Should()
+            .BeEmpty("an unverified address may belong to someone else than the registrant");
+        email.TextBody.Should().NotContain("Ana");
+        email.HtmlBody.Should().NotContain("Ana");
         email.TextBody.Should().Contain(code);
         email.Subject.Should().NotContain(code);
         email.TextBody.Should().Contain("https://app.test/verify-account#userId=");
@@ -359,12 +414,8 @@ public sealed class RegisterCommandHandlerTests
     {
         var added = await CaptureAddedUsersAsync();
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
-        ExistsReturns(false, false);
 
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister()),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister());
 
         result.IsSuccess.Should().BeTrue();
         added.Should().ContainSingle();
@@ -380,13 +431,8 @@ public sealed class RegisterCommandHandlerTests
     {
         var added = await CaptureAddedUsersAsync();
         emailSender.ThrowOnSend = new OperationCanceledException("registration cancelled");
-        ExistsReturns(false, false);
 
-        var act = () =>
-            sut.HandleAsync(
-                new RegisterCommand(NewRegister()),
-                TestContext.Current.CancellationToken
-            );
+        var act = () => HandleAsync(NewRegister());
 
         await act.Should().ThrowAsync<OperationCanceledException>();
         added.Should().ContainSingle();
@@ -398,17 +444,12 @@ public sealed class RegisterCommandHandlerTests
     public async Task HandleAsyncSubsequentUserWithMinorCreatesAdultAndMinorAsParticipants()
     {
         clock.UtcNow = new DateTimeOffset(2026, 4, 2, 10, 0, 0, TimeSpan.Zero);
-        ExistsReturns(false);
         var added = await CaptureAddedUsersAsync();
 
-        var result = await sut.HandleAsync(
-            new RegisterCommand(NewRegister(minors: [NewMinor()])),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync(NewRegister(minors: [NewMinor()]));
 
         result.IsSuccess.Should().BeTrue();
         added.Should().HaveCount(2);
-        result.Value.Should().Be(added[0].Id);
         added[1].ParentId.Should().Be(added[0].Id);
 
         await users.Received(2).AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());

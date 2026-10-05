@@ -3,6 +3,7 @@ export type { UpdateUserInput, User } from './model/types'
 export type { PersonField, PersonProblem } from './model/person'
 export { GENDERS, genderLabelKey } from './model/gender'
 export {
+  isSameEmail,
   minorBirthDateRange,
   parseDependentPerson,
   parseIndependentPerson,

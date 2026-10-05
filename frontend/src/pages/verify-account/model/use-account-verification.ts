@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 
@@ -10,7 +10,8 @@ export type LinkVerificationState = 'verifying' | 'success' | 'error'
 
 /**
  * Verification page flow: `verify` checks the link's user id and code (an incomplete link fails
- * without calling the API), and `resend` requests a new link, reporting the result as a toast.
+ * without calling the API), and `resend` asks for a new link for the address in `resendForm`,
+ * reporting with a toast that never tells whether the address has a pending account.
  */
 export function useAccountVerification() {
   const { t } = useI18n()
@@ -18,7 +19,7 @@ export function useAccountVerification() {
 
   const state = ref<LinkVerificationState>('verifying')
   const errorMessage = ref<string | null>(null)
-  const userId = ref<string | null>(null)
+  const resendForm = reactive({ email: '' })
 
   const mutation = useMutation({
     ...accountMutations.verify(),
@@ -45,7 +46,6 @@ export function useAccountVerification() {
   })
 
   function verify(id: string | null, code: string | null): void {
-    userId.value = id
     if (!id || !code) {
       state.value = 'error'
       errorMessage.value = t('pages.verifyAccount.incompleteLink')
@@ -57,15 +57,15 @@ export function useAccountVerification() {
   }
 
   function resend(): void {
-    if (userId.value && !resendMutation.isPending.value) resendMutation.mutate(userId.value)
+    if (!resendMutation.isPending.value) resendMutation.mutate(resendForm.email.trim())
   }
 
   return {
     state,
     errorMessage,
     verify,
+    resendForm,
     resend,
-    canResend: computed(() => userId.value !== null),
     isResending: resendMutation.isPending,
   }
 }

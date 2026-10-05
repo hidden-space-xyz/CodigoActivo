@@ -6,7 +6,8 @@ namespace CodigoActivo.Application.Abstractions.Email;
 public enum EmailKind
 {
     /// <summary>
-    /// Selects the account verification option.
+    /// Selects the option for the mail a registration or an email change sends to the address it
+    /// names: the link that verifies the address, or the notice that it already has an account.
     /// </summary>
     AccountVerification,
 

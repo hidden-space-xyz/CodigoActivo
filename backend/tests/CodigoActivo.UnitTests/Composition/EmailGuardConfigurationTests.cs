@@ -91,5 +91,15 @@ public sealed class EmailGuardConfigurationTests : IDisposable
         );
 
         options.EffectiveCredentialReserve.Should().Be(49);
+        options.EffectiveTwoFactorReserve.Should().Be(24);
+    }
+
+    [Fact]
+    public void AddCodigoActivoShippedReserveKeepsHalfOfItForLoginCodes()
+    {
+        var options = Build(new Dictionary<string, string?>(StringComparer.Ordinal));
+
+        options.EffectiveCredentialReserve.Should().Be(200);
+        options.EffectiveTwoFactorReserve.Should().Be(100);
     }
 }

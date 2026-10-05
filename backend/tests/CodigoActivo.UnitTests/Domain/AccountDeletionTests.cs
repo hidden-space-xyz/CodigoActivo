@@ -59,6 +59,18 @@ public sealed class AccountDeletionTests
     }
 
     [Fact]
+    public void ErasureForClaimedEmailNamesTheClaimant()
+    {
+        var claimantId = Guid.NewGuid();
+
+        var erasure = AccountErasure.ForClaimedEmail(claimantId, Now);
+
+        erasure
+            .Should()
+            .Be(new AccountErasure(AccountDeletionOrigin.EmailClaimed, claimantId, Now));
+    }
+
+    [Fact]
     public void ErasureForMissingAccountThrows()
     {
         var act = () => AccountErasure.For(null!, Guid.NewGuid(), Now);

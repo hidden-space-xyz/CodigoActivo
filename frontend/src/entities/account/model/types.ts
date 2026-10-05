@@ -77,9 +77,3 @@ export interface AccountHistoryEntry {
   readonly canRate: boolean
   readonly activities: readonly AccountHistoryActivity[]
 }
-
-/** Outcome of a registration: the adult to resend the verification email to and its minors. */
-export interface RegistrationResult {
-  readonly adultId: string
-  readonly minorCount: number
-}

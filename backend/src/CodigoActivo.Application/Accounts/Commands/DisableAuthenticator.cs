@@ -19,7 +19,8 @@ public sealed record DisableAuthenticatorCommand(Guid UserId, DisableAuthenticat
 /// <summary>
 /// Executes the command that removes the authenticator. Downgrading the second factor requires
 /// both the password and a current authenticator code, so neither a stolen session nor a stolen
-/// password is enough; wrong codes count towards the same lockout as logins.
+/// password is enough; wrong codes count towards the same lockout as logins, checked with the
+/// account row locked so parallel attempts are counted one after another.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -73,13 +74,38 @@ public sealed class DisableAuthenticatorCommandHandler(
             return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
+        var disabled = await uow.ExecuteInTransactionAsync(
+            attempt => DisableLockedAsync(user, command.Request.Code, attempt),
+            ct
+        );
+        if (disabled.IsFailure)
+        {
+            return disabled;
+        }
+
+        await securityNotifier.NotifyAsync(user, AccountSecurityChange.AuthenticatorDisabled, ct);
+        return Result.Success();
+    }
+
+    private async Task<Result> DisableLockedAsync(User user, string code, CancellationToken ct)
+    {
+        if (!await users.LockAsync(user, ct))
+        {
+            return Error.NotFound(ErrorCode.UserNotFound);
+        }
+
+        if (user.TwoFactorMethod != TwoFactorMethod.Authenticator)
+        {
+            return Error.Conflict(ErrorCode.AuthenticatorNotEnabled);
+        }
+
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
             return Error.Forbidden(ErrorCode.TwoFactorLocked);
         }
 
-        var step = authenticatorCodes.Match(user.AuthenticatorKey, command.Request.Code);
+        var step = authenticatorCodes.Match(user.AuthenticatorKey, code);
         if (step is not { } matched || !user.AcceptsAuthenticatorStep(matched))
         {
             var locked = user.RecordTwoFactorFailure(
@@ -99,7 +125,6 @@ public sealed class DisableAuthenticatorCommandHandler(
         user.UseEmailTwoFactor(now);
         user.ClearTwoFactorFailures();
         await uow.SaveChangesAsync(ct);
-        await securityNotifier.NotifyAsync(user, AccountSecurityChange.AuthenticatorDisabled, ct);
         return Result.Success();
     }
 }

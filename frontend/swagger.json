@@ -634,15 +634,8 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RegisterResponse"
-                }
-              }
-            }
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -686,8 +679,29 @@
         }
       }
     },
-    "/api/auth/{userId}/resend-verification": {
+    "/api/auth/resend-verification": {
       "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendVerificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/{userId}/confirm-email": {
+      "patch": {
         "tags": [
           "Auth"
         ],
@@ -702,6 +716,15 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK"
@@ -5188,6 +5211,7 @@
           "UserCurrentPasswordIncorrect",
           "UserNewPasswordSameAsCurrent",
           "UserParentReassignmentForbidden",
+          "UserChildLimitReached",
           "UserParentNotAllowedForAdult",
           "UserBirthDateNotAllowedForAdult",
           "UserChildBirthDateRequired",
@@ -5203,7 +5227,6 @@
           "UserAccountPendingVerification",
           "CurrentUserNotFound",
           "OtpInvalidOrExpired",
-          "OtpResendNotAllowed",
           "OtpResendCooldownActive",
           "PasswordResetInvalidOrExpired",
           "TwoFactorCodeInvalid",
@@ -5213,6 +5236,7 @@
           "TwoFactorResendCooldownActive",
           "AuthenticatorSetupExpired",
           "AuthenticatorNotEnabled",
+          "AuthenticatorAlreadyEnabled",
           "EmailNoRecipients",
           "EmailRecipientWithoutAddress",
           "EmailTooManyRecipients",
@@ -6943,21 +6967,14 @@
         },
         "additionalProperties": false
       },
-      "RegisterResponse": {
+      "ResendVerificationRequest": {
         "required": [
-          "adult",
-          "minors"
+          "email"
         ],
         "type": "object",
         "properties": {
-          "adult": {
-            "$ref": "#/components/schemas/UserResponse"
-          },
-          "minors": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserResponse"
-            }
+          "email": {
+            "type": "string"
           }
         },
         "additionalProperties": false

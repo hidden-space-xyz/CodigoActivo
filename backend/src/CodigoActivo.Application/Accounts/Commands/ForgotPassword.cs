@@ -38,23 +38,21 @@ public sealed class ForgotPasswordCommandHandler(
 ) : ICommandHandler<ForgotPasswordCommand, Result>
 {
     /// <summary>
-    /// Handles the request to forgot password.
+    /// Handles the request to forgot password. Every request succeeds alike and hashes a code
+    /// first, so neither the answer nor its timing tells whether the address has an account.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>A task whose result always reports success.</returns>
     public async Task<Result> HandleAsync(
         ForgotPasswordCommand command,
         CancellationToken ct = default
     )
     {
+        var code = AccountTokens.Create();
+        var codeHash = hasher.Hash(code);
         var email = command.Request.Email.NormalizeEmailOrNull();
-        if (email is null)
-        {
-            return Result.Success();
-        }
-
-        var user = await users.GetByEmailAsync(email, ct);
+        var user = email is null ? null : await users.GetByEmailAsync(email, ct);
         if (
             user is null
             || string.IsNullOrEmpty(user.PasswordHash)
@@ -71,7 +69,6 @@ public sealed class ForgotPasswordCommandHandler(
             return Result.Success();
         }
 
-        var code = AccountTokens.Create();
         try
         {
             await accountEmails.SendPasswordResetEmailAsync(user, code, ct);
@@ -86,7 +83,7 @@ public sealed class ForgotPasswordCommandHandler(
             return Result.Success();
         }
 
-        user.IssuePasswordResetCode(hasher.Hash(code), now, passwordReset.CodeLifetime);
+        user.IssuePasswordResetCode(codeHash, now, passwordReset.CodeLifetime);
         await uow.SaveChangesAsync(ct);
 
         return Result.Success();

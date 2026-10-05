@@ -4,6 +4,7 @@ import { toDateOnly } from '@/shared/lib/date'
 import { useForm, type FormProblem, type FormReading } from '@/shared/lib/form'
 
 import {
+  isSameEmail,
   parseDependentPerson,
   parseIndependentPerson,
   personProblemKey,
@@ -117,7 +118,7 @@ export function usePersonForm(options: PersonFormOptions) {
     const previous = stored.value
     return (
       previous !== null &&
-      (draft.email.trim().toLowerCase() !== (previous.email ?? '').toLowerCase() ||
+      (!isSameEmail(draft.email, previous.email) ||
         draft.phone.trim() !== (previous.phone ?? '') ||
         draft.secondaryPhone.trim() !== (previous.secondaryPhone ?? ''))
     )

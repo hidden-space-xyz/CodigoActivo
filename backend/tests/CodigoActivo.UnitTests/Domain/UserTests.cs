@@ -300,12 +300,55 @@ public sealed class UserTests
     }
 
     [Fact]
+    public void BeginAuthenticatorSetupActiveAuthenticatorIsRefusedWithoutAPendingKey()
+    {
+        var user = NewPendingUser();
+        user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
+        user.EnableAuthenticator(42, Now);
+
+        var begun = user.BeginAuthenticatorSetup("ANOTHER", Now, TimeSpan.FromMinutes(15));
+
+        begun.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorAlreadyEnabled);
+        user.PendingAuthenticatorKey.Should().BeNull();
+        user.AuthenticatorKey.Should().Be("PENDING");
+    }
+
+    [Fact]
+    public void EnableAuthenticatorActiveAuthenticatorIsNeverReplaced()
+    {
+        var user = NewPendingUser();
+        user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
+        user.EnableAuthenticator(42, Now);
+        Persisted.Overwrite(
+            user,
+            new
+            {
+                PendingAuthenticatorKey = "ANOTHER",
+                PendingAuthenticatorExpiresAt = Now.AddMinutes(15),
+            }
+        );
+
+        var enabled = user.EnableAuthenticator(43, Now.AddMinutes(1));
+
+        enabled.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorAlreadyEnabled);
+        user.AuthenticatorKey.Should().Be("PENDING");
+        user.AuthenticatorLastUsedStep.Should().Be(42);
+    }
+
+    [Fact]
     public void UseEmailTwoFactorForgetsActiveAndPendingAuthenticators()
     {
         var user = NewPendingUser();
         user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
         user.EnableAuthenticator(42, Now);
-        user.BeginAuthenticatorSetup("ANOTHER", Now, TimeSpan.FromMinutes(15));
+        Persisted.Overwrite(
+            user,
+            new
+            {
+                PendingAuthenticatorKey = "ANOTHER",
+                PendingAuthenticatorExpiresAt = Now.AddMinutes(15),
+            }
+        );
 
         user.UseEmailTwoFactor(Now.AddHours(1));
 
@@ -395,6 +438,7 @@ public sealed class UserTests
         user.IsBlocked.Should().Be(blocked);
         user.IsDependent.Should().Be(dependent);
         user.IsPendingVerification.Should().Be(pending);
+        user.OwnsEmail.Should().Be(!pending);
     }
 
     [Theory]

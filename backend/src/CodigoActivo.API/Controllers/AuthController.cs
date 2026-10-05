@@ -45,29 +45,24 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Registers a new user account from the validated request.
+    /// Registers a new user account from the validated request. Every valid request answers 204,
+    /// whether or not the email already has an account; the mail sent to the address tells its
+    /// owner how to go on.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getRegistration">Query handler that reads the result of the command.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a register, or an error response.</returns>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
-    [ProducesResponseType<RegisterResponse>(StatusCodes.Status201Created)]
-    public async Task<ActionResult<RegisterResponse>> RegisterAsync(
+    public async Task<ActionResult> RegisterAsync(
         [FromBody] RegisterRequest request,
         [FromServices] RegisterCommandHandler handler,
-        [FromServices] GetRegistrationQueryHandler getRegistration,
         CancellationToken ct
     )
     {
-        return await ToCreatedAfterAsync(
-            await handler.HandleAsync(new RegisterCommand(request), ct),
-            id => getRegistration.HandleAsync(new GetRegistrationQuery(id), ct),
-            id => $"/api/users/{id}"
-        );
+        return ToNoContent(await handler.HandleAsync(new RegisterCommand(request), ct));
     }
 
     /// <summary>
@@ -97,22 +92,48 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the resend verification endpoint for auth.
+    /// Emails a new verification link to the account that waits for verification with the given
+    /// email. It answers 204 for every valid request, so it never tells whether the address has an
+    /// account.
     /// </summary>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
-    [HttpPost("{userId:guid}/resend-verification")]
+    [HttpPost("resend-verification")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> ResendVerificationAsync(
-        Guid userId,
+        [FromBody] ResendVerificationRequest request,
         [FromServices] ResendVerificationCommandHandler handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new ResendVerificationCommand(userId), ct));
+        return ToNoContent(await handler.HandleAsync(new ResendVerificationCommand(request), ct));
+    }
+
+    /// <summary>
+    /// Moves an account to the new email its holder asked for, with the code of the link emailed to
+    /// that address. It needs no session, so the link also works on another device.
+    /// </summary>
+    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpPatch("{userId:guid}/confirm-email")]
+    [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<ActionResult> ConfirmEmailChangeAsync(
+        Guid userId,
+        [FromBody] VerifyRequest request,
+        [FromServices] ConfirmEmailChangeCommandHandler handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(
+            await handler.HandleAsync(new ConfirmEmailChangeCommand(userId, request.Otp), ct)
+        );
     }
 
     /// <summary>

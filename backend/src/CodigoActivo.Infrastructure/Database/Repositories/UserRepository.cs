@@ -37,6 +37,12 @@ public class UserRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
+    public Task<int> CountDependentsAsync(Guid guardianId, CancellationToken ct = default)
+    {
+        return Set.CountAsync(user => user.ParentId == guardianId, ct);
+    }
+
+    /// <inheritdoc />
     public Task<bool> EmailExistsAsync(
         string email,
         Guid? excludeUserId = null,
@@ -75,6 +81,23 @@ public class UserRepository(CodigoActivoDbContext context)
         MarkPersisted(entry.Property(u => u.PasswordFailedAttempts), persisted.Attempts);
         MarkPersisted(entry.Property(u => u.PasswordLockedAt), persisted.LockedAt);
         MarkPersisted(entry.Property(u => u.LoginChallengeId), persisted.ChallengeId);
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> LockAsync(User user, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        FormattableString sql = $"""
+            SELECT id AS "Value" FROM users WHERE id = {user.Id} FOR UPDATE
+            """;
+        if ((await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Count is 0)
+        {
+            return false;
+        }
+
+        await Context.Entry(user).ReloadAsync(ct);
         return true;
     }
 

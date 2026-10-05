@@ -183,24 +183,28 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ResendVerificationQuotaExhaustedReportsTheCooldownWithoutInventingANewCode()
+    public async Task ResendVerificationQuotaExhaustedAnswersAlikeWithoutInventingANewCode()
     {
         var host = ArmedGuard();
         var client = host.CreateClient();
-        var url = $"/api/auth/{TestSeedData.Users.PendingId}/resend-verification";
+        var request = new ResendVerificationRequest(TestSeedData.PendingEmail);
 
         for (var i = 0; i < RecipientBurst; i++)
         {
-            using var allowed = await client.SendWithCsrfAsync(HttpMethod.Post, url, null, Ct);
+            using var allowed = await client.PostJsonAsync(
+                "/api/auth/resend-verification",
+                request,
+                Ct
+            );
             allowed.StatusCode.Should().Be(HttpStatusCode.NoContent);
             Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddMinutes(5);
         }
 
         var issued = Factory.EmailSender.LastOtpSentTo(TestSeedData.PendingEmail);
 
-        using var denied = await client.SendWithCsrfAsync(HttpMethod.Post, url, null, Ct);
+        using var denied = await client.PostJsonAsync("/api/auth/resend-verification", request, Ct);
 
-        await denied.ShouldBeConflictAsync(ErrorCode.OtpResendCooldownActive);
+        denied.StatusCode.Should().Be(HttpStatusCode.NoContent);
         Factory.EmailSender.Sent.Should().HaveCount(RecipientBurst);
         Factory.EmailSender.LastOtpSentTo(TestSeedData.PendingEmail).Should().Be(issued);
     }

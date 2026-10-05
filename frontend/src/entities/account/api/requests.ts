@@ -1,13 +1,14 @@
 import {
   getApiAuthMe,
+  patchApiAuthUserIdConfirmEmail,
   patchApiAuthUserIdResetPassword,
   patchApiAuthUserIdVerify,
   postApiAuthForgotPassword,
   postApiAuthRegister,
+  postApiAuthResendVerification,
   postApiAuthTwoFactorAuthenticatorConfirm,
   postApiAuthTwoFactorAuthenticatorSetup,
   postApiAuthTwoFactorEmail,
-  postApiAuthUserIdResendVerification,
 } from '@/shared/api/generated/endpoints/auth/auth'
 import { postApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
 import {
@@ -42,7 +43,6 @@ import type {
   AccountHistoryEntry,
   AccountProfile,
   AuthenticatorSetup,
-  RegistrationResult,
 } from '../model/types'
 import {
   toAccountCertificate,
@@ -52,7 +52,6 @@ import {
   toAuthenticatorSetup,
   toMinorRequest,
   toRegisterRequest,
-  toRegistrationResult,
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
   toUpdateProfileRequest,
@@ -188,10 +187,13 @@ export async function saveAccountEventRatingRequest(
   await postApiEventsEventIdRating(eventId, toSaveEventRatingRequest(input))
 }
 
-/** Registers an adult together with any minors in one call (`POST /api/auth/register`). */
-export async function registerRequest(input: RegistrationInput): Promise<RegistrationResult> {
-  const response = await postApiAuthRegister(toRegisterRequest(input))
-  return toRegistrationResult(response.data)
+/**
+ * Registers an adult together with any minors in one call (`POST /api/auth/register`). The API
+ * answers alike whether or not the email already has an account, so nothing about the account
+ * comes back; the mail sent to the address tells its owner how to go on.
+ */
+export async function registerRequest(input: RegistrationInput): Promise<void> {
+  await postApiAuthRegister(toRegisterRequest(input))
 }
 
 /** Activates an account with the one-time code from the verification email link. */
@@ -199,9 +201,21 @@ export async function verifyAccountRequest(userId: string, otp: string): Promise
   await patchApiAuthUserIdVerify(userId, { otp })
 }
 
-/** Asks the API to email the user a new account verification link. */
-export async function resendVerificationRequest(userId: string): Promise<void> {
-  await postApiAuthUserIdResendVerification(userId)
+/**
+ * Asks the API to email a new verification link to the account that waits for verification with
+ * `email` (`POST /api/auth/resend-verification`). It succeeds alike whether or not such an account
+ * exists.
+ */
+export async function resendVerificationRequest(email: string): Promise<void> {
+  await postApiAuthResendVerification({ email })
+}
+
+/**
+ * Moves the account to the new email its holder asked for, with the code from the link emailed to
+ * that address (`PATCH /api/auth/{userId}/confirm-email`). It needs no session.
+ */
+export async function confirmEmailChangeRequest(userId: string, code: string): Promise<void> {
+  await patchApiAuthUserIdConfirmEmail(userId, { otp: code })
 }
 
 /** Asks the API (`POST /api/auth/forgot-password`) to email a password reset link. */

@@ -16,7 +16,11 @@ public readonly record struct EmailSendDecision(
 );
 
 /// <summary>
-/// Enforces the configured limits for email send.
+/// Enforces the configured limits for email send. The global budget is tiered: ordinary mail
+/// leaves the credential reserve untouched, and verification and password-reset mail, which anyone
+/// can trigger, leave the part of it kept for second-factor codes, which only a correct password
+/// triggers. Second-factor codes also have budgets of their own per destination, so flooding an
+/// address with other mail never stops its owner from receiving a login code.
 /// </summary>
 /// <param name="options">Configuration values used by the component.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
@@ -26,7 +30,7 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     private const double HoursPerDay = 24;
 
     private readonly Lock gate = new();
-    private readonly Dictionary<string, RecipientState> recipients = new(StringComparer.Ordinal);
+    private readonly Dictionary<RecipientKey, RecipientState> recipients = [];
 
     private Bucket global = Bucket.Full(options.GlobalBurst, clock.UtcNow);
     private DateTimeOffset lastSweepAt = clock.UtcNow;
@@ -58,8 +62,8 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     public EmailSendDecision TryConsume(EmailKind kind, string address)
     {
         var now = clock.UtcNow;
-        var key = NormalizeKey(address);
-        var reserve = IsCredential(kind) ? 0 : options.EffectiveCredentialReserve;
+        var key = new RecipientKey(kind is EmailKind.TwoFactorCode, NormalizeKey(address));
+        var reserve = ReserveFor(kind);
 
         lock (gate)
         {
@@ -160,12 +164,15 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
             || string.Equals(domain, "googlemail.com", StringComparison.Ordinal);
     }
 
-    private static bool IsCredential(EmailKind kind)
+    private int ReserveFor(EmailKind kind)
     {
-        return kind
-            is EmailKind.AccountVerification
-                or EmailKind.PasswordReset
-                or EmailKind.TwoFactorCode;
+        return kind switch
+        {
+            EmailKind.TwoFactorCode => 0,
+            EmailKind.AccountVerification or EmailKind.PasswordReset =>
+                options.EffectiveTwoFactorReserve,
+            _ => options.EffectiveCredentialReserve,
+        };
     }
 
     private EmailSendDecision Denied(EmailLimitScope scope, EmailGuardAlert alert)
@@ -224,7 +231,7 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
 
         lastSweepAt = now;
 
-        List<string>? stale = null;
+        List<RecipientKey>? stale = null;
         foreach (var (key, state) in recipients)
         {
             var hourly = state.Hourly.Refill(now, options.RecipientBurst, options.RecipientPerHour);
@@ -251,6 +258,8 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
             recipients.Remove(key);
         }
     }
+
+    private readonly record struct RecipientKey(bool IsTwoFactorCode, string Address);
 
     private sealed class RecipientState(Bucket hourly, Bucket daily)
     {

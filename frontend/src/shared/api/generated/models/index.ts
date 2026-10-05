@@ -124,7 +124,7 @@ export * from './postApiFilesBody';
 export * from './putApiFilesFileIdBody';
 export * from './registerMinorRequest';
 export * from './registerRequest';
-export * from './registerResponse';
+export * from './resendVerificationRequest';
 export * from './resetPasswordRequest';
 export * from './resetTwoFactorRequest';
 export * from './resourceListItemResponse';

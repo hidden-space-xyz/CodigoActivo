@@ -15,7 +15,9 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     : IAccountEmailComposer
 {
     private const string VerificationPath = "/verify-account";
+    private const string EmailChangePath = "/confirm-email";
     private const string PasswordResetPath = "/reset-password";
+    private const string LoginPath = "/login";
 
     private string SiteUrl => application.BaseUrl.TrimEnd('/');
 
@@ -34,6 +36,36 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
             BuildAccountUrl(VerificationPath, userId, code),
             SiteUrl,
             lifetime
+        );
+    }
+
+    /// <inheritdoc />
+    public EmailMessage EmailChangeConfirmation(
+        EmailRecipient recipient,
+        Guid userId,
+        string code,
+        TimeSpan lifetime
+    )
+    {
+        ArgumentNullException.ThrowIfNull(recipient);
+        return EmailChangeEmail.Create(
+            recipient.Address,
+            recipient.Name,
+            BuildAccountUrl(EmailChangePath, userId, code),
+            SiteUrl,
+            lifetime
+        );
+    }
+
+    /// <inheritdoc />
+    public EmailMessage EmailInUse(EmailRecipient recipient)
+    {
+        ArgumentNullException.ThrowIfNull(recipient);
+        return EmailInUseEmail.Create(
+            recipient.Address,
+            recipient.Name,
+            $"{SiteUrl}{LoginPath}",
+            SiteUrl
         );
     }
 

@@ -107,6 +107,71 @@ public static class AppStrings
     public static string EmailsDetailsScheduleLabel => Get("emails.details.scheduleLabel");
 
     /// <summary>
+    /// Gets the emails email change button label value.
+    /// </summary>
+    public static string EmailsEmailChangeButtonLabel => Get("emails.emailChange.buttonLabel");
+
+    /// <summary>
+    /// Gets the emails email change heading value.
+    /// </summary>
+    public static string EmailsEmailChangeHeading => Get("emails.emailChange.heading");
+
+    /// <summary>
+    /// Gets the emails email change ignore note value.
+    /// </summary>
+    public static string EmailsEmailChangeIgnoreNote => Get("emails.emailChange.ignoreNote");
+
+    /// <summary>
+    /// Gets the emails email change intro html value.
+    /// </summary>
+    public static string EmailsEmailChangeIntroHtml => Get("emails.emailChange.introHtml");
+
+    /// <summary>
+    /// Gets the emails email change intro text value.
+    /// </summary>
+    public static string EmailsEmailChangeIntroText => Get("emails.emailChange.introText");
+
+    /// <summary>
+    /// Gets the emails email change subject value.
+    /// </summary>
+    public static string EmailsEmailChangeSubject => Get("emails.emailChange.subject");
+
+    /// <summary>
+    /// Gets the emails email in use button label value.
+    /// </summary>
+    public static string EmailsEmailInUseButtonLabel => Get("emails.emailInUse.buttonLabel");
+
+    /// <summary>
+    /// Gets the emails email in use heading value.
+    /// </summary>
+    public static string EmailsEmailInUseHeading => Get("emails.emailInUse.heading");
+
+    /// <summary>
+    /// Gets the emails email in use ignore note value.
+    /// </summary>
+    public static string EmailsEmailInUseIgnoreNote => Get("emails.emailInUse.ignoreNote");
+
+    /// <summary>
+    /// Gets the emails email in use intro html value.
+    /// </summary>
+    public static string EmailsEmailInUseIntroHtml => Get("emails.emailInUse.introHtml");
+
+    /// <summary>
+    /// Gets the emails email in use intro text value.
+    /// </summary>
+    public static string EmailsEmailInUseIntroText => Get("emails.emailInUse.introText");
+
+    /// <summary>
+    /// Gets the emails email in use recovery value.
+    /// </summary>
+    public static string EmailsEmailInUseRecovery => Get("emails.emailInUse.recovery");
+
+    /// <summary>
+    /// Gets the emails email in use subject value.
+    /// </summary>
+    public static string EmailsEmailInUseSubject => Get("emails.emailInUse.subject");
+
+    /// <summary>
     /// Gets the emails footer automatic note value.
     /// </summary>
     public static string EmailsFooterAutomaticNote => Get("emails.footer.automaticNote");
@@ -456,6 +521,26 @@ public static class AppStrings
     )
     {
         return Format("emails.details.scheduleSameDay", startDate, startTime, endTime);
+    }
+
+    /// <summary>
+    /// Formats the localized emails email change expiry html text with the supplied values.
+    /// </summary>
+    /// <param name="minutes">The minutes value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsEmailChangeExpiryHtml(int minutes)
+    {
+        return Format("emails.emailChange.expiryHtml", minutes);
+    }
+
+    /// <summary>
+    /// Formats the localized emails email change expiry text text with the supplied values.
+    /// </summary>
+    /// <param name="minutes">The minutes value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsEmailChangeExpiryText(int minutes)
+    {
+        return Format("emails.emailChange.expiryText", minutes);
     }
 
     /// <summary>

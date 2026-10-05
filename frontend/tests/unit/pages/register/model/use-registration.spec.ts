@@ -3,11 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useRegistration } from '@/pages/register/model/use-registration'
 import { createEmptyMinor } from '@/pages/register/model/registration-form'
-import type { RegisterResponse } from '@/shared/api/generated/models'
 
 import { t } from '../../../../support/render'
-import { apiError, http, HttpResponse, server } from '../../../../support/server'
-import { buildUserResponse } from '../../../../support/builders'
+import { apiError, http, noContent, server } from '../../../../support/server'
 import { mountComposable } from '../../../../support/render'
 
 type Registration = ReturnType<typeof useRegistration>
@@ -18,30 +16,26 @@ function useCooldownClock(): void {
   vi.setSystemTime(new Date('2026-09-17T10:00:00Z'))
 }
 
-function serveRegister(response: RegisterResponse) {
+function serveRegister() {
   const bodies: unknown[] = []
   server.use(
     http.post('/api/auth/register', async ({ request }) => {
       bodies.push(await request.json())
-      return HttpResponse.json(response, { status: 201 })
+      return noContent()
     }),
   )
   return bodies
 }
 
-function serveResend(response: () => Response | Promise<Response> = () => ok()) {
-  const userIds: unknown[] = []
+function serveResend(response: () => Response | Promise<Response> = noContent) {
+  const emails: unknown[] = []
   server.use(
-    http.post('/api/auth/:userId/resend-verification', ({ params }) => {
-      userIds.push(params.userId)
+    http.post('/api/auth/resend-verification', async ({ request }) => {
+      emails.push(((await request.json()) as { email: unknown }).email)
       return response()
     }),
   )
-  return userIds
-}
-
-function ok(): Response {
-  return new HttpResponse(null, { status: 204 })
+  return emails
 }
 
 function fillAdult(registration: Registration): void {
@@ -57,8 +51,8 @@ function fillAdult(registration: Registration): void {
   })
 }
 
-async function registerSuccessfully(response: Partial<RegisterResponse> = {}) {
-  serveRegister({ adult: buildUserResponse(), minors: [], ...response })
+async function registerSuccessfully() {
+  serveRegister()
   const mounted = await mountComposable(() => useRegistration(), { attach: true })
   fillAdult(mounted.result)
   mounted.result.confirmAdult()
@@ -89,11 +83,8 @@ describe('useRegistration', () => {
     expect(scrollTo).toHaveBeenCalledTimes(2)
   })
 
-  it('submits the form and shows the success step with the trimmed email and minor count', async () => {
-    const bodies = serveRegister({
-      adult: buildUserResponse({ id: 'adult-1' }),
-      minors: [buildUserResponse({ id: 'minor-1' })],
-    })
+  it('submits the form and shows the success step with the submitted email and minors', async () => {
+    const bodies = serveRegister()
     const { result } = await mountComposable(() => useRegistration())
     fillAdult(result)
     result.form.minors.push({
@@ -113,53 +104,26 @@ describe('useRegistration', () => {
     expect(result.resendCooldown.value).toBe(60)
   })
 
-  it('falls back to the number of minors in the form when the response lists none', async () => {
-    serveRegister({ adult: buildUserResponse({ id: 'adult-1' }), minors: [] })
-    const { result } = await mountComposable(() => useRegistration())
-    fillAdult(result)
-    result.form.minors.push(
-      {
-        ...createEmptyMinor(),
-        firstName: 'A',
-        lastName: 'K',
-        birthDate: '2016-01-01',
-        gender: 'Male',
-      },
-      {
-        ...createEmptyMinor(),
-        firstName: 'B',
-        lastName: 'K',
-        birthDate: '2017-01-01',
-        gender: 'Other',
-      },
-    )
-
-    result.submit()
-    await vi.waitFor(() => expect(result.step.value).toBe('success'))
-
-    expect(result.submittedMinorCount.value).toBe(2)
-  })
-
   it('shows an error notification and stays on the form when registration fails', async () => {
-    server.use(http.post('/api/auth/register', () => apiError(409, 'UserEmailAlreadyInUse')))
+    server.use(http.post('/api/auth/register', () => apiError(400, 'DisposableEmailNotAllowed')))
     const { result } = await mountComposable(() => useRegistration(), { attach: true })
     fillAdult(result)
     result.confirmAdult()
 
     result.submit()
-    await vi.waitFor(() => expect(notificationText()).toContain(t('errors.UserEmailAlreadyInUse')))
+    await vi.waitFor(() =>
+      expect(notificationText()).toContain(t('errors.DisposableEmailNotAllowed')),
+    )
 
     expect(notificationText()).toContain(t('common.error'))
     expect(notificationText()).toContain('trace-123')
     expect(result.step.value).toBe('form')
   })
 
-  it('locks resending for 60 seconds after a registration that needs verification', async () => {
+  it('locks resending for 60 seconds after a registration', async () => {
     useCooldownClock()
-    const userIds = serveResend()
-    const { result } = await registerSuccessfully({
-      adult: buildUserResponse({ id: 'adult-1' }),
-    })
+    const emails = serveResend()
+    const { result } = await registerSuccessfully()
     expect(result.resendCooldown.value).toBe(60)
 
     vi.advanceTimersByTime(1000)
@@ -167,25 +131,23 @@ describe('useRegistration', () => {
 
     result.resend()
     await flushPromises()
-    expect(userIds).toHaveLength(0)
+    expect(emails).toHaveLength(0)
 
     vi.advanceTimersByTime(59_000)
     expect(result.resendCooldown.value).toBe(0)
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('resends the verification email once the cooldown ends and restarts the cooldown', async () => {
+  it('resends the verification email to the submitted address and restarts the cooldown', async () => {
     useCooldownClock()
-    const userIds = serveResend()
-    const { result } = await registerSuccessfully({
-      adult: buildUserResponse({ id: 'adult-1' }),
-    })
+    const emails = serveResend()
+    const { result } = await registerSuccessfully()
     vi.advanceTimersByTime(60_000)
 
     result.resend()
     await vi.waitFor(() => expect(result.resendCooldown.value).toBe(60))
 
-    expect(userIds).toEqual(['adult-1'])
+    expect(emails).toEqual(['ada@example.test'])
     await vi.waitFor(() =>
       expect(notificationText()).toContain(t('entities.account.verification.linkResentDetail')),
     )
@@ -195,49 +157,52 @@ describe('useRegistration', () => {
   it('ignores resend requests while a resend is already in flight', async () => {
     useCooldownClock()
     let release: () => void = () => undefined
-    const userIds = serveResend(
+    const emails = serveResend(
       () =>
         new Promise<Response>((resolve) => {
-          release = () => resolve(ok())
+          release = () => resolve(noContent())
         }),
     )
-    const { result } = await registerSuccessfully({
-      adult: buildUserResponse({ id: 'adult-1' }),
-    })
+    const { result } = await registerSuccessfully()
     vi.advanceTimersByTime(60_000)
 
     result.resend()
     await vi.waitFor(() => expect(result.isResending.value).toBe(true))
-    await vi.waitFor(() => expect(userIds).toHaveLength(1))
+    await vi.waitFor(() => expect(emails).toHaveLength(1))
     result.resend()
     release()
     await vi.waitFor(() => expect(result.isResending.value).toBe(false))
 
-    expect(userIds).toHaveLength(1)
+    expect(emails).toHaveLength(1)
   })
 
   it('reports a failed resend without restarting the cooldown', async () => {
     useCooldownClock()
-    serveResend(() => apiError(429, 'OtpResendCooldownActive'))
-    const { result } = await registerSuccessfully({
-      adult: buildUserResponse({ id: 'adult-1' }),
-    })
+    serveResend(() => apiError(400, 'RequestValidationFailed'))
+    const { result } = await registerSuccessfully()
     vi.advanceTimersByTime(60_000)
 
     result.resend()
     await vi.waitFor(() =>
-      expect(notificationText()).toContain(t('errors.OtpResendCooldownActive')),
+      expect(notificationText()).toContain(t('errors.RequestValidationFailed')),
     )
 
     expect(result.resendCooldown.value).toBe(0)
   })
 
+  it('does not resend before anything was submitted', async () => {
+    const emails = serveResend()
+    const { result } = await mountComposable(() => useRegistration())
+
+    result.resend()
+    await flushPromises()
+
+    expect(emails).toHaveLength(0)
+  })
+
   it('resets the whole flow back to an empty age gate and stops the cooldown', async () => {
     useCooldownClock()
-    const { result } = await registerSuccessfully({
-      adult: buildUserResponse({ id: 'adult-1' }),
-      minors: [buildUserResponse()],
-    })
+    const { result } = await registerSuccessfully()
     expect(vi.getTimerCount()).toBe(1)
 
     result.reset()
@@ -254,9 +219,7 @@ describe('useRegistration', () => {
 
   it('stops the cooldown timer when the component unmounts', async () => {
     useCooldownClock()
-    const { wrapper } = await registerSuccessfully({
-      adult: buildUserResponse({ id: 'adult-1' }),
-    })
+    const { wrapper } = await registerSuccessfully()
     expect(vi.getTimerCount()).toBe(1)
 
     wrapper.unmount()

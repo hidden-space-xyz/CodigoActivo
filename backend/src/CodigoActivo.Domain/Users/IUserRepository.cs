@@ -36,6 +36,14 @@ public interface IUserRepository : IRepository<User>
     public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
 
     /// <summary>
+    /// Counts the dependents a guardian has.
+    /// </summary>
+    /// <param name="guardianId">Identifier of the guardian.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is the number of dependents.</returns>
+    public Task<int> CountDependentsAsync(Guid guardianId, CancellationToken ct = default);
+
+    /// <summary>
     /// Tells whether an account already uses an email address.
     /// </summary>
     /// <param name="email">Normalized email address.</param>
@@ -57,6 +65,17 @@ public interface IUserRepository : IRepository<User>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="false"/> when the account no longer exists.</returns>
     public Task<bool> LockPasswordStateAsync(User user, CancellationToken ct = default);
+
+    /// <summary>
+    /// Locks the stored account until the running transaction ends and reloads it, so concurrent
+    /// changes that depend on its stored state, such as second-factor checks or adding a dependent,
+    /// run one after another and each one sees what the previous one stored. Changes staged on the
+    /// account before the call are discarded.
+    /// </summary>
+    /// <param name="user">Account loaded in the unit of work.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="false"/> when the account no longer exists.</returns>
+    public Task<bool> LockAsync(User user, CancellationToken ct = default);
 
     /// <summary>
     /// Stores the password lockout state of an account right away, without the rest of its staged

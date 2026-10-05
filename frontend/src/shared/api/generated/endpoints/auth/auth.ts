@@ -39,7 +39,7 @@ import type {
   LoginChallengeResponse,
   LoginRequest,
   RegisterRequest,
-  RegisterResponse,
+  ResendVerificationRequest,
   ResetPasswordRequest,
   TwoFactorLoginRequest,
   UserResponse,
@@ -132,12 +132,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiAuthCsrfMutationOptions(options), queryClient);
     }
-    export type postApiAuthRegisterResponse201 = {
-  data: RegisterResponse
-  status: 201
+    export type postApiAuthRegisterResponse200 = {
+  data: void
+  status: 200
 }
 
-export type postApiAuthRegisterResponseSuccess = (postApiAuthRegisterResponse201) & {
+export type postApiAuthRegisterResponseSuccess = (postApiAuthRegisterResponse200) & {
   headers: Headers;
 };
 ;
@@ -332,34 +332,48 @@ export function usePatchApiAuthUserIdVerify<TData = Awaited<ReturnType<typeof pa
 
 
 
-export type postApiAuthUserIdResendVerificationResponse200 = {
+export type postApiAuthResendVerificationResponse200 = {
   data: void
   status: 200
 }
 
-export type postApiAuthUserIdResendVerificationResponseSuccess = (postApiAuthUserIdResendVerificationResponse200) & {
+export type postApiAuthResendVerificationResponseSuccess = (postApiAuthResendVerificationResponse200) & {
   headers: Headers;
 };
 ;
 
-export type postApiAuthUserIdResendVerificationResponse = (postApiAuthUserIdResendVerificationResponseSuccess)
+export type postApiAuthResendVerificationResponse = (postApiAuthResendVerificationResponseSuccess)
 
-export const getPostApiAuthUserIdResendVerificationUrl = (userId: string,) => {
-
-
+export const getPostApiAuthResendVerificationUrl = () => {
 
 
-  return `/api/auth/${userId}/resend-verification`
+
+
+  return `/api/auth/resend-verification`
 }
 
-export const postApiAuthUserIdResendVerification = async (userId: string, options?: Parameters<typeof httpClient>[1]): Promise<postApiAuthUserIdResendVerificationResponse> => {
+export const postApiAuthResendVerification = async (resendVerificationRequest?: ResendVerificationRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiAuthResendVerificationResponse> => {
 
-  return httpClient<postApiAuthUserIdResendVerificationResponse>(getPostApiAuthUserIdResendVerificationUrl(userId),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiAuthResendVerificationResponse>(getPostApiAuthResendVerificationUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(resendVerificationRequest)
   }
 );}
 
@@ -367,42 +381,144 @@ export const postApiAuthUserIdResendVerification = async (userId: string, option
 
 
 
-export const getPostApiAuthUserIdResendVerificationQueryKey = (userId: MaybeRefOrGetter<string>,) => {
+export const getPostApiAuthResendVerificationQueryKey = (resendVerificationRequest?: MaybeRefOrGetter<ResendVerificationRequest>,) => {
     return [
-    'POST', 'api','auth',userId,'resend-verification'
+    'POST', 'api','auth','resend-verification', resendVerificationRequest
     ] as const;
     }
 
 
-export const getPostApiAuthUserIdResendVerificationQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError = unknown>(userId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+export const getPostApiAuthResendVerificationQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError = unknown>(resendVerificationRequest?: MaybeRefOrGetter<ResendVerificationRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  getPostApiAuthUserIdResendVerificationQueryKey(userId);
+  const queryKey =  getPostApiAuthResendVerificationQueryKey(resendVerificationRequest);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>> = ({ signal }) => postApiAuthUserIdResendVerification(toValue(userId), { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthResendVerification>>> = ({ signal }) => postApiAuthResendVerification(toValue(resendVerificationRequest), { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError, TData>
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError, TData>
 }
 
-export type PostApiAuthUserIdResendVerificationQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>>
-export type PostApiAuthUserIdResendVerificationQueryError = unknown
+export type PostApiAuthResendVerificationQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthResendVerification>>>
+export type PostApiAuthResendVerificationQueryError = unknown
 
 
 
-export function usePostApiAuthUserIdResendVerification<TData = Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthUserIdResendVerification>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+export function usePostApiAuthResendVerification<TData = Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError = unknown>(
+ resendVerificationRequest?: MaybeRefOrGetter<ResendVerificationRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPostApiAuthUserIdResendVerificationQueryOptions(userId,options)
+  const queryOptions = getPostApiAuthResendVerificationQueryOptions(resendVerificationRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type patchApiAuthUserIdConfirmEmailResponse200 = {
+  data: void
+  status: 200
+}
+
+export type patchApiAuthUserIdConfirmEmailResponseSuccess = (patchApiAuthUserIdConfirmEmailResponse200) & {
+  headers: Headers;
+};
+;
+
+export type patchApiAuthUserIdConfirmEmailResponse = (patchApiAuthUserIdConfirmEmailResponseSuccess)
+
+export const getPatchApiAuthUserIdConfirmEmailUrl = (userId: string,) => {
+
+
+
+
+  return `/api/auth/${userId}/confirm-email`
+}
+
+export const patchApiAuthUserIdConfirmEmail = async (userId: string,
+    verifyRequest?: VerifyRequest, options?: Parameters<typeof httpClient>[1]): Promise<patchApiAuthUserIdConfirmEmailResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<patchApiAuthUserIdConfirmEmailResponse>(getPatchApiAuthUserIdConfirmEmailUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(verifyRequest)
+  }
+);}
+
+
+
+
+
+export const getPatchApiAuthUserIdConfirmEmailQueryKey = (userId: MaybeRefOrGetter<string>,
+    verifyRequest?: MaybeRefOrGetter<VerifyRequest>,) => {
+    return [
+    'PATCH', 'api','auth',userId,'confirm-email', verifyRequest
+    ] as const;
+    }
+
+
+export const getPatchApiAuthUserIdConfirmEmailQueryOptions = <TData = Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
+    verifyRequest?: MaybeRefOrGetter<VerifyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPatchApiAuthUserIdConfirmEmailQueryKey(userId,verifyRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>> = ({ signal }) => patchApiAuthUserIdConfirmEmail(toValue(userId),toValue(verifyRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError, TData>
+}
+
+export type PatchApiAuthUserIdConfirmEmailQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>>
+export type PatchApiAuthUserIdConfirmEmailQueryError = unknown
+
+
+
+export function usePatchApiAuthUserIdConfirmEmail<TData = Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError = unknown>(
+ userId: MaybeRefOrGetter<string>,
+    verifyRequest?: MaybeRefOrGetter<VerifyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPatchApiAuthUserIdConfirmEmailQueryOptions(userId,verifyRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

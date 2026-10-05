@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Validation;
-using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Contracts;
@@ -96,7 +95,7 @@ public record RegisterRequest(
     [Required] [MaxLength(12)] [NotBlank] [SpanishNationalId] string NationalId,
     [EnumDataType(typeof(Gender))] Gender Gender,
     bool PromotionalConsent,
-    [MaxLength(20)] IReadOnlyList<RegisterMinorRequest>? Minors,
+    [MaxLength(Household.MaxDependents)] IReadOnlyList<RegisterMinorRequest>? Minors,
     [MaxLength(40)] string? SecondaryPhone = null
 );
 
@@ -115,13 +114,6 @@ public record RegisterMinorRequest(
 );
 
 /// <summary>
-/// Contains the register data returned by the API.
-/// </summary>
-/// <param name="Adult">The adult value, pending until the emailed verification link is opened.</param>
-/// <param name="Minors">The minors value.</param>
-public record RegisterResponse(UserResponse Adult, IReadOnlyList<UserResponse> Minors);
-
-/// <summary>
 /// Contains the client-supplied data used to verify.
 /// </summary>
 /// <param name="Otp">The otp value.</param>
@@ -132,6 +124,12 @@ public record VerifyRequest([Required] [MaxLength(128)] [NotBlank] string Otp);
 /// </summary>
 /// <param name="Email">Email address to validate or locate.</param>
 public record ForgotPasswordRequest([Required] [EmailAddress] [MaxLength(256)] string Email);
+
+/// <summary>
+/// Contains the client-supplied data used to send a new verification link.
+/// </summary>
+/// <param name="Email">Email of the account that waits for verification.</param>
+public record ResendVerificationRequest([Required] [EmailAddress] [MaxLength(256)] string Email);
 
 /// <summary>
 /// Contains the client-supplied data used to reset password.

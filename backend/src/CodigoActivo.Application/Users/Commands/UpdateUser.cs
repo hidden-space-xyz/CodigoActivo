@@ -29,6 +29,7 @@ public sealed record UpdateUserCommand(Guid UserId, Guid ActingUserId, UpdateUse
 /// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 /// <param name="disposableEmails">Checker that refuses addresses of disposable email providers.</param>
+/// <param name="emailChangeLinks">Issuer of the links that confirm a new email.</param>
 public sealed class UpdateUserCommandHandler(
     IUserRepository users,
     PasswordAttemptGuard passwordAttempts,
@@ -36,7 +37,8 @@ public sealed class UpdateUserCommandHandler(
     IUnitOfWork uow,
     ICacheInvalidator cacheInvalidator,
     AccountSecurityNotifier securityNotifier,
-    DisposableEmailChecker disposableEmails
+    DisposableEmailChecker disposableEmails,
+    EmailChangeLinkIssuer emailChangeLinks
 ) : ICommandHandler<UpdateUserCommand, Result>
 {
     /// <summary>
@@ -48,8 +50,12 @@ public sealed class UpdateUserCommandHandler(
     /// caller, so a hijacked session alone cannot take the account over or redirect its contact
     /// details; the DNI or NIE needs no password. A new email is refused when it belongs to a
     /// disposable email provider, while an unchanged one is kept even if its domain was listed
-    /// later. Dependents are created only through <c>POST /api/users/{id}/children</c>, and they
-    /// leave their guardian only when the guardian deletes them.
+    /// later. Holders who change their own email keep the stored one until they confirm the link
+    /// emailed to the new address, are never told whether that address has an account, and change
+    /// nothing when the mail cannot be sent; an administrator editing someone else's account
+    /// replaces it at once, or is told the address is in use. Dependents are created only through
+    /// <c>POST /api/users/{id}/children</c>, and they leave their guardian only when the guardian
+    /// deletes them.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -98,23 +104,40 @@ public sealed class UpdateUserCommandHandler(
             return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        if (change.Email is { } email && await users.EmailExistsAsync(email, command.UserId, ct))
+        var ownEmailChange = change.NewEmail is not null && command.UserId == command.ActingUserId;
+        if (
+            !ownEmailChange
+            && change.Email is { } email
+            && await users.EmailExistsAsync(email, command.UserId, ct)
+        )
         {
             return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
         }
 
         var previousEmail = user.Email;
-        user.ApplyProfileChange(change, clock.UtcNow);
+        if (ownEmailChange)
+        {
+            var issued = await emailChangeLinks.IssueAsync(user, change, clock.UtcNow, ct);
+            if (issued.IsFailure)
+            {
+                return issued.Error!;
+            }
+        }
+        else
+        {
+            user.ApplyProfileChange(change, clock.UtcNow);
+        }
 
         await uow.SaveChangesAsync(ct);
         await cacheInvalidator.InvalidateAsync(CacheTags.Users);
 
-        if (change.ReplacesContact && previousEmail is not null)
+        var replacedEmail = ownEmailChange ? null : change.NewEmail;
+        if ((replacedEmail is not null || change.ReplacesPhones) && previousEmail is not null)
         {
             await securityNotifier.NotifyIdentifiersChangedAsync(
                 previousEmail,
                 user.FirstName,
-                change.NewEmail,
+                replacedEmail,
                 change.ReplacesPhones,
                 ct
             );

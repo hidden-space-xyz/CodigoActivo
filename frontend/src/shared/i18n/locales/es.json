@@ -102,6 +102,9 @@
       "verifyAccount": {
         "title": "Verificar cuenta"
       },
+      "confirmEmail": {
+        "title": "Confirmar correo"
+      },
       "loginTwoFactor": {
         "title": "Verificación en dos pasos"
       },
@@ -256,6 +259,7 @@
     "UserBirthDateNotAllowedForAdult": "Una cuenta propia no guarda fecha de nacimiento: solo la tienen los menores a cargo de un responsable.",
     "UserChildBirthDateRequired": "Debes indicar la fecha de nacimiento del menor.",
     "UserParentReassignmentForbidden": "No puedes reasignar esta persona a cargo a otro responsable.",
+    "UserChildLimitReached": "Has alcanzado el máximo de 20 menores a cargo.",
     "UserContactInfoRequired": "Debes indicar al menos un dato de contacto.",
     "UserNationalIdRequired": "Debes indicar el DNI o NIE.",
     "UserEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
@@ -268,7 +272,6 @@
     "UserAccountPendingVerification": "Tu cuenta aún no ha sido verificada.",
     "CurrentUserNotFound": "No se encontró el usuario de la sesión actual.",
     "OtpInvalidOrExpired": "El enlace de verificación no es válido o ha expirado.",
-    "OtpResendNotAllowed": "No se puede reenviar el correo de verificación para esta cuenta.",
     "OtpResendCooldownActive": "Espera un momento antes de solicitar un nuevo enlace.",
     "PasswordResetInvalidOrExpired": "El enlace para restablecer la contraseña no es válido o ha caducado. Solicita uno nuevo.",
     "TwoFactorCodeInvalid": "El código no es válido o ha caducado.",
@@ -278,6 +281,7 @@
     "TwoFactorResendCooldownActive": "Espera un momento antes de solicitar otro código.",
     "AuthenticatorSetupExpired": "La configuración de la aplicación ha caducado. Vuelve a empezar.",
     "AuthenticatorNotEnabled": "No tienes una aplicación de autenticación configurada.",
+    "AuthenticatorAlreadyEnabled": "Ya usas una aplicación de autenticación. Para cambiarla, vuelve primero a la verificación por correo.",
     "EmailNoRecipients": "Ningún destinatario con correo coincide con los filtros actuales.",
     "EmailRecipientWithoutAddress": "Esta persona no tiene correo electrónico, así que no se le puede escribir.",
     "EmailTooManyRecipients": "Hay demasiados destinatarios para un solo envío. Afina los filtros e inténtalo de nuevo.",
@@ -550,7 +554,7 @@
         "changePassword": "Cambiar contraseña",
         "editDialogHeader": "Editar mis datos",
         "contactChange": {
-          "message": "Con el correo inicias sesión y recibes los códigos de verificación. Para cambiarlo, o cambiar tus teléfonos, confirma por seguridad tu contraseña actual.",
+          "message": "Con el correo inicias sesión y recibes los códigos de verificación. Para cambiarlo, o cambiar tus teléfonos, confirma por seguridad tu contraseña actual. Un correo nuevo solo se usará cuando abras el enlace que te enviaremos a esa dirección.",
           "passwordLabel": "Tu contraseña actual",
           "passwordRequired": "Introduce tu contraseña actual."
         },
@@ -560,6 +564,8 @@
         "passwordChangeFailed": "No se pudo cambiar. Revisa tu contraseña actual.",
         "savedDetail": "Tu información se ha guardado.",
         "savedSummary": "Datos actualizados",
+        "emailChangeSentDetail": "Te hemos enviado un correo a {email}. Tu correo no cambiará hasta que lo confirmes desde ese mensaje.",
+        "emailChangeSentSummary": "Revisa tu nuevo correo",
         "passwordUpdatedDetail": "Por seguridad hemos cerrado todas tus sesiones. Inicia sesión con la nueva contraseña.",
         "passwordUpdatedSummary": "Contraseña cambiada"
       },
@@ -805,6 +811,7 @@
         "birthDateWithAge": "{formatted} ({age})",
         "toasts": {
           "updated": "Usuario actualizado.",
+          "emailChangeSent": "Usuario actualizado. Te hemos enviado un correo a {email}: tu correo no cambiará hasta que lo confirmes desde ese mensaje.",
           "deleted": "Usuario eliminado.",
           "typeUpdated": "Tipo de usuario actualizado.",
           "adminGranted": "Administrador concedido.",
@@ -1300,14 +1307,14 @@
         "submit": "Completar registro"
       },
       "success": {
-        "title": "¡Registro completado!",
-        "minorsEnrolledBefore": "También has inscrito a",
+        "title": "¡Ya casi está!",
+        "minorsEnrolledBefore": "Cuando actives tu cuenta, tendrás",
         "minorsEnrolled": "{n} menor | {n} menores",
         "minorsEnrolledAfter": "a tu cargo.",
         "thanks": "Gracias por unirte a Código Activo.",
         "reminder": "Cuando actives tu cuenta podrás apuntarte, junto a los menores a tu cargo, a cualquier evento desde la sección de eventos.",
-        "verifyIntroBefore": "Te hemos enviado un correo electrónico de verificación a",
-        "verifyIntroAfter": ". Pulsa el enlace del mensaje para activar tu cuenta.",
+        "verifyIntroBefore": "Te hemos enviado un correo a",
+        "verifyIntroAfter": ". Sigue sus indicaciones para activar tu cuenta.",
         "resendPrompt": "¿No has recibido el correo? Revisa la carpeta de spam o",
         "resendCountdown": "reenviar el correo ({s}s)",
         "resend": "reenviar el correo",
@@ -1346,10 +1353,19 @@
       "successText": "Tu cuenta ha sido activada correctamente. Ya puedes iniciar sesión.",
       "errorTitle": "No hemos podido verificar tu cuenta",
       "defaultError": "El enlace de verificación no es válido o ha caducado.",
-      "hint": "Si el enlace ha caducado, pídenos un enlace nuevo y te lo enviaremos por correo.",
+      "hint": "Si el enlace ha caducado o no está completo, escribe tu correo y te enviaremos uno nuevo.",
       "resend": "Enviarme un enlace nuevo",
-      "incompleteLink": "El enlace de verificación no es válido o está incompleto.",
-      "incompleteHint": "Abre el enlace directamente desde el correo de verificación. Si lo copias, asegúrate de copiarlo entero."
+      "incompleteLink": "El enlace de verificación no es válido o está incompleto."
+    },
+    "confirmEmail": {
+      "eyebrow": "// correo",
+      "title": "Confirma tu nuevo correo",
+      "confirming": "Estamos confirmando tu nuevo correo…",
+      "successTitle": "¡Correo actualizado!",
+      "successText": "Tu cuenta ya usa esta dirección. Hemos avisado del cambio a la anterior.",
+      "errorTitle": "No hemos podido confirmar el correo",
+      "incompleteLink": "El enlace de confirmación no es válido o está incompleto.",
+      "hint": "Si el enlace ha caducado, vuelve a cambiar el correo desde «Mi cuenta» y te enviaremos uno nuevo."
     },
     "home": {
       "hero": {
@@ -1658,8 +1674,8 @@
     },
     "account": {
       "verification": {
-        "linkResentDetail": "Te hemos enviado un nuevo enlace de verificación. Revisa tu correo.",
-        "linkResentSummary": "Correo reenviado"
+        "linkResentDetail": "Si tu cuenta sigue pendiente de activar, te hemos enviado un enlace nuevo.",
+        "linkResentSummary": "Revisa tu correo"
       }
     }
   }

@@ -407,6 +407,17 @@ describe('normalizeLink', () => {
       expect(normalizeLink(href)).toBeNull()
     }
   })
+
+  it('refuses control characters that browsers drop to reach another host', () => {
+    for (const href of [
+      '/\t/evil.test',
+      '/\n\\evil.test',
+      'java\tscript:alert(1)',
+      `/eventos${String.fromCharCode(0x7f)}`,
+    ]) {
+      expect(normalizeLink(href, false)).toBeNull()
+    }
+  })
 })
 
 describe('cleanRichText', () => {

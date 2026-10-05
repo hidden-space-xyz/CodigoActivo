@@ -6,8 +6,8 @@ namespace CodigoActivo.Domain.Users;
 /// of a dependent, every activity signup of the household and the terms decisions behind them,
 /// grouped by event because terms are decided per event and recorded for the acting guardian.
 /// Catalog values, titles and document texts are copied by value, since the rows they come from
-/// may change or disappear later. Credentials, one-time codes, authenticator secrets and lockout
-/// counters are never copied.
+/// may change or disappear later. Credentials, one-time codes, unconfirmed email changes,
+/// authenticator secrets and lockout counters are never copied.
 /// </summary>
 /// <param name="Deletion">Who erased the account.</param>
 /// <param name="Account">The erased account.</param>
@@ -25,13 +25,17 @@ public sealed record LegalCopy(
 )
 {
     /// <summary>
-    /// Gets the <see cref="User"/> properties never copied: credentials, one-time codes,
-    /// authenticator secrets, the open login challenge and lockout state. Every other property is
-    /// a member of <see cref="LegalCopyPerson"/>.
+    /// Gets the <see cref="User"/> properties never copied: credentials, one-time codes and the
+    /// unconfirmed email change one of them confirms, authenticator secrets, the open login
+    /// challenge and lockout state. Every other property is a member of
+    /// <see cref="LegalCopyPerson"/>.
     /// </summary>
     public static IReadOnlyList<string> ExcludedUserProperties { get; } =
     [
         nameof(User.PasswordHash),
+        nameof(User.PendingEmail),
+        nameof(User.EmailChangeCodeHash),
+        nameof(User.EmailChangeExpiresAt),
         nameof(User.OtpCodeHash),
         nameof(User.OtpExpiresAt),
         nameof(User.OtpLastSentAt),

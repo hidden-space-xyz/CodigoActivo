@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -13,8 +14,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to resend verification.
 /// </summary>
-/// <param name="UserId">Identifier of the user.</param>
-public sealed record ResendVerificationCommand(Guid UserId) : ICommand<Result>;
+/// <param name="Request">Validated client request data.</param>
+public sealed record ResendVerificationCommand(ResendVerificationRequest Request)
+    : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to resend verification.
@@ -37,51 +39,48 @@ public sealed class ResendVerificationCommandHandler(
 ) : ICommandHandler<ResendVerificationCommand, Result>
 {
     /// <summary>
-    /// Handles the request to resend verification.
+    /// Handles the request to resend verification. A new link reaches the address only when it
+    /// belongs to an account waiting for verification whose last link is older than the resend
+    /// cooldown; every request succeeds alike and hashes a code first, so neither the answer nor
+    /// its timing tells whether the address has an account.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>A task whose result always reports success.</returns>
     public async Task<Result> HandleAsync(
         ResendVerificationCommand command,
         CancellationToken ct = default
     )
     {
-        var user = await users.GetByIdAsync(command.UserId, ct);
-        if (user is null)
-        {
-            return Error.NotFound(ErrorCode.UserNotFound);
-        }
-
-        if (!user.IsPendingVerification || string.IsNullOrWhiteSpace(user.Email))
-        {
-            return Error.Conflict(ErrorCode.OtpResendNotAllowed);
-        }
-
-        var now = clock.UtcNow;
-        if (user.IsOtpResendCoolingDown(now, verification.ResendCooldown))
-        {
-            return Error.Conflict(ErrorCode.OtpResendCooldownActive);
-        }
-
         var otpCode = AccountTokens.Create();
+        var otpCodeHash = hasher.Hash(otpCode);
+        var email = command.Request.Email.NormalizeEmailOrNull();
+        var user = email is null ? null : await users.GetByEmailAsync(email, ct);
+        var now = clock.UtcNow;
+        if (
+            user is not { IsPendingVerification: true }
+            || user.IsOtpResendCoolingDown(now, verification.ResendCooldown)
+        )
+        {
+            return Result.Success();
+        }
+
         try
         {
             await accountEmails.SendVerificationEmailAsync(user, otpCode, ct);
         }
         catch (EmailRateLimitedException)
         {
-            return Error.Conflict(ErrorCode.OtpResendCooldownActive);
+            return Result.Success();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.EmailSendFailed(EmailKind.AccountVerification, ex);
-            return Error.Conflict(ErrorCode.EmailSendFailed);
+            return Result.Success();
         }
 
-        user.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
+        user.IssueOtp(otpCodeHash, now, verification.OtpLifetime);
         await uow.SaveChangesAsync(ct);
-
         return Result.Success();
     }
 }

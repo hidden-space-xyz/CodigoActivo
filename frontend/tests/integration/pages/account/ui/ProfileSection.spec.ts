@@ -124,7 +124,7 @@ describe('ProfileSection', () => {
     expect(wrapper.text()).not.toContain(t('common.loading'))
   })
 
-  it('edits the profile with trimmed values, confirms and closes the dialog', async () => {
+  it('edits the profile with trimmed values, says a new email awaits its link and closes the dialog', async () => {
     let meRequests = 0
     server.use(
       http.get('/api/auth/me', () => {
@@ -190,9 +190,12 @@ describe('ProfileSection', () => {
       },
     })
     await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
-    expect(notificationTexts().join()).toContain(t('pages.account.profile.savedSummary'))
-    expect(notificationTexts().join()).toContain(t('pages.account.profile.savedDetail'))
+    expect(notificationTexts().join()).toContain(t('pages.account.profile.emailChangeSentSummary'))
+    expect(notificationTexts().join()).toContain(
+      t('pages.account.profile.emailChangeSentDetail', { email: 'augusta@example.test' }),
+    )
     expect(infoRows()[t('common.name')]).toBe('Augusta Lovelace')
+    expect(infoRows()[t('common.email')]).toBe('ada@example.test')
     await vi.waitFor(() => expect(meRequests).toBe(2))
   })
 
@@ -250,6 +253,10 @@ describe('ProfileSection', () => {
 
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({ secondaryPhone: null, currentPassword: 'old-password' })
+    await vi.waitFor(() =>
+      expect(notificationTexts().join()).toContain(t('pages.account.profile.savedDetail')),
+    )
+    expect(notificationTexts().join()).toContain(t('pages.account.profile.savedSummary'))
   })
 
   it('refuses a secondary phone equal to the phone', async () => {

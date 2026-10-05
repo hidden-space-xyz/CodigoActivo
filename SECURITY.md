@@ -23,12 +23,12 @@ authentication are not supported.
   every expired row on the `SessionCleanup:IntervalMinutes` schedule. The row carries the expiry that decides
   access: refreshing the claims re-issues the cookie with a later expiry, so a cookie can outlive its row,
   and the ticket is rejected as soon as the row is missing or expired.
-- Every authenticated request revalidates account status, password fingerprint, administrator flag and the
-  `sid` row in one query, and rejects the ticket when any of them is missing or expired. Blocking or demoting
-  a user takes effect on existing sessions; changing or resetting the password invalidates them and deletes
-  that user's session rows. When the API answers `AuthenticationRequired` or `CurrentUserNotFound` to a
-  signed-in SPA, or right after the user changes their password, the SPA drops its cached session and data
-  and sends protected pages back to login.
+- Every authenticated request revalidates account status, password lock, password fingerprint, administrator
+  flag and the `sid` row in one query, and rejects the ticket when any of them is missing or expired.
+  Blocking or demoting a user takes effect on existing sessions; changing or resetting the password
+  invalidates them and deletes that user's session rows. When the API answers `AuthenticationRequired` or
+  `CurrentUserNotFound` to a signed-in SPA, or right after the user changes their password, the SPA drops its
+  cached session and data and sends protected pages back to login.
 - `POST /api/auth/logout` deletes the row of the presented session before clearing the cookies, so a copy of
   that cookie stops working immediately instead of lasting until its expiry. It is idempotent: it asks for no
   valid session, only the CSRF token, and always answers 204 after clearing the session and challenge
@@ -50,10 +50,14 @@ authentication are not supported.
   the optional secondary phone are not unique, so no route checks them against other accounts and neither
   registration nor profile updates reveal whether someone else uses them; the secondary phone only has to
   differ from the same account's phone (`SecondaryPhoneSameAsPrimary`). `POST /api/auth/login` resolves the account by email only.
-- **Known limitation**: `POST /api/auth/register` accepts anonymous requests, so an attacker who knows
-  someone else's email can register with it; the account is created pending verification and the email
-  stays reserved until an administrator deletes it. The 409 (`UserEmailAlreadyInUse`) also lets a
-  caller probe whether a given email is already registered.
+- No anonymous route tells whether an email has an account. `POST /api/auth/register` answers 204 to every
+  valid request: a new address gets the verification link; an address whose account was verified gets a
+  notice instead, saying that it already has an account and that nothing changed, and nothing is created;
+  an address held by an account nobody verified gets the link of a new account that replaces it, erased
+  with its blocked copy, so registering someone else's email reserves nothing. The notice is budgeted as the
+  verification mail it replaces. `POST /api/auth/resend-verification` (by email) and `forgot-password` also
+  answer 204 alike. All three hash their password or code before looking the address up, so every outcome
+  costs the same Argon2 work. Unverified accounts are never purged on a schedule.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns
   `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password. Public registration never
@@ -66,8 +70,15 @@ authentication are not supported.
   password whenever the update would replace the account's email, phone or secondary phone. A missing or
   wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three
   untouched need none.
-  Changing the DNI/NIE needs no password. Only a different email can be refused as already in use
-  (`UserEmailAlreadyInUse`). A new address is stored as given and is not confirmed by an emailed code. The stored account,
+  Changing the DNI/NIE needs no password. Holders who change their own email, administrators included, keep
+  the current one until they open the link emailed to the new address (`PATCH /api/auth/{id}/confirm-email`,
+  no session needed): the rest of the edit applies at once, nothing changes when the mail cannot be queued
+  (`OtpResendCooldownActive`, `EmailSendFailed`), and a newer request replaces the pending one. When the new
+  address belongs to a verified account, its holder gets the same notice as registration instead of the link,
+  so the answer never tells whether the address is in use; an account nobody verified that holds it is
+  erased, with its blocked copy, when the link is confirmed, and one verified in the meantime keeps it
+  (`UserEmailAlreadyInUse`). An administrator who changes someone else's email replaces it at once, drops any
+  pending change and is told when the address is in use (`UserEmailAlreadyInUse`). The stored account,
   never the request, decides the rest: an account that is not already a dependent is refused a guardian
   (`UserParentNotAllowedForAdult`) and any birth date (`UserBirthDateNotAllowedForAdult`), must supply a
   DNI/NIE (`UserNationalIdRequired`) and may set `promotionalConsent`,
@@ -78,8 +89,9 @@ authentication are not supported.
   birth date, and never stores a DNI/NIE or promotional consent; turning 18 changes nothing about the
   account itself, which keeps the `Dependent` status and no password, so it still cannot log in
   (`UserAccountIsDependent`) and `forgot-password` still ignores it. Dependents are created only through
-  `POST /api/users/{id}/children`, must be minors at creation, and leave their guardian only when the
-  guardian deletes them.
+  `POST /api/users/{id}/children`, must be minors at creation, are at most 20 per guardian, counted with the
+  guardian's row locked (`UserChildLimitReached`), and leave their guardian only when the guardian deletes
+  them. A household signup list holds at most 21 people.
 
 ### Two-factor authentication
 
@@ -105,11 +117,15 @@ Each user chooses one second factor from their account:
   drift) via Otp.NET; the project implements no cryptographic algorithm itself. Enrollment starts with the
   user's password, stores the shared secret encrypted with ASP.NET Data Protection, and only activates once
   the first code is confirmed; an unconfirmed enrollment expires after 15 minutes. Each accepted time step is
-  remembered so a code cannot be replayed. Returning to email requires the password and a current code.
+  remembered so a code cannot be replayed. Returning to email requires the password and a current code, and
+  an account that already uses an authenticator cannot enroll another one (`AuthenticatorAlreadyEnabled`)
+  until it returns to email, so a session and the password alone cannot replace it.
 
 Wrong codes are counted per account across logins and authenticator removal: after five failures the second
-factor locks for 15 minutes (`TwoFactorLocked`). A successful code resets the counter. Enrollment URIs and
-shared keys are only returned to the authenticated owner over HTTPS and never logged.
+factor locks for 15 minutes (`TwoFactorLocked`). A successful code resets the counter. Every code check runs
+with the account row locked and reloaded, so parallel attempts are counted one by one and an emailed code or
+a time step is accepted only once. Enrollment URIs and shared keys are only returned to the authenticated
+owner over HTTPS and never logged.
 
 **Account deletion**: erasing one's own account requires the current password **and** the second factor on
 `POST /api/me/deletion` (email code via `POST /api/me/deletion/code`, sharing storage/lifetime/cooldown with
@@ -123,9 +139,10 @@ without re-entering a password, as with any other user. Every deletion credits t
 instead of the household as author, last editor or uploader of events, activities, news, partners, resources
 and files, in the same transaction; the original credit is not kept anywhere.
 
-**Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's
-or a guardian's — first stores one JSON copy in `deleted_accounts` (`id` is the former user id with no
-foreign key, `deleted_at`, `data` as `jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
+**Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's,
+a guardian's, or that of an unverified account whose email another account claims — first stores one JSON
+copy in `deleted_accounts` (`id` is the former user id with no foreign key, `deleted_at`, `data` as
+`jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
 their minors and the household's assignments and terms decisions, and then deletes them; a failed deletion
 keeps no copy, a concurrent signup, status change or cancellation cannot slip in between, and an erasure that
 PostgreSQL aborts to resolve a deadlock is retried up to three times. The copy holds the personal data of the
@@ -133,9 +150,10 @@ account and each minor, the guardian's identification when
 a minor is deleted alone, every assignment of the household with activity, event, role, status and signup
 time, every terms decision (accepted or rejected) of the household — or the guardian's for the minor's
 events — with each document's text as it stood at deletion (documents are not versioned), and who asked
-for the deletion. It never holds password or code hashes, authenticator secrets, the login challenge,
-lockout counters or sessions. Nothing in the application reads the table: the data is plain JSON protected
-only by database access. The `DeletedAccountPurger` hosted service runs `PurgeDeletedAccounts`, which deletes
+for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
+secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
+data is plain JSON protected only by database access. The `DeletedAccountPurger` hosted service runs
+`PurgeDeletedAccounts`, which deletes
 each copy two years after `deleted_at`, 30 seconds after startup and then hourly. Users are deleted only
 through `AccountEraser`, and `DeletedAccountGuard` refuses any commit that deletes the initial administrator,
 deletes a user without its copy or changes a stored copy.
@@ -155,7 +173,8 @@ need the same administrator reset.
 ### Passwords and credential endpoints
 
 Passwords require 12–128 characters and are hashed with Argon2id, never stored or logged in plaintext. Login
-performs fallback Argon2 work for unknown identifiers to reduce timing differences.
+performs fallback Argon2 work for unknown identifiers, and registration, verification resend and password
+recovery hash before looking the address up, to reduce timing differences.
 
 Five consecutive wrong passwords for the same account — counted together by `PasswordAttemptGuard` across the
 login password step and every route that asks the caller to re-enter their own password — lock the account,
@@ -165,12 +184,13 @@ Argon2 work, and only a completed password reset lifts it: `forgot-password` kee
 administrator's second-factor reset does not unlock. The accepted trade-off is that anyone who knows an
 account's email can lock it, so recovery depends on the owner's mailbox.
 
-Credential routes (both login steps and code resend, registration, verification, password recovery/change,
-authenticator enrollment/removal, administrator grants, second-factor resets, user updates and the two
-self-service account-deletion steps) have layered controls:
+Credential routes (both login steps and code resend, registration, verification, email-change confirmation,
+password recovery/change, authenticator enrollment/removal, administrator grants, second-factor resets, user
+updates and the two self-service account-deletion steps) have layered controls:
 
-- nginx caps `login`, `register`, `forgot-password`, `/api/auth/{id}/(verify|resend-verification|reset-password)`
-  and `/api/users/{id}/(password|admin)` at 10 requests/second per client IP, burst 100; the remaining
+- nginx caps `login`, `register`, `forgot-password`, `resend-verification`,
+  `/api/auth/{id}/(verify|reset-password|confirm-email)` and
+  `/api/users/{id}/(password|admin)` at 10 requests/second per client IP, burst 100; the remaining
   credential routes (two-factor login/resend/authenticator/email, `users/{id}`,
   `users/{id}/two-factor/reset`, `me/deletion*`) rely only on nginx's general 200 requests/second limit and
   the API controls below.
@@ -188,14 +208,17 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
 
 - DataAnnotations and custom attributes validate request models. JSON bodies accept enum values only by
   their declared name, never as integers, and enums bound from the query string reject undefined values.
+- A list `sort` parameter keeps only the first occurrence of each known key, so a request cannot grow the
+  query EF Core translates recursively.
 - Expected failures use a string `ErrorCode`; all failures return
   `ApiErrorResponse(Title, Status, Code, TraceId)` without stack traces or internal details.
 - User-supplied links allow only absolute HTTP(S) URLs without embedded credentials.
 - Rich-text JSON (`[RichText]`, `RichTextAllowlist`) may only use the editor's nodes, marks and attributes,
   at most 50 levels deep and 5,000 nodes. Its links may point to absolute HTTP(S) URLs without credentials,
   `mailto:`, `tel:`, root-relative paths (never `//` or `/\`, which browsers read as another host) and
-  fragments; embedded images may only reference this application's UUID-based file endpoint; colors are hex
-  or `rgb()`/`rgba()`. The editor saves only what the API accepts and the SPA renders through the same
+  fragments, and never contain control characters, which browsers drop (`/<tab>/host` is another host);
+  embedded images may only reference this application's UUID-based file endpoint; colors are hex or
+  `rgb()`/`rgba()`. The editor saves only what the API accepts and the SPA renders through the same
   allowlist. Terms documents are text only: their editor has no image option and drops images from loaded
   or pasted content, and the API refuses a description with an image node (`RequestValidationFailed`).
 - User-controlled values inserted into email templates are HTML-encoded; administrator-authored bodies are
@@ -204,13 +227,16 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
 ### Transport and proxy trust
 
 In Production the API accepts one forwarded hop, redirects HTTP to HTTPS and emits secure cookies.
-`X-Forwarded-For`/`X-Forwarded-Proto` are honoured only from loopback and private ranges (`127.0.0.0/8`,
-`::1/128`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`); other peers are ignored. nginx applies
-no peer filtering of its own: it normalizes whatever `X-Forwarded-Proto` it receives before forwarding it to
-the API — only an exact `https` value (case-insensitive) counts; any other value, a comma-separated list such
-as `https, http`, or a missing header become `http` — so the external TLS proxy must overwrite the header
-rather than append to it. The base
-Compose file keeps `api` and `db` off host ports but publishes nginx as `8080:8080` on all interfaces. The
+`X-Forwarded-For`/`X-Forwarded-Proto` are honoured only from IPv4 loopback and private ranges (`127.0.0.0/8`,
+`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`); other peers are ignored. nginx applies no peer filtering of
+its own: it normalizes whatever `X-Forwarded-Proto` it receives before forwarding it to the API — only an
+exact `https` value (case-insensitive) counts; any other value, a comma-separated list such as
+`https, http`, or a missing header become `http` — so the external TLS proxy must overwrite the header
+rather than append to it. The application accepts IPv4 clients only: the base Compose file keeps `api` and
+`db` off host ports, publishes nginx as `0.0.0.0:8080:8080` on all IPv4 interfaces and disables IPv6 on both
+networks, and nginx listens on IPv4 and answers 403 to any request whose client address is IPv6. Publishing
+on IPv6 as well would let Docker relay those clients from its bridge gateway, a private address whose
+`X-Forwarded-For` nginx trusts. The
 operator must terminate TLS externally, accepting only TLS 1.3 with TLS 1.2 as the sole fallback, overwrite
 untrusted `X-Forwarded-For`/`X-Forwarded-Proto`, and prevent clients from bypassing the proxy to reach port
 `8080` directly. nginx sends HSTS (`max-age=63072000; includeSubDomains`, no `preload`) only when its
@@ -245,9 +271,10 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
   rejection is never persisted. `AssignActivity` skips this consent step when an administrator enrolls
   someone else; `AssignHousehold` always runs it. The acceptance row cascades away when the acting user's
   account is deleted, once the blocked copy of that account holds it.
-- Verification and password-reset links put the user id and a 256-bit code from a cryptographic random
-  generator in the URL fragment (`/reset-password#userId=…&code=…`), which browsers never send to the server;
-  the page reads and removes it from the address bar, so a reload needs the emailed link again.
+- Verification, email-change and password-reset links put the user id and a 256-bit code from a
+  cryptographic random generator in the URL fragment (`/reset-password#userId=…&code=…`), which browsers
+  never send to the server; the page reads and removes it from the address bar, so a reload needs the
+  emailed link again.
 
 ### Event rating anonymity
 
@@ -335,7 +362,9 @@ as an `urn:codigoactivo:data-protection:aes-gcm:v1` XML element carrying a salt,
 ciphertext and an Ed25519 signature; decryption first verifies that signature against the certificate pinned
 in the volume, then derives the AES-256-GCM key from `DATA_PROTECTION_CERTIFICATE_PASSWORD` with Argon2id
 (`Argon2idKeyDerivation`: 3 iterations, 64 MiB, 4 lanes, a 16-byte salt — the same parameters and code path
-that hash passwords) before decrypting with `System.Security.Cryptography.AesGcm`. The locally generated
+that hash passwords) before decrypting with `System.Security.Cryptography.AesGcm`. Reading the ring ignores,
+and logs as `DataProtectionKeysIgnored`, any key whose secret is stored in clear or names another decryptor,
+so whoever can write to the volume without the password cannot plant a usable key. The locally generated
 Ed25519 certificate's own private key is stored the same way, in a fixed-size binary container (version,
 salt, nonce, tag, ciphertext) with the certificate's DER bytes as associated data. BouncyCastle is used only
 to generate and parse the Ed25519 certificate and to sign/verify; it performs no encryption. Since the
@@ -344,8 +373,9 @@ recreating the volume, which invalidates every session and every stored authenti
 Production the key ring is unencrypted on disk, but every environment protects Data Protection payloads
 themselves — session and two-factor cookies, antiforgery tokens, authenticator secrets and the email outbox
 content described below — with AES-256-GCM. Application containers run as non-root, drop all capabilities,
-enable `no-new-privileges` and use read-only root filesystems; PostgreSQL is reachable only on the internal
-backend network. The development override removes parts of this boundary and must not be deployed.
+enable `no-new-privileges` and use read-only root filesystems; PostgreSQL drops every capability its
+entrypoint does not need and is reachable only on the internal backend network. The development override
+removes parts of this boundary and must not be deployed.
 
 ### Files and multipart requests
 
@@ -358,12 +388,15 @@ application settings.
 
 ## Email abuse controls
 
-New accounts must always confirm an emailed OTP before their first login; there is no switch. Verification
-and password-reset codes expire after 15 minutes with a 60-second resend cooldown; login and account-deletion
-codes share storage and expire after 10 minutes with the same cooldown. SMTP must be configured everywhere or
-the API refuses to start. Activity signup sends no message; confirming or rejecting one queues an outcome
-email after commit, always to the guardian address for a dependent minor. Delivery errors never roll back
-registration, recovery, activity decisions or security changes.
+New accounts must always confirm an emailed OTP before their first login, and holders confirm their own new
+email the same way; there is no switch. Mail to an address nobody has verified yet greets nobody, so neither
+registration nor an email change relays a name typed by someone else to that mailbox. Verification and
+password-reset codes expire after 15 minutes with a 60-second resend cooldown; an email-change link also
+lasts 15 minutes, and each new one needs the password again. Login and account-deletion codes share storage
+and expire after 10 minutes with the same cooldown. SMTP must be configured everywhere or the API refuses to start. Activity signup sends no message;
+confirming or rejecting one queues an outcome email after commit, always to the guardian address for a
+dependent minor. Delivery errors never roll back registration, recovery, activity decisions or security
+changes.
 
 Registration and email changes (`PUT /api/users/{id}`) refuse addresses of disposable (temporary) mailbox
 providers with `DisposableEmailNotAllowed` (400), which the SPA presents as a security measure. An address
@@ -382,15 +415,18 @@ Changing an account's password (by the user or through recovery), its second fac
 returned to email, or reset by an administrator), its administrator flag or its email or phones queues a
 notification to the affected account after commit, from the handler, whoever asked for the change. The notice
 names the change and its timestamp and carries no code, secret or link that performs an action; an email
-change is reported to the **previous** address and only ever quotes the new one masked, and a phone change
-only states that the phone changed, without quoting it. These messages are
+change is reported to the **previous** address once it applies (for a holder's own change, when the new
+address is confirmed) and only ever quotes the new one masked, and a phone change only states that the phone
+changed, without quoting it. These messages are
 ordinary automatic mail, not credential mail, so they spend the shared budget without touching the credential
 reserve that login codes rely on.
 
 Every automatic verification, password-reset, second-factor-code, security-change and activity-decision email
 passes through `ThrottledEmailSender`: each normalized destination has burst/hourly/daily budgets, the
-process has a global budget with a credential-email reserve, and normalization lowercases addresses, strips
-sub-address tags and folds dots only for Gmail/Googlemail. Quota is spent on attempt, before the message
+process has a global budget with a credential-email reserve whose half only second-factor codes may spend,
+and second-factor codes have per-destination budgets of their own, so verification and reset mail, which
+anyone can request, never stops a login code. Normalization lowercases addresses, strips sub-address tags
+and folds dots only for Gmail/Googlemail. Quota is spent on attempt, before the message
 reaches the outbox; SMTP failure and a full outbox do not refund it. The limiter is always enabled,
 in-memory, resets on restart and is multiplied by the number of API replicas.
 
@@ -423,9 +459,10 @@ nginx's general API limit.
 
 `DEMO_MODE=true` seeds invented accounts with a random, hashed and discarded 32-byte password, fictitious
 addresses, and the second factor still required. Demonstrations use the bootstrap administrator configured
-in Compose. Such deployments are disposable and must never contain private data. The first selected mode is
-persisted in `api-state`; a later conflicting value stops startup. Changing it requires deleting all named
-volumes, see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode-and-initial-administrator).
+in Compose. Such deployments are disposable and must never contain private data. Seeding downloads its
+sample images once from `picsum.photos`, at most 10 MiB each, in a request that carries no user data. The
+first selected mode is persisted in `api-state`; a later conflicting value stops startup. Changing it
+requires deleting all named volumes, see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode-and-initial-administrator).
 
 ## Operational checklist
 

@@ -5,6 +5,7 @@ import {
   beginAuthenticatorSetupRequest,
   changeAccountPasswordRequest,
   confirmAuthenticatorRequest,
+  confirmEmailChangeRequest,
   deleteAccountChildRequest,
   deleteAccountRequest,
   disableAuthenticatorRequest,
@@ -35,7 +36,6 @@ import {
 } from '../../../../support/server'
 import {
   buildCertificateResponse,
-  buildDependentResponse,
   buildHistoryResponse,
   buildUserResponse,
 } from '../../../../support/builders'
@@ -394,17 +394,18 @@ describe('account requests', () => {
       }),
     ).rejects.toMatchObject({ status: 409, code: 'EventRatingNotFinished' })
   })
-  it('registers an adult with minors and resends the verification link', async () => {
+  it('registers an adult with minors and resends the verification link to the email', async () => {
     let registered: unknown
+    let resent: unknown
     server.use(
       http.post('/api/auth/register', async ({ request }) => {
         registered = await request.json()
-        return HttpResponse.json({ adult: buildUserResponse(), minors: [buildDependentResponse()] })
+        return new HttpResponse(null, { status: 204 })
       }),
-      http.post(
-        '/api/auth/user-1/resend-verification',
-        () => new HttpResponse(null, { status: 204 }),
-      ),
+      http.post('/api/auth/resend-verification', async ({ request }) => {
+        resent = await request.json()
+        return new HttpResponse(null, { status: 204 })
+      }),
     )
     const adult = {
       firstName: 'Ada',
@@ -423,15 +424,14 @@ describe('account requests', () => {
       gender: 'Male',
     } as const
 
-    await expect(
-      registerRequest({ adult, password: 'Str0ngPass!23', minors: [minor] }),
-    ).resolves.toEqual({ adultId: 'user-1', minorCount: 1 })
-    await resendVerificationRequest('user-1')
+    await registerRequest({ adult, password: 'Str0ngPass!23', minors: [minor] })
+    await resendVerificationRequest('ada@example.test')
 
     expect(registered).toEqual({ ...adult, password: 'Str0ngPass!23', minors: [minor] })
+    expect(resent).toEqual({ email: 'ada@example.test' })
   })
 
-  it('verifies an account and resets a password with the one-time code of the link', async () => {
+  it('verifies an account, confirms a new email and resets a password with the code of the link', async () => {
     const bodies: unknown[] = []
     const record = async ({ request }: { request: Request }) => {
       bodies.push({ path: new URL(request.url).pathname, body: await request.json() })
@@ -439,16 +439,19 @@ describe('account requests', () => {
     }
     server.use(
       http.patch('/api/auth/user-1/verify', record),
+      http.patch('/api/auth/user-1/confirm-email', record),
       http.post('/api/auth/forgot-password', record),
       http.patch('/api/auth/user-1/reset-password', record),
     )
 
     await verifyAccountRequest('user-1', 'otp-1')
+    await confirmEmailChangeRequest('user-1', 'code-1')
     await forgotPasswordRequest('ada@example.test')
     await resetPasswordRequest({ userId: 'user-1', otp: 'otp-2', newPassword: 'Str0ngPass!23' })
 
     expect(bodies).toEqual([
       { path: '/api/auth/user-1/verify', body: { otp: 'otp-1' } },
+      { path: '/api/auth/user-1/confirm-email', body: { otp: 'code-1' } },
       { path: '/api/auth/forgot-password', body: { email: 'ada@example.test' } },
       {
         path: '/api/auth/user-1/reset-password',

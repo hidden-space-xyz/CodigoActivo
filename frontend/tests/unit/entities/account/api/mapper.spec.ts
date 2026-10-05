@@ -8,7 +8,6 @@ import {
   toAuthenticatorSetup,
   toMinorRequest,
   toRegisterRequest,
-  toRegistrationResult,
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
   toUpdateProfileRequest,
@@ -138,7 +137,7 @@ describe('account mapper', () => {
     ).toEqual({ score: 4, mostLiked: 'Todo', leastLiked: null, suggestions: null })
   })
 
-  it('builds the registration of an adult with minors and reads its result', () => {
+  it('builds the registration of an adult with minors', () => {
     const adult = {
       firstName: 'Ada',
       lastName: 'Lovelace',
@@ -155,8 +154,5 @@ describe('account mapper', () => {
       password: 'Str0ngPass!23',
       minors: [MINOR],
     })
-    expect(
-      toRegistrationResult({ adult: buildUserResponse(), minors: [buildDependentResponse()] }),
-    ).toEqual({ adultId: 'user-1', minorCount: 1 })
   })
 })

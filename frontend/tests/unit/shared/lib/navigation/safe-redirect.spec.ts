@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toLocalRedirect } from '@/shared/lib/navigation'
+import { hasControlCharacter, toLocalRedirect } from '@/shared/lib/navigation'
 
 describe('toLocalRedirect', () => {
   it.each(['/', '/account', '/admin/users?search=ana&page=2', '/events#top'])(
@@ -31,6 +31,22 @@ describe('toLocalRedirect', () => {
     'rejects the non-string value %j',
     (value) => {
       expect(toLocalRedirect(value)).toBeNull()
+    },
+  )
+})
+
+describe('hasControlCharacter', () => {
+  it.each(['/account', 'https://example.org/a b', 'mailto:ana@example.org', ''])(
+    'finds none in %j',
+    (value) => {
+      expect(hasControlCharacter(value)).toBe(false)
+    },
+  )
+
+  it.each(['/\t/evil.test', '/\n\\evil.test', 'java\rscript:', '/a\u0000', '/a\u007f'])(
+    'finds one in %j',
+    (value) => {
+      expect(hasControlCharacter(value)).toBe(true)
     },
   )
 })

@@ -238,6 +238,17 @@ export function minorBirthDateRange(today: string = toDateOnly(new Date())): {
   return { min: cutoff.toISOString().slice(0, 10), max: today }
 }
 
+/**
+ * Tells whether two addresses are the same account email. The API stores emails trimmed and
+ * lowercased, so spacing and case never make an address new.
+ */
+export function isSameEmail(
+  first: string | null | undefined,
+  second: string | null | undefined,
+): boolean {
+  return (first ?? '').trim().toLowerCase() === (second ?? '').trim().toLowerCase()
+}
+
 /** Message explaining why `field` is refused, worded for the field when it is missing. */
 export function personProblemKey(field: PersonField, problem: PersonProblem): TranslationKey {
   return problem === 'required'

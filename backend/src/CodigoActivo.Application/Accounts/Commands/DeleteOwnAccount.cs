@@ -24,8 +24,8 @@ public sealed record DeleteOwnAccountCommand(Guid UserId, DeleteAccountRequest R
 /// all their participation rows, keeping the blocked copy the law requires and handing the content
 /// credited to the account over to the initial administrator. Because the deletion cannot be undone
 /// it demands both the current password and the account's second factor, and wrong codes count
-/// towards the same lockout as logins. The initial administrator cannot delete itself, so the
-/// application always keeps an administrator.
+/// towards the same lockout as logins, checked with the account row locked. The initial
+/// administrator cannot delete itself, so the application always keeps an administrator.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountEraser">Use case that erases the account after copying it.</param>
@@ -84,29 +84,16 @@ public sealed class DeleteOwnAccountCommandHandler(
             return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        var now = clock.UtcNow;
-        if (user.IsTwoFactorLocked(now))
+        var verified = await uow.ExecuteInTransactionAsync(
+            attempt => VerifyCodeLockedAsync(user, command.Request.Code, attempt),
+            ct
+        );
+        if (verified.IsFailure)
         {
-            return Error.Forbidden(ErrorCode.TwoFactorLocked);
+            return verified;
         }
 
-        if (!IsCodeAccepted(user, command.Request.Code, now))
-        {
-            var locked = user.RecordTwoFactorFailure(
-                now,
-                options.MaxFailedAttempts,
-                options.LockoutDuration
-            );
-            await uow.SaveChangesAsync(ct);
-            if (locked)
-            {
-                logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
-            }
-
-            return Error.Validation(ErrorCode.TwoFactorCodeInvalid);
-        }
-
-        var erasure = AccountErasure.For(user, user.Id, now);
+        var erasure = AccountErasure.For(user, user.Id, clock.UtcNow);
         if (!await accountEraser.EraseAsync(user, erasure, ct))
         {
             return Error.NotFound(ErrorCode.UserNotFound);
@@ -114,6 +101,38 @@ public sealed class DeleteOwnAccountCommandHandler(
 
         await cacheInvalidator.InvalidateAsync(CacheTags.Erasure);
         return Result.Success();
+    }
+
+    private async Task<Result> VerifyCodeLockedAsync(User user, string code, CancellationToken ct)
+    {
+        if (!await users.LockAsync(user, ct))
+        {
+            return Error.NotFound(ErrorCode.UserNotFound);
+        }
+
+        var now = clock.UtcNow;
+        if (user.IsTwoFactorLocked(now))
+        {
+            return Error.Forbidden(ErrorCode.TwoFactorLocked);
+        }
+
+        if (IsCodeAccepted(user, code, now))
+        {
+            return Result.Success();
+        }
+
+        var locked = user.RecordTwoFactorFailure(
+            now,
+            options.MaxFailedAttempts,
+            options.LockoutDuration
+        );
+        await uow.SaveChangesAsync(ct);
+        if (locked)
+        {
+            logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
+        }
+
+        return Error.Validation(ErrorCode.TwoFactorCodeInvalid);
     }
 
     private bool IsCodeAccepted(User user, string code, DateTimeOffset now)

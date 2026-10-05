@@ -28,7 +28,7 @@ public sealed record EmailContent(
 /// </summary>
 /// <param name="Heading">The heading value.</param>
 /// <param name="Preheader">The preheader value.</param>
-/// <param name="RecipientName">The recipient name value.</param>
+/// <param name="RecipientName">Name the message greets; a null or empty name greets nobody.</param>
 /// <param name="SiteUrl">The site url value.</param>
 /// <param name="Accent">The accent value.</param>
 /// <param name="FooterNote">The footer note value.</param>
@@ -79,7 +79,7 @@ public static class EmailLayout
             $"{AppStrings.EmailsSharedBrandName}\n{document.Heading}\n{TextRule}",
         };
 
-        if (document.RecipientName is not null)
+        if (!string.IsNullOrEmpty(document.RecipientName))
         {
             sections.Add(AppStrings.EmailsSharedGreeting(document.RecipientName));
         }
@@ -98,7 +98,7 @@ public static class EmailLayout
         var preheader = WebUtility.HtmlEncode(document.Preheader);
         var body = string.Concat(blocks.Select(block => block.Html));
         var accentBar = $"{EmailStyles.AccentBar}background-color:{document.Accent.Line};";
-        var greeting = document.RecipientName is null
+        var greeting = string.IsNullOrEmpty(document.RecipientName)
             ? string.Empty
             : EmailBlocks.Paragraph(
                 AppStrings.EmailsSharedGreeting(WebUtility.HtmlEncode(document.RecipientName))

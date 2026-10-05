@@ -36,7 +36,8 @@ from a clone, use `docker compose -f docker-compose.yml ...` so the override is 
   catcher such as Mailpit; the Compose development override already does.
 - New accounts always confirm their email before the first login; there is no configuration switch.
 - An empty database requires valid `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` values.
-- Production nginx is published on host port `8080` on all interfaces. Do not describe it as loopback-only.
+- Production nginx is published on host port `8080` on all IPv4 interfaces; IPv6 is not supported. Do not
+  describe it as loopback-only.
 - Configuration names in checked-in examples are uppercase. .NET nested overrides use `SECTION__KEY` and
   must also be forwarded explicitly by Compose.
 

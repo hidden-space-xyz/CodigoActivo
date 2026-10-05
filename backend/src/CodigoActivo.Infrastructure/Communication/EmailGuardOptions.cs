@@ -87,6 +87,13 @@ public sealed class EmailGuardOptions
         Math.Clamp(GlobalCredentialReserve, 0, Math.Max(GlobalBurst - 1, 0));
 
     /// <summary>
+    /// Gets the half of the credential reserve kept for second-factor codes alone: verification and
+    /// password-reset mail, which anyone can trigger, cannot spend it, so they never use up the
+    /// budget a login needs.
+    /// </summary>
+    public int EffectiveTwoFactorReserve => EffectiveCredentialReserve / 2;
+
+    /// <summary>
     /// Gets or sets the max tracked recipients value.
     /// </summary>
     public int MaxTrackedRecipients { get; set; } = DefaultMaxTrackedRecipients;

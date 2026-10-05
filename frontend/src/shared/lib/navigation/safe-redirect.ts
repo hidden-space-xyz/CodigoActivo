@@ -1,4 +1,12 @@
-function hasControlCharacter(value: string): boolean {
+/**
+ * Tells whether a link holds an ASCII control character. Browsers silently drop tabs and line
+ * breaks from URLs, so a link that carries one may lead somewhere other than it reads (`/\t/host`
+ * is another host); link checks refuse such values instead of reasoning about them.
+ *
+ * @param value - Link as typed or stored.
+ * @returns `true` when the value holds a character below U+0020 or U+007F.
+ */
+export function hasControlCharacter(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
     const code = value.charCodeAt(index)
     if (code < 0x20 || code === 0x7f) return true

@@ -38,6 +38,44 @@ public sealed class AccountEmails(
     }
 
     /// <summary>
+    /// Sends the link that confirms <paramref name="newEmail"/> as the new address of the account.
+    /// Nobody has verified that address yet, so the message greets nobody.
+    /// </summary>
+    /// <param name="user">Account the holder asked to move.</param>
+    /// <param name="newEmail">Address the link is sent to.</param>
+    /// <param name="code">Plain code the link carries; only its hash is stored.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task SendEmailChangeConfirmationAsync(
+        User user,
+        string newEmail,
+        string code,
+        CancellationToken ct
+    )
+    {
+        var message = composer.EmailChangeConfirmation(
+            new EmailRecipient(newEmail, string.Empty),
+            user.Id,
+            code,
+            verification.OtpLifetime
+        );
+        return emailSender.SendAsync(message, ct);
+    }
+
+    /// <summary>
+    /// Tells the holder of <paramref name="holder"/> that someone tried to use its email for another
+    /// account. Registrations and email changes send it instead of their link, so the caller cannot
+    /// tell whether the address already had an account.
+    /// </summary>
+    /// <param name="holder">Account that has the address.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task SendEmailInUseNoticeAsync(User holder, CancellationToken ct)
+    {
+        return emailSender.SendAsync(composer.EmailInUse(Recipient(holder)), ct);
+    }
+
+    /// <summary>
     /// Sends the password reset email message to its recipients.
     /// </summary>
     /// <param name="user">The user value.</param>
@@ -85,8 +123,20 @@ public sealed class AccountEmails(
         return emailSender.SendAsync(message, ct);
     }
 
+    /// <summary>
+    /// Gets the name account mail greets its owner with. Anyone may register an address they do not
+    /// own, so mail to an address nobody has verified yet greets nobody: the site never relays a
+    /// name a stranger typed to someone else's mailbox.
+    /// </summary>
+    /// <param name="user">Account the mail is about.</param>
+    /// <returns>The first name, or an empty name while the address is unverified.</returns>
+    internal static string RecipientName(User user)
+    {
+        return user.IsPendingVerification ? string.Empty : user.FirstName;
+    }
+
     private static EmailRecipient Recipient(User user)
     {
-        return new EmailRecipient(user.Email!, user.FirstName);
+        return new EmailRecipient(user.Email!, RecipientName(user));
     }
 }

@@ -112,4 +112,38 @@ describe('useUsersAdmin', () => {
     await expectNotification(t('pages.admin.users.toasts.adminGranted'))
     expect(result.grantDialog.visible.value).toBe(false)
   })
+
+  it('tells an admin that a new email of their own account waits for its link', async () => {
+    serveUserPages([[]])
+    server.use(
+      http.get('/api/users/:userId', ({ params }) =>
+        HttpResponse.json(buildUserResponse({ id: String(params.userId) })),
+      ),
+      http.put('/api/users/:userId', () => HttpResponse.json(buildUserResponse())),
+    )
+    const { result } = await mountComposable(() => useUsersAdmin(), {
+      user: { id: 'user-1', isAdmin: true },
+    })
+    const input = {
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      email: ' Ada.New@example.test ',
+      phone: '600000000',
+      secondaryPhone: null,
+      birthDate: null,
+      nationalId: '12345678Z',
+      promotionalConsent: false,
+      gender: 'Female',
+      parentId: null,
+      currentPassword: 'Str0ngPass!23',
+    } as const
+
+    await result.openEdit(toUser(buildUserResponse()))
+    result.saveUser(input)
+    await expectNotification(t('pages.admin.users.toasts.emailChangeSent', { email: input.email }))
+
+    await result.openEdit(toUser(buildUserResponse({ id: 'user-2' })))
+    result.saveUser(input)
+    await expectNotification(t('pages.admin.users.toasts.updated'))
+  })
 })

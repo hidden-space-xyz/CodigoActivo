@@ -61,7 +61,12 @@ public sealed class ConfirmAuthenticatorCommandHandler(
             return Error.Validation(ErrorCode.TwoFactorCodeInvalid);
         }
 
-        user.EnableAuthenticator(step.Value, now);
+        var enabled = user.EnableAuthenticator(step.Value, now);
+        if (enabled.IsFailure)
+        {
+            return enabled;
+        }
+
         await uow.SaveChangesAsync(ct);
         await securityNotifier.NotifyAsync(user, AccountSecurityChange.AuthenticatorEnabled, ct);
         return Result.Success();

@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -17,12 +18,14 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
 public sealed class ResendVerificationCommandHandlerTests
 {
+    private const string Email = "ana@test.com";
+
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
+    private readonly FakePasswordHasher hasher = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
-    private readonly PasswordResetOptions passwordReset = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
     private readonly RecordingLogger<ResendVerificationCommandHandler> logger = new();
     private readonly ResendVerificationCommandHandler sut;
@@ -33,17 +36,31 @@ public sealed class ResendVerificationCommandHandlerTests
             users,
             uow,
             clock,
-            new FakePasswordHasher(),
+            hasher,
             verification,
             new AccountEmails(
                 emailSender,
                 new AccountEmailComposer(application, new TestClock()),
                 verification,
-                passwordReset,
+                new PasswordResetOptions(),
                 new TwoFactorOptions()
             ),
             logger
         );
+    }
+
+    private Task<Result> HandleAsync(string email = $"  {Email}  ")
+    {
+        return sut.HandleAsync(
+            new ResendVerificationCommand(new ResendVerificationRequest(email)),
+            TestContext.Current.CancellationToken
+        );
+    }
+
+    private User HolderOfTheAddress(User user)
+    {
+        users.GetByEmailAsync(Email, Arg.Any<CancellationToken>()).Returns(user);
+        return user;
     }
 
     private Task<int> AssertNotSavedAsync()
@@ -53,52 +70,32 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncUserMissingReturnsNotFound()
+    public async Task HandleAsyncAddressWithoutAccountSucceedsAfterTheSameHashing()
     {
-        users.FindReturns(null);
+        var result = await HandleAsync();
 
-        var result = await sut.HandleAsync(
-            new ResendVerificationCommand(Guid.NewGuid()),
-            TestContext.Current.CancellationToken
-        );
-
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.IsSuccess.Should().BeTrue();
+        hasher.Hashes.Should().Be(1, "every request hashes a code, so timing tells nothing");
         emailSender.Sent.Should().BeEmpty();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncUserNotPendingReturnsConflict()
+    public async Task HandleAsyncVerifiedAccountGetsNothing()
     {
-        var user = users.FindReturns(NewUser(statusId: SeedIds.UserStatusTypes.Active));
+        HolderOfTheAddress(NewUser(statusId: SeedIds.UserStatusTypes.Active));
 
-        var result = await sut.HandleAsync(
-            new ResendVerificationCommand(user.Id),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync();
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendNotAllowed);
+        result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task HandleAsyncPendingUserWithoutEmailReturnsConflict()
-    {
-        var user = users.FindReturns(NewPendingWithOtp(clock));
-        Persisted.Overwrite(user, new { Email = (string?)null });
-
-        var result = await sut.HandleAsync(
-            new ResendVerificationCommand(user.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendNotAllowed);
-        emailSender.Sent.Should().BeEmpty();
+        await AssertNotSavedAsync();
     }
 
     [Fact]
     public async Task HandleAsyncNeverSentBeforeAllowsImmediateResend()
     {
-        var user = users.FindReturns(
+        var user = HolderOfTheAddress(
             NewUser(
                 statusId: SeedIds.UserStatusTypes.Pending,
                 otpCodeHash: null,
@@ -107,10 +104,7 @@ public sealed class ResendVerificationCommandHandlerTests
             )
         );
 
-        var result = await sut.HandleAsync(
-            new ResendVerificationCommand(user.Id),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync();
 
         result.IsSuccess.Should().BeTrue();
         user.OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + emailSender.LastCode());
@@ -120,18 +114,13 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncWithinCooldownReturnsConflict()
+    public async Task HandleAsyncWithinCooldownSendsNothing()
     {
-        var user = users.FindReturns(
-            NewPendingWithOtp(clock, otpLastSentAt: clock.UtcNow.AddSeconds(-10))
-        );
+        HolderOfTheAddress(NewPendingWithOtp(clock, otpLastSentAt: clock.UtcNow.AddSeconds(-10)));
 
-        var result = await sut.HandleAsync(
-            new ResendVerificationCommand(user.Id),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync();
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendCooldownActive);
+        result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -139,14 +128,11 @@ public sealed class ResendVerificationCommandHandlerTests
     [Fact]
     public async Task HandleAsyncCooldownElapsedIssuesNewCodeAndPersists()
     {
-        var user = users.FindReturns(
+        var user = HolderOfTheAddress(
             NewPendingWithOtp(clock, code: "old-code", otpLastSentAt: clock.UtcNow.AddMinutes(-5))
         );
 
-        var result = await sut.HandleAsync(
-            new ResendVerificationCommand(user.Id),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync();
 
         result.IsSuccess.Should().BeTrue();
         var newCode = emailSender.LastCode();
@@ -162,20 +148,17 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEmailSendFailsReturnsConflictAndDoesNotPersistNewCode()
+    public async Task HandleAsyncEmailSendFailsLogsAndKeepsTheIssuedCode()
     {
         emailSender.ThrowOnSend = new InvalidOperationException("the outbox insert failed");
-        var user = users.FindReturns(
+        var user = HolderOfTheAddress(
             NewPendingWithOtp(clock, otpLastSentAt: clock.UtcNow.AddMinutes(-5))
         );
         var previousHash = user.OtpCodeHash;
 
-        var result = await sut.HandleAsync(
-            new ResendVerificationCommand(user.Id),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync();
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.EmailSendFailed);
+        result.IsSuccess.Should().BeTrue();
         user.OtpCodeHash.Should().Be(previousHash);
         await AssertNotSavedAsync();
         logger
@@ -188,21 +171,18 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncQuotaDeniedReturnsConflictAndKeepsTheIssuedCode()
+    public async Task HandleAsyncQuotaDeniedKeepsTheIssuedCode()
     {
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
-        var user = users.FindReturns(
+        var user = HolderOfTheAddress(
             NewPendingWithOtp(clock, code: "old-code", otpLastSentAt: clock.UtcNow.AddMinutes(-5))
         );
         var previousHash = user.OtpCodeHash;
         var previousSentAt = user.OtpLastSentAt;
 
-        var result = await sut.HandleAsync(
-            new ResendVerificationCommand(user.Id),
-            TestContext.Current.CancellationToken
-        );
+        var result = await HandleAsync();
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendCooldownActive);
+        result.IsSuccess.Should().BeTrue();
         user.OtpCodeHash.Should().Be(previousHash);
         user.OtpLastSentAt.Should().Be(previousSentAt);
         await AssertNotSavedAsync();

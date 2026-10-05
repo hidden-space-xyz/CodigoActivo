@@ -4,10 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { useAccountVerification } from '@/pages/verify-account/model/use-account-verification'
 
 import { t } from '../../../../support/render'
-import { apiError, http, HttpResponse, server } from '../../../../support/server'
+import { apiError, http, noContent, server } from '../../../../support/server'
 import { mountComposable } from '../../../../support/render'
 
-function serveVerify(response: () => Response = () => new HttpResponse(null, { status: 204 })) {
+function serveVerify(response: () => Response = noContent) {
   const calls: { userId: unknown; body: unknown }[] = []
   server.use(
     http.patch('/api/auth/:userId/verify', async ({ request, params }) => {
@@ -18,15 +18,15 @@ function serveVerify(response: () => Response = () => new HttpResponse(null, { s
   return calls
 }
 
-function serveResend(response: () => Response = () => new HttpResponse(null, { status: 204 })) {
-  const userIds: unknown[] = []
+function serveResend(response: () => Response | Promise<Response> = noContent) {
+  const bodies: unknown[] = []
   server.use(
-    http.post('/api/auth/:userId/resend-verification', ({ params }) => {
-      userIds.push(params.userId)
+    http.post('/api/auth/resend-verification', async ({ request }) => {
+      bodies.push(await request.json())
       return response()
     }),
   )
-  return userIds
+  return bodies
 }
 
 function notificationText(): string {
@@ -34,12 +34,12 @@ function notificationText(): string {
 }
 
 describe('useAccountVerification', () => {
-  it('starts verifying without a user to resend to', async () => {
+  it('starts verifying with an empty resend form', async () => {
     const { result } = await mountComposable(() => useAccountVerification())
 
     expect(result.state.value).toBe('verifying')
     expect(result.errorMessage.value).toBeNull()
-    expect(result.canResend.value).toBe(false)
+    expect(result.resendForm.email).toBe('')
   })
 
   it('verifies the link and switches to success', async () => {
@@ -51,15 +51,14 @@ describe('useAccountVerification', () => {
     await vi.waitFor(() => expect(result.state.value).toBe('success'))
 
     expect(calls).toEqual([{ userId: 'user-1', body: { otp: 'otp-1' } }])
-    expect(result.canResend.value).toBe(true)
   })
 
   it.each([
-    { id: null, code: 'otp-1', canResend: false },
-    { id: 'user-1', code: null, canResend: true },
+    { id: null, code: 'otp-1' },
+    { id: 'user-1', code: null },
   ])(
     'fails an incomplete link (user $id, code $code) without calling the API',
-    async ({ id, code, canResend }) => {
+    async ({ id, code }) => {
       const calls = serveVerify()
       const { result } = await mountComposable(() => useAccountVerification())
 
@@ -68,7 +67,6 @@ describe('useAccountVerification', () => {
 
       expect(result.state.value).toBe('error')
       expect(result.errorMessage.value).toBe(t('pages.verifyAccount.incompleteLink'))
-      expect(result.canResend.value).toBe(canResend)
       expect(calls).toHaveLength(0)
     },
   )
@@ -83,64 +81,49 @@ describe('useAccountVerification', () => {
     expect(result.errorMessage.value).toBe(t('errors.OtpInvalidOrExpired'))
   })
 
-  it('does nothing when resending without a user id', async () => {
-    const userIds = serveResend()
-    const { result } = await mountComposable(() => useAccountVerification())
-
-    result.resend()
-    await flushPromises()
-
-    expect(userIds).toHaveLength(0)
-  })
-
-  it('resends the link to the user from the verified link and confirms with a toast', async () => {
-    serveVerify(() => apiError(400, 'OtpInvalidOrExpired'))
-    const userIds = serveResend()
+  it('asks for a new link for the trimmed address and confirms with a neutral toast', async () => {
+    const bodies = serveResend()
     const { result } = await mountComposable(() => useAccountVerification(), { attach: true })
-    result.verify('user-1', 'expired')
-    await vi.waitFor(() => expect(result.state.value).toBe('error'))
+    result.resendForm.email = '  ada@example.test '
 
     result.resend()
     await vi.waitFor(() =>
       expect(notificationText()).toContain(t('entities.account.verification.linkResentDetail')),
     )
 
-    expect(userIds).toEqual(['user-1'])
+    expect(bodies).toEqual([{ email: 'ada@example.test' }])
     expect(notificationText()).toContain(t('entities.account.verification.linkResentSummary'))
   })
 
   it('ignores a second resend while the first one is in flight', async () => {
     let release: () => void = () => undefined
-    const userIds: unknown[] = []
-    server.use(
-      http.post('/api/auth/:userId/resend-verification', ({ params }) => {
-        userIds.push(params.userId)
-        return new Promise<Response>((resolve) => {
-          release = () => resolve(new HttpResponse(null, { status: 204 }))
-        })
-      }),
+    const bodies = serveResend(
+      () =>
+        new Promise<Response>((resolve) => {
+          release = () => resolve(noContent())
+        }),
     )
     const { result } = await mountComposable(() => useAccountVerification())
-    result.verify('user-1', null)
+    result.resendForm.email = 'ada@example.test'
 
     result.resend()
     await vi.waitFor(() => expect(result.isResending.value).toBe(true))
-    await vi.waitFor(() => expect(userIds).toHaveLength(1))
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
     result.resend()
     release()
     await vi.waitFor(() => expect(result.isResending.value).toBe(false))
 
-    expect(userIds).toHaveLength(1)
+    expect(bodies).toHaveLength(1)
   })
 
   it('reports a failed resend as an error toast', async () => {
-    serveResend(() => apiError(429, 'OtpResendCooldownActive'))
+    serveResend(() => apiError(400, 'RequestValidationFailed'))
     const { result } = await mountComposable(() => useAccountVerification(), { attach: true })
-    result.verify('user-1', null)
+    result.resendForm.email = 'not-an-email'
 
     result.resend()
     await vi.waitFor(() =>
-      expect(notificationText()).toContain(t('errors.OtpResendCooldownActive')),
+      expect(notificationText()).toContain(t('errors.RequestValidationFailed')),
     )
   })
 })

@@ -6,8 +6,11 @@ public sealed class FakePasswordHasher : IPasswordHasher
 {
     public const string Prefix = "fake:";
 
+    public int Hashes { get; private set; }
+
     public string Hash(string password)
     {
+        Hashes++;
         return Prefix + password;
     }
 

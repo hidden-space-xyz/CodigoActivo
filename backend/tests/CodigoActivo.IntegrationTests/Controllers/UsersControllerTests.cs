@@ -1,12 +1,15 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.IntegrationTests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -483,11 +486,45 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateChangingEmailWithCurrentPasswordSucceeds()
+    public async Task UpdateChangingOwnEmailKeepsItUntilTheEmailedLinkIsConfirmed()
     {
+        const string newEmail = "marta.nueva@codigoactivo.test";
         var client = await LoginAsMemberAsync();
 
         var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(email: newEmail, currentPassword: TestSeedData.Password),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await response.ReadJsonAsync<UserResponse>(Ct);
+        updated!.Email.Should().Be(TestSeedData.MemberEmail);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.PendingEmail.Should().Be(newEmail);
+
+        var confirm = await CreateClient()
+            .PatchJsonAsync(
+                $"/api/auth/{TestSeedData.Users.MemberId}/confirm-email",
+                new VerifyRequest(Factory.EmailSender.LastOtpSentTo(newEmail)),
+                Ct
+            );
+
+        confirm.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.Email.Should().Be(newEmail);
+        stored.PendingEmail.Should().BeNull();
+        Factory
+            .EmailSender.Sent.Should()
+            .ContainSingle(message => message.Kind == EmailKind.SecurityAlert)
+            .Which.ToAddress.Should()
+            .Be(TestSeedData.MemberEmail);
+    }
+
+    [Fact]
+    public async Task UpdateChangingOwnEmailIsNotConfirmedByAWrongCode()
+    {
+        var client = await LoginAsMemberAsync();
+        using var update = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
             AdultUpdate(
                 email: "marta.nueva@codigoactivo.test",
@@ -496,9 +533,36 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
+        var confirm = await client.PatchJsonAsync(
+            $"/api/auth/{TestSeedData.Users.MemberId}/confirm-email",
+            new VerifyRequest(Guid.NewGuid().ToString()),
+            Ct
+        );
+
+        await confirm.ShouldBeBadRequestAsync(ErrorCode.OtpInvalidOrExpired);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .Email.Should()
+            .Be(TestSeedData.MemberEmail);
+    }
+
+    [Fact]
+    public async Task UpdateAsAdminChangingAnotherUsersEmailAppliesItAtOnce()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(
+                email: "marta.admin@codigoactivo.test",
+                currentPassword: TestSeedData.Password
+            ),
+            Ct
+        );
+
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.Email.Should().Be("marta.nueva@codigoactivo.test");
+        var updated = await response.ReadJsonAsync<UserResponse>(Ct);
+        updated!.Email.Should().Be("marta.admin@codigoactivo.test");
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.PendingEmail.Should().BeNull();
     }
 
     [Fact]
@@ -693,9 +757,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateStandaloneAccountEmailOfAnotherUserReturnsConflict()
+    public async Task UpdateAsAdminGivingAnotherUserAnEmailInUseReturnsConflict()
     {
-        var client = await LoginAsMemberAsync();
+        var client = await LoginAsAdminAsync();
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
@@ -707,6 +771,52 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
             .Email.Should()
             .Be(TestSeedData.MemberEmail);
+    }
+
+    [Fact]
+    public async Task UpdateChangingOwnEmailToAVerifiedAccountsAddressOnlyNotifiesItsHolder()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(email: TestSeedData.AdminEmail, currentPassword: TestSeedData.Password),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var notice = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
+        notice.ToAddress.Should().Be(TestSeedData.AdminEmail);
+        notice.Subject.Should().Be(AppStrings.EmailsEmailInUseSubject);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .Email.Should()
+            .Be(TestSeedData.MemberEmail);
+    }
+
+    [Fact]
+    public async Task UpdateChangingOwnEmailToAnUnverifiedAccountsAddressTakesItOverWhenConfirmed()
+    {
+        var client = await LoginAsMemberAsync();
+        using var update = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(email: TestSeedData.PendingEmail, currentPassword: TestSeedData.Password),
+            Ct
+        );
+
+        var confirm = await CreateClient()
+            .PatchJsonAsync(
+                $"/api/auth/{TestSeedData.Users.MemberId}/confirm-email",
+                new VerifyRequest(Factory.EmailSender.LastOtpSentTo(TestSeedData.PendingEmail)),
+                Ct
+            );
+
+        update.StatusCode.Should().Be(HttpStatusCode.OK);
+        confirm.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .Email.Should()
+            .Be(TestSeedData.PendingEmail);
+        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().BeNull();
+        (await FindAsync<DeletedAccount>(TestSeedData.Users.PendingId)).Should().NotBeNull();
     }
 
     [Fact]
@@ -1011,6 +1121,36 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             Task.FromResult(db.Users.Count(u => u.ParentId == TestSeedData.Users.MemberChildId))
         );
         children.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AddChildBeyondTheDependentLimitReturnsConflict()
+    {
+        await Factory.SeedAsync(async db =>
+        {
+            var existing = await db.Users.CountAsync(
+                u => u.ParentId == TestSeedData.Users.MemberId,
+                Ct
+            );
+            for (var index = existing; index < Household.MaxDependents; index++)
+            {
+                db.Users.Add(SeedChild($"Menor{index}", TestSeedData.Users.MemberId));
+            }
+        });
+        var client = await LoginAsMemberAsync();
+        var request = new RegisterMinorRequest("Otro", "Miembro", MinorBirthDate, Gender.Male);
+
+        var response = await client.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/children",
+            request,
+            Ct
+        );
+
+        await response.ShouldBeConflictAsync(ErrorCode.UserChildLimitReached);
+        var children = await Factory.QueryAsync(db =>
+            db.Users.CountAsync(u => u.ParentId == TestSeedData.Users.MemberId, Ct)
+        );
+        children.Should().Be(Household.MaxDependents);
     }
 
     [Fact]

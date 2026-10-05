@@ -750,7 +750,6 @@ public static class DependencyInjection
     {
         services.AddSingleton<CredentialTimingProtector>();
         services.AddScoped<GetCurrentUserQueryHandler>();
-        services.AddScoped<GetRegistrationQueryHandler>();
         services.AddScoped<GetSessionIdentityQueryHandler>();
         services.AddScoped<GetPendingChallengeQueryHandler>();
         services.AddScoped<StartSessionCommandHandler>();
@@ -761,6 +760,7 @@ public static class DependencyInjection
         services.AddScoped<RegisterCommandHandler>();
         services.AddScoped<VerifyUserCommandHandler>();
         services.AddScoped<ResendVerificationCommandHandler>();
+        services.AddScoped<ConfirmEmailChangeCommandHandler>();
         services.AddScoped<ForgotPasswordCommandHandler>();
         services.AddScoped<ResetPasswordCommandHandler>();
         services.AddScoped<GetLoginChallengeQueryHandler>();
@@ -774,6 +774,8 @@ public static class DependencyInjection
         services.AddScoped<PasswordAttemptGuard>();
         services.AddScoped<OtpValidator>();
         services.AddScoped<LoginCodeIssuer>();
+        services.AddScoped<EmailChangeLinkIssuer>();
+        services.AddScoped<EmailClaims>();
         services.AddScoped<AuthenticatorCodeVerifier>();
         services.AddScoped<DisposableEmailChecker>();
     }

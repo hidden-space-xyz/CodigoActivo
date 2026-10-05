@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Validation;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Contracts;
 
@@ -168,7 +169,9 @@ public record AssignRequest(
 /// <param name="Assignments">The assignments value.</param>
 /// <param name="TermsDecisions">The terms decisions supplied for the event's linked documents.</param>
 public record AssignHouseholdRequest(
-    [Required] IReadOnlyList<HouseholdAssignmentRequest> Assignments,
+    [Required]
+    [MaxLength(Household.MaxMembers)]
+        IReadOnlyList<HouseholdAssignmentRequest> Assignments,
     IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
 );
 
