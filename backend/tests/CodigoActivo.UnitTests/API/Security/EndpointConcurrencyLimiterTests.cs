@@ -74,14 +74,8 @@ public sealed class EndpointConcurrencyLimiterTests
             .Select(_ => sut.AttemptAcquire(NewContext(SecurityPolicies.FileUploads)))
             .ToArray();
 
-        try
-        {
-            leases.Should().OnlyContain(lease => lease.IsAcquired);
-        }
-        finally
-        {
-            Array.ForEach(leases, lease => lease.Dispose());
-        }
+        leases.Should().OnlyContain(lease => lease.IsAcquired);
+        Array.ForEach(leases, lease => lease.Dispose());
     }
 
     [Fact]
@@ -97,14 +91,8 @@ public sealed class EndpointConcurrencyLimiterTests
             .Select(_ => sut.AttemptAcquire(NewContext(SecurityPolicies.SingleRecipientEmail)))
             .ToArray();
 
-        try
-        {
-            leases.Should().OnlyContain(lease => lease.IsAcquired);
-        }
-        finally
-        {
-            Array.ForEach(leases, lease => lease.Dispose());
-        }
+        leases.Should().OnlyContain(lease => lease.IsAcquired);
+        Array.ForEach(leases, lease => lease.Dispose());
     }
 
     [Fact]

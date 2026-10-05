@@ -760,7 +760,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         {
             Content = new StringContent(
                 $$"""
-                {"identifier":"{{TestSeedData.AdminEmail}}","identifier":"attacker@test.com","password":"{{TestSeedData.Password}}"}
+                {"identifier":"{{TestSeedData.AdminEmail}}","identifier":"attacker@test.com","password":"never-checked"}
                 """,
                 System.Text.Encoding.UTF8,
                 "application/json"

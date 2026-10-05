@@ -28,17 +28,15 @@ public sealed class NonNullablePropertiesRequiredFilter : ISchemaFilter
             .Type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .ToDictionary(property => property.Name, StringComparer.OrdinalIgnoreCase);
         var nullability = new NullabilityInfoContext();
+        var nonNullable = concrete.Properties.Keys.Where(name =>
+            members.TryGetValue(name, out var member)
+            && nullability.Create(member).ReadState is not NullabilityState.Nullable
+        );
 
-        foreach (var name in concrete.Properties.Keys)
+        foreach (var name in nonNullable)
         {
-            if (
-                members.TryGetValue(name, out var member)
-                && nullability.Create(member).ReadState is not NullabilityState.Nullable
-            )
-            {
-                concrete.Required ??= new HashSet<string>(StringComparer.Ordinal);
-                concrete.Required.Add(name);
-            }
+            concrete.Required ??= new HashSet<string>(StringComparer.Ordinal);
+            concrete.Required.Add(name);
         }
     }
 }

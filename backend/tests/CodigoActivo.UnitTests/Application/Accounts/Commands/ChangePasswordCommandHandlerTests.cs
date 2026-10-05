@@ -74,7 +74,7 @@ public sealed class ChangePasswordCommandHandlerTests
     public async Task HandleAsyncPasswordNotSetReturnsBadRequest()
     {
         var user = NewUser();
-        Persisted.Overwrite(user, new { PasswordHash = (string?)null });
+        Persisted.Overwrite(user, new { PasswordHash = default(string?) });
         users.FindReturns(user);
         var request = new ChangePasswordRequest("old", "newpassword");
 

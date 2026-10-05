@@ -491,7 +491,7 @@ public sealed class UpdateUserCommandHandlerTests
     {
         var id = Guid.NewGuid();
         var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
-        Persisted.Overwrite(actingUser, new { PasswordHash = (string?)null });
+        Persisted.Overwrite(actingUser, new { PasswordHash = default(string?) });
         users.FindReturns(user, actingUser);
         var request = new UpdateUserRequest(
             "Ana",

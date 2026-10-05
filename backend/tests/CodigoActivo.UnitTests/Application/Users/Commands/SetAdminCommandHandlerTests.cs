@@ -126,7 +126,7 @@ public sealed class SetAdminCommandHandlerTests
     [Fact]
     public async Task HandleAsyncGrantActingUserWithoutPasswordReturnsBadRequest()
     {
-        Persisted.Overwrite(actingAdmin, new { PasswordHash = (string?)null });
+        Persisted.Overwrite(actingAdmin, new { PasswordHash = default(string?) });
         var user = NewUser(isAdmin: false);
         users.FindReturns(actingAdmin, user);
 

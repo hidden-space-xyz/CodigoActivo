@@ -76,7 +76,7 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     /// </summary>
     /// <param name="content">Titles, description and thumbnail.</param>
     /// <param name="schedule">Days and signup window.</param>
-    /// <param name="categories">Categories that tag the event.</param>
+    /// <param name="categorySelection">Categories that tag the event.</param>
     /// <param name="terms">Terms documents in display order.</param>
     /// <param name="authorId">Identifier of the user who creates it.</param>
     /// <param name="now">Current time.</param>
@@ -84,14 +84,14 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     public static Event Create(
         EventContent content,
         EventSchedule schedule,
-        EventCategorySelection categories,
+        EventCategorySelection categorySelection,
         EventTermsLinks terms,
         Guid authorId,
         DateTimeOffset now
     )
     {
         var ev = new Event();
-        ev.Apply(content, schedule, categories, terms);
+        ev.Apply(content, schedule, categorySelection, terms);
         ev.RecordCreation(authorId, now);
         return ev;
     }
@@ -101,20 +101,20 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     /// </summary>
     /// <param name="content">New titles, description and thumbnail.</param>
     /// <param name="schedule">New days and signup window.</param>
-    /// <param name="categories">Categories that tag the event from now on.</param>
+    /// <param name="categorySelection">Categories that tag the event from now on.</param>
     /// <param name="terms">Terms documents from now on, in display order.</param>
     /// <param name="editorId">Identifier of the user who edits it.</param>
     /// <param name="now">Current time.</param>
     public void Update(
         EventContent content,
         EventSchedule schedule,
-        EventCategorySelection categories,
+        EventCategorySelection categorySelection,
         EventTermsLinks terms,
         Guid editorId,
         DateTimeOffset now
     )
     {
-        Apply(content, schedule, categories, terms);
+        Apply(content, schedule, categorySelection, terms);
         RecordUpdate(editorId, now);
     }
 
@@ -153,13 +153,13 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     private void Apply(
         EventContent content,
         EventSchedule schedule,
-        EventCategorySelection categories,
+        EventCategorySelection categorySelection,
         EventTermsLinks terms
     )
     {
         ArgumentNullException.ThrowIfNull(content);
         ArgumentNullException.ThrowIfNull(schedule);
-        ArgumentNullException.ThrowIfNull(categories);
+        ArgumentNullException.ThrowIfNull(categorySelection);
         ArgumentNullException.ThrowIfNull(terms);
 
         Title = content.Title.Trim();
@@ -171,7 +171,7 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
         EarlySignupStartsAt = schedule.EarlySignupStartsAt;
         SignupStartsAt = schedule.SignupStartsAt;
         SignupEndsAt = schedule.SignupEndsAt;
-        SyncCategories(categories.CategoryTypeIds);
+        SyncCategories(categorySelection.CategoryTypeIds);
         SyncTermsDocuments(terms);
     }
 

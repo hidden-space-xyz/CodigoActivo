@@ -132,9 +132,8 @@ public sealed class RegisterCommandHandler(
 
         var adult = created.Value;
         var minors = new List<User>(minorRequests.Count);
-        foreach (var minor in minorRequests)
-        {
-            var child = User.CreateDependent(
+        var children = minorRequests.Select(minor =>
+            User.CreateDependent(
                 adult,
                 new PersonDetails(
                     minor.FirstName,
@@ -144,7 +143,10 @@ public sealed class RegisterCommandHandler(
                 ),
                 clock.Today,
                 now
-            );
+            )
+        );
+        foreach (var child in children)
+        {
             if (child.IsFailure)
             {
                 return child.Error!;

@@ -12,17 +12,23 @@ public sealed class StubHttpMessageHandler : HttpMessageHandler
         responses.Enqueue((status, body));
     }
 
-    protected override Task<HttpResponseMessage> SendAsync(
+    protected override HttpResponseMessage Send(
         HttpRequestMessage request,
         CancellationToken cancellationToken
     )
     {
         var (status, body) = responses.Dequeue();
-        return Task.FromResult(
-            new HttpResponseMessage(status)
-            {
-                Content = new StringContent(body, Encoding.UTF8, "text/plain"),
-            }
-        );
+        return new HttpResponseMessage(status)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "text/plain"),
+        };
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
+    {
+        return Task.FromResult(Send(request, cancellationToken));
     }
 }
