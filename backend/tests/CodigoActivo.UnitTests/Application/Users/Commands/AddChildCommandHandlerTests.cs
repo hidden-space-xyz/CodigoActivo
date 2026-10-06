@@ -3,7 +3,6 @@ using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -26,7 +25,7 @@ public sealed class AddChildCommandHandlerTests
     {
         sut = new AddChildCommandHandler(
             users,
-            new ActingUserPolicy(currentUser, users),
+            ActingUsers.Policy(currentUser),
             clock,
             uow.RunsTransactions()
         );

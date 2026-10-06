@@ -8,7 +8,6 @@ using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
@@ -58,7 +57,7 @@ public sealed class UpdateUserCommandHandlerTests
         );
         sut = new UpdateUserCommandHandler(
             users,
-            new ActingUserPolicy(currentUser, users),
+            ActingUsers.Policy(currentUser),
             currentUser,
             PasswordGuards.Create(hasher, uow, clock),
             clock,

@@ -7,7 +7,6 @@ using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
@@ -48,7 +47,7 @@ public sealed class ChangePasswordCommandHandlerTests
         );
         sut = new ChangePasswordCommandHandler(
             users,
-            new ActingUserPolicy(currentUser, users),
+            ActingUsers.Policy(currentUser),
             hasher,
             clock,
             PasswordGuards.Create(hasher, uow, clock)

@@ -1,38 +1,30 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Common.Security;
 
 public sealed class ActingUserPolicyTests
 {
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly FakeReadStore store = new();
     private readonly TestCurrentUser currentUser = new();
     private readonly ActingUserPolicy sut;
 
     public ActingUserPolicyTests()
     {
-        sut = new ActingUserPolicy(currentUser, users);
+        sut = ActingUsers.Policy(currentUser, store);
     }
 
-    private User PersonWithGuardian(UserId? guardianId)
+    private UserId PersonWithGuardian(UserId guardianId)
     {
-        var person = Persisted.As<User>(
-            new
-            {
-                Id = Guid.NewGuid(),
-                FirstName = "Ada",
-                LastName = "Lovelace",
-                ParentId = guardianId?.Value,
-            }
-        );
-        users.GetByIdAsync(person.Id, Arg.Any<CancellationToken>()).Returns(person);
-        return person;
+        var personId = Guid.NewGuid();
+        store.AddDependent(personId, guardianId.Value);
+        return UserId.From(personId);
     }
 
     [Fact]
@@ -44,20 +36,15 @@ public sealed class ActingUserPolicyTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await users
-            .DidNotReceiveWithAnyArgs()
-            .GetByIdAsync(default, TestContext.Current.CancellationToken);
+        store.ReadsOf<UserRow>().Should().Be(0);
     }
 
     [Fact]
     public async Task EnsureMayActForAsyncTheirDependentSucceeds()
     {
-        var child = PersonWithGuardian(currentUser.Id);
+        var child = PersonWithGuardian(currentUser.Id!.Value);
 
-        var result = await sut.EnsureMayActForAsync(
-            child.Id,
-            TestContext.Current.CancellationToken
-        );
+        var result = await sut.EnsureMayActForAsync(child, TestContext.Current.CancellationToken);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -80,10 +67,7 @@ public sealed class ActingUserPolicyTests
     {
         var child = PersonWithGuardian(UserId.New());
 
-        var result = await sut.EnsureMayActForAsync(
-            child.Id,
-            TestContext.Current.CancellationToken
-        );
+        var result = await sut.EnsureMayActForAsync(child, TestContext.Current.CancellationToken);
 
         result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
         result.Error.Code.Should().Be(ApplicationErrorCode.ActingForAnotherUserForbidden);
