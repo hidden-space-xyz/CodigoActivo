@@ -9,7 +9,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the account named by the cookie.</param>
 /// <param name="SessionId">Identifier of the session named by the cookie.</param>
-public sealed record EndSessionCommand(UserId UserId, Guid SessionId) : ICommand<Result>;
+public sealed record EndSessionCommand(UserId UserId, UserSessionId SessionId) : ICommand<Result>;
 
 /// <summary>
 /// Revokes one session of an account. The row is deleted immediately.
@@ -27,7 +27,7 @@ public sealed class EndSessionCommandHandler(IUserSessionRepository sessions)
     public async Task<Result> HandleAsync(EndSessionCommand command, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(command);
-        await sessions.EndAsync(UserSessionId.From(command.SessionId), command.UserId, ct);
+        await sessions.EndAsync(command.SessionId, command.UserId, ct);
         return Result.Success();
     }
 }
