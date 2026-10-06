@@ -62,17 +62,12 @@ public sealed class ActivityValidator(
             return Error.Validation(ApplicationErrorCode.ActivityModalityTypeNotFound);
         }
 
-        var requested = draft.RoleCapacities;
-        var roles = new List<RoleCapacity>(requested.Count);
-        foreach (var item in requested)
+        var roles = new List<RoleCapacity>(draft.RoleCapacities.Count);
+        foreach (var item in draft.RoleCapacities)
         {
             if (!CatalogIds.ActivityRoles.TryGetValue(item.ActivityRoleTypeId, out var role))
             {
-                return
-                    requested.Select(capacity => capacity.ActivityRoleTypeId).Distinct().Count()
-                    != requested.Count
-                    ? Error.Validation(DomainErrorCode.ActivityRoleCapacityDuplicated)
-                    : Error.Validation(ApplicationErrorCode.ActivityRoleTypeNotFound);
+                return Error.Validation(ApplicationErrorCode.ActivityRoleTypeNotFound);
             }
 
             roles.Add(new RoleCapacity(role, item.DesiredCount));
