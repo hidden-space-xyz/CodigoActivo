@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Events.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
@@ -123,7 +124,10 @@ public sealed class GetLeaderRosterQueryHandlerTests
     private Task<IReadOnlyList<LeaderRosterActivityResponse>> HandleAsync(Guid? eventId = null)
     {
         return sut.HandleAsync(
-            new GetLeaderRosterQuery(eventId ?? EventId, caller.Id),
+            new GetLeaderRosterQuery(
+                global::CodigoActivo.Domain.Events.EventId.From(eventId ?? EventId),
+                UserId.From(caller.Id)
+            ),
             TestContext.Current.CancellationToken
         );
     }

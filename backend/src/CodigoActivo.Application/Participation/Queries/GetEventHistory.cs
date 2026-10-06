@@ -5,6 +5,7 @@ using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
@@ -12,7 +13,7 @@ namespace CodigoActivo.Application.Participation.Queries;
 /// Carries the criteria used to retrieve event history.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-public sealed record GetEventHistoryQuery(Guid UserId)
+public sealed record GetEventHistoryQuery(UserId UserId)
     : IQuery<IReadOnlyList<EventHistoryResponse>>;
 
 /// <summary>
@@ -38,7 +39,7 @@ public sealed class GetEventHistoryQueryHandler(
         CancellationToken ct = default
     )
     {
-        var userId = query.UserId;
+        var userId = query.UserId.Value;
 
         var rows = await executor.ToListAsync(
             readStore

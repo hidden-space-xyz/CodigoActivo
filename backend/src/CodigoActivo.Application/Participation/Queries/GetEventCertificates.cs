@@ -7,6 +7,7 @@ using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
@@ -14,7 +15,7 @@ namespace CodigoActivo.Application.Participation.Queries;
 /// Carries the criteria used to retrieve event certificates.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-public sealed record GetEventCertificatesQuery(Guid UserId)
+public sealed record GetEventCertificatesQuery(UserId UserId)
     : IQuery<IReadOnlyList<EventCertificateResponse>>;
 
 /// <summary>
@@ -44,7 +45,7 @@ public sealed class GetEventCertificatesQueryHandler(
         CancellationToken ct = default
     )
     {
-        var userId = query.UserId;
+        var userId = query.UserId.Value;
         var today = clock.Today;
 
         var rows = await executor.ToListAsync(
