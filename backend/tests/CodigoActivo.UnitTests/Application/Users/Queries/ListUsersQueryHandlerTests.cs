@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Application.Users.Queries;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -21,7 +22,7 @@ public sealed class ListUsersQueryHandlerTests
     private Task<PagedResult<UserResponse>> ListAsAdminAsync(UserListQuery query)
     {
         return sut.HandleAsync(
-            new ListUsersQuery(query, Guid.NewGuid(), IsAdmin: true),
+            new ListUsersQuery(query, UserId.New(), IsAdmin: true),
             TestContext.Current.CancellationToken
         );
     }
@@ -29,7 +30,7 @@ public sealed class ListUsersQueryHandlerTests
     private Task<PagedResult<UserResponse>> ListAsCallerAsync(UserListQuery query, Guid callerId)
     {
         return sut.HandleAsync(
-            new ListUsersQuery(query, callerId, IsAdmin: false),
+            new ListUsersQuery(query, UserId.From(callerId), IsAdmin: false),
             TestContext.Current.CancellationToken
         );
     }

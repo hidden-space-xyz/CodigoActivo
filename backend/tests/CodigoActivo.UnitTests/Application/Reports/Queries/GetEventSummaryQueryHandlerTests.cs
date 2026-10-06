@@ -4,6 +4,7 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
@@ -80,7 +81,7 @@ public sealed class GetEventSummaryQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventSummaryQuery(QueriedEventId),
+            new GetEventSummaryQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -125,7 +126,7 @@ public sealed class GetEventSummaryQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new GetEventSummaryQuery(QueriedEventId),
+            new GetEventSummaryQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -162,7 +163,7 @@ public sealed class GetEventSummaryQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventSummaryQuery(QueriedEventId),
+            new GetEventSummaryQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 

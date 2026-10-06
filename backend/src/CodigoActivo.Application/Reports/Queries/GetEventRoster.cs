@@ -7,6 +7,7 @@ using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -14,7 +15,7 @@ namespace CodigoActivo.Application.Reports.Queries;
 /// Carries the criteria used to retrieve event roster.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record GetEventRosterQuery(Guid EventId) : IQuery<Result<EventRosterResponse>>;
+public sealed record GetEventRosterQuery(EventId EventId) : IQuery<Result<EventRosterResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve event roster.
@@ -35,7 +36,7 @@ public sealed class GetEventRosterQueryHandler(IReadStore readStore, IQueryExecu
         CancellationToken ct = default
     )
     {
-        var eventId = query.EventId;
+        var eventId = query.EventId.Value;
         var ev = await GetEventHeaderAsync(eventId, ct);
         if (ev is null)
         {

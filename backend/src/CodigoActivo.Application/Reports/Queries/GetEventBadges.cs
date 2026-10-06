@@ -6,6 +6,7 @@ using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -13,7 +14,7 @@ namespace CodigoActivo.Application.Reports.Queries;
 /// Carries the criteria used to retrieve event badges.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record GetEventBadgesQuery(Guid EventId) : IQuery<Result<EventBadgesResponse>>;
+public sealed record GetEventBadgesQuery(EventId EventId) : IQuery<Result<EventBadgesResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve event badges.
@@ -34,7 +35,7 @@ public sealed class GetEventBadgesQueryHandler(IReadStore readStore, IQueryExecu
         CancellationToken ct = default
     )
     {
-        var eventId = query.EventId;
+        var eventId = query.EventId.Value;
         var ev = await GetEventHeaderAsync(eventId, ct);
         if (ev is null)
         {

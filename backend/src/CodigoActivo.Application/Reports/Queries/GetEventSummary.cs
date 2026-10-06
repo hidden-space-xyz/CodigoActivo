@@ -5,6 +5,7 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -12,7 +13,7 @@ namespace CodigoActivo.Application.Reports.Queries;
 /// Carries the criteria used to retrieve event summary.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record GetEventSummaryQuery(Guid EventId) : IQuery<Result<EventSummaryResponse>>;
+public sealed record GetEventSummaryQuery(EventId EventId) : IQuery<Result<EventSummaryResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve event summary.
@@ -33,7 +34,7 @@ public sealed class GetEventSummaryQueryHandler(IReadStore readStore, IQueryExec
         CancellationToken ct = default
     )
     {
-        var eventId = query.EventId;
+        var eventId = query.EventId.Value;
         var ev = await executor.FirstOrDefaultAsync(
             readStore
                 .Events.Where(e => e.Id == eventId)

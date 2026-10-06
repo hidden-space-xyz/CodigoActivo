@@ -8,6 +8,7 @@ using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -16,7 +17,7 @@ namespace CodigoActivo.Application.Reports.Queries;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
-public sealed record ListEventAttendeesQuery(Guid EventId, EventAttendeeListQuery Filters)
+public sealed record ListEventAttendeesQuery(EventId EventId, EventAttendeeListQuery Filters)
     : IQuery<PagedResult<EventAttendeeResponse>>;
 
 /// <summary>
@@ -49,7 +50,7 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
         CancellationToken ct = default
     )
     {
-        var eventId = query.EventId;
+        var eventId = query.EventId.Value;
         var filters = query.Filters;
         var activityId = filters.ActivityId;
         var roleTypeId = filters.RoleTypeId;

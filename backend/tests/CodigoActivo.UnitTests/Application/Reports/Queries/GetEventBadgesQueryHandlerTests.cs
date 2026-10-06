@@ -4,6 +4,7 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
@@ -78,7 +79,7 @@ public sealed class GetEventBadgesQueryHandlerTests
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         var result = await sut.HandleAsync(
-            new GetEventBadgesQuery(QueriedEventId),
+            new GetEventBadgesQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -116,7 +117,7 @@ public sealed class GetEventBadgesQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new GetEventBadgesQuery(QueriedEventId),
+            new GetEventBadgesQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -167,7 +168,7 @@ public sealed class GetEventBadgesQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventBadgesQuery(QueriedEventId),
+            new GetEventBadgesQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 
