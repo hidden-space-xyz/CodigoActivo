@@ -1,24 +1,33 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Reports.Contracts;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
 /// <summary>
 /// Carries the criteria used to retrieve dashboard summary.
 /// </summary>
-public sealed record GetDashboardSummaryQuery : IQuery<DashboardSummaryResponse>;
+public sealed record GetDashboardSummaryQuery : IQuery<DashboardSummaryResponse>, ICachedQuery
+{
+    /// <inheritdoc />
+    public CacheDuration Duration => CacheDuration.Dashboard;
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<string> Tags => CacheTags.DashboardSummarySources;
+
+    /// <inheritdoc />
+    public string CacheKey(DateOnly today)
+    {
+        return "reports:dashboard";
+    }
+}
 
 /// <summary>
 /// Executes the query to retrieve dashboard summary.
 /// </summary>
 /// <param name="dashboard">Reader of the dashboard totals.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
-public sealed class GetDashboardSummaryQueryHandler(
-    IDashboardCountsReader dashboard,
-    HybridCache cache
-) : IQueryHandler<GetDashboardSummaryQuery, DashboardSummaryResponse>
+public sealed class GetDashboardSummaryQueryHandler(IDashboardCountsReader dashboard)
+    : IQueryHandler<GetDashboardSummaryQuery, DashboardSummaryResponse>
 {
     /// <summary>
     /// Handles the request to retrieve dashboard summary.
@@ -31,23 +40,14 @@ public sealed class GetDashboardSummaryQueryHandler(
         CancellationToken ct = default
     )
     {
-        return await cache.GetOrCreateAsync(
-            "reports:dashboard",
-            async token =>
-            {
-                var counts = await dashboard.GetCountsAsync(token);
-                return new DashboardSummaryResponse(
-                    counts.Events,
-                    counts.Activities,
-                    counts.Resources,
-                    counts.News,
-                    counts.Partners,
-                    counts.Users
-                );
-            },
-            CachePolicies.Dashboard,
-            CacheTags.DashboardSummarySources,
-            ct
+        var counts = await dashboard.GetCountsAsync(ct);
+        return new DashboardSummaryResponse(
+            counts.Events,
+            counts.Activities,
+            counts.Resources,
+            counts.News,
+            counts.Partners,
+            counts.Users
         );
     }
 }

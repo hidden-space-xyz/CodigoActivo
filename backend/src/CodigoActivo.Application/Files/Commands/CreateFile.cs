@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 
@@ -11,8 +13,7 @@ namespace CodigoActivo.Application.Files.Commands;
 /// Carries the input required to create a file.
 /// </summary>
 /// <param name="Upload">The upload value.</param>
-/// <param name="UserId">Identifier of the user.</param>
-public sealed record CreateFileCommand(FileUpload? Upload, Guid UserId) : ICommand<Result<Guid>>;
+public sealed record CreateFileCommand(FileUpload? Upload) : ICommand<Result<StoredFileId>>;
 
 /// <summary>
 /// Executes the command to create a file.
@@ -20,15 +21,17 @@ public sealed record CreateFileCommand(FileUpload? Upload, Guid UserId) : IComma
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="validator">The validator value.</param>
 public sealed class CreateFileCommandHandler(
     IStoredFileRepository files,
     IUnitOfWork uow,
     IFileStorage storage,
+    ICurrentUser currentUser,
     IClock clock,
     FileUploadValidator validator
-) : ICommandHandler<CreateFileCommand, Result<Guid>>
+) : ICommandHandler<CreateFileCommand, Result<StoredFileId>>
 {
     /// <summary>
     /// Handles the request to create a file.
@@ -36,7 +39,7 @@ public sealed class CreateFileCommandHandler(
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
-    public async Task<Result<Guid>> HandleAsync(
+    public async Task<Result<StoredFileId>> HandleAsync(
         CreateFileCommand command,
         CancellationToken ct = default
     )
@@ -53,11 +56,11 @@ public sealed class CreateFileCommandHandler(
         var file = StoredFile.Upload(
             FileNaming.SanitizeName(upload!.FileName),
             format.Extension,
-            command.UserId,
+            currentUser.RequiredId(),
             clock.UtcNow
         );
 
-        var storedName = FileNaming.StoredName(file.Id, file.Extension);
+        var storedName = FileNaming.StoredName(file.Id.Value, file.Extension);
         await storage.SaveAsync(storedName, upload.Content, ct);
 
         try

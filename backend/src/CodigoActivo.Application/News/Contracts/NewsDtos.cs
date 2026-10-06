@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Common.Validation;
-
 namespace CodigoActivo.Application.News.Contracts;
 
 /// <summary>
@@ -67,31 +64,3 @@ public record NewsListItemResponse(
     public NewsListItemResponse()
         : this(Guid.Empty, string.Empty, string.Empty, default, null, Guid.Empty, false) { }
 }
-
-/// <summary>
-/// Contains the client-supplied data used to create a news item.
-/// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-public record CreateNewsItemRequest(
-    [Required] [MaxLength(200)] [NotBlank] string Title,
-    [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [RichText] [MaxLength(262144)] string Description,
-    Guid ThumbnailId
-);
-
-/// <summary>
-/// Contains the client-supplied data used to update the news item.
-/// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-public record UpdateNewsItemRequest(
-    [Required] [MaxLength(200)] [NotBlank] string Title,
-    [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [RichText] [MaxLength(262144)] string Description,
-    Guid ThumbnailId
-);

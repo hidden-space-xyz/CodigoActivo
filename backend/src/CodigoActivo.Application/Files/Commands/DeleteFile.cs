@@ -1,8 +1,7 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 
@@ -12,7 +11,7 @@ namespace CodigoActivo.Application.Files.Commands;
 /// Carries the input required to delete the file.
 /// </summary>
 /// <param name="FileId">Identifier of the file.</param>
-public sealed record DeleteFileCommand(Guid FileId) : ICommand<Result>;
+public sealed record DeleteFileCommand(StoredFileId FileId) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to delete the file.
@@ -20,12 +19,10 @@ public sealed record DeleteFileCommand(Guid FileId) : ICommand<Result>;
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class DeleteFileCommandHandler(
     IStoredFileRepository files,
     IUnitOfWork uow,
-    IFileStorage storage,
-    ICacheInvalidator cacheInvalidator
+    IFileStorage storage
 ) : ICommandHandler<DeleteFileCommand, Result>
 {
     /// <summary>
@@ -39,21 +36,21 @@ public sealed class DeleteFileCommandHandler(
         var file = await files.GetByIdAsync(command.FileId, ct);
         if (file is null)
         {
-            return Error.NotFound(ErrorCode.FileNotFound);
+            return Error.NotFound(ApplicationErrorCode.FileNotFound);
         }
 
         if (await files.IsInUseAsync(command.FileId, ct))
         {
-            return Error.Conflict(ErrorCode.FileInUse);
+            return Error.Conflict(ApplicationErrorCode.FileInUse);
         }
 
-        var storedName = FileNaming.StoredName(file.Id, file.Extension);
+        var storedName = FileNaming.StoredName(file.Id.Value, file.Extension);
 
+        file.Delete();
         files.Remove(file);
         await uow.SaveChangesAsync(ct);
 
         storage.Delete(storedName);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         return Result.Success();
     }
 }

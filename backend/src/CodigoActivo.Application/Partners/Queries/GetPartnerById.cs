@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Partners;
 
 namespace CodigoActivo.Application.Partners.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.Partners.Queries;
 /// Carries the criteria used to retrieve partner by identifier.
 /// </summary>
 /// <param name="PartnerId">Identifier of the partner.</param>
-public sealed record GetPartnerByIdQuery(Guid PartnerId) : IQuery<Result<PartnerResponse>>;
+public sealed record GetPartnerByIdQuery(PartnerId PartnerId) : IQuery<Result<PartnerResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve partner by identifier.
@@ -32,10 +34,10 @@ public sealed class GetPartnerByIdQueryHandler(IReadStore readStore, IQueryExecu
     {
         var response = await executor.FirstOrDefaultAsync(
             readStore
-                .Partners.Where(p => p.Id == query.PartnerId)
+                .Partners.Where(p => p.Id == query.PartnerId.Value)
                 .Select(PartnerProjections.Partner),
             ct
         );
-        return response is null ? Error.NotFound(ErrorCode.PartnerNotFound) : response;
+        return response is null ? Error.NotFound(ApplicationErrorCode.PartnerNotFound) : response;
     }
 }

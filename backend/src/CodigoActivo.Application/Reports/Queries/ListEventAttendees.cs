@@ -1,11 +1,13 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Users;
+using CodigoActivo.Application.Users.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -98,7 +100,8 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
                     .ToList(),
                 u.Assignments.Where(a =>
                         a.Activity.EventId == eventId
-                        && a.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
+                        && a.AssignmentStatusId
+                            != CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Denied)
                     )
                     .Select(a => new AssignmentWindow(
                         a.ActivityId,
@@ -119,7 +122,7 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
             a with
             {
                 HasTimeConflict =
-                    a.StatusId != SeedIds.AssignmentStatusTypes.Denied
+                    a.StatusId != CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Denied)
                     && row.Windows.Exists(w =>
                         w.ActivityId != a.ActivityId
                         && a.ActivityStartsAt < w.EndsAt

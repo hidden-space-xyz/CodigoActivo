@@ -1,7 +1,6 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.News;
 
@@ -11,19 +10,15 @@ namespace CodigoActivo.Application.News.Commands;
 /// Carries the input required to set news item featured.
 /// </summary>
 /// <param name="NewsItemId">Identifier of the news item.</param>
-public sealed record SetNewsItemFeaturedCommand(Guid NewsItemId) : ICommand<Result>;
+public sealed record SetNewsItemFeaturedCommand(NewsItemId NewsItemId) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to set news item featured.
 /// </summary>
 /// <param name="news">Repository used to persist and retrieve news items.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
-public sealed class SetNewsItemFeaturedCommandHandler(
-    INewsItemRepository news,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
-) : ICommandHandler<SetNewsItemFeaturedCommand, Result>
+public sealed class SetNewsItemFeaturedCommandHandler(INewsItemRepository news, IUnitOfWork uow)
+    : ICommandHandler<SetNewsItemFeaturedCommand, Result>
 {
     /// <summary>
     /// Handles the request to set news item featured.
@@ -39,7 +34,7 @@ public sealed class SetNewsItemFeaturedCommandHandler(
         var chosen = await news.GetByIdAsync(command.NewsItemId, ct);
         if (chosen is null)
         {
-            return Error.NotFound(ErrorCode.NewsItemNotFound);
+            return Error.NotFound(ApplicationErrorCode.NewsItemNotFound);
         }
 
         await uow.ExecuteInTransactionAsync(
@@ -54,7 +49,6 @@ public sealed class SetNewsItemFeaturedCommandHandler(
             ct
         );
 
-        await cacheInvalidator.InvalidateAsync(CacheTags.News);
         return Result.Success();
     }
 }

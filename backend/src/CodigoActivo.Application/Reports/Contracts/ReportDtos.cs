@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Users;
+using CodigoActivo.Application.Users.Contracts;
 
 namespace CodigoActivo.Application.Reports.Contracts;
 

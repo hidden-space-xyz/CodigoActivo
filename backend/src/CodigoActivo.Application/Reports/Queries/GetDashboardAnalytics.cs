@@ -2,10 +2,12 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
-using Microsoft.Extensions.Caching.Hybrid;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -14,7 +16,48 @@ namespace CodigoActivo.Application.Reports.Queries;
 /// </summary>
 /// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record GetDashboardAnalyticsQuery(DashboardAnalyticsQuery Filters)
-    : IQuery<DashboardAnalyticsResponse>;
+    : IQuery<DashboardAnalyticsResponse>,
+        ICachedQuery
+{
+    /// <inheritdoc />
+    public CacheDuration Duration => CacheDuration.Dashboard;
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<string> Tags => CacheTags.DashboardAnalyticsSources;
+
+    /// <inheritdoc />
+    public string CacheKey(DateOnly today)
+    {
+        var (start, end, granularity) = Window(today);
+        return $"reports:dashboard:analytics:{start:yyyy-MM-dd}:{end:yyyy-MM-dd}:{granularity}";
+    }
+
+    /// <summary>
+    /// Resolves the days the analytics cover, the twelve months up to the end when no start is
+    /// given, and the bucket size that keeps the charts readable.
+    /// </summary>
+    /// <param name="today">Current day, the end when none is given.</param>
+    /// <returns>The first and last day, in order, and the granularity.</returns>
+    public (DateOnly Start, DateOnly End, string Granularity) Window(DateOnly today)
+    {
+        ArgumentNullException.ThrowIfNull(Filters);
+        var end = Filters.To ?? today;
+        var start = Filters.From ?? end.AddMonths(-12);
+        if (start > end)
+        {
+            (start, end) = (end, start);
+        }
+
+        var totalDays = end.DayNumber - start.DayNumber + 1;
+        var granularity = totalDays switch
+        {
+            <= 45 => "day",
+            <= 182 => "week",
+            _ => "month",
+        };
+        return (start, end, granularity);
+    }
+}
 
 /// <summary>
 /// Executes the query to retrieve dashboard analytics.
@@ -22,12 +65,10 @@ public sealed record GetDashboardAnalyticsQuery(DashboardAnalyticsQuery Filters)
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class GetDashboardAnalyticsQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
-    IClock clock,
-    HybridCache cache
+    IClock clock
 ) : IQueryHandler<GetDashboardAnalyticsQuery, DashboardAnalyticsResponse>
 {
     private static readonly string[] UserGrowthKeys = ["member", "sponsor", "participant"];
@@ -47,30 +88,9 @@ public sealed class GetDashboardAnalyticsQueryHandler(
         CancellationToken ct = default
     )
     {
-        var filters = query.Filters;
-        var today = clock.Today;
-        var end = filters.To ?? today;
-        var start = filters.From ?? end.AddMonths(-12);
-        if (start > end)
-        {
-            (start, end) = (end, start);
-        }
-
-        var totalDays = end.DayNumber - start.DayNumber + 1;
-        var granularity = totalDays switch
-        {
-            <= 45 => "day",
-            <= 182 => "week",
-            _ => "month",
-        };
-
-        return await cache.GetOrCreateAsync(
-            $"reports:dashboard:analytics:{start:yyyy-MM-dd}:{end:yyyy-MM-dd}:{granularity}",
-            async token => await BuildAnalyticsAsync(start, end, granularity, token),
-            CachePolicies.Dashboard,
-            CacheTags.DashboardAnalyticsSources,
-            ct
-        );
+        ArgumentNullException.ThrowIfNull(query);
+        var (start, end, granularity) = query.Window(clock.Today);
+        return await BuildAnalyticsAsync(start, end, granularity, ct);
     }
 
     private async Task<DashboardAnalyticsResponse> BuildAnalyticsAsync(
@@ -174,7 +194,8 @@ public sealed class GetDashboardAnalyticsQueryHandler(
                         c.DesiredCount,
                         Confirmed = a.Assignments.Count(x =>
                             x.ActivityRoleTypeId == c.ActivityRoleTypeId
-                            && x.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                            && x.AssignmentStatusId
+                                == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
                         ),
                     })
                     .ToList(),
@@ -248,7 +269,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
             (
                 "members",
                 userRows
-                    .Where(u => u.UserTypeId == SeedIds.UserTypes.Member)
+                    .Where(u => u.UserTypeId == CatalogIds.UserTypes.IdOf(UserType.Member))
                     .Select(u => u.CreatedAt)
                     .ToList()
             ),
@@ -310,7 +331,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
         var participantsByGender = FixedSlices(
             GenderKeys,
             userRows
-                .Where(u => u.UserTypeId == SeedIds.UserTypes.Participant)
+                .Where(u => u.UserTypeId == CatalogIds.UserTypes.IdOf(UserType.Participant))
                 .GroupBy(u => u.Gender.ToString(), StringComparer.Ordinal)
                 .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)
         );
@@ -324,7 +345,10 @@ public sealed class GetDashboardAnalyticsQueryHandler(
 
         var titleById = eventRows.ToDictionary(e => e.Id, e => e.Title);
         var topEvents = assignmentRows
-            .Where(a => a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed)
+            .Where(a =>
+                a.AssignmentStatusId
+                == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
+            )
             .GroupBy(a => a.EventId)
             .Select(g => new { EventId = g.Key, Confirmed = g.Count() })
             .OrderByDescending(x => x.Confirmed)
@@ -477,9 +501,9 @@ public sealed class GetDashboardAnalyticsQueryHandler(
     {
         return id switch
         {
-            _ when id == SeedIds.UserTypes.Member => "member",
-            _ when id == SeedIds.UserTypes.Sponsor => "sponsor",
-            _ when id == SeedIds.UserTypes.Participant => "participant",
+            _ when id == CatalogIds.UserTypes.IdOf(UserType.Member) => "member",
+            _ when id == CatalogIds.UserTypes.IdOf(UserType.Sponsor) => "sponsor",
+            _ when id == CatalogIds.UserTypes.IdOf(UserType.Participant) => "participant",
             _ => "other",
         };
     }
@@ -488,9 +512,11 @@ public sealed class GetDashboardAnalyticsQueryHandler(
     {
         return id switch
         {
-            _ when id == SeedIds.AssignmentStatusTypes.Requested => "requested",
-            _ when id == SeedIds.AssignmentStatusTypes.Confirmed => "confirmed",
-            _ when id == SeedIds.AssignmentStatusTypes.Denied => "denied",
+            _ when id == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Requested) =>
+                "requested",
+            _ when id == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed) =>
+                "confirmed",
+            _ when id == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Denied) => "denied",
             _ => "other",
         };
     }

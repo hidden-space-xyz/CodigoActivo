@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Files.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.Files.Queries;
 /// Carries the criteria used to retrieve file by identifier.
 /// </summary>
 /// <param name="FileId">Identifier of the file.</param>
-public sealed record GetFileByIdQuery(Guid FileId) : IQuery<Result<FileResponse>>;
+public sealed record GetFileByIdQuery(StoredFileId FileId) : IQuery<Result<FileResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve file by identifier.
@@ -31,9 +33,9 @@ public sealed class GetFileByIdQueryHandler(IReadStore readStore, IQueryExecutor
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            readStore.Files.Where(f => f.Id == query.FileId).Select(FileProjections.File),
+            readStore.Files.Where(f => f.Id == query.FileId.Value).Select(FileProjections.File),
             ct
         );
-        return response is null ? Error.NotFound(ErrorCode.FileNotFound) : response;
+        return response is null ? Error.NotFound(ApplicationErrorCode.FileNotFound) : response;
     }
 }

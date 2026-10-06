@@ -1,7 +1,5 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
-using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Domain.Files;
 using Microsoft.Extensions.Logging;
@@ -19,7 +17,7 @@ public interface IOrphanFileCleaner
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default);
+    public Task DeleteIfOrphanedAsync(StoredFileId fileId, CancellationToken ct = default);
 
     /// <summary>
     /// Deletes an orphaned when it is no longer referenced.
@@ -28,7 +26,7 @@ public interface IOrphanFileCleaner
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task DeleteOrphanedAsync(
-        IReadOnlyCollection<Guid> fileIds,
+        IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default
     );
 }
@@ -39,13 +37,11 @@ public interface IOrphanFileCleaner
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class OrphanFileCleaner(
     IStoredFileRepository files,
     IUnitOfWork uow,
     IFileStorage storage,
-    ICacheInvalidator cacheInvalidator,
     ILogger<OrphanFileCleaner> logger
 ) : IOrphanFileCleaner
 {
@@ -55,7 +51,7 @@ public sealed class OrphanFileCleaner(
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task DeleteIfOrphanedAsync(Guid fileId, CancellationToken ct = default)
+    public async Task DeleteIfOrphanedAsync(StoredFileId fileId, CancellationToken ct = default)
     {
         try
         {
@@ -70,13 +66,13 @@ public sealed class OrphanFileCleaner(
                 return;
             }
 
-            var storedName = FileNaming.StoredName(file.Id, file.Extension);
+            var storedName = FileNaming.StoredName(file.Id.Value, file.Extension);
 
+            file.Delete();
             files.Remove(file);
             await uow.SaveChangesAsync(ct);
 
             storage.Delete(storedName);
-            await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -91,7 +87,7 @@ public sealed class OrphanFileCleaner(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task DeleteOrphanedAsync(
-        IReadOnlyCollection<Guid> fileIds,
+        IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default
     )
     {
@@ -118,6 +114,7 @@ public sealed class OrphanFileCleaner(
 
             foreach (var file in orphans)
             {
+                file.Delete();
                 files.Remove(file);
             }
 
@@ -125,10 +122,8 @@ public sealed class OrphanFileCleaner(
 
             foreach (var file in orphans)
             {
-                DeleteStoredContent(file.Id, file.Extension);
+                DeleteStoredContent(file.Id.Value, file.Extension);
             }
-
-            await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.News;
 
 namespace CodigoActivo.Application.News.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.News.Queries;
 /// Carries the criteria used to retrieve news item by identifier.
 /// </summary>
 /// <param name="NewsItemId">Identifier of the news item.</param>
-public sealed record GetNewsItemByIdQuery(Guid NewsItemId) : IQuery<Result<NewsItemResponse>>;
+public sealed record GetNewsItemByIdQuery(NewsItemId NewsItemId) : IQuery<Result<NewsItemResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve news item by identifier.
@@ -31,9 +33,11 @@ public sealed class GetNewsItemByIdQueryHandler(IReadStore readStore, IQueryExec
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            readStore.News.Where(a => a.Id == query.NewsItemId).Select(NewsProjections.NewsItem),
+            readStore
+                .News.Where(a => a.Id == query.NewsItemId.Value)
+                .Select(NewsProjections.NewsItem),
             ct
         );
-        return response is null ? Error.NotFound(ErrorCode.NewsItemNotFound) : response;
+        return response is null ? Error.NotFound(ApplicationErrorCode.NewsItemNotFound) : response;
     }
 }

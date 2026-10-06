@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Common.Validation;
-
 namespace CodigoActivo.Application.Resources.Contracts;
 
 /// <summary>
@@ -104,39 +101,3 @@ public record ResourceListItemResponse(
             Guid.Empty
         ) { }
 }
-
-/// <summary>
-/// Contains the client-supplied data used to create a resource.
-/// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Url">The url value.</param>
-/// <param name="ResourceTypeId">Identifier of the resource type.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-public record CreateResourceRequest(
-    [Required] [MaxLength(200)] [NotBlank] string Title,
-    [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [RichText] [MaxLength(262144)] string? Description,
-    [HttpUrl] [MaxLength(500)] string? Url,
-    Guid ResourceTypeId,
-    Guid ThumbnailId
-);
-
-/// <summary>
-/// Contains the client-supplied data used to update the resource.
-/// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Url">The url value.</param>
-/// <param name="ResourceTypeId">Identifier of the resource type.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-public record UpdateResourceRequest(
-    [Required] [MaxLength(200)] [NotBlank] string Title,
-    [Required] [MaxLength(300)] [NotBlank] string Subtitle,
-    [RichText] [MaxLength(262144)] string? Description,
-    [HttpUrl] [MaxLength(500)] string? Url,
-    Guid ResourceTypeId,
-    Guid ThumbnailId
-);
