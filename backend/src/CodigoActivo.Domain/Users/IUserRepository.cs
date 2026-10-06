@@ -14,7 +14,7 @@ public interface IUserRepository : IRepository<User>
     /// <param name="id">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the account, or <see langword="null"/> when it does not exist.</returns>
-    public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    public Task<User?> GetByIdAsync(UserId id, CancellationToken ct = default);
 
     /// <summary>
     /// Loads the accounts that exist among the given ones.
@@ -23,7 +23,7 @@ public interface IUserRepository : IRepository<User>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the existing accounts.</returns>
     public Task<IReadOnlyList<User>> ListByIdsAsync(
-        IReadOnlyCollection<Guid> ids,
+        IReadOnlyCollection<UserId> ids,
         CancellationToken ct = default
     );
 
@@ -33,7 +33,7 @@ public interface IUserRepository : IRepository<User>
     /// <param name="email">Normalized email address.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the account, or <see langword="null"/> when no account uses it.</returns>
-    public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
+    public Task<User?> GetByEmailAsync(EmailAddress email, CancellationToken ct = default);
 
     /// <summary>
     /// Counts the dependents a guardian has.
@@ -41,7 +41,7 @@ public interface IUserRepository : IRepository<User>
     /// <param name="guardianId">Identifier of the guardian.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the number of dependents.</returns>
-    public Task<int> CountDependentsAsync(Guid guardianId, CancellationToken ct = default);
+    public Task<int> CountDependentsAsync(UserId guardianId, CancellationToken ct = default);
 
     /// <summary>
     /// Tells whether an account already uses an email address.
@@ -51,8 +51,8 @@ public interface IUserRepository : IRepository<User>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="true"/> when the address is taken.</returns>
     public Task<bool> EmailExistsAsync(
-        string email,
-        Guid? excludeUserId = null,
+        EmailAddress email,
+        UserId? excludeUserId = null,
         CancellationToken ct = default
     );
 

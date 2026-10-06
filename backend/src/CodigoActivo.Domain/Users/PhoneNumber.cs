@@ -1,11 +1,13 @@
+using CodigoActivo.Domain.Common;
+
 namespace CodigoActivo.Domain.Users;
 
 /// <summary>
-/// Shape of a contact phone: digits with optional spaces, dots, hyphens and parentheses, and an
-/// optional plus sign before the first digit, between seven and fifteen digits in total (the
-/// E.164 maximum).
+/// Contact phone: digits with optional spaces, dots, hyphens and parentheses, and an optional plus
+/// sign before the first digit, between seven and fifteen digits in total (the E.164 maximum). It
+/// keeps the phone as typed, without the surrounding spaces.
 /// </summary>
-public static class PhoneNumber
+public sealed record PhoneNumber
 {
     /// <summary>
     /// Fewest digits a phone may have.
@@ -17,15 +19,49 @@ public static class PhoneNumber
     /// </summary>
     public const int MaxDigits = 15;
 
-    /// <summary>
-    /// Tells whether a trimmed phone has the accepted shape.
-    /// </summary>
-    /// <param name="phone">Phone to check, already trimmed.</param>
-    /// <returns><see langword="true"/> when the phone is well formed.</returns>
-    public static bool IsValid(string phone)
+    private PhoneNumber(string value)
     {
-        ArgumentNullException.ThrowIfNull(phone);
+        Value = value;
+    }
 
+    /// <summary>
+    /// Gets the trimmed phone.
+    /// </summary>
+    public string Value { get; }
+
+    /// <summary>
+    /// Trims and checks a typed phone.
+    /// </summary>
+    /// <param name="value">Phone as typed, not blank.</param>
+    /// <returns>The phone, or <see cref="DomainErrorCode.UserPhoneInvalid"/> when it has another shape.</returns>
+    public static Result<PhoneNumber> Create(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var trimmed = value.Trim();
+        return HasValidShape(trimmed)
+            ? new PhoneNumber(trimmed)
+            : Error.Validation(DomainErrorCode.UserPhoneInvalid);
+    }
+
+    /// <summary>
+    /// Restores a phone that was checked before it was stored.
+    /// </summary>
+    /// <param name="value">Stored phone.</param>
+    /// <returns>The phone.</returns>
+    public static PhoneNumber FromStored(string value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+        return new PhoneNumber(value);
+    }
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return Value;
+    }
+
+    private static bool HasValidShape(string phone)
+    {
         var digits = 0;
         var plus = false;
         foreach (var character in phone)

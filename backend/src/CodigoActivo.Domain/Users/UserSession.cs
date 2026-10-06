@@ -6,14 +6,14 @@ namespace CodigoActivo.Domain.Users;
 /// Session opened after a successful second factor. One row exists per session cookie issued, so
 /// a ticket can be revoked on the server instead of staying valid until the cookie expires.
 /// </summary>
-public class UserSession : IdentifiableEntity, IAggregateRoot
+public class UserSession : AggregateRoot<UserSessionId>
 {
     private UserSession() { }
 
     /// <summary>
     /// Gets the identifier of the account the session belongs to.
     /// </summary>
-    public Guid UserId { get; private set; }
+    public UserId UserId { get; private set; }
 
     /// <summary>
     /// Gets the UTC timestamp when the session was opened.
@@ -33,7 +33,7 @@ public class UserSession : IdentifiableEntity, IAggregateRoot
     /// <param name="now">Current time.</param>
     /// <param name="lifetime">How long the session is accepted.</param>
     /// <returns>The new session.</returns>
-    public static UserSession Start(Guid userId, DateTimeOffset now, TimeSpan lifetime)
+    public static UserSession Start(UserId userId, DateTimeOffset now, TimeSpan lifetime)
     {
         return new UserSession
         {
