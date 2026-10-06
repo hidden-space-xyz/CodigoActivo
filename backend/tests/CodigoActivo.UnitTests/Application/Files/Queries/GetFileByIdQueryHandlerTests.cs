@@ -1,7 +1,9 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Application.Files.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Files.FileTestData;
@@ -25,7 +27,7 @@ public sealed class GetFileByIdQueryHandlerTests
         store.Files.AddRange([NewFileRow(), file]);
 
         var result = await sut.HandleAsync(
-            new GetFileByIdQuery(file.Id),
+            new GetFileByIdQuery(StoredFileId.From(file.Id)),
             TestContext.Current.CancellationToken
         );
 
@@ -39,10 +41,10 @@ public sealed class GetFileByIdQueryHandlerTests
         store.Files.Add(NewFileRow());
 
         var result = await sut.HandleAsync(
-            new GetFileByIdQuery(Guid.NewGuid()),
+            new GetFileByIdQuery(StoredFileId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.FileNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.FileNotFound);
     }
 }

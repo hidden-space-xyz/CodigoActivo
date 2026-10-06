@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
@@ -54,7 +55,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     private Task<Result> ResendAsync(Guid userId)
     {
         return sut.HandleAsync(
-            new ResendTwoFactorCodeCommand(userId),
+            new ResendTwoFactorCodeCommand(UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
     }
@@ -72,7 +73,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
 
         var result = await ResendAsync(Guid.NewGuid());
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
@@ -81,9 +82,9 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     {
         var user = users.FindReturns(NewUserWithAuthenticator("SECRET"));
 
-        var result = await ResendAsync(user.Id);
+        var result = await ResendAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.TwoFactorResendNotAllowed);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendNotAllowed);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -94,9 +95,9 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         var user = users.FindReturns(NewUserWithLoginCode(clock));
         Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(1) });
 
-        var result = await ResendAsync(user.Id);
+        var result = await ResendAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -107,9 +108,9 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
             NewUserWithLoginCode(clock, lastSentAt: clock.UtcNow.AddSeconds(-30))
         );
 
-        var result = await ResendAsync(user.Id);
+        var result = await ResendAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.TwoFactorResendCooldownActive);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -121,7 +122,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
             NewUserWithLoginCode(clock, code: "111111", lastSentAt: clock.UtcNow.AddMinutes(-2))
         );
 
-        var result = await ResendAsync(user.Id);
+        var result = await ResendAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
         var code = emailSender.LastLoginCode();
@@ -136,7 +137,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     {
         var user = users.FindReturns(NewUser());
 
-        var result = await ResendAsync(user.Id);
+        var result = await ResendAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().ContainSingle();
@@ -151,9 +152,9 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
             NewUserWithLoginCode(clock, code: "111111", lastSentAt: clock.UtcNow.AddMinutes(-2))
         );
 
-        var result = await ResendAsync(user.Id);
+        var result = await ResendAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.TwoFactorResendCooldownActive);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
         user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + "111111");
         await AssertNotSavedAsync();
     }

@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
@@ -90,7 +91,7 @@ public sealed class LoginCodeIssuerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserContactInfoRequired);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserContactInfoRequired);
         emailSender.Sent.Should().BeEmpty();
         user.LoginCodeHash.Should().BeNull();
     }
@@ -107,7 +108,7 @@ public sealed class LoginCodeIssuerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.EmailSendFailed);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.EmailSendFailed);
         user.LoginCodeHash.Should().BeNull();
     }
 
@@ -147,7 +148,7 @@ public sealed class LoginCodeIssuerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserContactInfoRequired);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserContactInfoRequired);
         emailSender.Sent.Should().BeEmpty();
         user.LoginCodeHash.Should().BeNull();
     }
@@ -164,7 +165,7 @@ public sealed class LoginCodeIssuerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.TwoFactorResendCooldownActive);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
         user.LoginCodeHash.Should().BeNull();
     }
 
@@ -180,7 +181,7 @@ public sealed class LoginCodeIssuerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.EmailSendFailed);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.EmailSendFailed);
         user.LoginCodeHash.Should().BeNull();
     }
 }

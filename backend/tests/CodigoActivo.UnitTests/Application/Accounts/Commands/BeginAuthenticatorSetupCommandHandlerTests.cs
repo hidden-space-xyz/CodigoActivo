@@ -1,9 +1,11 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -22,6 +24,7 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly TwoFactorOptions options = new() { Issuer = "Código Activo" };
+    private readonly TestCurrentUser currentUser = new();
     private readonly BeginAuthenticatorSetupCommandHandler sut;
 
     public BeginAuthenticatorSetupCommandHandlerTests()
@@ -29,7 +32,7 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
         totp.GenerateSecret().Returns(Secret);
         sut = new BeginAuthenticatorSetupCommandHandler(
             users,
-            uow,
+            currentUser,
             clock,
             PasswordGuards.Create(new FakePasswordHasher(), uow, clock),
             totp,
@@ -40,8 +43,9 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
 
     private Task<Result<AuthenticatorSetup>> SetupAsync(Guid userId, string password)
     {
+        currentUser.Id = UserId.From(userId);
         return sut.HandleAsync(
-            new BeginAuthenticatorSetupCommand(userId, new AuthenticatorSetupRequest(password)),
+            new AuthenticatorSetupRequest(password).ToCommand(),
             TestContext.Current.CancellationToken
         );
     }
@@ -59,7 +63,7 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
 
         var result = await SetupAsync(Guid.NewGuid(), "password123");
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
@@ -73,9 +77,9 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     {
         var user = users.FindReturns(NewUser());
 
-        var result = await SetupAsync(user.Id, password);
+        var result = await SetupAsync(user.Id.Value, password);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.PendingAuthenticatorKey.Should().BeNull();
         user.PasswordFailedAttempts.Should().Be(countedFailures);
         await AssertNotSavedAsync();
@@ -86,9 +90,9 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     {
         var user = users.FindReturns(NewUser(passwordHash: null));
 
-        var result = await SetupAsync(user.Id, "password123");
+        var result = await SetupAsync(user.Id.Value, "password123");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
     }
 
     [Fact]
@@ -96,7 +100,7 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     {
         var user = users.FindReturns(NewUser(email: "ana@test.com"));
 
-        var result = await SetupAsync(user.Id, "password123");
+        var result = await SetupAsync(user.Id.Value, "password123");
 
         result.IsSuccess.Should().BeTrue();
         result.Value.SharedKey.Should().Be("JBSW Y3DP EHPK 3PXP JBSW Y3DP EHPK 3PXP");
@@ -109,7 +113,6 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
         user.PendingAuthenticatorExpiresAt.Should().Be(clock.UtcNow + options.SetupLifetime);
         user.AuthenticatorKey.Should().BeNull("the key only activates after confirmation");
         user.TwoFactorMethod.Should().Be(CodigoActivo.Domain.Users.TwoFactorMethod.Email);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -117,9 +120,9 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     {
         var user = users.FindReturns(NewUserWithAuthenticator(Secret));
 
-        var result = await SetupAsync(user.Id, "password123");
+        var result = await SetupAsync(user.Id.Value, "password123");
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorAlreadyEnabled);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
         user.PendingAuthenticatorKey.Should().BeNull();
         user.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + Secret);
         await AssertNotSavedAsync();
@@ -130,7 +133,7 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     {
         var user = users.FindReturns(NewUser(email: null));
 
-        var result = await SetupAsync(user.Id, "password123");
+        var result = await SetupAsync(user.Id.Value, "password123");
 
         result.Value.AuthenticatorUri.Should().Contain($":{user.Id}?secret=");
     }

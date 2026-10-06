@@ -120,7 +120,7 @@ public sealed class GetSessionIdentityQueryHandlerTests
     [Fact]
     public async Task HandleAsyncAccountNotActiveReturnsNull()
     {
-        var user = NewUserRow(statusId: SeedIds.UserStatusTypes.Pending);
+        var user = NewUserRow(statusId: KnownIds.UserStatusTypes.Pending);
         store.Users.Add(user);
         store.UserSessions.Add(Session(user.Id, Now.AddDays(1)));
 

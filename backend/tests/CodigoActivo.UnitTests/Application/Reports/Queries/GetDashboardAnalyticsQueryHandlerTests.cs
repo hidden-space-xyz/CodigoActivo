@@ -7,6 +7,8 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Reports.Queries;
 
@@ -21,12 +23,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
 
     public GetDashboardAnalyticsQueryHandlerTests()
     {
-        sut = new GetDashboardAnalyticsQueryHandler(
-            store,
-            new FakeQueryExecutor(),
-            clock,
-            new FakeHybridCache()
-        );
+        sut = new GetDashboardAnalyticsQueryHandler(store, new FakeQueryExecutor(), clock);
     }
 
     private static UserRow AnalyticsUser(
@@ -101,7 +98,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
                 new RoleCapacityRow
                 {
                     DesiredCount = desired,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    ActivityRoleTypeId = KnownIds.ActivityRoleTypes.Participant,
                 }
             );
         }
@@ -112,7 +109,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
                 new AssignmentRow
                 {
                     AssignmentStatusId = Confirmed,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    ActivityRoleTypeId = KnownIds.ActivityRoleTypes.Participant,
                 }
             );
         }
@@ -123,7 +120,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
                 new AssignmentRow
                 {
                     AssignmentStatusId = Confirmed,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
+                    ActivityRoleTypeId = KnownIds.ActivityRoleTypes.Leader,
                 }
             );
         }
@@ -152,11 +149,11 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         var e1 = new Guid("eeeeeeee-0000-0000-0000-000000000001");
         var e2 = new Guid("eeeeeeee-0000-0000-0000-000000000002");
 
-        var member = SeedIds.UserTypes.Member;
-        var sponsor = SeedIds.UserTypes.Sponsor;
-        var participant = SeedIds.UserTypes.Participant;
-        var active = SeedIds.UserStatusTypes.Active;
-        var dependent = SeedIds.UserStatusTypes.Dependent;
+        var member = KnownIds.UserTypes.Member;
+        var sponsor = KnownIds.UserTypes.Sponsor;
+        var participant = KnownIds.UserTypes.Participant;
+        var active = KnownIds.UserStatusTypes.Active;
+        var dependent = KnownIds.UserStatusTypes.Dependent;
 
         var parent = AnalyticsUser(participant, active, Utc(2026, 6, 20), gender: Gender.Other);
         store.Users.AddRange([
@@ -217,21 +214,21 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
                 Subtitle = "Subtítulo del recurso",
                 Title = "Recurso de prueba",
                 CreatedAt = Utc(2026, 3, 1),
-                ResourceTypeId = SeedIds.ResourceTypes.Internal,
+                ResourceTypeId = KnownIds.ResourceTypes.Internal,
             },
             new ResourceRow
             {
                 Subtitle = "Subtítulo del recurso",
                 Title = "Recurso de prueba",
                 CreatedAt = Utc(2026, 4, 1),
-                ResourceTypeId = SeedIds.ResourceTypes.External,
+                ResourceTypeId = KnownIds.ResourceTypes.External,
             },
             new ResourceRow
             {
                 Subtitle = "Subtítulo del recurso",
                 Title = "Recurso de prueba",
                 CreatedAt = Utc(2025, 12, 15),
-                ResourceTypeId = SeedIds.ResourceTypes.External,
+                ResourceTypeId = KnownIds.ResourceTypes.External,
             },
         ]);
 
@@ -424,10 +421,10 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     {
         var unknown = Guid.NewGuid();
         store.Users.AddRange([
-            AnalyticsUser(unknown, SeedIds.UserStatusTypes.Active, Utc(2026, 3, 1)),
+            AnalyticsUser(unknown, KnownIds.UserStatusTypes.Active, Utc(2026, 3, 1)),
             AnalyticsUser(
-                SeedIds.UserTypes.Member,
-                SeedIds.UserStatusTypes.Active,
+                KnownIds.UserTypes.Member,
+                KnownIds.UserStatusTypes.Active,
                 Utc(2026, 3, 1)
             ),
         ]);
@@ -452,8 +449,8 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
     {
         store.Users.Add(
             AnalyticsUser(
-                SeedIds.UserTypes.Participant,
-                SeedIds.UserStatusTypes.Active,
+                KnownIds.UserTypes.Participant,
+                KnownIds.UserStatusTypes.Active,
                 Utc(2026, 3, 1),
                 gender: Gender.PreferNotToSay
             )

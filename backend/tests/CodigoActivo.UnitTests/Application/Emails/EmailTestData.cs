@@ -7,6 +7,8 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Emails;
 
@@ -32,12 +34,12 @@ internal static class EmailTestData
             Gender = Gender.Other,
             ParentId = parent?.Id,
             Parent = parent,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Member,
+            UserStatusTypeId = KnownIds.UserStatusTypes.Active,
+            UserTypeId = KnownIds.UserTypes.Member,
         };
     }
 
-    public static SendEmailRequest Request(string subject = "Asunto", string body = "Cuerpo")
+    public static ManualEmailText Request(string subject = "Asunto", string body = "Cuerpo")
     {
         return new(subject, body);
     }

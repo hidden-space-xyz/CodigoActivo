@@ -1,8 +1,11 @@
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Users;
 
@@ -41,9 +44,11 @@ internal static class UserTestData
                 NationalId = parentId is null ? nationalId : null,
                 Gender = Gender.Male,
                 ParentId = parentId,
-                UserStatusTypeId = statusId ?? Guid.NewGuid(),
+                Status = CatalogIds.UserStatuses.ValueOf(
+                    statusId ?? KnownIds.UserStatusTypes.Active
+                ),
                 IsAdmin = isAdmin,
-                UserTypeId = typeId ?? Guid.NewGuid(),
+                UserType = CatalogIds.UserTypes.ValueOf(typeId ?? KnownIds.UserTypes.Participant),
                 CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
             }
         );
@@ -140,13 +145,13 @@ internal static class UserTestData
             string.Equals(user.FirstName, "Kid", StringComparison.Ordinal)
             && string.Equals(user.LastName, "Doe", StringComparison.Ordinal);
         var isDependentParticipant =
-            user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
-            && user.UserTypeId == SeedIds.UserTypes.Participant
-            && user.Gender is Gender.Female;
+            user.Status == UserStatus.Dependent
+            && user.UserType == UserType.Participant
+            && user.Gender is CodigoActivo.Domain.Users.Gender.Female;
 
         return isNamedKid
             && isDependentParticipant
-            && user.ParentId == parentId
+            && user.ParentId == UserId.From(parentId)
             && user.CreatedAt == createdAt;
     }
 
@@ -160,7 +165,7 @@ internal static class UserTestData
 
         users.Finds(sequence[0]);
         users
-            .GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .GetByIdAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>())
             .Returns(sequence[0], [.. sequence.Skip(1)]);
     }
 }

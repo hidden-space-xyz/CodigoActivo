@@ -1,11 +1,14 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Queries;
 
@@ -32,7 +35,7 @@ public sealed class GetLoginChallengeQueryHandlerTests
     {
         var result = await QueryAsync(Guid.NewGuid());
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.TwoFactorChallengeExpired);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
     }
 
     [Fact]

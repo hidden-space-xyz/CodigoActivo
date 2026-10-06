@@ -1,8 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -16,22 +17,27 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 public sealed class AddChildCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly TestCurrentUser currentUser = new(isAdmin: true);
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly AddChildCommandHandler sut;
 
     public AddChildCommandHandlerTests()
     {
-        sut = new AddChildCommandHandler(users, clock, uow.RunsTransactions(), cacheInvalidator);
+        sut = new AddChildCommandHandler(
+            users,
+            new ActingUserPolicy(currentUser, users),
+            clock,
+            uow.RunsTransactions()
+        );
     }
 
-    private Task<Result<Guid>> AddAsync(Guid parentId)
+    private Task<Result<UserId>> AddAsync(Guid parentId)
     {
         return sut.HandleAsync(
             new AddChildCommand(
-                parentId,
-                new RegisterMinorRequest("Kid", "Doe", MinorDob, Gender.Male)
+                UserId.From(parentId),
+                new MinorDraft("Kid", "Doe", MinorDob, Gender.Male)
             ),
             TestContext.Current.CancellationToken
         );
@@ -54,14 +60,14 @@ public sealed class AddChildCommandHandlerTests
     public async Task HandleAsyncParentMissingReturnsNotFound()
     {
         users.FindReturns(null);
-        var request = new RegisterMinorRequest("Kid", "Doe", MinorDob, Gender.Male);
+        var request = new MinorDraft("Kid", "Doe", MinorDob, Gender.Male);
 
         var result = await sut.HandleAsync(
-            new AddChildCommand(Guid.NewGuid(), request),
+            new AddChildCommand(UserId.New(), request),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.ParentUserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ParentUserNotFound);
         await AssertNotSavedAsync();
     }
 
@@ -69,14 +75,14 @@ public sealed class AddChildCommandHandlerTests
     public async Task HandleAsyncChildBirthDateNotMinorReturnsBadRequest()
     {
         users.FindReturns(NewUser());
-        var request = new RegisterMinorRequest("Grown", "Up", AdultDob, Gender.Male);
+        var request = new MinorDraft("Grown", "Up", AdultDob, Gender.Male);
 
         var result = await sut.HandleAsync(
-            new AddChildCommand(Guid.NewGuid(), request),
+            new AddChildCommand(UserId.New(), request),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserChildBirthDateNotMinor);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserChildBirthDateNotMinor);
         await AssertNotSavedAsync();
     }
 
@@ -89,9 +95,9 @@ public sealed class AddChildCommandHandlerTests
             .CountDependentsAsync(parent.Id, Arg.Any<CancellationToken>())
             .Returns(Household.MaxDependents);
 
-        var result = await AddAsync(parent.Id);
+        var result = await AddAsync(parent.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserChildLimitReached);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserChildLimitReached);
         await users
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
@@ -107,7 +113,7 @@ public sealed class AddChildCommandHandlerTests
             .CountDependentsAsync(parent.Id, Arg.Any<CancellationToken>())
             .Returns(Household.MaxDependents - 1);
 
-        var result = await AddAsync(parent.Id);
+        var result = await AddAsync(parent.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
         Received.InOrder(() =>
@@ -130,13 +136,10 @@ public sealed class AddChildCommandHandlerTests
         users.FindReturns(parent);
         users.LockAsync(parent, Arg.Any<CancellationToken>()).Returns(false);
 
-        var result = await AddAsync(parent.Id);
+        var result = await AddAsync(parent.Id.Value);
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.ParentUserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ParentUserNotFound);
         await AssertNotSavedAsync();
-        await cacheInvalidator
-            .DidNotReceiveWithAnyArgs()
-            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
     }
 
     [Fact]
@@ -147,10 +150,10 @@ public sealed class AddChildCommandHandlerTests
         users.FindReturns(parent);
         var added = await CaptureAddedUsersAsync();
         clock.UtcNow = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero);
-        var request = new RegisterMinorRequest("  Kid  ", "  Doe  ", MinorDob, Gender.Female);
+        var request = new MinorDraft("  Kid  ", "  Doe  ", MinorDob, Gender.Female);
 
         var result = await sut.HandleAsync(
-            new AddChildCommand(parentId, request),
+            new AddChildCommand(UserId.From(parentId), request),
             TestContext.Current.CancellationToken
         );
 
@@ -167,12 +170,5 @@ public sealed class AddChildCommandHandlerTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Users)
-                )
-            );
     }
 }

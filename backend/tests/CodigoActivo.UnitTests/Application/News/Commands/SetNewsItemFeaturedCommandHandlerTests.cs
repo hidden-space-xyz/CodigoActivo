@@ -1,7 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.News.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.News;
@@ -16,12 +15,11 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
 {
     private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>().RunsTransactions();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly SetNewsItemFeaturedCommandHandler sut;
 
     public SetNewsItemFeaturedCommandHandlerTests()
     {
-        sut = new SetNewsItemFeaturedCommandHandler(news, uow, cacheInvalidator);
+        sut = new SetNewsItemFeaturedCommandHandler(news, uow);
     }
 
     [Fact]
@@ -30,13 +28,13 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
         news.Finds(null);
 
         var result = await sut.HandleAsync(
-            new SetNewsItemFeaturedCommand(Guid.NewGuid()),
+            new SetNewsItemFeaturedCommand(NewsItemId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.NewsItemNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -55,6 +53,7 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         chosen.Featured.Should().BeTrue();
+        chosen.PullDomainEvents().Should().Equal(new NewsItemFeaturedChanged(chosen.Id, true));
         await news.Received(1).GetByIdAsync(chosen.Id, Arg.Any<CancellationToken>());
         await uow.Received(1)
             .ExecuteInTransactionAsync(
@@ -79,6 +78,7 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         chosen.Featured.Should().BeTrue();
         previous.Featured.Should().BeFalse();
+        previous.PullDomainEvents().Should().Equal(new NewsItemFeaturedChanged(previous.Id, false));
         chosen.UpdatedAt.Should().BeNull();
         previous.UpdatedAt.Should().BeNull();
     }
@@ -104,7 +104,7 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAlreadyFeaturedKeepsItFeatured()
+    public async Task HandleAsyncAlreadyFeaturedKeepsItFeaturedWithoutRaisingAChange()
     {
         var chosen = NewNewsItem(featured: true);
         news.Finds(chosen);
@@ -117,27 +117,6 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         chosen.Featured.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task HandleAsyncMarkedInvalidatesNewsCache()
-    {
-        var chosen = NewNewsItem();
-        news.Finds(chosen);
-        news.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([]);
-
-        var result = await sut.HandleAsync(
-            new SetNewsItemFeaturedCommand(chosen.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.News)
-                )
-            );
+        chosen.PullDomainEvents().Should().BeEmpty();
     }
 }

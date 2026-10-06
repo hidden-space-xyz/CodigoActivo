@@ -12,7 +12,10 @@ using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Common;
 
@@ -343,8 +346,8 @@ public sealed class ProjectionsTests
     public static TheoryData<Guid, bool> EarlySignupTypes =>
         new()
         {
-            { SeedIds.UserTypes.Member, true },
-            { SeedIds.UserTypes.Sponsor, true },
+            { KnownIds.UserTypes.Member, true },
+            { KnownIds.UserTypes.Sponsor, true },
             { Guid.NewGuid(), false },
         };
 
@@ -364,7 +367,7 @@ public sealed class ProjectionsTests
     {
         var user = NewUser(
             Guid.NewGuid(),
-            SeedIds.UserTypes.Member,
+            KnownIds.UserTypes.Member,
             Guid.NewGuid(),
             parentTypeId: guardianTypeId
         );

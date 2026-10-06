@@ -1,14 +1,15 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Contracts;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -21,20 +22,17 @@ public sealed class CreateActivityCommandHandlerTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
-    private readonly FakeReadStore readStore = new();
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly CreateActivityCommandHandler sut;
 
     public CreateActivityCommandHandlerTests()
     {
         sut = new CreateActivityCommandHandler(
             activities,
-            new ActivityValidator(events, files, readStore, new FakeQueryExecutor(), clock),
-            clock,
-            uow,
-            cacheInvalidator
+            new ActivityValidator(events, files, clock),
+            currentUser,
+            clock
         );
     }
 
@@ -77,14 +75,12 @@ public sealed class CreateActivityCommandHandlerTests
         events.Finds(null);
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(Guid.NewGuid(), CreateRequest(), Guid.NewGuid()),
+            CreateRequest().ToCommand(EventId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -104,14 +100,12 @@ public sealed class CreateActivityCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(ev.Id, request, Guid.NewGuid()),
+            request.ToCommand(ev.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ActivityScheduleRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleRequired);
     }
 
     [Fact]
@@ -121,18 +115,12 @@ public sealed class CreateActivityCommandHandlerTests
         var when = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero);
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(
-                ev.Id,
-                CreateRequest(startsAt: when, endsAt: when),
-                Guid.NewGuid()
-            ),
+            CreateRequest(startsAt: when, endsAt: when).ToCommand(ev.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ActivityScheduleInvalidRange);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleInvalidRange);
     }
 
     [Fact]
@@ -141,21 +129,16 @@ public sealed class CreateActivityCommandHandlerTests
         var ev = EventExists();
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(
-                ev.Id,
-                CreateRequest(
+            CreateRequest(
                     startsAt: new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
                     endsAt: new DateTimeOffset(2026, 8, 1, 12, 0, 0, TimeSpan.Zero)
-                ),
-                Guid.NewGuid()
-            ),
+                )
+                .ToCommand(ev.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ActivityScheduleOutsideEventRange);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleOutsideEventRange);
     }
 
     [Fact]
@@ -164,21 +147,16 @@ public sealed class CreateActivityCommandHandlerTests
         var ev = EventExists();
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(
-                ev.Id,
-                CreateRequest(
+            CreateRequest(
                     startsAt: new DateTimeOffset(2026, 6, 25, 10, 0, 0, TimeSpan.Zero),
                     endsAt: new DateTimeOffset(2026, 6, 25, 12, 0, 0, TimeSpan.Zero)
-                ),
-                Guid.NewGuid()
-            ),
+                )
+                .ToCommand(ev.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ActivityScheduleOutsideEventRange);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleOutsideEventRange);
     }
 
     [Fact]
@@ -188,14 +166,12 @@ public sealed class CreateActivityCommandHandlerTests
         files.ThumbnailExists(false);
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(ev.Id, CreateRequest(), Guid.NewGuid()),
+            CreateRequest().ToCommand(ev.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ActivityThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityThumbnailNotFound);
     }
 
     [Fact]
@@ -203,32 +179,29 @@ public sealed class CreateActivityCommandHandlerTests
     {
         var ev = EventExists();
         files.ThumbnailExists(true);
-        readStore.ModalityExists(false);
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(ev.Id, CreateRequest(), Guid.NewGuid()),
+            (CreateRequest() with { ActivityModalityTypeId = Guid.NewGuid() }).ToCommand(ev.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ActivityModalityTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityModalityTypeNotFound);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestPersistsTrimmedActivityReturnsIdAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestStagesTrimmedActivityReturnsId()
     {
         var eventId = Guid.NewGuid();
         var caller = Guid.NewGuid();
+        currentUser.Id = UserId.From(caller);
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         events.Finds(NewEvent(id: eventId));
         files.ThumbnailExists(true);
-        readStore.ModalityExists(true);
         var added = await CaptureAddedActivitiesAsync();
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(eventId, CreateRequest(), caller),
+            CreateRequest().ToCommand(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -237,40 +210,27 @@ public sealed class CreateActivityCommandHandlerTests
         result.Value.Should().Be(created.Id);
         created.Title.Should().Be("Taller");
         created.Location.Should().Be("Sala");
-        created.EventId.Should().Be(eventId);
-        created.CreatedBy.Should().Be(caller);
+        created.EventId.Value.Should().Be(eventId);
+        created.CreatedBy.Value.Should().Be(caller);
         created.CreatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Activities)
-                )
-            );
     }
 
     [Fact]
-    public async Task HandleAsyncWithRoleCapacitiesPersistsDesiredCounts()
+    public async Task HandleAsyncWithRoleCapacitiesStagesDesiredCounts()
     {
         var ev = EventExists();
         files.ThumbnailExists(true);
-        readStore.ModalityExists(true);
-        readStore.CatalogRoles();
         var added = await CaptureAddedActivitiesAsync();
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(
-                ev.Id,
-                CreateRequest(
+            CreateRequest(
                     roleCapacities:
                     [
-                        new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 12),
-                        new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Volunteer, 3),
+                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 12),
+                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Volunteer, 3),
                     ]
-                ),
-                Guid.NewGuid()
-            ),
+                )
+                .ToCommand(ev.Id),
             TestContext.Current.CancellationToken
         );
 
@@ -279,13 +239,11 @@ public sealed class CreateActivityCommandHandlerTests
         result.Value.Should().Be(saved.Id);
         saved.RoleCapacities.Should().HaveCount(2);
         saved
-            .RoleCapacities.Single(c =>
-                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
-            )
+            .RoleCapacities.Single(c => c.Role == ActivityRole.Participant)
             .DesiredCount.Should()
             .Be(12);
         saved
-            .RoleCapacities.Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer)
+            .RoleCapacities.Single(c => c.Role == ActivityRole.Volunteer)
             .DesiredCount.Should()
             .Be(3);
     }
@@ -295,28 +253,21 @@ public sealed class CreateActivityCommandHandlerTests
     {
         var ev = EventExists();
         files.ThumbnailExists(true);
-        readStore.ModalityExists(true);
-        readStore.CatalogRoles();
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(
-                ev.Id,
-                CreateRequest(
+            CreateRequest(
                     roleCapacities:
                     [
-                        new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 5),
-                        new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 8),
+                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 5),
+                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 8),
                     ]
-                ),
-                Guid.NewGuid()
-            ),
+                )
+                .ToCommand(ev.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ActivityRoleCapacityDuplicated);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleCapacityDuplicated);
     }
 
     [Fact]
@@ -324,21 +275,14 @@ public sealed class CreateActivityCommandHandlerTests
     {
         var ev = EventExists();
         files.ThumbnailExists(true);
-        readStore.ModalityExists(true);
-        readStore.CatalogRoles();
 
         var result = await sut.HandleAsync(
-            new CreateActivityCommand(
-                ev.Id,
-                CreateRequest(roleCapacities: [new ActivityRoleCapacityRequest(Guid.NewGuid(), 5)]),
-                Guid.NewGuid()
-            ),
+            CreateRequest(roleCapacities: [new ActivityRoleCapacityRequest(Guid.NewGuid(), 5)])
+                .ToCommand(ev.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityRoleTypeNotFound);
     }
 }

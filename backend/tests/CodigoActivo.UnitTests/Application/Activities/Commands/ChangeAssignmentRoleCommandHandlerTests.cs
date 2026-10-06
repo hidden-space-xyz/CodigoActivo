@@ -1,12 +1,13 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Contracts;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -17,31 +18,26 @@ namespace CodigoActivo.UnitTests.Application.Activities.Commands;
 public sealed class ChangeAssignmentRoleCommandHandlerTests
 {
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
-    private readonly FakeReadStore readStore = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly ChangeAssignmentRoleCommandHandler sut;
 
     public ChangeAssignmentRoleCommandHandlerTests()
     {
-        sut = new ChangeAssignmentRoleCommandHandler(
-            activities,
-            readStore,
-            new FakeQueryExecutor(),
-            uow,
-            cacheInvalidator
-        );
+        sut = new ChangeAssignmentRoleCommandHandler(activities);
     }
 
-    private void RoleExists(Guid roleTypeId, bool exists)
+    private Task<Result> ChangeRoleAsync(
+        Guid activityId,
+        Guid userId,
+        ChangeAssignmentRoleRequest request
+    )
     {
-        readStore.ActivityRoleTypes.Add(
-            new ActivityRoleTypeRow
-            {
-                Id = exists ? roleTypeId : Guid.NewGuid(),
-                Name = "Rol",
-                Description = "d",
-            }
+        return sut.HandleAsync(
+            new ChangeAssignmentRoleCommand(
+                ActivityId.From(activityId),
+                UserId.From(userId),
+                request.ActivityRoleTypeId
+            ),
+            TestContext.Current.CancellationToken
         );
     }
 
@@ -51,19 +47,14 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
         var activity = NewActivity();
         activities.Finds(activity);
 
-        var result = await sut.HandleAsync(
-            new ChangeAssignmentRoleCommand(
-                activity.Id,
-                Guid.NewGuid(),
-                new ChangeAssignmentRoleRequest(Guid.NewGuid())
-            ),
-            TestContext.Current.CancellationToken
+        var result = await ChangeRoleAsync(
+            activity.Id.Value,
+            Guid.NewGuid(),
+            new ChangeAssignmentRoleRequest(Guid.NewGuid())
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.ActivityAssignmentNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentNotFound);
     }
 
     [Fact]
@@ -74,40 +65,30 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
         var activity = NewActivity();
         activity.SignUp(userId);
         activities.Finds(activity);
-        RoleExists(roleTypeId, false);
 
-        var result = await sut.HandleAsync(
-            new ChangeAssignmentRoleCommand(
-                activity.Id,
-                userId,
-                new ChangeAssignmentRoleRequest(roleTypeId)
-            ),
-            TestContext.Current.CancellationToken
+        var result = await ChangeRoleAsync(
+            activity.Id.Value,
+            userId,
+            new ChangeAssignmentRoleRequest(roleTypeId)
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.ActivityRoleTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityRoleTypeNotFound);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestUpdatesRolePersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestUpdatesRoleAndRaisesTheChange()
     {
         var userId = Guid.NewGuid();
-        var roleId = SeedIds.ActivityRoleTypes.Leader;
+        var roleId = KnownIds.ActivityRoleTypes.Leader;
         var activity = NewActivity();
         var assignment = activity.SignUp(userId);
         activities.Finds(activity);
-        RoleExists(roleId, true);
 
-        var result = await sut.HandleAsync(
-            new ChangeAssignmentRoleCommand(
-                activity.Id,
-                userId,
-                new ChangeAssignmentRoleRequest(roleId)
-            ),
-            TestContext.Current.CancellationToken
+        var result = await ChangeRoleAsync(
+            activity.Id.Value,
+            userId,
+            new ChangeAssignmentRoleRequest(roleId)
         );
 
         result.IsSuccess.Should().BeTrue();
@@ -115,46 +96,45 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
         activity
             .Assignments.Should()
             .ContainSingle(a =>
-                MatchesAssignment(a, userId, activity.Id, roleId, assignment.AssignmentStatusId)
-            );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Activities)
+                MatchesAssignment(
+                    a,
+                    userId,
+                    activity.Id.Value,
+                    ActivityRole.Leader,
+                    assignment.Status
                 )
+            );
+        activity
+            .PullDomainEvents()
+            .Should()
+            .Equal(
+                new AssignmentRoleChanged(activity.Id, UserId.From(userId), ActivityRole.Leader)
             );
     }
 
     [Fact]
-    public async Task HandleAsyncSameRoleAsCurrentKeepsAssignmentWithoutRemovingOrSaving()
+    public async Task HandleAsyncSameRoleAsCurrentKeepsAssignmentWithoutRaisingAChange()
     {
         var userId = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
-        var statusId = Guid.NewGuid();
+        var roleId = KnownIds.ActivityRoleTypes.Volunteer;
         var activity = NewActivity();
-        var assignment = activity.SignUp(userId, roleId, statusId);
+        var assignment = activity.SignUp(
+            userId,
+            ActivityRole.Volunteer,
+            AssignmentStatus.Confirmed
+        );
         activities.Finds(activity);
-        RoleExists(roleId, true);
 
-        var result = await sut.HandleAsync(
-            new ChangeAssignmentRoleCommand(
-                activity.Id,
-                userId,
-                new ChangeAssignmentRoleRequest(roleId)
-            ),
-            TestContext.Current.CancellationToken
+        var result = await ChangeRoleAsync(
+            activity.Id.Value,
+            userId,
+            new ChangeAssignmentRoleRequest(roleId)
         );
 
         result.IsSuccess.Should().BeTrue();
-        assignment.ActivityRoleTypeId.Should().Be(roleId);
-        assignment.AssignmentStatusId.Should().Be(statusId);
+        assignment.Role.Should().Be(ActivityRole.Volunteer);
+        assignment.Status.Should().Be(AssignmentStatus.Confirmed);
         activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(assignment);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await cacheInvalidator
-            .DidNotReceive()
-            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+        activity.PullDomainEvents().Should().BeEmpty();
     }
 }

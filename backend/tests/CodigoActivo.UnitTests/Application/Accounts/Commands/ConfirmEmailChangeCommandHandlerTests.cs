@@ -6,6 +6,7 @@ using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -28,23 +29,28 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly CommittedEvents events;
     private readonly ConfirmEmailChangeCommandHandler sut;
 
     public ConfirmEmailChangeCommandHandlerTests()
     {
+        events = new CommittedEvents(
+            new AccountSecurityNotifications(
+                users,
+                new AccountSecurityNotifier(
+                    emailSender,
+                    clock,
+                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    NullLogger<AccountSecurityNotifier>.Instance
+                ),
+                NullLogger<AccountSecurityNotifications>.Instance
+            )
+        );
         sut = new ConfirmEmailChangeCommandHandler(
             users,
             clock,
             new OtpValidator(new FakePasswordHasher()),
-            cacheInvalidator,
-            new AccountSecurityNotifier(
-                emailSender,
-                clock,
-                new AccountEmailComposer(new ApplicationOptions(), clock),
-                NullLogger<AccountSecurityNotifier>.Instance
-            ),
             new EmailClaims(AccountErasers.Create(users, deletedAccounts, erasureStore, uow), uow)
         );
     }
@@ -52,7 +58,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
     private Task<Result> HandleAsync(Guid userId, string code)
     {
         return sut.HandleAsync(
-            new ConfirmEmailChangeCommand(userId, code),
+            new ConfirmEmailChangeCommand(UserId.From(userId), code),
             TestContext.Current.CancellationToken
         );
     }
@@ -74,7 +80,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
             }
         );
         users
-            .GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GetByEmailAsync(Arg.Any<EmailAddress>(), Arg.Any<CancellationToken>())
             .Returns(newAddressHolder);
         return user;
     }
@@ -92,7 +98,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
 
         var result = await HandleAsync(Guid.NewGuid(), Code);
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
@@ -109,10 +115,11 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
     {
         var user = UserChangingEmail(pendingEmail: pendingEmail, expiresIn: expiresIn);
 
-        var result = await HandleAsync(user.Id, code);
+        var result = await HandleAsync(user.Id.Value, code);
+        await events.PublishAsync(user);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.OtpInvalidOrExpired);
-        user.Email.Should().Be("old@test.com");
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
+        user.Email!.Value.Should().Be("old@test.com");
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -122,10 +129,10 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
     {
         var user = UserChangingEmail(NewUser(email: "new@test.com"));
 
-        var result = await HandleAsync(user.Id, Code);
+        var result = await HandleAsync(user.Id.Value, Code);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserEmailAlreadyInUse);
-        user.Email.Should().Be("old@test.com");
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.UserEmailAlreadyInUse);
+        user.Email!.Value.Should().Be("old@test.com");
         await AssertNotSavedAsync();
     }
 
@@ -141,9 +148,9 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
                 )
             );
 
-        var result = await HandleAsync(user.Id, Code);
+        var result = await HandleAsync(user.Id.Value, Code);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserEmailAlreadyInUse);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.UserEmailAlreadyInUse);
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -152,21 +159,15 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
     {
         var user = UserChangingEmail();
 
-        var result = await HandleAsync(user.Id, $"  {Code}  ");
+        var result = await HandleAsync(user.Id.Value, $"  {Code}  ");
+        await events.PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
-        user.Email.Should().Be("new@test.com");
+        user.Email!.Value.Should().Be("new@test.com");
         user.PendingEmail.Should().BeNull();
         user.EmailChangeCodeHash.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Users)
-                )
-            );
         var alert = emailSender.Sent.Should().ContainSingle().Subject;
         alert.Kind.Should().Be(EmailKind.SecurityAlert);
         alert.ToAddress.Should().Be("old@test.com");
@@ -176,13 +177,13 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAddressOfAnUnverifiedAccountErasesItAndMovesTheAccount()
     {
-        var holder = NewUser(email: "new@test.com", statusId: SeedIds.UserStatusTypes.Pending);
+        var holder = NewUser(email: "new@test.com", statusId: KnownIds.UserStatusTypes.Pending);
         var user = UserChangingEmail(holder);
 
-        var result = await HandleAsync(user.Id, Code);
+        var result = await HandleAsync(user.Id.Value, Code);
 
         result.IsSuccess.Should().BeTrue();
-        user.Email.Should().Be("new@test.com");
+        user.Email!.Value.Should().Be("new@test.com");
         users.Received(1).Remove(holder);
         await erasureStore
             .Received(1)

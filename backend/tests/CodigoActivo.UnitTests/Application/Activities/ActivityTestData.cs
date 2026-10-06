@@ -1,7 +1,10 @@
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
@@ -40,7 +43,7 @@ internal static class ActivityTestData
         TimeSpan.Zero
     );
 
-    public static readonly Guid RequestedModalityId = SeedIds.ActivityModalityTypes.Presencial;
+    public static readonly Guid RequestedModalityId = KnownIds.ActivityModalityTypes.Presencial;
 
     private static readonly DateOnly EventStartsAt = new(2026, 7, 1);
     private static readonly DateOnly EventEndsAt = new(2026, 7, 31);
@@ -69,8 +72,14 @@ internal static class ActivityTestData
     )
     {
         return Activity.Create(
-            eventId ?? Guid.NewGuid(),
-            new ActivityDetails(title, "{}", "Sala", Guid.NewGuid(), Guid.NewGuid()),
+            EventId.From(eventId ?? Guid.NewGuid()),
+            new ActivityDetails(
+                title,
+                "{}",
+                "Sala",
+                ActivityModality.Presencial,
+                StoredFileId.From(Guid.NewGuid())
+            ),
             ActivitySchedule
                 .Create(
                     new DateTimeOffset(2026, 7, 31, 10, 0, 0, TimeSpan.Zero),
@@ -81,7 +90,7 @@ internal static class ActivityTestData
                 )
                 .Value,
             RoleCapacityPlan.Create(capacities).Value,
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
         );
     }
@@ -138,7 +147,7 @@ internal static class ActivityTestData
                 FirstName = "Ada",
                 LastName = "Parent",
                 Email = "ada@parent.test",
-                UserTypeId = SeedIds.UserTypes.Member,
+                UserType = UserType.Member,
             }
         );
     }
@@ -151,7 +160,7 @@ internal static class ActivityTestData
             FirstName = "Ada",
             LastName = "Parent",
             Email = "ada@parent.test",
-            UserTypeId = SeedIds.UserTypes.Member,
+            UserTypeId = KnownIds.UserTypes.Member,
         };
     }
 
@@ -164,7 +173,7 @@ internal static class ActivityTestData
                 FirstName = "Kid",
                 LastName = "One",
                 ParentId = parentId,
-                UserTypeId = SeedIds.UserTypes.Participant,
+                UserType = UserType.Participant,
             }
         );
     }
@@ -177,24 +186,25 @@ internal static class ActivityTestData
             FirstName = "Kid",
             LastName = "One",
             ParentId = parentId,
-            UserTypeId = SeedIds.UserTypes.Participant,
+            UserTypeId = KnownIds.UserTypes.Participant,
         };
     }
 
     public static Assignment SignUp(
         this Activity activity,
         Guid userId,
-        Guid? roleTypeId = null,
-        Guid? statusId = null
+        ActivityRole role = ActivityRole.Participant,
+        AssignmentStatus? status = null
     )
     {
-        activity.RequestAssignment(userId, roleTypeId ?? Guid.NewGuid(), SignedUpAt);
-        if (statusId is { } status)
+        activity.RequestAssignment(UserId.From(userId), role, SignedUpAt);
+        if (status is { } decided)
         {
-            activity.ChangeAssignmentStatus(userId, status);
+            activity.ChangeAssignmentStatus(UserId.From(userId), decided);
         }
 
-        return activity.AssignmentOf(userId)!;
+        activity.PullDomainEvents();
+        return activity.AssignmentOf(UserId.From(userId))!;
     }
 
     public static AssignmentRow NewAssignmentRow(
@@ -234,8 +244,8 @@ internal static class ActivityTestData
         Assignment? assignment,
         Guid userId,
         Guid activityId,
-        Guid roleTypeId,
-        Guid statusId
+        ActivityRole role,
+        AssignmentStatus status
     )
     {
         if (assignment is null)
@@ -243,10 +253,10 @@ internal static class ActivityTestData
             return false;
         }
 
-        var matchesTarget = assignment.UserId == userId && assignment.ActivityId == activityId;
-        return matchesTarget
-            && assignment.ActivityRoleTypeId == roleTypeId
-            && assignment.AssignmentStatusId == statusId;
+        var matchesTarget =
+            assignment.UserId == UserId.From(userId)
+            && assignment.ActivityId == ActivityId.From(activityId);
+        return matchesTarget && assignment.Role == role && assignment.Status == status;
     }
 
     public static ActivityRow OverlapActivityRow(
@@ -267,17 +277,6 @@ internal static class ActivityTestData
             ActivityEndsAt = new DateTimeOffset(2026, 7, 10, endHour, 0, 0, TimeSpan.Zero),
             EventId = eventId ?? Guid.Empty,
         };
-    }
-
-    public static void ModalityExists(this FakeReadStore readStore, bool exists)
-    {
-        readStore.ActivityModalityTypes.Add(
-            new ActivityModalityTypeRow
-            {
-                Id = exists ? RequestedModalityId : SeedIds.ActivityModalityTypes.Online,
-                Name = exists ? "Presencial" : "Online",
-            }
-        );
     }
 
     public static Activity HasActivityWindow(
@@ -310,7 +309,7 @@ internal static class ActivityTestData
         }
 
         events
-            .GetByIdAsync(resolvedEventId, Arg.Any<CancellationToken>())
+            .GetByIdAsync(EventId.From(resolvedEventId), Arg.Any<CancellationToken>())
             .Returns(
                 Persisted.As<Event>(
                     new
@@ -340,7 +339,9 @@ internal static class ActivityTestData
                 EventId = resolvedEventId,
             }
         );
-        activities.GetByIdAsync(activityId, Arg.Any<CancellationToken>()).Returns(activity);
+        activities
+            .GetByIdAsync(ActivityId.From(activityId), Arg.Any<CancellationToken>())
+            .Returns(activity);
         return activity;
     }
 
@@ -351,9 +352,9 @@ internal static class ActivityTestData
     )
     {
         return EventTermsAcceptance.Record(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            termsDocumentId,
+            EventId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
+            TermsDocumentId.From(termsDocumentId),
             accepted,
             decidedAt
         );
@@ -380,7 +381,7 @@ internal static class ActivityTestData
     )
     {
         termsAcceptances
-            .ListAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ListAsync(Arg.Any<EventId>(), Arg.Any<UserId>(), Arg.Any<CancellationToken>())
             .Returns(acceptances);
     }
 
@@ -394,7 +395,7 @@ internal static class ActivityTestData
                     FirstName = "Test",
                     LastName = "User",
                     Email = "test@user.test",
-                    UserTypeId = userTypeId,
+                    UserType = CatalogIds.UserTypes.ValueOf(userTypeId),
                 }
             )
         );
@@ -416,7 +417,7 @@ internal static class ActivityTestData
                     FirstName = "Ada",
                     LastName = "Parent",
                     Email = "ada@parent.test",
-                    UserTypeId = parentUserTypeId,
+                    UserType = CatalogIds.UserTypes.ValueOf(parentUserTypeId),
                 }
             )
         );
@@ -425,13 +426,13 @@ internal static class ActivityTestData
     public static void HouseholdUsers(this IUserRepository users, params User[] members)
     {
         users
-            .GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(ci => members.FirstOrDefault(member => member.Id == ci.ArgAt<Guid>(0)));
+            .GetByIdAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>())
+            .Returns(ci => members.FirstOrDefault(member => member.Id == ci.ArgAt<UserId>(0)));
         users
-            .ListByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .ListByIdsAsync(Arg.Any<IReadOnlyCollection<UserId>>(), Arg.Any<CancellationToken>())
             .Returns(ci =>
             {
-                var ids = ci.ArgAt<IReadOnlyCollection<Guid>>(0);
+                var ids = ci.ArgAt<IReadOnlyCollection<UserId>>(0);
                 IReadOnlyList<User> found = [.. members.Where(member => ids.Contains(member.Id))];
                 return found;
             });
@@ -486,7 +487,7 @@ internal static class ActivityTestData
                 FirstName = "Kid",
                 LastName = "One",
                 ParentId = parentId,
-                UserTypeId = SeedIds.UserTypes.Participant,
+                UserTypeId = KnownIds.UserTypes.Participant,
                 Parent = new UserRow
                 {
                     Id = parentId,
@@ -505,19 +506,19 @@ internal static class ActivityTestData
         [
             new()
             {
-                Id = SeedIds.ActivityRoleTypes.Leader,
+                Id = KnownIds.ActivityRoleTypes.Leader,
                 Name = "Líder",
                 Description = "d",
             },
             new()
             {
-                Id = SeedIds.ActivityRoleTypes.Volunteer,
+                Id = KnownIds.ActivityRoleTypes.Volunteer,
                 Name = "Voluntario",
                 Description = "d",
             },
             new()
             {
-                Id = SeedIds.ActivityRoleTypes.Participant,
+                Id = KnownIds.ActivityRoleTypes.Participant,
                 Name = "Participante",
                 Description = "d",
             },

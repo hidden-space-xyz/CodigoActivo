@@ -1,7 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.Events.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Application.Events.Contracts;
@@ -10,6 +10,7 @@ using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -25,9 +26,8 @@ public sealed class CreateEventCommandHandlerTests
         Substitute.For<ITermsDocumentRepository>();
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly CreateEventCommandHandler sut;
 
     public CreateEventCommandHandlerTests()
@@ -37,9 +37,8 @@ public sealed class CreateEventCommandHandlerTests
             files,
             termsDocuments,
             new EventCategoryChecker(categoryTypes),
-            clock,
-            uow,
-            cacheInvalidator
+            currentUser,
+            clock
         );
     }
 
@@ -56,24 +55,23 @@ public sealed class CreateEventCommandHandlerTests
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
         termsDocuments
-            .CountExistingAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .CountExistingAsync(
+                Arg.Any<IReadOnlyCollection<TermsDocumentId>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(0);
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(
-                CreateReq(
+            CreateReq(
                     categoryTypeIds: [Guid.NewGuid()],
                     termsDocuments: [new EventTermsDocumentRequest(Guid.NewGuid())]
-                ),
-                Guid.NewGuid()
-            ),
+                )
+                .ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.TermsDocumentNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNotFound);
     }
 
     [Fact]
@@ -84,44 +82,41 @@ public sealed class CreateEventCommandHandlerTests
         categoryTypes.HasCategoryCount(1);
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(
-                CreateReq(
+            CreateReq(
                     categoryTypeIds: [Guid.NewGuid()],
                     termsDocuments:
                     [
                         new EventTermsDocumentRequest(termsDocumentId),
                         new EventTermsDocumentRequest(termsDocumentId, Required: true),
                     ]
-                ),
-                Guid.NewGuid()
-            ),
+                )
+                .ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventTermsDocumentDuplicated);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.EventTermsDocumentDuplicated);
     }
 
     [Fact]
-    public async Task HandleAsyncKnownTermsDocumentPersistsEventWithTermsReference()
+    public async Task HandleAsyncKnownTermsDocumentStagesEventWithTermsReference()
     {
         var termsDocumentId = Guid.NewGuid();
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
         termsDocuments
-            .CountExistingAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .CountExistingAsync(
+                Arg.Any<IReadOnlyCollection<TermsDocumentId>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(1);
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(
-                CreateReq(
+            CreateReq(
                     categoryTypeIds: [Guid.NewGuid()],
                     termsDocuments: [new EventTermsDocumentRequest(termsDocumentId, Required: true)]
-                ),
-                Guid.NewGuid()
-            ),
+                )
+                .ToCommand(),
             TestContext.Current.CancellationToken
         );
 
@@ -132,13 +127,13 @@ public sealed class CreateEventCommandHandlerTests
                 Arg.Is<Event>(e =>
                     e != null
                     && e.TermsDocuments.Count == 1
-                    && e.TermsDocuments.Single().TermsDocumentId == termsDocumentId
+                    && e.TermsDocuments.Single().TermsDocumentId
+                        == TermsDocumentId.From(termsDocumentId)
                     && e.TermsDocuments.Single().IsRequired
                     && e.TermsDocuments.Single().DisplayOrder == 0
                 ),
                 Arg.Any<CancellationToken>()
             );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     public static TheoryData<CreateEventRequest> MissingScheduleDateRequests()
@@ -190,15 +185,13 @@ public sealed class CreateEventCommandHandlerTests
     )
     {
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventScheduleRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.EventScheduleRequired);
     }
 
     [Fact]
@@ -211,14 +204,12 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.EventScheduleInvalidRange);
     }
 
     [Fact]
@@ -232,13 +223,11 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error!.Code.Should().Be(DomainErrorCode.EventScheduleInvalidRange);
     }
 
     [Fact]
@@ -253,13 +242,11 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.EventScheduleInvalidRange);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error!.Code.Should().Be(DomainErrorCode.EventScheduleInvalidRange);
     }
 
     [Fact]
@@ -273,17 +260,15 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.EventEarlySignupNotBeforeSignup);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error!.Code.Should().Be(DomainErrorCode.EventEarlySignupNotBeforeSignup);
     }
 
     [Fact]
-    public async Task HandleAsyncEarlySignupBeforeSignupStartPersistsEarlySignupInUtc()
+    public async Task HandleAsyncEarlySignupBeforeSignupStartStagesEarlySignupInUtc()
     {
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
@@ -296,7 +281,7 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
@@ -304,7 +289,7 @@ public sealed class CreateEventCommandHandlerTests
         added
             .Should()
             .ContainSingle()
-            .Which.EarlySignupStartsAt.Should()
+            .Which.SignupWindow.EarlyStartsAt.Should()
             .BeExactly(new DateTimeOffset(2026, 6, 20, 10, 0, 0, TimeSpan.Zero));
     }
 
@@ -315,17 +300,15 @@ public sealed class CreateEventCommandHandlerTests
         var request = CreateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventThumbnailNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventThumbnailNotFound);
         await events
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<Event>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -335,14 +318,12 @@ public sealed class CreateEventCommandHandlerTests
         var request = CreateReq(categoryTypeIds: null);
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventCategoriesRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.EventCategoriesRequired);
     }
 
     [Fact]
@@ -352,14 +333,12 @@ public sealed class CreateEventCommandHandlerTests
         var request = CreateReq(categoryTypeIds: []);
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventCategoriesRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.EventCategoriesRequired);
     }
 
     [Fact]
@@ -370,20 +349,19 @@ public sealed class CreateEventCommandHandlerTests
         var request = CreateReq(categoryTypeIds: [Guid.NewGuid(), Guid.NewGuid()]);
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeNotFound);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestPersistsTrimmedEventWithAuditAndCategoriesAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestStagesTrimmedEventWithAuditAndCategories()
     {
         var caller = Guid.NewGuid();
+        currentUser.Id = UserId.From(caller);
         var thumbnailId = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
@@ -394,7 +372,7 @@ public sealed class CreateEventCommandHandlerTests
         var request = CreateReq(categoryTypeIds: [categoryId], thumbnailId: thumbnailId);
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, caller),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
@@ -403,26 +381,18 @@ public sealed class CreateEventCommandHandlerTests
         result.Value.Should().Be(created.Id);
         created.Title.Should().Be("Hackathon");
         created.Subtitle.Should().Be("Innovación");
-        created.CreatedBy.Should().Be(caller);
+        created.CreatedBy.Value.Should().Be(caller);
         created.CreatedAt.Should().Be(clock.UtcNow);
-        created.ThumbnailId.Should().Be(thumbnailId);
+        created.ThumbnailId.Value.Should().Be(thumbnailId);
         created
             .Categories.Should()
             .ContainSingle()
-            .Which.EventCategoryTypeId.Should()
+            .Which.EventCategoryTypeId.Value.Should()
             .Be(categoryId);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Events)
-                )
-            );
     }
 
     [Fact]
-    public async Task HandleAsyncDuplicateCategoryTypeIdsPersistsSingleCategory()
+    public async Task HandleAsyncDuplicateCategoryTypeIdsStagesSingleCategory()
     {
         var categoryId = Guid.NewGuid();
         files.ThumbnailExists(true);
@@ -432,7 +402,7 @@ public sealed class CreateEventCommandHandlerTests
         var request = CreateReq(categoryTypeIds: [categoryId, categoryId]);
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
@@ -442,7 +412,7 @@ public sealed class CreateEventCommandHandlerTests
             .ContainSingle()
             .Which.Categories.Should()
             .ContainSingle()
-            .Which.EventCategoryTypeId.Should()
+            .Which.EventCategoryTypeId.Value.Should()
             .Be(categoryId);
     }
 
@@ -461,11 +431,10 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateEventCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

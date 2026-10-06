@@ -1,13 +1,15 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.TermsDocuments.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.TermsDocuments.Commands;
 using CodigoActivo.Application.TermsDocuments.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.UnitTests.Application.Events;
+using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
@@ -18,19 +20,11 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
 {
     private readonly ITermsDocumentRepository termsDocuments =
         Substitute.For<ITermsDocumentRepository>();
-    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly UpdateTermsDocumentCommandHandler sut;
 
     public UpdateTermsDocumentCommandHandlerTests()
     {
-        sut = new UpdateTermsDocumentCommandHandler(
-            termsDocuments,
-            orphanCleaner,
-            uow,
-            cacheInvalidator
-        );
+        sut = new UpdateTermsDocumentCommandHandler(termsDocuments);
     }
 
     [Fact]
@@ -39,17 +33,12 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
         termsDocuments.TermsDocumentFound(null);
 
         var result = await sut.HandleAsync(
-            new UpdateTermsDocumentCommand(
-                Guid.NewGuid(),
-                new UpdateTermsDocumentRequest("Normas", "{}")
-            ),
+            new UpdateTermsDocumentRequest("Normas", "{}").ToCommand(TermsDocumentId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.TermsDocumentNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNotFound);
     }
 
     [Fact]
@@ -59,21 +48,16 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
         termsDocuments.TermsDocumentExists(true);
 
         var result = await sut.HandleAsync(
-            new UpdateTermsDocumentCommand(
-                Guid.NewGuid(),
-                new UpdateTermsDocumentRequest("Normas nuevas", "{}")
-            ),
+            new UpdateTermsDocumentRequest("Normas nuevas", "{}").ToCommand(TermsDocumentId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.TermsDocumentNameAlreadyExists);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNameAlreadyExists);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestUpdatesInvalidatesAndCleansOrphanedFiles()
+    public async Task HandleAsyncValidRequestRewritesItAndReleasesRemovedFiles()
     {
         var fileId = Guid.NewGuid();
         var termsDocument = NewTermsDocument(
@@ -84,29 +68,20 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
         termsDocuments.TermsDocumentExists(false);
 
         var result = await sut.HandleAsync(
-            new UpdateTermsDocumentCommand(
-                termsDocument.Id,
-                new UpdateTermsDocumentRequest("  Normas nuevas  ", "{\"type\":\"doc\"}")
+            new UpdateTermsDocumentRequest("  Normas nuevas  ", "{\"type\":\"doc\"}").ToCommand(
+                termsDocument.Id
             ),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         termsDocument.Name.Should().Be("Normas nuevas");
-        termsDocument.Description.Should().Be("{\"type\":\"doc\"}");
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Events)
-                )
-            );
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Contains(fileId)),
-                Arg.Any<CancellationToken>()
+        termsDocument.Description!.Json.Should().Be("{\"type\":\"doc\"}");
+        DomainEvents
+            .ReleasedFiles(termsDocument)
+            .Should()
+            .Match<IReadOnlyCollection<StoredFileId>>(ids =>
+                ids != null && ids.Contains(StoredFileId.From(fileId))
             );
     }
 }

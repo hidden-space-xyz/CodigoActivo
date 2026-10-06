@@ -1,8 +1,10 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
@@ -26,35 +28,39 @@ public sealed class SetAdminCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly RecordingEmailSender emailSender = new();
     private readonly User actingAdmin;
+    private readonly TestCurrentUser currentUser = new(isAdmin: true);
+    private readonly CommittedEvents events;
     private readonly SetAdminCommandHandler sut;
 
     public SetAdminCommandHandlerTests()
     {
         actingAdmin = NewUser(isAdmin: true);
         Persisted.Overwrite(actingAdmin, new { PasswordHash = hasher.Hash(ActingPassword) });
+        currentUser.Id = actingAdmin.Id;
+        events = new CommittedEvents(
+            new AccountSecurityNotifications(
+                users,
+                new AccountSecurityNotifier(
+                    emailSender,
+                    clock,
+                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    NullLogger<AccountSecurityNotifier>.Instance
+                ),
+                NullLogger<AccountSecurityNotifications>.Instance
+            )
+        );
         sut = new SetAdminCommandHandler(
             users,
+            currentUser,
             PasswordGuards.Create(hasher, uow, clock),
-            clock,
-            uow,
-            new AccountSecurityNotifier(
-                emailSender,
-                clock,
-                new AccountEmailComposer(new ApplicationOptions(), clock),
-                NullLogger<AccountSecurityNotifier>.Instance
-            ),
-            NullLogger<SetAdminCommandHandler>.Instance
+            clock
         );
     }
 
     private Task<Result> HandleAsync(Guid userId, bool isAdmin, string? currentPassword = null)
     {
         return sut.HandleAsync(
-            new SetAdminCommand(
-                userId,
-                actingAdmin.Id,
-                new SetAdminRequest(isAdmin, currentPassword)
-            ),
+            new SetAdminRequest(isAdmin, currentPassword).ToCommand(UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
     }
@@ -72,7 +78,7 @@ public sealed class SetAdminCommandHandlerTests
 
         var result = await HandleAsync(Guid.NewGuid(), true, ActingPassword);
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
@@ -83,15 +89,15 @@ public sealed class SetAdminCommandHandlerTests
         users.FindReturns(actingAdmin, user);
         clock.UtcNow = new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero);
 
-        var result = await HandleAsync(user.Id, true, ActingPassword);
+        var result = await HandleAsync(user.Id.Value, true, ActingPassword);
 
         result.IsSuccess.Should().BeTrue();
         user.IsAdmin.Should().BeTrue();
         user.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await events.PublishAsync(user);
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email);
+        message.ToAddress.Should().Be(user.Email!.Value);
         message.TextBody.Should().NotContain(ActingPassword);
     }
 
@@ -102,7 +108,7 @@ public sealed class SetAdminCommandHandlerTests
     {
         var result = await HandleAsync(Guid.NewGuid(), true, currentPassword);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         await users
             .DidNotReceiveWithAnyArgs()
             .GetByIdAsync(default, TestContext.Current.CancellationToken);
@@ -115,9 +121,9 @@ public sealed class SetAdminCommandHandlerTests
         var user = NewUser(isAdmin: false);
         users.FindReturns(actingAdmin, user);
 
-        var result = await HandleAsync(user.Id, true, "wrong-password");
+        var result = await HandleAsync(user.Id.Value, true, "wrong-password");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.IsAdmin.Should().BeFalse();
         actingAdmin.PasswordFailedAttempts.Should().Be(1);
         await AssertNotSavedAsync();
@@ -130,9 +136,9 @@ public sealed class SetAdminCommandHandlerTests
         var user = NewUser(isAdmin: false);
         users.FindReturns(actingAdmin, user);
 
-        var result = await HandleAsync(user.Id, true, ActingPassword);
+        var result = await HandleAsync(user.Id.Value, true, ActingPassword);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.IsAdmin.Should().BeFalse();
         await AssertNotSavedAsync();
     }
@@ -143,9 +149,9 @@ public sealed class SetAdminCommandHandlerTests
         var user = NewUser(isAdmin: false);
         users.FindReturns(null, user);
 
-        var result = await HandleAsync(user.Id, true, ActingPassword);
+        var result = await HandleAsync(user.Id.Value, true, ActingPassword);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.IsAdmin.Should().BeFalse();
         await AssertNotSavedAsync();
     }
@@ -156,10 +162,11 @@ public sealed class SetAdminCommandHandlerTests
         var user = NewUser(isAdmin: true);
         users.FindReturns(actingAdmin, user);
 
-        var result = await HandleAsync(user.Id, true, ActingPassword);
+        var result = await HandleAsync(user.Id.Value, true, ActingPassword);
 
         result.IsSuccess.Should().BeTrue();
         await AssertNotSavedAsync();
+        await events.PublishAsync(user);
         emailSender
             .Sent.Should()
             .BeEmpty("an unchanged flag is not a security event worth reporting");
@@ -171,29 +178,30 @@ public sealed class SetAdminCommandHandlerTests
         var user = NewUser(isAdmin: true);
         users.FindReturns(user);
 
-        var result = await HandleAsync(user.Id, false);
+        var result = await HandleAsync(user.Id.Value, false);
 
         result.IsSuccess.Should().BeTrue();
         user.IsAdmin.Should().BeFalse();
-        await users.Received(1).GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await users.Received(1).GetByIdAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>());
         await users.Received(1).GetByIdAsync(user.Id, Arg.Any<CancellationToken>());
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await events.PublishAsync(user);
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email);
+        message.ToAddress.Should().Be(user.Email!.Value);
     }
 
     [Fact]
     public async Task HandleAsyncRevokeInitialAdministratorReturnsForbidden()
     {
-        var user = NewUser(id: SeedIds.Users.InitialAdministrator, isAdmin: true);
+        var user = NewUser(id: KnownIds.Users.InitialAdministrator, isAdmin: true);
         users.FindReturns(user);
 
-        var result = await HandleAsync(user.Id, false);
+        var result = await HandleAsync(user.Id.Value, false);
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserCannotRemoveInitialAdmin);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.UserCannotRemoveInitialAdmin);
         user.IsAdmin.Should().BeTrue();
         await AssertNotSavedAsync();
+        await events.PublishAsync(user);
         emailSender.Sent.Should().BeEmpty();
     }
 }

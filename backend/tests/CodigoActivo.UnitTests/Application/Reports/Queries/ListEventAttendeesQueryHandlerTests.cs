@@ -8,6 +8,8 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Reports.Queries;
 
@@ -211,13 +213,13 @@ public sealed class ListEventAttendeesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncUserTypeFilterReturnsOnlyMatchingUsers()
     {
-        var ana = NewUserRow("Ana", userTypeId: SeedIds.UserTypes.Participant);
+        var ana = NewUserRow("Ana", userTypeId: KnownIds.UserTypes.Participant);
         var berto = NewUserRow("Berto");
         HasConfirmedAttendees(ana, berto);
 
         var page = await ListAsync(
             QueriedEventId,
-            new EventAttendeeListQuery { UserTypeId = SeedIds.UserTypes.Participant }
+            new EventAttendeeListQuery { UserTypeId = KnownIds.UserTypes.Participant }
         );
 
         page.Total.Should().Be(1);

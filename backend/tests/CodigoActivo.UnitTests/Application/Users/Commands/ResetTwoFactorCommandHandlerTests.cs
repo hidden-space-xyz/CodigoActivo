@@ -1,8 +1,10 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
@@ -26,34 +28,39 @@ public sealed class ResetTwoFactorCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly RecordingEmailSender emailSender = new();
     private readonly User actingAdmin;
+    private readonly TestCurrentUser currentUser = new(isAdmin: true);
+    private readonly CommittedEvents events;
     private readonly ResetTwoFactorCommandHandler sut;
 
     public ResetTwoFactorCommandHandlerTests()
     {
         actingAdmin = NewUser(isAdmin: true);
         Persisted.Overwrite(actingAdmin, new { PasswordHash = hasher.Hash(ActingPassword) });
+        currentUser.Id = actingAdmin.Id;
+        events = new CommittedEvents(
+            new AccountSecurityNotifications(
+                users,
+                new AccountSecurityNotifier(
+                    emailSender,
+                    clock,
+                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    NullLogger<AccountSecurityNotifier>.Instance
+                ),
+                NullLogger<AccountSecurityNotifications>.Instance
+            )
+        );
         sut = new ResetTwoFactorCommandHandler(
             users,
+            currentUser,
             PasswordGuards.Create(hasher, uow, clock),
-            clock,
-            uow,
-            new AccountSecurityNotifier(
-                emailSender,
-                clock,
-                new AccountEmailComposer(new ApplicationOptions(), clock),
-                NullLogger<AccountSecurityNotifier>.Instance
-            )
+            clock
         );
     }
 
     private Task<Result> HandleAsync(Guid userId, string currentPassword)
     {
         return sut.HandleAsync(
-            new ResetTwoFactorCommand(
-                userId,
-                actingAdmin.Id,
-                new ResetTwoFactorRequest(currentPassword)
-            ),
+            new ResetTwoFactorRequest(currentPassword).ToCommand(UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
     }
@@ -89,9 +96,9 @@ public sealed class ResetTwoFactorCommandHandlerTests
         var user = UserWithAuthenticator();
         users.FindReturns(actingAdmin, user);
 
-        var result = await HandleAsync(user.Id, "wrong");
+        var result = await HandleAsync(user.Id.Value, "wrong");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
         actingAdmin.PasswordFailedAttempts.Should().Be(1);
         await uow.DidNotReceiveWithAnyArgs()
@@ -105,7 +112,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
 
         var result = await HandleAsync(Guid.NewGuid(), ActingPassword);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         await AssertNotSavedAsync();
     }
 
@@ -116,7 +123,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
 
         var result = await HandleAsync(Guid.NewGuid(), ActingPassword);
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
@@ -127,7 +134,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
         users.FindReturns(actingAdmin, user);
         clock.UtcNow = new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero);
 
-        var result = await HandleAsync(user.Id, ActingPassword);
+        var result = await HandleAsync(user.Id.Value, ActingPassword);
 
         result.IsSuccess.Should().BeTrue();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
@@ -138,10 +145,10 @@ public sealed class ResetTwoFactorCommandHandlerTests
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.TwoFactorLockedUntil.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await events.PublishAsync(user);
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email);
+        message.ToAddress.Should().Be(user.Email!.Value);
         message.TextBody.Should().NotContain("protected:secret").And.NotContain(ActingPassword);
     }
 
@@ -155,12 +162,12 @@ public sealed class ResetTwoFactorCommandHandlerTests
         );
         users.FindReturns(actingAdmin, user);
 
-        var result = await HandleAsync(user.Id, ActingPassword);
+        var result = await HandleAsync(user.Id.Value, ActingPassword);
 
         result.IsSuccess.Should().BeTrue();
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.TwoFactorLockedUntil.Should().BeNull();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await events.PublishAsync(user);
         emailSender.Sent.Should().BeEmpty();
     }
 }

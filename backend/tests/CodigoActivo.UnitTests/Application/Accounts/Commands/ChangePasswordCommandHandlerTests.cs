@@ -1,10 +1,13 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
@@ -24,30 +27,32 @@ public sealed class ChangePasswordCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly TestCurrentUser currentUser = new(isAdmin: true);
+    private readonly CommittedEvents events;
     private readonly ChangePasswordCommandHandler sut;
 
     public ChangePasswordCommandHandlerTests()
     {
+        events = new CommittedEvents(
+            new AccountSecurityNotifications(
+                users,
+                new AccountSecurityNotifier(
+                    emailSender,
+                    clock,
+                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    NullLogger<AccountSecurityNotifier>.Instance
+                ),
+                NullLogger<AccountSecurityNotifications>.Instance
+            ),
+            new SessionsEndOnPasswordReplaced(sessions)
+        );
         sut = new ChangePasswordCommandHandler(
             users,
+            new ActingUserPolicy(currentUser, users),
             hasher,
             clock,
-            uow,
-            sessions,
-            PasswordGuards.Create(hasher, uow, clock),
-            new AccountSecurityNotifier(
-                emailSender,
-                clock,
-                new AccountEmailComposer(new ApplicationOptions(), clock),
-                NullLogger<AccountSecurityNotifier>.Instance
-            )
+            PasswordGuards.Create(hasher, uow, clock)
         );
-    }
-
-    private Task<int> AssertNotSavedAsync()
-    {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private Task AssertSessionsRevokedAsync(User user)
@@ -62,12 +67,11 @@ public sealed class ChangePasswordCommandHandlerTests
         var request = new ChangePasswordRequest("old", "newpassword");
 
         var result = await sut.HandleAsync(
-            new ChangePasswordCommand(Guid.NewGuid(), request),
+            request.ToCommand(UserId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSavedAsync();
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
     }
 
     [Fact]
@@ -79,12 +83,11 @@ public sealed class ChangePasswordCommandHandlerTests
         var request = new ChangePasswordRequest("old", "newpassword");
 
         var result = await sut.HandleAsync(
-            new ChangePasswordCommand(Guid.NewGuid(), request),
+            request.ToCommand(UserId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserPasswordNotSet);
-        await AssertNotSavedAsync();
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserPasswordNotSet);
     }
 
     [Fact]
@@ -96,13 +99,13 @@ public sealed class ChangePasswordCommandHandlerTests
         var request = new ChangePasswordRequest("correct", "correct");
 
         var result = await sut.HandleAsync(
-            new ChangePasswordCommand(Guid.NewGuid(), request),
+            request.ToCommand(UserId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserNewPasswordSameAsCurrent);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserNewPasswordSameAsCurrent);
         user.PasswordFailedAttempts.Should().Be(0);
-        await AssertNotSavedAsync();
+        await events.PublishAsync(user);
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -115,19 +118,17 @@ public sealed class ChangePasswordCommandHandlerTests
         var request = new ChangePasswordRequest("wrong", "newpassword");
 
         var result = await sut.HandleAsync(
-            new ChangePasswordCommand(Guid.NewGuid(), request),
+            request.ToCommand(UserId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.PasswordHash.Should().Be(hasher.Hash("correct"));
         user.PasswordFailedAttempts.Should().Be(1, "the guard counts the failure on its own");
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncValidCurrentPasswordRehashesAndPersists()
+    public async Task HandleAsyncValidCurrentPasswordRehashesAndSignsOutEverywhere()
     {
         var user = NewUser();
         Persisted.Overwrite(user, new { PasswordHash = hasher.Hash("correct") });
@@ -136,14 +137,14 @@ public sealed class ChangePasswordCommandHandlerTests
         var request = new ChangePasswordRequest("correct", "brandnew");
 
         var result = await sut.HandleAsync(
-            new ChangePasswordCommand(Guid.NewGuid(), request),
+            request.ToCommand(UserId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         user.PasswordHash.Should().Be(hasher.Hash("brandnew"));
         user.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await events.PublishAsync(user);
         await AssertSessionsRevokedAsync(user);
     }
 
@@ -155,20 +156,20 @@ public sealed class ChangePasswordCommandHandlerTests
         users.FindReturns(user);
 
         var result = await sut.HandleAsync(
-            new ChangePasswordCommand(user.Id, new ChangePasswordRequest("correct", "brandnew")),
+            new ChangePasswordRequest("correct", "brandnew").ToCommand(user.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
+        await events.PublishAsync(user);
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email);
+        message.ToAddress.Should().Be(user.Email!.Value);
         message
             .TextBody.Should()
             .NotContain("brandnew")
             .And.NotContain(user.PasswordHash)
             .And.NotContain("#userId=");
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -180,36 +181,35 @@ public sealed class ChangePasswordCommandHandlerTests
         users.FindReturns(user);
 
         var result = await sut.HandleAsync(
-            new ChangePasswordCommand(user.Id, new ChangePasswordRequest("correct", "brandnew")),
+            new ChangePasswordRequest("correct", "brandnew").ToCommand(user.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         user.PasswordHash.Should().Be(hasher.Hash("brandnew"));
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await events.PublishAsync(user);
         await AssertSessionsRevokedAsync(user);
     }
 
     [Fact]
-    public async Task HandleAsyncSaveChangesFailureDoesNotQueueTheAlert()
+    public async Task HandleAsyncLeavesTheAlertAndTheSignOutToTheCommit()
     {
         var user = NewUser();
         Persisted.Overwrite(user, new { PasswordHash = hasher.Hash("correct") });
         users.FindReturns(user);
-        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
-            .Returns<Task<int>>(_ => throw new InvalidOperationException("db down"));
+        var result = await sut.HandleAsync(
+            new ChangePasswordRequest("correct", "brandnew").ToCommand(user.Id),
+            TestContext.Current.CancellationToken
+        );
 
-        Func<Task> act = () =>
-            sut.HandleAsync(
-                new ChangePasswordCommand(
-                    user.Id,
-                    new ChangePasswordRequest("correct", "brandnew")
-                ),
-                TestContext.Current.CancellationToken
-            );
-
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        emailSender.Sent.Should().BeEmpty("the alert is only queued once the commit succeeds");
+        result.IsSuccess.Should().BeTrue();
+        emailSender
+            .Sent.Should()
+            .BeEmpty("the alert is only sent once the commit publishes the change");
+        await sessions
+            .DidNotReceiveWithAnyArgs()
+            .EndAllAsync(default, TestContext.Current.CancellationToken);
+        user.PullDomainEvents().Should().Equal(new PasswordChanged(user.Id));
     }
 
     [Fact]
@@ -223,7 +223,7 @@ public sealed class ChangePasswordCommandHandlerTests
         var request = new ChangePasswordRequest("correct", "brandnew");
 
         var result = await sut.HandleAsync(
-            new ChangePasswordCommand(Guid.NewGuid(), request),
+            request.ToCommand(UserId.New()),
             TestContext.Current.CancellationToken
         );
 
@@ -231,6 +231,5 @@ public sealed class ChangePasswordCommandHandlerTests
         user.PasswordResetCodeHash.Should().BeNull();
         user.PasswordResetExpiresAt.Should().BeNull();
         user.PasswordResetLastSentAt.Should().BeNull();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

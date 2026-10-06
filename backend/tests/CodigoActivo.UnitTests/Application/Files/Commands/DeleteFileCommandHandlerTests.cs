@@ -1,8 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
@@ -18,12 +17,11 @@ public sealed class DeleteFileCommandHandlerTests
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IFileStorage storage = Substitute.For<IFileStorage>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly DeleteFileCommandHandler sut;
 
     public DeleteFileCommandHandlerTests()
     {
-        sut = new DeleteFileCommandHandler(files, uow, storage, cacheInvalidator);
+        sut = new DeleteFileCommandHandler(files, uow, storage);
     }
 
     [Fact]
@@ -32,11 +30,11 @@ public sealed class DeleteFileCommandHandlerTests
         files.FileMissing();
 
         var result = await sut.HandleAsync(
-            new DeleteFileCommand(Guid.NewGuid()),
+            new DeleteFileCommand(StoredFileId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.FileNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.FileNotFound);
         await AssertNotSavedAsync();
         storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
     }
@@ -53,17 +51,15 @@ public sealed class DeleteFileCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.FileInUse);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.FileInUse);
         files.DidNotReceiveWithAnyArgs().Remove(NewFile());
         await AssertNotSavedAsync();
         storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
-        await cacheInvalidator
-            .DidNotReceive()
-            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+        file.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncNotInUseRemovesRowSavesDeletesStoredContentAndInvalidatesCache()
+    public async Task HandleAsyncNotInUseRemovesRowSavesDeletesStoredContentAndRaisesDeletion()
     {
         var file = NewFile(name: "gone.png", extension: "png");
         files.FileFound(file);
@@ -78,13 +74,11 @@ public sealed class DeleteFileCommandHandlerTests
         files.Received(1).Remove(file);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.Received(1).Delete($"{file.Id}.png");
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Files)
-                )
-            );
+        file.PullDomainEvents()
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<StoredFileDeleted>();
     }
 
     private Task<int> AssertNotSavedAsync()

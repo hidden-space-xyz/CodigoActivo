@@ -1,26 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Common.Validation;
 
-public sealed class ValidationAttributesTests : IDisposable
+public sealed class ValidationAttributesTests
 {
     private static readonly DateOnly Today = new(2026, 7, 4);
-
-    private readonly ServiceProvider services = new ServiceCollection()
-        .AddSingleton<IClock>(new TestClock(today: Today))
-        .BuildServiceProvider();
-
-    public void Dispose()
-    {
-        services.Dispose();
-    }
 
     [Fact]
     public void IsValidNotBlankNonStringValuesReturnsTrue()
@@ -219,9 +207,9 @@ public sealed class ValidationAttributesTests : IDisposable
     [Fact]
     public void IsEmptyRichTextRepeatingAPropertyNameReportsNoContent()
     {
-        RichTextDocument
-            .IsEmpty("{\"type\":\"doc\",\"type\":\"doc\",\"text\":\"hello\"}")
-            .Should()
+        RichText
+            .From("{\"type\":\"doc\",\"type\":\"doc\",\"text\":\"hello\"}")
+            .IsEmpty.Should()
             .BeTrue();
     }
 
@@ -332,14 +320,27 @@ public sealed class ValidationAttributesTests : IDisposable
     }
 
     [Fact]
+    public void GetValidationResultNotDefaultOrFutureDateWithoutTheCurrentDayThrows()
+    {
+        var context = new ValidationContext(new Holder { BirthDate = Today });
+
+        var act = () => new NotDefaultOrFutureDateAttribute().GetValidationResult(Today, context);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
     public void IsValidSpanishNationalIdRejectsNonStringValues()
     {
         new SpanishNationalIdAttribute().IsValid(12345678).Should().BeFalse();
     }
 
-    private ValidationResult? Validate(object? value)
+    private static ValidationResult? Validate(object? value)
     {
-        var context = new ValidationContext(new Holder { BirthDate = Today }, services, items: null)
+        var context = new ValidationContext(
+            new Holder { BirthDate = Today },
+            new Dictionary<object, object?> { [MessageValidator.TodayKey] = Today }
+        )
         {
             MemberName = nameof(Holder.BirthDate),
         };

@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Files;
@@ -16,18 +15,11 @@ public sealed class OrphanFileCleanerTests
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IFileStorage storage = Substitute.For<IFileStorage>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly OrphanFileCleaner sut;
 
     public OrphanFileCleanerTests()
     {
-        sut = new OrphanFileCleaner(
-            files,
-            uow,
-            storage,
-            cacheInvalidator,
-            NullLogger<OrphanFileCleaner>.Instance
-        );
+        sut = new OrphanFileCleaner(files, uow, storage, NullLogger<OrphanFileCleaner>.Instance);
     }
 
     private static StoredFile NewFile(string name = "photo.png", string extension = "png")
@@ -56,23 +48,31 @@ public sealed class OrphanFileCleanerTests
 
     private void FileReferenced(bool referenced)
     {
-        files.IsInUseAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(referenced);
+        files
+            .IsInUseAsync(Arg.Any<StoredFileId>(), Arg.Any<CancellationToken>())
+            .Returns(referenced);
     }
 
     private void InUseFilesAre(params Guid[] inUse)
     {
         files
-            .GetInUseAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([.. inUse]);
+            .GetInUseAsync(
+                Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns([.. inUse.Select(StoredFileId.From)]);
     }
 
     private void StoredFilesAre(params StoredFile[] all)
     {
         files
-            .ListByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .ListByIdsAsync(
+                Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(ci =>
             {
-                var ids = ci.Arg<IReadOnlyCollection<Guid>>();
+                var ids = ci.Arg<IReadOnlyCollection<StoredFileId>>();
                 Assert.NotNull(ids);
                 List<StoredFile> matches = [.. all.Where(file => ids.Contains(file.Id))];
                 return matches;
@@ -115,7 +115,10 @@ public sealed class OrphanFileCleanerTests
         FileMissing();
 
         var act = async () =>
-            await sut.DeleteIfOrphanedAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
+            await sut.DeleteIfOrphanedAsync(
+                StoredFileId.From(Guid.NewGuid()),
+                TestContext.Current.CancellationToken
+            );
 
         await act.Should().NotThrowAsync();
         await AssertNotSavedAsync();
@@ -140,11 +143,14 @@ public sealed class OrphanFileCleanerTests
     public async Task DeleteIfOrphanedAsyncCancelledPropagatesCancellation()
     {
         files
-            .When(f => f.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
+            .When(f => f.GetByIdAsync(Arg.Any<StoredFileId>(), Arg.Any<CancellationToken>()))
             .Do(_ => throw new OperationCanceledException());
 
         var act = async () =>
-            await sut.DeleteIfOrphanedAsync(Guid.NewGuid(), TestContext.Current.CancellationToken);
+            await sut.DeleteIfOrphanedAsync(
+                StoredFileId.From(Guid.NewGuid()),
+                TestContext.Current.CancellationToken
+            );
 
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
@@ -155,7 +161,7 @@ public sealed class OrphanFileCleanerTests
         var inUseFile = NewFile(name: "used.png", extension: "png");
         var orphanPng = NewFile(name: "a.png", extension: "png");
         var orphanJpg = NewFile(name: "b.jpg", extension: "jpg");
-        InUseFilesAre(inUseFile.Id);
+        InUseFilesAre(inUseFile.Id.Value);
         StoredFilesAre(inUseFile, orphanPng, orphanJpg);
 
         await sut.DeleteOrphanedAsync(
@@ -166,7 +172,7 @@ public sealed class OrphanFileCleanerTests
         await files
             .Received(1)
             .GetInUseAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Count == 3),
+                Arg.Is<IReadOnlyCollection<StoredFileId>>(ids => ids != null && ids.Count == 3),
                 Arg.Any<CancellationToken>()
             );
         files.Received(1).Remove(orphanPng);
@@ -195,7 +201,7 @@ public sealed class OrphanFileCleanerTests
     {
         var first = NewFile();
         var second = NewFile();
-        InUseFilesAre(first.Id, second.Id);
+        InUseFilesAre(first.Id.Value, second.Id.Value);
 
         await sut.DeleteOrphanedAsync([first.Id, second.Id], TestContext.Current.CancellationToken);
 
@@ -209,12 +215,18 @@ public sealed class OrphanFileCleanerTests
     {
         files
             .When(f =>
-                f.GetInUseAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+                f.GetInUseAsync(
+                    Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                    Arg.Any<CancellationToken>()
+                )
             )
             .Do(_ => throw new InvalidOperationException("db down"));
 
         var act = async () =>
-            await sut.DeleteOrphanedAsync([Guid.NewGuid()], TestContext.Current.CancellationToken);
+            await sut.DeleteOrphanedAsync(
+                [StoredFileId.From(Guid.NewGuid())],
+                TestContext.Current.CancellationToken
+            );
 
         await act.Should().NotThrowAsync();
         await AssertNotSavedAsync();
@@ -241,12 +253,18 @@ public sealed class OrphanFileCleanerTests
     {
         files
             .When(f =>
-                f.GetInUseAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+                f.GetInUseAsync(
+                    Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                    Arg.Any<CancellationToken>()
+                )
             )
             .Do(_ => throw new OperationCanceledException());
 
         var act = async () =>
-            await sut.DeleteOrphanedAsync([Guid.NewGuid()], TestContext.Current.CancellationToken);
+            await sut.DeleteOrphanedAsync(
+                [StoredFileId.From(Guid.NewGuid())],
+                TestContext.Current.CancellationToken
+            );
 
         await act.Should().ThrowAsync<OperationCanceledException>();
     }

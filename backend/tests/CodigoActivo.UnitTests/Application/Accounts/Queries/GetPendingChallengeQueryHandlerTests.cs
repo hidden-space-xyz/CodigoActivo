@@ -65,7 +65,7 @@ public sealed class GetPendingChallengeQueryHandlerTests
     public async Task HandleAsyncAccountNotActiveReturnsNull()
     {
         var user = NewUserRow(
-            statusId: SeedIds.UserStatusTypes.Pending,
+            statusId: KnownIds.UserStatusTypes.Pending,
             loginChallengeId: ChallengeId
         );
         store.Users.Add(user);

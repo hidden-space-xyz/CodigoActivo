@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Accounts;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
@@ -22,7 +23,10 @@ public sealed class DisposableEmailCheckerTests
     [InlineData("ana@MAILINATOR.com.")]
     public async Task IsDisposableAsyncListedDomainOrSubdomainReturnsTrue(string email)
     {
-        var disposable = await sut.IsDisposableAsync(email, TestContext.Current.CancellationToken);
+        var disposable = await sut.IsDisposableAsync(
+            EmailAddress.FromStored(email),
+            TestContext.Current.CancellationToken
+        );
 
         disposable.Should().BeTrue();
     }
@@ -33,7 +37,10 @@ public sealed class DisposableEmailCheckerTests
     [InlineData("ana@example.test")]
     public async Task IsDisposableAsyncUnlistedDomainReturnsFalse(string email)
     {
-        var disposable = await sut.IsDisposableAsync(email, TestContext.Current.CancellationToken);
+        var disposable = await sut.IsDisposableAsync(
+            EmailAddress.FromStored(email),
+            TestContext.Current.CancellationToken
+        );
 
         disposable.Should().BeFalse();
     }
@@ -41,7 +48,10 @@ public sealed class DisposableEmailCheckerTests
     [Fact]
     public async Task IsDisposableAsyncLooksUpTheDomainAndItsParentsTogether()
     {
-        await sut.IsDisposableAsync("ana@a.b.example.test", TestContext.Current.CancellationToken);
+        await sut.IsDisposableAsync(
+            EmailAddress.FromStored("ana@a.b.example.test"),
+            TestContext.Current.CancellationToken
+        );
 
         domains
             .Lookups.Should()
@@ -53,7 +63,10 @@ public sealed class DisposableEmailCheckerTests
     [Fact]
     public async Task IsDisposableAsyncAddressWithoutDomainSkipsTheLookup()
     {
-        var disposable = await sut.IsDisposableAsync("ana@", TestContext.Current.CancellationToken);
+        var disposable = await sut.IsDisposableAsync(
+            EmailAddress.FromStored("ana@"),
+            TestContext.Current.CancellationToken
+        );
 
         disposable.Should().BeFalse();
         domains.Lookups.Should().BeEmpty();
@@ -65,7 +78,7 @@ public sealed class DisposableEmailCheckerTests
         domains.Clear();
 
         var disposable = await sut.IsDisposableAsync(
-            "ana@mailinator.com",
+            EmailAddress.FromStored("ana@mailinator.com"),
             TestContext.Current.CancellationToken
         );
 

@@ -32,7 +32,7 @@ public sealed class EmailClaimsTests
     [Fact]
     public async Task TryCommitAsyncHolderThatOwnsTheEmailThrowsWithoutCommitting()
     {
-        var holder = NewUser(statusId: SeedIds.UserStatusTypes.Active);
+        var holder = NewUser(statusId: KnownIds.UserStatusTypes.Active);
 
         var act = () =>
             sut.TryCommitAsync(
@@ -51,7 +51,7 @@ public sealed class EmailClaimsTests
     [Fact]
     public async Task TryCommitAsyncHolderErasedMeanwhileStillCommitsTheClaimant()
     {
-        var holder = NewUser(statusId: SeedIds.UserStatusTypes.Pending);
+        var holder = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
         erasureStore.LockHouseholdAsync(holder.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var committed = await sut.TryCommitAsync(

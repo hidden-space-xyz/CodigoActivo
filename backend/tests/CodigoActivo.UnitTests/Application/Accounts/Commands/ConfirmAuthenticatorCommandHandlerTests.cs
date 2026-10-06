@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -6,6 +7,7 @@ using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
@@ -14,6 +16,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
+using TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
@@ -22,37 +25,45 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
     private const string Secret = "JBSWY3DPEHPK3PXP";
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly TestCurrentUser currentUser = new();
+    private readonly CommittedEvents events;
     private readonly ConfirmAuthenticatorCommandHandler sut;
 
     public ConfirmAuthenticatorCommandHandlerTests()
     {
+        events = new CommittedEvents(
+            new AccountSecurityNotifications(
+                users,
+                new AccountSecurityNotifier(
+                    emailSender,
+                    clock,
+                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    NullLogger<AccountSecurityNotifier>.Instance
+                ),
+                NullLogger<AccountSecurityNotifications>.Instance
+            )
+        );
         sut = new ConfirmAuthenticatorCommandHandler(
             users,
-            uow,
+            currentUser,
             clock,
             new AuthenticatorCodeVerifier(
                 totp,
                 new FakeSecretProtector(),
                 clock,
                 NullLogger<AuthenticatorCodeVerifier>.Instance
-            ),
-            new AccountSecurityNotifier(
-                emailSender,
-                clock,
-                new AccountEmailComposer(new ApplicationOptions(), clock),
-                NullLogger<AccountSecurityNotifier>.Instance
             )
         );
     }
 
     private Task<Result> ConfirmAsync(Guid userId, string code)
     {
+        currentUser.Id = UserId.From(userId);
         return sut.HandleAsync(
-            new ConfirmAuthenticatorCommand(userId, new ConfirmAuthenticatorRequest(code)),
+            new ConfirmAuthenticatorRequest(code).ToCommand(),
             TestContext.Current.CancellationToken
         );
     }
@@ -72,12 +83,6 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
         return users.FindReturns(user);
     }
 
-    private Task<int> AssertNotSavedAsync()
-    {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
     [Fact]
     public async Task HandleAsyncUserMissingReturnsNotFound()
     {
@@ -85,8 +90,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
 
         var result = await ConfirmAsync(Guid.NewGuid(), "123456");
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSavedAsync();
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
     }
 
     [Fact]
@@ -94,10 +98,9 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
     {
         var user = users.FindReturns(NewUser());
 
-        var result = await ConfirmAsync(user.Id, "123456");
+        var result = await ConfirmAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.AuthenticatorSetupExpired);
-        await AssertNotSavedAsync();
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.AuthenticatorSetupExpired);
     }
 
     [Fact]
@@ -105,10 +108,9 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
     {
         var user = PendingUser(expiresAt: clock.UtcNow.AddSeconds(-1));
 
-        var result = await ConfirmAsync(user.Id, "123456");
+        var result = await ConfirmAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.AuthenticatorSetupExpired);
-        await AssertNotSavedAsync();
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.AuthenticatorSetupExpired);
     }
 
     [Fact]
@@ -117,12 +119,11 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
         var user = PendingUser();
         totp.MatchStep(Secret, "000000", clock.UtcNow).Returns(default(long?));
 
-        var result = await ConfirmAsync(user.Id, "000000");
+        var result = await ConfirmAsync(user.Id.Value, "000000");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         user.PendingAuthenticatorKey.Should().NotBeNull();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -139,12 +140,12 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
         );
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(99);
 
-        var result = await ConfirmAsync(user.Id, "123456");
+        var result = await ConfirmAsync(user.Id.Value, "123456");
+        await events.PublishAsync(user);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorAlreadyEnabled);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
         user.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + "ACTIVEKEY");
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -153,7 +154,8 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
         var user = PendingUser();
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(99);
 
-        var result = await ConfirmAsync(user.Id, "123456");
+        var result = await ConfirmAsync(user.Id.Value, "123456");
+        await events.PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
@@ -163,10 +165,9 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
         user.PendingAuthenticatorExpiresAt.Should().BeNull();
         user.LoginCodeHash.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email);
+        message.ToAddress.Should().Be(user.Email!.Value);
         message.TextBody.Should().NotContain(Secret).And.NotContain("123456");
     }
 }

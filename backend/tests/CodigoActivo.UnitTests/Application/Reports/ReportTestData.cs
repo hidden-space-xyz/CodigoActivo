@@ -1,6 +1,9 @@
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.UnitTests.TestSupport;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Reports;
 
@@ -10,9 +13,9 @@ internal static class ReportTestData
 
     public static readonly Guid AlphaRoleId = new("11111111-1111-1111-1111-111111111111");
 
-    public static readonly Guid Confirmed = SeedIds.AssignmentStatusTypes.Confirmed;
-    public static readonly Guid Requested = SeedIds.AssignmentStatusTypes.Requested;
-    public static readonly Guid Denied = SeedIds.AssignmentStatusTypes.Denied;
+    public static readonly Guid Confirmed = KnownIds.AssignmentStatusTypes.Confirmed;
+    public static readonly Guid Requested = KnownIds.AssignmentStatusTypes.Requested;
+    public static readonly Guid Denied = KnownIds.AssignmentStatusTypes.Denied;
 
     public static readonly DateTimeOffset When = new(2026, 5, 1, 10, 0, 0, TimeSpan.Zero);
 
@@ -28,7 +31,7 @@ internal static class ReportTestData
         bool withContact = true
     )
     {
-        var typeId = userTypeId ?? SeedIds.UserTypes.Member;
+        var typeId = userTypeId ?? KnownIds.UserTypes.Member;
         return new()
         {
             Id = Guid.NewGuid(),

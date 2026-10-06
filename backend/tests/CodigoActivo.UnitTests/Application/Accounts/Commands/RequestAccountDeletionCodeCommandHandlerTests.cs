@@ -1,10 +1,12 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
@@ -13,6 +15,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
+using TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
@@ -27,6 +30,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly TwoFactorOptions options = new();
     private readonly PasswordLockoutOptions lockout = new();
+    private readonly TestCurrentUser currentUser = new();
     private readonly RequestAccountDeletionCodeCommandHandler sut;
 
     public RequestAccountDeletionCodeCommandHandlerTests()
@@ -44,7 +48,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         );
         sut = new RequestAccountDeletionCodeCommandHandler(
             users,
-            uow,
+            currentUser,
             clock,
             PasswordGuards.Create(hasher, uow, clock, sessions, emailSender, lockout),
             options,
@@ -70,8 +74,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
     private Task<Result> RequestAsync(Guid userId, string password = Password)
     {
+        currentUser.Id = UserId.From(userId);
         return sut.HandleAsync(
-            new RequestAccountDeletionCodeCommand(userId, new AccountDeletionCodeRequest(password)),
+            new AccountDeletionCodeRequest(password).ToCommand(),
             TestContext.Current.CancellationToken
         );
     }
@@ -89,7 +94,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
         var result = await RequestAsync(Guid.NewGuid());
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -97,9 +102,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncInitialAdministratorReturnsForbiddenWithoutCheckingThePassword()
     {
-        var result = await RequestAsync(SeedIds.Users.InitialAdministrator, "WrongPassword!");
+        var result = await RequestAsync(KnownIds.Users.InitialAdministrator, "WrongPassword!");
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteInitialAdminForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.UserDeleteInitialAdminForbidden);
         await users
             .DidNotReceiveWithAnyArgs()
             .GetByIdAsync(default, TestContext.Current.CancellationToken);
@@ -112,7 +117,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     {
         var user = Signed(isAdmin: true);
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().ContainSingle();
@@ -124,9 +129,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     {
         var user = Signed();
 
-        var result = await RequestAsync(user.Id, password: "WrongPassword!");
+        var result = await RequestAsync(user.Id.Value, password: "WrongPassword!");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.PasswordFailedAttempts.Should().Be(1);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
@@ -139,9 +144,12 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
         for (var attempt = 1; attempt <= lockout.MaxFailedAttempts; attempt++)
         {
-            var result = await RequestAsync(user.Id, password: "WrongPassword!");
+            var result = await RequestAsync(user.Id.Value, password: "WrongPassword!");
 
-            result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+            result.ShouldFail(
+                ErrorKind.Validation,
+                ApplicationErrorCode.UserCurrentPasswordIncorrect
+            );
             user.PasswordFailedAttempts.Should().Be(attempt);
             user.IsPasswordLocked().Should().Be(attempt == lockout.MaxFailedAttempts);
         }
@@ -160,9 +168,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var user = Signed();
         Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddMinutes(-5) });
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.LoginCodeHash.Should().BeNull();
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
@@ -173,9 +181,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     {
         var user = Signed(passwordHash: null);
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -185,9 +193,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var user = Signed();
         Persisted.Overwrite(user, new { TwoFactorMethod = TwoFactorMethod.Authenticator });
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.TwoFactorResendNotAllowed);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendNotAllowed);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -198,9 +206,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var user = Signed();
         Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(1) });
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -211,9 +219,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var user = Signed();
         Persisted.Overwrite(user, new { LoginCodeLastSentAt = clock.UtcNow.AddSeconds(-30) });
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.TwoFactorResendCooldownActive);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -223,9 +231,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     {
         var user = Signed(email: null);
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserContactInfoRequired);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserContactInfoRequired);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -236,9 +244,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var user = Signed();
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.TwoFactorResendCooldownActive);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
         user.LoginCodeHash.Should().BeNull();
         await AssertNotSavedAsync();
     }
@@ -249,7 +257,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var user = Signed();
         Persisted.Overwrite(user, new { LoginCodeLastSentAt = clock.UtcNow.AddMinutes(-5) });
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
         var message = emailSender.Sent.Should().ContainSingle().Subject;
@@ -261,7 +269,6 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + options.ChallengeLifetime);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -269,7 +276,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     {
         var user = Signed();
 
-        var result = await RequestAsync(user.Id);
+        var result = await RequestAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().ContainSingle();

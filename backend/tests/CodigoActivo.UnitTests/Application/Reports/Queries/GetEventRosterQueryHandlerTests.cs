@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.UnitTests.TestSupport;
@@ -44,7 +45,7 @@ public sealed class GetEventRosterQueryHandlerTests
         string roleName = "Participante"
     )
     {
-        var roleId = roleTypeId ?? SeedIds.ActivityRoleTypes.Participant;
+        var roleId = roleTypeId ?? KnownIds.ActivityRoleTypes.Participant;
         return new AssignmentRow
         {
             UserId = user.Id,
@@ -72,7 +73,7 @@ public sealed class GetEventRosterQueryHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
         store.ReadsOf<AssignmentRow>().Should().Be(0);
     }
 
@@ -170,8 +171,8 @@ public sealed class GetEventRosterQueryHandlerTests
         );
         store.Assignments.AddRange([
             RosterAsg(bruno, taller, Confirmed),
-            RosterAsg(bruno, taller, Confirmed, SeedIds.ActivityRoleTypes.Leader, "Líder"),
-            RosterAsg(vera, taller, Confirmed, SeedIds.ActivityRoleTypes.Volunteer, "Voluntario"),
+            RosterAsg(bruno, taller, Confirmed, KnownIds.ActivityRoleTypes.Leader, "Líder"),
+            RosterAsg(vera, taller, Confirmed, KnownIds.ActivityRoleTypes.Volunteer, "Voluntario"),
             RosterAsg(zoe, taller, Confirmed),
             RosterAsg(ana, taller, Confirmed),
         ]);

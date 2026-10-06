@@ -1,8 +1,12 @@
+using CodigoActivo.API.Events.Contracts;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 
@@ -19,11 +23,16 @@ internal static class EventTestData
         DateTimeOffset? signupStart = null,
         DateTimeOffset? signupEnd = null,
         string description = "{}",
-        IReadOnlyList<Guid>? categoryTypeIds = null
+        IReadOnlyList<EventCategoryTypeId>? categoryTypeIds = null
     )
     {
         var ev = Event.Create(
-            new EventContent(title, subtitle, description, Guid.NewGuid()),
+            new EventContent(
+                title,
+                subtitle,
+                RichText.From(description),
+                StoredFileId.From(Guid.NewGuid())
+            ),
             EventSchedule
                 .Create(
                     starts ?? new DateOnly(2026, 8, 1),
@@ -33,9 +42,9 @@ internal static class EventTestData
                     signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)
                 )
                 .Value,
-            EventCategorySelection.Create(categoryTypeIds ?? [Guid.NewGuid()]).Value,
+            EventCategorySelection.Create(categoryTypeIds ?? [EventCategoryTypeId.New()]).Value,
             EventTermsLinks.None,
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
         );
         if (featured)
@@ -168,7 +177,10 @@ internal static class EventTestData
     public static void HasCategoryCount(this IEventCategoryTypeRepository categoryTypes, int count)
     {
         categoryTypes
-            .CountExistingAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .CountExistingAsync(
+                Arg.Any<IReadOnlyCollection<EventCategoryTypeId>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(count);
     }
 
@@ -178,7 +190,11 @@ internal static class EventTestData
     )
     {
         categoryTypes
-            .NameExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .NameExistsAsync(
+                Arg.Any<string>(),
+                Arg.Any<EventCategoryTypeId?>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(taken);
     }
 
@@ -216,7 +232,11 @@ internal static class EventTestData
     )
     {
         termsDocuments
-            .NameExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .NameExistsAsync(
+                Arg.Any<string>(),
+                Arg.Any<TermsDocumentId?>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(exists);
     }
 
@@ -226,14 +246,14 @@ internal static class EventTestData
     )
     {
         termsDocuments
-            .GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .GetByIdAsync(Arg.Any<TermsDocumentId>(), Arg.Any<CancellationToken>())
             .Returns(termsDocument);
     }
 
     public static void TermsDocumentInUse(this IEventRepository events, bool inUse)
     {
         events
-            .LinksTermsDocumentAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .LinksTermsDocumentAsync(Arg.Any<TermsDocumentId>(), Arg.Any<CancellationToken>())
             .Returns(inUse);
     }
 
@@ -243,7 +263,7 @@ internal static class EventTestData
     )
     {
         termsAcceptances
-            .AnyForDocumentAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .AnyForDocumentAsync(Arg.Any<TermsDocumentId>(), Arg.Any<CancellationToken>())
             .Returns(accepted);
     }
 }

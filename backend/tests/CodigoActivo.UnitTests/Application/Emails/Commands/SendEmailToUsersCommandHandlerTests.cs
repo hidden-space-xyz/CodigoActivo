@@ -1,5 +1,6 @@
 using System.Text;
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Users.Contracts;
@@ -95,7 +96,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailNoRecipients);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailNoRecipients);
         outbox.Messages.Should().BeEmpty();
     }
 
@@ -130,7 +131,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailTooManyRecipients);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailTooManyRecipients);
         outbox.Messages.Should().BeEmpty();
     }
 
@@ -148,7 +149,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailSendFailed);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailSendFailed);
         outbox.Messages.Should().BeEmpty();
     }
 
@@ -163,7 +164,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailSendFailed);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailSendFailed);
     }
 
     [Fact]
@@ -219,7 +220,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailAttachmentsTooLarge);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailAttachmentsTooLarge);
         outbox.Messages.Should().BeEmpty();
     }
 
@@ -238,7 +239,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailTooManyAttachments);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailTooManyAttachments);
     }
 
     [Fact]
@@ -251,6 +252,6 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailAttachmentEmpty);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailAttachmentEmpty);
     }
 }

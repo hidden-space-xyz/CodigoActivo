@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.UnitTests.TestSupport;
@@ -26,7 +27,7 @@ public sealed class GetCurrentUserQueryHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.CurrentUserNotFound);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.CurrentUserNotFound);
     }
 
     [Fact]

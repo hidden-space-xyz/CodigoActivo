@@ -62,7 +62,10 @@ internal static class FileTestData
     {
         files.Finds(file);
         files
-            .ListByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .ListByIdsAsync(
+                Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns([file]);
     }
 
@@ -70,12 +73,17 @@ internal static class FileTestData
     {
         files.Finds(null);
         files
-            .ListByIdsAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
+            .ListByIdsAsync(
+                Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns([]);
     }
 
     public static void FileReferenced(this IStoredFileRepository files, bool referenced)
     {
-        files.IsInUseAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(referenced);
+        files
+            .IsInUseAsync(Arg.Any<StoredFileId>(), Arg.Any<CancellationToken>())
+            .Returns(referenced);
     }
 }

@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Events.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -26,7 +27,7 @@ public sealed class GetEventByIdQueryHandlerTests
         store.Events.Add(ev);
 
         var result = await sut.HandleAsync(
-            new GetEventByIdQuery(ev.Id),
+            new GetEventByIdQuery(EventId.From(ev.Id)),
             TestContext.Current.CancellationToken
         );
 
@@ -43,7 +44,7 @@ public sealed class GetEventByIdQueryHandlerTests
         clock.Today = ev.EventEndsAt;
 
         var result = await sut.HandleAsync(
-            new GetEventByIdQuery(ev.Id),
+            new GetEventByIdQuery(EventId.From(ev.Id)),
             TestContext.Current.CancellationToken
         );
 
@@ -54,12 +55,12 @@ public sealed class GetEventByIdQueryHandlerTests
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         var result = await sut.HandleAsync(
-            new GetEventByIdQuery(Guid.NewGuid()),
+            new GetEventByIdQuery(EventId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
     }
 }

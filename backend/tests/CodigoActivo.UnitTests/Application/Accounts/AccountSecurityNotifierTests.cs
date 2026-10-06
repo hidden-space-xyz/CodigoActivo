@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -39,7 +40,9 @@ public sealed class AccountSecurityNotifierTests
                 LastName = "Test",
                 Email = email,
                 BirthDate = new DateOnly(1990, 1, 1),
-                UserStatusTypeId = statusId ?? SeedIds.UserStatusTypes.Active,
+                Status = CatalogIds.UserStatuses.ValueOf(
+                    statusId ?? KnownIds.UserStatusTypes.Active
+                ),
             }
         );
     }
@@ -59,7 +62,7 @@ public sealed class AccountSecurityNotifierTests
     [Fact]
     public async Task NotifyAsyncGreetsNobodyAtAnAddressNobodyVerified()
     {
-        var user = NewUser(statusId: SeedIds.UserStatusTypes.Pending);
+        var user = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
 
         await sut.NotifyAsync(user, AccountSecurityChange.PasswordLocked, CancellationToken.None);
 
@@ -73,16 +76,6 @@ public sealed class AccountSecurityNotifierTests
     public async Task NotifyAsyncAccountWithoutEmailIsSkipped()
     {
         var user = NewUser(email: null);
-
-        await sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
-
-        emailSender.Sent.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task NotifyAsyncAccountWithBlankEmailIsSkipped()
-    {
-        var user = NewUser(email: "   ");
 
         await sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
 
@@ -105,9 +98,9 @@ public sealed class AccountSecurityNotifierTests
     public async Task NotifyIdentifiersChangedAsyncSendsToThePreviousAddressWithTheNewOneMasked()
     {
         await sut.NotifyIdentifiersChangedAsync(
-            "old@test.com",
+            EmailAddress.FromStored("old@test.com"),
             "Owner",
-            "brandnew@test.com",
+            EmailAddress.FromStored("brandnew@test.com"),
             false,
             CancellationToken.None
         );
@@ -122,7 +115,7 @@ public sealed class AccountSecurityNotifierTests
     public async Task NotifyIdentifiersChangedAsyncPhoneOnlyNamesThePhoneWithoutQuotingAnAddress()
     {
         await sut.NotifyIdentifiersChangedAsync(
-            "owner@test.com",
+            EmailAddress.FromStored("owner@test.com"),
             "Owner",
             null,
             true,
@@ -139,9 +132,9 @@ public sealed class AccountSecurityNotifierTests
     public async Task NotifyIdentifiersChangedAsyncEmailAndPhoneNamesBoth()
     {
         await sut.NotifyIdentifiersChangedAsync(
-            "old@test.com",
+            EmailAddress.FromStored("old@test.com"),
             "Owner",
-            "brandnew@test.com",
+            EmailAddress.FromStored("brandnew@test.com"),
             true,
             CancellationToken.None
         );

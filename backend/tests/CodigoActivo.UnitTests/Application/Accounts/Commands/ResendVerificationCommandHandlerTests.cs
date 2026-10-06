@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
@@ -52,14 +53,16 @@ public sealed class ResendVerificationCommandHandlerTests
     private Task<Result> HandleAsync(string email = $"  {Email}  ")
     {
         return sut.HandleAsync(
-            new ResendVerificationCommand(new ResendVerificationRequest(email)),
+            new ResendVerificationCommand(email),
             TestContext.Current.CancellationToken
         );
     }
 
     private User HolderOfTheAddress(User user)
     {
-        users.GetByEmailAsync(Email, Arg.Any<CancellationToken>()).Returns(user);
+        users
+            .GetByEmailAsync(EmailAddress.FromStored(Email), Arg.Any<CancellationToken>())
+            .Returns(user);
         return user;
     }
 
@@ -83,7 +86,7 @@ public sealed class ResendVerificationCommandHandlerTests
     [Fact]
     public async Task HandleAsyncVerifiedAccountGetsNothing()
     {
-        HolderOfTheAddress(NewUser(statusId: SeedIds.UserStatusTypes.Active));
+        HolderOfTheAddress(NewUser(statusId: KnownIds.UserStatusTypes.Active));
 
         var result = await HandleAsync();
 
@@ -97,7 +100,7 @@ public sealed class ResendVerificationCommandHandlerTests
     {
         var user = HolderOfTheAddress(
             NewUser(
-                statusId: SeedIds.UserStatusTypes.Pending,
+                statusId: KnownIds.UserStatusTypes.Pending,
                 otpCodeHash: null,
                 otpExpiresAt: null,
                 otpLastSentAt: null
@@ -167,7 +170,7 @@ public sealed class ResendVerificationCommandHandlerTests
             .Which.Message.Should()
             .StartWith("Sending a AccountVerification email failed")
             .And.NotContain(user.Id.ToString());
-        logger.Entries.Should().NotContain(entry => entry.Contains(user.Email!));
+        logger.Entries.Should().NotContain(entry => entry.Contains(user.Email!.Value));
     }
 
     [Fact]

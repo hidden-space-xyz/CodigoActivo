@@ -1,12 +1,11 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Events.Commands;
-using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -18,20 +17,11 @@ public sealed class DeleteEventCommandHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
-    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly DeleteEventCommandHandler sut;
 
     public DeleteEventCommandHandlerTests()
     {
-        sut = new DeleteEventCommandHandler(
-            events,
-            activities,
-            orphanCleaner,
-            uow,
-            cacheInvalidator
-        );
+        sut = new DeleteEventCommandHandler(events, activities);
     }
 
     [Fact]
@@ -40,38 +30,31 @@ public sealed class DeleteEventCommandHandlerTests
         events.Finds(null);
 
         var result = await sut.HandleAsync(
-            new DeleteEventCommand(Guid.NewGuid()),
+            new DeleteEventCommand(EventId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await orphanCleaner
-            .DidNotReceiveWithAnyArgs()
-            .DeleteOrphanedAsync(
-                Arg.Any<IReadOnlyCollection<Guid>>(),
-                TestContext.Current.CancellationToken
-            );
-        await cacheInvalidator
-            .DidNotReceive()
-            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
+        events.DidNotReceiveWithAnyArgs().Remove(Arg.Any<Event>());
     }
 
     [Fact]
-    public async Task HandleAsyncValidEventRemovesCleansThumbnailsAndInvalidatesCache()
+    public async Task HandleAsyncValidEventRemovesItAndReleasesItsAndItsActivitiesThumbnails()
     {
         var ev = NewEvent();
         events.Finds(ev);
         var sharedActivityThumbnailId = Guid.NewGuid();
         var foreignThumbnailId = Guid.NewGuid();
         activities
-            .ListThumbnailIdsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns([foreignThumbnailId]);
+            .ListThumbnailIdsAsync(Arg.Any<EventId>(), Arg.Any<CancellationToken>())
+            .Returns([StoredFileId.From(foreignThumbnailId)]);
         activities
             .ListThumbnailIdsAsync(ev.Id, Arg.Any<CancellationToken>())
-            .Returns([sharedActivityThumbnailId, sharedActivityThumbnailId]);
+            .Returns([
+                StoredFileId.From(sharedActivityThumbnailId),
+                StoredFileId.From(sharedActivityThumbnailId),
+            ]);
 
         var result = await sut.HandleAsync(
             new DeleteEventCommand(ev.Id),
@@ -80,33 +63,21 @@ public sealed class DeleteEventCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         events.Received(1).Remove(ev);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    IsDeletedEventThumbnailBatch(
-                        ids,
-                        ev.ThumbnailId,
-                        sharedActivityThumbnailId,
-                        foreignThumbnailId
-                    )
-                ),
-                Arg.Any<CancellationToken>()
-            );
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null
-                    && tags.Contains(CacheTags.Events)
-                    && tags.Contains(CacheTags.Activities)
+        DomainEvents
+            .ReleasedFiles(ev)
+            .Should()
+            .Match<IReadOnlyCollection<StoredFileId>>(ids =>
+                IsDeletedEventThumbnailBatch(
+                    ids,
+                    ev.ThumbnailId.Value,
+                    sharedActivityThumbnailId,
+                    foreignThumbnailId
                 )
             );
     }
 
     private static bool IsDeletedEventThumbnailBatch(
-        IReadOnlyCollection<Guid>? ids,
+        IReadOnlyCollection<StoredFileId>? ids,
         Guid eventThumbnailId,
         Guid activityThumbnailId,
         Guid foreignThumbnailId
@@ -117,13 +88,15 @@ public sealed class DeleteEventCommandHandlerTests
             return false;
         }
 
-        var hasEventThumbnail = ids.Contains(eventThumbnailId);
-        var hasActivityThumbnail = ids.Contains(activityThumbnailId);
-        return hasEventThumbnail && hasActivityThumbnail && !ids.Contains(foreignThumbnailId);
+        var hasEventThumbnail = ids.Contains(StoredFileId.From(eventThumbnailId));
+        var hasActivityThumbnail = ids.Contains(StoredFileId.From(activityThumbnailId));
+        return hasEventThumbnail
+            && hasActivityThumbnail
+            && !ids.Contains(StoredFileId.From(foreignThumbnailId));
     }
 
     [Fact]
-    public async Task HandleAsyncImagesEmbeddedInDescriptionCleansThemUp()
+    public async Task HandleAsyncImagesEmbeddedInDescriptionReleasesThem()
     {
         var embeddedId = Guid.NewGuid();
         var ev = NewEvent(description: $"{{\"img\":\"/api/files/{embeddedId}/content\"}}");
@@ -136,11 +109,11 @@ public sealed class DeleteEventCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Contains(embeddedId)),
-                Arg.Any<CancellationToken>()
+        DomainEvents
+            .ReleasedFiles(ev)
+            .Should()
+            .Match<IReadOnlyCollection<StoredFileId>>(ids =>
+                ids != null && ids.Contains(StoredFileId.From(embeddedId))
             );
     }
 }

@@ -1,11 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Partners.Commands;
-using CodigoActivo.Application.Partners.Contracts;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.UnitTests.TestSupport;
@@ -19,21 +15,30 @@ public sealed class UpdatePartnerCommandHandlerTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
-    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly UpdatePartnerCommandHandler sut;
 
     public UpdatePartnerCommandHandlerTests()
     {
-        sut = new UpdatePartnerCommandHandler(
-            partners,
-            files,
-            orphanCleaner,
-            clock,
-            uow,
-            cacheInvalidator
+        sut = new UpdatePartnerCommandHandler(partners, files, currentUser, clock);
+    }
+
+    private static UpdatePartnerCommand Command(
+        PartnerId partnerId,
+        string name = "Acme",
+        int tier = 1,
+        string? website = null,
+        StoredFileId? thumbnailId = null
+    )
+    {
+        return new UpdatePartnerCommand(
+            partnerId,
+            name,
+            new DateOnly(2025, 2, 2),
+            tier,
+            website,
+            thumbnailId ?? StoredFileId.New()
         );
     }
 
@@ -41,132 +46,101 @@ public sealed class UpdatePartnerCommandHandlerTests
     public async Task HandleAsyncPartnerMissingReturnsNotFound()
     {
         partners.Finds(null);
-        var request = new UpdatePartnerRequest(
-            "Acme",
-            new DateOnly(2024, 1, 1),
-            1,
-            null,
-            Guid.NewGuid()
-        );
 
         var result = await sut.HandleAsync(
-            new UpdatePartnerCommand(Guid.NewGuid(), request, Guid.NewGuid()),
+            Command(PartnerId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.PartnerNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error!.Code.Should().Be(ApplicationErrorCode.PartnerNotFound);
     }
 
     [Fact]
-    public async Task HandleAsyncThumbnailMissingReturnsBadRequest()
+    public async Task HandleAsyncThumbnailMissingReturnsBadRequestAndKeepsThePartner()
     {
-        var partner = NewPartner();
+        var partner = NewPartner("Old");
+        partner.PullDomainEvents();
         partners.Finds(partner);
         files.ThumbnailExists(false);
-        var request = new UpdatePartnerRequest(
-            "Acme",
-            new DateOnly(2024, 1, 1),
-            1,
-            null,
-            Guid.NewGuid()
-        );
 
         var result = await sut.HandleAsync(
-            new UpdatePartnerCommand(partner.Id, request, Guid.NewGuid()),
+            Command(partner.Id, "New"),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.PartnerThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error!.Code.Should().Be(ApplicationErrorCode.PartnerThumbnailNotFound);
+        partner.Name.Should().Be("Old");
+        partner.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestMutatesPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidCommandReplacesProfileByTheCurrentUser()
     {
         var partner = NewPartner("Old", tier: 1);
         partners.Finds(partner);
         files.ThumbnailExists(true);
-        var caller = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
-        var request = new UpdatePartnerRequest(
-            "  New  ",
-            new DateOnly(2025, 2, 2),
-            5,
-            "https://new.test",
-            Guid.NewGuid()
-        );
 
         var result = await sut.HandleAsync(
-            new UpdatePartnerCommand(partner.Id, request, caller),
+            Command(partner.Id, "  New  ", 5, "https://new.test"),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         partner.Name.Should().Be("New");
         partner.Tier.Should().Be(5);
-        partner.UpdatedBy.Should().Be(caller);
+        partner.UpdatedBy.Should().Be(currentUser.Id);
         partner.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Partners)
-                )
-            );
     }
 
     [Fact]
-    public async Task HandleAsyncThumbnailReplacedCleansUpPreviousFileAfterSave()
+    public async Task HandleAsyncThumbnailReplacedRaisesUpdateReleasingThePreviousFile()
     {
         var partner = NewPartner();
         var previousThumbnailId = partner.ThumbnailId;
+        partner.PullDomainEvents();
         partners.Finds(partner);
         files.ThumbnailExists(true);
-        var request = new UpdatePartnerRequest(
-            "Acme",
-            new DateOnly(2024, 1, 1),
-            1,
-            null,
-            Guid.NewGuid()
-        );
+        var thumbnailId = StoredFileId.New();
 
         var result = await sut.HandleAsync(
-            new UpdatePartnerCommand(partner.Id, request, Guid.NewGuid()),
+            Command(partner.Id, thumbnailId: thumbnailId),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+        var updated = partner
+            .PullDomainEvents()
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<PartnerUpdated>()
+            .Subject;
+        updated.Should().Be(new PartnerUpdated(partner.Id, previousThumbnailId, thumbnailId));
+        updated.ReleasedFileIds.Should().Equal(previousThumbnailId);
     }
 
     [Fact]
-    public async Task HandleAsyncThumbnailUnchangedDoesNotCleanUp()
+    public async Task HandleAsyncThumbnailUnchangedReleasesNoFile()
     {
         var partner = NewPartner();
+        partner.PullDomainEvents();
         partners.Finds(partner);
         files.ThumbnailExists(true);
-        var request = new UpdatePartnerRequest(
-            "Acme",
-            new DateOnly(2024, 1, 1),
-            1,
-            null,
-            partner.ThumbnailId
-        );
 
         var result = await sut.HandleAsync(
-            new UpdatePartnerCommand(partner.Id, request, Guid.NewGuid()),
+            Command(partner.Id, thumbnailId: partner.ThumbnailId),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
+        partner
+            .PullDomainEvents()
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<PartnerUpdated>()
+            .Which.ReleasedFileIds.Should()
+            .BeEmpty();
     }
 }

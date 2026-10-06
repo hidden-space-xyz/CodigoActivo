@@ -2,7 +2,12 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
@@ -37,7 +42,7 @@ public sealed class GetActivityByIdQueryHandlerTests
         store.Activities.Add(activity);
 
         var result = await sut.HandleAsync(
-            new GetActivityByIdQuery(activity.Id),
+            new GetActivityByIdQuery(ActivityId.From(activity.Id)),
             TestContext.Current.CancellationToken
         );
 
@@ -50,13 +55,13 @@ public sealed class GetActivityByIdQueryHandlerTests
     public async Task HandleAsyncActivityMissingReturnsNotFound()
     {
         var result = await sut.HandleAsync(
-            new GetActivityByIdQuery(Guid.NewGuid()),
+            new GetActivityByIdQuery(ActivityId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityNotFound);
     }
 
     [Fact]
@@ -64,44 +69,44 @@ public sealed class GetActivityByIdQueryHandlerTests
     {
         var activity = NewActivityRow();
         activity.RoleCapacities.Add(
-            CapacityRow(activity.Id, SeedIds.ActivityRoleTypes.Participant, 1)
+            CapacityRow(activity.Id, KnownIds.ActivityRoleTypes.Participant, 1)
         );
         activity.RoleCapacities.Add(
-            CapacityRow(activity.Id, SeedIds.ActivityRoleTypes.Volunteer, 2)
+            CapacityRow(activity.Id, KnownIds.ActivityRoleTypes.Volunteer, 2)
         );
         activity.Assignments.Add(
             RoleAssignment(
                 activity.Id,
-                SeedIds.ActivityRoleTypes.Participant,
-                SeedIds.AssignmentStatusTypes.Confirmed
+                KnownIds.ActivityRoleTypes.Participant,
+                KnownIds.AssignmentStatusTypes.Confirmed
             )
         );
         activity.Assignments.Add(
             RoleAssignment(
                 activity.Id,
-                SeedIds.ActivityRoleTypes.Participant,
-                SeedIds.AssignmentStatusTypes.Requested
+                KnownIds.ActivityRoleTypes.Participant,
+                KnownIds.AssignmentStatusTypes.Requested
             )
         );
         store.Activities.Add(activity);
 
         var result = await sut.HandleAsync(
-            new GetActivityByIdQuery(activity.Id),
+            new GetActivityByIdQuery(ActivityId.From(activity.Id)),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         result
             .Value.RoleCapacities.Single(c =>
-                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
+                c.ActivityRoleTypeId == KnownIds.ActivityRoleTypes.Participant
             )
             .Should()
             .BeEquivalentTo(
-                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Participant, 1, true)
+                new ActivityRoleCapacityResponse(KnownIds.ActivityRoleTypes.Participant, 1, true)
             );
         result
             .Value.RoleCapacities.Single(c =>
-                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer
+                c.ActivityRoleTypeId == KnownIds.ActivityRoleTypes.Volunteer
             )
             .IsHighDemand.Should()
             .BeFalse();
@@ -112,33 +117,33 @@ public sealed class GetActivityByIdQueryHandlerTests
     {
         var activity = NewActivityRow();
         activity.RoleCapacities.Add(
-            CapacityRow(activity.Id, SeedIds.ActivityRoleTypes.Participant, 1)
+            CapacityRow(activity.Id, KnownIds.ActivityRoleTypes.Participant, 1)
         );
         activity.Assignments.Add(
             RoleAssignment(
                 activity.Id,
-                SeedIds.ActivityRoleTypes.Participant,
-                SeedIds.AssignmentStatusTypes.Confirmed
+                KnownIds.ActivityRoleTypes.Participant,
+                KnownIds.AssignmentStatusTypes.Confirmed
             )
         );
         activity.Assignments.Add(
             RoleAssignment(
                 activity.Id,
-                SeedIds.ActivityRoleTypes.Participant,
-                SeedIds.AssignmentStatusTypes.Denied
+                KnownIds.ActivityRoleTypes.Participant,
+                KnownIds.AssignmentStatusTypes.Denied
             )
         );
         activity.Assignments.Add(
             RoleAssignment(
                 activity.Id,
-                SeedIds.ActivityRoleTypes.Volunteer,
-                SeedIds.AssignmentStatusTypes.Confirmed
+                KnownIds.ActivityRoleTypes.Volunteer,
+                KnownIds.AssignmentStatusTypes.Confirmed
             )
         );
         store.Activities.Add(activity);
 
         var result = await sut.HandleAsync(
-            new GetActivityByIdQuery(activity.Id),
+            new GetActivityByIdQuery(ActivityId.From(activity.Id)),
             TestContext.Current.CancellationToken
         );
 

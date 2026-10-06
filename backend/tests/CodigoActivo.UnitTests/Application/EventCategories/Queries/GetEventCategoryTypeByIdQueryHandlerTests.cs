@@ -1,7 +1,9 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Application.EventCategories.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
@@ -25,7 +27,7 @@ public sealed class GetEventCategoryTypeByIdQueryHandlerTests
         store.EventCategoryTypes.AddRange([NewCategoryTypeRow("Charlas"), categoryType]);
 
         var result = await sut.HandleAsync(
-            new GetEventCategoryTypeByIdQuery(categoryType.Id),
+            new GetEventCategoryTypeByIdQuery(EventCategoryTypeId.From(categoryType.Id)),
             TestContext.Current.CancellationToken
         );
 
@@ -41,10 +43,10 @@ public sealed class GetEventCategoryTypeByIdQueryHandlerTests
         store.EventCategoryTypes.Add(NewCategoryTypeRow("Charlas"));
 
         var result = await sut.HandleAsync(
-            new GetEventCategoryTypeByIdQuery(Guid.NewGuid()),
+            new GetEventCategoryTypeByIdQuery(EventCategoryTypeId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.EventCategoryTypeNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventCategoryTypeNotFound);
     }
 }

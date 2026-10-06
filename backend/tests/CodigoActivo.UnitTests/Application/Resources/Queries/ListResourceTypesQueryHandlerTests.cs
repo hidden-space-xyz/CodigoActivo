@@ -13,11 +13,7 @@ public sealed class ListResourceTypesQueryHandlerTests
 
     public ListResourceTypesQueryHandlerTests()
     {
-        sut = new ListResourceTypesQueryHandler(
-            store,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
-        );
+        sut = new ListResourceTypesQueryHandler(store, new FakeQueryExecutor());
     }
 
     [Fact]

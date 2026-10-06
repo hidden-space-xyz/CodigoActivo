@@ -1,8 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Domain.Common;
@@ -21,7 +20,6 @@ public sealed class UpdateFileCommandHandlerTests
     private readonly IFileStorage storage = Substitute.For<IFileStorage>();
     private readonly TestClock clock = new();
     private readonly FileUploadOptions options = new();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly UpdateFileCommandHandler sut;
 
     public UpdateFileCommandHandlerTests()
@@ -31,8 +29,7 @@ public sealed class UpdateFileCommandHandlerTests
             uow,
             storage,
             clock,
-            new FileUploadValidator(options),
-            cacheInvalidator
+            new FileUploadValidator(options)
         );
     }
 
@@ -43,11 +40,11 @@ public sealed class UpdateFileCommandHandlerTests
         var upload = new FileUpload(PngStream(), "new.png", 32);
 
         var result = await sut.HandleAsync(
-            new UpdateFileCommand(Guid.NewGuid(), upload),
+            new UpdateFileCommand(StoredFileId.New(), upload),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.FileNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.FileNotFound);
         await AssertNotSavedAsync();
         await storage
             .DidNotReceiveWithAnyArgs()
@@ -60,11 +57,11 @@ public sealed class UpdateFileCommandHandlerTests
         files.FileFound(NewFile());
 
         var result = await sut.HandleAsync(
-            new UpdateFileCommand(Guid.NewGuid(), null),
+            new UpdateFileCommand(StoredFileId.New(), null),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadMissing);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.FileUploadMissing);
         await AssertNotSavedAsync();
         await storage
             .DidNotReceiveWithAnyArgs()
@@ -72,7 +69,7 @@ public sealed class UpdateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncExtensionUnchangedReplacesContentWithoutDeletingAndInvalidatesCache()
+    public async Task HandleAsyncExtensionUnchangedReplacesContentWithoutDeletingAndRaisesReplacement()
     {
         var file = NewFile(name: "old.png", extension: "png");
         files.FileFound(file);
@@ -92,13 +89,11 @@ public sealed class UpdateFileCommandHandlerTests
             .SaveAsync($"{file.Id}.png", content, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Files)
-                )
-            );
+        file.PullDomainEvents()
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<StoredFileReplaced>();
     }
 
     [Fact]

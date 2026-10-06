@@ -1,5 +1,7 @@
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.UnitTests.Application.Partners;
 
@@ -18,9 +20,9 @@ internal static class PartnerTestData
                 fromDate ?? new DateOnly(2024, 1, 1),
                 tier,
                 web,
-                Guid.NewGuid()
+                StoredFileId.From(Guid.NewGuid())
             ),
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero)
         );
     }

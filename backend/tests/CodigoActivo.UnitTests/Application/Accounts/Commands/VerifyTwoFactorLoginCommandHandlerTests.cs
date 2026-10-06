@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -47,7 +48,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     private Task<Result> VerifyAsync(Guid userId, string code)
     {
         return sut.HandleAsync(
-            new VerifyTwoFactorLoginCommand(userId, code),
+            new VerifyTwoFactorLoginCommand(UserId.From(userId), code),
             TestContext.Current.CancellationToken
         );
     }
@@ -65,7 +66,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
 
         var result = await VerifyAsync(Guid.NewGuid(), "123456");
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
     }
 
     [Fact]
@@ -74,9 +75,9 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         var user = Prepare(NewUserWithLoginCode(clock));
         Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(5) });
 
-        var result = await VerifyAsync(user.Id, "123456");
+        var result = await VerifyAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
         user.TwoFactorFailedAttempts.Should().Be(0);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -88,9 +89,9 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
         Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddMinutes(-1) });
 
-        var result = await VerifyAsync(user.Id, "123456");
+        var result = await VerifyAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.TwoFactorChallengeExpired);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
         user.LastLoginAt.Should().BeNull();
         user.LoginCodeHash.Should().NotBeNull();
         await uow.DidNotReceiveWithAnyArgs()
@@ -104,7 +105,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 2 });
 
-        var result = await VerifyAsync(user.Id, " 123456 ");
+        var result = await VerifyAsync(user.Id.Value, " 123456 ");
 
         result.IsSuccess.Should().BeTrue();
         user.LoginCodeHash.Should().BeNull();
@@ -119,9 +120,9 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
 
-        var result = await VerifyAsync(user.Id, "000000");
+        var result = await VerifyAsync(user.Id.Value, "000000");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         user.TwoFactorFailedAttempts.Should().Be(1);
         user.LoginCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
         user.LastLoginAt.Should().BeNull();
@@ -135,9 +136,9 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
             NewUserWithLoginCode(clock, code: "123456", expiresAt: clock.UtcNow.AddSeconds(-1))
         );
 
-        var result = await VerifyAsync(user.Id, "123456");
+        var result = await VerifyAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
     }
 
     [Fact]
@@ -146,9 +147,9 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = options.MaxFailedAttempts - 1 });
 
-        var result = await VerifyAsync(user.Id, "000000");
+        var result = await VerifyAsync(user.Id.Value, "000000");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         user.TwoFactorLockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.LoginCodeHash.Should().BeNull();
@@ -160,7 +161,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         var user = Prepare(NewUserWithAuthenticator(Secret, lastUsedStep: 41));
         totp.MatchStep(Secret, "222333", clock.UtcNow).Returns(42);
 
-        var result = await VerifyAsync(user.Id, "222333");
+        var result = await VerifyAsync(user.Id.Value, "222333");
 
         result.IsSuccess.Should().BeTrue();
         user.AuthenticatorLastUsedStep.Should().Be(42);
@@ -173,9 +174,9 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         var user = Prepare(NewUserWithAuthenticator(Secret, lastUsedStep: 42));
         totp.MatchStep(Secret, "222333", clock.UtcNow).Returns(42);
 
-        var result = await VerifyAsync(user.Id, "222333");
+        var result = await VerifyAsync(user.Id.Value, "222333");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         user.TwoFactorFailedAttempts.Should().Be(1);
         user.LastLoginAt.Should().BeNull();
     }
@@ -185,7 +186,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
 
-        await VerifyAsync(user.Id, "123456");
+        await VerifyAsync(user.Id.Value, "123456");
 
         logger.Entries.Should().BeEmpty();
     }
@@ -195,7 +196,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
 
-        await VerifyAsync(user.Id, "000000");
+        await VerifyAsync(user.Id.Value, "000000");
 
         logger.Entries.Should().BeEmpty();
     }
@@ -206,7 +207,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = options.MaxFailedAttempts - 1 });
 
-        await VerifyAsync(user.Id, "000000");
+        await VerifyAsync(user.Id.Value, "000000");
 
         var entry = logger.LevelEntries.Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Warning);
@@ -223,7 +224,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
 
-        await VerifyAsync(user.Id, "000000");
+        await VerifyAsync(user.Id.Value, "000000");
 
         Received.InOrder(() =>
         {
@@ -251,9 +252,9 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
                 return true;
             });
 
-        var result = await VerifyAsync(user.Id, "123456");
+        var result = await VerifyAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
         user.LastLoginAt.Should().BeNull();
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -265,9 +266,9 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
         users.LockAsync(user, Arg.Any<CancellationToken>()).Returns(false);
 
-        var result = await VerifyAsync(user.Id, "123456");
+        var result = await VerifyAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -287,8 +288,8 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         totp.MatchStep(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTimeOffset>())
             .Returns(default(long?));
 
-        var result = await VerifyAsync(user.Id, "123456");
+        var result = await VerifyAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
     }
 }

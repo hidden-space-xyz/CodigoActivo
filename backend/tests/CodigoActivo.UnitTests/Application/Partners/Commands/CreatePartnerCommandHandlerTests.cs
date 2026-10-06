@@ -1,9 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Partners.Commands;
-using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
@@ -17,14 +15,13 @@ public sealed class CreatePartnerCommandHandlerTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly CreatePartnerCommandHandler sut;
 
     public CreatePartnerCommandHandlerTests()
     {
-        sut = new CreatePartnerCommandHandler(partners, files, clock, uow, cacheInvalidator);
+        sut = new CreatePartnerCommandHandler(partners, files, currentUser, clock);
     }
 
     private async Task<List<Partner>> CaptureAddedPartnersAsync()
@@ -34,51 +31,45 @@ public sealed class CreatePartnerCommandHandlerTests
         return added;
     }
 
+    private static CreatePartnerCommand Command(
+        string name = "Acme",
+        string? website = null,
+        StoredFileId? thumbnailId = null
+    )
+    {
+        return new CreatePartnerCommand(
+            name,
+            new DateOnly(2024, 3, 4),
+            2,
+            website,
+            thumbnailId ?? StoredFileId.New()
+        );
+    }
+
     [Fact]
     public async Task HandleAsyncThumbnailMissingReturnsBadRequestAndDoesNotPersist()
     {
         files.ThumbnailExists(false);
-        var request = new CreatePartnerRequest(
-            "  Acme  ",
-            new DateOnly(2024, 1, 1),
-            1,
-            " https://acme.test ",
-            Guid.NewGuid()
-        );
 
-        var result = await sut.HandleAsync(
-            new CreatePartnerCommand(request, Guid.NewGuid()),
-            TestContext.Current.CancellationToken
-        );
+        var result = await sut.HandleAsync(Command(), TestContext.Current.CancellationToken);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.PartnerThumbnailNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.PartnerThumbnailNotFound);
         await partners
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<Partner>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestPersistsTrimmedNormalizedPartnerAndInvalidatesCache()
+    public async Task HandleAsyncValidCommandStagesTrimmedPartnerByTheCurrentUser()
     {
         files.ThumbnailExists(true);
-        var caller = Guid.NewGuid();
-        var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         var added = await CaptureAddedPartnersAsync();
-        var request = new CreatePartnerRequest(
-            "  Acme  ",
-            new DateOnly(2024, 3, 4),
-            2,
-            " https://acme.test ",
-            thumbnailId
-        );
 
         var result = await sut.HandleAsync(
-            new CreatePartnerCommand(request, caller),
+            Command("  Acme  ", " https://acme.test "),
             TestContext.Current.CancellationToken
         );
 
@@ -88,16 +79,9 @@ public sealed class CreatePartnerCommandHandlerTests
         created.Name.Should().Be("Acme");
         created.Web.Should().Be("https://acme.test");
         created.Tier.Should().Be(2);
-        created.CreatedBy.Should().Be(caller);
+        created.CreatedBy.Should().Be(currentUser.Id!.Value);
         created.CreatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Partners)
-                )
-            );
+        created.PullDomainEvents().Should().Equal(new PartnerCreated(created.Id));
     }
 
     [Fact]
@@ -105,20 +89,24 @@ public sealed class CreatePartnerCommandHandlerTests
     {
         files.ThumbnailExists(true);
         var added = await CaptureAddedPartnersAsync();
-        var request = new CreatePartnerRequest(
-            "Acme",
-            new DateOnly(2024, 1, 1),
-            0,
-            "   ",
-            Guid.NewGuid()
-        );
 
         var result = await sut.HandleAsync(
-            new CreatePartnerCommand(request, Guid.NewGuid()),
+            Command(website: "   "),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         added.Should().ContainSingle().Which.Web.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsyncNobodySignedInThrows()
+    {
+        files.ThumbnailExists(true);
+        currentUser.Id = null;
+
+        var act = () => sut.HandleAsync(Command(), TestContext.Current.CancellationToken);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 }

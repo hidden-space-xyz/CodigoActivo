@@ -1,5 +1,7 @@
 using AwesomeAssertions;
+using CodigoActivo.API.TermsDocuments.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.TermsDocuments.Commands;
 using CodigoActivo.Application.TermsDocuments.Contracts;
 using CodigoActivo.Domain.Common;
@@ -14,12 +16,11 @@ public sealed class CreateTermsDocumentCommandHandlerTests
 {
     private readonly ITermsDocumentRepository termsDocuments =
         Substitute.For<ITermsDocumentRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly CreateTermsDocumentCommandHandler sut;
 
     public CreateTermsDocumentCommandHandlerTests()
     {
-        sut = new CreateTermsDocumentCommandHandler(termsDocuments, uow);
+        sut = new CreateTermsDocumentCommandHandler(termsDocuments);
     }
 
     [Fact]
@@ -28,23 +29,19 @@ public sealed class CreateTermsDocumentCommandHandlerTests
         termsDocuments.TermsDocumentExists(true);
 
         var result = await sut.HandleAsync(
-            new CreateTermsDocumentCommand(
-                new CreateTermsDocumentRequest("  Normas de campamento  ", "{}")
-            ),
+            new CreateTermsDocumentRequest("  Normas de campamento  ", "{}").ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.TermsDocumentNameAlreadyExists);
+        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNameAlreadyExists);
         await termsDocuments
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<TermsDocument>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestPersistsTrimmedName()
+    public async Task HandleAsyncValidRequestStagesTrimmedName()
     {
         termsDocuments.TermsDocumentExists(false);
         var added = new List<TermsDocument>();
@@ -54,9 +51,10 @@ public sealed class CreateTermsDocumentCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateTermsDocumentCommand(
-                new CreateTermsDocumentRequest("  Normas de campamento  ", "{\"type\":\"doc\"}")
-            ),
+            new CreateTermsDocumentRequest(
+                "  Normas de campamento  ",
+                "{\"type\":\"doc\"}"
+            ).ToCommand(),
             TestContext.Current.CancellationToken
         );
 
@@ -64,7 +62,6 @@ public sealed class CreateTermsDocumentCommandHandlerTests
         var created = added.Should().ContainSingle().Which;
         result.Value.Should().Be(created.Id);
         created.Name.Should().Be("Normas de campamento");
-        created.Description.Should().Be("{\"type\":\"doc\"}");
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        created.Description!.Json.Should().Be("{\"type\":\"doc\"}");
     }
 }

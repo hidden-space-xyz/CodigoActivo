@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
@@ -83,7 +84,7 @@ public sealed class GetEventBadgesQueryHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
         store.ReadsOf<AssignmentRow>().Should().Be(0);
     }
 
