@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Common;
@@ -41,7 +42,7 @@ public sealed class ListEventRatingsQueryHandler(IReadStore readStore, IQueryExe
     {
         if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == query.EventId), ct))
         {
-            return Error.NotFound(ErrorCode.EventNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
         var source = readStore

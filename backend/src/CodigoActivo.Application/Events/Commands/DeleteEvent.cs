@@ -1,8 +1,6 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -13,22 +11,16 @@ namespace CodigoActivo.Application.Events.Commands;
 /// Carries the input required to delete the event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record DeleteEventCommand(Guid EventId) : ICommand<Result>;
+public sealed record DeleteEventCommand(EventId EventId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the event.
+/// Executes the command to delete the event together with its activities.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class DeleteEventCommandHandler(
     IEventRepository events,
-    IActivityRepository activities,
-    IOrphanFileCleaner orphanCleaner,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    IActivityRepository activities
 ) : ICommandHandler<DeleteEventCommand, Result>
 {
     /// <summary>
@@ -42,25 +34,16 @@ public sealed class DeleteEventCommandHandler(
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(command);
+
         var ev = await events.GetByIdAsync(command.EventId, ct);
         if (ev is null)
         {
-            return Error.NotFound(ErrorCode.EventNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
-        var activityThumbnailIds = await activities.ListThumbnailIdsAsync(command.EventId, ct);
-
+        ev.Delete(await activities.ListThumbnailIdsAsync(command.EventId, ct));
         events.Remove(ev);
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Events, CacheTags.Activities);
-
-        var orphanCandidates = activityThumbnailIds
-            .Append(ev.ThumbnailId)
-            .Concat(RichTextFileReferences.Extract(ev.Description))
-            .Distinct()
-            .ToList();
-        await orphanCleaner.DeleteOrphanedAsync(orphanCandidates, ct);
-
         return Result.Success();
     }
 }

@@ -1,9 +1,9 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
@@ -14,10 +14,8 @@ namespace CodigoActivo.Application.Events.Commands;
 /// <summary>
 /// Carries the input required to create an event.
 /// </summary>
-/// <param name="Request">Validated client request data.</param>
-/// <param name="UserId">Identifier of the user.</param>
-public sealed record CreateEventCommand(CreateEventRequest Request, Guid UserId)
-    : ICommand<Result<Guid>>;
+/// <param name="Event">Content, schedule, categories and terms of the new event.</param>
+public sealed record CreateEventCommand(EventDraft Event) : ICommand<Result<EventId>>;
 
 /// <summary>
 /// Executes the command to create an event.
@@ -26,18 +24,16 @@ public sealed record CreateEventCommand(CreateEventRequest Request, Guid UserId)
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
 /// <param name="categoryChecker">The category checker value.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class CreateEventCommandHandler(
     IEventRepository events,
     IStoredFileRepository files,
     ITermsDocumentRepository termsDocuments,
     EventCategoryChecker categoryChecker,
-    IClock clock,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
-) : ICommandHandler<CreateEventCommand, Result<Guid>>
+    ICurrentUser currentUser,
+    IClock clock
+) : ICommandHandler<CreateEventCommand, Result<EventId>>
 {
     /// <summary>
     /// Handles the request to create an event.
@@ -45,41 +41,38 @@ public sealed class CreateEventCommandHandler(
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
-    public async Task<Result<Guid>> HandleAsync(
+    public async Task<Result<EventId>> HandleAsync(
         CreateEventCommand command,
         CancellationToken ct = default
     )
     {
-        var request = command.Request;
+        ArgumentNullException.ThrowIfNull(command);
+        var draft = command.Event;
 
         var schedule = EventSchedule.Create(
-            request.EventStartsAt,
-            request.EventEndsAt,
-            request.EarlySignupStartsAt,
-            request.SignupStartsAt,
-            request.SignupEndsAt
+            draft.EventStartsAt,
+            draft.EventEndsAt,
+            draft.EarlySignupStartsAt,
+            draft.SignupStartsAt,
+            draft.SignupEndsAt
         );
         if (schedule.IsFailure)
         {
             return schedule.Error!;
         }
 
-        if (!await files.ExistsAsync(request.ThumbnailId, ct))
+        if (!await files.ExistsAsync(draft.ThumbnailId, ct))
         {
-            return Error.Validation(ErrorCode.EventThumbnailNotFound);
+            return Error.Validation(ApplicationErrorCode.EventThumbnailNotFound);
         }
 
-        var categories = await categoryChecker.EnsureCategoriesAsync(request.CategoryTypeIds, ct);
+        var categories = await categoryChecker.EnsureCategoriesAsync(draft.CategoryTypeIds, ct);
         if (categories.IsFailure)
         {
             return categories.Error!;
         }
 
-        var terms = await EventTermsRequests.ResolveAsync(
-            request.TermsDocuments,
-            termsDocuments,
-            ct
-        );
+        var terms = await EventTermsRequests.ResolveAsync(draft.TermsDocuments, termsDocuments, ct);
         if (terms.IsFailure)
         {
             return terms.Error!;
@@ -87,22 +80,19 @@ public sealed class CreateEventCommandHandler(
 
         var ev = Event.Create(
             new EventContent(
-                request.Title,
-                request.Subtitle,
-                request.Description,
-                request.ThumbnailId
+                draft.Title,
+                draft.Subtitle,
+                RichText.From(draft.Description),
+                draft.ThumbnailId
             ),
             schedule.Value,
             categories.Value,
             terms.Value,
-            command.UserId,
+            currentUser.RequiredId(),
             clock.UtcNow
         );
 
         await events.AddAsync(ev, ct);
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Events);
-
         return ev.Id;
     }
 }

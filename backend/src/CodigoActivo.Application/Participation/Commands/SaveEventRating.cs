@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Participation.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -12,30 +15,34 @@ namespace CodigoActivo.Application.Participation.Commands;
 /// Carries the input required to save event rating.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-/// <param name="UserId">Identifier of the user.</param>
-/// <param name="Request">Validated client request data.</param>
+/// <param name="Score">Score from 1 to 5, if any.</param>
+/// <param name="MostLiked">What the participant liked most, if anything.</param>
+/// <param name="LeastLiked">What the participant liked least, if anything.</param>
+/// <param name="Suggestions">Suggestions, if any.</param>
 public sealed record SaveEventRatingCommand(
-    Guid EventId,
-    Guid UserId,
-    SaveEventRatingRequest Request
+    EventId EventId,
+    [property: Range(EventRating.MinScore, EventRating.MaxScore)] int? Score,
+    [property: MaxLength(EventRating.MaxAnswerLength)] string? MostLiked,
+    [property: MaxLength(EventRating.MaxAnswerLength)] string? LeastLiked,
+    [property: MaxLength(EventRating.MaxAnswerLength)] string? Suggestions
 ) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to save event rating. Every accepted call appends one anonymous rating row:
 /// nothing records who wrote it, so an attendee may rate the same event more than once and no
-/// answer is ever overwritten.
+/// answer is ever overwritten. Only someone who attended the event may rate it.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="ratings">Repository used to persist and retrieve ratings.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
 public sealed class SaveEventRatingCommandHandler(
     IEventRepository events,
     IEventRatingRepository ratings,
     IActivityRepository activities,
-    IClock clock,
-    IUnitOfWork uow
+    ICurrentUser currentUser,
+    IClock clock
 ) : ICommandHandler<SaveEventRatingCommand, Result>
 {
     /// <summary>
@@ -49,30 +56,30 @@ public sealed class SaveEventRatingCommandHandler(
         CancellationToken ct = default
     )
     {
-        var request = command.Request;
+        ArgumentNullException.ThrowIfNull(command);
 
         var ev = await events.GetByIdAsync(command.EventId, ct);
         if (ev is null)
         {
-            return Error.NotFound(ErrorCode.EventNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
         if (!ev.HasEndedBy(clock.Today))
         {
-            return Error.Conflict(ErrorCode.EventRatingNotFinished);
+            return Error.Conflict(ApplicationErrorCode.EventRatingNotFinished);
         }
 
-        if (!await activities.HasConfirmedAttendanceAsync(ev.Id, command.UserId, ct))
+        if (!await activities.HasConfirmedAttendanceAsync(ev.Id, currentUser.RequiredId(), ct))
         {
-            return Error.Conflict(ErrorCode.EventRatingAttendanceRequired);
+            return Error.Conflict(ApplicationErrorCode.EventRatingAttendanceRequired);
         }
 
         var rating = EventRating.Submit(
             ev.Id,
-            request.Score,
-            request.MostLiked,
-            request.LeastLiked,
-            request.Suggestions
+            command.Score,
+            command.MostLiked,
+            command.LeastLiked,
+            command.Suggestions
         );
         if (rating.IsFailure)
         {
@@ -80,8 +87,6 @@ public sealed class SaveEventRatingCommandHandler(
         }
 
         await ratings.AddAsync(rating.Value, ct);
-        await uow.SaveChangesAsync(ct);
-
         return Result.Success();
     }
 }

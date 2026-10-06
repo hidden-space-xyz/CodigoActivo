@@ -1,4 +1,4 @@
-using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.TermsDocuments;
@@ -12,14 +12,12 @@ namespace CodigoActivo.Application.Events;
 internal static class EventTermsRequests
 {
     public static async Task<Result<EventTermsLinks>> ResolveAsync(
-        IReadOnlyList<EventTermsDocumentRequest>? requests,
+        IReadOnlyList<EventTermsLink> requested,
         ITermsDocumentRepository termsDocuments,
         CancellationToken ct
     )
     {
-        var links = EventTermsLinks.Create(
-            requests?.Select(r => new EventTermsLink(r.TermsDocumentId, r.Required)).ToList()
-        );
+        var links = EventTermsLinks.Create(requested);
         if (links.IsFailure)
         {
             return links.Error!;
@@ -33,7 +31,7 @@ internal static class EventTermsRequests
 
         var existing = await termsDocuments.CountExistingAsync(ids, ct);
         return existing != ids.Count
-            ? Error.Validation(ErrorCode.TermsDocumentNotFound)
+            ? Error.Validation(ApplicationErrorCode.TermsDocumentNotFound)
             : links.Value;
     }
 }

@@ -1,7 +1,6 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
@@ -12,21 +11,17 @@ namespace CodigoActivo.Application.EventCategories.Commands;
 /// Carries the input required to delete the event category type.
 /// </summary>
 /// <param name="CategoryTypeId">Identifier of the category type.</param>
-public sealed record DeleteEventCategoryTypeCommand(Guid CategoryTypeId) : ICommand<Result>;
+public sealed record DeleteEventCategoryTypeCommand(EventCategoryTypeId CategoryTypeId)
+    : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the event category type. The events it tagged lose the tag, so it
-/// is refused while some event has no other category.
+/// Executes the command to delete the event category type.
 /// </summary>
 /// <param name="categoryTypes">Repository used to persist and retrieve category types.</param>
-/// <param name="events">Repository used to check which events would be left without a category.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
+/// <param name="events">Repository used to persist and retrieve events.</param>
 public sealed class DeleteEventCategoryTypeCommandHandler(
     IEventCategoryTypeRepository categoryTypes,
-    IEventRepository events,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    IEventRepository events
 ) : ICommandHandler<DeleteEventCategoryTypeCommand, Result>
 {
     /// <summary>
@@ -40,21 +35,21 @@ public sealed class DeleteEventCategoryTypeCommandHandler(
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(command);
+
         var categoryType = await categoryTypes.GetByIdAsync(command.CategoryTypeId, ct);
         if (categoryType is null)
         {
-            return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventCategoryTypeNotFound);
         }
 
         if (await events.HasEventWithOnlyCategoryAsync(categoryType.Id, ct))
         {
-            return Error.Conflict(ErrorCode.EventCategoryTypeOnlyCategoryOfEvent);
+            return Error.Conflict(ApplicationErrorCode.EventCategoryTypeOnlyCategoryOfEvent);
         }
 
+        categoryType.Delete();
         categoryTypes.Remove(categoryType);
-        await uow.SaveChangesAsync(ct);
-
-        await cacheInvalidator.InvalidateAsync(CacheTags.EventCategoryTypes, CacheTags.Events);
         return Result.Success();
     }
 }

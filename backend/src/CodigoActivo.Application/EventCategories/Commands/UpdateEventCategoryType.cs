@@ -1,8 +1,8 @@
-using CodigoActivo.Application.Abstractions.Caching;
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.EventCategories.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 
@@ -12,22 +12,20 @@ namespace CodigoActivo.Application.EventCategories.Commands;
 /// Carries the input required to update the event category type.
 /// </summary>
 /// <param name="CategoryTypeId">Identifier of the category type.</param>
-/// <param name="Request">Validated client request data.</param>
+/// <param name="Name">Name, unique among category types.</param>
+/// <param name="Color">Color as <c>#RRGGBB</c>.</param>
 public sealed record UpdateEventCategoryTypeCommand(
-    Guid CategoryTypeId,
-    UpdateEventCategoryTypeRequest Request
+    EventCategoryTypeId CategoryTypeId,
+    [property: Required, MaxLength(120), NotBlank] string Name,
+    [property: Required, MaxLength(9), RegularExpression("^#[0-9A-Fa-f]{6}$")] string Color
 ) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the event category type.
 /// </summary>
 /// <param name="categoryTypes">Repository used to persist and retrieve category types.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdateEventCategoryTypeCommandHandler(
-    IEventCategoryTypeRepository categoryTypes,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    IEventCategoryTypeRepository categoryTypes
 ) : ICommandHandler<UpdateEventCategoryTypeCommand, Result>
 {
     /// <summary>
@@ -41,23 +39,21 @@ public sealed class UpdateEventCategoryTypeCommandHandler(
         CancellationToken ct = default
     )
     {
-        var request = command.Request;
+        ArgumentNullException.ThrowIfNull(command);
 
         var categoryType = await categoryTypes.GetByIdAsync(command.CategoryTypeId, ct);
         if (categoryType is null)
         {
-            return Error.NotFound(ErrorCode.EventCategoryTypeNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventCategoryTypeNotFound);
         }
 
-        var name = request.Name.Trim();
+        var name = command.Name.Trim();
         if (await categoryTypes.NameExistsAsync(name, command.CategoryTypeId, ct))
         {
-            return Error.Conflict(ErrorCode.EventCategoryTypeNameAlreadyExists);
+            return Error.Conflict(ApplicationErrorCode.EventCategoryTypeNameAlreadyExists);
         }
 
-        categoryType.Rename(name, request.Color);
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.EventCategoryTypes, CacheTags.Events);
+        categoryType.Rename(name, command.Color);
         return Result.Success();
     }
 }

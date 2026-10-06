@@ -1,8 +1,10 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -10,7 +12,7 @@ namespace CodigoActivo.Application.Events.Queries;
 /// Carries the criteria used to retrieve event by identifier.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record GetEventByIdQuery(Guid EventId) : IQuery<Result<EventResponse>>;
+public sealed record GetEventByIdQuery(EventId EventId) : IQuery<Result<EventResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve event by identifier.
@@ -36,11 +38,11 @@ public sealed class GetEventByIdQueryHandler(
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            readStore.Events.Where(e => e.Id == query.EventId).Select(EventProjections.Event),
+            readStore.Events.Where(e => e.Id == query.EventId.Value).Select(EventProjections.Event),
             ct
         );
         return response is null
-            ? Error.NotFound(ErrorCode.EventNotFound)
+            ? Error.NotFound(ApplicationErrorCode.EventNotFound)
             : EventStages.Stamp(response, clock.UtcNow, clock.Today);
     }
 }

@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
@@ -18,7 +19,7 @@ public sealed class EventCategoryChecker(IEventCategoryTypeRepository categoryTy
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the selection, or the error of the first broken rule.</returns>
     public async Task<Result<EventCategorySelection>> EnsureCategoriesAsync(
-        IReadOnlyList<Guid>? categoryTypeIds,
+        IReadOnlyList<EventCategoryTypeId> categoryTypeIds,
         CancellationToken ct = default
     )
     {
@@ -30,7 +31,7 @@ public sealed class EventCategoryChecker(IEventCategoryTypeRepository categoryTy
 
         var ids = selection.Value.CategoryTypeIds;
         return await categoryTypes.CountExistingAsync(ids, ct) != ids.Count
-            ? Error.Validation(ErrorCode.EventCategoryTypeNotFound)
+            ? Error.Validation(ApplicationErrorCode.EventCategoryTypeNotFound)
             : selection;
     }
 }

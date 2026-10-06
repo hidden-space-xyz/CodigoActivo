@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Common.Validation;
-
 namespace CodigoActivo.Application.TermsDocuments.Contracts;
 
 /// <summary>
@@ -17,23 +14,3 @@ public record TermsDocumentResponse(Guid Id, string Name, string Description)
     public TermsDocumentResponse()
         : this(Guid.Empty, string.Empty, string.Empty) { }
 }
-
-/// <summary>
-/// Contains the client-supplied data used to create a terms document.
-/// </summary>
-/// <param name="Name">The name value.</param>
-/// <param name="Description">Rich-text document holding text only; images are refused.</param>
-public record CreateTermsDocumentRequest(
-    [Required] [MaxLength(120)] [NotBlank] string Name,
-    [Required] [RichText(AllowImages = false)] [MaxLength(262144)] string Description
-);
-
-/// <summary>
-/// Contains the client-supplied data used to update the terms document.
-/// </summary>
-/// <param name="Name">The name value.</param>
-/// <param name="Description">Rich-text document holding text only; images are refused.</param>
-public record UpdateTermsDocumentRequest(
-    [Required] [MaxLength(120)] [NotBlank] string Name,
-    [Required] [RichText(AllowImages = false)] [MaxLength(262144)] string Description
-);
