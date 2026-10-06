@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
@@ -13,7 +15,10 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the user whose password was already accepted.</param>
 /// <param name="Code">Code from the email or the authenticator application.</param>
-public sealed record VerifyTwoFactorLoginCommand(UserId UserId, string Code) : ICommand<Result>;
+public sealed record VerifyTwoFactorLoginCommand(
+    UserId UserId,
+    [property: Required, MaxLength(16), NotBlank] string Code
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the second step of the login. Wrong codes are counted and lock the account's second

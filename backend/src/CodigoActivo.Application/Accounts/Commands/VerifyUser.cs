@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -12,7 +14,10 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="Otp">The otp value.</param>
-public sealed record VerifyUserCommand(UserId UserId, string Otp) : ICommand<Result>;
+public sealed record VerifyUserCommand(
+    UserId UserId,
+    [property: Required, MaxLength(128), NotBlank] string Otp
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to verify user.

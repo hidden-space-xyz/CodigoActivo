@@ -1,6 +1,8 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -11,7 +13,10 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the account.</param>
 /// <param name="Code">Code from the link emailed to the new address.</param>
-public sealed record ConfirmEmailChangeCommand(UserId UserId, string Code) : ICommand<Result>;
+public sealed record ConfirmEmailChangeCommand(
+    UserId UserId,
+    [property: Required, MaxLength(128), NotBlank] string Code
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to confirm the new email an account holder asked for.
