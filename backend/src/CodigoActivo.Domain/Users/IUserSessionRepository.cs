@@ -15,7 +15,7 @@ public interface IUserSessionRepository : IRepository<UserSession>
     /// <param name="userId">Identifier of the account that owns it.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that completes once the session no longer exists.</returns>
-    public Task EndAsync(Guid sessionId, Guid userId, CancellationToken ct = default);
+    public Task EndAsync(UserSessionId sessionId, UserId userId, CancellationToken ct = default);
 
     /// <summary>
     /// Ends every session of an account.
@@ -23,7 +23,7 @@ public interface IUserSessionRepository : IRepository<UserSession>
     /// <param name="userId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that completes once the account has no sessions.</returns>
-    public Task EndAllAsync(Guid userId, CancellationToken ct = default);
+    public Task EndAllAsync(UserId userId, CancellationToken ct = default);
 
     /// <summary>
     /// Removes the sessions that stopped being accepted by a moment.
@@ -34,7 +34,7 @@ public interface IUserSessionRepository : IRepository<UserSession>
     /// <returns>A task whose result is the number of sessions removed.</returns>
     public Task<int> RemoveExpiredAsync(
         DateTimeOffset now,
-        Guid? userId = null,
+        UserId? userId = null,
         CancellationToken ct = default
     );
 }

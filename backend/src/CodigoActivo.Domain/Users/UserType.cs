@@ -1,35 +1,23 @@
-using CodigoActivo.Domain.Common;
-
 namespace CodigoActivo.Domain.Users;
 
 /// <summary>
-/// Membership type of an account, from the fixed catalog of types.
+/// Relationship of a person with the association, which decides the roles they may sign up for
+/// and whether they sign up early.
 /// </summary>
-public class UserType : NamedEntity
+public enum UserType
 {
-    private UserType() { }
+    /// <summary>
+    /// Member of the association.
+    /// </summary>
+    Member,
 
     /// <summary>
-    /// Gets the display color associated with the item.
+    /// Person or organization that sponsors the association.
     /// </summary>
-    public string Color { get; private init; } = string.Empty;
+    Sponsor,
 
     /// <summary>
-    /// Creates an entry of the catalog.
+    /// Person who takes part in events without an organizing role.
     /// </summary>
-    /// <param name="id">Known identifier of the type.</param>
-    /// <param name="name">Human-readable name.</param>
-    /// <param name="description">Detailed description.</param>
-    /// <param name="color">Display color.</param>
-    /// <returns>The unsaved entry.</returns>
-    public static UserType Create(Guid id, string name, string description, string color)
-    {
-        return new UserType
-        {
-            Id = id,
-            Name = name,
-            Description = description,
-            Color = color,
-        };
-    }
+    Participant,
 }

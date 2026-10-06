@@ -12,7 +12,7 @@ public sealed class ProfileChange
         User account,
         PersonDetails details,
         ContactDetails? contact,
-        string? nationalId,
+        SpanishNationalId? nationalId,
         DateOnly? birthDate
     )
     {
@@ -24,21 +24,10 @@ public sealed class ProfileChange
         NationalId = nationalId;
         PromotionalConsent = contact is not null && details.PromotionalConsent;
         BirthDate = birthDate;
-        NewEmail =
-            contact is not null
-            && !string.Equals(contact.Email, account.Email, StringComparison.Ordinal)
-                ? contact.Email
-                : null;
+        NewEmail = contact is not null && contact.Email != account.Email ? contact.Email : null;
         ReplacesPhones =
             contact is not null
-            && (
-                !string.Equals(contact.Phone, account.Phone, StringComparison.Ordinal)
-                || !string.Equals(
-                    contact.SecondaryPhone,
-                    account.SecondaryPhone,
-                    StringComparison.Ordinal
-                )
-            );
+            && (contact.Phone != account.Phone || contact.SecondaryPhone != account.SecondaryPhone);
         ReplacesContact = NewEmail is not null || ReplacesPhones;
     }
 
@@ -46,13 +35,13 @@ public sealed class ProfileChange
     /// Gets the email the account keeps or receives; <see langword="null"/> for a dependent, which
     /// has none of its own.
     /// </summary>
-    public string? Email => Contact?.Email;
+    public EmailAddress? Email => Contact?.Email;
 
     /// <summary>
     /// Gets the email when it replaces the stored one; <see langword="null"/> when the email stays
     /// the same or the account is a dependent.
     /// </summary>
-    public string? NewEmail { get; }
+    public EmailAddress? NewEmail { get; }
 
     /// <summary>
     /// Gets whether the change replaces the email, the phone or the secondary phone of the account,
@@ -75,7 +64,7 @@ public sealed class ProfileChange
 
     internal ContactDetails? Contact { get; }
 
-    internal string? NationalId { get; }
+    internal SpanishNationalId? NationalId { get; }
 
     internal bool PromotionalConsent { get; }
 

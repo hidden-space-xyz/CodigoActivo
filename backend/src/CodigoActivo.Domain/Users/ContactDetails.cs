@@ -3,46 +3,67 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Domain.Users;
 
 /// <summary>
-/// Normalized contact details of an independent account: the email it logs in with, a phone and
-/// an optional second phone that differs from the first.
+/// Contact details of an independent account: the email it logs in with, a phone and an optional
+/// second phone that differs from the first.
 /// </summary>
-/// <param name="Email">Trimmed, lowercase email.</param>
-/// <param name="Phone">Trimmed phone.</param>
-/// <param name="SecondaryPhone">Trimmed second phone, or <see langword="null"/> when there is none.</param>
-internal sealed record ContactDetails(string Email, string Phone, string? SecondaryPhone)
+/// <param name="Email">Email of the account.</param>
+/// <param name="Phone">Phone of the account.</param>
+/// <param name="SecondaryPhone">Second phone, or <see langword="null"/> when there is none.</param>
+internal sealed record ContactDetails(
+    EmailAddress Email,
+    PhoneNumber Phone,
+    PhoneNumber? SecondaryPhone
+)
 {
     /// <summary>
     /// Normalizes and checks the contact details a caller supplied.
     /// </summary>
     /// <param name="details">Details as supplied.</param>
     /// <returns>
-    /// The contact details, <see cref="ErrorCode.UserContactInfoRequired"/> without an email or a
-    /// phone, <see cref="ErrorCode.UserPhoneInvalid"/> when a phone is not a <see cref="PhoneNumber"/>,
-    /// or <see cref="ErrorCode.SecondaryPhoneSameAsPrimary"/> when both phones are equal.
+    /// The contact details, <see cref="DomainErrorCode.UserContactInfoRequired"/> without an email or a
+    /// phone, <see cref="DomainErrorCode.UserPhoneInvalid"/> when a phone is not a <see cref="PhoneNumber"/>,
+    /// <see cref="DomainErrorCode.SecondaryPhoneSameAsPrimary"/> when both phones are equal, or
+    /// <see cref="DomainErrorCode.UserEmailInvalid"/> when the email is malformed.
     /// </returns>
     public static Result<ContactDetails> From(PersonDetails details)
     {
-        var email = details.Email.NormalizeEmailOrNull();
-        var phone = details.Phone.NormalizeOrNull();
-        if (email is null || phone is null)
-        {
-            return Error.Validation(ErrorCode.UserContactInfoRequired);
-        }
-
-        var secondaryPhone = details.SecondaryPhone.NormalizeOrNull();
         if (
-            !PhoneNumber.IsValid(phone)
-            || (secondaryPhone is not null && !PhoneNumber.IsValid(secondaryPhone))
+            details.Email.NormalizeOrNull() is null
+            || details.Phone.NormalizeOrNull() is not { } phoneText
         )
         {
-            return Error.Validation(ErrorCode.UserPhoneInvalid);
+            return Error.Validation(DomainErrorCode.UserContactInfoRequired);
         }
 
-        if (string.Equals(secondaryPhone, phone, StringComparison.Ordinal))
+        var phone = PhoneNumber.Create(phoneText);
+        if (phone.IsFailure)
         {
-            return Error.Validation(ErrorCode.SecondaryPhoneSameAsPrimary);
+            return phone.Error!;
         }
 
-        return new ContactDetails(email, phone, secondaryPhone);
+        PhoneNumber? secondaryPhone = null;
+        if (details.SecondaryPhone.NormalizeOrNull() is { } secondaryText)
+        {
+            var secondary = PhoneNumber.Create(secondaryText);
+            if (secondary.IsFailure)
+            {
+                return secondary.Error!;
+            }
+
+            secondaryPhone = secondary.Value;
+        }
+
+        if (secondaryPhone == phone.Value)
+        {
+            return Error.Validation(DomainErrorCode.SecondaryPhoneSameAsPrimary);
+        }
+
+        var email = EmailAddress.Create(details.Email);
+        if (email.IsFailure)
+        {
+            return email.Error!;
+        }
+
+        return new ContactDetails(email.Value, phone.Value, secondaryPhone);
     }
 }

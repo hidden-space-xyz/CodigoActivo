@@ -105,7 +105,7 @@ public sealed record LegalCopy(
         var eventIds = signupEventIds.Union(kept.Select(decision => decision.EventId)).ToHashSet();
 
         return new LegalCopy(
-            new LegalCopyDeletion(erasure.Origin, erasure.ActorId),
+            new LegalCopyDeletion(erasure.Origin, erasure.ActorId.Value),
             account,
             guardian,
             [

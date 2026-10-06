@@ -8,7 +8,7 @@ namespace CodigoActivo.Domain.Users;
 /// <param name="DeletedAt">UTC timestamp of the deletion.</param>
 public sealed record AccountErasure(
     AccountDeletionOrigin Origin,
-    Guid ActorId,
+    UserId ActorId,
     DateTimeOffset DeletedAt
 )
 {
@@ -20,7 +20,7 @@ public sealed record AccountErasure(
     /// <param name="actorId">Identifier of the user who asks for the deletion.</param>
     /// <param name="now">Current time.</param>
     /// <returns>The description of the deletion.</returns>
-    public static AccountErasure For(User account, Guid actorId, DateTimeOffset now)
+    public static AccountErasure For(User account, UserId actorId, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(account);
 
@@ -39,7 +39,7 @@ public sealed record AccountErasure(
     /// <param name="claimantId">Identifier of the account that takes the email.</param>
     /// <param name="now">Current time.</param>
     /// <returns>The description of the deletion.</returns>
-    public static AccountErasure ForClaimedEmail(Guid claimantId, DateTimeOffset now)
+    public static AccountErasure ForClaimedEmail(UserId claimantId, DateTimeOffset now)
     {
         return new AccountErasure(AccountDeletionOrigin.EmailClaimed, claimantId, now);
     }

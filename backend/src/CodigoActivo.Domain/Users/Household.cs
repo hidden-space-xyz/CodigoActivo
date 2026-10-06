@@ -27,6 +27,6 @@ public static class Household
     {
         return dependents < MaxDependents
             ? Result.Success()
-            : Error.Conflict(ErrorCode.UserChildLimitReached);
+            : Error.Conflict(DomainErrorCode.UserChildLimitReached);
     }
 }

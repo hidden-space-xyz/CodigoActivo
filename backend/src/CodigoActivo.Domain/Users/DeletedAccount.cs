@@ -8,7 +8,7 @@ namespace CodigoActivo.Domain.Users;
 /// they stood when the account was deleted. Nothing in the application reads it; the row is only
 /// reachable directly in the database and is purged once <see cref="RetentionYears"/> have passed.
 /// </summary>
-public class DeletedAccount : IAggregateRoot
+public class DeletedAccount : AggregateRoot<UserId>
 {
     /// <summary>
     /// Years a copy is kept before it is physically purged.
@@ -16,12 +16,6 @@ public class DeletedAccount : IAggregateRoot
     public const int RetentionYears = 2;
 
     private DeletedAccount() { }
-
-    /// <summary>
-    /// Gets the identifier the user had. It is not a foreign key, since the user row no longer
-    /// exists.
-    /// </summary>
-    public Guid Id { get; private set; }
 
     /// <summary>
     /// Gets the UTC timestamp when the account was deleted.
@@ -40,17 +34,19 @@ public class DeletedAccount : IAggregateRoot
     /// <param name="erasure">Who erased it and when.</param>
     /// <param name="legalCopy">JSON document holding the copy.</param>
     /// <returns>The copy to keep.</returns>
-    public static DeletedAccount Record(Guid accountId, AccountErasure erasure, string legalCopy)
+    public static DeletedAccount Record(UserId accountId, AccountErasure erasure, string legalCopy)
     {
         ArgumentNullException.ThrowIfNull(erasure);
         ArgumentException.ThrowIfNullOrWhiteSpace(legalCopy);
 
-        return new DeletedAccount
+        var deleted = new DeletedAccount
         {
             Id = accountId,
             DeletedAt = erasure.DeletedAt,
             Data = legalCopy,
         };
+        deleted.Raise(new AccountErased(accountId));
+        return deleted;
     }
 
     /// <summary>

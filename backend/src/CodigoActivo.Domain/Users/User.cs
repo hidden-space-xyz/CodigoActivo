@@ -10,7 +10,7 @@ namespace CodigoActivo.Domain.Users;
 /// <see cref="PlanProfileChange"/> and <see cref="ApplyProfileChange"/>, which own those rules, or
 /// with <see cref="ApplyProfileChangeConfirmingEmail"/> when a new email must be confirmed first.
 /// </summary>
-public class User : IdentifiableEntity, IAggregateRoot
+public class User : AggregateRoot<UserId>
 {
     private User() { }
 
@@ -27,13 +27,13 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// <summary>
     /// Gets the email value.
     /// </summary>
-    public string? Email { get; private set; }
+    public EmailAddress? Email { get; private set; }
 
     /// <summary>
     /// Gets the email the holder asked to move the account to. It replaces <see cref="Email"/> only
     /// once the code emailed to it is confirmed.
     /// </summary>
-    public string? PendingEmail { get; private set; }
+    public EmailAddress? PendingEmail { get; private set; }
 
     /// <summary>
     /// Gets the hash of the emailed code that confirms the pending email.
@@ -48,13 +48,13 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// <summary>
     /// Gets the phone value.
     /// </summary>
-    public string? Phone { get; private set; }
+    public PhoneNumber? Phone { get; private set; }
 
     /// <summary>
     /// Gets the optional second contact phone of an independent account. It is never
     /// equal to <see cref="Phone"/> and is always unset for dependents.
     /// </summary>
-    public string? SecondaryPhone { get; private set; }
+    public PhoneNumber? SecondaryPhone { get; private set; }
 
     /// <summary>
     /// Gets the password hash value.
@@ -71,7 +71,7 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// Gets the normalized Spanish national identity number (DNI or NIE): uppercase, without
     /// spaces or hyphens. Required for independent accounts but not unique; unset for dependents.
     /// </summary>
-    public string? NationalId { get; private set; }
+    public SpanishNationalId? NationalId { get; private set; }
 
     /// <summary>
     /// Gets whether the user agreed to receive promotional content. Always
@@ -102,17 +102,17 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// <summary>
     /// Gets the identifier of the associated parent.
     /// </summary>
-    public Guid? ParentId { get; private set; }
+    public UserId? ParentId { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the associated user status type.
+    /// Gets the stage of the account.
     /// </summary>
-    public Guid UserStatusTypeId { get; private set; }
+    public UserStatus Status { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the associated user type.
+    /// Gets the relationship of the person with the association.
     /// </summary>
-    public Guid UserTypeId { get; private set; }
+    public UserType UserType { get; private set; }
 
     /// <summary>
     /// Gets whether admin.
@@ -229,17 +229,17 @@ public class User : IdentifiableEntity, IAggregateRoot
     public static Result<User> CreateIndependent(
         PersonDetails details,
         DateTimeOffset now,
-        Guid? id = null
+        UserId? id = null
     )
     {
         ArgumentNullException.ThrowIfNull(details);
         var account = new User
         {
-            Id = id ?? Guid.NewGuid(),
+            Id = id ?? UserId.New(),
             FirstName = string.Empty,
             LastName = string.Empty,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
-            UserTypeId = SeedIds.UserTypes.Participant,
+            Status = UserStatus.Pending,
+            UserType = UserType.Participant,
             CreatedAt = now,
         };
         var change = account.PlanIndependentChange(details, guardianId: null);
@@ -249,6 +249,7 @@ public class User : IdentifiableEntity, IAggregateRoot
         }
 
         account.Apply(change.Value);
+        account.Raise(new AccountRegistered(account.Id));
         return account;
     }
 
@@ -268,24 +269,24 @@ public class User : IdentifiableEntity, IAggregateRoot
         PersonDetails details,
         DateOnly today,
         DateTimeOffset now,
-        Guid? id = null
+        UserId? id = null
     )
     {
         ArgumentNullException.ThrowIfNull(guardian);
         ArgumentNullException.ThrowIfNull(details);
         if (guardian.ParentId is not null)
         {
-            return Error.Validation(ErrorCode.UserParentIsMinor);
+            return Error.Validation(DomainErrorCode.UserParentIsMinor);
         }
 
         var dependent = new User
         {
-            Id = id ?? Guid.NewGuid(),
+            Id = id ?? UserId.New(),
             FirstName = string.Empty,
             LastName = string.Empty,
             ParentId = guardian.Id,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-            UserTypeId = SeedIds.UserTypes.Participant,
+            Status = UserStatus.Dependent,
+            UserType = UserType.Participant,
             CreatedAt = now,
         };
         var change = dependent.PlanDependentChange(details, guardianId: null, today);
@@ -295,6 +296,7 @@ public class User : IdentifiableEntity, IAggregateRoot
         }
 
         dependent.Apply(change.Value);
+        dependent.Raise(new DependentAdded(dependent.Id, guardian.Id));
         return dependent;
     }
 
@@ -314,7 +316,7 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// <returns>The planned change, or the error of the first broken rule.</returns>
     public Result<ProfileChange> PlanProfileChange(
         PersonDetails details,
-        Guid? guardianId,
+        UserId? guardianId,
         DateOnly today
     )
     {
@@ -334,6 +336,7 @@ public class User : IdentifiableEntity, IAggregateRoot
     public void ApplyProfileChange(ProfileChange change, DateTimeOffset now)
     {
         EnsurePlannedHere(change);
+        var previousEmail = Email;
         if (change.NewEmail is not null)
         {
             ClearEmailChange();
@@ -341,6 +344,19 @@ public class User : IdentifiableEntity, IAggregateRoot
 
         Apply(change);
         UpdatedAt = now;
+        Raise(new ProfileChanged(Id));
+        if (change.ReplacesContact)
+        {
+            Raise(
+                new ContactDetailsReplaced(
+                    Id,
+                    previousEmail,
+                    FirstName,
+                    change.NewEmail,
+                    change.ReplacesPhones
+                )
+            );
+        }
     }
 
     /// <summary>
@@ -372,6 +388,19 @@ public class User : IdentifiableEntity, IAggregateRoot
         EmailChangeExpiresAt = now + lifetime;
         ApplyKeepingEmail(change);
         UpdatedAt = now;
+        Raise(new ProfileChanged(Id));
+        if (change.ReplacesPhones)
+        {
+            Raise(
+                new ContactDetailsReplaced(
+                    Id,
+                    Email,
+                    FirstName,
+                    NewEmail: null,
+                    PhonesReplaced: true
+                )
+            );
+        }
     }
 
     /// <summary>
@@ -381,11 +410,16 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// <exception cref="InvalidOperationException">No email change is waiting.</exception>
     public void ConfirmEmailChange(DateTimeOffset now)
     {
+        var previousEmail = Email;
         Email =
             PendingEmail
             ?? throw new InvalidOperationException("No email change is waiting for confirmation.");
         ClearEmailChange();
         UpdatedAt = now;
+        Raise(new ProfileChanged(Id));
+        Raise(
+            new ContactDetailsReplaced(Id, previousEmail, FirstName, Email, PhonesReplaced: false)
+        );
     }
 
     private void EnsurePlannedHere(ProfileChange change)
@@ -407,27 +441,22 @@ public class User : IdentifiableEntity, IAggregateRoot
         EmailChangeExpiresAt = null;
     }
 
-    private Result<ProfileChange> PlanIndependentChange(PersonDetails details, Guid? guardianId)
+    private Result<ProfileChange> PlanIndependentChange(PersonDetails details, UserId? guardianId)
     {
         if (details.BirthDate is not null)
         {
-            return Error.Validation(ErrorCode.UserBirthDateNotAllowedForAdult);
+            return Error.Validation(DomainErrorCode.UserBirthDateNotAllowedForAdult);
         }
 
         if (guardianId is not null)
         {
-            return Error.Validation(ErrorCode.UserParentNotAllowedForAdult);
+            return Error.Validation(DomainErrorCode.UserParentNotAllowedForAdult);
         }
 
-        var nationalId = SpanishNationalId.Normalize(details.NationalId);
-        if (nationalId is null)
+        var nationalId = SpanishNationalId.Create(details.NationalId);
+        if (nationalId.IsFailure)
         {
-            return Error.Validation(ErrorCode.UserNationalIdRequired);
-        }
-
-        if (!SpanishNationalId.IsValid(nationalId))
-        {
-            return Error.Validation(ErrorCode.RequestValidationFailed);
+            return nationalId.Error!;
         }
 
         var contact = ContactDetails.From(details);
@@ -436,35 +465,35 @@ public class User : IdentifiableEntity, IAggregateRoot
             return contact.Error!;
         }
 
-        return new ProfileChange(this, details, contact.Value, nationalId, birthDate: null);
+        return new ProfileChange(this, details, contact.Value, nationalId.Value, birthDate: null);
     }
 
     private Result<ProfileChange> PlanDependentChange(
         PersonDetails details,
-        Guid? guardianId,
+        UserId? guardianId,
         DateOnly today
     )
     {
         if (guardianId is { } requested && requested != ParentId)
         {
-            return Error.Forbidden(ErrorCode.UserParentReassignmentForbidden);
+            return Error.Forbidden(DomainErrorCode.UserParentReassignmentForbidden);
         }
 
         if (details.BirthDate is not { } birthDate)
         {
-            return Error.Validation(ErrorCode.UserChildBirthDateRequired);
+            return Error.Validation(DomainErrorCode.UserChildBirthDateRequired);
         }
 
         if (birthDate != BirthDate)
         {
             if (birthDate > today)
             {
-                return Error.Validation(ErrorCode.RequestValidationFailed);
+                return Error.Validation(DomainErrorCode.UserChildBirthDateInFuture);
             }
 
             if (!birthDate.IsMinor(today))
             {
-                return Error.Validation(ErrorCode.UserChildBirthDateNotMinor);
+                return Error.Validation(DomainErrorCode.UserChildBirthDateNotMinor);
             }
         }
 
@@ -550,6 +579,23 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// <param name="now">Current timestamp used to calculate replenishment.</param>
     public void ResetPassword(string passwordHash, DateTimeOffset now)
     {
+        ReplacePassword(passwordHash, now);
+        Raise(new PasswordReset(Id));
+    }
+
+    /// <summary>
+    /// Replaces the password at the request of the holder, who proved the current one.
+    /// </summary>
+    /// <param name="passwordHash">Hash of the new password.</param>
+    /// <param name="now">Current timestamp.</param>
+    public void ChangePassword(string passwordHash, DateTimeOffset now)
+    {
+        ReplacePassword(passwordHash, now);
+        Raise(new PasswordChanged(Id));
+    }
+
+    private void ReplacePassword(string passwordHash, DateTimeOffset now)
+    {
         PasswordHash = passwordHash;
         ClearPasswordResetCode();
         ClearPasswordFailures();
@@ -563,7 +609,7 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// </summary>
     /// <param name="guardianId">Identifier of the guardian.</param>
     /// <returns><see langword="true"/> when the guardian is responsible for this account.</returns>
-    public bool IsDependentOf(Guid guardianId)
+    public bool IsDependentOf(UserId guardianId)
     {
         return ParentId == guardianId;
     }
@@ -594,7 +640,7 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// <param name="now">Current time.</param>
     public void Verify(DateTimeOffset now)
     {
-        UserStatusTypeId = SeedIds.UserStatusTypes.Active;
+        Status = UserStatus.Active;
         ClearOtp();
         UpdatedAt = now;
     }
@@ -729,7 +775,7 @@ public class User : IdentifiableEntity, IAggregateRoot
     {
         if (TwoFactorMethod is TwoFactorMethod.Authenticator)
         {
-            return Error.Conflict(ErrorCode.AuthenticatorAlreadyEnabled);
+            return Error.Conflict(DomainErrorCode.AuthenticatorAlreadyEnabled);
         }
 
         PendingAuthenticatorKey = protectedKey;
@@ -758,7 +804,7 @@ public class User : IdentifiableEntity, IAggregateRoot
     {
         if (TwoFactorMethod is TwoFactorMethod.Authenticator)
         {
-            return Error.Conflict(ErrorCode.AuthenticatorAlreadyEnabled);
+            return Error.Conflict(DomainErrorCode.AuthenticatorAlreadyEnabled);
         }
 
         AuthenticatorKey = PendingAuthenticatorKey;
@@ -768,7 +814,20 @@ public class User : IdentifiableEntity, IAggregateRoot
         TwoFactorMethod = TwoFactorMethod.Authenticator;
         ClearLoginCode();
         UpdatedAt = now;
+        Raise(new AuthenticatorEnabled(Id));
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Goes back to email as the second factor at the request of the holder, who proved they still
+    /// control the authenticator, and forgets the failed attempts.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    public void DisableAuthenticator(DateTimeOffset now)
+    {
+        UseEmailTwoFactor(now);
+        ClearTwoFactorFailures();
+        Raise(new AuthenticatorDisabled(Id));
     }
 
     /// <summary>
@@ -799,6 +858,11 @@ public class User : IdentifiableEntity, IAggregateRoot
         ClearLoginCode();
         TwoFactorFailedAttempts = 0;
         TwoFactorLockedUntil = null;
+        if (leftAuthenticator)
+        {
+            Raise(new TwoFactorReset(Id));
+        }
+
         return leftAuthenticator;
     }
 
@@ -811,12 +875,12 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// <param name="now">Current timestamp, stored as the creation time.</param>
     /// <returns>The unsaved account.</returns>
     public static User CreateInitialAdministrator(
-        string email,
+        EmailAddress email,
         string passwordHash,
         DateTimeOffset now
     )
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        ArgumentNullException.ThrowIfNull(email);
         ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
 
         return new User
@@ -828,8 +892,8 @@ public class User : IdentifiableEntity, IAggregateRoot
             PasswordHash = passwordHash,
             NationalId = SpanishNationalId.FromDniNumber(0),
             Gender = Gender.Other,
-            UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-            UserTypeId = SeedIds.UserTypes.Member,
+            Status = UserStatus.Active,
+            UserType = UserType.Member,
             IsAdmin = true,
             CreatedAt = now,
         };
@@ -839,23 +903,22 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// Gets a value indicating whether the account can open sessions: it is active and has a
     /// password.
     /// </summary>
-    public bool CanSignIn =>
-        UserStatusTypeId == SeedIds.UserStatusTypes.Active && PasswordHash is not null;
+    public bool CanSignIn => Status == UserStatus.Active && PasswordHash is not null;
 
     /// <summary>
     /// Gets a value indicating whether an administrator blocked the account.
     /// </summary>
-    public bool IsBlocked => UserStatusTypeId == SeedIds.UserStatusTypes.Blocked;
+    public bool IsBlocked => Status == UserStatus.Blocked;
 
     /// <summary>
     /// Gets a value indicating whether the account is a dependent, which never signs in by itself.
     /// </summary>
-    public bool IsDependent => UserStatusTypeId == SeedIds.UserStatusTypes.Dependent;
+    public bool IsDependent => Status == UserStatus.Dependent;
 
     /// <summary>
     /// Gets a value indicating whether the account still waits for the verification of its email.
     /// </summary>
-    public bool IsPendingVerification => UserStatusTypeId == SeedIds.UserStatusTypes.Pending;
+    public bool IsPendingVerification => Status == UserStatus.Pending;
 
     /// <summary>
     /// Gets a value indicating whether the account keeps its email against anyone else who claims
@@ -1024,12 +1087,13 @@ public class User : IdentifiableEntity, IAggregateRoot
     /// <summary>
     /// Changes the membership type.
     /// </summary>
-    /// <param name="userTypeId">Identifier of the new membership type.</param>
+    /// <param name="userType">New membership type.</param>
     /// <param name="now">Current time.</param>
-    public void ChangeType(Guid userTypeId, DateTimeOffset now)
+    public void ChangeType(UserType userType, DateTimeOffset now)
     {
-        UserTypeId = userTypeId;
+        UserType = userType;
         UpdatedAt = now;
+        Raise(new UserTypeChanged(Id));
     }
 
     /// <summary>
@@ -1047,6 +1111,7 @@ public class User : IdentifiableEntity, IAggregateRoot
 
         IsAdmin = isAdmin;
         UpdatedAt = now;
+        Raise(new AdministratorRightsChanged(Id, isAdmin));
         return true;
     }
 }
