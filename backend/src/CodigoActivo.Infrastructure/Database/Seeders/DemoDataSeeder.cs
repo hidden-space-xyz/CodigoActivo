@@ -62,7 +62,7 @@ public sealed class DemoDataSeeder(
     private const string CategoryFormacion = "Formación";
     private const string CategoryComunidad = "Comunidad";
 
-    private static Guid DemoAuthorId => UserId(0);
+    private static UserId DemoAuthorId => DemoUser(0);
 
     private static readonly (
         int? EarlyOpensDaysBeforeStart,
@@ -82,10 +82,10 @@ public sealed class DemoDataSeeder(
         "#EC4899",
     ];
 
-    private static readonly (Guid RoleTypeId, int DesiredCount)[][] RoleCapacityPlans =
+    private static readonly (ActivityRole Role, int DesiredCount)[][] RoleCapacityPlans =
     [
-        [(SeedIds.ActivityRoleTypes.Participant, 1), (SeedIds.ActivityRoleTypes.Volunteer, 2)],
-        [(SeedIds.ActivityRoleTypes.Participant, 6), (SeedIds.ActivityRoleTypes.Leader, 1)],
+        [(ActivityRole.Participant, 1), (ActivityRole.Volunteer, 2)],
+        [(ActivityRole.Participant, 6), (ActivityRole.Leader, 1)],
         [],
     ];
 
@@ -102,7 +102,7 @@ public sealed class DemoDataSeeder(
         }
 
         var graph = BuildGraph(clock, passwordHasher);
-        var fileIds = graph.Files.ConvertAll(f => f.Id);
+        var fileIds = graph.Files.ConvertAll(f => f.Id.Value);
 
         try
         {
@@ -210,11 +210,11 @@ public sealed class DemoDataSeeder(
                 PromotionalConsent: index % 3 is not 0
             ),
             createdAt,
-            UserId(index)
+            DemoUser(index)
         ).Value;
         adult.AssignPassword(passwordHash);
         adult.Verify(createdAt);
-        adult.ChangeType(ResolveUserTypeId(seed.Kind), createdAt);
+        adult.ChangeType(ResolveUserType(seed.Kind), createdAt);
         adult.RegisterLogin(now.AddDays(-(index % 9)));
         return adult;
     }
@@ -237,13 +237,13 @@ public sealed class DemoDataSeeder(
             ),
             today,
             createdAt,
-            UserId(index)
+            DemoUser(index)
         ).Value;
     }
 
     private static (
         List<EventCategoryType> CategoryTypes,
-        Dictionary<string, Guid> IdByName
+        Dictionary<string, EventCategoryTypeId> IdByName
     ) BuildCategoryTypes()
     {
         var categoryTypes = DemoCategories
@@ -252,7 +252,7 @@ public sealed class DemoDataSeeder(
                     EventCategoryType.Create(
                         name,
                         CategoryColors[index % CategoryColors.Length],
-                        CategoryId(index)
+                        DemoCategory(index)
                     )
             )
             .ToList();
@@ -273,8 +273,8 @@ public sealed class DemoDataSeeder(
                 (seed, index) =>
                     TermsDocument.Create(
                         seed.Name,
-                        BuildRichText(seed.Description, null, null),
-                        TermsDocumentId(index)
+                        RichText.From(BuildRichText(seed.Description, null, null)),
+                        DemoTermsDocument(index)
                     )
             )
             .ToList();
@@ -284,7 +284,7 @@ public sealed class DemoDataSeeder(
         IClock clock,
         DateTimeOffset now,
         List<StoredFile> files,
-        Dictionary<string, Guid> categoryIdByName
+        Dictionary<string, EventCategoryTypeId> categoryIdByName
     )
     {
         var events = new List<Event>(DemoEvents.Length);
@@ -323,7 +323,9 @@ public sealed class DemoDataSeeder(
                 new EventContent(
                     seed.Title,
                     seed.Subtitle,
-                    BuildRichText(seed.Description, descriptionImageId, seed.Title),
+                    RichText.From(
+                        BuildRichText(seed.Description, descriptionImageId.Value, seed.Title)
+                    ),
                     NewFile(files, $"evento-{label}-portada.jpg", now)
                 ),
                 EventSchedule
@@ -364,7 +366,7 @@ public sealed class DemoDataSeeder(
                         activity.Title,
                         activity.Description,
                         activity.Location,
-                        ResolveModalityId(activity.Modality),
+                        ResolveModality(activity.Modality),
                         NewFile(files, $"evento-{label}-actividad-{activityLabel}.jpg", now)
                     ),
                     ActivitySchedule
@@ -387,7 +389,7 @@ public sealed class DemoDataSeeder(
 
             if (end < clock.Today)
             {
-                ratings.AddRange(BuildRatings(eventIndex, eventId, eventAssignments));
+                ratings.AddRange(BuildRatings(eventIndex, eventId.Value, eventAssignments));
             }
         }
 
@@ -405,7 +407,7 @@ public sealed class DemoDataSeeder(
                         new NewsItemContent(
                             seed.Title,
                             seed.Subtitle,
-                            BuildRichText(seed.Description, null, null),
+                            RichText.From(BuildRichText(seed.Description, null, null)),
                             NewFile(files, $"noticia-{label}-portada.jpg", now)
                         ),
                         DemoAuthorId,
@@ -432,11 +434,15 @@ public sealed class DemoDataSeeder(
                     new ResourceDetails(
                         seed.Title,
                         seed.Subtitle,
-                        SeedIds.ResourceTypes.Internal,
+                        ResourceType.Internal,
                         NewFile(files, $"recurso-{label}-portada.jpg", now)
                     ),
                     ResourceContent
-                        .For(false, BuildRichText(seed.Description, null, null), null)
+                        .For(
+                            ResourceType.Internal,
+                            RichText.From(BuildRichText(seed.Description, null, null)),
+                            null
+                        )
                         .Value,
                     DemoAuthorId,
                     now.AddDays(-(index * 8) - 5)
@@ -452,10 +458,10 @@ public sealed class DemoDataSeeder(
                     new ResourceDetails(
                         seed.Title,
                         seed.Subtitle,
-                        SeedIds.ResourceTypes.External,
+                        ResourceType.External,
                         NewFile(files, $"recurso-{label}-portada.jpg", now)
                     ),
-                    ResourceContent.For(true, null, seed.Url).Value,
+                    ResourceContent.For(ResourceType.External, RichText.Empty, seed.Url).Value,
                     DemoAuthorId,
                     now.AddDays(-(globalIndex * 8) - 5)
                 );
@@ -504,7 +510,7 @@ public sealed class DemoDataSeeder(
         return now.AddDays(-daysAgo).AddHours(index % 12);
     }
 
-    private static Guid NewFile(List<StoredFile> files, string name, DateTimeOffset now)
+    private static StoredFileId NewFile(List<StoredFile> files, string name, DateTimeOffset now)
     {
         var file = StoredFile.Upload(name, "jpg", DemoAuthorId, now);
         files.Add(file);
@@ -514,7 +520,7 @@ public sealed class DemoDataSeeder(
     private static IEnumerable<RoleCapacity> BuildRoleCapacities(int globalIndex)
     {
         return RoleCapacityPlans[globalIndex % 3]
-            .Select(plan => new RoleCapacity(plan.RoleTypeId, plan.DesiredCount));
+            .Select(plan => new RoleCapacity(plan.Role, plan.DesiredCount));
     }
 
     private static void SignUp(
@@ -541,13 +547,13 @@ public sealed class DemoDataSeeder(
             return index == leaderAdult ? (baseAdult + 4) % AdultCount : index;
         }
 
-        (int UserIndex, Guid RoleTypeId)[] picks =
+        (int UserIndex, ActivityRole Role)[] picks =
         [
-            (leaderAdult, SeedIds.ActivityRoleTypes.Leader),
-            (OtherAdult(1), SeedIds.ActivityRoleTypes.Volunteer),
-            (OtherAdult(2), SeedIds.ActivityRoleTypes.Participant),
-            (AdultCount + (globalIndex % ChildCount), SeedIds.ActivityRoleTypes.Participant),
-            (OtherAdult(3), SeedIds.ActivityRoleTypes.Participant),
+            (leaderAdult, ActivityRole.Leader),
+            (OtherAdult(1), ActivityRole.Volunteer),
+            (OtherAdult(2), ActivityRole.Participant),
+            (AdultCount + (globalIndex % ChildCount), ActivityRole.Participant),
+            (OtherAdult(3), ActivityRole.Participant),
         ];
 
         for (var slot = 0; slot < picks.Length; slot++)
@@ -555,12 +561,12 @@ public sealed class DemoDataSeeder(
             var signedUpAt = signupOpensAt.AddHours(
                 ((globalIndex * 37) + (slot * 101)) % windowHours
             );
-            var userId = UserId(picks[slot].UserIndex);
-            activity.RequestAssignment(userId, picks[slot].RoleTypeId, signedUpAt);
-            var statusId = ResolveAssignmentStatus(globalIndex, slot);
-            if (statusId != SeedIds.AssignmentStatusTypes.Requested)
+            var userId = DemoUser(picks[slot].UserIndex);
+            activity.RequestAssignment(userId, picks[slot].Role, signedUpAt);
+            var status = ResolveAssignmentStatus(globalIndex, slot);
+            if (status != AssignmentStatus.Requested)
             {
-                activity.ChangeAssignmentStatus(userId, statusId);
+                activity.ChangeAssignmentStatus(userId, status);
             }
         }
     }
@@ -576,12 +582,9 @@ public sealed class DemoDataSeeder(
             return [];
         }
 
-        var adultIds = Enumerable.Range(0, AdultCount).Select(UserId).ToHashSet();
+        var adultIds = Enumerable.Range(0, AdultCount).Select(DemoUser).ToHashSet();
         var raters = eventAssignments
-            .Where(a =>
-                a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
-                && adultIds.Contains(a.UserId)
-            )
+            .Where(a => a.Status == AssignmentStatus.Confirmed && adultIds.Contains(a.UserId))
             .Select(a => a.UserId)
             .Distinct()
             .Take(2 + (eventIndex % 4))
@@ -593,7 +596,13 @@ public sealed class DemoDataSeeder(
             var seed = DemoRatings[((eventIndex * 3) + slot) % DemoRatings.Length];
             ratings.Add(
                 EventRating
-                    .Submit(eventId, seed.Score, seed.MostLiked, seed.LeastLiked, seed.Suggestions)
+                    .Submit(
+                        EventId.From(eventId),
+                        seed.Score,
+                        seed.MostLiked,
+                        seed.LeastLiked,
+                        seed.Suggestions
+                    )
                     .Value
             );
         }
@@ -606,9 +615,9 @@ public sealed class DemoDataSeeder(
         return value < ceiling ? value : ceiling;
     }
 
-    private static List<Guid> ResolveCategoryIds(
+    private static List<EventCategoryTypeId> ResolveCategoryIds(
         string[] names,
-        Dictionary<string, Guid> categoryIdByName
+        Dictionary<string, EventCategoryTypeId> categoryIdByName
     )
     {
         var ids = names
@@ -616,7 +625,7 @@ public sealed class DemoDataSeeder(
             .Select(name => categoryIdByName[name])
             .Distinct()
             .ToList();
-        return ids.Count > 0 ? ids : [CategoryId(0)];
+        return ids.Count > 0 ? ids : [DemoCategory(0)];
     }
 
     private async Task DownloadImagesAsync(IReadOnlyCollection<Guid> fileIds, CancellationToken ct)
@@ -717,47 +726,47 @@ public sealed class DemoDataSeeder(
         return new($"dede{category:x4}-0000-0000-0000-{index:x12}");
     }
 
-    private static Guid UserId(int index)
+    private static UserId DemoUser(int index)
     {
-        return MakeId(1, index);
+        return UserId.From(MakeId(1, index));
     }
 
-    private static Guid CategoryId(int index)
+    private static EventCategoryTypeId DemoCategory(int index)
     {
-        return MakeId(3, index);
+        return EventCategoryTypeId.From(MakeId(3, index));
     }
 
-    private static Guid TermsDocumentId(int index)
+    private static TermsDocumentId DemoTermsDocument(int index)
     {
-        return MakeId(4, index);
+        return TermsDocumentId.From(MakeId(4, index));
     }
 
-    private static Guid ResolveTermsDocumentId(int eventIndex)
+    private static TermsDocumentId ResolveTermsDocumentId(int eventIndex)
     {
-        return TermsDocumentId(eventIndex % DemoTermsDocuments.Length);
+        return DemoTermsDocument(eventIndex % DemoTermsDocuments.Length);
     }
 
-    private static Guid ResolveUserTypeId(UserKind kind)
+    private static UserType ResolveUserType(UserKind kind)
     {
-        return kind is UserKind.Sponsor ? SeedIds.UserTypes.Sponsor : SeedIds.UserTypes.Member;
+        return kind is UserKind.Sponsor ? UserType.Sponsor : UserType.Member;
     }
 
-    private static Guid ResolveModalityId(string modality)
+    private static ActivityModality ResolveModality(string modality)
     {
         return string.Equals(modality, ModalityOnline, StringComparison.OrdinalIgnoreCase)
-            ? SeedIds.ActivityModalityTypes.Online
-            : SeedIds.ActivityModalityTypes.Presencial;
+            ? ActivityModality.Online
+            : ActivityModality.Presencial;
     }
 
-    private static Guid ResolveAssignmentStatus(int globalIndex, int slot)
+    private static AssignmentStatus ResolveAssignmentStatus(int globalIndex, int slot)
     {
         var index = globalIndex + slot;
         return slot switch
         {
-            0 => SeedIds.AssignmentStatusTypes.Confirmed,
-            _ when index % 7 is 0 => SeedIds.AssignmentStatusTypes.Requested,
-            _ when index % 11 is 0 => SeedIds.AssignmentStatusTypes.Denied,
-            _ => SeedIds.AssignmentStatusTypes.Confirmed,
+            0 => AssignmentStatus.Confirmed,
+            _ when index % 7 is 0 => AssignmentStatus.Requested,
+            _ when index % 11 is 0 => AssignmentStatus.Denied,
+            _ => AssignmentStatus.Confirmed,
         };
     }
 
@@ -774,7 +783,7 @@ public sealed class DemoDataSeeder(
 
     private static string BuildNationalId(int index)
     {
-        return SpanishNationalId.FromDniNumber(20_000_000 + (index * 1_234_567));
+        return SpanishNationalId.FromDniNumber(20_000_000 + (index * 1_234_567)).Value;
     }
 
     private static DateOnly BuildBirthDate(int index, int year)

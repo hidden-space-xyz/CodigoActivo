@@ -8,8 +8,13 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// per pending delivery: the table holds only email that still has to leave, so a row is deleted
 /// once it is delivered or once its attempts are spent.
 /// </summary>
-public class EmailOutboxMessage : IdentifiableEntity
+public class EmailOutboxMessage
 {
+    /// <summary>
+    /// Gets the unique identifier, fixed when the row is created.
+    /// </summary>
+    public Guid Id { get; init; } = Guid.NewGuid();
+
     /// <summary>
     /// Identifies the maximum stored length of <see cref="LastError"/>.
     /// </summary>

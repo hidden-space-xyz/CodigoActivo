@@ -61,7 +61,7 @@ public sealed class DeletedAccountGuard : SaveChangesInterceptor
             switch (entry.Entity)
             {
                 case DeletedAccount copy when entry.State is EntityState.Added:
-                    archived.Add(copy.Id);
+                    archived.Add(copy.Id.Value);
                     break;
                 case DeletedAccount when entry.State is EntityState.Modified or EntityState.Deleted:
                     throw new InvalidOperationException(
@@ -90,7 +90,7 @@ public sealed class DeletedAccountGuard : SaveChangesInterceptor
 
     private static bool IsArchived(User user, HashSet<Guid> archived)
     {
-        return archived.Contains(user.Id)
-            || (user.ParentId is { } guardianId && archived.Contains(guardianId));
+        return archived.Contains(user.Id.Value)
+            || (user.ParentId is { } guardianId && archived.Contains(guardianId.Value));
     }
 }
