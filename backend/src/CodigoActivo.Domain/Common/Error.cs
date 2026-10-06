@@ -32,18 +32,19 @@ public enum ErrorKind
 }
 
 /// <summary>
-/// Represents an error value used by the application.
+/// Represents an expected failure: its kind and the code that names it, a <see cref="DomainErrorCode"/>
+/// for a broken domain rule or a code of the layer that reported the failure.
 /// </summary>
-/// <param name="Kind">Email category whose limits are applied.</param>
-/// <param name="Code">The code value.</param>
-public sealed record Error(ErrorKind Kind, ErrorCode Code)
+/// <param name="Kind">Kind of failure.</param>
+/// <param name="Code">Member of the error code enumeration that names the failure.</param>
+public sealed record Error(ErrorKind Kind, Enum Code)
 {
     /// <summary>
     /// Creates an application error with the validation classification.
     /// </summary>
     /// <param name="code">The code value.</param>
     /// <returns>The resulting error value.</returns>
-    public static Error Validation(ErrorCode code)
+    public static Error Validation(Enum code)
     {
         return new Error(ErrorKind.Validation, code);
     }
@@ -53,7 +54,7 @@ public sealed record Error(ErrorKind Kind, ErrorCode Code)
     /// </summary>
     /// <param name="code">The code value.</param>
     /// <returns>The resulting error value.</returns>
-    public static Error NotFound(ErrorCode code)
+    public static Error NotFound(Enum code)
     {
         return new Error(ErrorKind.NotFound, code);
     }
@@ -63,7 +64,7 @@ public sealed record Error(ErrorKind Kind, ErrorCode Code)
     /// </summary>
     /// <param name="code">The code value.</param>
     /// <returns>The resulting error value.</returns>
-    public static Error Forbidden(ErrorCode code)
+    public static Error Forbidden(Enum code)
     {
         return new Error(ErrorKind.Forbidden, code);
     }
@@ -73,7 +74,7 @@ public sealed record Error(ErrorKind Kind, ErrorCode Code)
     /// </summary>
     /// <param name="code">The code value.</param>
     /// <returns>The resulting error value.</returns>
-    public static Error Unauthorized(ErrorCode code)
+    public static Error Unauthorized(Enum code)
     {
         return new Error(ErrorKind.Unauthorized, code);
     }
@@ -83,7 +84,7 @@ public sealed record Error(ErrorKind Kind, ErrorCode Code)
     /// </summary>
     /// <param name="code">The code value.</param>
     /// <returns>The resulting error value.</returns>
-    public static Error Conflict(ErrorCode code)
+    public static Error Conflict(Enum code)
     {
         return new Error(ErrorKind.Conflict, code);
     }
