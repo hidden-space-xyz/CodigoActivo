@@ -1,7 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
@@ -21,7 +23,7 @@ public sealed class GetAssignmentQueryHandlerTests
     private Task<Result<AssignmentResponse>> QueryAsync(Guid activityId, Guid userId)
     {
         return sut.HandleAsync(
-            new GetAssignmentQuery(activityId, userId),
+            new GetAssignmentQuery(ActivityId.From(activityId), UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
     }

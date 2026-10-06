@@ -1,6 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// </summary>
 /// <param name="ActingUserId">Identifier of the acting user.</param>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record GetHouseholdAssignmentsQuery(Guid ActingUserId, Guid EventId)
+public sealed record GetHouseholdAssignmentsQuery(UserId ActingUserId, EventId EventId)
     : IQuery<IReadOnlyList<HouseholdMemberAssignmentResponse>>;
 
 /// <summary>
@@ -33,11 +35,14 @@ public sealed class GetHouseholdAssignmentsQueryHandler(
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(query);
+        var eventId = query.EventId.Value;
+        var actingUserId = query.ActingUserId.Value;
         return await executor.ToListAsync(
             readStore
                 .Assignments.Where(x =>
-                    x.Activity.EventId == query.EventId
-                    && (x.UserId == query.ActingUserId || x.User.ParentId == query.ActingUserId)
+                    x.Activity.EventId == eventId
+                    && (x.UserId == actingUserId || x.User.ParentId == actingUserId)
                 )
                 .OrderBy(x => x.User.FirstName)
                 .ThenBy(x => x.User.LastName)

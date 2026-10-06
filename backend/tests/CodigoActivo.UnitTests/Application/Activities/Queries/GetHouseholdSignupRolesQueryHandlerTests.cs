@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
@@ -43,7 +44,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
         store.ActivityRoleTypes.AddRange(CatalogRoleRows());
 
         var result = await sut.HandleAsync(
-            new GetHouseholdSignupRolesQuery(actingUserId),
+            new GetHouseholdSignupRolesQuery(UserId.From(actingUserId)),
             TestContext.Current.CancellationToken
         );
 
@@ -81,7 +82,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
         store.ActivityRoleTypes.AddRange(CatalogRoleRows());
 
         var result = await sut.HandleAsync(
-            new GetHouseholdSignupRolesQuery(actingUserId),
+            new GetHouseholdSignupRolesQuery(UserId.From(actingUserId)),
             TestContext.Current.CancellationToken
         );
 

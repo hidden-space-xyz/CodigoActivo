@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -10,7 +11,7 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// Carries the criteria used to retrieve household signup roles.
 /// </summary>
 /// <param name="ActingUserId">Identifier of the acting user.</param>
-public sealed record GetHouseholdSignupRolesQuery(Guid ActingUserId)
+public sealed record GetHouseholdSignupRolesQuery(UserId ActingUserId)
     : IQuery<IReadOnlyList<HouseholdSignupRolesResponse>>;
 
 /// <summary>
@@ -39,9 +40,11 @@ public sealed class GetHouseholdSignupRolesQueryHandler(
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(query);
+        var actingUserId = query.ActingUserId.Value;
         var members = await executor.ToListAsync(
             readStore
-                .Users.Where(u => u.Id == query.ActingUserId || u.ParentId == query.ActingUserId)
+                .Users.Where(u => u.Id == actingUserId || u.ParentId == actingUserId)
                 .Select(u => new { u.Id, u.UserTypeId }),
             ct
         );

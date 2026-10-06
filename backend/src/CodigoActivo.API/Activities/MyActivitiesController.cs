@@ -4,6 +4,7 @@ using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using EventId = CodigoActivo.Domain.Events.EventId;
 
 namespace CodigoActivo.API.Activities;
 
@@ -38,7 +39,10 @@ public class MyActivitiesController : ApiControllerBase
     {
         return Ok(
             await handler.HandleAsync(
-                new ListAssignedActivitiesQuery(CurrentUserId.Value, eventId),
+                new ListAssignedActivitiesQuery(
+                    CurrentUserId,
+                    eventId is { } filter ? EventId.From(filter) : null
+                ),
                 ct
             )
         );

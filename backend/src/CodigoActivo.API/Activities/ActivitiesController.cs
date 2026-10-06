@@ -113,7 +113,7 @@ public class ActivitiesController : ApiControllerBase
     {
         return Ok(
             await handler.HandleAsync(
-                new GetHouseholdAssignmentsQuery(CurrentUserId.Value, eventId),
+                new GetHouseholdAssignmentsQuery(CurrentUserId, EventId.From(eventId)),
                 ct
             )
         );
@@ -156,9 +156,7 @@ public class ActivitiesController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return Ok(
-            await handler.HandleAsync(new GetHouseholdSignupRolesQuery(CurrentUserId.Value), ct)
-        );
+        return Ok(await handler.HandleAsync(new GetHouseholdSignupRolesQuery(CurrentUserId), ct));
     }
 
     /// <summary>
@@ -301,7 +299,11 @@ public class ActivitiesController : ApiControllerBase
                 request.ToCommand(ActivityId.From(activityId), UserId.From(userId)),
                 ct
             ),
-            () => getAssignment.HandleAsync(new GetAssignmentQuery(activityId, userId), ct)
+            () =>
+                getAssignment.HandleAsync(
+                    new GetAssignmentQuery(ActivityId.From(activityId), UserId.From(userId)),
+                    ct
+                )
         );
     }
 
@@ -330,7 +332,7 @@ public class ActivitiesController : ApiControllerBase
             await handler.HandleAsync(request.ToCommand(ActivityId.From(activityId)), ct),
             userIds =>
                 getAssignments.HandleAsync(
-                    new GetAssignmentsQuery(activityId, [.. userIds.Select(id => id.Value)]),
+                    new GetAssignmentsQuery(ActivityId.From(activityId), userIds),
                     ct
                 )
         );
@@ -391,7 +393,11 @@ public class ActivitiesController : ApiControllerBase
                 ),
                 ct
             ),
-            () => getAssignment.HandleAsync(new GetAssignmentQuery(activityId, userId), ct)
+            () =>
+                getAssignment.HandleAsync(
+                    new GetAssignmentQuery(ActivityId.From(activityId), UserId.From(userId)),
+                    ct
+                )
         );
     }
 
@@ -425,7 +431,11 @@ public class ActivitiesController : ApiControllerBase
                 ),
                 ct
             ),
-            () => getAssignment.HandleAsync(new GetAssignmentQuery(activityId, userId), ct)
+            () =>
+                getAssignment.HandleAsync(
+                    new GetAssignmentQuery(ActivityId.From(activityId), UserId.From(userId)),
+                    ct
+                )
         );
     }
 }
