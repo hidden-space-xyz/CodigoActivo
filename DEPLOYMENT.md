@@ -135,7 +135,10 @@ no fallback: point `SMTP_HOST` at a mail catcher such as the development overlay
 ### Application settings
 
 Defaults in `backend/src/CodigoActivo.API/appsettings.json`, overridable with standard .NET environment
-syntax (for example `AUTH__EXPIREHOURS`; also add the uppercase variable to the Compose API environment list):
+syntax (for example `AUTH__EXPIREHOURS`; also add the uppercase variable to the Compose API environment list).
+A missing or blank setting takes its default; a setting that is present but unusable (not a positive number,
+not an absolute HTTPS address, above its limit) stops the API at start with a message naming the key, so a
+typo never runs silently with the default:
 
 | Setting                                       | Default             |
 | --------------------------------------------- | ------------------- |
@@ -175,7 +178,7 @@ is committed, not once SMTP accepts it. Automatic messages pass through a proces
 before reaching the outbox; administrator bulk email bypasses that budget but is queued the same way, so its
 response (`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
-The guard cannot be disabled and falls back to defaults on invalid settings. Limits are per API process:
+The guard cannot be disabled; an unusable setting stops the API at start. Limits are per API process:
 restarts refill them, replicas multiply them.
 
 | Setting                              | Purpose                                                                  | Default |
@@ -208,11 +211,11 @@ without also raising `EmailQueue:Workers` lengthens the lease held on a claimed 
 | Setting                           | Purpose                                               | Default |
 | --------------------------------- | ------------------------------------------------------ | ------- |
 | `EmailQueue:Capacity`             | Approximate cap on pending non-critical messages      | `1000`  |
-| `EmailQueue:Workers`              | Concurrent SMTP sends per claimed batch, capped at 16 | `4`     |
-| `EmailQueue:BatchSize`            | Due messages claimed at once, capped at 100           | `10`    |
-| `EmailQueue:ShutdownDrainSeconds` | Graceful drain time, capped at 300 seconds            | `20`    |
-| `EmailQueue:SendTimeoutSeconds`   | Per-message timeout, capped at 600 seconds            | `60`    |
-| `EmailQueue:PollIntervalSeconds`  | Wait between poll passes, capped at 300 seconds       | `5`     |
+| `EmailQueue:Workers`              | Concurrent SMTP sends per claimed batch, at most 16   | `4`     |
+| `EmailQueue:BatchSize`            | Due messages claimed at once, at most 100             | `10`    |
+| `EmailQueue:ShutdownDrainSeconds` | Graceful drain time, at most 300 seconds              | `20`    |
+| `EmailQueue:SendTimeoutSeconds`   | Per-message timeout, at most 600 seconds              | `60`    |
+| `EmailQueue:PollIntervalSeconds`  | Wait between poll passes, at most 300 seconds         | `5`     |
 
 None of the `EmailQueue:*` settings are forwarded by the base Compose file; changing one requires both the
 uppercase environment variable and adding it to `api.environment` in `docker-compose.yml`.
