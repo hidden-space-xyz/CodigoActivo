@@ -1,13 +1,14 @@
 using CodigoActivo.API.Extensions;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Users.Queries;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CodigoActivo.API.Attributes;
 
 /// <summary>
-/// Applies allow only self validation or authorization to the annotated target.
+/// Refuses early a request on a user the signed-in user may not act for: administrators pass, and
+/// anyone else needs <see cref="ActingUserPolicy"/> to accept the user named by the route.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilter
@@ -17,14 +18,13 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
     /// <summary>
     /// Authorizes the current request against the attribute requirements.
     /// </summary>
-    /// <param name="context">Database context used for persistence.</param>
+    /// <param name="context">Authorization context of the request.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        var services = context.HttpContext.RequestServices;
         var user = context.HttpContext.User;
 
-        if (user.GetUserId() is not { } currentUserId)
+        if (user.GetUserId() is null)
         {
             context.Result = new ChallengeResult();
             return;
@@ -44,22 +44,12 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
             return;
         }
 
-        if (targetUserId == currentUserId)
+        var allowed = await context
+            .HttpContext.RequestServices.GetRequiredService<ActingUserPolicy>()
+            .EnsureMayActForAsync(UserId.From(targetUserId), context.HttpContext.RequestAborted);
+        if (allowed.IsFailure)
         {
-            return;
+            context.Result = new ForbidResult();
         }
-
-        var isOwnChild = await services
-            .GetRequiredService<IQueryHandler<IsGuardianOfQuery, bool>>()
-            .HandleAsync(
-                new IsGuardianOfQuery(currentUserId, targetUserId),
-                context.HttpContext.RequestAborted
-            );
-        if (isOwnChild)
-        {
-            return;
-        }
-
-        context.Result = new ForbidResult();
     }
 }

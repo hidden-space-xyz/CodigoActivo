@@ -162,7 +162,7 @@ an administrator for anyone, reading the guardianship from the read side so comm
 answers anything else with `ActingForAnotherUserForbidden` (403
 `AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a minor,
 updating or deleting a user and changing a password check it. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]`
-attributes still refuse early at the HTTP edge.
+attributes still refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
 
 An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); the
 signup wire contract (`AssignRequest`/`AssignHouseholdRequest`) carries a `TermsDecisions` list of

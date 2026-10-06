@@ -2,9 +2,11 @@ using System.Security.Claims;
 using AwesomeAssertions;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Extensions;
-using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Users.Queries;
+using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,20 +21,14 @@ namespace CodigoActivo.UnitTests.API.Attributes;
 public sealed class AllowOnlySelfAttributeTests : IDisposable
 {
     private readonly FakeReadStore store = new();
-    private readonly ServiceProvider services;
-
-    public AllowOnlySelfAttributeTests()
-    {
-        services = new ServiceCollection()
-            .AddSingleton<IQueryHandler<IsGuardianOfQuery, bool>>(
-                new IsGuardianOfQueryHandler(store, new FakeQueryExecutor())
-            )
-            .BuildServiceProvider();
-    }
+    private readonly List<ServiceProvider> requestServices = [];
 
     public void Dispose()
     {
-        services.Dispose();
+        foreach (var services in requestServices)
+        {
+            services.Dispose();
+        }
     }
 
     private AuthorizationFilterContext BuildContext(
@@ -41,7 +37,18 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         bool includeRouteKey = true
     )
     {
-        var httpContext = new DefaultHttpContext { User = principal, RequestServices = services };
+        var httpContext = new DefaultHttpContext { User = principal };
+        var services = new ServiceCollection()
+            .AddSingleton<IHttpContextAccessor>(
+                new HttpContextAccessor { HttpContext = httpContext }
+            )
+            .AddSingleton<ICurrentUser, HttpCurrentUser>()
+            .AddSingleton<IReadStore>(store)
+            .AddSingleton<IQueryExecutor>(new FakeQueryExecutor())
+            .AddSingleton<ActingUserPolicy>()
+            .BuildServiceProvider();
+        requestServices.Add(services);
+        httpContext.RequestServices = services;
         var routeData = new RouteData();
         if (includeRouteKey)
         {
