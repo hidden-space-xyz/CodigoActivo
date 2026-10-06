@@ -109,35 +109,6 @@ public abstract class ApiControllerBase : ControllerBase
     /// Answers a successful creation with its location and the read model loaded afterwards, or
     /// with the command error.
     /// </summary>
-    /// <typeparam name="T">Type of the read model returned to the client.</typeparam>
-    /// <param name="result">Outcome of the command, carrying the identifier of the new resource.</param>
-    /// <param name="read">Query that loads the read model of the new resource.</param>
-    /// <param name="location">Builds the relative location of the new resource.</param>
-    /// <returns>A created result with the read model, or the problem describing the failure.</returns>
-    protected async Task<ActionResult<T>> ToCreatedAfterAsync<T>(
-        Result<Guid> result,
-        Func<Guid, Task<Result<T>>> read,
-        Func<Guid, string> location
-    )
-    {
-        ArgumentNullException.ThrowIfNull(result);
-        ArgumentNullException.ThrowIfNull(read);
-        ArgumentNullException.ThrowIfNull(location);
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
-
-        var created = await read(result.Value);
-        return created.IsFailure
-            ? ToProblem(created.Error!)
-            : Created(new Uri(location(result.Value), UriKind.Relative), created.Value);
-    }
-
-    /// <summary>
-    /// Answers a successful creation with its location and the read model loaded afterwards, or
-    /// with the command error.
-    /// </summary>
     /// <typeparam name="TId">Type of the identifier of the new resource.</typeparam>
     /// <typeparam name="T">Type of the read model returned to the client.</typeparam>
     /// <param name="result">Outcome of the command, carrying the identifier of the new resource.</param>
