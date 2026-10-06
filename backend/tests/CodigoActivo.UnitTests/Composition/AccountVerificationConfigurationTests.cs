@@ -1,8 +1,10 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Composition;
+using CodigoActivo.Infrastructure.Communication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Composition;
@@ -48,13 +50,11 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivoMissingOrInvalidValuesDefaultsAccountVerificationOptions()
+    public void AddCodigoActivoMissingValuesDefaultsAccountVerificationOptions()
     {
         var provider = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)
             {
-                ["AccountVerification:OtpLifetimeMinutes"] = "Infinity",
-                ["AccountVerification:ResendCooldownSeconds"] = "not-a-number",
                 ["SMTP_HOST"] = "smtp.example.test",
                 ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
             }
@@ -66,21 +66,42 @@ public sealed class AccountVerificationConfigurationTests : IDisposable
     }
 
     [Theory]
+    [InlineData("AccountVerification:OtpLifetimeMinutes", "Infinity")]
+    [InlineData("AccountVerification:ResendCooldownSeconds", "not-a-number")]
+    public void AddCodigoActivoUnusableValueStopsTheStart(string key, string value)
+    {
+        var provider = Build(
+            new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [key] = value,
+                ["SMTP_HOST"] = "smtp.example.test",
+                ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
+            }
+        );
+
+        var act = () => provider.GetRequiredService<AccountVerificationOptions>();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
+    }
+
+    [Theory]
     [InlineData(null, "no-reply@example.test")]
     [InlineData("smtp.example.test", null)]
     [InlineData(null, null)]
-    public void AddCodigoActivoSmtpUnconfiguredThrows(string? host, string? from)
+    public void AddCodigoActivoSmtpUnconfiguredStopsTheStart(string? host, string? from)
     {
-        var settings = new Dictionary<string, string?>(StringComparer.Ordinal)
-        {
-            ["SMTP_HOST"] = host,
-            ["SMTP_FROM_ADDRESS"] = from,
-        };
+        var provider = Build(
+            new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["SMTP_HOST"] = host,
+                ["SMTP_FROM_ADDRESS"] = from,
+            }
+        );
 
-        var act = () => Build(settings);
+        var act = () => provider.GetRequiredService<SmtpOptions>();
 
         act.Should()
-            .Throw<InvalidOperationException>()
+            .Throw<OptionsValidationException>()
             .WithMessage("*SMTP is not configured*Login codes are delivered by email*");
     }
 }

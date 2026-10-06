@@ -3,6 +3,7 @@ using CodigoActivo.Composition;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Repositories;
+using CodigoActivo.Infrastructure.Users;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -52,10 +53,8 @@ public sealed class DeletedAccountWiringTests
     [Fact]
     public void AddCodigoActivoPurgesHourlyAfterTheStartupDelay()
     {
-        var options = (DeletedAccountPurgeOptions)
-            Build()
-                .Single(descriptor => descriptor.ServiceType == typeof(DeletedAccountPurgeOptions))
-                .ImplementationInstance!;
+        using var provider = Build().BuildServiceProvider();
+        var options = provider.GetRequiredService<DeletedAccountPurgeOptions>();
 
         options.Interval.Should().Be(TimeSpan.FromHours(1));
         options.StartupDelay.Should().Be(TimeSpan.FromSeconds(30));

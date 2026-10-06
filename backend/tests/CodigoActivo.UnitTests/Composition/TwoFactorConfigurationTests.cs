@@ -59,15 +59,10 @@ public sealed class TwoFactorConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivoMissingOrInvalidValuesDefaultsTwoFactorOptions()
+    public void AddCodigoActivoMissingOrBlankValuesDefaultsTwoFactorOptions()
     {
         var provider = Build(
-            new Dictionary<string, string?>(StringComparer.Ordinal)
-            {
-                ["TwoFactor:ChallengeLifetimeMinutes"] = "-1",
-                ["TwoFactor:MaxFailedAttempts"] = "zero",
-                ["TwoFactor:Issuer"] = "   ",
-            }
+            new Dictionary<string, string?>(StringComparer.Ordinal) { ["TwoFactor:Issuer"] = "   " }
         );
 
         var options = provider.GetRequiredService<TwoFactorOptions>();
@@ -77,6 +72,20 @@ public sealed class TwoFactorConfigurationTests : IDisposable
         options.MaxFailedAttempts.Should().Be(TwoFactorOptions.DefaultMaxFailedAttempts);
         options.LockoutDuration.Should().Be(TwoFactorOptions.DefaultLockoutDuration);
         options.Issuer.Should().Be(TwoFactorOptions.DefaultIssuer);
+    }
+
+    [Theory]
+    [InlineData("TwoFactor:ChallengeLifetimeMinutes", "-1")]
+    [InlineData("TwoFactor:MaxFailedAttempts", "zero")]
+    public void AddCodigoActivoUnusableValueStopsTheStart(string key, string value)
+    {
+        var provider = Build(
+            new Dictionary<string, string?>(StringComparer.Ordinal) { [key] = value }
+        );
+
+        var act = () => provider.GetRequiredService<TwoFactorOptions>();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
     }
 
     [Fact]

@@ -1,7 +1,9 @@
 using System.Text;
 using System.Text.Json;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Http;
 using Xunit;
@@ -16,7 +18,7 @@ public sealed class HttpContextExtensionsTests
         var context = new DefaultHttpContext { TraceIdentifier = "trace-http-1" };
         var responseBody = new MemoryStream();
         context.Response.Body = responseBody;
-        var error = Error.NotFound(ErrorCode.PartnerNotFound);
+        var error = ApiError.NotFound(ErrorCode.PartnerNotFound);
 
         await context.WriteApiErrorAsync(error);
 
@@ -28,7 +30,10 @@ public sealed class HttpContextExtensionsTests
         var root = doc.RootElement;
         root.GetProperty("status").GetInt32().Should().Be(StatusCodes.Status404NotFound);
         root.GetProperty("title").GetString().Should().Be("Not Found");
-        root.GetProperty("code").GetString().Should().Be(nameof(ErrorCode.PartnerNotFound));
+        root.GetProperty("code")
+            .GetString()
+            .Should()
+            .Be(nameof(ApplicationErrorCode.PartnerNotFound));
         root.GetProperty("traceId").GetString().Should().Be("trace-http-1");
     }
 }

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AwesomeAssertions;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.UnitTests.TestSupport;
@@ -23,7 +24,9 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
     public AllowOnlySelfAttributeTests()
     {
         services = new ServiceCollection()
-            .AddSingleton(new IsGuardianOfQueryHandler(store, new FakeQueryExecutor()))
+            .AddSingleton<IQueryHandler<IsGuardianOfQuery, bool>>(
+                new IsGuardianOfQueryHandler(store, new FakeQueryExecutor())
+            )
             .BuildServiceProvider();
     }
 
