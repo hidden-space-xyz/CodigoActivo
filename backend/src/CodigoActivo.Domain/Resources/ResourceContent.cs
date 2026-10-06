@@ -8,7 +8,7 @@ namespace CodigoActivo.Domain.Resources;
 /// </summary>
 public sealed record ResourceContent
 {
-    private ResourceContent(string description, string? url)
+    private ResourceContent(RichText description, string? url)
     {
         Description = description;
         Url = url;
@@ -17,7 +17,7 @@ public sealed record ResourceContent
     /// <summary>
     /// Gets the rich-text body, an empty document for external resources.
     /// </summary>
-    public string Description { get; }
+    public RichText Description { get; }
 
     /// <summary>
     /// Gets the link of an external resource.
@@ -27,37 +27,39 @@ public sealed record ResourceContent
     /// <summary>
     /// Builds the content a resource of a type may hold.
     /// </summary>
-    /// <param name="isExternal">Whether the type of the resource is an external link.</param>
+    /// <param name="type">Type of the resource.</param>
     /// <param name="description">Rich-text body supplied.</param>
     /// <param name="url">Link supplied.</param>
     /// <returns>The content, or a validation error when it does not fit the type.</returns>
-    public static Result<ResourceContent> For(bool isExternal, string? description, string? url)
+    public static Result<ResourceContent> For(ResourceType type, RichText description, string? url)
     {
-        if (isExternal)
+        ArgumentNullException.ThrowIfNull(description);
+
+        if (type is ResourceType.External)
         {
-            if (!RichTextDocument.IsEmpty(description))
+            if (!description.IsEmpty)
             {
-                return Error.Validation(ErrorCode.ResourceDescriptionNotAllowed);
+                return Error.Validation(DomainErrorCode.ResourceDescriptionNotAllowed);
             }
 
             if (string.IsNullOrWhiteSpace(url))
             {
-                return Error.Validation(ErrorCode.ResourceUrlRequired);
+                return Error.Validation(DomainErrorCode.ResourceUrlRequired);
             }
 
-            return new ResourceContent("{}", url.Trim());
+            return new ResourceContent(RichText.Empty, url.Trim());
         }
 
         if (!string.IsNullOrWhiteSpace(url))
         {
-            return Error.Validation(ErrorCode.ResourceUrlNotAllowed);
+            return Error.Validation(DomainErrorCode.ResourceUrlNotAllowed);
         }
 
-        if (RichTextDocument.IsEmpty(description))
+        if (description.IsEmpty)
         {
-            return Error.Validation(ErrorCode.ResourceDescriptionRequired);
+            return Error.Validation(DomainErrorCode.ResourceDescriptionRequired);
         }
 
-        return new ResourceContent(description!, null);
+        return new ResourceContent(description, null);
     }
 }

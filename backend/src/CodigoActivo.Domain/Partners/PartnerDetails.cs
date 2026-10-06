@@ -1,3 +1,5 @@
+using CodigoActivo.Domain.Files;
+
 namespace CodigoActivo.Domain.Partners;
 
 /// <summary>
@@ -13,5 +15,5 @@ public sealed record PartnerDetails(
     DateOnly FromDate,
     int Tier,
     string? Web,
-    Guid ThumbnailId
+    StoredFileId ThumbnailId
 );

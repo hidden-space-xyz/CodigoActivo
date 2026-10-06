@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Files;
 
@@ -6,7 +7,7 @@ namespace CodigoActivo.Domain.Files;
 /// Uploaded file: its original name, the format detected from its content and who uploaded it.
 /// Replacing the content keeps the identity and the uploader.
 /// </summary>
-public class StoredFile : IdentifiableEntity, IAggregateRoot
+public class StoredFile : AggregateRoot<StoredFileId>
 {
     private StoredFile() { }
 
@@ -28,7 +29,7 @@ public class StoredFile : IdentifiableEntity, IAggregateRoot
     /// <summary>
     /// Gets the identifier of the user who uploaded the file.
     /// </summary>
-    public Guid UploadedBy { get; private set; }
+    public UserId UploadedBy { get; private set; }
 
     /// <summary>
     /// Records a new upload.
@@ -42,13 +43,13 @@ public class StoredFile : IdentifiableEntity, IAggregateRoot
     public static StoredFile Upload(
         string name,
         string extension,
-        Guid uploaderId,
+        UserId uploaderId,
         DateTimeOffset now,
-        Guid? id = null
+        StoredFileId? id = null
     )
     {
-        var file = new StoredFile { Id = id ?? Guid.NewGuid(), UploadedBy = uploaderId };
-        file.Replace(name, extension, now);
+        var file = new StoredFile { Id = id ?? StoredFileId.New(), UploadedBy = uploaderId };
+        file.Apply(name, extension, now);
         return file;
     }
 
@@ -59,6 +60,20 @@ public class StoredFile : IdentifiableEntity, IAggregateRoot
     /// <param name="extension">Extension of the detected format.</param>
     /// <param name="now">Current time.</param>
     public void Replace(string name, string extension, DateTimeOffset now)
+    {
+        Apply(name, extension, now);
+        Raise(new StoredFileReplaced(Id));
+    }
+
+    /// <summary>
+    /// Marks the file as deleted, so whatever caches it can drop it once it is gone.
+    /// </summary>
+    public void Delete()
+    {
+        Raise(new StoredFileDeleted(Id));
+    }
+
+    private void Apply(string name, string extension, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(extension);
