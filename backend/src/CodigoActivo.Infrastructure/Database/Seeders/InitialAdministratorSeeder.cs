@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
 /// <summary>
-/// Creates the initial administrator, under <see cref="SeedIds.Users.InitialAdministrator"/>, on
+/// Creates the initial administrator, under <see cref="InitialAdministrator.Id"/>, on
 /// an empty database.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
@@ -38,10 +38,10 @@ public sealed class InitialAdministratorSeeder(
     {
         if (await context.Users.AnyAsync(ct))
         {
-            if (!await context.Users.AnyAsync(u => u.Id == SeedIds.Users.InitialAdministrator, ct))
+            if (!await context.Users.AnyAsync(u => u.Id == InitialAdministrator.Id, ct))
             {
                 throw new InvalidOperationException(
-                    $"The database has users but not the initial administrator {SeedIds.Users.InitialAdministrator}; a database created before that account had a fixed identifier must be recreated."
+                    $"The database has users but not the initial administrator {InitialAdministrator.Id}; a database created before that account had a fixed identifier must be recreated."
                 );
             }
 
@@ -72,7 +72,7 @@ public sealed class InitialAdministratorSeeder(
 
         context.Users.Add(
             User.CreateInitialAdministrator(
-                email,
+                EmailAddress.Create(email).Value,
                 passwordHasher.Hash(configuredPassword),
                 clock.UtcNow
             )

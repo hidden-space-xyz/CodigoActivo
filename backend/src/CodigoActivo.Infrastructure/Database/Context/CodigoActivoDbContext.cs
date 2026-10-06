@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
@@ -9,11 +8,9 @@ using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication;
-using CodigoActivo.Infrastructure.Diagnostics;
+using CodigoActivo.Infrastructure.Database.Catalogs;
+using CodigoActivo.Infrastructure.Database.Conversions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.Logging;
-using Npgsql;
 
 namespace CodigoActivo.Infrastructure.Database.Context;
 
@@ -22,8 +19,7 @@ namespace CodigoActivo.Infrastructure.Database.Context;
 /// </summary>
 /// <param name="options">Configuration values used by the component.</param>
 public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> options)
-    : DbContext(options),
-        IUnitOfWork
+    : DbContext(options)
 {
     /// <summary>
     /// Gets the users value.
@@ -33,12 +29,12 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// <summary>
     /// Gets the user status types value.
     /// </summary>
-    public DbSet<UserStatusType> UserStatusTypes => Set<UserStatusType>();
+    public DbSet<UserStatusEntry> UserStatusTypes => Set<UserStatusEntry>();
 
     /// <summary>
     /// Gets the user types value.
     /// </summary>
-    public DbSet<UserType> UserTypes => Set<UserType>();
+    public DbSet<UserTypeEntry> UserTypes => Set<UserTypeEntry>();
 
     /// <summary>
     /// Gets the user sessions value.
@@ -63,7 +59,7 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// <summary>
     /// Gets the activity role types value.
     /// </summary>
-    public DbSet<ActivityRoleType> ActivityRoleTypes => Set<ActivityRoleType>();
+    public DbSet<ActivityRoleEntry> ActivityRoleTypes => Set<ActivityRoleEntry>();
 
     /// <summary>
     /// Gets the assignments value.
@@ -78,12 +74,12 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// <summary>
     /// Gets the assignment status types value.
     /// </summary>
-    public DbSet<AssignmentStatusType> AssignmentStatusTypes => Set<AssignmentStatusType>();
+    public DbSet<AssignmentStatusEntry> AssignmentStatusTypes => Set<AssignmentStatusEntry>();
 
     /// <summary>
     /// Gets the activity modality types value.
     /// </summary>
-    public DbSet<ActivityModalityType> ActivityModalityTypes => Set<ActivityModalityType>();
+    public DbSet<ActivityModalityEntry> ActivityModalityTypes => Set<ActivityModalityEntry>();
 
     /// <summary>
     /// Gets the event category types value.
@@ -118,7 +114,7 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// <summary>
     /// Gets the resource types value.
     /// </summary>
-    public DbSet<ResourceType> ResourceTypes => Set<ResourceType>();
+    public DbSet<ResourceTypeEntry> ResourceTypes => Set<ResourceTypeEntry>();
 
     /// <summary>
     /// Gets the news value.
@@ -161,103 +157,6 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<DeletedAccount> DeletedAccounts => Set<DeletedAccount>();
 
     /// <summary>
-    /// Attempts made when PostgreSQL resolves a deadlock by aborting a transaction, which happens
-    /// when a concurrent transaction takes the same row locks in the opposite order, as a signup of
-    /// a household being erased does.
-    /// </summary>
-    internal const int MaxTransactionAttempts = 3;
-
-    async Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken ct)
-    {
-        try
-        {
-            return await base.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException ex)
-            when (ex.InnerException
-                    is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } violation
-            )
-        {
-            throw new UniqueConstraintViolationException(EntityTypeOf(violation.TableName), ex);
-        }
-    }
-
-    async Task<T> IUnitOfWork.ExecuteInTransactionAsync<T>(
-        Func<CancellationToken, Task<T>> work,
-        CancellationToken ct
-    )
-    {
-        ArgumentNullException.ThrowIfNull(work);
-
-        if (Database.CurrentTransaction is not null)
-        {
-            return await work(ct);
-        }
-
-        for (var attempt = 1; ; attempt++)
-        {
-            var tracked = ChangeTracker
-                .Entries()
-                .Select(entry => entry.Entity)
-                .ToHashSet(ReferenceEqualityComparer.Instance);
-            await using var transaction = await Database.BeginTransactionAsync(ct);
-            try
-            {
-                var result = await work(ct);
-                await transaction.CommitAsync(ct);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                DetachAddedSince(tracked);
-                if (attempt >= MaxTransactionAttempts || !IsDeadlock(ex))
-                {
-                    throw;
-                }
-
-                this.GetService<ILoggerFactory>()
-                    .CreateLogger<CodigoActivoDbContext>()
-                    .TransactionDeadlockRetried(attempt);
-            }
-        }
-    }
-
-    private void DetachAddedSince(HashSet<object> tracked)
-    {
-        var added = ChangeTracker
-            .Entries()
-            .Where(entry => entry.State is EntityState.Added && !tracked.Contains(entry.Entity))
-            .ToList();
-        foreach (var entry in added)
-        {
-            entry.State = EntityState.Detached;
-        }
-    }
-
-    private static bool IsDeadlock(Exception? exception)
-    {
-        for (; exception is not null; exception = exception.InnerException)
-        {
-            if (exception is PostgresException { SqlState: PostgresErrorCodes.DeadlockDetected })
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private Type? EntityTypeOf(string? tableName)
-    {
-        return Model
-            .GetEntityTypes()
-            .FirstOrDefault(entityType =>
-                string.Equals(entityType.GetTableName(), tableName, StringComparison.Ordinal)
-            )
-            ?.ClrType;
-    }
-
-    /// <summary>
     /// Adds <see cref="DeletedAccountGuard"/> to every instance, whatever registered the options, so
     /// no commit can delete a user without the legal copy.
     /// </summary>
@@ -268,6 +167,15 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
 
         base.OnConfiguring(optionsBuilder);
         optionsBuilder.AddInterceptors(DeletedAccountGuard.Instance);
+    }
+
+    /// <inheritdoc />
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        ArgumentNullException.ThrowIfNull(configurationBuilder);
+
+        base.ConfigureConventions(configurationBuilder);
+        DomainValueConventions.Apply(configurationBuilder);
     }
 
     /// <inheritdoc />

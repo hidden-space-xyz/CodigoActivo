@@ -1,5 +1,3 @@
-using CodigoActivo.Domain.Common;
-
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
@@ -23,8 +21,13 @@ public enum EmailPartDisposition
 /// carries one attachment or inline image of a stored email, so a message sent to many recipients
 /// keeps a single copy of the bytes.
 /// </summary>
-public class EmailOutboxContentPart : IdentifiableEntity
+public class EmailOutboxContentPart
 {
+    /// <summary>
+    /// Gets the unique identifier, fixed when the row is created.
+    /// </summary>
+    public Guid Id { get; init; } = Guid.NewGuid();
+
     /// <summary>
     /// Gets or sets the identifier of the associated content.
     /// </summary>

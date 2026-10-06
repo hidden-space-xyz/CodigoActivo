@@ -1,5 +1,3 @@
-using CodigoActivo.Domain.Common;
-
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
@@ -8,8 +6,13 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// once the last of those messages is gone. Subject and bodies are stored protected because they
 /// quote one-time codes and reset links that exist nowhere else in the database as plain text.
 /// </summary>
-public class EmailOutboxContent : IdentifiableEntity
+public class EmailOutboxContent
 {
+    /// <summary>
+    /// Gets the unique identifier, fixed when the row is created.
+    /// </summary>
+    public Guid Id { get; init; } = Guid.NewGuid();
+
     /// <summary>
     /// Gets or sets the protected subject payload.
     /// </summary>
