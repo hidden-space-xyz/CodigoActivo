@@ -1,6 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Activities;
@@ -48,8 +50,9 @@ public sealed class GetLeaderRosterQueryHandler(
             readStore
                 .Assignments.Where(a =>
                     a.UserId == query.UserId
-                    && a.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader
-                    && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                    && a.ActivityRoleTypeId == CatalogIds.ActivityRoles.IdOf(ActivityRole.Leader)
+                    && a.AssignmentStatusId
+                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
                     && a.Activity.EventId == query.EventId
                     && a.Activity.ActivityEndsAt > now
                 )
@@ -72,7 +75,8 @@ public sealed class GetLeaderRosterQueryHandler(
             readStore
                 .Assignments.Where(a =>
                     ledActivityIds.Contains(a.ActivityId)
-                    && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                    && a.AssignmentStatusId
+                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
                 )
                 .Select(a => new AttendeeRow(
                     a.ActivityId,

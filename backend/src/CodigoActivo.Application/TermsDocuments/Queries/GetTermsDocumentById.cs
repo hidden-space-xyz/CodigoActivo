@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.TermsDocuments.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.TermsDocuments;
 
 namespace CodigoActivo.Application.TermsDocuments.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.TermsDocuments.Queries;
 /// Carries the criteria used to retrieve a terms document by identifier.
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
-public sealed record GetTermsDocumentByIdQuery(Guid TermsDocumentId)
+public sealed record GetTermsDocumentByIdQuery(TermsDocumentId TermsDocumentId)
     : IQuery<Result<TermsDocumentResponse>>;
 
 /// <summary>
@@ -33,10 +35,14 @@ public sealed class GetTermsDocumentByIdQueryHandler(IReadStore readStore, IQuer
     {
         var response = await executor.FirstOrDefaultAsync(
             readStore
-                .TermsDocuments.Where(termsDocument => termsDocument.Id == query.TermsDocumentId)
+                .TermsDocuments.Where(termsDocument =>
+                    termsDocument.Id == query.TermsDocumentId.Value
+                )
                 .Select(TermsDocumentProjections.TermsDocument),
             ct
         );
-        return response is null ? Error.NotFound(ErrorCode.TermsDocumentNotFound) : response;
+        return response is null
+            ? Error.NotFound(ApplicationErrorCode.TermsDocumentNotFound)
+            : response;
     }
 }

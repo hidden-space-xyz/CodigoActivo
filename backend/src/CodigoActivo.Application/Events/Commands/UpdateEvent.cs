@@ -1,11 +1,10 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Querying;
-using CodigoActivo.Application.Events.Contracts;
-using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -18,10 +17,8 @@ namespace CodigoActivo.Application.Events.Commands;
 /// Carries the input required to update the event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-/// <param name="Request">Validated client request data.</param>
-/// <param name="UserId">Identifier of the user.</param>
-public sealed record UpdateEventCommand(Guid EventId, UpdateEventRequest Request, Guid UserId)
-    : ICommand<Result>;
+/// <param name="Event">New content, schedule, categories and terms of the event.</param>
+public sealed record UpdateEventCommand(EventId EventId, EventDraft Event) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the event.
@@ -30,21 +27,17 @@ public sealed record UpdateEventCommand(Guid EventId, UpdateEventRequest Request
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
-/// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
 /// <param name="categoryChecker">The category checker value.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdateEventCommandHandler(
     IEventRepository events,
     IActivityRepository activities,
     IStoredFileRepository files,
     ITermsDocumentRepository termsDocuments,
-    IOrphanFileCleaner orphanCleaner,
     EventCategoryChecker categoryChecker,
-    IClock clock,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    ICurrentUser currentUser,
+    IClock clock
 ) : ICommandHandler<UpdateEventCommand, Result>
 {
     /// <summary>
@@ -58,21 +51,22 @@ public sealed class UpdateEventCommandHandler(
         CancellationToken ct = default
     )
     {
-        var request = command.Request;
+        ArgumentNullException.ThrowIfNull(command);
+        var draft = command.Event;
 
         var schedule = EventSchedule.Create(
-            request.EventStartsAt,
-            request.EventEndsAt,
-            request.EarlySignupStartsAt,
-            request.SignupStartsAt,
-            request.SignupEndsAt
+            draft.EventStartsAt,
+            draft.EventEndsAt,
+            draft.EarlySignupStartsAt,
+            draft.SignupStartsAt,
+            draft.SignupEndsAt
         );
         if (schedule.IsFailure)
         {
             return schedule.Error!;
         }
 
-        var categories = await categoryChecker.EnsureCategoriesAsync(request.CategoryTypeIds, ct);
+        var categories = await categoryChecker.EnsureCategoriesAsync(draft.CategoryTypeIds, ct);
         if (categories.IsFailure)
         {
             return categories.Error!;
@@ -81,12 +75,12 @@ public sealed class UpdateEventCommandHandler(
         var ev = await events.GetByIdAsync(command.EventId, ct);
         if (ev is null)
         {
-            return Error.NotFound(ErrorCode.EventNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
         var (lowerInclusive, upperExclusive) = DayBounds(
-            schedule.Value.EventStartsAt,
-            schedule.Value.EventEndsAt
+            schedule.Value.Calendar.Start,
+            schedule.Value.Calendar.End
         );
         if (
             await activities.AnyOutsideRangeAsync(
@@ -97,54 +91,33 @@ public sealed class UpdateEventCommandHandler(
             )
         )
         {
-            return Error.Validation(ErrorCode.EventActivitiesOutsideNewRange);
+            return Error.Validation(ApplicationErrorCode.EventActivitiesOutsideNewRange);
         }
 
-        if (!await files.ExistsAsync(request.ThumbnailId, ct))
+        if (!await files.ExistsAsync(draft.ThumbnailId, ct))
         {
-            return Error.Validation(ErrorCode.EventThumbnailNotFound);
+            return Error.Validation(ApplicationErrorCode.EventThumbnailNotFound);
         }
 
-        var terms = await EventTermsRequests.ResolveAsync(
-            request.TermsDocuments,
-            termsDocuments,
-            ct
-        );
+        var terms = await EventTermsRequests.ResolveAsync(draft.TermsDocuments, termsDocuments, ct);
         if (terms.IsFailure)
         {
             return terms.Error!;
         }
 
-        var previousThumbnailId = ev.ThumbnailId;
-        var previousDescription = ev.Description;
-
         ev.Update(
             new EventContent(
-                request.Title,
-                request.Subtitle,
-                request.Description,
-                request.ThumbnailId
+                draft.Title,
+                draft.Subtitle,
+                RichText.From(draft.Description),
+                draft.ThumbnailId
             ),
             schedule.Value,
             categories.Value,
             terms.Value,
-            command.UserId,
+            currentUser.RequiredId(),
             clock.UtcNow
         );
-
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Events);
-
-        var orphanCandidates = RichTextFileReferences
-            .ExtractRemoved(previousDescription, ev.Description)
-            .ToList();
-        if (previousThumbnailId != request.ThumbnailId)
-        {
-            orphanCandidates.Add(previousThumbnailId);
-        }
-
-        await orphanCleaner.DeleteOrphanedAsync(orphanCandidates, ct);
-
         return Result.Success();
     }
 

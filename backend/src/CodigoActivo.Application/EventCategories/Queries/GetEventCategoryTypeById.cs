@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.EventCategories;
 
 namespace CodigoActivo.Application.EventCategories.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.EventCategories.Queries;
 /// Carries the criteria used to retrieve an event category type by identifier.
 /// </summary>
 /// <param name="CategoryTypeId">Identifier of the event category type.</param>
-public sealed record GetEventCategoryTypeByIdQuery(Guid CategoryTypeId)
+public sealed record GetEventCategoryTypeByIdQuery(EventCategoryTypeId CategoryTypeId)
     : IQuery<Result<EventCategoryTypeResponse>>;
 
 /// <summary>
@@ -35,10 +37,14 @@ public sealed class GetEventCategoryTypeByIdQueryHandler(
     {
         var response = await executor.FirstOrDefaultAsync(
             readStore
-                .EventCategoryTypes.Where(categoryType => categoryType.Id == query.CategoryTypeId)
+                .EventCategoryTypes.Where(categoryType =>
+                    categoryType.Id == query.CategoryTypeId.Value
+                )
                 .Select(EventCategoryProjections.EventCategoryType),
             ct
         );
-        return response is null ? Error.NotFound(ErrorCode.EventCategoryTypeNotFound) : response;
+        return response is null
+            ? Error.NotFound(ApplicationErrorCode.EventCategoryTypeNotFound)
+            : response;
     }
 }
