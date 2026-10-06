@@ -1,6 +1,7 @@
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Activities.Commands;
+using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -15,38 +16,30 @@ namespace CodigoActivo.Application.Activities;
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
-/// <param name="readStore">Read side used to check the modality and role catalogs.</param>
-/// <param name="executor">Executor of the read-side queries.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ActivityValidator(
     IEventRepository events,
     IStoredFileRepository files,
-    IReadStore readStore,
-    IQueryExecutor executor,
     IClock clock
 )
 {
     internal async Task<Result<ValidatedActivity>> ValidateActivityAsync(
-        Guid eventId,
-        DateTimeOffset? startsAt,
-        DateTimeOffset? endsAt,
-        Guid thumbnailId,
-        Guid modalityTypeId,
-        IReadOnlyList<ActivityRoleCapacityRequest>? roleCapacities,
+        EventId eventId,
+        ActivityDraft draft,
         CancellationToken ct
     )
     {
         var ev = await events.GetByIdAsync(eventId, ct);
         if (ev is null)
         {
-            return Error.NotFound(ErrorCode.EventNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
         var schedule = ActivitySchedule.Create(
-            startsAt,
-            endsAt,
-            ev.EventStartsAt,
-            ev.EventEndsAt,
+            draft.ActivityStartsAt,
+            draft.ActivityEndsAt,
+            ev.Calendar.Start,
+            ev.Calendar.End,
             clock.TimeZone
         );
         if (schedule.IsFailure)
@@ -54,55 +47,49 @@ public sealed class ActivityValidator(
             return schedule.Error!;
         }
 
-        if (!await files.ExistsAsync(thumbnailId, ct))
+        if (!await files.ExistsAsync(draft.ThumbnailId, ct))
         {
-            return Error.Validation(ErrorCode.ActivityThumbnailNotFound);
+            return Error.Validation(ApplicationErrorCode.ActivityThumbnailNotFound);
         }
 
         if (
-            !await executor.AnyAsync(
-                readStore.ActivityModalityTypes.Where(type => type.Id == modalityTypeId),
-                ct
+            !CatalogIds.ActivityModalities.TryGetValue(
+                draft.ActivityModalityTypeId,
+                out var modality
             )
         )
         {
-            return Error.Validation(ErrorCode.ActivityModalityTypeNotFound);
+            return Error.Validation(ApplicationErrorCode.ActivityModalityTypeNotFound);
         }
 
-        var capacities = RoleCapacityPlan.Create(
-            roleCapacities
-                ?.Select(item => new RoleCapacity(
-                    item.ActivityRoleTypeId,
-                    item.DesiredCount!.Value
-                ))
-                .ToList()
-        );
+        var requested = draft.RoleCapacities;
+        var roles = new List<RoleCapacity>(requested.Count);
+        foreach (var item in requested)
+        {
+            if (!CatalogIds.ActivityRoles.TryGetValue(item.ActivityRoleTypeId, out var role))
+            {
+                return
+                    requested.Select(capacity => capacity.ActivityRoleTypeId).Distinct().Count()
+                    != requested.Count
+                    ? Error.Validation(DomainErrorCode.ActivityRoleCapacityDuplicated)
+                    : Error.Validation(ApplicationErrorCode.ActivityRoleTypeNotFound);
+            }
+
+            roles.Add(new RoleCapacity(role, item.DesiredCount));
+        }
+
+        var capacities = RoleCapacityPlan.Create(roles);
         if (capacities.IsFailure)
         {
             return capacities.Error!;
         }
 
-        var roleIds = capacities.Value.Items.Select(item => item.ActivityRoleTypeId).ToList();
-        if (
-            roleIds.Count > 0
-            && (
-                await executor.ToListAsync(
-                    readStore
-                        .ActivityRoleTypes.Where(type => roleIds.Contains(type.Id))
-                        .Select(type => type.Id),
-                    ct
-                )
-            ).Count != roleIds.Count
-        )
-        {
-            return Error.Validation(ErrorCode.ActivityRoleTypeNotFound);
-        }
-
-        return new ValidatedActivity(schedule.Value, capacities.Value);
+        return new ValidatedActivity(schedule.Value, modality, capacities.Value);
     }
 
     internal readonly record struct ValidatedActivity(
         ActivitySchedule Schedule,
+        ActivityModality Modality,
         RoleCapacityPlan Capacities
     );
 }

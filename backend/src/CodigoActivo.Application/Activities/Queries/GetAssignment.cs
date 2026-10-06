@@ -40,6 +40,8 @@ public sealed class GetAssignmentQueryHandler(IReadStore readStore, IQueryExecut
                 .Select(ActivityProjections.Assignment),
             ct
         );
-        return response is null ? Error.NotFound(ErrorCode.ActivityAssignmentNotFound) : response;
+        return response is null
+            ? Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound)
+            : response;
     }
 }

@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 
 namespace CodigoActivo.Application.Activities.Queries;
@@ -21,7 +22,10 @@ public sealed record GetHouseholdSignupRolesQuery(Guid ActingUserId)
 public sealed class GetHouseholdSignupRolesQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
-    ListActivityRoleTypesQueryHandler roleTypesQuery
+    IQueryHandler<
+        ListActivityRoleTypesQuery,
+        IReadOnlyList<ActivityRoleTypeResponse>
+    > roleTypesQuery
 ) : IQueryHandler<GetHouseholdSignupRolesQuery, IReadOnlyList<HouseholdSignupRolesResponse>>
 {
     /// <summary>
@@ -52,7 +56,8 @@ public sealed class GetHouseholdSignupRolesQueryHandler(
                 member.Id,
                 [
                     .. SignupRoles
-                        .For(member.UserTypeId)
+                        .For(CatalogIds.UserTypes.ValueOf(member.UserTypeId))
+                        .Select(CatalogIds.ActivityRoles.IdOf)
                         .Select(roleId => new SignupRoleResponse(
                             roleId,
                             roleNames.GetValueOrDefault(roleId, string.Empty)
