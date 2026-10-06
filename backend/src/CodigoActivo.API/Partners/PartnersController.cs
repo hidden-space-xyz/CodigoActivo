@@ -1,15 +1,19 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Partners.Contracts;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Partners.Commands;
 using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Application.Partners.Queries;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Partners;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
-namespace CodigoActivo.API.Controllers;
+namespace CodigoActivo.API.Partners;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing partners.
@@ -30,7 +34,7 @@ public class PartnersController : ApiControllerBase
     [OutputCache(PolicyName = CacheTags.Partners)]
     public async Task<ActionResult<PagedResult<PartnerResponse>>> ListAsync(
         [FromQuery] PartnerListQuery query,
-        [FromServices] ListPartnersQueryHandler handler,
+        [FromServices] IQueryHandler<ListPartnersQuery, PagedResult<PartnerResponse>> handler,
         CancellationToken ct
     )
     {
@@ -49,11 +53,13 @@ public class PartnersController : ApiControllerBase
     [OutputCache(PolicyName = CacheTags.Partners)]
     public async Task<ActionResult<PartnerResponse>> GetAsync(
         Guid partnerId,
-        [FromServices] GetPartnerByIdQueryHandler handler,
+        [FromServices] IQueryHandler<GetPartnerByIdQuery, Result<PartnerResponse>> handler,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetPartnerByIdQuery(partnerId), ct));
+        return ToOk(
+            await handler.HandleAsync(new GetPartnerByIdQuery(PartnerId.From(partnerId)), ct)
+        );
     }
 
     /// <summary>
@@ -69,13 +75,13 @@ public class PartnersController : ApiControllerBase
     [ProducesResponseType<PartnerResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<PartnerResponse>> CreateAsync(
         [FromBody] CreatePartnerRequest request,
-        [FromServices] CreatePartnerCommandHandler handler,
-        [FromServices] GetPartnerByIdQueryHandler getById,
+        [FromServices] ICommandHandler<CreatePartnerCommand, Result<PartnerId>> handler,
+        [FromServices] IQueryHandler<GetPartnerByIdQuery, Result<PartnerResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToCreatedAfterAsync(
-            await handler.HandleAsync(new CreatePartnerCommand(request, UserId), ct),
+            await handler.HandleAsync(request.ToCommand(), ct),
             id => getById.HandleAsync(new GetPartnerByIdQuery(id), ct),
             id => $"/api/partners/{id}"
         );
@@ -95,14 +101,14 @@ public class PartnersController : ApiControllerBase
     public async Task<ActionResult<PartnerResponse>> UpdateAsync(
         Guid partnerId,
         [FromBody] UpdatePartnerRequest request,
-        [FromServices] UpdatePartnerCommandHandler handler,
-        [FromServices] GetPartnerByIdQueryHandler getById,
+        [FromServices] ICommandHandler<UpdatePartnerCommand, Result> handler,
+        [FromServices] IQueryHandler<GetPartnerByIdQuery, Result<PartnerResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
-            await handler.HandleAsync(new UpdatePartnerCommand(partnerId, request, UserId), ct),
-            () => getById.HandleAsync(new GetPartnerByIdQuery(partnerId), ct)
+            await handler.HandleAsync(request.ToCommand(PartnerId.From(partnerId)), ct),
+            () => getById.HandleAsync(new GetPartnerByIdQuery(PartnerId.From(partnerId)), ct)
         );
     }
 
@@ -117,10 +123,12 @@ public class PartnersController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(
         Guid partnerId,
-        [FromServices] DeletePartnerCommandHandler handler,
+        [FromServices] ICommandHandler<DeletePartnerCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new DeletePartnerCommand(partnerId), ct));
+        return ToNoContent(
+            await handler.HandleAsync(new DeletePartnerCommand(PartnerId.From(partnerId)), ct)
+        );
     }
 }

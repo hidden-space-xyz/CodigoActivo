@@ -1,15 +1,22 @@
+using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using EventId = CodigoActivo.Domain.Events.EventId;
+using UserId = CodigoActivo.Domain.Users.UserId;
 
-namespace CodigoActivo.API.Controllers;
+namespace CodigoActivo.API.Activities;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing activities.
@@ -30,7 +37,7 @@ public class ActivitiesController : ApiControllerBase
     [OutputCache(PolicyName = CacheTags.Activities)]
     public async Task<ActionResult<PagedResult<ActivityResponse>>> ListAsync(
         [FromQuery] ActivityListQuery query,
-        [FromServices] ListActivitiesQueryHandler handler,
+        [FromServices] IQueryHandler<ListActivitiesQuery, PagedResult<ActivityResponse>> handler,
         CancellationToken ct
     )
     {
@@ -49,11 +56,13 @@ public class ActivitiesController : ApiControllerBase
     [OutputCache(PolicyName = CacheTags.Activities)]
     public async Task<ActionResult<ActivityResponse>> GetAsync(
         Guid activityId,
-        [FromServices] GetActivityByIdQueryHandler handler,
+        [FromServices] IQueryHandler<GetActivityByIdQuery, Result<ActivityResponse>> handler,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetActivityByIdQuery(activityId), ct));
+        return ToOk(
+            await handler.HandleAsync(new GetActivityByIdQuery(ActivityId.From(activityId)), ct)
+        );
     }
 
     /// <summary>
@@ -69,11 +78,16 @@ public class ActivitiesController : ApiControllerBase
     public async Task<ActionResult<TimeOverlapResponse>> OverlapsAsync(
         Guid activityId,
         Guid userId,
-        [FromServices] VerifyTimeOverlapsQueryHandler handler,
+        [FromServices] IQueryHandler<VerifyTimeOverlapsQuery, Result<TimeOverlapResponse>> handler,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new VerifyTimeOverlapsQuery(activityId, userId), ct));
+        return ToOk(
+            await handler.HandleAsync(
+                new VerifyTimeOverlapsQuery(ActivityId.From(activityId), UserId.From(userId)),
+                ct
+            )
+        );
     }
 
     /// <summary>
@@ -89,11 +103,17 @@ public class ActivitiesController : ApiControllerBase
         ActionResult<IReadOnlyList<HouseholdMemberAssignmentResponse>>
     > HouseholdAssignmentsAsync(
         Guid eventId,
-        [FromServices] GetHouseholdAssignmentsQueryHandler handler,
+        [FromServices]
+            IQueryHandler<
+            GetHouseholdAssignmentsQuery,
+            IReadOnlyList<HouseholdMemberAssignmentResponse>
+        > handler,
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new GetHouseholdAssignmentsQuery(UserId, eventId), ct));
+        return Ok(
+            await handler.HandleAsync(new GetHouseholdAssignmentsQuery(CurrentUserId, eventId), ct)
+        );
     }
 
     /// <summary>
@@ -105,7 +125,11 @@ public class ActivitiesController : ApiControllerBase
     [HttpGet("roleType")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<ActivityRoleTypeResponse>>> RoleTypesAsync(
-        [FromServices] ListActivityRoleTypesQueryHandler handler,
+        [FromServices]
+            IQueryHandler<
+            ListActivityRoleTypesQuery,
+            IReadOnlyList<ActivityRoleTypeResponse>
+        > handler,
         CancellationToken ct
     )
     {
@@ -121,11 +145,15 @@ public class ActivitiesController : ApiControllerBase
     [HttpGet("signup-roles")]
     [Authorize]
     public async Task<ActionResult<IReadOnlyList<HouseholdSignupRolesResponse>>> SignupRolesAsync(
-        [FromServices] GetHouseholdSignupRolesQueryHandler handler,
+        [FromServices]
+            IQueryHandler<
+            GetHouseholdSignupRolesQuery,
+            IReadOnlyList<HouseholdSignupRolesResponse>
+        > handler,
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new GetHouseholdSignupRolesQuery(UserId), ct));
+        return Ok(await handler.HandleAsync(new GetHouseholdSignupRolesQuery(CurrentUserId), ct));
     }
 
     /// <summary>
@@ -139,7 +167,11 @@ public class ActivitiesController : ApiControllerBase
     public async Task<
         ActionResult<IReadOnlyList<AssignmentStatusTypeResponse>>
     > AssignmentStatusTypesAsync(
-        [FromServices] ListAssignmentStatusTypesQueryHandler handler,
+        [FromServices]
+            IQueryHandler<
+            ListAssignmentStatusTypesQuery,
+            IReadOnlyList<AssignmentStatusTypeResponse>
+        > handler,
         CancellationToken ct
     )
     {
@@ -155,7 +187,11 @@ public class ActivitiesController : ApiControllerBase
     [HttpGet("modality-types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<ActivityModalityTypeResponse>>> ModalityTypesAsync(
-        [FromServices] ListActivityModalityTypesQueryHandler handler,
+        [FromServices]
+            IQueryHandler<
+            ListActivityModalityTypesQuery,
+            IReadOnlyList<ActivityModalityTypeResponse>
+        > handler,
         CancellationToken ct
     )
     {
@@ -177,13 +213,13 @@ public class ActivitiesController : ApiControllerBase
     public async Task<ActionResult<ActivityResponse>> CreateAsync(
         Guid eventId,
         [FromBody] CreateActivityRequest request,
-        [FromServices] CreateActivityCommandHandler handler,
-        [FromServices] GetActivityByIdQueryHandler getById,
+        [FromServices] ICommandHandler<CreateActivityCommand, Result<ActivityId>> handler,
+        [FromServices] IQueryHandler<GetActivityByIdQuery, Result<ActivityResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToCreatedAfterAsync(
-            await handler.HandleAsync(new CreateActivityCommand(eventId, request, UserId), ct),
+            await handler.HandleAsync(request.ToCommand(EventId.From(eventId)), ct),
             id => getById.HandleAsync(new GetActivityByIdQuery(id), ct),
             id => $"/api/activities/{id}"
         );
@@ -203,14 +239,14 @@ public class ActivitiesController : ApiControllerBase
     public async Task<ActionResult<ActivityResponse>> UpdateAsync(
         Guid activityId,
         [FromBody] UpdateActivityRequest request,
-        [FromServices] UpdateActivityCommandHandler handler,
-        [FromServices] GetActivityByIdQueryHandler getById,
+        [FromServices] ICommandHandler<UpdateActivityCommand, Result> handler,
+        [FromServices] IQueryHandler<GetActivityByIdQuery, Result<ActivityResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
-            await handler.HandleAsync(new UpdateActivityCommand(activityId, request, UserId), ct),
-            () => getById.HandleAsync(new GetActivityByIdQuery(activityId), ct)
+            await handler.HandleAsync(request.ToCommand(ActivityId.From(activityId)), ct),
+            () => getById.HandleAsync(new GetActivityByIdQuery(ActivityId.From(activityId)), ct)
         );
     }
 
@@ -225,11 +261,13 @@ public class ActivitiesController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(
         Guid activityId,
-        [FromServices] DeleteActivityCommandHandler handler,
+        [FromServices] ICommandHandler<DeleteActivityCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new DeleteActivityCommand(activityId), ct));
+        return ToNoContent(
+            await handler.HandleAsync(new DeleteActivityCommand(ActivityId.From(activityId)), ct)
+        );
     }
 
     /// <summary>
@@ -248,14 +286,14 @@ public class ActivitiesController : ApiControllerBase
         Guid activityId,
         Guid userId,
         [FromBody] AssignRequest request,
-        [FromServices] AssignActivityCommandHandler handler,
-        [FromServices] GetAssignmentQueryHandler getAssignment,
+        [FromServices] ICommandHandler<AssignActivityCommand, Result> handler,
+        [FromServices] IQueryHandler<GetAssignmentQuery, Result<AssignmentResponse>> getAssignment,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
             await handler.HandleAsync(
-                new AssignActivityCommand(activityId, userId, UserId, request, IsAdmin),
+                request.ToCommand(ActivityId.From(activityId), UserId.From(userId)),
                 ct
             ),
             () => getAssignment.HandleAsync(new GetAssignmentQuery(activityId, userId), ct)
@@ -276,17 +314,20 @@ public class ActivitiesController : ApiControllerBase
     public async Task<ActionResult<IReadOnlyList<AssignmentResponse>>> AssignHouseholdAsync(
         Guid activityId,
         [FromBody] AssignHouseholdRequest request,
-        [FromServices] AssignHouseholdCommandHandler handler,
-        [FromServices] GetAssignmentsQueryHandler getAssignments,
+        [FromServices]
+            ICommandHandler<AssignHouseholdCommand, Result<IReadOnlyList<UserId>>> handler,
+        [FromServices]
+            IQueryHandler<GetAssignmentsQuery, IReadOnlyList<AssignmentResponse>> getAssignments,
         CancellationToken ct
     )
     {
         return await ToOkListAfterAsync(
-            await handler.HandleAsync(
-                new AssignHouseholdCommand(activityId, UserId, request, IsAdmin),
-                ct
-            ),
-            userIds => getAssignments.HandleAsync(new GetAssignmentsQuery(activityId, userIds), ct)
+            await handler.HandleAsync(request.ToCommand(ActivityId.From(activityId)), ct),
+            userIds =>
+                getAssignments.HandleAsync(
+                    new GetAssignmentsQuery(activityId, [.. userIds.Select(id => id.Value)]),
+                    ct
+                )
         );
     }
 
@@ -303,12 +344,15 @@ public class ActivitiesController : ApiControllerBase
     public async Task<IActionResult> UnassignAsync(
         Guid activityId,
         Guid userId,
-        [FromServices] UnassignActivityCommandHandler handler,
+        [FromServices] ICommandHandler<UnassignActivityCommand, Result> handler,
         CancellationToken ct
     )
     {
         return ToNoContent(
-            await handler.HandleAsync(new UnassignActivityCommand(activityId, userId, IsAdmin), ct)
+            await handler.HandleAsync(
+                new UnassignActivityCommand(ActivityId.From(activityId), UserId.From(userId)),
+                ct
+            )
         );
     }
 
@@ -328,14 +372,18 @@ public class ActivitiesController : ApiControllerBase
         Guid activityId,
         Guid userId,
         [FromBody] ChangeAssignmentStatusRequest request,
-        [FromServices] ChangeAssignmentStatusCommandHandler handler,
-        [FromServices] GetAssignmentQueryHandler getAssignment,
+        [FromServices] ICommandHandler<ChangeAssignmentStatusCommand, Result> handler,
+        [FromServices] IQueryHandler<GetAssignmentQuery, Result<AssignmentResponse>> getAssignment,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
             await handler.HandleAsync(
-                new ChangeAssignmentStatusCommand(activityId, userId, request),
+                new ChangeAssignmentStatusCommand(
+                    ActivityId.From(activityId),
+                    UserId.From(userId),
+                    request.AssignmentStatusId
+                ),
                 ct
             ),
             () => getAssignment.HandleAsync(new GetAssignmentQuery(activityId, userId), ct)
@@ -358,14 +406,18 @@ public class ActivitiesController : ApiControllerBase
         Guid activityId,
         Guid userId,
         [FromBody] ChangeAssignmentRoleRequest request,
-        [FromServices] ChangeAssignmentRoleCommandHandler handler,
-        [FromServices] GetAssignmentQueryHandler getAssignment,
+        [FromServices] ICommandHandler<ChangeAssignmentRoleCommand, Result> handler,
+        [FromServices] IQueryHandler<GetAssignmentQuery, Result<AssignmentResponse>> getAssignment,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
             await handler.HandleAsync(
-                new ChangeAssignmentRoleCommand(activityId, userId, request),
+                new ChangeAssignmentRoleCommand(
+                    ActivityId.From(activityId),
+                    UserId.From(userId),
+                    request.ActivityRoleTypeId
+                ),
                 ct
             ),
             () => getAssignment.HandleAsync(new GetAssignmentQuery(activityId, userId), ct)

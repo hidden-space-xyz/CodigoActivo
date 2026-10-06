@@ -1,3 +1,4 @@
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.Domain.Common;
@@ -30,7 +31,7 @@ internal static class ApiRequestPipeline
         app.MapControllers();
         app.MapFallback(
                 "/api/{**path}",
-                context => context.WriteApiErrorAsync(Error.NotFound(ErrorCode.EndpointNotFound))
+                context => context.WriteApiErrorAsync(ApiError.NotFound(ErrorCode.EndpointNotFound))
             )
             .AllowAnonymous()
             .ExcludeFromDescription();

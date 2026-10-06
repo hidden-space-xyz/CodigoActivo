@@ -1,8 +1,11 @@
 using System.Security.Claims;
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -31,8 +34,8 @@ public static class TwoFactorAuthentication
 /// <param name="pendingChallenge">Handler that resolves the pending challenge of an account.</param>
 /// <param name="endChallenge">Handler that closes a pending challenge.</param>
 public sealed class TwoFactorTicketValidator(
-    GetPendingChallengeQueryHandler pendingChallenge,
-    EndLoginChallengeCommandHandler endChallenge
+    IQueryHandler<GetPendingChallengeQuery, PendingChallenge?> pendingChallenge,
+    ICommandHandler<EndLoginChallengeCommand, Result> endChallenge
 )
 {
     private const string PasswordFingerprintClaim = "codigoactivo:credential";
@@ -107,7 +110,10 @@ public sealed class TwoFactorTicketValidator(
             return;
         }
 
-        await endChallenge.HandleAsync(new EndLoginChallengeCommand(user, challenge), ct);
+        await endChallenge.HandleAsync(
+            new EndLoginChallengeCommand(UserId.From(user), challenge),
+            ct
+        );
     }
 
     private static Guid? ReadChallengeId(ClaimsPrincipal? principal)

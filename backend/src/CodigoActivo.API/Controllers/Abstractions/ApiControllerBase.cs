@@ -1,3 +1,4 @@
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ public abstract class ApiControllerBase : ControllerBase
     /// <summary>
     /// Gets the identifier of the associated user.
     /// </summary>
-    protected Guid UserId =>
+    protected Guid CurrentUserId =>
         User.GetUserId()
         ?? throw new InvalidOperationException("No authenticated user on this request.");
 
@@ -134,6 +135,37 @@ public abstract class ApiControllerBase : ControllerBase
     }
 
     /// <summary>
+    /// Answers a successful creation with its location and the read model loaded afterwards, or
+    /// with the command error.
+    /// </summary>
+    /// <typeparam name="TId">Type of the identifier of the new resource.</typeparam>
+    /// <typeparam name="T">Type of the read model returned to the client.</typeparam>
+    /// <param name="result">Outcome of the command, carrying the identifier of the new resource.</param>
+    /// <param name="read">Query that loads the read model of the new resource.</param>
+    /// <param name="location">Builds the relative location of the new resource.</param>
+    /// <returns>A created result with the read model, or the problem describing the failure.</returns>
+    protected async Task<ActionResult<T>> ToCreatedAfterAsync<TId, T>(
+        Result<TId> result,
+        Func<TId, Task<Result<T>>> read,
+        Func<Guid, string> location
+    )
+        where TId : struct, IEntityId<TId>
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        ArgumentNullException.ThrowIfNull(read);
+        ArgumentNullException.ThrowIfNull(location);
+        if (result.IsFailure)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        var created = await read(result.Value);
+        return created.IsFailure
+            ? ToProblem(created.Error!)
+            : Created(new Uri(location(result.Value.Value), UriKind.Relative), created.Value);
+    }
+
+    /// <summary>
     /// Converts the value to no content.
     /// </summary>
     /// <param name="result">The result value.</param>
@@ -149,6 +181,16 @@ public abstract class ApiControllerBase : ControllerBase
     /// <param name="error">Application error associated with a failed result or response.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
     protected ActionResult ToProblem(Error error)
+    {
+        return ToProblem(ApiError.From(error));
+    }
+
+    /// <summary>
+    /// Converts a failure the API decides itself to an error response.
+    /// </summary>
+    /// <param name="error">Failure with its wire code.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    protected ActionResult ToProblem(ApiError error)
     {
         var (statusCode, body) = ApiErrorResponseExtensions.Create(error, HttpContext);
         return StatusCode(statusCode, body);

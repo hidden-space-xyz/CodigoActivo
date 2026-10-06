@@ -2,14 +2,16 @@ using System.Text;
 using CodigoActivo.API.Caching;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Seo;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Seo;
 using CodigoActivo.Application.Seo.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.Net.Http.Headers;
 
-namespace CodigoActivo.API.Controllers;
+namespace CodigoActivo.API.Seo;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing seo.
@@ -33,7 +35,7 @@ public class SeoController : ApiControllerBase
     [AllowAnonymous]
     [OutputCache(PolicyName = OutputCachePolicies.Seo)]
     public async Task<IActionResult> SitemapAsync(
-        [FromServices] GetSitemapEntriesQueryHandler handler,
+        [FromServices] IQueryHandler<GetSitemapEntriesQuery, SitemapEntries> handler,
         [FromServices] ApplicationOptions application,
         CancellationToken ct
     )

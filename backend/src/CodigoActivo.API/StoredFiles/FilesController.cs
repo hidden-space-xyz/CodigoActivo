@@ -2,18 +2,21 @@ using System.Globalization;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Application.Files.Queries;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Net.Http.Headers;
 
-namespace CodigoActivo.API.Controllers;
+namespace CodigoActivo.API.StoredFiles;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing files.
@@ -34,11 +37,11 @@ public class FilesController : ApiControllerBase
     [OutputCache(PolicyName = CacheTags.Files)]
     public async Task<ActionResult<FileResponse>> GetAsync(
         Guid fileId,
-        [FromServices] GetFileByIdQueryHandler handler,
+        [FromServices] IQueryHandler<GetFileByIdQuery, Result<FileResponse>> handler,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetFileByIdQuery(fileId), ct));
+        return ToOk(await handler.HandleAsync(new GetFileByIdQuery(StoredFileId.From(fileId)), ct));
     }
 
     /// <summary>
@@ -53,11 +56,14 @@ public class FilesController : ApiControllerBase
     [OutputCache(PolicyName = CacheTags.Files)]
     public async Task<IActionResult> GetContentAsync(
         Guid fileId,
-        [FromServices] GetFileContentQueryHandler handler,
+        [FromServices] IQueryHandler<GetFileContentQuery, Result<FileContent>> handler,
         CancellationToken ct
     )
     {
-        var result = await handler.HandleAsync(new GetFileContentQuery(fileId), ct);
+        var result = await handler.HandleAsync(
+            new GetFileContentQuery(StoredFileId.From(fileId)),
+            ct
+        );
         if (result.IsFailure)
         {
             return ToProblem(result.Error!);
@@ -92,13 +98,13 @@ public class FilesController : ApiControllerBase
     [ProducesResponseType<FileResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<FileResponse>> CreateAsync(
         IFormFile? file,
-        [FromServices] CreateFileCommandHandler handler,
-        [FromServices] GetFileByIdQueryHandler getById,
+        [FromServices] ICommandHandler<CreateFileCommand, Result<StoredFileId>> handler,
+        [FromServices] IQueryHandler<GetFileByIdQuery, Result<FileResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToCreatedAfterAsync(
-            await handler.HandleAsync(new CreateFileCommand(ToUploadRequest(file), UserId), ct),
+            await handler.HandleAsync(new CreateFileCommand(ToUploadRequest(file)), ct),
             id => getById.HandleAsync(new GetFileByIdQuery(id), ct),
             id => $"/api/files/{id}"
         );
@@ -121,14 +127,17 @@ public class FilesController : ApiControllerBase
     public async Task<ActionResult<FileResponse>> UpdateAsync(
         Guid fileId,
         IFormFile? file,
-        [FromServices] UpdateFileCommandHandler handler,
-        [FromServices] GetFileByIdQueryHandler getById,
+        [FromServices] ICommandHandler<UpdateFileCommand, Result> handler,
+        [FromServices] IQueryHandler<GetFileByIdQuery, Result<FileResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
-            await handler.HandleAsync(new UpdateFileCommand(fileId, ToUploadRequest(file)), ct),
-            () => getById.HandleAsync(new GetFileByIdQuery(fileId), ct)
+            await handler.HandleAsync(
+                new UpdateFileCommand(StoredFileId.From(fileId), ToUploadRequest(file)),
+                ct
+            ),
+            () => getById.HandleAsync(new GetFileByIdQuery(StoredFileId.From(fileId)), ct)
         );
     }
 
@@ -143,11 +152,13 @@ public class FilesController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(
         Guid fileId,
-        [FromServices] DeleteFileCommandHandler handler,
+        [FromServices] ICommandHandler<DeleteFileCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new DeleteFileCommand(fileId), ct));
+        return ToNoContent(
+            await handler.HandleAsync(new DeleteFileCommand(StoredFileId.From(fileId)), ct)
+        );
     }
 
     private static FileUpload? ToUploadRequest(IFormFile? file)

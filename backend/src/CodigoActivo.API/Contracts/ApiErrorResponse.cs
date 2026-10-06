@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Common;
+using CodigoActivo.API.Errors;
 
 namespace CodigoActivo.API.Contracts;
 

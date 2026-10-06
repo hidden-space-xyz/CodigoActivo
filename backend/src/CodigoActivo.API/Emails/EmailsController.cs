@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
@@ -9,10 +10,13 @@ using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Emails.Queries;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Users.Contracts;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using EventId = CodigoActivo.Domain.Events.EventId;
 
-namespace CodigoActivo.API.Controllers;
+namespace CodigoActivo.API.Emails;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing emails.
@@ -38,22 +42,18 @@ public class EmailsController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.SingleRecipientEmail)]
     public async Task<ActionResult<SendEmailResultResponse>> SendToUserAsync(
         Guid userId,
-        [FromForm]
-        [Required]
-        [MaxLength(SendEmailRequest.SubjectMaxLength)]
-        [NotBlank]
-            string subject,
-        [FromForm] [Required] [MaxLength(SendEmailRequest.BodyMaxLength)] [NotBlank] string body,
+        [FromForm] [Required] [MaxLength(ManualEmailText.SubjectMaxLength)] string subject,
+        [FromForm] [Required] [MaxLength(ManualEmailText.BodyMaxLength)] string body,
         [FromForm] IEnumerable<IFormFile>? attachments,
-        [FromServices] SendEmailToUserCommandHandler handler,
+        [FromServices] ICommandHandler<SendEmailToUserCommand, Result<EmailDispatch>> handler,
         CancellationToken ct
     )
     {
         return ToOk(
             await handler.HandleAsync(
                 new SendEmailToUserCommand(
-                    userId,
-                    new SendEmailRequest(subject, body),
+                    UserId.From(userId),
+                    new ManualEmailText(subject, body),
                     ToAttachments(attachments)
                 ),
                 ct
@@ -79,14 +79,10 @@ public class EmailsController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.BulkEmail)]
     public async Task<ActionResult<SendEmailResultResponse>> SendToUsersAsync(
         [FromQuery] UserListQuery query,
-        [FromForm]
-        [Required]
-        [MaxLength(SendEmailRequest.SubjectMaxLength)]
-        [NotBlank]
-            string subject,
-        [FromForm] [Required] [MaxLength(SendEmailRequest.BodyMaxLength)] [NotBlank] string body,
+        [FromForm] [Required] [MaxLength(ManualEmailText.SubjectMaxLength)] string subject,
+        [FromForm] [Required] [MaxLength(ManualEmailText.BodyMaxLength)] string body,
         [FromForm] IEnumerable<IFormFile>? attachments,
-        [FromServices] SendEmailToUsersCommandHandler handler,
+        [FromServices] ICommandHandler<SendEmailToUsersCommand, Result<EmailDispatch>> handler,
         CancellationToken ct
     )
     {
@@ -94,7 +90,7 @@ public class EmailsController : ApiControllerBase
             await handler.HandleAsync(
                 new SendEmailToUsersCommand(
                     query,
-                    new SendEmailRequest(subject, body),
+                    new ManualEmailText(subject, body),
                     ToAttachments(attachments)
                 ),
                 ct
@@ -122,23 +118,20 @@ public class EmailsController : ApiControllerBase
     public async Task<ActionResult<SendEmailResultResponse>> SendToEventAttendeesAsync(
         Guid eventId,
         [FromQuery] EventAttendeeListQuery query,
-        [FromForm]
-        [Required]
-        [MaxLength(SendEmailRequest.SubjectMaxLength)]
-        [NotBlank]
-            string subject,
-        [FromForm] [Required] [MaxLength(SendEmailRequest.BodyMaxLength)] [NotBlank] string body,
+        [FromForm] [Required] [MaxLength(ManualEmailText.SubjectMaxLength)] string subject,
+        [FromForm] [Required] [MaxLength(ManualEmailText.BodyMaxLength)] string body,
         [FromForm] IEnumerable<IFormFile>? attachments,
-        [FromServices] SendEmailToEventAttendeesCommandHandler handler,
+        [FromServices]
+            ICommandHandler<SendEmailToEventAttendeesCommand, Result<EmailDispatch>> handler,
         CancellationToken ct
     )
     {
         return ToOk(
             await handler.HandleAsync(
                 new SendEmailToEventAttendeesCommand(
-                    eventId,
+                    EventId.From(eventId),
                     query,
-                    new SendEmailRequest(subject, body),
+                    new ManualEmailText(subject, body),
                     ToAttachments(attachments)
                 ),
                 ct
@@ -158,7 +151,8 @@ public class EmailsController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<ActionResult<EmailAudienceResponse>> GetUsersAudienceAsync(
         [FromQuery] UserListQuery query,
-        [FromServices] GetUsersEmailAudienceQueryHandler handler,
+        [FromServices]
+            IQueryHandler<GetUsersEmailAudienceQuery, Result<EmailAudienceResponse>> handler,
         CancellationToken ct
     )
     {
@@ -179,7 +173,11 @@ public class EmailsController : ApiControllerBase
     public async Task<ActionResult<EmailAudienceResponse>> GetEventAttendeesAudienceAsync(
         Guid eventId,
         [FromQuery] EventAttendeeListQuery query,
-        [FromServices] GetEventAttendeesEmailAudienceQueryHandler handler,
+        [FromServices]
+            IQueryHandler<
+            GetEventAttendeesEmailAudienceQuery,
+            Result<EmailAudienceResponse>
+        > handler,
         CancellationToken ct
     )
     {

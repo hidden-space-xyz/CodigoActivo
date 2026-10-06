@@ -1,5 +1,4 @@
 using CodigoActivo.API.Security;
-using CodigoActivo.Composition;
 
 namespace CodigoActivo.API.Configuration;
 
@@ -10,7 +9,6 @@ internal static class ApiHostConfiguration
         logging.Configure(builder.Logging);
         ConfigureAllowedHosts(builder);
         ValidateProductionConfiguration(builder.Environment, builder.Configuration);
-        ConfigureDataProtection(builder);
         ConfigureKestrel(builder);
     }
 
@@ -38,15 +36,6 @@ internal static class ApiHostConfiguration
         {
             ProductionConfigurationValidator.Validate(configuration);
         }
-    }
-
-    private static void ConfigureDataProtection(WebApplicationBuilder builder)
-    {
-        var production = builder.Environment.IsProduction();
-        builder.Services.AddCodigoActivoDataProtection(
-            protectKeysAtRest: production,
-            production ? builder.Configuration["DATA_PROTECTION_CERTIFICATE_PASSWORD"] : null
-        );
     }
 
     private static void ConfigureKestrel(WebApplicationBuilder builder)

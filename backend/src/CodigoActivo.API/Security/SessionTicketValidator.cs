@@ -1,9 +1,12 @@
 using System.Security.Claims;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -19,9 +22,9 @@ namespace CodigoActivo.API.Security;
 /// <param name="endSession">Handler that revokes a stored session.</param>
 /// <param name="sessionIdentity">Handler that resolves the account behind a live session.</param>
 public sealed class SessionTicketValidator(
-    StartSessionCommandHandler startSession,
-    EndSessionCommandHandler endSession,
-    GetSessionIdentityQueryHandler sessionIdentity
+    ICommandHandler<StartSessionCommand, Result<SessionTicket>> startSession,
+    ICommandHandler<EndSessionCommand, Result> endSession,
+    IQueryHandler<GetSessionIdentityQuery, SessionIdentity?> sessionIdentity
 )
 {
     private const string PasswordFingerprintClaim = "codigoactivo:credential";
@@ -38,7 +41,10 @@ public sealed class SessionTicketValidator(
         CancellationToken ct = default
     )
     {
-        var started = await startSession.HandleAsync(new StartSessionCommand(userId), ct);
+        var started = await startSession.HandleAsync(
+            new StartSessionCommand(UserId.From(userId)),
+            ct
+        );
         return started.IsFailure
             ? null
             : BuildPrincipal(started.Value.Identity, started.Value.SessionId);
@@ -59,7 +65,7 @@ public sealed class SessionTicketValidator(
             return;
         }
 
-        await endSession.HandleAsync(new EndSessionCommand(user, session), ct);
+        await endSession.HandleAsync(new EndSessionCommand(UserId.From(user), session), ct);
     }
 
     /// <summary>

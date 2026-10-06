@@ -1,17 +1,22 @@
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Security;
+using CodigoActivo.API.Users.Contracts;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Application.Users.Queries;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace CodigoActivo.API.Controllers;
+namespace CodigoActivo.API.Users;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing users.
@@ -31,11 +36,11 @@ public class UsersController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResult<UserResponse>>> ListAsync(
         [FromQuery] UserListQuery query,
-        [FromServices] ListUsersQueryHandler handler,
+        [FromServices] IQueryHandler<ListUsersQuery, PagedResult<UserResponse>> handler,
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new ListUsersQuery(query, UserId, IsAdmin), ct));
+        return Ok(await handler.HandleAsync(new ListUsersQuery(query, CurrentUserId, IsAdmin), ct));
     }
 
     /// <summary>
@@ -47,7 +52,7 @@ public class UsersController : ApiControllerBase
     [HttpGet("types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> TypesAsync(
-        [FromServices] ListUserTypesQueryHandler handler,
+        [FromServices] IQueryHandler<ListUserTypesQuery, IReadOnlyList<UserTypeResponse>> handler,
         CancellationToken ct
     )
     {
@@ -63,7 +68,8 @@ public class UsersController : ApiControllerBase
     [HttpGet("status-types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<UserStatusTypeResponse>>> StatusTypesAsync(
-        [FromServices] ListUserStatusTypesQueryHandler handler,
+        [FromServices]
+            IQueryHandler<ListUserStatusTypesQuery, IReadOnlyList<UserStatusTypeResponse>> handler,
         CancellationToken ct
     )
     {
@@ -81,11 +87,11 @@ public class UsersController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<ActionResult<UserResponse>> GetAsync(
         Guid userId,
-        [FromServices] GetUserByIdQueryHandler handler,
+        [FromServices] IQueryHandler<GetUserByIdQuery, Result<UserResponse>> handler,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetUserByIdQuery(userId), ct));
+        return ToOk(await handler.HandleAsync(new GetUserByIdQuery(UserId.From(userId)), ct));
     }
 
     /// <summary>
@@ -104,14 +110,14 @@ public class UsersController : ApiControllerBase
     public async Task<ActionResult<UserResponse>> UpdateAsync(
         Guid userId,
         [FromBody] UpdateUserRequest request,
-        [FromServices] UpdateUserCommandHandler handler,
-        [FromServices] GetUserByIdQueryHandler getById,
+        [FromServices] ICommandHandler<UpdateUserCommand, Result> handler,
+        [FromServices] IQueryHandler<GetUserByIdQuery, Result<UserResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
-            await handler.HandleAsync(new UpdateUserCommand(userId, UserId, request), ct),
-            () => getById.HandleAsync(new GetUserByIdQuery(userId), ct)
+            await handler.HandleAsync(request.ToCommand(UserId.From(userId)), ct),
+            () => getById.HandleAsync(new GetUserByIdQuery(UserId.From(userId)), ct)
         );
     }
 
@@ -128,11 +134,13 @@ public class UsersController : ApiControllerBase
     [AllowOnlySelf]
     public async Task<IActionResult> DeleteAsync(
         Guid userId,
-        [FromServices] DeleteUserCommandHandler handler,
+        [FromServices] ICommandHandler<DeleteUserCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new DeleteUserCommand(userId, UserId), ct));
+        return ToNoContent(
+            await handler.HandleAsync(new DeleteUserCommand(UserId.From(userId)), ct)
+        );
     }
 
     /// <summary>
@@ -150,13 +158,11 @@ public class UsersController : ApiControllerBase
     public async Task<IActionResult> SetAdminAsync(
         Guid userId,
         [FromBody] SetAdminRequest request,
-        [FromServices] SetAdminCommandHandler handler,
+        [FromServices] ICommandHandler<SetAdminCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(
-            await handler.HandleAsync(new SetAdminCommand(userId, UserId, request), ct)
-        );
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(UserId.From(userId)), ct));
     }
 
     /// <summary>
@@ -174,13 +180,11 @@ public class UsersController : ApiControllerBase
     public async Task<IActionResult> ResetTwoFactorAsync(
         Guid userId,
         [FromBody] ResetTwoFactorRequest request,
-        [FromServices] ResetTwoFactorCommandHandler handler,
+        [FromServices] ICommandHandler<ResetTwoFactorCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(
-            await handler.HandleAsync(new ResetTwoFactorCommand(userId, UserId, request), ct)
-        );
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(UserId.From(userId)), ct));
     }
 
     /// <summary>
@@ -198,13 +202,16 @@ public class UsersController : ApiControllerBase
     public async Task<ActionResult<UserResponse>> AddChildAsync(
         Guid userId,
         [FromBody] RegisterMinorRequest request,
-        [FromServices] AddChildCommandHandler handler,
-        [FromServices] GetUserByIdQueryHandler getById,
+        [FromServices] ICommandHandler<AddChildCommand, Result<UserId>> handler,
+        [FromServices] IQueryHandler<GetUserByIdQuery, Result<UserResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToCreatedAfterAsync(
-            await handler.HandleAsync(new AddChildCommand(userId, request), ct),
+            await handler.HandleAsync(
+                new AddChildCommand(UserId.From(userId), request.ToDraft()),
+                ct
+            ),
             id => getById.HandleAsync(new GetUserByIdQuery(id), ct),
             id => $"/api/users/{id}"
         );
@@ -224,13 +231,11 @@ public class UsersController : ApiControllerBase
     public async Task<IActionResult> ChangePasswordAsync(
         Guid userId,
         [FromBody] ChangePasswordRequest request,
-        [FromServices] ChangePasswordCommandHandler handler,
+        [FromServices] ICommandHandler<ChangePasswordCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(
-            await handler.HandleAsync(new ChangePasswordCommand(userId, request), ct)
-        );
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(UserId.From(userId)), ct));
     }
 
     /// <summary>
@@ -247,14 +252,17 @@ public class UsersController : ApiControllerBase
     public async Task<ActionResult<UserResponse>> ChangeTypeAsync(
         Guid userId,
         [FromQuery] Guid userTypeId,
-        [FromServices] ChangeUserTypeCommandHandler handler,
-        [FromServices] GetUserByIdQueryHandler getById,
+        [FromServices] ICommandHandler<ChangeUserTypeCommand, Result> handler,
+        [FromServices] IQueryHandler<GetUserByIdQuery, Result<UserResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
-            await handler.HandleAsync(new ChangeUserTypeCommand(userId, userTypeId), ct),
-            () => getById.HandleAsync(new GetUserByIdQuery(userId), ct)
+            await handler.HandleAsync(
+                new ChangeUserTypeCommand(UserId.From(userId), userTypeId),
+                ct
+            ),
+            () => getById.HandleAsync(new GetUserByIdQuery(UserId.From(userId)), ct)
         );
     }
 }
