@@ -25,6 +25,17 @@ public sealed record ActivitySchedule
     public DateTimeOffset EndsAt { get; }
 
     /// <summary>
+    /// Restores a schedule that was checked before it was stored.
+    /// </summary>
+    /// <param name="startsAt">Stored start.</param>
+    /// <param name="endsAt">Stored end.</param>
+    /// <returns>The schedule.</returns>
+    public static ActivitySchedule FromStored(DateTimeOffset startsAt, DateTimeOffset endsAt)
+    {
+        return new ActivitySchedule(startsAt, endsAt);
+    }
+
+    /// <summary>
     /// Builds a schedule from the times supplied.
     /// </summary>
     /// <param name="startsAt">When the activity starts.</param>
@@ -45,18 +56,18 @@ public sealed record ActivitySchedule
 
         if (startsAt is not { } start || endsAt is not { } end)
         {
-            return Error.Validation(ErrorCode.ActivityScheduleRequired);
+            return Error.Validation(DomainErrorCode.ActivityScheduleRequired);
         }
 
         if (end <= start)
         {
-            return Error.Validation(ErrorCode.ActivityScheduleInvalidRange);
+            return Error.Validation(DomainErrorCode.ActivityScheduleInvalidRange);
         }
 
         var startDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(start, zone).DateTime);
         var endDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(end, zone).DateTime);
         return startDate < eventStartsAt || endDate > eventEndsAt
-            ? Error.Validation(ErrorCode.ActivityScheduleOutsideEventRange)
+            ? Error.Validation(DomainErrorCode.ActivityScheduleOutsideEventRange)
             : new ActivitySchedule(start.ToUniversalTime(), end.ToUniversalTime());
     }
 }

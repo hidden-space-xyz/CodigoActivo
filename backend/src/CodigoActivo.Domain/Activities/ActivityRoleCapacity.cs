@@ -7,22 +7,22 @@ public class ActivityRoleCapacity
 {
     private ActivityRoleCapacity() { }
 
-    internal ActivityRoleCapacity(Guid activityId, Guid activityRoleTypeId, int desiredCount)
+    internal ActivityRoleCapacity(ActivityId activityId, ActivityRole role, int desiredCount)
     {
         ActivityId = activityId;
-        ActivityRoleTypeId = activityRoleTypeId;
+        Role = role;
         DesiredCount = desiredCount;
     }
 
     /// <summary>
     /// Gets the identifier of the activity.
     /// </summary>
-    public Guid ActivityId { get; private set; }
+    public ActivityId ActivityId { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the role.
+    /// Gets the role.
     /// </summary>
-    public Guid ActivityRoleTypeId { get; private set; }
+    public ActivityRole Role { get; private set; }
 
     /// <summary>
     /// Gets the desired number of people.

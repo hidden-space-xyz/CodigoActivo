@@ -1,4 +1,7 @@
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Activities;
 
@@ -13,7 +16,7 @@ public interface IActivityRepository : IRepository<Activity>
     /// <param name="id">Identifier of the activity.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the activity, or <see langword="null"/> when it does not exist.</returns>
-    public Task<Activity?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    public Task<Activity?> GetByIdAsync(ActivityId id, CancellationToken ct = default);
 
     /// <summary>
     /// Tells whether an event has activities outside a time window.
@@ -24,7 +27,7 @@ public interface IActivityRepository : IRepository<Activity>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="true"/> when some activity falls outside.</returns>
     public Task<bool> AnyOutsideRangeAsync(
-        Guid eventId,
+        EventId eventId,
         DateTimeOffset lowerInclusive,
         DateTimeOffset upperExclusive,
         CancellationToken ct = default
@@ -36,8 +39,8 @@ public interface IActivityRepository : IRepository<Activity>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the identifiers of the thumbnail files.</returns>
-    public Task<IReadOnlyList<Guid>> ListThumbnailIdsAsync(
-        Guid eventId,
+    public Task<IReadOnlyList<StoredFileId>> ListThumbnailIdsAsync(
+        EventId eventId,
         CancellationToken ct = default
     );
 
@@ -50,8 +53,8 @@ public interface IActivityRepository : IRepository<Activity>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="true"/> when the household attended.</returns>
     public Task<bool> HasConfirmedAttendanceAsync(
-        Guid eventId,
-        Guid userId,
+        EventId eventId,
+        UserId userId,
         CancellationToken ct = default
     );
 }
