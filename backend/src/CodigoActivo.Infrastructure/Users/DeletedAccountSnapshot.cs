@@ -53,48 +53,77 @@ internal static class DeletedAccountSnapshot
             where u.Id == userId || u.ParentId == userId
             select new
             {
-                Person = u,
+                u.Id,
+                u.FirstName,
+                u.LastName,
+                u.Email,
+                u.Phone,
+                u.SecondaryPhone,
+                u.NationalId,
+                u.BirthDate,
+                u.Gender,
+                u.PromotionalConsent,
+                u.UserType,
                 TypeName = type.Name,
+                u.Status,
                 StatusName = status.Name,
+                u.IsAdmin,
+                u.TwoFactorMethod,
+                u.ParentId,
+                u.CreatedAt,
+                u.UpdatedAt,
+                u.LastLoginAt,
             }
         ).ToListAsync(ct);
         var household = people.ConvertAll(row => new LegalCopyPerson(
-            row.Person.Id.Value,
-            row.Person.FirstName,
-            row.Person.LastName,
-            row.Person.Email?.Value,
-            row.Person.Phone?.Value,
-            row.Person.SecondaryPhone?.Value,
-            row.Person.NationalId?.Value,
-            row.Person.BirthDate,
-            row.Person.Gender,
-            row.Person.PromotionalConsent,
-            CatalogIds.UserTypes.IdOf(row.Person.UserType),
+            row.Id.Value,
+            row.FirstName,
+            row.LastName,
+            row.Email?.Value,
+            row.Phone?.Value,
+            row.SecondaryPhone?.Value,
+            row.NationalId?.Value,
+            row.BirthDate,
+            row.Gender,
+            row.PromotionalConsent,
+            CatalogIds.UserTypes.IdOf(row.UserType),
             row.TypeName,
-            CatalogIds.UserStatuses.IdOf(row.Person.Status),
+            CatalogIds.UserStatuses.IdOf(row.Status),
             row.StatusName,
-            row.Person.IsAdmin,
-            row.Person.TwoFactorMethod,
-            row.Person.ParentId?.Value,
-            row.Person.CreatedAt,
-            row.Person.UpdatedAt,
-            row.Person.LastLoginAt
+            row.IsAdmin,
+            row.TwoFactorMethod,
+            row.ParentId?.Value,
+            row.CreatedAt,
+            row.UpdatedAt,
+            row.LastLoginAt
         ));
-        var householdIds = people.ConvertAll(row => row.Person.Id);
-        var guardianId = people.Single(row => row.Person.Id == userId).Person.ParentId;
+        var householdIds = people.ConvertAll(row => row.Id);
+        var guardianId = people.Single(row => row.Id == userId).ParentId;
 
-        var guardianAccount = guardianId is null
+        var guardianRow = guardianId is null
             ? null
-            : await context.Users.AsNoTracking().SingleAsync(u => u.Id == guardianId, ct);
-        var guardian = guardianAccount is null
+            : await context
+                .Users.AsNoTracking()
+                .Where(u => u.Id == guardianId)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.FirstName,
+                    u.LastName,
+                    u.NationalId,
+                    u.Email,
+                    u.Phone,
+                })
+                .SingleAsync(ct);
+        var guardian = guardianRow is null
             ? null
             : new LegalCopyGuardian(
-                guardianAccount.Id.Value,
-                guardianAccount.FirstName,
-                guardianAccount.LastName,
-                guardianAccount.NationalId?.Value,
-                guardianAccount.Email?.Value,
-                guardianAccount.Phone?.Value
+                guardianRow.Id.Value,
+                guardianRow.FirstName,
+                guardianRow.LastName,
+                guardianRow.NationalId?.Value,
+                guardianRow.Email?.Value,
+                guardianRow.Phone?.Value
             );
 
         var signupRows = await (
