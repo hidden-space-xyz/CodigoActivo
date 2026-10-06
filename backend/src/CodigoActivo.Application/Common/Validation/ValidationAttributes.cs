@@ -1,7 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Domain.Users;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace CodigoActivo.Application.Common.Validation;
 
@@ -60,7 +58,8 @@ public sealed class HttpUrlAttribute : ValidationAttribute
 }
 
 /// <summary>
-/// Applies not default or future date validation or authorization to the annotated target.
+/// Accepts a date that is set and is not after the current day, which <see cref="MessageValidator"/>
+/// supplies in <see cref="ValidationContext.Items"/> under <see cref="MessageValidator.TodayKey"/>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
@@ -73,7 +72,17 @@ public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
             return ValidationResult.Success;
         }
 
-        var today = validationContext.GetRequiredService<IClock>().Today;
+        ArgumentNullException.ThrowIfNull(validationContext);
+        if (
+            !validationContext.Items.TryGetValue(MessageValidator.TodayKey, out var current)
+            || current is not DateOnly today
+        )
+        {
+            throw new InvalidOperationException(
+                "The current day is only known when MessageValidator checks the message."
+            );
+        }
+
         string[]? memberNames = validationContext.MemberName is { } memberName
             ? [memberName]
             : null;
