@@ -17,11 +17,11 @@ public static class AccountErasers
     )
     {
         erasureStore
-            .LockHouseholdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .LockHouseholdAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>())
             .Returns(true);
         erasureStore
             .CaptureLegalCopyAsync(
-                Arg.Any<Guid>(),
+                Arg.Any<UserId>(),
                 Arg.Any<AccountErasure>(),
                 Arg.Any<CancellationToken>()
             )

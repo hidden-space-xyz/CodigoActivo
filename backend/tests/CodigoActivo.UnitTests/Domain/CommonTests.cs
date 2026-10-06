@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using Xunit;
 
@@ -19,7 +20,7 @@ public sealed class CommonTests
     [Fact]
     public void ValueFailedResultOfTThrowsInvalidOperation()
     {
-        Result<int> result = Error.Forbidden(ErrorCode.AccessDenied);
+        Result<int> result = Error.Forbidden(ApplicationErrorCode.UserNotFound);
 
         var act = () => result.Value;
 
@@ -37,7 +38,7 @@ public sealed class CommonTests
         result.Value.Should().BeNull();
     }
 
-    public static TheoryData<Func<ErrorCode, Error>, ErrorKind> ErrorFactories =>
+    public static TheoryData<Func<Enum, Error>, ErrorKind> ErrorFactories =>
         new()
         {
             { Error.Validation, ErrorKind.Validation },
@@ -50,13 +51,13 @@ public sealed class CommonTests
     [Theory]
     [MemberData(nameof(ErrorFactories))]
     public void ErrorFactoryGivenCodeSetsMatchingKindAndCarriesCode(
-        Func<ErrorCode, Error> factory,
+        Func<Enum, Error> factory,
         ErrorKind expectedKind
     )
     {
-        var error = factory(ErrorCode.UserEmailAlreadyInUse);
+        var error = factory(ApplicationErrorCode.UserEmailAlreadyInUse);
 
         error.Kind.Should().Be(expectedKind);
-        error.Code.Should().Be(ErrorCode.UserEmailAlreadyInUse);
+        error.Code.Should().Be(ApplicationErrorCode.UserEmailAlreadyInUse);
     }
 }

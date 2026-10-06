@@ -5,7 +5,7 @@ namespace CodigoActivo.UnitTests.TestSupport;
 
 public static class ResultAssertions
 {
-    public static void ShouldFail(this Result result, ErrorKind kind, ErrorCode code)
+    public static void ShouldFail(this Result result, ErrorKind kind, Enum code)
     {
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(kind);

@@ -129,6 +129,9 @@ public sealed class LayerReferenceTests
             .SelectMany(action =>
                 action
                     .GetParameters()
+                    .Where(parameter =>
+                        parameter.GetCustomAttribute<FromServicesAttribute>() is null
+                    )
                     .Select(parameter => parameter.ParameterType)
                     .Append(action.ReturnType)
             );

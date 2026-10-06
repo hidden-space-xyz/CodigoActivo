@@ -63,8 +63,8 @@ public sealed class SpanishNationalIdTests
     {
         var dni = SpanishNationalId.FromDniNumber(number);
 
-        dni.Should().Be(expected);
-        SpanishNationalId.IsValid(dni).Should().BeTrue();
+        dni.Value.Should().Be(expected);
+        SpanishNationalId.IsValid(dni.Value).Should().BeTrue();
     }
 
     [Theory]

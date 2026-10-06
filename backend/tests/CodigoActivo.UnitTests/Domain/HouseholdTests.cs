@@ -23,6 +23,6 @@ public sealed class HouseholdTests
     {
         Household
             .EnsureMayAddDependent(dependents)
-            .ShouldFail(ErrorKind.Conflict, ErrorCode.UserChildLimitReached);
+            .ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserChildLimitReached);
     }
 }

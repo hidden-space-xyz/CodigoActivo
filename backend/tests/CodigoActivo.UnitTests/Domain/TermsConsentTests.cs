@@ -1,5 +1,10 @@
 using AwesomeAssertions;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
@@ -18,7 +23,12 @@ public sealed class TermsConsentTests
     {
         return Event
             .Create(
-                new EventContent("Feria", "Verano", "{}", Guid.NewGuid()),
+                new EventContent(
+                    "Feria",
+                    "Verano",
+                    RichText.From("{}"),
+                    StoredFileId.From(Guid.NewGuid())
+                ),
                 EventSchedule
                     .Create(
                         new DateOnly(2026, 8, 1),
@@ -28,16 +38,16 @@ public sealed class TermsConsentTests
                         new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)
                     )
                     .Value,
-                EventCategorySelection.Create([Guid.NewGuid()]).Value,
+                EventCategorySelection.Create([EventCategoryTypeId.From(Guid.NewGuid())]).Value,
                 EventTermsLinks
                     .Create([
                         .. documents.Select(document => new EventTermsLink(
-                            document.TermsDocumentId,
+                            TermsDocumentId.From(document.TermsDocumentId),
                             document.Required
                         )),
                     ])
                     .Value,
-                Guid.NewGuid(),
+                UserId.From(Guid.NewGuid()),
                 Earlier
             )
             .TermsDocuments;
@@ -45,7 +55,13 @@ public sealed class TermsConsentTests
 
     private EventTermsAcceptance Stored(Guid termsDocumentId, bool accepted)
     {
-        return EventTermsAcceptance.Record(eventId, userId, termsDocumentId, accepted, Earlier);
+        return EventTermsAcceptance.Record(
+            EventId.From(eventId),
+            UserId.From(userId),
+            TermsDocumentId.From(termsDocumentId),
+            accepted,
+            Earlier
+        );
     }
 
     private TermsConsentOutcome Apply(
@@ -54,7 +70,14 @@ public sealed class TermsConsentTests
         IReadOnlyList<TermsDecision>? decisions
     )
     {
-        return TermsConsent.Apply(eventId, userId, documents, acceptances, decisions, Now);
+        return TermsConsent.Apply(
+            EventId.From(eventId),
+            UserId.From(userId),
+            documents,
+            acceptances,
+            decisions,
+            Now
+        );
     }
 
     [Fact]
@@ -65,7 +88,7 @@ public sealed class TermsConsentTests
         var outcome = Apply(
             Documents((optional, false)),
             [],
-            [new TermsDecision(Guid.NewGuid(), true)]
+            [new TermsDecision(TermsDocumentId.From(Guid.NewGuid()), true)]
         );
 
         outcome.Recorded.Should().BeEmpty();
@@ -80,7 +103,7 @@ public sealed class TermsConsentTests
         var outcome = Apply(
             Documents((required, true)),
             [],
-            [new TermsDecision(Guid.NewGuid(), true)]
+            [new TermsDecision(TermsDocumentId.From(Guid.NewGuid()), true)]
         );
 
         outcome.Recorded.Should().BeEmpty();
@@ -92,7 +115,11 @@ public sealed class TermsConsentTests
     {
         var required = Guid.NewGuid();
 
-        var outcome = Apply(Documents((required, true)), [], [new TermsDecision(required, false)]);
+        var outcome = Apply(
+            Documents((required, true)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(required), false)]
+        );
 
         outcome.Recorded.Should().BeEmpty();
         outcome.MissingRequired.Should().BeTrue();
@@ -103,12 +130,16 @@ public sealed class TermsConsentTests
     {
         var optional = Guid.NewGuid();
 
-        var outcome = Apply(Documents((optional, false)), [], [new TermsDecision(optional, false)]);
+        var outcome = Apply(
+            Documents((optional, false)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(optional), false)]
+        );
 
         var recorded = outcome.Recorded.Should().ContainSingle().Which;
-        recorded.EventId.Should().Be(eventId);
-        recorded.UserId.Should().Be(userId);
-        recorded.TermsDocumentId.Should().Be(optional);
+        recorded.EventId.Value.Should().Be(eventId);
+        recorded.UserId.Value.Should().Be(userId);
+        recorded.TermsDocumentId.Value.Should().Be(optional);
         recorded.Accepted.Should().BeFalse();
         recorded.DecidedAt.Should().Be(Now);
         outcome.MissingRequired.Should().BeFalse();
@@ -123,7 +154,7 @@ public sealed class TermsConsentTests
         var outcome = Apply(
             Documents((required, true)),
             [stored],
-            [new TermsDecision(required, true)]
+            [new TermsDecision(TermsDocumentId.From(required), true)]
         );
 
         outcome.Recorded.Should().BeEmpty();
@@ -141,7 +172,7 @@ public sealed class TermsConsentTests
         var outcome = Apply(
             Documents((required, true)),
             [stored],
-            [new TermsDecision(required, false)]
+            [new TermsDecision(TermsDocumentId.From(required), false)]
         );
 
         outcome.Recorded.Should().BeEmpty();
@@ -188,13 +219,16 @@ public sealed class TermsConsentTests
         var outcome = Apply(
             Documents((first, true), (second, true)),
             [],
-            [new TermsDecision(first, true), new TermsDecision(second, true)]
+            [
+                new TermsDecision(TermsDocumentId.From(first), true),
+                new TermsDecision(TermsDocumentId.From(second), true),
+            ]
         );
 
         outcome
             .Recorded.Select(acceptance => (acceptance.TermsDocumentId, acceptance.Accepted))
             .Should()
-            .Equal((first, true), (second, true));
+            .Equal((TermsDocumentId.From(first), true), (TermsDocumentId.From(second), true));
         outcome.Recorded.Should().OnlyContain(acceptance => acceptance.DecidedAt == Now);
         outcome.MissingRequired.Should().BeFalse();
     }
@@ -207,11 +241,14 @@ public sealed class TermsConsentTests
         var outcome = Apply(
             Documents((optional, false)),
             [],
-            [new TermsDecision(optional, false), new TermsDecision(optional, true)]
+            [
+                new TermsDecision(TermsDocumentId.From(optional), false),
+                new TermsDecision(TermsDocumentId.From(optional), true),
+            ]
         );
 
         var recorded = outcome.Recorded.Should().ContainSingle().Which;
-        recorded.TermsDocumentId.Should().Be(optional);
+        recorded.TermsDocumentId.Value.Should().Be(optional);
         recorded.Accepted.Should().BeTrue();
         outcome.MissingRequired.Should().BeFalse();
     }

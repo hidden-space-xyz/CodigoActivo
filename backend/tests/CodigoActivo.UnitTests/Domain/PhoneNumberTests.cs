@@ -15,7 +15,7 @@ public sealed class PhoneNumberTests
     [InlineData("+123456789012345")]
     public void IsValidWellFormedPhonesReturnsTrue(string phone)
     {
-        PhoneNumber.IsValid(phone).Should().BeTrue();
+        PhoneNumber.Create(phone).IsSuccess.Should().BeTrue();
     }
 
     [Theory]
@@ -29,6 +29,6 @@ public sealed class PhoneNumberTests
     [InlineData("+1234567890123456")]
     public void IsValidMalformedPhonesReturnsFalse(string phone)
     {
-        PhoneNumber.IsValid(phone).Should().BeFalse();
+        PhoneNumber.Create(phone).IsSuccess.Should().BeFalse();
     }
 }

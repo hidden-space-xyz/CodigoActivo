@@ -1,5 +1,8 @@
 using AwesomeAssertions;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.Users;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
@@ -15,17 +18,22 @@ public sealed class NewsItemTests
         var thumbnailId = Guid.NewGuid();
 
         var newsItem = NewsItem.Create(
-            new NewsItemContent("  Title ", " Sub  ", "{\"a\":1}", thumbnailId),
-            authorId,
+            new NewsItemContent(
+                "  Title ",
+                " Sub  ",
+                RichText.From("{\"a\":1}"),
+                StoredFileId.From(thumbnailId)
+            ),
+            UserId.From(authorId),
             Now
         );
 
         newsItem.Title.Should().Be("Title");
         newsItem.Subtitle.Should().Be("Sub");
-        newsItem.Description.Should().Be("{\"a\":1}");
-        newsItem.ThumbnailId.Should().Be(thumbnailId);
+        newsItem.Description!.Json.Should().Be("{\"a\":1}");
+        newsItem.ThumbnailId.Value.Should().Be(thumbnailId);
         newsItem.Featured.Should().BeFalse();
-        newsItem.CreatedBy.Should().Be(authorId);
+        newsItem.CreatedBy.Value.Should().Be(authorId);
         newsItem.CreatedAt.Should().Be(Now);
         newsItem.UpdatedAt.Should().BeNull();
     }
@@ -34,24 +42,34 @@ public sealed class NewsItemTests
     public void UpdateNewContentReplacesItAndRecordsEditor()
     {
         var newsItem = NewsItem.Create(
-            new NewsItemContent("Old", "Old", "{}", Guid.NewGuid()),
-            Guid.NewGuid(),
+            new NewsItemContent(
+                "Old",
+                "Old",
+                RichText.From("{}"),
+                StoredFileId.From(Guid.NewGuid())
+            ),
+            UserId.From(Guid.NewGuid()),
             Now
         );
         var editorId = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
 
         newsItem.Update(
-            new NewsItemContent(" New ", " Sub ", "{\"b\":2}", thumbnailId),
-            editorId,
+            new NewsItemContent(
+                " New ",
+                " Sub ",
+                RichText.From("{\"b\":2}"),
+                StoredFileId.From(thumbnailId)
+            ),
+            UserId.From(editorId),
             Now.AddHours(1)
         );
 
         newsItem.Title.Should().Be("New");
         newsItem.Subtitle.Should().Be("Sub");
-        newsItem.Description.Should().Be("{\"b\":2}");
-        newsItem.ThumbnailId.Should().Be(thumbnailId);
-        newsItem.UpdatedBy.Should().Be(editorId);
+        newsItem.Description!.Json.Should().Be("{\"b\":2}");
+        newsItem.ThumbnailId.Value.Should().Be(thumbnailId);
+        newsItem.UpdatedBy.Should().Be(UserId.From(editorId));
         newsItem.UpdatedAt.Should().Be(Now.AddHours(1));
     }
 
@@ -59,8 +77,8 @@ public sealed class NewsItemTests
     public void FeatureThenUnfeatureTogglesTheFlagWithoutAnEdit()
     {
         var newsItem = NewsItem.Create(
-            new NewsItemContent("T", "S", "{}", Guid.NewGuid()),
-            Guid.NewGuid(),
+            new NewsItemContent("T", "S", RichText.From("{}"), StoredFileId.From(Guid.NewGuid())),
+            UserId.From(Guid.NewGuid()),
             Now
         );
 

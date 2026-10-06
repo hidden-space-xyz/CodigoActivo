@@ -16,6 +16,8 @@ public sealed partial class LoggingConventionTests
 {
     private static readonly string[] AllowedPlaceholders =
     [
+        "ElapsedMilliseconds",
+        "UseCase",
         "Attempts",
         "Capacity",
         "ConfiguredMode",
