@@ -1,7 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -10,11 +14,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to email the code that confirms deleting an account.
 /// </summary>
-/// <param name="UserId">Identifier of the signed-in user.</param>
-/// <param name="Request">Validated client request data.</param>
+/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
 public sealed record RequestAccountDeletionCodeCommand(
-    Guid UserId,
-    AccountDeletionCodeRequest Request
+    [property: Required, MaxLength(128), NotBlank] string CurrentPassword
 ) : ICommand<Result>;
 
 /// <summary>
@@ -26,14 +28,14 @@ public sealed record RequestAccountDeletionCodeCommand(
 /// never be deleted, is refused before its password is checked.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="options">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed one-time codes.</param>
 public sealed class RequestAccountDeletionCodeCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
+    ICurrentUser currentUser,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
     TwoFactorOptions options,
@@ -51,43 +53,37 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
         CancellationToken ct = default
     )
     {
-        var deletable = InitialAdministrator.EnsureMayBeDeleted(command.UserId);
+        var deletable = InitialAdministrator.EnsureMayBeDeleted(currentUser.RequiredId());
         if (deletable.IsFailure)
         {
             return deletable.Error!;
         }
 
-        var user = await users.GetByIdAsync(command.UserId, ct);
+        var user = await users.GetByIdAsync(currentUser.RequiredId(), ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (
-            !await passwordAttempts.VerifyReauthenticationAsync(
-                user,
-                command.Request.CurrentPassword,
-                ct
-            )
-        )
+        if (!await passwordAttempts.VerifyReauthenticationAsync(user, command.CurrentPassword, ct))
         {
-            return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
+            return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
 
         if (user.TwoFactorMethod != TwoFactorMethod.Email)
         {
-            return Error.Conflict(ErrorCode.TwoFactorResendNotAllowed);
+            return Error.Conflict(ApplicationErrorCode.TwoFactorResendNotAllowed);
         }
 
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            return Error.Forbidden(ErrorCode.TwoFactorLocked);
+            return Error.Forbidden(ApplicationErrorCode.TwoFactorLocked);
         }
 
         if (user.IsLoginCodeResendCoolingDown(now, options.ResendCooldown))
         {
-            return Error.Conflict(ErrorCode.TwoFactorResendCooldownActive);
+            return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
         }
 
         var issued = await loginCodes.IssueAccountDeletionAsync(user, now, ct);
@@ -96,7 +92,6 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
             return issued;
         }
 
-        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

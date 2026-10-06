@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
@@ -61,12 +62,12 @@ public sealed class EmailChangeLinkIssuer(
         }
         catch (EmailRateLimitedException)
         {
-            return Error.Conflict(ErrorCode.OtpResendCooldownActive);
+            return Error.Conflict(ApplicationErrorCode.OtpResendCooldownActive);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.EmailSendFailed(EmailKind.AccountVerification, ex);
-            return Error.Conflict(ErrorCode.EmailSendFailed);
+            return Error.Conflict(ApplicationErrorCode.EmailSendFailed);
         }
 
         user.ApplyProfileChangeConfirmingEmail(

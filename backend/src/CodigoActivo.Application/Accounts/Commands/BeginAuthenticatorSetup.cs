@@ -1,8 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -11,10 +14,10 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to start enrolling an authenticator application.
 /// </summary>
-/// <param name="UserId">Identifier of the signed-in user.</param>
-/// <param name="Request">Validated client request data.</param>
-public sealed record BeginAuthenticatorSetupCommand(Guid UserId, AuthenticatorSetupRequest Request)
-    : ICommand<Result<AuthenticatorSetup>>;
+/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
+public sealed record BeginAuthenticatorSetupCommand(
+    [property: Required, MaxLength(128), NotBlank] string CurrentPassword
+) : ICommand<Result<AuthenticatorSetup>>;
 
 /// <summary>
 /// Executes the command that creates a new shared secret. The user re-enters their password so a
@@ -23,7 +26,7 @@ public sealed record BeginAuthenticatorSetupCommand(Guid UserId, AuthenticatorSe
 /// already uses an authenticator is refused: it returns to email first, which takes a current code.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="totp">Generator of shared secrets.</param>
@@ -31,7 +34,7 @@ public sealed record BeginAuthenticatorSetupCommand(Guid UserId, AuthenticatorSe
 /// <param name="options">Second-factor configuration.</param>
 public sealed class BeginAuthenticatorSetupCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
+    ICurrentUser currentUser,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
     ITotpService totp,
@@ -50,21 +53,15 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
         CancellationToken ct = default
     )
     {
-        var user = await users.GetByIdAsync(command.UserId, ct);
+        var user = await users.GetByIdAsync(currentUser.RequiredId(), ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (
-            !await passwordAttempts.VerifyReauthenticationAsync(
-                user,
-                command.Request.CurrentPassword,
-                ct
-            )
-        )
+        if (!await passwordAttempts.VerifyReauthenticationAsync(user, command.CurrentPassword, ct))
         {
-            return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
+            return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
 
         var secret = totp.GenerateSecret();
@@ -78,9 +75,7 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
             return begun.Error!;
         }
 
-        await uow.SaveChangesAsync(ct);
-
-        var account = user.Email ?? user.Id.ToString();
+        var account = user.Email?.Value ?? user.Id.ToString();
         return new AuthenticatorSetup(
             AuthenticatorKeys.Format(secret),
             AuthenticatorKeys.BuildUri(options.Issuer, account, secret)

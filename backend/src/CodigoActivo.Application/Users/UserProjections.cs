@@ -1,8 +1,10 @@
 using System.Linq.Expressions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users;
 
@@ -11,6 +13,11 @@ namespace CodigoActivo.Application.Users;
 /// </summary>
 public static class UserProjections
 {
+    private static readonly IReadOnlyList<Guid> EarlySignupUserTypeIds =
+    [
+        .. EarlySignup.EntitledUserTypes.Select(CatalogIds.UserTypes.IdOf),
+    ];
+
     /// <summary>
     /// Stores the shared user value.
     /// </summary>
@@ -36,9 +43,9 @@ public static class UserProjections
             user.UserStatusType.Color
         ),
         IsAdmin = user.IsAdmin,
-        IsInitialAdmin = user.Id == SeedIds.Users.InitialAdministrator,
+        IsInitialAdmin = user.Id == InitialAdministrator.Id.Value,
         TwoFactorMethod = user.TwoFactorMethod,
-        EarlySignupEligible = EarlySignup.EntitledUserTypeIds.Contains(
+        EarlySignupEligible = EarlySignupUserTypeIds.Contains(
             user.Parent != null ? user.Parent.UserTypeId : user.UserTypeId
         ),
     };
@@ -72,14 +79,14 @@ public static class UserProjections
                 user.UserStatusType.Color
             ),
             IsAdmin = user.IsAdmin,
-            IsInitialAdmin = user.Id == SeedIds.Users.InitialAdministrator,
+            IsInitialAdmin = user.Id == InitialAdministrator.Id.Value,
             Type = new UserTypeSummaryResponse(
                 user.UserTypeId,
                 user.UserType.Name,
                 user.UserType.Color
             ),
             TwoFactorMethod = user.TwoFactorMethod,
-            EarlySignupEligible = EarlySignup.EntitledUserTypeIds.Contains(
+            EarlySignupEligible = EarlySignupUserTypeIds.Contains(
                 user.Parent != null ? user.Parent.UserTypeId : user.UserTypeId
             ),
         };

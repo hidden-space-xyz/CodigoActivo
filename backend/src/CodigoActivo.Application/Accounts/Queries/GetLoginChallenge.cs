@@ -1,8 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Queries;
 
@@ -37,7 +37,7 @@ public sealed class GetLoginChallengeQueryHandler(IReadStore readStore, IQueryEx
         );
         if (user is null)
         {
-            return Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired);
+            return Error.Unauthorized(ApplicationErrorCode.TwoFactorChallengeExpired);
         }
 
         return new LoginChallengeResponse(

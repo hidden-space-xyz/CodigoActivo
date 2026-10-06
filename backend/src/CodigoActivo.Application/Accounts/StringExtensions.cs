@@ -1,3 +1,5 @@
+using CodigoActivo.Domain.Users;
+
 namespace CodigoActivo.Application.Accounts;
 
 /// <summary>
@@ -25,5 +27,15 @@ public static class StringExtensions
         }
 
         return $"{email[0]}***{email[at..]}";
+    }
+
+    /// <summary>
+    /// Hides most of the local part of an account email, as <see cref="MaskEmail(string?)"/> does.
+    /// </summary>
+    /// <param name="email">Address to mask.</param>
+    /// <returns>The masked address, or <see langword="null"/> when there is no address.</returns>
+    public static string? MaskEmail(this EmailAddress? email)
+    {
+        return email?.Value.MaskEmail();
     }
 }

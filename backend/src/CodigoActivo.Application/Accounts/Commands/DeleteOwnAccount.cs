@@ -1,9 +1,11 @@
-using CodigoActivo.Application.Abstractions.Caching;
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -14,10 +16,12 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to delete the signed-in user's own account.
 /// </summary>
-/// <param name="UserId">Identifier of the signed-in user.</param>
-/// <param name="Request">Validated client request data.</param>
-public sealed record DeleteOwnAccountCommand(Guid UserId, DeleteAccountRequest Request)
-    : ICommand<Result>;
+/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
+/// <param name="Code">Code of the second factor.</param>
+public sealed record DeleteOwnAccountCommand(
+    [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
+    [property: Required, MaxLength(16), NotBlank] string Code
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command that erases the signed-in user, every minor under their guardianship and
@@ -28,6 +32,7 @@ public sealed record DeleteOwnAccountCommand(Guid UserId, DeleteAccountRequest R
 /// administrator cannot delete itself, so the application always keeps an administrator.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="accountEraser">Use case that erases the account after copying it.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
@@ -35,10 +40,10 @@ public sealed record DeleteOwnAccountCommand(Guid UserId, DeleteAccountRequest R
 /// <param name="otpValidator">Validator of emailed codes.</param>
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
 /// <param name="options">Second-factor configuration.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DeleteOwnAccountCommandHandler(
     IUserRepository users,
+    ICurrentUser currentUser,
     AccountEraser accountEraser,
     IUnitOfWork uow,
     IClock clock,
@@ -46,7 +51,6 @@ public sealed class DeleteOwnAccountCommandHandler(
     OtpValidator otpValidator,
     AuthenticatorCodeVerifier authenticatorCodes,
     TwoFactorOptions options,
-    ICacheInvalidator cacheInvalidator,
     ILogger<DeleteOwnAccountCommandHandler> logger
 ) : ICommandHandler<DeleteOwnAccountCommand, Result>
 {
@@ -61,31 +65,25 @@ public sealed class DeleteOwnAccountCommandHandler(
         CancellationToken ct = default
     )
     {
-        var deletable = InitialAdministrator.EnsureMayBeDeleted(command.UserId);
+        var deletable = InitialAdministrator.EnsureMayBeDeleted(currentUser.RequiredId());
         if (deletable.IsFailure)
         {
             return deletable.Error!;
         }
 
-        var user = await users.GetByIdAsync(command.UserId, ct);
+        var user = await users.GetByIdAsync(currentUser.RequiredId(), ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (
-            !await passwordAttempts.VerifyReauthenticationAsync(
-                user,
-                command.Request.CurrentPassword,
-                ct
-            )
-        )
+        if (!await passwordAttempts.VerifyReauthenticationAsync(user, command.CurrentPassword, ct))
         {
-            return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
+            return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
 
         var verified = await uow.ExecuteInTransactionAsync(
-            attempt => VerifyCodeLockedAsync(user, command.Request.Code, attempt),
+            attempt => VerifyCodeLockedAsync(user, command.Code, attempt),
             ct
         );
         if (verified.IsFailure)
@@ -96,10 +94,8 @@ public sealed class DeleteOwnAccountCommandHandler(
         var erasure = AccountErasure.For(user, user.Id, clock.UtcNow);
         if (!await accountEraser.EraseAsync(user, erasure, ct))
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
-
-        await cacheInvalidator.InvalidateAsync(CacheTags.Erasure);
         return Result.Success();
     }
 
@@ -107,13 +103,13 @@ public sealed class DeleteOwnAccountCommandHandler(
     {
         if (!await users.LockAsync(user, ct))
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            return Error.Forbidden(ErrorCode.TwoFactorLocked);
+            return Error.Forbidden(ApplicationErrorCode.TwoFactorLocked);
         }
 
         if (IsCodeAccepted(user, code, now))
@@ -132,7 +128,7 @@ public sealed class DeleteOwnAccountCommandHandler(
             logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
         }
 
-        return Error.Validation(ErrorCode.TwoFactorCodeInvalid);
+        return Error.Validation(ApplicationErrorCode.TwoFactorCodeInvalid);
     }
 
     private bool IsCodeAccepted(User user, string code, DateTimeOffset now)

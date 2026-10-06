@@ -1,8 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -11,29 +14,27 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to reset password.
 /// </summary>
-/// <param name="UserId">Identifier of the user.</param>
-/// <param name="Request">Validated client request data.</param>
-public sealed record ResetPasswordCommand(Guid UserId, ResetPasswordRequest Request)
-    : ICommand<Result>;
+/// <param name="UserId">Identifier of the account.</param>
+/// <param name="Otp">Code emailed to reset the password.</param>
+/// <param name="NewPassword">New password.</param>
+public sealed record ResetPasswordCommand(
+    UserId UserId,
+    [property: Required, MaxLength(128), NotBlank] string Otp,
+    [property: Required, MinLength(12), MaxLength(128), NotBlank] string NewPassword
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to reset password.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="hasher">The hasher value.</param>
 /// <param name="otpValidator">The otp validator value.</param>
-/// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
-/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class ResetPasswordCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
     IClock clock,
     IPasswordHasher hasher,
-    OtpValidator otpValidator,
-    IUserSessionRepository sessions,
-    AccountSecurityNotifier securityNotifier
+    OtpValidator otpValidator
 ) : ICommandHandler<ResetPasswordCommand, Result>
 {
     /// <summary>
@@ -47,30 +48,25 @@ public sealed class ResetPasswordCommandHandler(
         CancellationToken ct = default
     )
     {
-        var request = command.Request;
-
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
         if (
             user.IsBlocked
             || user.IsDependent
             || !otpValidator.IsCodeValid(
-                request.Otp,
+                command.Otp,
                 user.UsablePasswordResetCodeHash(clock.UtcNow)
             )
         )
         {
-            return Error.Validation(ErrorCode.PasswordResetInvalidOrExpired);
+            return Error.Validation(ApplicationErrorCode.PasswordResetInvalidOrExpired);
         }
 
-        user.ResetPassword(hasher.Hash(request.NewPassword), clock.UtcNow);
-        await uow.SaveChangesAsync(ct);
-        await sessions.EndAllAsync(user.Id, ct);
-        await securityNotifier.NotifyAsync(user, AccountSecurityChange.PasswordReset, ct);
+        user.ResetPassword(hasher.Hash(command.NewPassword), clock.UtcNow);
 
         return Result.Success();
     }

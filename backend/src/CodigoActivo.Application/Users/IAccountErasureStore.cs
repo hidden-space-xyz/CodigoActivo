@@ -15,7 +15,7 @@ public interface IAccountErasureStore
     /// <param name="accountId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="false"/> when the account no longer exists.</returns>
-    public Task<bool> LockHouseholdAsync(Guid accountId, CancellationToken ct = default);
+    public Task<bool> LockHouseholdAsync(UserId accountId, CancellationToken ct = default);
 
     /// <summary>
     /// Builds the legal copy of the account and its household as they stand now.
@@ -25,7 +25,7 @@ public interface IAccountErasureStore
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the JSON document of the copy.</returns>
     public Task<string> CaptureLegalCopyAsync(
-        Guid accountId,
+        UserId accountId,
         AccountErasure erasure,
         CancellationToken ct = default
     );
@@ -38,8 +38,8 @@ public interface IAccountErasureStore
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that completes once the content is credited to the heir.</returns>
     public Task HandOverAuthoredContentAsync(
-        Guid accountId,
-        Guid heirId,
+        UserId accountId,
+        UserId heirId,
         CancellationToken ct = default
     );
 }

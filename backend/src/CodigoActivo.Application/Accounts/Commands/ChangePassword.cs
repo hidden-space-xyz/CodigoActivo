@@ -1,8 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -11,29 +14,29 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to change password.
 /// </summary>
-/// <param name="UserId">Identifier of the user.</param>
-/// <param name="Request">Validated client request data.</param>
-public sealed record ChangePasswordCommand(Guid UserId, ChangePasswordRequest Request)
-    : ICommand<Result>;
+/// <param name="UserId">Identifier of the account.</param>
+/// <param name="CurrentPassword">Current password of the account.</param>
+/// <param name="NewPassword">New password.</param>
+public sealed record ChangePasswordCommand(
+    UserId UserId,
+    [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
+    [property: Required, MinLength(12), MaxLength(128), NotBlank] string NewPassword
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to change password.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
 /// <param name="hasher">The hasher value.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
-/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class ChangePasswordCommandHandler(
     IUserRepository users,
+    ActingUserPolicy actingUser,
     IPasswordHasher hasher,
     IClock clock,
-    IUnitOfWork uow,
-    IUserSessionRepository sessions,
-    PasswordAttemptGuard passwordAttempts,
-    AccountSecurityNotifier securityNotifier
+    PasswordAttemptGuard passwordAttempts
 ) : ICommandHandler<ChangePasswordCommand, Result>
 {
     /// <summary>
@@ -47,43 +50,36 @@ public sealed class ChangePasswordCommandHandler(
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var allowed = await actingUser.EnsureMayActForAsync(command.UserId, ct);
+        if (allowed.IsFailure)
+        {
+            return allowed;
+        }
+
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
         if (string.IsNullOrEmpty(user.PasswordHash))
         {
-            return Error.Validation(ErrorCode.UserPasswordNotSet);
+            return Error.Validation(ApplicationErrorCode.UserPasswordNotSet);
         }
 
-        if (
-            string.Equals(
-                command.Request.NewPassword,
-                command.Request.CurrentPassword,
-                StringComparison.Ordinal
-            )
-        )
+        if (string.Equals(command.NewPassword, command.CurrentPassword, StringComparison.Ordinal))
         {
-            return Error.Validation(ErrorCode.UserNewPasswordSameAsCurrent);
+            return Error.Validation(ApplicationErrorCode.UserNewPasswordSameAsCurrent);
         }
 
-        if (
-            !await passwordAttempts.VerifyReauthenticationAsync(
-                user,
-                command.Request.CurrentPassword,
-                ct
-            )
-        )
+        if (!await passwordAttempts.VerifyReauthenticationAsync(user, command.CurrentPassword, ct))
         {
-            return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
+            return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        user.ResetPassword(hasher.Hash(command.Request.NewPassword), clock.UtcNow);
-        await uow.SaveChangesAsync(ct);
-        await sessions.EndAllAsync(user.Id, ct);
-        await securityNotifier.NotifyAsync(user, AccountSecurityChange.PasswordChanged, ct);
+        user.ChangePassword(hasher.Hash(command.NewPassword), clock.UtcNow);
         return Result.Success();
     }
 }

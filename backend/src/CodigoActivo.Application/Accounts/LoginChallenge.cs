@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts;
 

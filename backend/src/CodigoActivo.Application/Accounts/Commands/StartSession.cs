@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -10,7 +11,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Carries the account a session is opened for, once its second factor was accepted.
 /// </summary>
 /// <param name="UserId">Identifier of the account.</param>
-public sealed record StartSessionCommand(Guid UserId) : ICommand<Result<SessionTicket>>;
+public sealed record StartSessionCommand(UserId UserId) : ICommand<Result<SessionTicket>>;
 
 /// <summary>
 /// Opens a session for an active account with a password: it drops the expired sessions of the
@@ -44,7 +45,7 @@ public sealed class StartSessionCommandHandler(
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null || !user.CanSignIn)
         {
-            return Error.Unauthorized(ErrorCode.InvalidCredentials);
+            return Error.Unauthorized(ApplicationErrorCode.InvalidCredentials);
         }
 
         var now = clock.UtcNow;
@@ -55,12 +56,12 @@ public sealed class StartSessionCommandHandler(
         await uow.SaveChangesAsync(ct);
 
         return new SessionTicket(
-            session.Id,
+            session.Id.Value,
             new SessionIdentity(
-                user.Id,
+                user.Id.Value,
                 user.FirstName,
                 user.LastName,
-                user.Email,
+                user.Email?.Value,
                 user.IsAdmin,
                 CredentialStamps.For(user.PasswordHash!)
             )

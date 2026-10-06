@@ -1,65 +1,63 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Commands;
 
 /// <summary>
-/// Carries the input required to add a child.
+/// Carries the input required to add a minor to a household.
 /// </summary>
-/// <param name="ParentId">Identifier of the parent.</param>
-/// <param name="Request">Validated client request data.</param>
-public sealed record AddChildCommand(Guid ParentId, RegisterMinorRequest Request)
-    : ICommand<Result<Guid>>;
+/// <param name="ParentId">Identifier of the guardian.</param>
+/// <param name="Child">Details of the minor.</param>
+public sealed record AddChildCommand(UserId ParentId, MinorDraft Child) : ICommand<Result<UserId>>;
 
 /// <summary>
-/// Executes the command to add a child. A guardian has at most
-/// <see cref="Household.MaxDependents"/> dependents; they are counted with the guardian's row
-/// locked, so parallel requests cannot pass the limit together.
+/// Executes the command to add a minor to a household. The signed-in user may add one to their
+/// own household; an administrator to anyone's.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class AddChildCommandHandler(
     IUserRepository users,
+    ActingUserPolicy actingUser,
     IClock clock,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
-) : ICommandHandler<AddChildCommand, Result<Guid>>
+    IUnitOfWork uow
+) : ICommandHandler<AddChildCommand, Result<UserId>>
 {
     /// <summary>
-    /// Handles the request to add a child.
+    /// Handles the request to add a minor to a household.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
-    public async Task<Result<Guid>> HandleAsync(
+    /// <returns>A task whose result contains the identifier of the minor, or an application error on failure.</returns>
+    public async Task<Result<UserId>> HandleAsync(
         AddChildCommand command,
         CancellationToken ct = default
     )
     {
-        var request = command.Request;
+        ArgumentNullException.ThrowIfNull(command);
+
+        var allowed = await actingUser.EnsureMayActForAsync(command.ParentId, ct);
+        if (allowed.IsFailure)
+        {
+            return allowed.Error!;
+        }
 
         var parent = await users.GetByIdAsync(command.ParentId, ct);
         if (parent is null)
         {
-            return Error.NotFound(ErrorCode.ParentUserNotFound);
+            return Error.NotFound(ApplicationErrorCode.ParentUserNotFound);
         }
 
         var child = User.CreateDependent(
             parent,
-            new PersonDetails(
-                request.FirstName,
-                request.LastName,
-                request.Gender,
-                BirthDate: request.BirthDate
-            ),
+            command.Child.ToDetails(),
             clock.Today,
             clock.UtcNow
         );
@@ -77,8 +75,6 @@ public sealed class AddChildCommandHandler(
             return added.Error!;
         }
 
-        await cacheInvalidator.InvalidateAsync(CacheTags.Users);
-
         return child.Value.Id;
     }
 
@@ -86,7 +82,7 @@ public sealed class AddChildCommandHandler(
     {
         if (!await users.LockAsync(parent, ct))
         {
-            return Error.NotFound(ErrorCode.ParentUserNotFound);
+            return Error.NotFound(ApplicationErrorCode.ParentUserNotFound);
         }
 
         var allowed = Household.EnsureMayAddDependent(

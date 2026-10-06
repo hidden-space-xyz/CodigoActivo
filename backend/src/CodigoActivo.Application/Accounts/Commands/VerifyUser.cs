@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -11,7 +12,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="Otp">The otp value.</param>
-public sealed record VerifyUserCommand(Guid UserId, string Otp) : ICommand<Result>;
+public sealed record VerifyUserCommand(UserId UserId, string Otp) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to verify user.
@@ -38,7 +39,7 @@ public sealed class VerifyUserCommandHandler(
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
         var now = clock.UtcNow;
@@ -47,7 +48,7 @@ public sealed class VerifyUserCommandHandler(
             || !otpValidator.IsCodeValid(command.Otp, user.UsableOtpCodeHash(now))
         )
         {
-            return Error.Validation(ErrorCode.OtpInvalidOrExpired);
+            return Error.Validation(ApplicationErrorCode.OtpInvalidOrExpired);
         }
 
         user.Verify(now);

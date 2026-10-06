@@ -1,80 +1,73 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts;
-using CodigoActivo.Application.Users.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Commands;
 
 /// <summary>
-/// Carries the input required for an administrator to reset a user's second factor.
+/// Carries the input required by an administrator to reset a user's second factor.
 /// </summary>
-/// <param name="UserId">Identifier of the user whose second factor is reset.</param>
-/// <param name="ActingUserId">Identifier of the acting administrator.</param>
-/// <param name="Request">Validated client request data.</param>
+/// <param name="UserId">Identifier of the user.</param>
+/// <param name="CurrentPassword">Password of the signed-in administrator, re-entered to authorize the reset.</param>
 public sealed record ResetTwoFactorCommand(
-    Guid UserId,
-    Guid ActingUserId,
-    ResetTwoFactorRequest Request
+    UserId UserId,
+    [property: Required, MaxLength(128), NotBlank] string CurrentPassword
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command that returns a user's second factor to email, forgetting their
-/// authenticator and clearing any lockout. This is the recovery path for a lost authenticator,
-/// so the administrator re-enters their own password first. The owner is told only when an
-/// authenticator was dropped, since clearing a lockout alone changes nothing about how they log in.
+/// Executes the command to reset a user's second factor to email.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class ResetTwoFactorCommandHandler(
     IUserRepository users,
+    ICurrentUser currentUser,
     PasswordAttemptGuard passwordAttempts,
-    IClock clock,
-    IUnitOfWork uow,
-    AccountSecurityNotifier securityNotifier
+    IClock clock
 ) : ICommandHandler<ResetTwoFactorCommand, Result>
 {
     /// <summary>
-    /// Handles the request to reset the second factor.
+    /// Handles the request to reset a user's second factor.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>A task whose result reports success, or an application error on failure.</returns>
     public async Task<Result> HandleAsync(
         ResetTwoFactorCommand command,
         CancellationToken ct = default
     )
     {
-        var actingUser = await users.GetByIdAsync(command.ActingUserId, ct);
+        ArgumentNullException.ThrowIfNull(command);
+
+        var actingUser = await users.GetByIdAsync(currentUser.RequiredId(), ct);
         if (
             !await passwordAttempts.VerifyReauthenticationAsync(
                 actingUser,
-                command.Request.CurrentPassword,
+                command.CurrentPassword,
                 ct
             )
         )
         {
-            return Error.Validation(ErrorCode.UserCurrentPasswordIncorrect);
+            return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
 
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        var leftAuthenticator = user.ResetTwoFactor(clock.UtcNow);
-        await uow.SaveChangesAsync(ct);
-        if (leftAuthenticator)
-        {
-            await securityNotifier.NotifyAsync(user, AccountSecurityChange.TwoFactorReset, ct);
-        }
-
+        user.ResetTwoFactor(clock.UtcNow);
         return Result.Success();
     }
 }

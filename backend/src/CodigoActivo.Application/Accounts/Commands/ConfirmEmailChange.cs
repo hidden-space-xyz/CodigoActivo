@@ -1,7 +1,6 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -12,7 +11,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the account.</param>
 /// <param name="Code">Code from the link emailed to the new address.</param>
-public sealed record ConfirmEmailChangeCommand(Guid UserId, string Code) : ICommand<Result>;
+public sealed record ConfirmEmailChangeCommand(UserId UserId, string Code) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to confirm the new email an account holder asked for.
@@ -20,15 +19,11 @@ public sealed record ConfirmEmailChangeCommand(Guid UserId, string Code) : IComm
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="otpValidator">Validator of the code from the link.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
-/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 /// <param name="emailClaims">Committer that replaces an unverified account holding the address.</param>
 public sealed class ConfirmEmailChangeCommandHandler(
     IUserRepository users,
     IClock clock,
     OtpValidator otpValidator,
-    ICacheInvalidator cacheInvalidator,
-    AccountSecurityNotifier securityNotifier,
     EmailClaims emailClaims
 ) : ICommandHandler<ConfirmEmailChangeCommand, Result>
 {
@@ -50,7 +45,7 @@ public sealed class ConfirmEmailChangeCommandHandler(
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
         var now = clock.UtcNow;
@@ -59,30 +54,21 @@ public sealed class ConfirmEmailChangeCommandHandler(
             || !otpValidator.IsCodeValid(command.Code, user.UsableEmailChangeCodeHash(now))
         )
         {
-            return Error.Validation(ErrorCode.OtpInvalidOrExpired);
+            return Error.Validation(ApplicationErrorCode.OtpInvalidOrExpired);
         }
 
         var holder = await users.GetByEmailAsync(newEmail, ct);
         if (holder is { OwnsEmail: true })
         {
-            return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
+            return Error.Conflict(ApplicationErrorCode.UserEmailAlreadyInUse);
         }
 
-        var previousEmail = user.Email;
         user.ConfirmEmailChange(now);
         if (!await emailClaims.TryCommitAsync(user, holder, now, ct))
         {
-            return Error.Conflict(ErrorCode.UserEmailAlreadyInUse);
+            return Error.Conflict(ApplicationErrorCode.UserEmailAlreadyInUse);
         }
 
-        await cacheInvalidator.InvalidateAsync(CacheTags.Users);
-        await securityNotifier.NotifyIdentifiersChangedAsync(
-            previousEmail,
-            user.FirstName,
-            newEmail,
-            phonesChanged: false,
-            ct
-        );
         return Result.Success();
     }
 }

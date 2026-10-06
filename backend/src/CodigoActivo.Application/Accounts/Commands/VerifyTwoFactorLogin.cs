@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
@@ -12,7 +13,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the user whose password was already accepted.</param>
 /// <param name="Code">Code from the email or the authenticator application.</param>
-public sealed record VerifyTwoFactorLoginCommand(Guid UserId, string Code) : ICommand<Result>;
+public sealed record VerifyTwoFactorLoginCommand(UserId UserId, string Code) : ICommand<Result>;
 
 /// <summary>
 /// Executes the second step of the login. Wrong codes are counted and lock the account's second
@@ -53,7 +54,7 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
         return await uow.ExecuteInTransactionAsync(
@@ -66,18 +67,18 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
     {
         if (!await users.LockAsync(user, ct))
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
         if (user.IsPasswordLocked())
         {
-            return Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired);
+            return Error.Unauthorized(ApplicationErrorCode.TwoFactorChallengeExpired);
         }
 
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            return Error.Forbidden(ErrorCode.TwoFactorLocked);
+            return Error.Forbidden(ApplicationErrorCode.TwoFactorLocked);
         }
 
         long? usedStep = null;
@@ -104,7 +105,7 @@ public sealed class VerifyTwoFactorLoginCommandHandler(
                 logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
             }
 
-            return Error.Validation(ErrorCode.TwoFactorCodeInvalid);
+            return Error.Validation(ApplicationErrorCode.TwoFactorCodeInvalid);
         }
 
         if (usedStep is { } step)

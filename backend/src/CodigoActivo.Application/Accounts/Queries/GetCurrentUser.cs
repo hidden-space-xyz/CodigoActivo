@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
@@ -35,6 +36,8 @@ public sealed class GetCurrentUserQueryHandler(IReadStore readStore, IQueryExecu
             readStore.Users.Where(u => u.Id == query.UserId).Select(UserProjections.User),
             ct
         );
-        return response is null ? Error.Unauthorized(ErrorCode.CurrentUserNotFound) : response;
+        return response is null
+            ? Error.Unauthorized(ApplicationErrorCode.CurrentUserNotFound)
+            : response;
     }
 }

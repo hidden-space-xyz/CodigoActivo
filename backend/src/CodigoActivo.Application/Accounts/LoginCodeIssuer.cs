@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
@@ -63,9 +64,9 @@ public sealed class LoginCodeIssuer(
         CancellationToken ct
     )
     {
-        if (string.IsNullOrWhiteSpace(user.Email))
+        if (user.Email is null)
         {
-            return Error.Conflict(ErrorCode.UserContactInfoRequired);
+            return Error.Conflict(DomainErrorCode.UserContactInfoRequired);
         }
 
         var code = GenerateCode();
@@ -75,12 +76,12 @@ public sealed class LoginCodeIssuer(
         }
         catch (EmailRateLimitedException)
         {
-            return Error.Conflict(ErrorCode.TwoFactorResendCooldownActive);
+            return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.EmailSendFailed(EmailKind.TwoFactorCode, ex);
-            return Error.Conflict(ErrorCode.EmailSendFailed);
+            return Error.Conflict(ApplicationErrorCode.EmailSendFailed);
         }
 
         user.IssueLoginCode(hasher.Hash(code), now, options.ChallengeLifetime);

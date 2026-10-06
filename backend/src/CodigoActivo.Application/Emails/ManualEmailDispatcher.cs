@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Domain.Common;
@@ -53,7 +54,7 @@ public sealed class ManualEmailDispatcher(
     public async Task<Result<EmailDispatch>> DispatchAsync(
         IReadOnlyList<Recipient> recipients,
         int skipped,
-        SendEmailRequest request,
+        ManualEmailText request,
         IReadOnlyList<EmailAttachmentUpload> attachments,
         CancellationToken ct
     )
@@ -79,13 +80,13 @@ public sealed class ManualEmailDispatcher(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.ManualEmailQueueFailed(batch.Recipients.Count, ex);
-            return Error.Validation(ErrorCode.EmailSendFailed);
+            return Error.Validation(ApplicationErrorCode.EmailSendFailed);
         }
 
         if (!queued)
         {
             logger.ManualEmailOutboxFull(batch.Recipients.Count);
-            return Error.Validation(ErrorCode.EmailSendFailed);
+            return Error.Validation(ApplicationErrorCode.EmailSendFailed);
         }
 
         return new EmailDispatch(batch.Recipients.Count, skipped);
@@ -103,12 +104,12 @@ public sealed class ManualEmailDispatcher(
 
         if (uploads.Count > options.MaxAttachments)
         {
-            return Error.Validation(ErrorCode.EmailTooManyAttachments);
+            return Error.Validation(ApplicationErrorCode.EmailTooManyAttachments);
         }
 
         if (uploads.Sum(u => u.Length) > options.MaxAttachmentsBytes)
         {
-            return Error.Validation(ErrorCode.EmailAttachmentsTooLarge);
+            return Error.Validation(ApplicationErrorCode.EmailAttachmentsTooLarge);
         }
 
         var buffered = new List<EmailAttachment>(uploads.Count);
@@ -116,7 +117,7 @@ public sealed class ManualEmailDispatcher(
         {
             if (upload.Length <= 0)
             {
-                return Error.Validation(ErrorCode.EmailAttachmentEmpty);
+                return Error.Validation(ApplicationErrorCode.EmailAttachmentEmpty);
             }
 
             var content = new byte[upload.Length];
