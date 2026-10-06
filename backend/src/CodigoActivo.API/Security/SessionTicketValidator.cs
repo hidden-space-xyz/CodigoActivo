@@ -65,7 +65,10 @@ public sealed class SessionTicketValidator(
             return;
         }
 
-        await endSession.HandleAsync(new EndSessionCommand(UserId.From(user), session), ct);
+        await endSession.HandleAsync(
+            new EndSessionCommand(UserId.From(user), UserSessionId.From(session)),
+            ct
+        );
     }
 
     /// <summary>
