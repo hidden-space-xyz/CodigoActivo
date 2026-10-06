@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the account named by the cookie.</param>
 /// <param name="ChallengeId">Identifier of the challenge named by the cookie.</param>
-public sealed record EndLoginChallengeCommand(Guid UserId, Guid ChallengeId) : ICommand<Result>;
+public sealed record EndLoginChallengeCommand(UserId UserId, Guid ChallengeId) : ICommand<Result>;
 
 /// <summary>
 /// Closes the pending second-factor challenge of an account, when it is still the one presented.

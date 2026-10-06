@@ -1,7 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -10,26 +14,24 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to confirm an authenticator enrollment.
 /// </summary>
-/// <param name="UserId">Identifier of the signed-in user.</param>
-/// <param name="Request">Validated client request data.</param>
-public sealed record ConfirmAuthenticatorCommand(Guid UserId, ConfirmAuthenticatorRequest Request)
-    : ICommand<Result>;
+/// <param name="Code">Code the authenticator shows.</param>
+public sealed record ConfirmAuthenticatorCommand(
+    [property: Required, MaxLength(16), NotBlank] string Code
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command that activates the pending authenticator once the user proves the
 /// application was set up correctly. From then on logins require its codes instead of email.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
-/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
 public sealed class ConfirmAuthenticatorCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
+    ICurrentUser currentUser,
     IClock clock,
-    AuthenticatorCodeVerifier authenticatorCodes,
-    AccountSecurityNotifier securityNotifier
+    AuthenticatorCodeVerifier authenticatorCodes
 ) : ICommandHandler<ConfirmAuthenticatorCommand, Result>
 {
     /// <summary>
@@ -43,22 +45,22 @@ public sealed class ConfirmAuthenticatorCommandHandler(
         CancellationToken ct = default
     )
     {
-        var user = await users.GetByIdAsync(command.UserId, ct);
+        var user = await users.GetByIdAsync(currentUser.RequiredId(), ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
         var now = clock.UtcNow;
         if (!user.HasPendingAuthenticator(now))
         {
-            return Error.Validation(ErrorCode.AuthenticatorSetupExpired);
+            return Error.Validation(ApplicationErrorCode.AuthenticatorSetupExpired);
         }
 
-        var step = authenticatorCodes.Match(user.PendingAuthenticatorKey, command.Request.Code);
+        var step = authenticatorCodes.Match(user.PendingAuthenticatorKey, command.Code);
         if (step is null)
         {
-            return Error.Validation(ErrorCode.TwoFactorCodeInvalid);
+            return Error.Validation(ApplicationErrorCode.TwoFactorCodeInvalid);
         }
 
         var enabled = user.EnableAuthenticator(step.Value, now);
@@ -67,8 +69,6 @@ public sealed class ConfirmAuthenticatorCommandHandler(
             return enabled;
         }
 
-        await uow.SaveChangesAsync(ct);
-        await securityNotifier.NotifyAsync(user, AccountSecurityChange.AuthenticatorEnabled, ct);
         return Result.Success();
     }
 }

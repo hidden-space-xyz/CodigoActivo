@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.Users.Queries;
 /// Carries the criteria used to retrieve user by identifier.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-public sealed record GetUserByIdQuery(Guid UserId) : IQuery<Result<UserResponse>>;
+public sealed record GetUserByIdQuery(UserId UserId) : IQuery<Result<UserResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve user by identifier.
@@ -31,11 +33,13 @@ public sealed class GetUserByIdQueryHandler(IReadStore readStore, IQueryExecutor
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            readStore.Users.Where(u => u.Id == query.UserId).Select(UserProjections.UserWithType),
+            readStore
+                .Users.Where(u => u.Id == query.UserId.Value)
+                .Select(UserProjections.UserWithType),
             ct
         );
         return response is null
-            ? (Result<UserResponse>)Error.NotFound(ErrorCode.UserNotFound)
+            ? (Result<UserResponse>)Error.NotFound(ApplicationErrorCode.UserNotFound)
             : (Result<UserResponse>)response;
     }
 }

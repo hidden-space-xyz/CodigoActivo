@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Queries;
 
@@ -45,7 +47,7 @@ public sealed class GetSessionIdentityQueryHandler(
             readStore
                 .Users.Where(candidate =>
                     candidate.Id == query.UserId
-                    && candidate.UserStatusTypeId == SeedIds.UserStatusTypes.Active
+                    && candidate.UserStatusTypeId == CatalogIds.UserStatuses.IdOf(UserStatus.Active)
                     && candidate.PasswordHash != null
                     && candidate.PasswordLockedAt == null
                     && readStore.UserSessions.Any(row =>

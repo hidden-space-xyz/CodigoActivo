@@ -60,6 +60,7 @@ public sealed class EmailClaims(AccountEraser eraser, IUnitOfWork uow)
         }
         catch (UniqueConstraintViolationException ex) when (ex.EntityType == typeof(User))
         {
+            uow.DiscardChanges();
             return false;
         }
     }

@@ -51,9 +51,9 @@ public sealed class AccountSecurityNotifier(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task NotifyIdentifiersChangedAsync(
-        string? previousEmail,
+        EmailAddress? previousEmail,
         string recipientName,
-        string? newEmail,
+        EmailAddress? newEmail,
         bool phonesChanged,
         CancellationToken ct
     )
@@ -64,18 +64,18 @@ public sealed class AccountSecurityNotifier(
             (_, true) => AccountSecurityChange.EmailAndPhoneChanged,
             _ => AccountSecurityChange.EmailChanged,
         };
-        return SendAsync(previousEmail, recipientName, change, newEmail?.MaskEmail(), ct);
+        return SendAsync(previousEmail, recipientName, change, newEmail.MaskEmail(), ct);
     }
 
     private async Task SendAsync(
-        string? address,
+        EmailAddress? address,
         string recipientName,
         AccountSecurityChange change,
         string? maskedNewEmail,
         CancellationToken ct
     )
     {
-        if (string.IsNullOrWhiteSpace(address))
+        if (address is null)
         {
             return;
         }
@@ -83,7 +83,7 @@ public sealed class AccountSecurityNotifier(
         try
         {
             var message = composer.SecurityAlert(
-                new EmailRecipient(address, recipientName),
+                new EmailRecipient(address.Value, recipientName),
                 change,
                 clock.UtcNow,
                 maskedNewEmail

@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Emails.Commands;
 
@@ -9,11 +11,11 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// Carries the input required to send email to user.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-/// <param name="Request">Validated client request data.</param>
+/// <param name="Content">Subject and body of the email.</param>
 /// <param name="Attachments">The attachments value.</param>
 public sealed record SendEmailToUserCommand(
-    Guid UserId,
-    SendEmailRequest Request,
+    UserId UserId,
+    ManualEmailText Content,
     IReadOnlyList<EmailAttachmentUpload> Attachments
 ) : ICommand<Result<EmailDispatch>>;
 
@@ -40,7 +42,7 @@ public sealed class SendEmailToUserCommandHandler(
         CancellationToken ct = default
     )
     {
-        var userId = command.UserId;
+        var userId = command.UserId.Value;
         var recipient = await executor.FirstOrDefaultAsync(
             readStore.Users.Where(u => u.Id == userId).Select(ManualEmailDispatcher.ToRecipient),
             ct
@@ -48,14 +50,14 @@ public sealed class SendEmailToUserCommandHandler(
 
         return recipient switch
         {
-            null => Error.NotFound(ErrorCode.UserNotFound),
+            null => Error.NotFound(ApplicationErrorCode.UserNotFound),
             { } found when string.IsNullOrWhiteSpace(found.Email) => Error.Validation(
-                ErrorCode.EmailRecipientWithoutAddress
+                ApplicationErrorCode.EmailRecipientWithoutAddress
             ),
             { } found => await dispatcher.DispatchAsync(
                 [found],
                 skipped: 0,
-                command.Request,
+                command.Content,
                 command.Attachments,
                 ct
             ),

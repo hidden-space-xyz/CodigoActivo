@@ -1,9 +1,11 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Emails.Commands;
 
@@ -12,12 +14,12 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
-/// <param name="Request">Validated client request data.</param>
+/// <param name="Content">Subject and body of the email.</param>
 /// <param name="Attachments">The attachments value.</param>
 public sealed record SendEmailToEventAttendeesCommand(
-    Guid EventId,
+    EventId EventId,
     EventAttendeeListQuery Filters,
-    SendEmailRequest Request,
+    ManualEmailText Content,
     IReadOnlyList<EmailAttachmentUpload> Attachments
 ) : ICommand<Result<EmailDispatch>>;
 
@@ -46,13 +48,19 @@ public sealed class SendEmailToEventAttendeesCommandHandler(
         CancellationToken ct = default
     )
     {
-        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == command.EventId), ct))
+        if (
+            !await executor.AnyAsync(readStore.Events.Where(e => e.Id == command.EventId.Value), ct)
+        )
         {
-            return Error.NotFound(ErrorCode.EventNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
         var audience = await ManualEmailAudience.LoadAsync(
-            UserFilters.ApplyEventAttendees(readStore.Users, command.EventId, command.Filters),
+            UserFilters.ApplyEventAttendees(
+                readStore.Users,
+                command.EventId.Value,
+                command.Filters
+            ),
             executor,
             ct
         );
@@ -60,14 +68,14 @@ public sealed class SendEmailToEventAttendeesCommandHandler(
 
         return recipients.Count switch
         {
-            0 => Error.Validation(ErrorCode.EmailNoRecipients),
+            0 => Error.Validation(ApplicationErrorCode.EmailNoRecipients),
             _ when recipients.Count > options.MaxRecipients => Error.Validation(
-                ErrorCode.EmailTooManyRecipients
+                ApplicationErrorCode.EmailTooManyRecipients
             ),
             _ => await dispatcher.DispatchAsync(
                 recipients,
                 audience.Skipped,
-                command.Request,
+                command.Content,
                 command.Attachments,
                 ct
             ),

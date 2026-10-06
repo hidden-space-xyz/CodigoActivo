@@ -30,7 +30,7 @@ public sealed class AccountEmails(
     {
         var message = composer.AccountVerification(
             Recipient(user),
-            user.Id,
+            user.Id.Value,
             otpCode,
             verification.OtpLifetime
         );
@@ -48,14 +48,14 @@ public sealed class AccountEmails(
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendEmailChangeConfirmationAsync(
         User user,
-        string newEmail,
+        EmailAddress newEmail,
         string code,
         CancellationToken ct
     )
     {
         var message = composer.EmailChangeConfirmation(
-            new EmailRecipient(newEmail, string.Empty),
-            user.Id,
+            new EmailRecipient(newEmail.Value, string.Empty),
+            user.Id.Value,
             code,
             verification.OtpLifetime
         );
@@ -86,7 +86,7 @@ public sealed class AccountEmails(
     {
         var message = composer.PasswordReset(
             Recipient(user),
-            user.Id,
+            user.Id.Value,
             code,
             passwordReset.CodeLifetime
         );
@@ -137,6 +137,6 @@ public sealed class AccountEmails(
 
     private static EmailRecipient Recipient(User user)
     {
-        return new EmailRecipient(user.Email!, RecipientName(user));
+        return new EmailRecipient(user.Email!.Value, RecipientName(user));
     }
 }

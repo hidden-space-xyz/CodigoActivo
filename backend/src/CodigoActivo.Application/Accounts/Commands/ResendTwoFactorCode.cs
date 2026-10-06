@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -10,7 +11,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Carries the input required to email a new login code for an open challenge.
 /// </summary>
 /// <param name="UserId">Identifier of the user whose password was already accepted.</param>
-public sealed record ResendTwoFactorCodeCommand(Guid UserId) : ICommand<Result>;
+public sealed record ResendTwoFactorCodeCommand(UserId UserId) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to email a new login code, replacing the previous one.
@@ -42,23 +43,23 @@ public sealed class ResendTwoFactorCodeCommandHandler(
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
         if (user.TwoFactorMethod != TwoFactorMethod.Email)
         {
-            return Error.Conflict(ErrorCode.TwoFactorResendNotAllowed);
+            return Error.Conflict(ApplicationErrorCode.TwoFactorResendNotAllowed);
         }
 
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            return Error.Forbidden(ErrorCode.TwoFactorLocked);
+            return Error.Forbidden(ApplicationErrorCode.TwoFactorLocked);
         }
 
         if (user.IsLoginCodeResendCoolingDown(now, options.ResendCooldown))
         {
-            return Error.Conflict(ErrorCode.TwoFactorResendCooldownActive);
+            return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
         }
 
         var issued = await loginCodes.IssueAsync(user, now, ct);

@@ -1,12 +1,13 @@
-using CodigoActivo.Application.Abstractions.Caching;
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Validation;
+using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
@@ -16,8 +17,28 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to register.
 /// </summary>
-/// <param name="Request">Validated client request data.</param>
-public sealed record RegisterCommand(RegisterRequest Request) : ICommand<Result>;
+/// <param name="FirstName">Given name of the adult.</param>
+/// <param name="LastName">Family name of the adult.</param>
+/// <param name="Email">Email of the adult.</param>
+/// <param name="Phone">Phone of the adult.</param>
+/// <param name="Password">Password of the adult.</param>
+/// <param name="NationalId">DNI or NIE of the adult.</param>
+/// <param name="Gender">Gender of the adult.</param>
+/// <param name="PromotionalConsent">Whether the adult agrees to receive promotional content.</param>
+/// <param name="Minors">Minors registered with the adult.</param>
+/// <param name="SecondaryPhone">Optional second phone of the adult.</param>
+public sealed record RegisterCommand(
+    [property: Required, MaxLength(120), NotBlank] string FirstName,
+    [property: Required, MaxLength(120), NotBlank] string LastName,
+    [property: Required, EmailAddress, MaxLength(256)] string Email,
+    [property: Required, MaxLength(40)] string Phone,
+    [property: Required, MinLength(12), MaxLength(128), NotBlank] string Password,
+    [property: Required, MaxLength(12), NotBlank, SpanishNationalId] string NationalId,
+    [property: EnumDataType(typeof(Gender))] Gender Gender,
+    bool PromotionalConsent,
+    [property: MaxLength(Household.MaxDependents)] IReadOnlyList<MinorDraft> Minors,
+    [property: MaxLength(40)] string? SecondaryPhone
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to register.
@@ -29,7 +50,6 @@ public sealed record RegisterCommand(RegisterRequest Request) : ICommand<Result>
 /// <param name="verification">The verification value.</param>
 /// <param name="accountEmails">The account emails value.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 /// <param name="disposableEmails">Checker that refuses addresses of disposable email providers.</param>
 /// <param name="emailClaims">Committer that replaces an unverified account holding the email.</param>
 public sealed class RegisterCommandHandler(
@@ -40,7 +60,6 @@ public sealed class RegisterCommandHandler(
     AccountVerificationOptions verification,
     AccountEmails accountEmails,
     ILogger<RegisterCommandHandler> logger,
-    ICacheInvalidator cacheInvalidator,
     DisposableEmailChecker disposableEmails,
     EmailClaims emailClaims
 ) : ICommandHandler<RegisterCommand, Result>
@@ -60,7 +79,7 @@ public sealed class RegisterCommandHandler(
     /// <returns>A task whose result reports success, or an application error on failure.</returns>
     public async Task<Result> HandleAsync(RegisterCommand command, CancellationToken ct = default)
     {
-        var planned = PlanHousehold(command.Request);
+        var planned = PlanHousehold(command);
         if (planned.IsFailure)
         {
             return planned.Error!;
@@ -70,12 +89,12 @@ public sealed class RegisterCommandHandler(
         var email = adult.Email!;
         if (await disposableEmails.IsDisposableAsync(email, ct))
         {
-            return Error.Validation(ErrorCode.DisposableEmailNotAllowed);
+            return Error.Validation(ApplicationErrorCode.DisposableEmailNotAllowed);
         }
 
         var now = clock.UtcNow;
         var otpCode = AccountTokens.Create();
-        adult.AssignPassword(hasher.Hash(command.Request.Password));
+        adult.AssignPassword(hasher.Hash(command.Password));
         adult.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
 
         var holder = await users.GetByEmailAsync(email, ct);
@@ -93,22 +112,21 @@ public sealed class RegisterCommandHandler(
 
         if (await emailClaims.TryCommitAsync(adult, holder, now, ct))
         {
-            await cacheInvalidator.InvalidateAsync(CacheTags.Users);
             await TrySendVerificationEmailAsync(adult, otpCode, ct);
         }
 
         return Result.Success();
     }
 
-    private Result<NewHousehold> PlanHousehold(RegisterRequest request)
+    private Result<NewHousehold> PlanHousehold(RegisterCommand request)
     {
-        var minorRequests = request.Minors ?? [];
+        var minorRequests = request.Minors;
         if (
             string.IsNullOrWhiteSpace(request.Password)
             || minorRequests.Count > Household.MaxDependents
         )
         {
-            return Error.Validation(ErrorCode.RequestValidationFailed);
+            return Error.Validation(ApplicationErrorCode.RegistrationInvalid);
         }
 
         var now = clock.UtcNow;
@@ -133,17 +151,7 @@ public sealed class RegisterCommandHandler(
         var adult = created.Value;
         var minors = new List<User>(minorRequests.Count);
         var children = minorRequests.Select(minor =>
-            User.CreateDependent(
-                adult,
-                new PersonDetails(
-                    minor.FirstName,
-                    minor.LastName,
-                    minor.Gender,
-                    BirthDate: minor.BirthDate
-                ),
-                clock.Today,
-                now
-            )
+            User.CreateDependent(adult, minor.ToDetails(), clock.Today, now)
         );
         foreach (var child in children)
         {

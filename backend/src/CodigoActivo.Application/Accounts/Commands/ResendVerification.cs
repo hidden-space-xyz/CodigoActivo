@@ -1,10 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
@@ -14,9 +15,10 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to resend verification.
 /// </summary>
-/// <param name="Request">Validated client request data.</param>
-public sealed record ResendVerificationCommand(ResendVerificationRequest Request)
-    : ICommand<Result>;
+/// <param name="Email">Email of the account.</param>
+public sealed record ResendVerificationCommand(
+    [property: Required, EmailAddress, MaxLength(256)] string Email
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to resend verification.
@@ -54,8 +56,8 @@ public sealed class ResendVerificationCommandHandler(
     {
         var otpCode = AccountTokens.Create();
         var otpCodeHash = hasher.Hash(otpCode);
-        var email = command.Request.Email.NormalizeEmailOrNull();
-        var user = email is null ? null : await users.GetByEmailAsync(email, ct);
+        var email = EmailAddress.Create(command.Email);
+        var user = email.IsSuccess ? await users.GetByEmailAsync(email.Value, ct) : null;
         var now = clock.UtcNow;
         if (
             user is not { IsPendingVerification: true }

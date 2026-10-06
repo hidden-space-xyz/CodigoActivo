@@ -1,6 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Queries;
 
@@ -35,7 +37,7 @@ public sealed class GetPendingChallengeQueryHandler(IReadStore readStore, IQuery
             readStore
                 .Users.Where(user =>
                     user.Id == query.UserId
-                    && user.UserStatusTypeId == SeedIds.UserStatusTypes.Active
+                    && user.UserStatusTypeId == CatalogIds.UserStatuses.IdOf(UserStatus.Active)
                     && user.PasswordHash != null
                     && user.PasswordLockedAt == null
                     && user.LoginChallengeId != null

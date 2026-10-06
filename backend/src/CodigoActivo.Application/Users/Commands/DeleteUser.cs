@@ -1,8 +1,9 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Commands;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -12,8 +13,7 @@ namespace CodigoActivo.Application.Users.Commands;
 /// Carries the input required to delete the user.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-/// <param name="ActingUserId">Identifier of the user that asked for the deletion.</param>
-public sealed record DeleteUserCommand(Guid UserId, Guid ActingUserId) : ICommand<Result>;
+public sealed record DeleteUserCommand(UserId UserId) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to delete the user, keeping the blocked copy the law requires and handing
@@ -24,14 +24,16 @@ public sealed record DeleteUserCommand(Guid UserId, Guid ActingUserId) : IComman
 /// The initial administrator is never deleted.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="accountEraser">Use case that erases the account after copying it.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class DeleteUserCommandHandler(
     IUserRepository users,
+    ActingUserPolicy actingUser,
+    ICurrentUser currentUser,
     AccountEraser accountEraser,
-    IClock clock,
-    ICacheInvalidator cacheInvalidator
+    IClock clock
 ) : ICommandHandler<DeleteUserCommand, Result>
 {
     /// <summary>
@@ -42,6 +44,14 @@ public sealed class DeleteUserCommandHandler(
     /// <returns>A task whose result indicates success or contains the application error.</returns>
     public async Task<Result> HandleAsync(DeleteUserCommand command, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var allowed = await actingUser.EnsureMayActForAsync(command.UserId, ct);
+        if (allowed.IsFailure)
+        {
+            return allowed;
+        }
+
         var deletable = InitialAdministrator.EnsureMayBeDeleted(command.UserId);
         if (deletable.IsFailure)
         {
@@ -51,21 +61,18 @@ public sealed class DeleteUserCommandHandler(
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
-            return Error.NotFound(ErrorCode.UserNotFound);
+            return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (command.UserId == command.ActingUserId)
+        var actingUserId = currentUser.RequiredId();
+        if (command.UserId == actingUserId)
         {
-            return Error.Forbidden(ErrorCode.UserSelfDeleteRequiresVerification);
+            return Error.Forbidden(ApplicationErrorCode.UserSelfDeleteRequiresVerification);
         }
 
-        var erasure = AccountErasure.For(user, command.ActingUserId, clock.UtcNow);
-        if (!await accountEraser.EraseAsync(user, erasure, ct))
-        {
-            return Error.NotFound(ErrorCode.UserNotFound);
-        }
-
-        await cacheInvalidator.InvalidateAsync(CacheTags.Erasure);
-        return Result.Success();
+        var erasure = AccountErasure.For(user, actingUserId, clock.UtcNow);
+        return await accountEraser.EraseAsync(user, erasure, ct)
+            ? Result.Success()
+            : Error.NotFound(ApplicationErrorCode.UserNotFound);
     }
 }

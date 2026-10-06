@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Users;
@@ -41,7 +42,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandler(
     {
         if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == query.EventId), ct))
         {
-            return Error.NotFound(ErrorCode.EventNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
         var audience = await ManualEmailAudience.LoadAsync(

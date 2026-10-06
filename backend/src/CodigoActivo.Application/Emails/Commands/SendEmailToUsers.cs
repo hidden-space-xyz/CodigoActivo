@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Contracts;
@@ -11,11 +12,11 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// Carries the input required to send email to users.
 /// </summary>
 /// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
-/// <param name="Request">Validated client request data.</param>
+/// <param name="Content">Subject and body of the email.</param>
 /// <param name="Attachments">The attachments value.</param>
 public sealed record SendEmailToUsersCommand(
     UserListQuery Filters,
-    SendEmailRequest Request,
+    ManualEmailText Content,
     IReadOnlyList<EmailAttachmentUpload> Attachments
 ) : ICommand<Result<EmailDispatch>>;
 
@@ -53,14 +54,14 @@ public sealed class SendEmailToUsersCommandHandler(
 
         return recipients.Count switch
         {
-            0 => Error.Validation(ErrorCode.EmailNoRecipients),
+            0 => Error.Validation(ApplicationErrorCode.EmailNoRecipients),
             _ when recipients.Count > options.MaxRecipients => Error.Validation(
-                ErrorCode.EmailTooManyRecipients
+                ApplicationErrorCode.EmailTooManyRecipients
             ),
             _ => await dispatcher.DispatchAsync(
                 recipients,
                 audience.Skipped,
-                command.Request,
+                command.Content,
                 command.Attachments,
                 ct
             ),

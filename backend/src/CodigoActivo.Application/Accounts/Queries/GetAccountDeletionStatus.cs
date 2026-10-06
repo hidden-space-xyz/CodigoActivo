@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Queries;
 
@@ -30,7 +31,7 @@ public sealed class GetAccountDeletionStatusQueryHandler
     )
     {
         return Task.FromResult(
-            new AccountDeletionStatusResponse(query.UserId != SeedIds.Users.InitialAdministrator)
+            new AccountDeletionStatusResponse(query.UserId != InitialAdministrator.Id.Value)
         );
     }
 }
