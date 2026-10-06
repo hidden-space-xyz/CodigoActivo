@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Users.Contracts;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Queries;
 
@@ -12,7 +13,7 @@ namespace CodigoActivo.Application.Users.Queries;
 /// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 /// <param name="CallerId">Identifier of the caller.</param>
 /// <param name="IsAdmin">Whether admin.</param>
-public sealed record ListUsersQuery(UserListQuery Filters, Guid CallerId, bool IsAdmin)
+public sealed record ListUsersQuery(UserListQuery Filters, UserId CallerId, bool IsAdmin)
     : IQuery<PagedResult<UserResponse>>;
 
 /// <summary>
@@ -56,7 +57,8 @@ public sealed class ListUsersQueryHandler(IReadStore readStore, IQueryExecutor e
 
         if (!query.IsAdmin)
         {
-            source = source.Where(u => u.Id == query.CallerId || u.ParentId == query.CallerId);
+            var callerId = query.CallerId.Value;
+            source = source.Where(u => u.Id == callerId || u.ParentId == callerId);
         }
 
         source = UserFilters.Apply(source, filters);

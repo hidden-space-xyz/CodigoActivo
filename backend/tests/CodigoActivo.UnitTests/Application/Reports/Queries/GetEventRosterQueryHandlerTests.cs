@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
@@ -67,7 +68,7 @@ public sealed class GetEventRosterQueryHandlerTests
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         var result = await sut.HandleAsync(
-            new GetEventRosterQuery(QueriedEventId),
+            new GetEventRosterQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -113,7 +114,7 @@ public sealed class GetEventRosterQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new GetEventRosterQuery(QueriedEventId),
+            new GetEventRosterQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -178,7 +179,7 @@ public sealed class GetEventRosterQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new GetEventRosterQuery(QueriedEventId),
+            new GetEventRosterQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -205,7 +206,7 @@ public sealed class GetEventRosterQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventRosterQuery(QueriedEventId),
+            new GetEventRosterQuery(EventId.From(QueriedEventId)),
             TestContext.Current.CancellationToken
         );
 

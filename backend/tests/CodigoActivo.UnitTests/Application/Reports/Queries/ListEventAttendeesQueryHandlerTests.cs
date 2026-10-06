@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
@@ -86,7 +87,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
     )
     {
         return sut.HandleAsync(
-            new ListEventAttendeesQuery(eventId, filters),
+            new ListEventAttendeesQuery(EventId.From(eventId), filters),
             TestContext.Current.CancellationToken
         );
     }

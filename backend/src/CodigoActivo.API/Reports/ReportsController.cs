@@ -8,6 +8,7 @@ using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using EventId = CodigoActivo.Domain.Events.EventId;
 
 namespace CodigoActivo.API.Reports;
 
@@ -34,7 +35,7 @@ public class ReportsController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetEventSummaryQuery(eventId), ct));
+        return ToOk(await handler.HandleAsync(new GetEventSummaryQuery(EventId.From(eventId)), ct));
     }
 
     /// <summary>
@@ -55,7 +56,9 @@ public class ReportsController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new ListEventAttendeesQuery(eventId, query), ct));
+        return Ok(
+            await handler.HandleAsync(new ListEventAttendeesQuery(EventId.From(eventId), query), ct)
+        );
     }
 
     /// <summary>
@@ -73,7 +76,7 @@ public class ReportsController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetEventBadgesQuery(eventId), ct));
+        return ToOk(await handler.HandleAsync(new GetEventBadgesQuery(EventId.From(eventId)), ct));
     }
 
     /// <summary>
@@ -91,7 +94,7 @@ public class ReportsController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetEventRosterQuery(eventId), ct));
+        return ToOk(await handler.HandleAsync(new GetEventRosterQuery(EventId.From(eventId)), ct));
     }
 
     /// <summary>
