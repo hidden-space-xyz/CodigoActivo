@@ -6,7 +6,7 @@ namespace CodigoActivo.Domain.Events;
 /// Anonymous rating of an event given by one of its participants: an optional score and optional
 /// answers, never all of them missing.
 /// </summary>
-public class EventRating : IdentifiableEntity, IAggregateRoot
+public class EventRating : AggregateRoot<EventRatingId>
 {
     /// <summary>
     /// Lowest score allowed.
@@ -28,7 +28,7 @@ public class EventRating : IdentifiableEntity, IAggregateRoot
     /// <summary>
     /// Gets the identifier of the rated event.
     /// </summary>
-    public Guid EventId { get; private set; }
+    public EventId EventId { get; private set; }
 
     /// <summary>
     /// Gets the score, or <see langword="null"/> when the participant only answered the questions.
@@ -59,9 +59,9 @@ public class EventRating : IdentifiableEntity, IAggregateRoot
     /// <param name="mostLiked">What the participant liked most.</param>
     /// <param name="leastLiked">What the participant liked least.</param>
     /// <param name="suggestions">Suggestions.</param>
-    /// <returns>The new rating, or <see cref="ErrorCode.EventRatingEmpty"/> when it carries nothing.</returns>
+    /// <returns>The new rating, or <see cref="DomainErrorCode.EventRatingEmpty"/> when it carries nothing.</returns>
     public static Result<EventRating> Submit(
-        Guid eventId,
+        EventId eventId,
         int? score,
         string? mostLiked,
         string? leastLiked,
@@ -82,7 +82,7 @@ public class EventRating : IdentifiableEntity, IAggregateRoot
             && rating.MostLiked is null
             && rating.LeastLiked is null
             && rating.Suggestions is null
-            ? Error.Validation(ErrorCode.EventRatingEmpty)
+            ? Error.Validation(DomainErrorCode.EventRatingEmpty)
             : rating;
     }
 }

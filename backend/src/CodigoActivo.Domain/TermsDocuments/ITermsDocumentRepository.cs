@@ -13,7 +13,7 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
     /// <param name="id">Identifier of the document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the document, or <see langword="null"/> when it does not exist.</returns>
-    public Task<TermsDocument?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    public Task<TermsDocument?> GetByIdAsync(TermsDocumentId id, CancellationToken ct = default);
 
     /// <summary>
     /// Tells whether another document already uses a name, ignoring letter case.
@@ -24,7 +24,7 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
     /// <returns>A task whose result is <see langword="true"/> when the name is taken.</returns>
     public Task<bool> NameExistsAsync(
         string name,
-        Guid? exceptId = null,
+        TermsDocumentId? exceptId = null,
         CancellationToken ct = default
     );
 
@@ -35,7 +35,7 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the number of existing documents.</returns>
     public Task<int> CountExistingAsync(
-        IReadOnlyCollection<Guid> ids,
+        IReadOnlyCollection<TermsDocumentId> ids,
         CancellationToken ct = default
     );
 }

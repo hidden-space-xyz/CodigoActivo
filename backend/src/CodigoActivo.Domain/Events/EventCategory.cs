@@ -1,3 +1,5 @@
+using CodigoActivo.Domain.EventCategories;
+
 namespace CodigoActivo.Domain.Events;
 
 /// <summary>
@@ -7,7 +9,7 @@ public class EventCategory
 {
     private EventCategory() { }
 
-    internal EventCategory(Guid eventId, Guid eventCategoryTypeId)
+    internal EventCategory(EventId eventId, EventCategoryTypeId eventCategoryTypeId)
     {
         EventId = eventId;
         EventCategoryTypeId = eventCategoryTypeId;
@@ -16,10 +18,10 @@ public class EventCategory
     /// <summary>
     /// Gets the identifier of the event.
     /// </summary>
-    public Guid EventId { get; private set; }
+    public EventId EventId { get; private set; }
 
     /// <summary>
     /// Gets the identifier of the category.
     /// </summary>
-    public Guid EventCategoryTypeId { get; private set; }
+    public EventCategoryTypeId EventCategoryTypeId { get; private set; }
 }

@@ -1,4 +1,7 @@
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Events;
 
@@ -6,7 +9,7 @@ namespace CodigoActivo.Domain.Events;
 /// Event that groups activities people sign up to. It owns its schedule, the categories that tag
 /// it and the terms documents participants accept; featuring it is not an edit.
 /// </summary>
-public class Event : AuditableEntity, IAggregateRoot, IFeaturable
+public class Event : AuditableEntity<EventId>, IFeaturable
 {
     private readonly List<EventCategory> categories = [];
     private readonly List<EventTermsDocument> termsDocuments = [];
@@ -26,32 +29,18 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     /// <summary>
     /// Gets the rich-text description.
     /// </summary>
-    public string Description { get; private set; } = "{}";
+    public RichText Description { get; private set; } = RichText.Empty;
 
     /// <summary>
-    /// Gets the first day of the event.
+    /// Gets the days the event runs.
     /// </summary>
-    public DateOnly EventStartsAt { get; private set; }
+    public DateRange Calendar => DateRange.FromStored(EventStartsAt, EventEndsAt);
 
     /// <summary>
-    /// Gets the last day of the event.
+    /// Gets when people may sign up to the activities of the event.
     /// </summary>
-    public DateOnly EventEndsAt { get; private set; }
-
-    /// <summary>
-    /// Gets when the early signup opens, if there is one.
-    /// </summary>
-    public DateTimeOffset? EarlySignupStartsAt { get; private set; }
-
-    /// <summary>
-    /// Gets when the signup opens.
-    /// </summary>
-    public DateTimeOffset SignupStartsAt { get; private set; }
-
-    /// <summary>
-    /// Gets when the signup closes.
-    /// </summary>
-    public DateTimeOffset SignupEndsAt { get; private set; }
+    public SignupWindow SignupWindow =>
+        SignupWindow.FromStored(EarlySignupStartsAt, SignupStartsAt, SignupEndsAt);
 
     /// <inheritdoc />
     public bool Featured { get; private set; }
@@ -59,7 +48,7 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     /// <summary>
     /// Gets the identifier of the thumbnail file.
     /// </summary>
-    public Guid ThumbnailId { get; private set; }
+    public StoredFileId ThumbnailId { get; private set; }
 
     /// <summary>
     /// Gets the categories that tag the event.
@@ -70,6 +59,16 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     /// Gets the terms documents participants accept, in display order.
     /// </summary>
     public IReadOnlyCollection<EventTermsDocument> TermsDocuments => termsDocuments;
+
+    private DateOnly EventStartsAt { get; set; }
+
+    private DateOnly EventEndsAt { get; set; }
+
+    private DateTimeOffset? EarlySignupStartsAt { get; set; }
+
+    private DateTimeOffset SignupStartsAt { get; set; }
+
+    private DateTimeOffset SignupEndsAt { get; set; }
 
     /// <summary>
     /// Creates an event.
@@ -86,13 +85,14 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
         EventSchedule schedule,
         EventCategorySelection categorySelection,
         EventTermsLinks terms,
-        Guid authorId,
+        UserId authorId,
         DateTimeOffset now
     )
     {
         var ev = new Event();
         ev.Apply(content, schedule, categorySelection, terms);
         ev.RecordCreation(authorId, now);
+        ev.Raise(new EventCreated(ev.Id));
         return ev;
     }
 
@@ -110,12 +110,25 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
         EventSchedule schedule,
         EventCategorySelection categorySelection,
         EventTermsLinks terms,
-        Guid editorId,
+        UserId editorId,
         DateTimeOffset now
     )
     {
+        var previousThumbnailId = ThumbnailId;
+        var previousDescription = Description;
         Apply(content, schedule, categorySelection, terms);
         RecordUpdate(editorId, now);
+        Raise(
+            new EventUpdated(
+                Id,
+                ReleasedFiles.Between(
+                    previousThumbnailId,
+                    ThumbnailId,
+                    previousDescription,
+                    Description
+                )
+            )
+        );
     }
 
     /// <summary>
@@ -125,7 +138,7 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     /// <returns>The signup phase at that moment.</returns>
     public SignupPhase SignupPhaseAt(DateTimeOffset now)
     {
-        return EventTimeline.SignupPhaseAt(EarlySignupStartsAt, SignupStartsAt, SignupEndsAt, now);
+        return SignupWindow.PhaseAt(now);
     }
 
     /// <summary>
@@ -135,19 +148,46 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
     /// <returns><see langword="true"/> once the last day of the event has passed.</returns>
     public bool HasEndedBy(DateOnly today)
     {
-        return EventEndsAt < today;
+        return Calendar.EndsBefore(today);
     }
 
     /// <inheritdoc />
     public void Feature()
     {
-        Featured = true;
+        ChangeFeatured(true);
     }
 
     /// <inheritdoc />
     public void Unfeature()
     {
-        Featured = false;
+        ChangeFeatured(false);
+    }
+
+    /// <summary>
+    /// Marks the event as deleted together with its activities, so the files they reference can
+    /// be released once they are gone.
+    /// </summary>
+    /// <param name="activityThumbnailIds">Thumbnails of the activities deleted with the event.</param>
+    public void Delete(IReadOnlyCollection<StoredFileId> activityThumbnailIds)
+    {
+        ArgumentNullException.ThrowIfNull(activityThumbnailIds);
+        Raise(
+            new EventDeleted(
+                Id,
+                [.. ReleasedFiles.Of(ThumbnailId, Description).Union(activityThumbnailIds)]
+            )
+        );
+    }
+
+    private void ChangeFeatured(bool featured)
+    {
+        if (Featured == featured)
+        {
+            return;
+        }
+
+        Featured = featured;
+        Raise(new EventFeaturedChanged(Id, featured));
     }
 
     private void Apply(
@@ -166,16 +206,16 @@ public class Event : AuditableEntity, IAggregateRoot, IFeaturable
         Subtitle = content.Subtitle.Trim();
         Description = content.Description;
         ThumbnailId = content.ThumbnailId;
-        EventStartsAt = schedule.EventStartsAt;
-        EventEndsAt = schedule.EventEndsAt;
-        EarlySignupStartsAt = schedule.EarlySignupStartsAt;
-        SignupStartsAt = schedule.SignupStartsAt;
-        SignupEndsAt = schedule.SignupEndsAt;
+        EventStartsAt = schedule.Calendar.Start;
+        EventEndsAt = schedule.Calendar.End;
+        EarlySignupStartsAt = schedule.SignupWindow.EarlyStartsAt;
+        SignupStartsAt = schedule.SignupWindow.StartsAt;
+        SignupEndsAt = schedule.SignupWindow.EndsAt;
         SyncCategories(categorySelection.CategoryTypeIds);
         SyncTermsDocuments(terms);
     }
 
-    private void SyncCategories(IReadOnlyCollection<Guid> categoryTypeIds)
+    private void SyncCategories(IReadOnlyCollection<EventCategoryTypeId> categoryTypeIds)
     {
         var desired = categoryTypeIds.ToHashSet();
         categories.RemoveAll(category => !desired.Contains(category.EventCategoryTypeId));

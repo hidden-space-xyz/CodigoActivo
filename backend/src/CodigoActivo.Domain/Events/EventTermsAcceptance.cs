@@ -1,4 +1,6 @@
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Events;
 
@@ -13,17 +15,17 @@ public class EventTermsAcceptance : IAggregateRoot
     /// <summary>
     /// Gets the identifier of the event.
     /// </summary>
-    public Guid EventId { get; private set; }
+    public EventId EventId { get; private set; }
 
     /// <summary>
     /// Gets the identifier of the person who decided.
     /// </summary>
-    public Guid UserId { get; private set; }
+    public UserId UserId { get; private set; }
 
     /// <summary>
     /// Gets the identifier of the terms document.
     /// </summary>
-    public Guid TermsDocumentId { get; private set; }
+    public TermsDocumentId TermsDocumentId { get; private set; }
 
     /// <summary>
     /// Gets a value indicating whether the document was accepted.
@@ -45,9 +47,9 @@ public class EventTermsAcceptance : IAggregateRoot
     /// <param name="now">Current time.</param>
     /// <returns>The new decision.</returns>
     public static EventTermsAcceptance Record(
-        Guid eventId,
-        Guid userId,
-        Guid termsDocumentId,
+        EventId eventId,
+        UserId userId,
+        TermsDocumentId termsDocumentId,
         bool accepted,
         DateTimeOffset now
     )

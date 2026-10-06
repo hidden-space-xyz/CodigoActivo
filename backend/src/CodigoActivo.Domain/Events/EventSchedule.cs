@@ -9,45 +9,21 @@ namespace CodigoActivo.Domain.Events;
 /// </summary>
 public sealed record EventSchedule
 {
-    private EventSchedule(
-        DateOnly eventStartsAt,
-        DateOnly eventEndsAt,
-        DateTimeOffset? earlySignupStartsAt,
-        DateTimeOffset signupStartsAt,
-        DateTimeOffset signupEndsAt
-    )
+    private EventSchedule(DateRange calendar, SignupWindow signupWindow)
     {
-        EventStartsAt = eventStartsAt;
-        EventEndsAt = eventEndsAt;
-        EarlySignupStartsAt = earlySignupStartsAt;
-        SignupStartsAt = signupStartsAt;
-        SignupEndsAt = signupEndsAt;
+        Calendar = calendar;
+        SignupWindow = signupWindow;
     }
 
     /// <summary>
-    /// Gets the first day of the event.
+    /// Gets the days the event runs.
     /// </summary>
-    public DateOnly EventStartsAt { get; }
+    public DateRange Calendar { get; }
 
     /// <summary>
-    /// Gets the last day of the event.
+    /// Gets when people may sign up, in UTC.
     /// </summary>
-    public DateOnly EventEndsAt { get; }
-
-    /// <summary>
-    /// Gets when the early signup opens, in UTC, if there is one.
-    /// </summary>
-    public DateTimeOffset? EarlySignupStartsAt { get; }
-
-    /// <summary>
-    /// Gets when the signup opens, in UTC.
-    /// </summary>
-    public DateTimeOffset SignupStartsAt { get; }
-
-    /// <summary>
-    /// Gets when the signup closes, in UTC.
-    /// </summary>
-    public DateTimeOffset SignupEndsAt { get; }
+    public SignupWindow SignupWindow { get; }
 
     /// <summary>
     /// Builds a schedule from the dates supplied.
@@ -73,35 +49,32 @@ public sealed record EventSchedule
             || signupEndsAt is not { } signupEnd
         )
         {
-            return Error.Validation(ErrorCode.EventScheduleRequired);
+            return Error.Validation(DomainErrorCode.EventScheduleRequired);
         }
 
-        if (eventEnd < eventStart || signupEnd <= signupStart)
+        if (
+            DateRange.TryCreate(eventStart, eventEnd) is not { } calendar
+            || signupEnd <= signupStart
+        )
         {
-            return Error.Validation(ErrorCode.EventScheduleInvalidRange);
+            return Error.Validation(DomainErrorCode.EventScheduleInvalidRange);
         }
 
-        if (earlySignupStartsAt is { } earlyStart && earlyStart >= signupStart)
+        if (SignupWindow.TryCreate(earlySignupStartsAt, signupStart, signupEnd) is not { } window)
         {
-            return Error.Validation(ErrorCode.EventEarlySignupNotBeforeSignup);
+            return Error.Validation(DomainErrorCode.EventEarlySignupNotBeforeSignup);
         }
 
-        if (DateOnly.FromDateTime(signupStart.UtcDateTime) > eventEnd)
+        if (calendar.EndsBefore(DateOnly.FromDateTime(signupStart.UtcDateTime)))
         {
-            return Error.Validation(ErrorCode.EventScheduleInvalidRange);
+            return Error.Validation(DomainErrorCode.EventScheduleInvalidRange);
         }
 
-        if (DateOnly.FromDateTime(signupEnd.UtcDateTime) > eventEnd)
+        if (calendar.EndsBefore(DateOnly.FromDateTime(signupEnd.UtcDateTime)))
         {
-            return Error.Validation(ErrorCode.EventSignupEndsAfterEvent);
+            return Error.Validation(DomainErrorCode.EventSignupEndsAfterEvent);
         }
 
-        return new EventSchedule(
-            eventStart,
-            eventEnd,
-            earlySignupStartsAt?.ToUniversalTime(),
-            signupStart.ToUniversalTime(),
-            signupEnd.ToUniversalTime()
-        );
+        return new EventSchedule(calendar, window);
     }
 }

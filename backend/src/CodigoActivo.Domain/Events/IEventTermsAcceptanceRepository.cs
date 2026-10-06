@@ -1,4 +1,6 @@
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Events;
 
@@ -15,8 +17,8 @@ public interface IEventTermsAcceptanceRepository : IRepository<EventTermsAccepta
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the decisions.</returns>
     public Task<IReadOnlyList<EventTermsAcceptance>> ListAsync(
-        Guid eventId,
-        Guid userId,
+        EventId eventId,
+        UserId userId,
         CancellationToken ct = default
     );
 
@@ -26,5 +28,8 @@ public interface IEventTermsAcceptanceRepository : IRepository<EventTermsAccepta
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="true"/> when a decision exists.</returns>
-    public Task<bool> AnyForDocumentAsync(Guid termsDocumentId, CancellationToken ct = default);
+    public Task<bool> AnyForDocumentAsync(
+        TermsDocumentId termsDocumentId,
+        CancellationToken ct = default
+    );
 }

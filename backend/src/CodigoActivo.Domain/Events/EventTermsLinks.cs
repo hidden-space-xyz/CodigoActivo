@@ -35,7 +35,7 @@ public sealed class EventTermsLinks
         }
 
         return links.Select(link => link.TermsDocumentId).Distinct().Count() != links.Count
-            ? Error.Validation(ErrorCode.EventTermsDocumentDuplicated)
+            ? Error.Validation(DomainErrorCode.EventTermsDocumentDuplicated)
             : new EventTermsLinks([.. links]);
     }
 }
