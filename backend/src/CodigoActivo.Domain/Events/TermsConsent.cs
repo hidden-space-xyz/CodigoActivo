@@ -1,3 +1,5 @@
+using CodigoActivo.Domain.Users;
+
 namespace CodigoActivo.Domain.Events;
 
 /// <summary>
@@ -18,8 +20,8 @@ public static class TermsConsent
     /// <param name="now">Current time.</param>
     /// <returns>The decisions to record and whether a required document is still not accepted.</returns>
     public static TermsConsentOutcome Apply(
-        Guid eventId,
-        Guid userId,
+        EventId eventId,
+        UserId userId,
         IReadOnlyCollection<EventTermsDocument> documents,
         IReadOnlyCollection<EventTermsAcceptance> acceptances,
         IReadOnlyList<TermsDecision>? decisions,

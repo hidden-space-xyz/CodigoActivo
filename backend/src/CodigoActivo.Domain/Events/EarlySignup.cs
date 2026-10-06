@@ -1,4 +1,3 @@
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Events;
@@ -12,17 +11,17 @@ public static class EarlySignup
     /// <summary>
     /// Gets the membership types entitled to the early signup: members and sponsors.
     /// </summary>
-    public static IReadOnlyList<Guid> EntitledUserTypeIds { get; } =
-    [SeedIds.UserTypes.Member, SeedIds.UserTypes.Sponsor];
+    public static IReadOnlyList<UserType> EntitledUserTypes { get; } =
+    [UserType.Member, UserType.Sponsor];
 
     /// <summary>
     /// Tells whether a membership type is entitled to the early signup.
     /// </summary>
-    /// <param name="userTypeId">Membership type of the account, or of the guardian of a dependent.</param>
+    /// <param name="userType">Membership type of the account, or of the guardian of a dependent.</param>
     /// <returns><see langword="true"/> when the type is entitled.</returns>
-    public static bool IsEntitled(Guid userTypeId)
+    public static bool IsEntitled(UserType userType)
     {
-        return EntitledUserTypeIds.Contains(userTypeId);
+        return EntitledUserTypes.Contains(userType);
     }
 
     /// <summary>
@@ -35,6 +34,6 @@ public static class EarlySignup
     {
         ArgumentNullException.ThrowIfNull(person);
 
-        return IsEntitled(guardian?.UserTypeId ?? person.UserTypeId);
+        return IsEntitled(guardian?.UserType ?? person.UserType);
     }
 }

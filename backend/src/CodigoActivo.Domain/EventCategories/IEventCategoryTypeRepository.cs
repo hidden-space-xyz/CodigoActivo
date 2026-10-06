@@ -13,7 +13,10 @@ public interface IEventCategoryTypeRepository : IRepository<EventCategoryType>
     /// <param name="id">Identifier of the category.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the category, or <see langword="null"/> when it does not exist.</returns>
-    public Task<EventCategoryType?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    public Task<EventCategoryType?> GetByIdAsync(
+        EventCategoryTypeId id,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Tells whether another category already uses a name, ignoring letter case.
@@ -24,7 +27,7 @@ public interface IEventCategoryTypeRepository : IRepository<EventCategoryType>
     /// <returns>A task whose result is <see langword="true"/> when the name is taken.</returns>
     public Task<bool> NameExistsAsync(
         string name,
-        Guid? exceptId = null,
+        EventCategoryTypeId? exceptId = null,
         CancellationToken ct = default
     );
 
@@ -35,7 +38,7 @@ public interface IEventCategoryTypeRepository : IRepository<EventCategoryType>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the number of existing categories.</returns>
     public Task<int> CountExistingAsync(
-        IReadOnlyCollection<Guid> ids,
+        IReadOnlyCollection<EventCategoryTypeId> ids,
         CancellationToken ct = default
     );
 }

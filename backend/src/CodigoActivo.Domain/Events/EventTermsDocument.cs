@@ -1,3 +1,5 @@
+using CodigoActivo.Domain.TermsDocuments;
+
 namespace CodigoActivo.Domain.Events;
 
 /// <summary>
@@ -8,8 +10,8 @@ public class EventTermsDocument
     private EventTermsDocument() { }
 
     internal EventTermsDocument(
-        Guid eventId,
-        Guid termsDocumentId,
+        EventId eventId,
+        TermsDocumentId termsDocumentId,
         bool isRequired,
         int displayOrder
     )
@@ -23,12 +25,12 @@ public class EventTermsDocument
     /// <summary>
     /// Gets the identifier of the event.
     /// </summary>
-    public Guid EventId { get; private set; }
+    public EventId EventId { get; private set; }
 
     /// <summary>
     /// Gets the identifier of the terms document.
     /// </summary>
-    public Guid TermsDocumentId { get; private set; }
+    public TermsDocumentId TermsDocumentId { get; private set; }
 
     /// <summary>
     /// Gets a value indicating whether accepting the document is required to sign up.
