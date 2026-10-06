@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
+using UserId = CodigoActivo.Domain.Users.UserId;
 
 namespace CodigoActivo.Application.Accounts.Queries;
 
@@ -10,7 +11,7 @@ namespace CodigoActivo.Application.Accounts.Queries;
 /// Carries the criteria used to describe the open second-factor challenge of a user.
 /// </summary>
 /// <param name="UserId">Identifier of the user whose password was already accepted.</param>
-public sealed record GetLoginChallengeQuery(Guid UserId) : IQuery<Result<LoginChallengeResponse>>;
+public sealed record GetLoginChallengeQuery(UserId UserId) : IQuery<Result<LoginChallengeResponse>>;
 
 /// <summary>
 /// Executes the query that tells the client which second factor to ask for.
@@ -32,7 +33,7 @@ public sealed class GetLoginChallengeQueryHandler(IReadStore readStore, IQueryEx
     )
     {
         var user = await executor.FirstOrDefaultAsync(
-            readStore.Users.Where(u => u.Id == query.UserId),
+            readStore.Users.Where(u => u.Id == query.UserId.Value),
             ct
         );
         if (user is null)

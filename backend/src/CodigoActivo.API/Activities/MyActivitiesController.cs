@@ -37,7 +37,10 @@ public class MyActivitiesController : ApiControllerBase
     )
     {
         return Ok(
-            await handler.HandleAsync(new ListAssignedActivitiesQuery(CurrentUserId, eventId), ct)
+            await handler.HandleAsync(
+                new ListAssignedActivitiesQuery(CurrentUserId.Value, eventId),
+                ct
+            )
         );
     }
 }

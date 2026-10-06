@@ -52,7 +52,10 @@ public sealed class TwoFactorTicketValidator(
         CancellationToken ct = default
     )
     {
-        var pending = await pendingChallenge.HandleAsync(new GetPendingChallengeQuery(userId), ct);
+        var pending = await pendingChallenge.HandleAsync(
+            new GetPendingChallengeQuery(UserId.From(userId)),
+            ct
+        );
         return pending is null
             ? null
             : BuildPrincipal(userId, pending.CredentialStamp, pending.ChallengeId);
@@ -80,7 +83,7 @@ public sealed class TwoFactorTicketValidator(
         }
 
         var pending = await pendingChallenge.HandleAsync(
-            new GetPendingChallengeQuery(userId.Value),
+            new GetPendingChallengeQuery(UserId.From(userId.Value)),
             context.HttpContext.RequestAborted
         );
         if (

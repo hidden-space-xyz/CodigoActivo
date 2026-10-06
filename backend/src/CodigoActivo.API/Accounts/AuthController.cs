@@ -92,7 +92,7 @@ public class AuthController : ApiControllerBase
     {
         return await ToOkAfterAsync(
             await handler.HandleAsync(new VerifyUserCommand(UserId.From(userId), request.Otp), ct),
-            () => getUser.HandleAsync(new GetCurrentUserQuery(userId), ct)
+            () => getUser.HandleAsync(new GetCurrentUserQuery(UserId.From(userId)), ct)
         );
     }
 
@@ -245,7 +245,9 @@ public class AuthController : ApiControllerBase
             return ToProblem(ApiError.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
         }
 
-        return ToOk(await handler.HandleAsync(new GetLoginChallengeQuery(userId.Value), ct));
+        return ToOk(
+            await handler.HandleAsync(new GetLoginChallengeQuery(UserId.From(userId.Value)), ct)
+        );
     }
 
     /// <summary>
@@ -301,7 +303,9 @@ public class AuthController : ApiControllerBase
                 AllowRefresh = false,
             }
         );
-        return ToOk(await getUser.HandleAsync(new GetCurrentUserQuery(userId.Value), ct));
+        return ToOk(
+            await getUser.HandleAsync(new GetCurrentUserQuery(UserId.From(userId.Value)), ct)
+        );
     }
 
     /// <summary>

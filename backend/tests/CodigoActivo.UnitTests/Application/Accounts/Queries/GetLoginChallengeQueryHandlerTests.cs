@@ -25,7 +25,7 @@ public sealed class GetLoginChallengeQueryHandlerTests
     private Task<Result<LoginChallengeResponse>> QueryAsync(Guid userId)
     {
         return sut.HandleAsync(
-            new GetLoginChallengeQuery(userId),
+            new GetLoginChallengeQuery(UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
     }

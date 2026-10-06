@@ -1,6 +1,7 @@
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.Controllers.Abstractions;
@@ -11,11 +12,12 @@ namespace CodigoActivo.API.Controllers.Abstractions;
 public abstract class ApiControllerBase : ControllerBase
 {
     /// <summary>
-    /// Gets the identifier of the associated user.
+    /// Gets the identifier of the signed-in user.
     /// </summary>
-    protected Guid CurrentUserId =>
-        User.GetUserId()
-        ?? throw new InvalidOperationException("No authenticated user on this request.");
+    protected UserId CurrentUserId =>
+        User.GetUserId() is { } id
+            ? UserId.From(id)
+            : throw new InvalidOperationException("No authenticated user on this request.");
 
     /// <summary>
     /// Gets whether admin.

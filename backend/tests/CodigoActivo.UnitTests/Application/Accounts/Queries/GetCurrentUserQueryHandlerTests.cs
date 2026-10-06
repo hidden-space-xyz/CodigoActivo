@@ -3,6 +3,7 @@ using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -23,7 +24,7 @@ public sealed class GetCurrentUserQueryHandlerTests
     public async Task HandleAsyncUserMissingReturnsUnauthorized()
     {
         var result = await sut.HandleAsync(
-            new GetCurrentUserQuery(Guid.NewGuid()),
+            new GetCurrentUserQuery(UserId.New()),
             TestContext.Current.CancellationToken
         );
 
@@ -37,7 +38,7 @@ public sealed class GetCurrentUserQueryHandlerTests
         store.Users.AddRange([user, NewUserRow(first: "Otra")]);
 
         var result = await sut.HandleAsync(
-            new GetCurrentUserQuery(user.Id),
+            new GetCurrentUserQuery(UserId.From(user.Id)),
             TestContext.Current.CancellationToken
         );
 

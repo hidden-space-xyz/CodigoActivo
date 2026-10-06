@@ -90,7 +90,10 @@ public sealed class SessionTicketValidator(
         }
 
         var identity = await sessionIdentity.HandleAsync(
-            new GetSessionIdentityQuery(userId.Value, sessionId.Value),
+            new GetSessionIdentityQuery(
+                UserId.From(userId.Value),
+                UserSessionId.From(sessionId.Value)
+            ),
             context.HttpContext.RequestAborted
         );
         if (

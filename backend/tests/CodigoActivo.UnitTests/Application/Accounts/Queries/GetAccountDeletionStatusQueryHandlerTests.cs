@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
@@ -14,7 +15,7 @@ public sealed class GetAccountDeletionStatusQueryHandlerTests
     private Task<AccountDeletionStatusResponse> StatusAsync(Guid userId)
     {
         return sut.HandleAsync(
-            new GetAccountDeletionStatusQuery(userId),
+            new GetAccountDeletionStatusQuery(UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
     }

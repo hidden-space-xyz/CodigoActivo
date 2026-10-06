@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.Accounts.Queries;
 /// Carries the account whose pending second-factor challenge is requested.
 /// </summary>
 /// <param name="UserId">Identifier of the account.</param>
-public sealed record GetPendingChallengeQuery(Guid UserId) : IQuery<PendingChallenge?>;
+public sealed record GetPendingChallengeQuery(UserId UserId) : IQuery<PendingChallenge?>;
 
 /// <summary>
 /// Resolves the second-factor challenge an account has pending: only an active, unlocked account
@@ -33,10 +33,11 @@ public sealed class GetPendingChallengeQueryHandler(IReadStore readStore, IQuery
     )
     {
         ArgumentNullException.ThrowIfNull(query);
+        var userId = query.UserId.Value;
         var pending = await executor.FirstOrDefaultAsync(
             readStore
                 .Users.Where(user =>
-                    user.Id == query.UserId
+                    user.Id == userId
                     && user.UserStatusTypeId == CatalogIds.UserStatuses.IdOf(UserStatus.Active)
                     && user.PasswordHash != null
                     && user.PasswordLockedAt == null
