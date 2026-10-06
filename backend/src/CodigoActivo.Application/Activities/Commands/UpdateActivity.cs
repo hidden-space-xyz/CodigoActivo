@@ -1,10 +1,9 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Activities.Contracts;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 
@@ -14,30 +13,22 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// Carries the input required to update the activity.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="Request">Validated client request data.</param>
-/// <param name="UserId">Identifier of the user.</param>
-public sealed record UpdateActivityCommand(
-    Guid ActivityId,
-    UpdateActivityRequest Request,
-    Guid UserId
-) : ICommand<Result>;
+/// <param name="Activity">New details, schedule and capacities of the activity.</param>
+public sealed record UpdateActivityCommand(ActivityId ActivityId, ActivityDraft Activity)
+    : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the activity.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="validator">The validator value.</param>
-/// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdateActivityCommandHandler(
     IActivityRepository activities,
     ActivityValidator validator,
-    IOrphanFileCleaner orphanCleaner,
-    IClock clock,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    ICurrentUser currentUser,
+    IClock clock
 ) : ICommandHandler<UpdateActivityCommand, Result>
 {
     /// <summary>
@@ -51,52 +42,34 @@ public sealed class UpdateActivityCommandHandler(
         CancellationToken ct = default
     )
     {
-        var request = command.Request;
+        ArgumentNullException.ThrowIfNull(command);
+        var draft = command.Activity;
 
         var activity = await activities.GetByIdAsync(command.ActivityId, ct);
         if (activity is null)
         {
-            return Error.NotFound(ErrorCode.ActivityNotFound);
+            return Error.NotFound(ApplicationErrorCode.ActivityNotFound);
         }
 
-        var validated = await validator.ValidateActivityAsync(
-            activity.EventId,
-            request.ActivityStartsAt,
-            request.ActivityEndsAt,
-            request.ThumbnailId,
-            request.ActivityModalityTypeId,
-            request.RoleCapacities,
-            ct
-        );
+        var validated = await validator.ValidateActivityAsync(activity.EventId, draft, ct);
         if (validated.IsFailure)
         {
             return validated.Error!;
         }
 
-        var previousThumbnailId = activity.ThumbnailId;
-
         activity.Update(
             new ActivityDetails(
-                request.Title,
-                request.Description,
-                request.Location,
-                request.ActivityModalityTypeId,
-                request.ThumbnailId
+                draft.Title,
+                draft.Description,
+                draft.Location,
+                validated.Value.Modality,
+                draft.ThumbnailId
             ),
             validated.Value.Schedule,
             validated.Value.Capacities,
-            command.UserId,
+            currentUser.RequiredId(),
             clock.UtcNow
         );
-
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
-
-        if (previousThumbnailId != request.ThumbnailId)
-        {
-            await orphanCleaner.DeleteIfOrphanedAsync(previousThumbnailId, ct);
-        }
-
         return Result.Success();
     }
 }

@@ -2,7 +2,6 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Caching;
-using Microsoft.Extensions.Caching.Hybrid;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -10,18 +9,30 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// Carries the criteria used to list activity modality types.
 /// </summary>
 public sealed record ListActivityModalityTypesQuery
-    : IQuery<IReadOnlyList<ActivityModalityTypeResponse>>;
+    : IQuery<IReadOnlyList<ActivityModalityTypeResponse>>,
+        ICachedQuery
+{
+    /// <inheritdoc />
+    public CacheDuration Duration => CacheDuration.Catalog;
+
+    /// <inheritdoc />
+    public IReadOnlyCollection<string> Tags { get; } = [CacheTags.Catalogs];
+
+    /// <inheritdoc />
+    public string CacheKey(DateOnly today)
+    {
+        return "activities:modality-types";
+    }
+}
 
 /// <summary>
 /// Executes the query to list activity modality types.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="cache">Cache used to reuse previously computed results.</param>
 public sealed class ListActivityModalityTypesQueryHandler(
     IReadStore readStore,
-    IQueryExecutor executor,
-    HybridCache cache
+    IQueryExecutor executor
 ) : IQueryHandler<ListActivityModalityTypesQuery, IReadOnlyList<ActivityModalityTypeResponse>>
 {
     /// <summary>
@@ -35,13 +46,10 @@ public sealed class ListActivityModalityTypesQueryHandler(
         CancellationToken ct = default
     )
     {
-        return cache.GetCatalogAsync(
-            executor,
-            "activities:modality-types",
-            () =>
-                readStore
-                    .ActivityModalityTypes.OrderBy(modality => modality.Name)
-                    .Select(ActivityProjections.ActivityModalityType),
+        return executor.ToListAsync(
+            readStore
+                .ActivityModalityTypes.OrderBy(modality => modality.Name)
+                .Select(ActivityProjections.ActivityModalityType),
             ct
         );
     }

@@ -1,7 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Common.Validation;
-using CodigoActivo.Domain.Users;
-
 namespace CodigoActivo.Application.Activities.Contracts;
 
 /// <summary>
@@ -70,60 +66,6 @@ public record ActivityRoleCapacityResponse(
 );
 
 /// <summary>
-/// Contains the client-supplied data used to activity role capacity.
-/// </summary>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-/// <param name="DesiredCount">Number of desired allowed or reported.</param>
-public record ActivityRoleCapacityRequest(
-    [Required] Guid ActivityRoleTypeId,
-    [Required] [Range(1, 10000)] int? DesiredCount
-);
-
-/// <summary>
-/// Contains the client-supplied data used to create an activity.
-/// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Location">The location value.</param>
-/// <param name="ActivityModalityTypeId">Identifier of the activity modality type.</param>
-/// <param name="ActivityStartsAt">The activity starts at value.</param>
-/// <param name="ActivityEndsAt">The activity ends at value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-/// <param name="RoleCapacities">The role capacities value.</param>
-public record CreateActivityRequest(
-    [Required] [MaxLength(200)] [NotBlank] string Title,
-    [Required] [MaxLength(4000)] [NotBlank] string Description,
-    [Required] [MaxLength(200)] [NotBlank] string Location,
-    [Required] Guid ActivityModalityTypeId,
-    [Required] DateTimeOffset? ActivityStartsAt,
-    [Required] DateTimeOffset? ActivityEndsAt,
-    Guid ThumbnailId,
-    IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
-);
-
-/// <summary>
-/// Contains the client-supplied data used to update the activity.
-/// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Location">The location value.</param>
-/// <param name="ActivityModalityTypeId">Identifier of the activity modality type.</param>
-/// <param name="ActivityStartsAt">The activity starts at value.</param>
-/// <param name="ActivityEndsAt">The activity ends at value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-/// <param name="RoleCapacities">The role capacities value.</param>
-public record UpdateActivityRequest(
-    [Required] [MaxLength(200)] [NotBlank] string Title,
-    [Required] [MaxLength(4000)] [NotBlank] string Description,
-    [Required] [MaxLength(200)] [NotBlank] string Location,
-    [Required] Guid ActivityModalityTypeId,
-    [Required] DateTimeOffset? ActivityStartsAt,
-    [Required] DateTimeOffset? ActivityEndsAt,
-    Guid ThumbnailId,
-    IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
-);
-
-/// <summary>
 /// Contains the assignment data returned by the API.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
@@ -145,45 +87,6 @@ public record AssignmentResponse(
 /// <param name="Id">Identifier of the target entity.</param>
 /// <param name="Name">The name value.</param>
 public record AssignmentStatusResponse(Guid Id, string Name);
-
-/// <summary>
-/// Contains the client-supplied decision for a single terms document during a signup.
-/// </summary>
-/// <param name="TermsDocumentId">Identifier of the terms document.</param>
-/// <param name="Accepted">Whether the user accepted the document.</param>
-public record TermsDecisionRequest([Required] Guid TermsDocumentId, [Required] bool? Accepted);
-
-/// <summary>
-/// Contains the client-supplied data used to assign.
-/// </summary>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-/// <param name="TermsDecisions">The terms decisions supplied for the event's linked documents.</param>
-public record AssignRequest(
-    [Required] Guid ActivityRoleTypeId,
-    IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
-);
-
-/// <summary>
-/// Contains the client-supplied data used to assign household.
-/// </summary>
-/// <param name="Assignments">The assignments value.</param>
-/// <param name="TermsDecisions">The terms decisions supplied for the event's linked documents.</param>
-public record AssignHouseholdRequest(
-    [Required]
-    [MaxLength(Household.MaxMembers)]
-        IReadOnlyList<HouseholdAssignmentRequest> Assignments,
-    IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
-);
-
-/// <summary>
-/// Contains the client-supplied data used to household assignment.
-/// </summary>
-/// <param name="UserId">Identifier of the user.</param>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-public record HouseholdAssignmentRequest(
-    [Required] Guid UserId,
-    [Required] Guid ActivityRoleTypeId
-);
 
 /// <summary>
 /// Contains the household member assignment data returned by the API.
@@ -220,18 +123,6 @@ public record SignupRoleResponse(Guid Id, string Name);
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="Roles">The roles value.</param>
 public record HouseholdSignupRolesResponse(Guid UserId, IReadOnlyList<SignupRoleResponse> Roles);
-
-/// <summary>
-/// Contains the client-supplied data used to change assignment status.
-/// </summary>
-/// <param name="AssignmentStatusId">Identifier of the assignment status.</param>
-public record ChangeAssignmentStatusRequest([Required] Guid AssignmentStatusId);
-
-/// <summary>
-/// Contains the client-supplied data used to change assignment role.
-/// </summary>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-public record ChangeAssignmentRoleRequest([Required] Guid ActivityRoleTypeId);
 
 /// <summary>
 /// Contains the overlapping activity data returned by the API.

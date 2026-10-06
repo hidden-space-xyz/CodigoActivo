@@ -1,76 +1,78 @@
-using CodigoActivo.Application.Abstractions.Caching;
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Activities.Contracts;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
 /// <summary>
-/// Carries the input required to assign household.
+/// Carries the input required to sign members of the signed-in user's household up to an activity.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="ActingUserId">Identifier of the acting user.</param>
-/// <param name="Request">Validated client request data.</param>
-/// <param name="IsAdmin">Whether admin.</param>
+/// <param name="Assignments">Members to sign up with their roles.</param>
+/// <param name="TermsDecisions">Decisions on the terms documents of the event, if any were asked.</param>
 public sealed record AssignHouseholdCommand(
-    Guid ActivityId,
-    Guid ActingUserId,
-    AssignHouseholdRequest Request,
-    bool IsAdmin
-) : ICommand<Result<IReadOnlyList<Guid>>>;
+    ActivityId ActivityId,
+    [property: MaxLength(Household.MaxMembers)] IReadOnlyList<HouseholdMemberSignup> Assignments,
+    IReadOnlyList<TermsDecision>? TermsDecisions
+) : ICommand<Result<IReadOnlyList<UserId>>>;
 
 /// <summary>
-/// Executes the command to assign household.
+/// Executes the command to sign members of the signed-in user's household up to an activity.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="signupGate">The signup gate value.</param>
-/// <param name="termsGate">The terms gate value.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="signupGate">Gate that checks the signup window.</param>
+/// <param name="termsGate">Gate that records and checks the terms decisions.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class AssignHouseholdCommandHandler(
     IActivityRepository activities,
     IUserRepository users,
+    ICurrentUser currentUser,
     SignupGate signupGate,
     TermsGate termsGate,
     IClock clock,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
-) : ICommandHandler<AssignHouseholdCommand, Result<IReadOnlyList<Guid>>>
+    IUnitOfWork uow
+) : ICommandHandler<AssignHouseholdCommand, Result<IReadOnlyList<UserId>>>
 {
     /// <summary>
-    /// Handles the request to assign household.
+    /// Handles the request to sign household members up to an activity.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifiers of the newly assigned users, or an application error on failure.</returns>
-    public async Task<Result<IReadOnlyList<Guid>>> HandleAsync(
+    /// <returns>A task whose result contains the identifiers of the members signed up, or an application error on failure.</returns>
+    public async Task<Result<IReadOnlyList<UserId>>> HandleAsync(
         AssignHouseholdCommand command,
         CancellationToken ct = default
     )
     {
-        var request = command.Request;
-        if (request.Assignments is null || request.Assignments.Count is 0)
+        ArgumentNullException.ThrowIfNull(command);
+        if (command.Assignments.Count is 0)
         {
-            return Error.Validation(ErrorCode.ActivityHouseholdAssignmentsRequired);
+            return Error.Validation(ApplicationErrorCode.ActivityHouseholdAssignmentsRequired);
         }
 
         var activity = await activities.GetByIdAsync(command.ActivityId, ct);
         if (activity is null)
         {
-            return Error.NotFound(ErrorCode.ActivityNotFound);
+            return Error.NotFound(ApplicationErrorCode.ActivityNotFound);
         }
 
+        var actingUserId = currentUser.RequiredId();
         var signup = await signupGate.EnsureSignupOpenAsync(
             activity,
-            [command.ActingUserId],
-            command.IsAdmin,
+            [actingUserId],
+            currentUser.IsAdmin,
             ct
         );
         if (signup.IsFailure)
@@ -78,35 +80,33 @@ public sealed class AssignHouseholdCommandHandler(
             return signup.Error!;
         }
 
-        var items = request.Assignments.DistinctBy(a => a.UserId).ToList();
+        var items = command.Assignments.DistinctBy(a => a.UserId).ToList();
         var userIds = items.ConvertAll(item => item.UserId);
         var memberById = (await users.ListByIdsAsync(userIds, ct)).ToDictionary(u => u.Id);
         var outsideHousehold = userIds.Exists(id =>
-            id != command.ActingUserId
-            && (
-                !memberById.TryGetValue(id, out var member)
-                || !member.IsDependentOf(command.ActingUserId)
-            )
+            id != actingUserId
+            && (!memberById.TryGetValue(id, out var member) || !member.IsDependentOf(actingUserId))
         );
         if (outsideHousehold)
         {
-            return Error.Forbidden(ErrorCode.ActivityHouseholdMemberNotAllowed);
+            return Error.Forbidden(ApplicationErrorCode.ActivityHouseholdMemberNotAllowed);
         }
 
         if (
             items.Exists(item =>
                 !memberById.TryGetValue(item.UserId, out var member)
-                || !SignupRoles.Allows(member.UserTypeId, item.ActivityRoleTypeId)
+                || !CatalogIds.ActivityRoles.TryGetValue(item.ActivityRoleTypeId, out var role)
+                || !SignupRoles.Allows(member.UserType, role)
             )
         )
         {
-            return Error.Validation(ErrorCode.ActivityRoleNotAllowed);
+            return Error.Validation(ApplicationErrorCode.ActivityRoleNotAllowed);
         }
 
         var terms = await termsGate.EnsureDecidedAsync(
             activity.EventId,
-            command.ActingUserId,
-            request.TermsDecisions,
+            actingUserId,
+            command.TermsDecisions,
             ct
         );
         if (terms.IsFailure)
@@ -117,7 +117,11 @@ public sealed class AssignHouseholdCommandHandler(
         var created = items
             .Where(item =>
                 activity
-                    .RequestAssignment(item.UserId, item.ActivityRoleTypeId, clock.UtcNow)
+                    .RequestAssignment(
+                        item.UserId,
+                        CatalogIds.ActivityRoles.ValueOf(item.ActivityRoleTypeId),
+                        clock.UtcNow
+                    )
                     .IsSuccess
             )
             .Select(item => item.UserId)
@@ -129,14 +133,9 @@ public sealed class AssignHouseholdCommandHandler(
         }
         catch (UniqueConstraintViolationException ex) when (ex.EntityType == typeof(Assignment))
         {
-            return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
+            return Error.Conflict(DomainErrorCode.ActivityAssignmentAlreadyExists);
         }
 
-        if (created.Count > 0)
-        {
-            await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
-        }
-
-        return Result.Success<IReadOnlyList<Guid>>(created);
+        return Result.Success<IReadOnlyList<UserId>>(created);
     }
 }

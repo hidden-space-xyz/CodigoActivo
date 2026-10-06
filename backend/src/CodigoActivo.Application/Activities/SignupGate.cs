@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -26,7 +27,7 @@ public sealed class SignupGate(IEventRepository events, IUserRepository users, I
     /// <returns>A task whose result reports success, or an application error on failure.</returns>
     public async Task<Result> EnsureSignupOpenAsync(
         Activity activity,
-        IReadOnlyList<Guid> userIds,
+        IReadOnlyList<UserId> userIds,
         bool isAdmin,
         CancellationToken ct
     )
@@ -43,21 +44,21 @@ public sealed class SignupGate(IEventRepository events, IUserRepository users, I
         var phase = ev?.SignupPhaseAt(now) ?? SignupPhase.Closed;
         if (phase is SignupPhase.Closed)
         {
-            return Error.Validation(ErrorCode.ActivitySignupClosed);
+            return Error.Validation(ApplicationErrorCode.ActivitySignupClosed);
         }
 
         if (activity.HasStartedBy(now))
         {
-            return Error.Validation(ErrorCode.ActivityAlreadyStarted);
+            return Error.Validation(ApplicationErrorCode.ActivityAlreadyStarted);
         }
 
         return phase is SignupPhase.Open || await AllEntitledToEarlySignupAsync(userIds, ct)
             ? Result.Success()
-            : Error.Validation(ErrorCode.ActivitySignupEarlyOnly);
+            : Error.Validation(ApplicationErrorCode.ActivitySignupEarlyOnly);
     }
 
     private async Task<bool> AllEntitledToEarlySignupAsync(
-        IReadOnlyList<Guid> userIds,
+        IReadOnlyList<UserId> userIds,
         CancellationToken ct
     )
     {

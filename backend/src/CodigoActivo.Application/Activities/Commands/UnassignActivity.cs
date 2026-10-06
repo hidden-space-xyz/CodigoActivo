@@ -1,37 +1,39 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
 /// <summary>
-/// Carries the input required to unassign activity.
+/// Carries the input required to withdraw a person from an activity.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="UserId">Identifier of the user.</param>
-/// <param name="IsAdmin">Whether admin.</param>
-public sealed record UnassignActivityCommand(Guid ActivityId, Guid UserId, bool IsAdmin)
+/// <param name="UserId">Identifier of the person withdrawn.</param>
+public sealed record UnassignActivityCommand(ActivityId ActivityId, UserId UserId)
     : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to unassign activity.
+/// Executes the command to withdraw a person from an activity. The signed-in user may withdraw
+/// themselves or one of their dependents while the signup is open; an administrator may withdraw
+/// anyone at any time.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="signupGate">The signup gate value.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
+/// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="signupGate">Gate that checks the signup window.</param>
 public sealed class UnassignActivityCommandHandler(
     IActivityRepository activities,
-    SignupGate signupGate,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    ActingUserPolicy actingUser,
+    ICurrentUser currentUser,
+    SignupGate signupGate
 ) : ICommandHandler<UnassignActivityCommand, Result>
 {
     /// <summary>
-    /// Handles the request to unassign activity.
+    /// Handles the request to withdraw a person from an activity.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -41,18 +43,26 @@ public sealed class UnassignActivityCommandHandler(
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var allowed = await actingUser.EnsureMayActForAsync(command.UserId, ct);
+        if (allowed.IsFailure)
+        {
+            return allowed;
+        }
+
         var activity = await activities.GetByIdAsync(command.ActivityId, ct);
         if (activity?.AssignmentOf(command.UserId) is null)
         {
-            return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
+            return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
         }
 
-        if (!command.IsAdmin)
+        if (!currentUser.IsAdmin)
         {
             var signup = await signupGate.EnsureSignupOpenAsync(
                 activity,
                 [command.UserId],
-                command.IsAdmin,
+                isAdmin: false,
                 ct
             );
             if (signup.IsFailure)
@@ -61,14 +71,6 @@ public sealed class UnassignActivityCommandHandler(
             }
         }
 
-        var unassigned = activity.Unassign(command.UserId);
-        if (unassigned.IsFailure)
-        {
-            return unassigned.Error!;
-        }
-
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
-        return Result.Success();
+        return activity.Unassign(command.UserId);
     }
 }

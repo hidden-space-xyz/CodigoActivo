@@ -1,44 +1,34 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Activities.Contracts;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Commands;
 
 /// <summary>
-/// Carries the input required to change assignment role.
+/// Carries the input required to change the role of a person signed up to an activity.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="UserId">Identifier of the user.</param>
-/// <param name="Request">Validated client request data.</param>
+/// <param name="UserId">Identifier of the person.</param>
+/// <param name="ActivityRoleTypeId">Catalog identifier of the new role.</param>
 public sealed record ChangeAssignmentRoleCommand(
-    Guid ActivityId,
-    Guid UserId,
-    ChangeAssignmentRoleRequest Request
+    ActivityId ActivityId,
+    UserId UserId,
+    Guid ActivityRoleTypeId
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to change assignment role.
+/// Executes the command to change the role of a person signed up to an activity.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="readStore">Read side used to check the role catalog.</param>
-/// <param name="executor">Executor of the read-side queries.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
-public sealed class ChangeAssignmentRoleCommandHandler(
-    IActivityRepository activities,
-    IReadStore readStore,
-    IQueryExecutor executor,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
-) : ICommandHandler<ChangeAssignmentRoleCommand, Result>
+public sealed class ChangeAssignmentRoleCommandHandler(IActivityRepository activities)
+    : ICommandHandler<ChangeAssignmentRoleCommand, Result>
 {
     /// <summary>
-    /// Handles the request to change assignment role.
+    /// Handles the request to change the role of a person signed up to an activity.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -48,29 +38,20 @@ public sealed class ChangeAssignmentRoleCommandHandler(
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(command);
+
         var activity = await activities.GetByIdAsync(command.ActivityId, ct);
         if (activity?.AssignmentOf(command.UserId) is null)
         {
-            return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
+            return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
         }
 
-        var roleTypeId = command.Request.ActivityRoleTypeId;
-        if (
-            !await executor.AnyAsync(
-                readStore.ActivityRoleTypes.Where(type => type.Id == roleTypeId),
-                ct
-            )
-        )
+        if (!CatalogIds.ActivityRoles.TryGetValue(command.ActivityRoleTypeId, out var role))
         {
-            return Error.NotFound(ErrorCode.ActivityRoleTypeNotFound);
+            return Error.NotFound(ApplicationErrorCode.ActivityRoleTypeNotFound);
         }
 
-        if (activity.ChangeAssignmentRole(command.UserId, roleTypeId))
-        {
-            await uow.SaveChangesAsync(ct);
-            await cacheInvalidator.InvalidateAsync(CacheTags.Activities);
-        }
-
+        activity.ChangeAssignmentRole(command.UserId, role);
         return Result.Success();
     }
 }

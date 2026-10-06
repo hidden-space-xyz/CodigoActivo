@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Domain.Activities;
 using Microsoft.Extensions.Logging;
@@ -27,15 +28,15 @@ public sealed class ActivitySignupNotifier(
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="userId">Identifier of the user.</param>
-    /// <param name="statusId">Identifier of the status.</param>
-    /// <param name="roleTypeId">Identifier of the role type.</param>
+    /// <param name="status">Status that settled the signup.</param>
+    /// <param name="role">Role of the signup.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task NotifyDecisionAsync(
         Guid activityId,
         Guid userId,
-        Guid statusId,
-        Guid roleTypeId,
+        AssignmentStatus status,
+        ActivityRole role,
         CancellationToken ct
     )
     {
@@ -57,11 +58,13 @@ public sealed class ActivitySignupNotifier(
             }
 
             var participantName = recipient.IsGuardian ? contact.FullName : null;
-            var message = AssignmentDecisions.IsConfirmation(statusId)
+            var message = AssignmentDecisions.IsConfirmation(status)
                 ? composer.Confirmed(
                     new EmailRecipient(recipient.Address, recipient.Name),
                     participantName,
-                    (await GetRoleNamesAsync(ct)).GetValueOrDefault(roleTypeId),
+                    (await GetRoleNamesAsync(ct)).GetValueOrDefault(
+                        CatalogIds.ActivityRoles.IdOf(role)
+                    ),
                     activity
                 )
                 : composer.Denied(

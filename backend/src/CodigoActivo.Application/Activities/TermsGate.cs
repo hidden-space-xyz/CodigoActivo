@@ -1,8 +1,9 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities;
 
@@ -31,9 +32,9 @@ public sealed class TermsGate(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result reports success, or an application error on failure.</returns>
     public async Task<Result> EnsureDecidedAsync(
-        Guid eventId,
-        Guid userId,
-        IReadOnlyList<TermsDecisionRequest>? decisions,
+        EventId eventId,
+        UserId userId,
+        IReadOnlyList<TermsDecision>? decisions,
         CancellationToken ct
     )
     {
@@ -48,12 +49,7 @@ public sealed class TermsGate(
             userId,
             ev.TermsDocuments,
             await termsAcceptances.ListAsync(ev.Id, userId, ct),
-            decisions
-                ?.Select(decision => new TermsDecision(
-                    decision.TermsDocumentId,
-                    decision.Accepted ?? false
-                ))
-                .ToList(),
+            decisions,
             clock.UtcNow
         );
         foreach (var acceptance in outcome.Recorded)
@@ -62,7 +58,7 @@ public sealed class TermsGate(
         }
 
         return outcome.MissingRequired
-            ? Error.Validation(ErrorCode.EventTermsAcceptanceRequired)
+            ? Error.Validation(ApplicationErrorCode.EventTermsAcceptanceRequired)
             : Result.Success();
     }
 }

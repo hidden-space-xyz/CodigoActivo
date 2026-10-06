@@ -1,7 +1,11 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -10,7 +14,7 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="UserId">Identifier of the user.</param>
-public sealed record VerifyTimeOverlapsQuery(Guid ActivityId, Guid UserId)
+public sealed record VerifyTimeOverlapsQuery(ActivityId ActivityId, UserId UserId)
     : IQuery<Result<TimeOverlapResponse>>;
 
 /// <summary>
@@ -18,8 +22,12 @@ public sealed record VerifyTimeOverlapsQuery(Guid ActivityId, Guid UserId)
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class VerifyTimeOverlapsQueryHandler(IReadStore readStore, IQueryExecutor executor)
-    : IQueryHandler<VerifyTimeOverlapsQuery, Result<TimeOverlapResponse>>
+/// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
+public sealed class VerifyTimeOverlapsQueryHandler(
+    IReadStore readStore,
+    IQueryExecutor executor,
+    ActingUserPolicy actingUser
+) : IQueryHandler<VerifyTimeOverlapsQuery, Result<TimeOverlapResponse>>
 {
     /// <summary>
     /// Handles the request to verify time overlaps.
@@ -32,22 +40,31 @@ public sealed class VerifyTimeOverlapsQueryHandler(IReadStore readStore, IQueryE
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(query);
+        var allowed = await actingUser.EnsureMayActForAsync(query.UserId, ct);
+        if (allowed.IsFailure)
+        {
+            return allowed.Error!;
+        }
+
+        var activityId = query.ActivityId.Value;
+        var userId = query.UserId.Value;
         var target = await executor.FirstOrDefaultAsync(
             readStore
-                .Activities.Where(a => a.Id == query.ActivityId)
+                .Activities.Where(a => a.Id == activityId)
                 .Select(a => new { a.ActivityStartsAt, a.ActivityEndsAt }),
             ct
         );
         if (target is null)
         {
-            return Error.NotFound(ErrorCode.ActivityNotFound);
+            return Error.NotFound(ApplicationErrorCode.ActivityNotFound);
         }
 
         var overlaps = await executor.ToListAsync(
             readStore
                 .Assignments.Where(x =>
-                    x.UserId == query.UserId
-                    && x.ActivityId != query.ActivityId
+                    x.UserId == userId
+                    && x.ActivityId != activityId
                     && x.Activity.ActivityStartsAt < target.ActivityEndsAt
                     && target.ActivityStartsAt < x.Activity.ActivityEndsAt
                 )

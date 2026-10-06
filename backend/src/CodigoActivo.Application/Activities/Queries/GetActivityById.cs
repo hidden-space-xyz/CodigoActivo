@@ -1,6 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Activities.Queries;
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// Carries the criteria used to retrieve activity by identifier.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-public sealed record GetActivityByIdQuery(Guid ActivityId) : IQuery<Result<ActivityResponse>>;
+public sealed record GetActivityByIdQuery(ActivityId ActivityId) : IQuery<Result<ActivityResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve activity by identifier.
@@ -32,10 +34,10 @@ public sealed class GetActivityByIdQueryHandler(IReadStore readStore, IQueryExec
     {
         var response = await executor.FirstOrDefaultAsync(
             readStore
-                .Activities.Where(a => a.Id == query.ActivityId)
+                .Activities.Where(a => a.Id == query.ActivityId.Value)
                 .Select(ActivityProjections.Activity),
             ct
         );
-        return response is null ? Error.NotFound(ErrorCode.ActivityNotFound) : response;
+        return response is null ? Error.NotFound(ApplicationErrorCode.ActivityNotFound) : response;
     }
 }

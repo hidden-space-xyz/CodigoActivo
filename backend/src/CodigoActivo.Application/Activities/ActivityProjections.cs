@@ -1,6 +1,8 @@
 using System.Linq.Expressions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Activities;
@@ -34,7 +36,8 @@ public static class ActivityProjections
                     activity
                         .Assignments.Where(assignment =>
                             assignment.ActivityRoleTypeId == capacity.ActivityRoleTypeId
-                            && assignment.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
+                            && assignment.AssignmentStatusId
+                                != CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Denied)
                         )
                         .Skip(capacity.DesiredCount)
                         .Any()
