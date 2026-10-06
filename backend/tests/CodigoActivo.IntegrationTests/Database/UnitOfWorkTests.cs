@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
@@ -7,9 +8,12 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Npgsql;
 using Xunit;
 using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
@@ -24,6 +28,9 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     private static readonly Guid EventId = new("cccccccc-0000-0000-0000-000000000003");
     private static readonly Guid ActivityId = new("cccccccc-0000-0000-0000-000000000004");
     private const string UserEmail = "unit-of-work@codigoactivo.test";
+
+    private static readonly global::CodigoActivo.Domain.Events.EventId SeededEventId =
+        global::CodigoActivo.Domain.Events.EventId.From(EventId);
 
     public async ValueTask InitializeAsync()
     {
@@ -254,5 +261,130 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
             )
             .ToListAsync(Ct);
         stored.Should().ContainSingle().Which.Role.Should().Be(ActivityRole.Volunteer);
+    }
+
+    [Fact]
+    public async Task SaveChangesAsyncRefusedCommitKeepsItsEventsForTheNextCommit()
+    {
+        await using var db = postgres.CreateContext();
+        var publisher = new RecordingPublisher();
+        var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+        (await db.Events.SingleAsync(e => e.Id == SeededEventId, Ct)).Feature();
+        var duplicate = NewUser(Guid.NewGuid(), UserEmail);
+        db.Users.Add(duplicate);
+
+        var refused = () => uow.SaveChangesAsync(Ct);
+        await refused.Should().ThrowAsync<UniqueConstraintViolationException>();
+        db.Entry(duplicate).State = EntityState.Detached;
+        await uow.SaveChangesAsync(Ct);
+
+        publisher.Published.Should().Equal(new EventFeaturedChanged(SeededEventId, true));
+    }
+
+    [Fact]
+    public async Task ExecuteInTransactionAsyncDeadlockedAttemptKeepsTheChangesStagedBeforeIt()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var publisher = new RecordingPublisher();
+            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            (await db.Events.SingleAsync(e => e.Id == SeededEventId, Ct)).Feature();
+            var attempts = 0;
+
+            await uow.ExecuteInTransactionAsync(
+                async attempt =>
+                {
+                    attempts++;
+                    await uow.SaveChangesAsync(attempt);
+                    return attempts > 1 ? true : throw Deadlock();
+                },
+                Ct
+            );
+
+            attempts.Should().Be(2);
+            publisher.Published.Should().Equal(new EventFeaturedChanged(SeededEventId, true));
+        }
+
+        await using var verify = postgres.CreateContext();
+        (await verify.Events.SingleAsync(e => e.Id == SeededEventId, Ct))
+            .Featured.Should()
+            .BeTrue();
+    }
+
+    [Fact]
+    public async Task ExecuteInTransactionAsyncDeadlockedAttemptRunsAgainFromTheStateItStarted()
+    {
+        var previous = FeaturedEvent();
+        await using (var seed = postgres.CreateContext())
+        {
+            seed.Events.Add(previous);
+            await seed.SaveChangesAsync(Ct);
+        }
+
+        await using (var db = postgres.CreateContext())
+        {
+            var publisher = new RecordingPublisher();
+            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var chosen = await db.Events.SingleAsync(e => e.Id == SeededEventId, Ct);
+            var attempts = 0;
+
+            await uow.ExecuteInTransactionAsync(
+                async attempt =>
+                {
+                    attempts++;
+                    foreach (
+                        var featured in await db.Events.Where(e => e.Featured).ToListAsync(attempt)
+                    )
+                    {
+                        featured.Unfeature();
+                    }
+
+                    await uow.SaveChangesAsync(attempt);
+                    chosen.Feature();
+                    if (attempts is 1)
+                    {
+                        throw Deadlock();
+                    }
+
+                    await uow.SaveChangesAsync(attempt);
+                    return true;
+                },
+                Ct
+            );
+
+            attempts.Should().Be(2);
+            publisher
+                .Published.Should()
+                .Equal(
+                    new EventFeaturedChanged(previous.Id, false),
+                    new EventFeaturedChanged(SeededEventId, true)
+                );
+        }
+
+        await using var verify = postgres.CreateContext();
+        (await verify.Events.Where(e => e.Featured).Select(e => e.Id).ToListAsync(Ct))
+            .Should()
+            .Equal(SeededEventId);
+    }
+
+    private static PostgresException Deadlock()
+    {
+        return new PostgresException(
+            "deadlock detected",
+            "ERROR",
+            "ERROR",
+            PostgresErrorCodes.DeadlockDetected
+        );
+    }
+
+    private sealed class RecordingPublisher : IDomainEventPublisher
+    {
+        public List<IDomainEvent> Published { get; } = [];
+
+        public Task PublishAsync(IReadOnlyList<IDomainEvent> domainEvents, CancellationToken ct)
+        {
+            Published.AddRange(domainEvents);
+            return Task.CompletedTask;
+        }
     }
 }

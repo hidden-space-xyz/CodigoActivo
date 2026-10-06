@@ -1012,7 +1012,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         await erase
             .Should()
             .ThrowAsync<UniqueConstraintViolationException>("a retry stages a fresh copy");
-        await save.Should().ThrowAsync<InvalidOperationException>().WithMessage("*EraseAsync*");
+        await save.Should().NotThrowAsync("the refused erasure leaves no deletion staged");
         await AssertPendingKeptWithItsContentAsync();
     }
 
