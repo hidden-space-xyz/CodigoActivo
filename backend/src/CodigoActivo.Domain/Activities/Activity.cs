@@ -1,4 +1,7 @@
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Activities;
 
@@ -7,7 +10,7 @@ namespace CodigoActivo.Domain.Activities;
 /// the signups: a person holds at most one signup per activity, which starts as requested and is
 /// later confirmed or denied.
 /// </summary>
-public class Activity : AuditableEntity, IAggregateRoot
+public class Activity : AuditableEntity<ActivityId>
 {
     private readonly List<ActivityRoleCapacity> roleCapacities = [];
     private readonly List<Assignment> assignments = [];
@@ -30,29 +33,25 @@ public class Activity : AuditableEntity, IAggregateRoot
     public string Location { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Gets when the activity starts.
+    /// Gets when the activity starts and ends, in UTC.
     /// </summary>
-    public DateTimeOffset ActivityStartsAt { get; private set; }
-
-    /// <summary>
-    /// Gets when the activity ends.
-    /// </summary>
-    public DateTimeOffset ActivityEndsAt { get; private set; }
+    public ActivitySchedule Schedule =>
+        ActivitySchedule.FromStored(ActivityStartsAt, ActivityEndsAt);
 
     /// <summary>
     /// Gets the identifier of the event the activity belongs to.
     /// </summary>
-    public Guid EventId { get; private set; }
+    public EventId EventId { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the modality.
+    /// Gets where the activity takes place.
     /// </summary>
-    public Guid ActivityModalityTypeId { get; private set; }
+    public ActivityModality Modality { get; private set; }
 
     /// <summary>
     /// Gets the identifier of the thumbnail file.
     /// </summary>
-    public Guid ThumbnailId { get; private set; }
+    public StoredFileId ThumbnailId { get; private set; }
 
     /// <summary>
     /// Gets the desired number of people per role.
@@ -63,6 +62,10 @@ public class Activity : AuditableEntity, IAggregateRoot
     /// Gets the signups of the activity.
     /// </summary>
     public IReadOnlyCollection<Assignment> Assignments => assignments;
+
+    private DateTimeOffset ActivityStartsAt { get; set; }
+
+    private DateTimeOffset ActivityEndsAt { get; set; }
 
     /// <summary>
     /// Creates an activity in an event.
@@ -75,17 +78,18 @@ public class Activity : AuditableEntity, IAggregateRoot
     /// <param name="now">Current time.</param>
     /// <returns>The new activity.</returns>
     public static Activity Create(
-        Guid eventId,
+        EventId eventId,
         ActivityDetails details,
         ActivitySchedule schedule,
         RoleCapacityPlan capacities,
-        Guid authorId,
+        UserId authorId,
         DateTimeOffset now
     )
     {
         var activity = new Activity { EventId = eventId };
         activity.Apply(details, schedule, capacities);
         activity.RecordCreation(authorId, now);
+        activity.Raise(new ActivityCreated(activity.Id));
         return activity;
     }
 
@@ -101,12 +105,16 @@ public class Activity : AuditableEntity, IAggregateRoot
         ActivityDetails details,
         ActivitySchedule schedule,
         RoleCapacityPlan capacities,
-        Guid editorId,
+        UserId editorId,
         DateTimeOffset now
     )
     {
+        var previousThumbnailId = ThumbnailId;
         Apply(details, schedule, capacities);
         RecordUpdate(editorId, now);
+        Raise(
+            new ActivityUpdated(Id, previousThumbnailId == ThumbnailId ? [] : [previousThumbnailId])
+        );
     }
 
     /// <summary>
@@ -124,7 +132,7 @@ public class Activity : AuditableEntity, IAggregateRoot
     /// </summary>
     /// <param name="userId">Identifier of the person.</param>
     /// <returns>The signup, or <see langword="null"/> when the person is not signed up.</returns>
-    public Assignment? AssignmentOf(Guid userId)
+    public Assignment? AssignmentOf(UserId userId)
     {
         return assignments.FirstOrDefault(assignment => assignment.UserId == userId);
     }
@@ -133,19 +141,18 @@ public class Activity : AuditableEntity, IAggregateRoot
     /// Signs a person up with a role, pending a decision.
     /// </summary>
     /// <param name="userId">Identifier of the person.</param>
-    /// <param name="roleTypeId">Role asked for.</param>
+    /// <param name="role">Role asked for.</param>
     /// <param name="now">Current time.</param>
     /// <returns>Success, or a conflict when the person is already signed up.</returns>
-    public Result RequestAssignment(Guid userId, Guid roleTypeId, DateTimeOffset now)
+    public Result RequestAssignment(UserId userId, ActivityRole role, DateTimeOffset now)
     {
         if (AssignmentOf(userId) is not null)
         {
-            return Error.Conflict(ErrorCode.ActivityAssignmentAlreadyExists);
+            return Error.Conflict(DomainErrorCode.ActivityAssignmentAlreadyExists);
         }
 
-        assignments.Add(
-            new Assignment(userId, Id, roleTypeId, SeedIds.AssignmentStatusTypes.Requested, now)
-        );
+        assignments.Add(new Assignment(userId, Id, role, AssignmentStatus.Requested, now));
+        Raise(new AssignmentRequested(Id, userId, role));
         return Result.Success();
     }
 
@@ -154,15 +161,16 @@ public class Activity : AuditableEntity, IAggregateRoot
     /// </summary>
     /// <param name="userId">Identifier of the person.</param>
     /// <returns>Success, or not found when the person is not signed up.</returns>
-    public Result Unassign(Guid userId)
+    public Result Unassign(UserId userId)
     {
         var assignment = AssignmentOf(userId);
         if (assignment is null)
         {
-            return Error.NotFound(ErrorCode.ActivityAssignmentNotFound);
+            return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
         }
 
         assignments.Remove(assignment);
+        Raise(new AssignmentWithdrawn(Id, userId));
         return Result.Success();
     }
 
@@ -170,28 +178,21 @@ public class Activity : AuditableEntity, IAggregateRoot
     /// Moves the signup of a person to another role, keeping its status and date.
     /// </summary>
     /// <param name="userId">Identifier of the signed-up person.</param>
-    /// <param name="roleTypeId">New role.</param>
+    /// <param name="role">New role.</param>
     /// <returns><see langword="true"/> when the role changed.</returns>
-    public bool ChangeAssignmentRole(Guid userId, Guid roleTypeId)
+    public bool ChangeAssignmentRole(UserId userId, ActivityRole role)
     {
         var assignment =
             AssignmentOf(userId)
             ?? throw new InvalidOperationException("The person is not signed up.");
-        if (assignment.ActivityRoleTypeId == roleTypeId)
+        if (assignment.Role == role)
         {
             return false;
         }
 
         assignments.Remove(assignment);
-        assignments.Add(
-            new Assignment(
-                userId,
-                Id,
-                roleTypeId,
-                assignment.AssignmentStatusId,
-                assignment.CreatedAt
-            )
-        );
+        assignments.Add(new Assignment(userId, Id, role, assignment.Status, assignment.CreatedAt));
+        Raise(new AssignmentRoleChanged(Id, userId, role));
         return true;
     }
 
@@ -199,16 +200,29 @@ public class Activity : AuditableEntity, IAggregateRoot
     /// Changes the status of the signup of a person.
     /// </summary>
     /// <param name="userId">Identifier of the signed-up person.</param>
-    /// <param name="statusId">New status.</param>
+    /// <param name="status">New status.</param>
     /// <returns>The status the signup had before.</returns>
-    public Guid ChangeAssignmentStatus(Guid userId, Guid statusId)
+    public AssignmentStatus ChangeAssignmentStatus(UserId userId, AssignmentStatus status)
     {
         var assignment =
             AssignmentOf(userId)
             ?? throw new InvalidOperationException("The person is not signed up.");
-        var previousStatusId = assignment.AssignmentStatusId;
-        assignment.ChangeStatus(statusId);
-        return previousStatusId;
+        var previous = assignment.Status;
+        assignment.ChangeStatus(status);
+        if (previous != status)
+        {
+            Raise(new AssignmentStatusChanged(Id, userId, previous, status, assignment.Role));
+        }
+
+        return previous;
+    }
+
+    /// <summary>
+    /// Marks the activity as deleted, so its thumbnail can be released once it is gone.
+    /// </summary>
+    public void Delete()
+    {
+        Raise(new ActivityDeleted(Id, [ThumbnailId]));
     }
 
     private void Apply(
@@ -224,7 +238,7 @@ public class Activity : AuditableEntity, IAggregateRoot
         Title = details.Title.Trim();
         Description = details.Description;
         Location = details.Location.Trim();
-        ActivityModalityTypeId = details.ActivityModalityTypeId;
+        Modality = details.Modality;
         ThumbnailId = details.ThumbnailId;
         ActivityStartsAt = schedule.StartsAt;
         ActivityEndsAt = schedule.EndsAt;
@@ -233,22 +247,15 @@ public class Activity : AuditableEntity, IAggregateRoot
 
     private void SyncRoleCapacities(RoleCapacityPlan plan)
     {
-        var desiredByRole = plan.Items.ToDictionary(
-            item => item.ActivityRoleTypeId,
-            item => item.DesiredCount
-        );
-        roleCapacities.RemoveAll(capacity =>
-            !desiredByRole.ContainsKey(capacity.ActivityRoleTypeId)
-        );
+        var desiredByRole = plan.Items.ToDictionary(item => item.Role, item => item.DesiredCount);
+        roleCapacities.RemoveAll(capacity => !desiredByRole.ContainsKey(capacity.Role));
 
-        foreach (var (roleTypeId, desiredCount) in desiredByRole)
+        foreach (var (role, desiredCount) in desiredByRole)
         {
-            var existing = roleCapacities.FirstOrDefault(capacity =>
-                capacity.ActivityRoleTypeId == roleTypeId
-            );
+            var existing = roleCapacities.FirstOrDefault(capacity => capacity.Role == role);
             if (existing is null)
             {
-                roleCapacities.Add(new ActivityRoleCapacity(Id, roleTypeId, desiredCount));
+                roleCapacities.Add(new ActivityRoleCapacity(Id, role, desiredCount));
             }
             else
             {

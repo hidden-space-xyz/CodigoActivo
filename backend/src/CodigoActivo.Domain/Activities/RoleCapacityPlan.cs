@@ -34,8 +34,8 @@ public sealed class RoleCapacityPlan
             return None;
         }
 
-        return items.Select(item => item.ActivityRoleTypeId).Distinct().Count() != items.Count
-            ? Error.Validation(ErrorCode.ActivityRoleCapacityDuplicated)
+        return items.Select(item => item.Role).Distinct().Count() != items.Count
+            ? Error.Validation(DomainErrorCode.ActivityRoleCapacityDuplicated)
             : new RoleCapacityPlan([.. items]);
     }
 }

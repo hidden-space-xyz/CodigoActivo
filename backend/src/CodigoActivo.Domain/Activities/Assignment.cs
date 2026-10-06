@@ -1,3 +1,5 @@
+using CodigoActivo.Domain.Users;
+
 namespace CodigoActivo.Domain.Activities;
 
 /// <summary>
@@ -8,47 +10,47 @@ public class Assignment
     private Assignment() { }
 
     internal Assignment(
-        Guid userId,
-        Guid activityId,
-        Guid activityRoleTypeId,
-        Guid assignmentStatusId,
+        UserId userId,
+        ActivityId activityId,
+        ActivityRole role,
+        AssignmentStatus status,
         DateTimeOffset createdAt
     )
     {
         UserId = userId;
         ActivityId = activityId;
-        ActivityRoleTypeId = activityRoleTypeId;
-        AssignmentStatusId = assignmentStatusId;
+        Role = role;
+        Status = status;
         CreatedAt = createdAt;
     }
 
     /// <summary>
     /// Gets the identifier of the signed-up person.
     /// </summary>
-    public Guid UserId { get; private set; }
+    public UserId UserId { get; private set; }
 
     /// <summary>
     /// Gets the identifier of the activity.
     /// </summary>
-    public Guid ActivityId { get; private set; }
+    public ActivityId ActivityId { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the role.
+    /// Gets the role asked for.
     /// </summary>
-    public Guid ActivityRoleTypeId { get; private set; }
+    public ActivityRole Role { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the status.
+    /// Gets the review state of the signup.
     /// </summary>
-    public Guid AssignmentStatusId { get; private set; }
+    public AssignmentStatus Status { get; private set; }
 
     /// <summary>
     /// Gets when the signup was requested.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private set; }
 
-    internal void ChangeStatus(Guid statusId)
+    internal void ChangeStatus(AssignmentStatus status)
     {
-        AssignmentStatusId = statusId;
+        Status = status;
     }
 }

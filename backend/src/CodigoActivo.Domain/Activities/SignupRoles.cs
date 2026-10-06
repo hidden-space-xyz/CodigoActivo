@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Activities;
 
@@ -11,27 +11,27 @@ public static class SignupRoles
     /// <summary>
     /// Lists the roles a membership type may ask for.
     /// </summary>
-    /// <param name="userTypeId">Membership type of the account.</param>
-    /// <returns>The identifiers of the allowed roles.</returns>
-    public static IEnumerable<Guid> For(Guid userTypeId)
+    /// <param name="userType">Membership type of the account.</param>
+    /// <returns>The allowed roles.</returns>
+    public static IEnumerable<ActivityRole> For(UserType userType)
     {
-        yield return SeedIds.ActivityRoleTypes.Participant;
-        yield return SeedIds.ActivityRoleTypes.Volunteer;
+        yield return ActivityRole.Participant;
+        yield return ActivityRole.Volunteer;
 
-        if (userTypeId == SeedIds.UserTypes.Member)
+        if (userType is UserType.Member)
         {
-            yield return SeedIds.ActivityRoleTypes.Leader;
+            yield return ActivityRole.Leader;
         }
     }
 
     /// <summary>
     /// Tells whether a membership type may ask for a role.
     /// </summary>
-    /// <param name="userTypeId">Membership type of the account.</param>
-    /// <param name="roleTypeId">Role asked for.</param>
+    /// <param name="userType">Membership type of the account.</param>
+    /// <param name="role">Role asked for.</param>
     /// <returns><see langword="true"/> when the role is allowed.</returns>
-    public static bool Allows(Guid userTypeId, Guid roleTypeId)
+    public static bool Allows(UserType userType, ActivityRole role)
     {
-        return For(userTypeId).Contains(roleTypeId);
+        return For(userType).Contains(role);
     }
 }
