@@ -1,4 +1,6 @@
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Partners;
 
@@ -6,7 +8,7 @@ namespace CodigoActivo.Domain.Partners;
 /// Organisation that supports the association, listed by sponsorship tier. Its profile changes
 /// only as a whole, recording who made the change.
 /// </summary>
-public class Partner : AuditableEntity, IAggregateRoot
+public class Partner : AuditableEntity<PartnerId>
 {
     private Partner() { }
 
@@ -33,7 +35,7 @@ public class Partner : AuditableEntity, IAggregateRoot
     /// <summary>
     /// Gets the identifier of the logo file.
     /// </summary>
-    public Guid ThumbnailId { get; private set; }
+    public StoredFileId ThumbnailId { get; private set; }
 
     /// <summary>
     /// Creates a partner.
@@ -42,13 +44,14 @@ public class Partner : AuditableEntity, IAggregateRoot
     /// <param name="authorId">Identifier of the user who creates it.</param>
     /// <param name="now">Current time.</param>
     /// <returns>The new partner.</returns>
-    public static Partner Create(PartnerDetails details, Guid authorId, DateTimeOffset now)
+    public static Partner Create(PartnerDetails details, UserId authorId, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(details);
 
         var partner = new Partner();
         partner.Apply(details);
         partner.RecordCreation(authorId, now);
+        partner.Raise(new PartnerCreated(partner.Id));
         return partner;
     }
 
@@ -58,12 +61,22 @@ public class Partner : AuditableEntity, IAggregateRoot
     /// <param name="details">New profile.</param>
     /// <param name="editorId">Identifier of the user who edits it.</param>
     /// <param name="now">Current time.</param>
-    public void Update(PartnerDetails details, Guid editorId, DateTimeOffset now)
+    public void Update(PartnerDetails details, UserId editorId, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(details);
 
+        var previousThumbnailId = ThumbnailId;
         Apply(details);
         RecordUpdate(editorId, now);
+        Raise(new PartnerUpdated(Id, previousThumbnailId, ThumbnailId));
+    }
+
+    /// <summary>
+    /// Marks the partner as deleted, so the logo it showed can be released once it is gone.
+    /// </summary>
+    public void Delete()
+    {
+        Raise(new PartnerDeleted(Id, ThumbnailId));
     }
 
     private void Apply(PartnerDetails details)

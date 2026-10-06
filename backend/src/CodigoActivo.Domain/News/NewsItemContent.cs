@@ -1,3 +1,6 @@
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
+
 namespace CodigoActivo.Domain.News;
 
 /// <summary>
@@ -10,6 +13,6 @@ namespace CodigoActivo.Domain.News;
 public sealed record NewsItemContent(
     string Title,
     string Subtitle,
-    string Description,
-    Guid ThumbnailId
+    RichText Description,
+    StoredFileId ThumbnailId
 );

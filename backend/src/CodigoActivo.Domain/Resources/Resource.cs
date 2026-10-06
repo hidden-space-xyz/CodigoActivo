@@ -1,4 +1,6 @@
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Resources;
 
@@ -6,7 +8,7 @@ namespace CodigoActivo.Domain.Resources;
 /// Resource offered on the site, either hosted as rich text or linked from outside. Its content
 /// always fits its type and changes only as a whole, recording who made the change.
 /// </summary>
-public class Resource : AuditableEntity, IAggregateRoot
+public class Resource : AuditableEntity<ResourceId>
 {
     private Resource() { }
 
@@ -23,7 +25,7 @@ public class Resource : AuditableEntity, IAggregateRoot
     /// <summary>
     /// Gets the rich-text body of a resource hosted on the site.
     /// </summary>
-    public string Description { get; private set; } = "{}";
+    public RichText Description { get; private set; } = RichText.Empty;
 
     /// <summary>
     /// Gets the link of an external resource.
@@ -31,14 +33,14 @@ public class Resource : AuditableEntity, IAggregateRoot
     public string? Url { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the resource type.
+    /// Gets whether the resource is written on the site or links elsewhere.
     /// </summary>
-    public Guid ResourceTypeId { get; private set; }
+    public ResourceType ResourceType { get; private set; }
 
     /// <summary>
     /// Gets the identifier of the thumbnail file.
     /// </summary>
-    public Guid ThumbnailId { get; private set; }
+    public StoredFileId ThumbnailId { get; private set; }
 
     /// <summary>
     /// Creates a resource.
@@ -51,7 +53,7 @@ public class Resource : AuditableEntity, IAggregateRoot
     public static Resource Create(
         ResourceDetails details,
         ResourceContent content,
-        Guid authorId,
+        UserId authorId,
         DateTimeOffset now
     )
     {
@@ -61,6 +63,7 @@ public class Resource : AuditableEntity, IAggregateRoot
         var resource = new Resource();
         resource.Apply(details, content);
         resource.RecordCreation(authorId, now);
+        resource.Raise(new ResourceCreated(resource.Id));
         return resource;
     }
 
@@ -74,22 +77,43 @@ public class Resource : AuditableEntity, IAggregateRoot
     public void Update(
         ResourceDetails details,
         ResourceContent content,
-        Guid editorId,
+        UserId editorId,
         DateTimeOffset now
     )
     {
         ArgumentNullException.ThrowIfNull(details);
         ArgumentNullException.ThrowIfNull(content);
 
+        var previousThumbnailId = ThumbnailId;
+        var previousDescription = Description;
         Apply(details, content);
         RecordUpdate(editorId, now);
+        Raise(
+            new ResourceUpdated(
+                Id,
+                ReleasedFiles.Between(
+                    previousThumbnailId,
+                    ThumbnailId,
+                    previousDescription,
+                    Description
+                )
+            )
+        );
+    }
+
+    /// <summary>
+    /// Marks the resource as deleted, so the files it references can be released once it is gone.
+    /// </summary>
+    public void Delete()
+    {
+        Raise(new ResourceDeleted(Id, ReleasedFiles.Of(ThumbnailId, Description)));
     }
 
     private void Apply(ResourceDetails details, ResourceContent content)
     {
         Title = details.Title.Trim();
         Subtitle = details.Subtitle.Trim();
-        ResourceTypeId = details.ResourceTypeId;
+        ResourceType = details.ResourceType;
         ThumbnailId = details.ThumbnailId;
         Description = content.Description;
         Url = content.Url;
