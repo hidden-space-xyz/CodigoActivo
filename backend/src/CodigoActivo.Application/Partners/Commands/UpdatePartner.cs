@@ -1,10 +1,11 @@
-using CodigoActivo.Application.Abstractions.Caching;
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.Files;
-using CodigoActivo.Application.Partners.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
@@ -15,27 +16,32 @@ namespace CodigoActivo.Application.Partners.Commands;
 /// Carries the input required to update the partner.
 /// </summary>
 /// <param name="PartnerId">Identifier of the partner.</param>
-/// <param name="Request">Validated client request data.</param>
-/// <param name="UserId">Identifier of the user.</param>
-public sealed record UpdatePartnerCommand(Guid PartnerId, UpdatePartnerRequest Request, Guid UserId)
-    : ICommand<Result>;
+/// <param name="Name">Human-readable name.</param>
+/// <param name="FromDate">Day the collaboration started; today at the latest.</param>
+/// <param name="Tier">Sponsorship tier.</param>
+/// <param name="Website">Website, if any.</param>
+/// <param name="ThumbnailId">Identifier of the logo file.</param>
+public sealed record UpdatePartnerCommand(
+    PartnerId PartnerId,
+    [property: Required, MaxLength(200), NotBlank] string Name,
+    [property: NotDefaultOrFutureDate] DateOnly FromDate,
+    [property: Range(0, int.MaxValue)] int Tier,
+    [property: HttpUrl, MaxLength(500)] string? Website,
+    StoredFileId ThumbnailId
+) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the partner.
 /// </summary>
 /// <param name="partners">Repository used to persist and retrieve partners.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
-/// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdatePartnerCommandHandler(
     IPartnerRepository partners,
     IStoredFileRepository files,
-    IOrphanFileCleaner orphanCleaner,
-    IClock clock,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
+    ICurrentUser currentUser,
+    IClock clock
 ) : ICommandHandler<UpdatePartnerCommand, Result>
 {
     /// <summary>
@@ -49,41 +55,30 @@ public sealed class UpdatePartnerCommandHandler(
         CancellationToken ct = default
     )
     {
-        var request = command.Request;
+        ArgumentNullException.ThrowIfNull(command);
 
         var partner = await partners.GetByIdAsync(command.PartnerId, ct);
         if (partner is null)
         {
-            return Error.NotFound(ErrorCode.PartnerNotFound);
+            return Error.NotFound(ApplicationErrorCode.PartnerNotFound);
         }
 
-        if (!await files.ExistsAsync(request.ThumbnailId, ct))
+        if (!await files.ExistsAsync(command.ThumbnailId, ct))
         {
-            return Error.Validation(ErrorCode.PartnerThumbnailNotFound);
+            return Error.Validation(ApplicationErrorCode.PartnerThumbnailNotFound);
         }
-
-        var previousThumbnailId = partner.ThumbnailId;
 
         partner.Update(
             new PartnerDetails(
-                request.Name,
-                request.FromDate!.Value,
-                request.Tier,
-                request.Website,
-                request.ThumbnailId
+                command.Name,
+                command.FromDate,
+                command.Tier,
+                command.Website,
+                command.ThumbnailId
             ),
-            command.UserId,
+            currentUser.RequiredId(),
             clock.UtcNow
         );
-
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Partners);
-
-        if (previousThumbnailId != request.ThumbnailId)
-        {
-            await orphanCleaner.DeleteIfOrphanedAsync(previousThumbnailId, ct);
-        }
-
         return Result.Success();
     }
 }

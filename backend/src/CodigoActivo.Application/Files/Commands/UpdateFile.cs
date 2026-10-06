@@ -1,9 +1,8 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 
@@ -14,7 +13,7 @@ namespace CodigoActivo.Application.Files.Commands;
 /// </summary>
 /// <param name="FileId">Identifier of the file.</param>
 /// <param name="Upload">The upload value.</param>
-public sealed record UpdateFileCommand(Guid FileId, FileUpload? Upload) : ICommand<Result>;
+public sealed record UpdateFileCommand(StoredFileId FileId, FileUpload? Upload) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to update the file.
@@ -24,14 +23,12 @@ public sealed record UpdateFileCommand(Guid FileId, FileUpload? Upload) : IComma
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="validator">The validator value.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
 public sealed class UpdateFileCommandHandler(
     IStoredFileRepository files,
     IUnitOfWork uow,
     IFileStorage storage,
     IClock clock,
-    FileUploadValidator validator,
-    ICacheInvalidator cacheInvalidator
+    FileUploadValidator validator
 ) : ICommandHandler<UpdateFileCommand, Result>
 {
     /// <summary>
@@ -47,7 +44,7 @@ public sealed class UpdateFileCommandHandler(
         var file = await files.GetByIdAsync(command.FileId, ct);
         if (file is null)
         {
-            return Error.NotFound(ErrorCode.FileNotFound);
+            return Error.NotFound(ApplicationErrorCode.FileNotFound);
         }
 
         var detection = await validator.ValidateAndDetectAsync(upload, ct);
@@ -57,8 +54,8 @@ public sealed class UpdateFileCommandHandler(
         }
 
         var format = detection.Value;
-        var oldStoredName = FileNaming.StoredName(file.Id, file.Extension);
-        var newStoredName = FileNaming.StoredName(file.Id, format.Extension);
+        var oldStoredName = FileNaming.StoredName(file.Id.Value, file.Extension);
+        var newStoredName = FileNaming.StoredName(file.Id.Value, format.Extension);
         var extensionChanged = !string.Equals(
             oldStoredName,
             newStoredName,
@@ -87,8 +84,6 @@ public sealed class UpdateFileCommandHandler(
         {
             storage.Delete(oldStoredName);
         }
-
-        await cacheInvalidator.InvalidateAsync(CacheTags.Files);
         return Result.Success();
     }
 }

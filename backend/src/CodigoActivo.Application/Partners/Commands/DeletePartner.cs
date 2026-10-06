@@ -1,8 +1,6 @@
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Partners;
 
@@ -12,21 +10,14 @@ namespace CodigoActivo.Application.Partners.Commands;
 /// Carries the input required to delete the partner.
 /// </summary>
 /// <param name="PartnerId">Identifier of the partner.</param>
-public sealed record DeletePartnerCommand(Guid PartnerId) : ICommand<Result>;
+public sealed record DeletePartnerCommand(PartnerId PartnerId) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to delete the partner.
 /// </summary>
 /// <param name="partners">Repository used to persist and retrieve partners.</param>
-/// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="cacheInvalidator">Service used to invalidate stale cached responses.</param>
-public sealed class DeletePartnerCommandHandler(
-    IPartnerRepository partners,
-    IOrphanFileCleaner orphanCleaner,
-    IUnitOfWork uow,
-    ICacheInvalidator cacheInvalidator
-) : ICommandHandler<DeletePartnerCommand, Result>
+public sealed class DeletePartnerCommandHandler(IPartnerRepository partners)
+    : ICommandHandler<DeletePartnerCommand, Result>
 {
     /// <summary>
     /// Handles the request to delete the partner.
@@ -39,17 +30,16 @@ public sealed class DeletePartnerCommandHandler(
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(command);
+
         var partner = await partners.GetByIdAsync(command.PartnerId, ct);
         if (partner is null)
         {
-            return Error.NotFound(ErrorCode.PartnerNotFound);
+            return Error.NotFound(ApplicationErrorCode.PartnerNotFound);
         }
 
+        partner.Delete();
         partners.Remove(partner);
-        await uow.SaveChangesAsync(ct);
-        await cacheInvalidator.InvalidateAsync(CacheTags.Partners);
-
-        await orphanCleaner.DeleteIfOrphanedAsync(partner.ThumbnailId, ct);
         return Result.Success();
     }
 }

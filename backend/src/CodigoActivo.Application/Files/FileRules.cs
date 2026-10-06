@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Common;
 
@@ -58,29 +59,29 @@ public sealed class FileUploadValidator(FileUploadOptions options)
     {
         if (upload is null)
         {
-            return Error.Validation(ErrorCode.FileUploadMissing);
+            return Error.Validation(ApplicationErrorCode.FileUploadMissing);
         }
 
         if (upload.Length <= 0)
         {
-            return Error.Validation(ErrorCode.FileUploadEmpty);
+            return Error.Validation(ApplicationErrorCode.FileUploadEmpty);
         }
 
         if (upload.Length > options.MaxSizeBytes)
         {
-            return Error.Validation(ErrorCode.FileUploadTooLarge);
+            return Error.Validation(ApplicationErrorCode.FileUploadTooLarge);
         }
 
         if (!upload.Content.CanSeek)
         {
-            return Error.Validation(ErrorCode.FileUploadStreamNotSeekable);
+            return Error.Validation(ApplicationErrorCode.FileUploadStreamNotSeekable);
         }
 
         upload.Content.Position = 0;
         var format = await upload.Content.DetectImageFormatAsync(ct);
         if (format is null)
         {
-            return Error.Validation(ErrorCode.FileUploadUnsupportedFormat);
+            return Error.Validation(ApplicationErrorCode.FileUploadUnsupportedFormat);
         }
 
         upload.Content.Position = 0;

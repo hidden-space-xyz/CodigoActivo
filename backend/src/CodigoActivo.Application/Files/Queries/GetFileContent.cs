@@ -1,6 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Files.Queries;
 
@@ -8,7 +11,7 @@ namespace CodigoActivo.Application.Files.Queries;
 /// Carries the criteria used to retrieve file content.
 /// </summary>
 /// <param name="FileId">Identifier of the file.</param>
-public sealed record GetFileContentQuery(Guid FileId) : IQuery<Result<FileContent>>;
+public sealed record GetFileContentQuery(StoredFileId FileId) : IQuery<Result<FileContent>>;
 
 /// <summary>
 /// Executes the query to retrieve file content.
@@ -16,7 +19,7 @@ public sealed record GetFileContentQuery(Guid FileId) : IQuery<Result<FileConten
 /// <param name="getById">Handler used to retrieve file by identifier.</param>
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
 public sealed class GetFileContentQueryHandler(
-    GetFileByIdQueryHandler getById,
+    IQueryHandler<GetFileByIdQuery, Result<FileResponse>> getById,
     IFileStorage storage
 ) : IQueryHandler<GetFileContentQuery, Result<FileContent>>
 {
@@ -45,7 +48,7 @@ public sealed class GetFileContentQueryHandler(
         );
         if (stream is null)
         {
-            return Error.NotFound(ErrorCode.FileContentMissingFromStorage);
+            return Error.NotFound(ApplicationErrorCode.FileContentMissingFromStorage);
         }
 
         var format = await stream.DetectImageFormatAsync(ct);

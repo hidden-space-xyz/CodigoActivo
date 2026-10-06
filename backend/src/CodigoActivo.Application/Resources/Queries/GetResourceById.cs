@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Resources;
 
 namespace CodigoActivo.Application.Resources.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.Resources.Queries;
 /// Carries the criteria used to retrieve resource by identifier.
 /// </summary>
 /// <param name="ResourceId">Identifier of the resource.</param>
-public sealed record GetResourceByIdQuery(Guid ResourceId) : IQuery<Result<ResourceResponse>>;
+public sealed record GetResourceByIdQuery(ResourceId ResourceId) : IQuery<Result<ResourceResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve resource by identifier.
@@ -32,10 +34,10 @@ public sealed class GetResourceByIdQueryHandler(IReadStore readStore, IQueryExec
     {
         var response = await executor.FirstOrDefaultAsync(
             readStore
-                .Resources.Where(r => r.Id == query.ResourceId)
+                .Resources.Where(r => r.Id == query.ResourceId.Value)
                 .Select(ResourceProjections.Resource),
             ct
         );
-        return response is null ? Error.NotFound(ErrorCode.ResourceNotFound) : response;
+        return response is null ? Error.NotFound(ApplicationErrorCode.ResourceNotFound) : response;
     }
 }

@@ -1,6 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Reports.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Reports.Queries;
@@ -49,7 +52,7 @@ public sealed class GetEventSummaryQueryHandler(IReadStore readStore, IQueryExec
         );
         if (ev is null)
         {
-            return Error.NotFound(ErrorCode.EventNotFound);
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
         var stats = await executor.FirstOrDefaultAsync(
@@ -60,13 +63,16 @@ public sealed class GetEventSummaryQueryHandler(IReadStore readStore, IQueryExec
                 {
                     Total = g.Count(),
                     Requested = g.Count(a =>
-                        a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Requested
+                        a.AssignmentStatusId
+                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Requested)
                     ),
                     Confirmed = g.Count(a =>
-                        a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                        a.AssignmentStatusId
+                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
                     ),
                     Denied = g.Count(a =>
-                        a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Denied
+                        a.AssignmentStatusId
+                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Denied)
                     ),
                     DistinctUsers = g.Select(a => a.UserId).Distinct().Count(),
                 }),
@@ -81,7 +87,8 @@ public sealed class GetEventSummaryQueryHandler(IReadStore readStore, IQueryExec
                     role.Name,
                     role.Assignments.Count(a =>
                         a.Activity.EventId == eventId
-                        && a.AssignmentStatusId == SeedIds.AssignmentStatusTypes.Confirmed
+                        && a.AssignmentStatusId
+                            == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
                     )
                 )),
             ct

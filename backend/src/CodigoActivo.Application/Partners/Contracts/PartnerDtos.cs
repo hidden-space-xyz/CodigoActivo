@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Common.Validation;
-
 namespace CodigoActivo.Application.Partners.Contracts;
 
 /// <summary>
@@ -31,35 +28,3 @@ public record PartnerResponse(
     public PartnerResponse()
         : this(Guid.Empty, string.Empty, default, default, null, default, null, Guid.Empty) { }
 }
-
-/// <summary>
-/// Contains the client-supplied data used to create a partner.
-/// </summary>
-/// <param name="Name">The name value.</param>
-/// <param name="FromDate">Day the collaboration started; today at the latest.</param>
-/// <param name="Tier">The tier value.</param>
-/// <param name="Website">The website value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-public record CreatePartnerRequest(
-    [Required] [MaxLength(200)] [NotBlank] string Name,
-    [Required] [NotDefaultOrFutureDate] DateOnly? FromDate,
-    [Range(0, int.MaxValue)] int Tier,
-    [HttpUrl] [MaxLength(500)] string? Website,
-    Guid ThumbnailId
-);
-
-/// <summary>
-/// Contains the client-supplied data used to update the partner.
-/// </summary>
-/// <param name="Name">The name value.</param>
-/// <param name="FromDate">Day the collaboration started; today at the latest.</param>
-/// <param name="Tier">The tier value.</param>
-/// <param name="Website">The website value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-public record UpdatePartnerRequest(
-    [Required] [MaxLength(200)] [NotBlank] string Name,
-    [Required] [NotDefaultOrFutureDate] DateOnly? FromDate,
-    [Range(0, int.MaxValue)] int Tier,
-    [HttpUrl] [MaxLength(500)] string? Website,
-    Guid ThumbnailId
-);
