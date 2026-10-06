@@ -1,7 +1,9 @@
 using System.Net;
 using System.Text;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
@@ -72,7 +74,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
                         ActivityStartsAt = At,
                         ActivityEndsAt = At.AddHours(2),
                         EventId = EventId,
-                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        Modality = ActivityModality.Presencial,
                         ThumbnailId = ThumbnailId,
                         CreatedAt = At,
                         CreatedBy = TestSeedData.Users.AdminId,
@@ -81,12 +83,18 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             );
 
             db.Assignments.AddRange(
-                NewAssignment(TestSeedData.Users.MemberId, SeedIds.AssignmentStatusTypes.Confirmed),
+                NewAssignment(
+                    TestSeedData.Users.MemberId,
+                    KnownIds.AssignmentStatusTypes.Confirmed
+                ),
                 NewAssignment(
                     TestSeedData.Users.MemberChildId,
-                    SeedIds.AssignmentStatusTypes.Confirmed
+                    KnownIds.AssignmentStatusTypes.Confirmed
                 ),
-                NewAssignment(TestSeedData.Users.PendingId, SeedIds.AssignmentStatusTypes.Requested)
+                NewAssignment(
+                    TestSeedData.Users.PendingId,
+                    KnownIds.AssignmentStatusTypes.Requested
+                )
             );
 
             return Task.CompletedTask;
@@ -100,8 +108,8 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             {
                 ActivityId = ActivityId,
                 UserId = userId,
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                AssignmentStatusId = statusId,
+                Role = ActivityRole.Participant,
+                Status = CatalogIds.AssignmentStatuses.ValueOf(statusId),
                 CreatedAt = At,
             }
         );
@@ -221,7 +229,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         using var response = await client.SendEmailFormAsync(
-            $"{UsersUrl}?userStatusTypeId={SeedIds.UserStatusTypes.Pending}"
+            $"{UsersUrl}?userStatusTypeId={KnownIds.UserStatusTypes.Pending}"
         );
 
         var result = await ReadResultAsync(response);
@@ -251,7 +259,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsAdminAsync();
         var filesBefore = await Factory.QueryAsync(db =>
-            Task.FromResult(db.Files.Count(f => f.Id != ThumbnailId))
+            Task.FromResult(db.Files.Count(f => f.Id != StoredFileId.From(ThumbnailId)))
         );
 
         using var response = await client.SendEmailFormAsync(
@@ -265,7 +273,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             .OnlyContain(m => m.Attachments!.Count == 1 && m.Attachments[0].FileName == "acta.pdf");
 
         var filesAfter = await Factory.QueryAsync(db =>
-            Task.FromResult(db.Files.Count(f => f.Id != ThumbnailId))
+            Task.FromResult(db.Files.Count(f => f.Id != StoredFileId.From(ThumbnailId)))
         );
         filesAfter.Should().Be(filesBefore, "email attachments are never persisted");
     }
@@ -414,7 +422,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         using var response = await client.SendEmailFormAsync(
-            $"{AttendeesUrl}?statusId={SeedIds.AssignmentStatusTypes.Requested}"
+            $"{AttendeesUrl}?statusId={KnownIds.AssignmentStatusTypes.Requested}"
         );
 
         var result = await ReadResultAsync(response);
@@ -525,7 +533,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
 
         using var response = await client.GetAsync(
             TestUri.Rel(
-                $"{AttendeesUrl}/audience?statusId={SeedIds.AssignmentStatusTypes.Confirmed}"
+                $"{AttendeesUrl}/audience?statusId={KnownIds.AssignmentStatusTypes.Confirmed}"
             ),
             Ct
         );

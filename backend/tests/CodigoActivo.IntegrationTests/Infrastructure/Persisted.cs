@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Reflection;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
@@ -58,18 +60,44 @@ public static class Persisted
             var property = type.GetProperty(name, Members | BindingFlags.DeclaredOnly);
             if (property?.SetMethod is { } setter)
             {
-                setter.Invoke(entity, [value]);
+                setter.Invoke(entity, [AsStored(property.PropertyType, value)]);
                 return;
             }
 
             var backing = type.GetField($"<{name}>k__BackingField", Members);
             if (backing is not null)
             {
-                backing.SetValue(entity, value);
+                backing.SetValue(entity, AsStored(backing.FieldType, value));
                 return;
             }
         }
 
         throw new InvalidOperationException($"{entity.GetType().Name} has no state named {name}.");
+    }
+
+    private static object? AsStored(Type target, object? value)
+    {
+        var type = Nullable.GetUnderlyingType(target) ?? target;
+        return value switch
+        {
+            null => null,
+            _ when type.IsInstanceOfType(value) => value,
+            Guid id when IsEntityId(type) => Activator.CreateInstance(type, id),
+            string text when type == typeof(EmailAddress) => EmailAddress.FromStored(text),
+            string text when type == typeof(PhoneNumber) => PhoneNumber.FromStored(text),
+            string text when type == typeof(SpanishNationalId) => SpanishNationalId.FromStored(
+                text
+            ),
+            string text when type == typeof(RichText) => RichText.From(text),
+            _ => value,
+        };
+    }
+
+    private static bool IsEntityId(Type type)
+    {
+        return type.GetInterfaces()
+            .Any(contract =>
+                contract.IsGenericType && contract.GetGenericTypeDefinition() == typeof(IEntityId<>)
+            );
     }
 }

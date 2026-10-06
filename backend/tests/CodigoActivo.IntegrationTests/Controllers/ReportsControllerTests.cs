@@ -1,6 +1,8 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
@@ -31,11 +33,11 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(async db =>
         {
             Persisted.Overwrite(
-                (await db.Users.FindAsync([TestSeedData.Users.AdminId], Ct))!,
+                (await db.Users.FindAsync([UserId.From(TestSeedData.Users.AdminId)], Ct))!,
                 new { SecondaryPhone = "+34700000001" }
             );
             Persisted.Overwrite(
-                (await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct))!,
+                (await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct))!,
                 new { SecondaryPhone = "+34700000002" }
             );
         });
@@ -77,26 +79,26 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 NewAssignment(
                     ActivityAId,
                     TestSeedData.Users.MemberChildId,
-                    SeedIds.ActivityRoleTypes.Volunteer,
-                    SeedIds.AssignmentStatusTypes.Confirmed
+                    KnownIds.ActivityRoleTypes.Volunteer,
+                    KnownIds.AssignmentStatusTypes.Confirmed
                 ),
                 NewAssignment(
                     ActivityBId,
                     TestSeedData.Users.AdminId,
-                    SeedIds.ActivityRoleTypes.Leader,
-                    SeedIds.AssignmentStatusTypes.Confirmed
+                    KnownIds.ActivityRoleTypes.Leader,
+                    KnownIds.AssignmentStatusTypes.Confirmed
                 ),
                 NewAssignment(
                     ActivityBId,
                     TestSeedData.Users.PendingId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Requested
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Requested
                 ),
                 NewAssignment(
                     ActivityBId,
                     TestSeedData.Users.BlockedId,
-                    SeedIds.ActivityRoleTypes.Leader,
-                    SeedIds.AssignmentStatusTypes.Denied
+                    KnownIds.ActivityRoleTypes.Leader,
+                    KnownIds.AssignmentStatusTypes.Denied
                 )
             );
 
@@ -121,7 +123,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 ActivityStartsAt = startsAt ?? At,
                 ActivityEndsAt = (startsAt ?? At).AddHours(2),
                 EventId = EventId,
-                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                Modality = ActivityModality.Presencial,
                 ThumbnailId = thumbnailId,
                 CreatedAt = At,
                 CreatedBy = TestSeedData.Users.AdminId,
@@ -155,8 +157,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             {
                 ActivityId = activityId,
                 UserId = userId,
-                ActivityRoleTypeId = roleTypeId,
-                AssignmentStatusId = statusId,
+                Role = CatalogIds.ActivityRoles.ValueOf(roleTypeId),
+                Status = CatalogIds.AssignmentStatuses.ValueOf(statusId),
                 CreatedAt = At,
             }
         );
@@ -187,9 +189,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             .RoleTypeBreakdown.Select(r => (r.RoleTypeId, r.RoleTypeName, r.ApprovedAssignments))
             .Should()
             .Equal(
-                (SeedIds.ActivityRoleTypes.Leader, "Líder", 1),
-                (SeedIds.ActivityRoleTypes.Participant, "Participante", 0),
-                (SeedIds.ActivityRoleTypes.Volunteer, "Voluntario", 1)
+                (KnownIds.ActivityRoleTypes.Leader, "Líder", 1),
+                (KnownIds.ActivityRoleTypes.Participant, "Participante", 0),
+                (KnownIds.ActivityRoleTypes.Volunteer, "Voluntario", 1)
             );
     }
 
@@ -203,8 +205,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 NewAssignment(
                     ActivityAId,
                     TestSeedData.Users.AdminId,
-                    SeedIds.ActivityRoleTypes.Volunteer,
-                    SeedIds.AssignmentStatusTypes.Requested
+                    KnownIds.ActivityRoleTypes.Volunteer,
+                    KnownIds.AssignmentStatusTypes.Requested
                 )
             );
             return Task.CompletedTask;
@@ -252,8 +254,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 NewAssignment(
                     ActivityCId,
                     TestSeedData.Users.MemberChildId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Requested
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Requested
                 )
             );
             return Task.CompletedTask;
@@ -281,9 +283,9 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         assignment.ActivityTitle.Should().Be("Charla");
         assignment.ActivityStartsAt.Should().Be(At);
         assignment.ActivityEndsAt.Should().Be(At.AddHours(2));
-        assignment.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
+        assignment.RoleTypeId.Should().Be(KnownIds.ActivityRoleTypes.Leader);
         assignment.RoleTypeName.Should().Be("Líder");
-        assignment.StatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        assignment.StatusId.Should().Be(KnownIds.AssignmentStatusTypes.Confirmed);
         assignment.StatusName.Should().Be("Confirmada");
         assignment.SignedUpAt.Should().Be(At);
         assignment.HasTimeConflict.Should().BeFalse();
@@ -319,8 +321,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 NewAssignment(
                     ActivityCId,
                     TestSeedData.Users.MemberChildId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Requested
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Requested
                 )
             );
             return Task.CompletedTask;
@@ -329,7 +331,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.GetAsync(
             TestUri.Rel(
-                $"/api/reports/events/{EventId}/attendees?statusId={SeedIds.AssignmentStatusTypes.Confirmed}"
+                $"/api/reports/events/{EventId}/attendees?statusId={KnownIds.AssignmentStatusTypes.Confirmed}"
             ),
             Ct
         );
@@ -342,7 +344,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         var child = page.Items.Single(a => a.UserId == TestSeedData.Users.MemberChildId);
         child.Assignments.Should().HaveCount(1);
         child.Assignments[0].ActivityId.Should().Be(ActivityAId);
-        child.Assignments[0].StatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        child.Assignments[0].StatusId.Should().Be(KnownIds.AssignmentStatusTypes.Confirmed);
         child.Assignments[0].HasTimeConflict.Should().BeTrue();
     }
 
@@ -414,8 +416,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 NewAssignment(
                     ActivityCId,
                     TestSeedData.Users.MemberChildId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Requested
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Requested
                 )
             );
             return Task.CompletedTask;
@@ -574,8 +576,8 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 NewAssignment(
                     ActivityBId,
                     TestSeedData.Users.MemberChildId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Confirmed
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Confirmed
                 )
             );
             return Task.CompletedTask;

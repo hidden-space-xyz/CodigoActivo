@@ -1,4 +1,5 @@
 using System.Net;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Files;
@@ -139,6 +140,15 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
     protected Task<T?> FindAsync<T>(Guid id)
         where T : class
     {
-        return Factory.QueryAsync(db => db.Set<T>().FindAsync([id], Ct).AsTask());
+        return Factory.QueryAsync(db =>
+        {
+            var keyType = db
+                .Model.FindEntityType(typeof(T))!
+                .FindPrimaryKey()!
+                .Properties[0]
+                .ClrType;
+            var key = keyType == typeof(Guid) ? id : Activator.CreateInstance(keyType, id)!;
+            return db.Set<T>().FindAsync([key], Ct).AsTask();
+        });
     }
 }

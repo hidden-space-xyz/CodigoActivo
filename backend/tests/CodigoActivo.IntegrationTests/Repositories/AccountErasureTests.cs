@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
@@ -14,6 +15,7 @@ using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
+using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -96,7 +98,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 ActivityStartsAt = startsAt,
                 ActivityEndsAt = startsAt.AddHours(2),
                 EventId = eventId,
-                ActivityModalityTypeId = modalityId,
+                Modality = CatalogIds.ActivityModalities.ValueOf(modalityId),
                 ThumbnailId = ThumbnailId,
                 CreatedAt = SeededAt,
                 CreatedBy = TestSeedData.Users.AdminId,
@@ -117,8 +119,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             {
                 UserId = userId,
                 ActivityId = activityId,
-                ActivityRoleTypeId = roleId,
-                AssignmentStatusId = statusId,
+                Role = CatalogIds.ActivityRoles.ValueOf(roleId),
+                Status = CatalogIds.AssignmentStatuses.ValueOf(statusId),
                 CreatedAt = createdAt,
             }
         );
@@ -148,7 +150,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     {
         return Factory.SeedAsync(async db =>
         {
-            var member = await db.Users.SingleAsync(u => u.Id == TestSeedData.Users.MemberId, Ct);
+            var member = await db.Users.SingleAsync(
+                u => u.Id == UserId.From(TestSeedData.Users.MemberId),
+                Ct
+            );
             Persisted.Overwrite(
                 member,
                 new
@@ -211,50 +216,50 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     CampId,
                     "Escalada",
                     new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
-                    SeedIds.ActivityModalityTypes.Presencial
+                    KnownIds.ActivityModalityTypes.Presencial
                 ),
                 NewActivity(
                     WorkshopId,
                     CampId,
                     "Taller",
                     new DateTimeOffset(2026, 6, 2, 10, 0, 0, TimeSpan.Zero),
-                    SeedIds.ActivityModalityTypes.Online
+                    KnownIds.ActivityModalityTypes.Online
                 ),
                 NewActivity(
                     TalkId,
                     ConferenceId,
                     "Charla",
                     new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
-                    SeedIds.ActivityModalityTypes.Presencial
+                    KnownIds.ActivityModalityTypes.Presencial
                 )
             );
             db.Assignments.AddRange(
                 NewAssignment(
                     TestSeedData.Users.MemberId,
                     ClimbingId,
-                    SeedIds.ActivityRoleTypes.Volunteer,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Volunteer,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     MemberSignedUpAt
                 ),
                 NewAssignment(
                     TestSeedData.Users.MemberChildId,
                     ClimbingId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     ChildSignedUpAt
                 ),
                 NewAssignment(
                     TestSeedData.Users.MemberChildId,
                     WorkshopId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Requested,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Requested,
                     ChildSignedUpAt
                 ),
                 NewAssignment(
                     TestSeedData.Users.BlockedId,
                     TalkId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     SeededAt
                 )
             );
@@ -327,7 +332,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     {
         (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().NotBeNull();
         (await FindAsync<NewsItem>(NewsItemId))!
-            .CreatedBy.Should()
+            .CreatedBy.Value.Should()
             .Be(TestSeedData.Users.PendingId, "the handover is rolled back with the deletion");
         (await CopiesAsync())
             .Should()
@@ -345,12 +350,13 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
-        var user = await db.Users.SingleAsync(u => u.Id == userId, Ct);
-        await db.Users.Where(u => alsoTracked.Contains(u.Id)).LoadAsync(Ct);
+        var user = await db.Users.SingleAsync(u => u.Id == UserId.From(userId), Ct);
+        var tracked = alsoTracked.Select(UserId.From).ToList();
+        await db.Users.Where(u => tracked.Contains(u.Id)).LoadAsync(Ct);
         var eraser = scope.ServiceProvider.GetRequiredService<AccountEraser>();
         return await eraser.EraseAsync(
             user,
-            new AccountErasure(origin, actorId, Factory.Clock.UtcNow),
+            new AccountErasure(origin, UserId.From(actorId), Factory.Clock.UtcNow),
             Ct
         );
     }
@@ -367,16 +373,20 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 .AddInterceptors(interceptor)
                 .Options
         );
-        var user = await db.Users.SingleAsync(u => u.Id == userId, Ct);
+        var user = await db.Users.SingleAsync(u => u.Id == UserId.From(userId), Ct);
         var eraser = new AccountEraser(
             new UserRepository(db),
             new DeletedAccountRepository(db),
             new AccountErasureStore(db),
-            db
+            TestUnitOfWork.For(db)
         );
         return await eraser.EraseAsync(
             user,
-            new AccountErasure(AccountDeletionOrigin.Self, userId, Factory.Clock.UtcNow),
+            new AccountErasure(
+                AccountDeletionOrigin.Self,
+                UserId.From(userId),
+                Factory.Clock.UtcNow
+            ),
             Ct
         );
     }
@@ -388,7 +398,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
 
     private async Task<JsonElement> CopyOfAsync(Guid userId)
     {
-        var copy = (await CopiesAsync()).Single(c => c.Id == userId);
+        var copy = (await CopiesAsync()).Single(c => c.Id == UserId.From(userId));
         using var document = JsonDocument.Parse(
             copy.Data,
             new JsonDocumentOptions { MaxDepth = 128 }
@@ -425,15 +435,15 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         {
             (await db.Assignments.Select(a => a.UserId).ToListAsync(Ct))
                 .Should()
-                .Equal(TestSeedData.Users.BlockedId);
+                .Equal(UserId.From(TestSeedData.Users.BlockedId));
             (await db.EventTermsAcceptances.Select(a => a.UserId).ToListAsync(Ct))
                 .Should()
-                .Equal(TestSeedData.Users.BlockedId);
+                .Equal(UserId.From(TestSeedData.Users.BlockedId));
             return true;
         });
 
         var stored = (await CopiesAsync()).Should().ContainSingle().Subject;
-        stored.Id.Should().Be(TestSeedData.Users.MemberId);
+        stored.Id.Value.Should().Be(TestSeedData.Users.MemberId);
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
 
         var copy = await CopyOfAsync(TestSeedData.Users.MemberId);
@@ -665,7 +675,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         );
 
         erased.Should().BeTrue();
-        (await CopiesAsync()).Select(c => c.Id).Should().Equal(TestSeedData.Users.MemberId);
+        (await CopiesAsync())
+            .Select(c => c.Id)
+            .Should()
+            .Equal(UserId.From(TestSeedData.Users.MemberId));
         (await FindAsync<User>(TestSeedData.Users.MemberChildId)).Should().BeNull();
     }
 
@@ -674,7 +687,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
-        var stale = await db.Users.SingleAsync(u => u.Id == TestSeedData.Users.PendingId, Ct);
+        var stale = await db.Users.SingleAsync(
+            u => u.Id == UserId.From(TestSeedData.Users.PendingId),
+            Ct
+        );
         await EraseAsync(
             TestSeedData.Users.PendingId,
             AccountDeletionOrigin.Administrator,
@@ -687,7 +703,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 stale,
                 new AccountErasure(
                     AccountDeletionOrigin.Administrator,
-                    TestSeedData.Users.AdminId,
+                    UserId.From(TestSeedData.Users.AdminId),
                     Factory.Clock.UtcNow
                 ),
                 Ct
@@ -730,7 +746,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 CampId,
                 "Autoría",
                 new DateTimeOffset(2026, 6, 3, 10, 0, 0, TimeSpan.Zero),
-                SeedIds.ActivityModalityTypes.Online
+                KnownIds.ActivityModalityTypes.Online
             );
             Persisted.Overwrite(authored, new { CreatedBy = child, UpdatedBy = member });
             db.Events.Add(reviewed);
@@ -772,7 +788,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                         Title = "Recurso",
                         Subtitle = "Sub",
                         Description = "{}",
-                        ResourceTypeId = SeedIds.ResourceTypes.Internal,
+                        ResourceType = ResourceType.Internal,
                         ThumbnailId = ThumbnailId,
                         CreatedAt = SeededAt,
                         CreatedBy = other,
@@ -808,22 +824,22 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         var erased = await EraseAsync(member, AccountDeletionOrigin.Self, member);
 
         erased.Should().BeTrue();
-        var heir = SeedIds.Users.InitialAdministrator;
+        var heir = KnownIds.Users.InitialAdministrator;
         var reviewedEvent = (await FindAsync<Event>(ReviewedEventId))!;
-        reviewedEvent.CreatedBy.Should().Be(other);
-        reviewedEvent.UpdatedBy.Should().Be(heir);
+        reviewedEvent.CreatedBy.Value.Should().Be(other);
+        reviewedEvent.UpdatedBy.Should().Be(UserId.From(heir));
         var authoredActivity = (await FindAsync<Activity>(AuthoredActivityId))!;
-        authoredActivity.CreatedBy.Should().Be(heir);
-        authoredActivity.UpdatedBy.Should().Be(heir);
+        authoredActivity.CreatedBy.Value.Should().Be(heir);
+        authoredActivity.UpdatedBy.Should().Be(UserId.From(heir));
         var newsItem = (await FindAsync<NewsItem>(NewsItemId))!;
-        newsItem.CreatedBy.Should().Be(heir);
-        newsItem.UpdatedBy.Should().Be(other);
-        (await FindAsync<Partner>(PartnerId))!.CreatedBy.Should().Be(heir);
+        newsItem.CreatedBy.Value.Should().Be(heir);
+        newsItem.UpdatedBy.Should().Be(UserId.From(other));
+        (await FindAsync<Partner>(PartnerId))!.CreatedBy.Value.Should().Be(heir);
         var resource = (await FindAsync<Resource>(ResourceId))!;
-        resource.CreatedBy.Should().Be(other);
-        resource.UpdatedBy.Should().Be(heir);
-        (await FindAsync<StoredFile>(UploadId))!.UploadedBy.Should().Be(heir);
-        (await FindAsync<StoredFile>(OtherUploadId))!.UploadedBy.Should().Be(other);
+        resource.CreatedBy.Value.Should().Be(other);
+        resource.UpdatedBy.Should().Be(UserId.From(heir));
+        (await FindAsync<StoredFile>(UploadId))!.UploadedBy.Value.Should().Be(heir);
+        (await FindAsync<StoredFile>(OtherUploadId))!.UploadedBy.Value.Should().Be(other);
         (await FindAsync<User>(member)).Should().BeNull();
         (await FindAsync<User>(child)).Should().BeNull();
     }
@@ -832,7 +848,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     public async Task EraseAsyncInitialAdministratorIsRefusedAndKeepsEverything()
     {
         await SeedHouseholdAsync();
-        var administrator = SeedIds.Users.InitialAdministrator;
+        var administrator = KnownIds.Users.InitialAdministrator;
 
         var erase = () => EraseAsync(administrator, AccountDeletionOrigin.Self, administrator);
 
@@ -841,7 +857,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .ThrowAsync<InvalidOperationException>()
             .WithMessage("*initial administrator*");
         (await FindAsync<User>(administrator)).Should().NotBeNull();
-        (await FindAsync<Event>(CampId))!.CreatedBy.Should().Be(administrator);
+        (await FindAsync<Event>(CampId))!.CreatedBy.Value.Should().Be(administrator);
         (await CopiesAsync()).Should().BeEmpty();
     }
 
@@ -851,7 +867,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         await using var scope = Factory.Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
         var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var user = await users.GetByIdAsync(TestSeedData.Users.PendingId, Ct);
+        var user = await users.GetByIdAsync(UserId.From(TestSeedData.Users.PendingId), Ct);
         users.Remove(user!);
 
         var save = () => uow.SaveChangesAsync(Ct);
@@ -884,7 +900,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         );
 
         purged.Should().Be(2);
-        (await CopiesAsync()).Select(c => c.Id).Should().Equal(after);
+        (await CopiesAsync()).Select(c => c.Id).Should().Equal(UserId.From(after));
     }
 
     [Fact]
@@ -927,7 +943,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
 
         erased.Should().BeTrue();
         deadlocks.Thrown.Should().Be(2);
-        (await CopiesAsync()).Select(c => c.Id).Should().Equal(TestSeedData.Users.MemberId);
+        (await CopiesAsync())
+            .Select(c => c.Id)
+            .Should()
+            .Equal(UserId.From(TestSeedData.Users.MemberId));
         (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
     }
 
@@ -941,7 +960,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
 
         erased.Should().BeTrue();
         deadlocks.Thrown.Should().Be(1);
-        (await CopiesAsync()).Select(c => c.Id).Should().Equal(TestSeedData.Users.MemberId);
+        (await CopiesAsync())
+            .Select(c => c.Id)
+            .Should()
+            .Equal(UserId.From(TestSeedData.Users.MemberId));
         (await FindAsync<User>(TestSeedData.Users.MemberChildId)).Should().BeNull();
     }
 
@@ -972,10 +994,13 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
         var eraser = scope.ServiceProvider.GetRequiredService<AccountEraser>();
-        var user = await db.Users.SingleAsync(u => u.Id == TestSeedData.Users.PendingId, Ct);
+        var user = await db.Users.SingleAsync(
+            u => u.Id == UserId.From(TestSeedData.Users.PendingId),
+            Ct
+        );
         var erasure = new AccountErasure(
             AccountDeletionOrigin.Administrator,
-            TestSeedData.Users.AdminId,
+            UserId.From(TestSeedData.Users.AdminId),
             Factory.Clock.UtcNow
         );
 
@@ -996,7 +1021,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
-        var user = await db.Users.SingleAsync(u => u.Id == TestSeedData.Users.PendingId, Ct);
+        var user = await db.Users.SingleAsync(
+            u => u.Id == UserId.From(TestSeedData.Users.PendingId),
+            Ct
+        );
         db.Users.Add(
             Persisted.As<User>(
                 new
@@ -1005,8 +1033,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     LastName = "Duplicado",
                     Email = TestSeedData.MemberEmail,
                     Gender = Gender.Other,
-                    UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
-                    UserTypeId = SeedIds.UserTypes.Member,
+                    Status = UserStatus.Pending,
+                    UserType = UserType.Member,
                     CreatedAt = SeededAt,
                 }
             )
@@ -1019,7 +1047,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     user,
                     new AccountErasure(
                         AccountDeletionOrigin.Administrator,
-                        TestSeedData.Users.AdminId,
+                        UserId.From(TestSeedData.Users.AdminId),
                         Factory.Clock.UtcNow
                     ),
                     Ct
@@ -1037,10 +1065,15 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         const int ValidatedMaxDepth = 64;
         await Factory.SeedAsync(async db =>
         {
-            var conditions = await db.TermsDocuments.SingleAsync(d => d.Id == ConditionsId, Ct);
+            var conditions = await db.TermsDocuments.SingleAsync(
+                d => d.Id == TermsDocumentId.From(ConditionsId),
+                Ct
+            );
             conditions.Rewrite(
                 conditions.Name,
-                new string('[', ValidatedMaxDepth) + new string(']', ValidatedMaxDepth)
+                RichText.From(
+                    new string('[', ValidatedMaxDepth) + new string(']', ValidatedMaxDepth)
+                )
             );
         });
 

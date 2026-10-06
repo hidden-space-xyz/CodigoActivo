@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
+using CodigoActivo.API.Partners.Contracts;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Domain.Common;
@@ -106,7 +108,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
 
         var stored = await FindAsync<Partner>(created.Id);
         stored!.Tier.Should().Be(3);
-        stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
+        stored.CreatedBy.Value.Should().Be(TestSeedData.Users.AdminId);
     }
 
     [Fact]
@@ -244,7 +246,7 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<Partner>(id);
         stored.Should().BeNull();
-        var file = await FindAsync<StoredFile>(thumbnailId);
+        var file = await FindAsync<StoredFile>(thumbnailId.Value);
         file.Should()
             .BeNull("the deleted partner's thumbnail is orphaned and must be cascade-deleted");
     }

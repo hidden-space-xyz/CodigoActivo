@@ -1,12 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
+using CodigoActivo.API.Activities.Contracts;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -83,8 +87,9 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                         Title = title,
                         Description = "Descripcion",
                         Location = location,
-                        ActivityModalityTypeId = modalityId
-                            ?? SeedIds.ActivityModalityTypes.Presencial,
+                        Modality = CatalogIds.ActivityModalities.ValueOf(
+                            modalityId ?? KnownIds.ActivityModalityTypes.Presencial
+                        ),
                         ActivityStartsAt = startsAt ?? ActivityStart,
                         ActivityEndsAt = endsAt ?? ActivityEnd,
                         EventId = eventId,
@@ -112,7 +117,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             title,
             "Descripcion",
             "Sala",
-            modalityId ?? SeedIds.ActivityModalityTypes.Presencial,
+            modalityId ?? KnownIds.ActivityModalityTypes.Presencial,
             startsAt ?? ActivityStart,
             endsAt ?? ActivityEnd,
             thumbnailId,
@@ -146,13 +151,13 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             eventId,
             thumb,
             "En sala",
-            SeedIds.ActivityModalityTypes.Presencial
+            KnownIds.ActivityModalityTypes.Presencial
         );
-        await SeedActivityAsync(eventId, thumb, "En remoto", SeedIds.ActivityModalityTypes.Online);
+        await SeedActivityAsync(eventId, thumb, "En remoto", KnownIds.ActivityModalityTypes.Online);
         var client = CreateClient();
 
         var response = await client.GetAsync(
-            TestUri.Rel($"/api/activities?modalityTypeId={SeedIds.ActivityModalityTypes.Online}"),
+            TestUri.Rel($"/api/activities?modalityTypeId={KnownIds.ActivityModalityTypes.Online}"),
             Ct
         );
 
@@ -161,7 +166,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         page!.Total.Should().Be(1);
         var item = page.Items.Should().ContainSingle().Subject;
         item.Title.Should().Be("En remoto");
-        item.ModalityId.Should().Be(SeedIds.ActivityModalityTypes.Online);
+        item.ModalityId.Should().Be(KnownIds.ActivityModalityTypes.Online);
     }
 
     [Fact]
@@ -277,8 +282,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         created!.Title.Should().Be("Taller");
 
         var stored = await FindAsync<Activity>(created.Id);
-        stored!.EventId.Should().Be(eventId);
-        stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
+        stored!.EventId.Value.Should().Be(eventId);
+        stored.CreatedBy.Value.Should().Be(TestSeedData.Users.AdminId);
     }
 
     [Fact]
@@ -291,8 +296,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             thumb,
             roleCapacities:
             [
-                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 10),
-                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Leader, 1),
+                new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 10),
+                new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Leader, 1),
             ]
         );
 
@@ -303,12 +308,14 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         created!
             .RoleCapacities.Should()
             .BeEquivalentTo([
-                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Participant, 10, false),
-                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Leader, 1, false),
+                new ActivityRoleCapacityResponse(KnownIds.ActivityRoleTypes.Participant, 10, false),
+                new ActivityRoleCapacityResponse(KnownIds.ActivityRoleTypes.Leader, 1, false),
             ]);
 
         var storedCount = await Factory.QueryAsync(db =>
-            Task.FromResult(db.ActivityRoleCapacities.Count(c => c.ActivityId == created.Id))
+            Task.FromResult(
+                db.ActivityRoleCapacities.Count(c => c.ActivityId == ActivityId.From(created.Id))
+            )
         );
         storedCount.Should().Be(2);
     }
@@ -323,8 +330,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             thumb,
             roleCapacities:
             [
-                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 5),
-                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 9),
+                new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 5),
+                new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 9),
             ]
         );
 
@@ -343,7 +350,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             thumb,
             roleCapacities:
             [
-                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 0),
+                new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 0),
             ]
         );
 
@@ -365,7 +372,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         ActivityId = id,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Leader,
+                        Role = ActivityRole.Leader,
                         DesiredCount = 1,
                     }
                 )
@@ -375,7 +382,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         ActivityId = id,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        Role = ActivityRole.Participant,
                         DesiredCount = 5,
                     }
                 )
@@ -387,13 +394,13 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             "Despues",
             "Descripcion",
             "Sala",
-            SeedIds.ActivityModalityTypes.Presencial,
+            KnownIds.ActivityModalityTypes.Presencial,
             ActivityStart,
             ActivityEnd,
             thumb,
             [
-                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 3),
-                new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Volunteer, 2),
+                new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 3),
+                new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Volunteer, 2),
             ]
         );
 
@@ -404,28 +411,22 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         updated!
             .RoleCapacities.Should()
             .BeEquivalentTo([
-                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Participant, 3, false),
-                new ActivityRoleCapacityResponse(SeedIds.ActivityRoleTypes.Volunteer, 2, false),
+                new ActivityRoleCapacityResponse(KnownIds.ActivityRoleTypes.Participant, 3, false),
+                new ActivityRoleCapacityResponse(KnownIds.ActivityRoleTypes.Volunteer, 2, false),
             ]);
 
         var stored = await Factory.QueryAsync(db =>
             Task.FromResult(
-                db.ActivityRoleCapacities.Where(c => c.ActivityId == id)
-                    .Select(c => new { c.ActivityRoleTypeId, c.DesiredCount })
+                db.ActivityRoleCapacities.Where(c => c.ActivityId == ActivityId.From(id))
+                    .Select(c => new { c.Role, c.DesiredCount })
                     .ToList()
             )
         );
         stored.Should().HaveCount(2);
         stored
             .Should()
-            .ContainSingle(c =>
-                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant && c.DesiredCount == 3
-            );
-        stored
-            .Should()
-            .ContainSingle(c =>
-                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer && c.DesiredCount == 2
-            );
+            .ContainSingle(c => c.Role == ActivityRole.Participant && c.DesiredCount == 3);
+        stored.Should().ContainSingle(c => c.Role == ActivityRole.Volunteer && c.DesiredCount == 2);
     }
 
     [Fact]
@@ -442,7 +443,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         ActivityId = crowded,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        Role = ActivityRole.Participant,
                         DesiredCount = 1,
                     }
                 )
@@ -452,7 +453,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         ActivityId = crowded,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
+                        Role = ActivityRole.Volunteer,
                         DesiredCount = 1,
                     }
                 )
@@ -462,7 +463,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         ActivityId = covered,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                        Role = ActivityRole.Participant,
                         DesiredCount = 2,
                     }
                 )
@@ -475,8 +476,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                         {
                             UserId = TestSeedData.Users.MemberId,
                             ActivityId = activityId,
-                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+                            Role = ActivityRole.Participant,
+                            Status = AssignmentStatus.Confirmed,
                             CreatedAt = SignupStart,
                         }
                     )
@@ -487,8 +488,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                         {
                             UserId = TestSeedData.Users.MemberChildId,
                             ActivityId = activityId,
-                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+                            Role = ActivityRole.Participant,
+                            Status = AssignmentStatus.Requested,
                             CreatedAt = SignupStart,
                         }
                     )
@@ -499,8 +500,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                         {
                             UserId = TestSeedData.Users.PendingId,
                             ActivityId = activityId,
-                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                            AssignmentStatusId = SeedIds.AssignmentStatusTypes.Denied,
+                            Role = ActivityRole.Participant,
+                            Status = AssignmentStatus.Denied,
                             CreatedAt = SignupStart,
                         }
                     )
@@ -518,16 +519,16 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             .Items.Single(a => string.Equals(a.Title, "Llena", StringComparison.Ordinal))
             .RoleCapacities;
         crowdedCapacities
-            .Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant)
+            .Single(c => c.ActivityRoleTypeId == KnownIds.ActivityRoleTypes.Participant)
             .IsHighDemand.Should()
             .BeTrue();
         crowdedCapacities
-            .Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer)
+            .Single(c => c.ActivityRoleTypeId == KnownIds.ActivityRoleTypes.Volunteer)
             .IsHighDemand.Should()
             .BeFalse();
         page.Items.Single(a => string.Equals(a.Title, "Con hueco", StringComparison.Ordinal))
             .RoleCapacities.Single(c =>
-                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
+                c.ActivityRoleTypeId == KnownIds.ActivityRoleTypes.Participant
             )
             .IsHighDemand.Should()
             .BeFalse();
@@ -603,7 +604,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
             "Despues",
             "Descripcion",
             "Otra Sala",
-            SeedIds.ActivityModalityTypes.Online,
+            KnownIds.ActivityModalityTypes.Online,
             ActivityStart,
             ActivityEnd,
             thumb,
@@ -615,8 +616,8 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stored = await FindAsync<Activity>(id);
         stored!.Title.Should().Be("Despues");
-        stored.ActivityModalityTypeId.Should().Be(SeedIds.ActivityModalityTypes.Online);
-        stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
+        stored.Modality.Should().Be(ActivityModality.Online);
+        stored.UpdatedBy.Should().Be(UserId.From(TestSeedData.Users.AdminId));
     }
 
     [Fact]
@@ -664,14 +665,14 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var roles = await response.ReadJsonAsync<IReadOnlyList<ActivityRoleTypeResponse>>(Ct);
         roles.Should().HaveCount(3);
-        roles.Should().Contain(r => r.Id == SeedIds.ActivityRoleTypes.Leader && r.Name == "Líder");
+        roles.Should().Contain(r => r.Id == KnownIds.ActivityRoleTypes.Leader && r.Name == "Líder");
         roles
             .Should()
-            .Contain(r => r.Id == SeedIds.ActivityRoleTypes.Volunteer && r.Name == "Voluntario");
+            .Contain(r => r.Id == KnownIds.ActivityRoleTypes.Volunteer && r.Name == "Voluntario");
         roles
             .Should()
             .Contain(r =>
-                r.Id == SeedIds.ActivityRoleTypes.Participant && r.Name == "Participante"
+                r.Id == KnownIds.ActivityRoleTypes.Participant && r.Name == "Participante"
             );
     }
 
@@ -689,7 +690,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var statuses = await response.ReadJsonAsync<IReadOnlyList<AssignmentStatusTypeResponse>>(
             Ct
         );
-        statuses.Should().Contain(s => s.Id == SeedIds.AssignmentStatusTypes.Requested);
+        statuses.Should().Contain(s => s.Id == KnownIds.AssignmentStatusTypes.Requested);
     }
 
     [Fact]
@@ -703,6 +704,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var modalities = await response.ReadJsonAsync<IReadOnlyList<ActivityModalityTypeResponse>>(
             Ct
         );
-        modalities.Should().Contain(m => m.Id == SeedIds.ActivityModalityTypes.Presencial);
+        modalities.Should().Contain(m => m.Id == KnownIds.ActivityModalityTypes.Presencial);
     }
 }

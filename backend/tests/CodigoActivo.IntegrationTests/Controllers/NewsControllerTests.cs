@@ -1,11 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
+using CodigoActivo.API.News.Contracts;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 
@@ -106,7 +109,7 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
 
         var stored = await FindAsync<NewsItem>(created.Id);
         stored!.Subtitle.Should().Be("Tagline");
-        stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
+        stored.CreatedBy.Value.Should().Be(TestSeedData.Users.AdminId);
         stored.Featured.Should().BeFalse();
     }
 
@@ -179,7 +182,7 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         var stored = await FindAsync<NewsItem>(id);
         stored!.Title.Should().Be("After");
         stored.Subtitle.Should().Be("NewSub");
-        stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
+        stored.UpdatedBy.Should().Be(UserId.From(TestSeedData.Users.AdminId));
     }
 
     [Fact]
@@ -194,7 +197,7 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync($"/api/news/{id}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var oldFile = await FindAsync<StoredFile>(oldThumbnailId);
+        var oldFile = await FindAsync<StoredFile>(oldThumbnailId.Value);
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
         var newFile = await FindAsync<StoredFile>(newThumbnailId);
         newFile.Should().NotBeNull();
@@ -211,13 +214,18 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
             "Con imagen",
             "Sub",
             $"{{\"type\":\"doc\",\"content\":[{{\"type\":\"image\",\"attrs\":{{\"src\":\"/api/files/{embeddedFileId}/content\"}}}}]}}",
-            thumbnailId
+            thumbnailId.Value
         );
         using (var seeded = await client.PutJsonAsync($"/api/news/{id}", withImage, Ct))
         {
             seeded.StatusCode.Should().Be(HttpStatusCode.OK);
         }
-        var withoutImage = new UpdateNewsItemRequest("Con imagen", "Sub", Description, thumbnailId);
+        var withoutImage = new UpdateNewsItemRequest(
+            "Con imagen",
+            "Sub",
+            Description,
+            thumbnailId.Value
+        );
 
         var response = await client.PutJsonAsync($"/api/news/{id}", withoutImage, Ct);
 
@@ -269,7 +277,7 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<NewsItem>(id);
         stored.Should().BeNull();
-        var file = await FindAsync<StoredFile>(thumbnailId);
+        var file = await FindAsync<StoredFile>(thumbnailId.Value);
         file.Should()
             .BeNull("the deleted news item's thumbnail is orphaned and must be cascade-deleted");
     }

@@ -42,8 +42,8 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
                         LastName = "Paginated",
                         BirthDate = new DateOnly(1990, 1, 1),
                         Gender = Gender.Other,
-                        UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                        UserTypeId = SeedIds.UserTypes.Member,
+                        Status = UserStatus.Active,
+                        UserType = UserType.Member,
                         CreatedAt = Fixed,
                     }
                 )

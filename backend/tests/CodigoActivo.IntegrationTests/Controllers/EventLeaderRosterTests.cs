@@ -1,5 +1,6 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
@@ -57,8 +58,8 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
                 SecondaryPhone = secondaryPhone,
                 NationalId = nationalId ?? "87654321X",
                 Gender = Gender.Female,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                UserTypeId = SeedIds.UserTypes.Participant,
+                Status = UserStatus.Active,
+                UserType = UserType.Participant,
                 CreatedAt = SeededAt,
             }
         );
@@ -77,8 +78,8 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
             {
                 UserId = userId,
                 ActivityId = activityId,
-                ActivityRoleTypeId = roleTypeId,
-                AssignmentStatusId = statusId,
+                Role = CatalogIds.ActivityRoles.ValueOf(roleTypeId),
+                Status = CatalogIds.AssignmentStatuses.ValueOf(statusId),
                 CreatedAt = SeededAt.AddMinutes(minutesAfterSeed),
             }
         );
@@ -121,7 +122,7 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
                 ActivityStartsAt = startsAt,
                 ActivityEndsAt = startsAt.AddHours(2),
                 EventId = eventId,
-                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                Modality = ActivityModality.Presencial,
                 ThumbnailId = ThumbnailId,
                 CreatedAt = SeededAt,
                 CreatedBy = TestSeedData.Users.AdminId,
@@ -183,8 +184,8 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
                         BirthDate = new DateOnly(2012, 7, 5),
                         Gender = Gender.Female,
                         ParentId = GuardianId,
-                        UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-                        UserTypeId = SeedIds.UserTypes.Participant,
+                        Status = UserStatus.Dependent,
+                        UserType = UserType.Participant,
                         CreatedAt = SeededAt,
                     }
                 )
@@ -193,64 +194,64 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
                 NewAssignment(
                     CoLeaderId,
                     LedActivityId,
-                    SeedIds.ActivityRoleTypes.Leader,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Leader,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     1
                 ),
                 NewAssignment(
                     AdultParticipantId,
                     LedActivityId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     2
                 ),
                 NewAssignment(
                     VolunteerId,
                     LedActivityId,
-                    SeedIds.ActivityRoleTypes.Volunteer,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Volunteer,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     3
                 ),
                 NewAssignment(
                     GuardedChildId,
                     LedActivityId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     4
                 ),
                 NewAssignment(
                     TestSeedData.Users.MemberChildId,
                     LedActivityId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     5
                 ),
                 NewAssignment(
                     RequestedId,
                     LedActivityId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Requested,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Requested,
                     6
                 ),
                 NewAssignment(
                     DeniedId,
                     LedActivityId,
-                    SeedIds.ActivityRoleTypes.Volunteer,
-                    SeedIds.AssignmentStatusTypes.Denied,
+                    KnownIds.ActivityRoleTypes.Volunteer,
+                    KnownIds.AssignmentStatusTypes.Denied,
                     7
                 ),
                 NewAssignment(
                     SiblingOnlyId,
                     SiblingActivityId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     8
                 ),
                 NewAssignment(
                     SiblingOnlyId,
                     OtherEventActivityId,
-                    SeedIds.ActivityRoleTypes.Participant,
-                    SeedIds.AssignmentStatusTypes.Confirmed,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Confirmed,
                     9
                 )
             );
@@ -268,8 +269,8 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
     {
         return MemberAssignment(
             LedActivityId,
-            SeedIds.ActivityRoleTypes.Leader,
-            SeedIds.AssignmentStatusTypes.Confirmed
+            KnownIds.ActivityRoleTypes.Leader,
+            KnownIds.AssignmentStatusTypes.Confirmed
         );
     }
 
@@ -307,13 +308,13 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
             MemberLeadsTheActivity(),
             MemberAssignment(
                 SiblingActivityId,
-                SeedIds.ActivityRoleTypes.Participant,
-                SeedIds.AssignmentStatusTypes.Confirmed
+                KnownIds.ActivityRoleTypes.Participant,
+                KnownIds.AssignmentStatusTypes.Confirmed
             ),
             MemberAssignment(
                 OtherEventActivityId,
-                SeedIds.ActivityRoleTypes.Leader,
-                SeedIds.AssignmentStatusTypes.Confirmed
+                KnownIds.ActivityRoleTypes.Leader,
+                KnownIds.AssignmentStatusTypes.Confirmed
             )
         );
         var client = await LoginAsMemberAsync();
@@ -330,9 +331,9 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
             .Roles.Select(r => r.RoleTypeId)
             .Should()
             .Equal(
-                SeedIds.ActivityRoleTypes.Leader,
-                SeedIds.ActivityRoleTypes.Volunteer,
-                SeedIds.ActivityRoleTypes.Participant
+                KnownIds.ActivityRoleTypes.Leader,
+                KnownIds.ActivityRoleTypes.Volunteer,
+                KnownIds.ActivityRoleTypes.Participant
             );
 
         var leaders = activity.Roles[0];
@@ -415,10 +416,10 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
     {
         var statusId =
             status == "Requested"
-                ? SeedIds.AssignmentStatusTypes.Requested
-                : SeedIds.AssignmentStatusTypes.Denied;
+                ? KnownIds.AssignmentStatusTypes.Requested
+                : KnownIds.AssignmentStatusTypes.Denied;
         await SeedEventsAsync(
-            MemberAssignment(LedActivityId, SeedIds.ActivityRoleTypes.Leader, statusId)
+            MemberAssignment(LedActivityId, KnownIds.ActivityRoleTypes.Leader, statusId)
         );
         var client = await LoginAsMemberAsync();
 
@@ -434,10 +435,10 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
     {
         var roleTypeId =
             role == "Volunteer"
-                ? SeedIds.ActivityRoleTypes.Volunteer
-                : SeedIds.ActivityRoleTypes.Participant;
+                ? KnownIds.ActivityRoleTypes.Volunteer
+                : KnownIds.ActivityRoleTypes.Participant;
         await SeedEventsAsync(
-            MemberAssignment(LedActivityId, roleTypeId, SeedIds.AssignmentStatusTypes.Confirmed)
+            MemberAssignment(LedActivityId, roleTypeId, KnownIds.AssignmentStatusTypes.Confirmed)
         );
         var client = await LoginAsMemberAsync();
 
@@ -470,14 +471,11 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
 
         await Factory.SeedAsync(db =>
             db.Assignments.Where(a =>
-                    a.UserId == TestSeedData.Users.MemberId && a.ActivityId == LedActivityId
+                    a.UserId == UserId.From(TestSeedData.Users.MemberId)
+                    && a.ActivityId == ActivityId.From(LedActivityId)
                 )
                 .ExecuteUpdateAsync(
-                    set =>
-                        set.SetProperty(
-                            a => a.AssignmentStatusId,
-                            SeedIds.AssignmentStatusTypes.Denied
-                        ),
+                    set => set.SetProperty(a => a.Status, AssignmentStatus.Denied),
                     Ct
                 )
         );
@@ -505,8 +503,8 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
             NewAssignment(
                 TestSeedData.Users.AdminId,
                 SiblingActivityId,
-                SeedIds.ActivityRoleTypes.Leader,
-                SeedIds.AssignmentStatusTypes.Confirmed
+                KnownIds.ActivityRoleTypes.Leader,
+                KnownIds.AssignmentStatusTypes.Confirmed
             )
         );
         var client = await LoginAsAdminAsync();
@@ -530,15 +528,16 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         {
             await db
                 .Assignments.Where(a =>
-                    a.UserId == TestSeedData.Users.MemberChildId && a.ActivityId == LedActivityId
+                    a.UserId == UserId.From(TestSeedData.Users.MemberChildId)
+                    && a.ActivityId == ActivityId.From(LedActivityId)
                 )
                 .ExecuteDeleteAsync(Ct);
             db.Assignments.Add(
                 NewAssignment(
                     TestSeedData.Users.MemberChildId,
                     LedActivityId,
-                    SeedIds.ActivityRoleTypes.Leader,
-                    SeedIds.AssignmentStatusTypes.Confirmed
+                    KnownIds.ActivityRoleTypes.Leader,
+                    KnownIds.AssignmentStatusTypes.Confirmed
                 )
             );
         });
@@ -555,8 +554,8 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         await SeedEventsAsync(
             MemberAssignment(
                 OtherEventActivityId,
-                SeedIds.ActivityRoleTypes.Leader,
-                SeedIds.AssignmentStatusTypes.Confirmed
+                KnownIds.ActivityRoleTypes.Leader,
+                KnownIds.AssignmentStatusTypes.Confirmed
             )
         );
         var client = await LoginAsMemberAsync();

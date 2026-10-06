@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;

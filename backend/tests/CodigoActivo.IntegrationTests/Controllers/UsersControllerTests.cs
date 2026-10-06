@@ -1,5 +1,8 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
+using CodigoActivo.API.Errors;
+using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Accounts.Contracts;
@@ -11,6 +14,8 @@ using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using ContractGender = CodigoActivo.Application.Users.Contracts.Gender;
+using Gender = CodigoActivo.Domain.Users.Gender;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
@@ -25,7 +30,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         string lastName = "Member",
         string? email = TestSeedData.MemberEmail,
         string? phone = "+34600000002",
-        Gender gender = Gender.Female,
+        ContractGender gender = ContractGender.Female,
         Guid? parentId = null,
         string? currentPassword = null,
         string? nationalId = TestSeedData.MemberNationalId,
@@ -50,7 +55,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
     private static UpdateUserRequest ChildUpdate(
         string firstName = "MateoX",
-        Gender gender = Gender.Male,
+        ContractGender gender = ContractGender.Male,
         Guid? parentId = null,
         DateOnly? birthDate = null
     )
@@ -95,7 +100,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         page.Items.Where(u => u.IsInitialAdmin)
             .Select(u => u.Id)
             .Should()
-            .Equal(SeedIds.Users.InitialAdministrator);
+            .Equal(KnownIds.Users.InitialAdministrator);
     }
 
     [Fact]
@@ -132,8 +137,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
                         PasswordHash = TestSeedData.PasswordHash,
                         NationalId = "55555555K",
                         Gender = Gender.Female,
-                        UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                        UserTypeId = SeedIds.UserTypes.Member,
+                        Status = UserStatus.Active,
+                        UserType = UserType.Member,
                         CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
                     }
                 )
@@ -167,8 +172,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
                         PasswordHash = TestSeedData.PasswordHash,
                         NationalId = "66666666Q",
                         Gender = Gender.Female,
-                        UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                        UserTypeId = SeedIds.UserTypes.Member,
+                        Status = UserStatus.Active,
+                        UserType = UserType.Member,
                         CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
                     }
                 )
@@ -190,7 +195,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            TestUri.Rel($"/api/users?userStatusTypeId={SeedIds.UserStatusTypes.Pending}"),
+            TestUri.Rel($"/api/users?userStatusTypeId={KnownIds.UserStatusTypes.Pending}"),
             Ct
         );
 
@@ -368,8 +373,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
                 BirthDate = birthDate ?? new DateOnly(2017, 3, 3),
                 Gender = Gender.Other,
                 ParentId = parentId,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-                UserTypeId = SeedIds.UserTypes.Participant,
+                Status = UserStatus.Dependent,
+                UserType = UserType.Participant,
                 CreatedAt = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero),
             }
         );
@@ -385,7 +390,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var types = await response.ReadJsonAsync<List<UserTypeResponse>>(Ct);
         types.Should().HaveCount(3);
-        types.Should().Contain(t => t.Id == SeedIds.UserTypes.Member);
+        types.Should().Contain(t => t.Id == KnownIds.UserTypes.Member);
     }
 
     [Fact]
@@ -418,7 +423,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var statuses = await response.ReadJsonAsync<List<UserStatusTypeResponse>>(Ct);
         statuses.Should().HaveCount(4);
-        statuses.Should().Contain(s => s.Id == SeedIds.UserStatusTypes.Active);
+        statuses.Should().Contain(s => s.Id == KnownIds.UserStatusTypes.Active);
     }
 
     [Fact]
@@ -452,18 +457,18 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
-            AdultUpdate(firstName: "Marta Renombrada", gender: Gender.Other),
+            AdultUpdate(firstName: "Marta Renombrada", gender: ContractGender.Other),
             Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.Type.Should().NotBeNull();
-        updated.Type.Id.Should().Be(SeedIds.UserTypes.Member);
+        updated.Type.Id.Should().Be(KnownIds.UserTypes.Member);
         updated.Type.Name.Should().Be("Socio");
         updated.ParentName.Should().BeNull();
         updated.DependentCount.Should().Be(1);
-        updated.Gender.Should().Be(Gender.Other);
+        updated.Gender.Should().Be(ContractGender.Other);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.FirstName.Should().Be("Marta Renombrada");
         stored.Gender.Should().Be(Gender.Other);
@@ -482,7 +487,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.Email.Should().Be(TestSeedData.MemberEmail);
+        stored!.Email!.Value.Should().Be(TestSeedData.MemberEmail);
     }
 
     [Fact]
@@ -500,7 +505,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.Email.Should().Be(TestSeedData.MemberEmail);
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!.PendingEmail.Should().Be(newEmail);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .PendingEmail!.Value.Should()
+            .Be(newEmail);
 
         var confirm = await CreateClient()
             .PatchJsonAsync(
@@ -511,7 +518,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         confirm.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.Email.Should().Be(newEmail);
+        stored!.Email!.Value.Should().Be(newEmail);
         stored.PendingEmail.Should().BeNull();
         Factory
             .EmailSender.Sent.Should()
@@ -541,7 +548,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         await confirm.ShouldBeBadRequestAsync(ErrorCode.OtpInvalidOrExpired);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .Email.Should()
+            .Email!.Value.Should()
             .Be(TestSeedData.MemberEmail);
     }
 
@@ -634,7 +641,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeBadRequestAsync(ErrorCode.UserBirthDateNotAllowedForAdult);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.ParentId.Should().BeNull();
-        stored.Email.Should().Be(TestSeedData.MemberEmail);
+        stored.Email!.Value.Should().Be(TestSeedData.MemberEmail);
         stored.PasswordHash.Should().Be(TestSeedData.PasswordHash);
         stored.BirthDate.Should().BeNull();
     }
@@ -652,7 +659,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeBadRequestAsync(ErrorCode.UserNationalIdRequired);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .NationalId.Should()
+            .NationalId!.Value.Should()
             .Be(TestSeedData.MemberNationalId);
     }
 
@@ -691,8 +698,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.NationalId.Should().Be(TestSeedData.PendingNationalId);
-        stored.Phone.Should().Be("+34600000003");
+        stored!.NationalId!.Value.Should().Be(TestSeedData.PendingNationalId);
+        stored.Phone!.Value.Should().Be("+34600000003");
     }
 
     [Fact]
@@ -711,7 +718,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         body!.Phone.Should().Be("+34600000002");
         body.SecondaryPhone.Should().Be("+34700000009");
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .SecondaryPhone.Should()
+            .SecondaryPhone!.Value.Should()
             .Be("+34700000009");
         var admin = await LoginAsAdminAsync();
         var list = await admin.GetAsync(TestUri.Rel("/api/users?phone=700000009"), Ct);
@@ -752,7 +759,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeBadRequestAsync(ErrorCode.DisposableEmailNotAllowed);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .Email.Should()
+            .Email!.Value.Should()
             .Be(TestSeedData.MemberEmail);
     }
 
@@ -769,7 +776,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeConflictAsync(ErrorCode.UserEmailAlreadyInUse);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .Email.Should()
+            .Email!.Value.Should()
             .Be(TestSeedData.MemberEmail);
     }
 
@@ -789,7 +796,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         notice.ToAddress.Should().Be(TestSeedData.AdminEmail);
         notice.Subject.Should().Be(AppStrings.EmailsEmailInUseSubject);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .Email.Should()
+            .Email!.Value.Should()
             .Be(TestSeedData.MemberEmail);
     }
 
@@ -813,7 +820,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         update.StatusCode.Should().Be(HttpStatusCode.OK);
         confirm.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .Email.Should()
+            .Email!.Value.Should()
             .Be(TestSeedData.PendingEmail);
         (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().BeNull();
         (await FindAsync<DeletedAccount>(TestSeedData.Users.PendingId)).Should().NotBeNull();
@@ -835,7 +842,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         updated!.NationalId.Should().Be("X1234567L");
         updated.PromotionalConsent.Should().BeFalse();
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.NationalId.Should().Be("X1234567L");
+        stored!.NationalId!.Value.Should().Be("X1234567L");
         stored.PromotionalConsent.Should().BeFalse();
     }
 
@@ -871,7 +878,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeForbiddenAsync(ErrorCode.UserParentReassignmentForbidden);
         (await FindAsync<User>(TestSeedData.Users.MemberChildId))!
             .ParentId.Should()
-            .Be(TestSeedData.Users.MemberId);
+            .Be(UserId.From(TestSeedData.Users.MemberId));
     }
 
     [Fact]
@@ -881,7 +888,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberChildId}",
-            ChildUpdate(firstName: "Mateo Nuevo", gender: Gender.Other),
+            ChildUpdate(firstName: "Mateo Nuevo", gender: ContractGender.Other),
             Ct
         );
 
@@ -889,7 +896,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
         stored!.FirstName.Should().Be("Mateo Nuevo");
         stored.Gender.Should().Be(Gender.Other);
-        stored.ParentId.Should().Be(TestSeedData.Users.MemberId);
+        stored.ParentId.Should().Be(UserId.From(TestSeedData.Users.MemberId));
     }
 
     [Fact]
@@ -915,7 +922,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var adultBirthDate = new DateOnly(1999, 5, 5);
         await Factory.SeedAsync(async db =>
         {
-            var child = await db.Users.FindAsync([TestSeedData.Users.MemberChildId], Ct);
+            var child = await db.Users.FindAsync(
+                [UserId.From(TestSeedData.Users.MemberChildId)],
+                Ct
+            );
             Persisted.Overwrite(child!, new { BirthDate = adultBirthDate });
         });
         var client = await LoginAsMemberAsync();
@@ -930,7 +940,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
         stored!.FirstName.Should().Be("Mateo Mayor");
         stored.BirthDate.Should().Be(adultBirthDate);
-        stored.ParentId.Should().Be(TestSeedData.Users.MemberId);
+        stored.ParentId.Should().Be(UserId.From(TestSeedData.Users.MemberId));
     }
 
     [Fact]
@@ -973,8 +983,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
-        stored!.ParentId.Should().Be(TestSeedData.Users.MemberId);
-        stored.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Dependent);
+        stored!.ParentId.Should().Be(UserId.From(TestSeedData.Users.MemberId));
+        stored.Status.Should().Be(UserStatus.Dependent);
         stored.Email.Should().BeNull("a dependent never takes login identifiers from the request");
         stored.Phone.Should().BeNull();
         stored.NationalId.Should().BeNull();
@@ -998,7 +1008,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeForbiddenAsync(ErrorCode.UserParentReassignmentForbidden);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
-        stored!.ParentId.Should().Be(TestSeedData.Users.MemberId);
+        stored!.ParentId.Should().Be(UserId.From(TestSeedData.Users.MemberId));
         stored.BirthDate.Should().Be(ChildBirthDate);
     }
 
@@ -1037,16 +1047,16 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/change-type?userTypeId={SeedIds.UserTypes.Sponsor}",
+            $"/api/users/{TestSeedData.Users.MemberId}/change-type?userTypeId={KnownIds.UserTypes.Sponsor}",
             ct: Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.Type.Should().NotBeNull();
-        updated.Type.Id.Should().Be(SeedIds.UserTypes.Sponsor);
+        updated.Type.Id.Should().Be(KnownIds.UserTypes.Sponsor);
         var user = await FindAsync<User>(TestSeedData.Users.MemberId);
-        user!.UserTypeId.Should().Be(SeedIds.UserTypes.Sponsor);
+        user!.UserType.Should().Be(UserType.Sponsor);
     }
 
     [Fact]
@@ -1055,13 +1065,13 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberChildId}/change-type?userTypeId={SeedIds.UserTypes.Member}",
+            $"/api/users/{TestSeedData.Users.MemberChildId}/change-type?userTypeId={KnownIds.UserTypes.Member}",
             ct: Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await FindAsync<User>(TestSeedData.Users.MemberChildId);
-        user!.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
+        user!.UserType.Should().Be(UserType.Member);
     }
 
     [Fact]
@@ -1081,7 +1091,12 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     public async Task AddChildAsMemberCreatesDependent()
     {
         var client = await LoginAsMemberAsync();
-        var request = new RegisterMinorRequest("Nino", "Miembro", MinorBirthDate, Gender.Male);
+        var request = new RegisterMinorRequest(
+            "Nino",
+            "Miembro",
+            MinorBirthDate,
+            ContractGender.Male
+        );
 
         var response = await client.PostJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/children",
@@ -1095,20 +1110,25 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         created.ParentName.Should().Be("Marta Miembro");
         created.DependentCount.Should().Be(0);
         created.Type.Should().NotBeNull();
-        created.Type.Id.Should().Be(SeedIds.UserTypes.Participant);
+        created.Type.Id.Should().Be(KnownIds.UserTypes.Participant);
         created.Type.Name.Should().Be("Participante");
 
         var stored = await FindAsync<User>(created.Id);
-        stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Dependent);
-        stored.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
-        stored.ParentId.Should().Be(TestSeedData.Users.MemberId);
+        stored!.Status.Should().Be(UserStatus.Dependent);
+        stored.UserType.Should().Be(UserType.Participant);
+        stored.ParentId.Should().Be(UserId.From(TestSeedData.Users.MemberId));
     }
 
     [Fact]
     public async Task AddChildToADependentReturnsBadRequest()
     {
         var client = await LoginAsAdminAsync();
-        var request = new RegisterMinorRequest("Nieto", "Miembro", MinorBirthDate, Gender.Male);
+        var request = new RegisterMinorRequest(
+            "Nieto",
+            "Miembro",
+            MinorBirthDate,
+            ContractGender.Male
+        );
 
         var response = await client.PostJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberChildId}/children",
@@ -1118,7 +1138,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeBadRequestAsync(ErrorCode.UserParentIsMinor);
         var children = await Factory.QueryAsync(db =>
-            Task.FromResult(db.Users.Count(u => u.ParentId == TestSeedData.Users.MemberChildId))
+            Task.FromResult(
+                db.Users.Count(u => u.ParentId == UserId.From(TestSeedData.Users.MemberChildId))
+            )
         );
         children.Should().Be(0);
     }
@@ -1129,7 +1151,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var existing = await db.Users.CountAsync(
-                u => u.ParentId == TestSeedData.Users.MemberId,
+                u => u.ParentId == UserId.From(TestSeedData.Users.MemberId),
                 Ct
             );
             for (var index = existing; index < Household.MaxDependents; index++)
@@ -1138,7 +1160,12 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             }
         });
         var client = await LoginAsMemberAsync();
-        var request = new RegisterMinorRequest("Otro", "Miembro", MinorBirthDate, Gender.Male);
+        var request = new RegisterMinorRequest(
+            "Otro",
+            "Miembro",
+            MinorBirthDate,
+            ContractGender.Male
+        );
 
         var response = await client.PostJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/children",
@@ -1148,7 +1175,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeConflictAsync(ErrorCode.UserChildLimitReached);
         var children = await Factory.QueryAsync(db =>
-            db.Users.CountAsync(u => u.ParentId == TestSeedData.Users.MemberId, Ct)
+            db.Users.CountAsync(u => u.ParentId == UserId.From(TestSeedData.Users.MemberId), Ct)
         );
         children.Should().Be(Household.MaxDependents);
     }
@@ -1254,12 +1281,12 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var another = await LoginAsMemberAsync();
 
         var response = await another.PatchJsonAsync(
-            $"/api/users/{SeedIds.Users.InitialAdministrator}/admin",
+            $"/api/users/{KnownIds.Users.InitialAdministrator}/admin",
             new SetAdminRequest(false, null),
             Ct
         );
 
         await response.ShouldBeForbiddenAsync(ErrorCode.UserCannotRemoveInitialAdmin);
-        (await FindAsync<User>(SeedIds.Users.InitialAdministrator))!.IsAdmin.Should().BeTrue();
+        (await FindAsync<User>(KnownIds.Users.InitialAdministrator))!.IsAdmin.Should().BeTrue();
     }
 }

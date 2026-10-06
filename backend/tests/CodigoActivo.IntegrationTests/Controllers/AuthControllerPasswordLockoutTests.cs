@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
+using CodigoActivo.API.Errors;
+using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Users.Contracts;
@@ -157,7 +160,10 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         await after.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
         (
             await Factory.QueryAsync(db =>
-                db.UserSessions.CountAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
+                db.UserSessions.CountAsync(
+                    row => row.UserId == UserId.From(TestSeedData.Users.MemberId),
+                    Ct
+                )
             )
         )
             .Should()
@@ -199,7 +205,10 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         stored.LastLoginAt.Should().BeNull();
         (
             await Factory.QueryAsync(db =>
-                db.UserSessions.CountAsync(row => row.UserId == TestSeedData.Users.MemberId, Ct)
+                db.UserSessions.CountAsync(
+                    row => row.UserId == UserId.From(TestSeedData.Users.MemberId),
+                    Ct
+                )
             )
         )
             .Should()

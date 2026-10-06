@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
@@ -52,7 +53,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
 
         var stored = await FindAsync<StoredFile>(created.Id);
         stored!.Extension.Should().Be("png");
-        stored.UploadedBy.Should().Be(TestSeedData.Users.AdminId);
+        stored.UploadedBy.Value.Should().Be(TestSeedData.Users.AdminId);
     }
 
     [Fact]

@@ -1,5 +1,7 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
+using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Emails.Contracts;
@@ -69,7 +71,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
                         Title = "Actividad",
                         Description = "Descripcion",
                         Location = "Sala",
-                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        Modality = ActivityModality.Presencial,
                         ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
                         EventId = eventId,
@@ -93,7 +95,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         var member = await LoginAsync(host, TestSeedData.MemberCredentials);
         using var assign = await member.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
-            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
             Ct
         );
         assign.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -106,8 +108,8 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         {
             var statusId =
                 i % 2 == 0
-                    ? SeedIds.AssignmentStatusTypes.Confirmed
-                    : SeedIds.AssignmentStatusTypes.Denied;
+                    ? KnownIds.AssignmentStatusTypes.Confirmed
+                    : KnownIds.AssignmentStatusTypes.Denied;
 
             using var response = await admin.PatchJsonAsync(
                 url,

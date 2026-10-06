@@ -1,5 +1,7 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
+using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -20,7 +22,7 @@ public sealed class UsersControllerTwoFactorResetTests(CodigoActivoWebAppFactory
     {
         return Factory.SeedAsync(async db =>
         {
-            var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
+            var user = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
             Persisted.Overwrite(
                 user!,
                 new

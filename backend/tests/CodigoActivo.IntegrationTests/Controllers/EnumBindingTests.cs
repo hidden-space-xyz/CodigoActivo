@@ -1,5 +1,6 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
