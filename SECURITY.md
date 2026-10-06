@@ -63,7 +63,7 @@ authentication are not supported.
   `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password. Public registration never
   grants administrator access; on an empty database, startup creates the initial administrator from
   `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD`, ignored once a user exists, under the fixed id
-  `SeedIds.Users.InitialAdministrator`. That generic account can be neither demoted
+  `InitialAdministrator.Id`. That generic account can be neither demoted
   (`UserCannotRemoveInitialAdmin`) nor deleted, so the application always keeps an administrator; the SPA
   disables both actions for it.
 - `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
@@ -206,7 +206,9 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
 
 ### Input, output and error handling
 
-- DataAnnotations and custom attributes validate request models. JSON bodies accept enum values only by
+- DataAnnotations validate the HTTP request models, and the same rules, together with the custom ones
+  (`[NotBlank]`, `[HttpUrl]`, `[RichText]`, `[SpanishNationalId]`, `[NotDefaultOrFutureDate]`), are checked
+  again on every command before its handler runs, whatever starts it. JSON bodies accept enum values only by
   their declared name, never as integers, and enums bound from the query string reject undefined values.
 - A list `sort` parameter keeps only the first occurrence of each known key, so a request cannot grow the
   query EF Core translates recursively.

@@ -17,17 +17,18 @@ belong in [SECURITY.md](SECURITY.md).
 
 The backend follows Clean Architecture with a DDD domain model and a CQRS split, organized by feature in every
 layer. It has one PostgreSQL database with a write model of aggregates and a read model of its own over the same
-tables, and no mediator, message bus or event sourcing.
+tables, domain events published in process after each commit, and no mediator, message bus, transactional
+outbox for events or event sourcing.
 
 ### Project dependencies
 
 | Project                       | Responsibility                                                                                                             | Direct project dependencies         |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `CodigoActivo.Domain`         | Aggregates, value objects, domain policies, repository ports of the aggregates, `Result` and `Error`                       | None                                |
-| `CodigoActivo.Application`    | Use cases, wire contracts, the read model and the ports they need                                                          | Domain                              |
-| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, file storage, Argon2id, TOTP (Otp.NET), SMTP, email templates and the clock | Domain, Application                 |
-| `CodigoActivo.Composition`    | Dependency injection, configuration-to-options mapping and database initialization                                         | Domain, Application, Infrastructure |
-| `CodigoActivo.API`            | HTTP controllers, middleware, claims and cookies, caching, OpenAPI, SEO documents and startup                              | Composition                         |
+| `CodigoActivo.Domain`         | Aggregates, typed identifiers, value objects, domain events and policies, repository ports, `Result`, `Error` and `DomainErrorCode` | None                                |
+| `CodigoActivo.Application`    | Use cases with their validated messages, response contracts, the read model, the use case decorators and the ports they need       | Domain                              |
+| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, file storage, Argon2id, TOTP (Otp.NET), SMTP, email templates and the clock | Domain, Application                 |
+| `CodigoActivo.Composition`    | The composition root: registrations by feature, strict configuration-to-options mapping checked on start, data protection and database initialization | Domain, Application, Infrastructure |
+| `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, output caching, OpenAPI, SEO documents and startup | Composition                         |
 
 The `ProjectReference` graph is the source of truth for these boundaries. Tests under
 `tests/CodigoActivo.UnitTests/Architecture/` also check the layer references (the API reaches neither
@@ -37,8 +38,15 @@ aggregate roots.
 ### Domain and persistence
 
 - `CodigoActivo.Domain` has one folder per feature (`Users/`, `Events/`, `Activities/`, `EventCategories/`,
-  `TermsDocuments/`, `News/`, `Resources/`, `Partners/`, `Files/`) with its aggregates, value objects, policies
-  and repository ports; `Common/` holds `Result`, `Error`, `ErrorCode`, the base classes and `SeedIds`.
+  `TermsDocuments/`, `News/`, `Resources/`, `Partners/`, `Files/`) with its aggregates, typed identifiers, value
+  objects, domain events, policies and repository ports; `Common/` holds `Result`, `Error`, `DomainErrorCode`, the
+  base classes (`Entity<TId>`, `AggregateRoot<TId>`, `AuditableEntity<TId>`) and the shared value objects.
+- Every aggregate has a typed identifier (`UserId`, `EventId`, `ActivityId`, `PartnerId`, `StoredFileId`...), a
+  `readonly record struct` over a `Guid` with no implicit conversion, so an identifier of one aggregate can never
+  be passed for another. Values with rules are value objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`,
+  `RichText`, `DateRange` (the event calendar), `SignupWindow` and `ActivitySchedule`. EF Core maps them onto the
+  existing columns through conventions and converters (`Infrastructure/Database/Conversions`), so the schema does
+  not change; the read model keeps plain `Guid` and primitive columns.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
   `DeletedAccount`, `Event` (with its categories and terms links), `Activity` (with its role capacities and
   signups), `EventTermsAcceptance`, `EventRating`, `NewsItem`, `Resource`, `Partner`, `TermsDocument`,
@@ -47,17 +55,31 @@ aggregate roots.
   (`User.Verify`, `User.RecordPasswordFailure`, `Activity.RequestAssignment`, `Activity.ChangeAssignmentStatus`,
   `Event.Feature`). Child entities change only through their root. For people, `CreateIndependent`,
   `CreateDependent` and `PlanProfileChange`/`ApplyProfileChange` decide which details an independent account or
-  a dependent needs and answer each broken rule with one `ErrorCode`.
+  a dependent needs and answer each broken rule with one `DomainErrorCode`.
+- Aggregates record domain events for the changes other parts react to (`PartnerUpdated`, `NewsItemDeleted`,
+  `AssignmentStatusChanged`, `PasswordChanged`, `ContactDetailsReplaced`, `AccountErased`...). `UnitOfWork`
+  collects them when it saves and publishes them only after the commit, or after the explicit transaction the
+  save ran in commits; a failed commit publishes nothing. `ICommittedEventsHandler`s see the whole commit once
+  (`CacheInvalidationOnCommit` evicts the tags `CacheTagsByEvent` maps; `ReleasedFilesCleanup` removes the files
+  that events implementing `IReleasesFiles` stopped referencing, when nothing else references them) and then every
+  `IDomainEventListener<T>` of each event runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`,
+  `SessionsEndOnPasswordReplaced`). Effects run in the request after the commit, as before the events existed; a
+  crash between the commit and an effect loses that effect, because there is no transactional outbox for
+  events (emails themselves go through the email outbox).
 - Rules that span aggregates are domain policies (`SignupRoles`, `EarlySignup`, `TermsConsent`,
-  `FeaturedSelection`, `AccountErasure`, `InitialAdministrator`, `LegalCopy`, `Household`). Handlers load,
-  call the domain, persist and run the effects after the commit; the checks that need I/O are Application
+  `FeaturedSelection`, `AccountErasure`, `InitialAdministrator`, `LegalCopy`, `Household`). Handlers load and
+  call the domain; the commit and the effects that follow it belong to the decorators and the domain events; the
+  checks that need I/O are Application
   collaborators (`SignupGate`, `TermsGate`, `ActivityValidator`, `EventCategoryChecker`,
   `DisposableEmailChecker`).
 - Aggregates reference each other by ID, never through navigations. The EF configuration keeps the foreign keys
   and cascades with `HasOne<T>().WithMany().HasForeignKey(...)`.
-- The fixed catalogs (user status and type, activity role and modality, signup status and resource type) are
-  reference data seeded with stable IDs from `SeedIds`, not aggregates: they have no repository, and commands
-  check them through the read store.
+- The closed value sets (user status and type, activity role and modality, signup status and resource type) are
+  domain enums (`UserStatus`, `UserType`, `ActivityRole`, `ActivityModality`, `AssignmentStatus`,
+  `ResourceType`). Their catalog tables stay only for the names, colors and descriptions shown to people; each
+  member keeps the stable `Guid` of its row through `CatalogIds` (`Application/Common/Catalogs`), which the EF
+  converters use to store the enum in the same foreign key column and the API uses to accept and return the same
+  identifiers as before.
 - Repositories exist only for aggregate roots (`IRepository<T>` plus methods that name their intention), never
   expose `IQueryable` or predicates, and share the scoped `CodigoActivoDbContext`. `IUnitOfWork.SaveChangesAsync`
   commits staged changes once and turns a PostgreSQL unique violation into `UniqueConstraintViolationException`,
@@ -86,31 +108,58 @@ aggregate roots.
 - Technical ports (`IClock`, `IPasswordHasher`, `ITotpService`, `ISecretProtector`, `IFileStorage`, the email,
   persistence and read ports) live in `Application/Abstractions` or in the feature that consumes them. Domain
   declares only the repositories of its aggregates.
-- EF Core uses Npgsql and snake-case names. IDs are client-generated `Guid` values. Closed value sets are
-  string enums; fixed catalogs are tables seeded with stable IDs from `SeedIds`.
+- EF Core uses Npgsql and snake-case names. IDs are client-generated `Guid` values wrapped in typed
+  identifiers. Closed value sets are domain enums stored as strings or as the `Guid` of their catalog row.
 - Startup locks the selected demo mode, applies migrations, seeds catalogs, creates the initial administrator
-  (`SeedIds.Users.InitialAdministrator`) when the user table is empty, refuses a database that has users but
-  not that account, and adds demo data when enabled.
+  (`InitialAdministrator.Id`) when the user table is empty, refuses a database that has users but not that
+  account, and adds demo data when enabled.
+- Infrastructure is organized by feature too: each feature folder (`Users/`, `Events/`, `Activities/`, `News/`,
+  `Files/`...) holds its EF configurations, repositories and background services; `Database/` keeps only the
+  contexts, conventions, catalogs, unit of work, seeders and migrations, and `Communication/` the email
+  delivery shared by every feature.
 
 ### Commands and queries
 
-Each use case is a message and a sealed handler in `CodigoActivo.Application/<Feature>/Commands|Queries/`, with
-its wire contracts in `<Feature>/Contracts/`. Controllers inject concrete handlers with `[FromServices]`; there
-is no MediatR dispatcher.
+Each use case is a message and a sealed handler in `CodigoActivo.Application/<Feature>/Commands|Queries/`.
+`UseCaseRegistration` (Composition) registers every `ICommandHandler<,>`, `IQueryHandler<,>` and
+`IDomainEventListener<>` it finds by the contract it implements, and wraps the handlers in decorators: a command
+runs through `LoggingCommandDecorator` (warns about slow use cases), `ValidationCommandDecorator` and
+`UnitOfWorkCommandDecorator` (commits once the handler succeeds); a query through `LoggingQueryDecorator`,
+`ValidationQueryDecorator` and `CachingQueryDecorator`. Controllers inject the handler contract
+(`ICommandHandler<TCommand, TResult>`) with `[FromServices]`; there is no MediatR dispatcher.
+
+Commands and queries are application messages, not HTTP contracts: they carry typed identifiers and domain
+values, and their fields carry the DataAnnotations of their rules (`[property: Required, MaxLength(200),
+NotBlank]`), which `MessageValidator` checks, nested messages included, before any handler runs. The current day
+reaches the date rules through the validation context, never through a service locator. The HTTP request
+records live in the API (`API/<Feature>/Contracts/`) with only the standard attributes the OpenAPI document
+describes, and map themselves to the command (`request.ToCommand(id)`). Response records and list criteria stay
+in `Application/<Feature>/Contracts/` as the read contracts of the queries; `Gender` and `TwoFactorMethod`
+there are contract enums that mirror the domain ones (`ContractEnums`).
 
 Queries read only through `IReadStore`: no-tracking `IQueryable` sources of read rows
 (`Application/Abstractions/Querying/ReadModel`) that `CodigoActivoReadDbContext` maps onto the same tables,
 excluded from migrations. They project to response shapes in the database, materialize through
-`IQueryExecutor`, and never depend on repositories or domain entities. They may use `HybridCache` only for
-immutable catalogs and expensive non-personal aggregates, and never mutate, commit or invalidate caches.
+`IQueryExecutor`, and never depend on repositories or domain entities. A query that may be cached implements
+`ICachedQuery` (duration, tags and key) and `CachingQueryDecorator` keeps its result in `HybridCache`; only
+immutable catalogs and expensive non-personal aggregates do. Queries never mutate, commit or invalidate caches.
 
-Commands load aggregates through repositories, call the domain, commit through `IUnitOfWork` (normally once per
-use case), and invalidate affected cache tags only after a successful commit. They return `Result`, or
-`Result<Guid>` with the ID of what they create; they return data only when it exists nowhere else after the
-operation, such as the authenticator secret of `BeginAuthenticatorSetup` or the recipient count of
-`SendEmail*`. The controller then runs the query that builds the HTTP response. Commands never call query
-handlers; they may read the read store only for lookups that change nothing: fixed catalogs, email audiences
-and the names the signup notifier shows.
+Commands load aggregates through repositories, call the domain and stage the changes; the decorator commits them
+and the committed domain events evict caches and run the effects. A handler saves on its own only when it must
+react to the outcome of the save (a unique violation answered as a conflict, file content to compensate) or
+when several saves form one transaction. Commands return `Result`, or `Result<TId>` with the typed ID of what
+they create; they return data only when it exists nowhere else after the operation, such as the authenticator
+secret of `BeginAuthenticatorSetup` or the recipient count of `SendEmail*`. The controller then runs the query
+that builds the HTTP response. Commands never call query handlers; they may read the read store only for lookups
+that change nothing: email audiences and the names the signup notifier shows.
+
+Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
+tells who is signed in; commands take the author, the acting user and the administrator flag from it, never
+from their input. `ActingUserPolicy` lets the signed-in user act for themselves or one of their dependents, and
+an administrator for anyone, and answers anything else with `ActingForAnotherUserForbidden` (403
+`AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a minor,
+updating or deleting a user and changing a password check it. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]`
+attributes still refuse early at the HTTP edge.
 
 An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); the
 signup wire contract (`AssignRequest`/`AssignHouseholdRequest`) carries a `TermsDecisions` list of
@@ -123,9 +172,11 @@ every linked document with the caller's current decision.
 
 - Every anonymous GET/HEAD declares a named output-cache policy or an explicit `no-store`; authenticated or
   user-specific responses are never output cached.
-- `HybridCache` is limited to immutable catalogs and non-personal dashboard aggregates.
+- `HybridCache` is limited to immutable catalogs and non-personal dashboard aggregates, and only
+  `CachingQueryDecorator` uses it.
 - Both in-memory cache layers are capped at 64 MiB and skip payloads larger than 1 MiB.
-- Commands invalidate dependency tags only after commit, evicting both application and HTTP output entries.
+- Committed domain events invalidate the tags `CacheTagsByEvent` maps them to, evicting both application and
+  HTTP output entries; commands never invalidate caches themselves.
 - Both stores are process-local, assuming one API replica; scaling out needs a shared store and cross-instance
   invalidation.
 - nginx does not cache API responses. It adds `Cache-Control: no-store` to every proxied response that sets
@@ -142,7 +193,12 @@ every linked document with the caller's current decision.
 ### Results, validation and HTTP errors
 
 Expected failures are values, not exceptions: command and single-item query handlers return `Result` or
-`Result<T>` with an `ErrorCode`; controllers translate them through `ApiControllerBase`. All client-visible
+`Result<T>` with an `Error` whose code is a `DomainErrorCode` (rules of the model) or an `ApplicationErrorCode`
+(use case outcomes such as `UserNotFound`); neither knows HTTP. The API owns the wire `ErrorCode`
+(`API/Errors`): `WireErrorCodes` translates each code to the wire member of the same name or to an explicit
+rename (malformed input becomes `RequestValidationFailed`, acting for another user `AccessDenied`), and
+`WireErrorCodesTests` fails when a code has no translation or a wire code is reached by none. Controllers
+translate failures through `ApiControllerBase`. All client-visible
 failures use `ApiErrorResponse(Title, Status, Code, TraceId)`, including model validation, authorization,
 CSRF and unhandled exceptions. HTTP mappings: 400 validation, 401 unauthenticated, 403 forbidden, 404 not
 found, 409 conflict, 500 unexpected. A path under `/api` that matches no endpoint answers 404
@@ -150,9 +206,15 @@ found, 409 conflict, 500 unexpected. A path under `/api` that matches no endpoin
 
 `ErrorCode` is serialized as a string and is part of the frontend contract; the API registers the string enum
 converter for MVC and for the responses it writes directly, since the Domain carries no serialization
-attributes. Request/response records live in each feature's `Contracts/`; the shared binding primitives
-(`PageQuery`, `SortMap`, `TextSearch`, `LocalDayRange`) in `Application/Common/Querying`. Mapping is
-handwritten. User-facing backend text comes from `Application/Common/Localization/AppStrings.resx`; logs and
+attributes. Request records live in `API/<Feature>/Contracts/`, response records in
+`Application/<Feature>/Contracts/`; the shared binding primitives (`PageQuery`, `SortMap`, `TextSearch`,
+`LocalDayRange`) in `Application/Common/Querying`. Mapping is handwritten.
+
+Configuration is read once, in the composition root (`AddCodigoActivo`), into options registered with
+`IOptions<T>` and `ValidateOnStart`: a missing setting takes its default, and a setting that is present but
+unusable (not a positive number, not an HTTPS address, above its limit) stops the application at start with a
+message naming the key, instead of silently falling back. Data protection is registered there once, with the
+keys protected at rest in production. User-facing backend text comes from `Application/Common/Localization/AppStrings.resx`; logs and
 seeded content are not UI localization resources.
 
 ### Email boundaries
