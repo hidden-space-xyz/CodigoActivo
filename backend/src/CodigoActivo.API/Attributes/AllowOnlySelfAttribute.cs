@@ -1,4 +1,5 @@
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Users.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -49,7 +50,7 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
         }
 
         var isOwnChild = await services
-            .GetRequiredService<IsGuardianOfQueryHandler>()
+            .GetRequiredService<IQueryHandler<IsGuardianOfQuery, bool>>()
             .HandleAsync(
                 new IsGuardianOfQuery(currentUserId, targetUserId),
                 context.HttpContext.RequestAborted

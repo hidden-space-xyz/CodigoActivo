@@ -1,15 +1,19 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.News.Contracts;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.News.Commands;
 using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Application.News.Queries;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.News;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
-namespace CodigoActivo.API.Controllers;
+namespace CodigoActivo.API.News;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing news items.
@@ -30,7 +34,7 @@ public class NewsController : ApiControllerBase
     [OutputCache(PolicyName = CacheTags.News)]
     public async Task<ActionResult<PagedResult<NewsListItemResponse>>> ListAsync(
         [FromQuery] NewsListQuery query,
-        [FromServices] ListNewsQueryHandler handler,
+        [FromServices] IQueryHandler<ListNewsQuery, PagedResult<NewsListItemResponse>> handler,
         CancellationToken ct
     )
     {
@@ -47,7 +51,7 @@ public class NewsController : ApiControllerBase
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.News)]
     public async Task<ActionResult<IReadOnlyList<int>>> YearsAsync(
-        [FromServices] GetNewsYearsQueryHandler handler,
+        [FromServices] IQueryHandler<GetNewsYearsQuery, IReadOnlyList<int>> handler,
         CancellationToken ct
     )
     {
@@ -66,11 +70,13 @@ public class NewsController : ApiControllerBase
     [OutputCache(PolicyName = CacheTags.News)]
     public async Task<ActionResult<NewsItemResponse>> GetAsync(
         Guid newsItemId,
-        [FromServices] GetNewsItemByIdQueryHandler handler,
+        [FromServices] IQueryHandler<GetNewsItemByIdQuery, Result<NewsItemResponse>> handler,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetNewsItemByIdQuery(newsItemId), ct));
+        return ToOk(
+            await handler.HandleAsync(new GetNewsItemByIdQuery(NewsItemId.From(newsItemId)), ct)
+        );
     }
 
     /// <summary>
@@ -86,13 +92,13 @@ public class NewsController : ApiControllerBase
     [ProducesResponseType<NewsItemResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<NewsItemResponse>> CreateAsync(
         [FromBody] CreateNewsItemRequest request,
-        [FromServices] CreateNewsItemCommandHandler handler,
-        [FromServices] GetNewsItemByIdQueryHandler getById,
+        [FromServices] ICommandHandler<CreateNewsItemCommand, Result<NewsItemId>> handler,
+        [FromServices] IQueryHandler<GetNewsItemByIdQuery, Result<NewsItemResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToCreatedAfterAsync(
-            await handler.HandleAsync(new CreateNewsItemCommand(request, UserId), ct),
+            await handler.HandleAsync(request.ToCommand(), ct),
             id => getById.HandleAsync(new GetNewsItemByIdQuery(id), ct),
             id => $"/api/news/{id}"
         );
@@ -112,14 +118,14 @@ public class NewsController : ApiControllerBase
     public async Task<ActionResult<NewsItemResponse>> UpdateAsync(
         Guid newsItemId,
         [FromBody] UpdateNewsItemRequest request,
-        [FromServices] UpdateNewsItemCommandHandler handler,
-        [FromServices] GetNewsItemByIdQueryHandler getById,
+        [FromServices] ICommandHandler<UpdateNewsItemCommand, Result> handler,
+        [FromServices] IQueryHandler<GetNewsItemByIdQuery, Result<NewsItemResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
-            await handler.HandleAsync(new UpdateNewsItemCommand(newsItemId, request, UserId), ct),
-            () => getById.HandleAsync(new GetNewsItemByIdQuery(newsItemId), ct)
+            await handler.HandleAsync(request.ToCommand(NewsItemId.From(newsItemId)), ct),
+            () => getById.HandleAsync(new GetNewsItemByIdQuery(NewsItemId.From(newsItemId)), ct)
         );
     }
 
@@ -134,11 +140,13 @@ public class NewsController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(
         Guid newsItemId,
-        [FromServices] DeleteNewsItemCommandHandler handler,
+        [FromServices] ICommandHandler<DeleteNewsItemCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new DeleteNewsItemCommand(newsItemId), ct));
+        return ToNoContent(
+            await handler.HandleAsync(new DeleteNewsItemCommand(NewsItemId.From(newsItemId)), ct)
+        );
     }
 
     /// <summary>
@@ -153,14 +161,17 @@ public class NewsController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<ActionResult<NewsItemResponse>> FeatureAsync(
         Guid newsItemId,
-        [FromServices] SetNewsItemFeaturedCommandHandler handler,
-        [FromServices] GetNewsItemByIdQueryHandler getById,
+        [FromServices] ICommandHandler<SetNewsItemFeaturedCommand, Result> handler,
+        [FromServices] IQueryHandler<GetNewsItemByIdQuery, Result<NewsItemResponse>> getById,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
-            await handler.HandleAsync(new SetNewsItemFeaturedCommand(newsItemId), ct),
-            () => getById.HandleAsync(new GetNewsItemByIdQuery(newsItemId), ct)
+            await handler.HandleAsync(
+                new SetNewsItemFeaturedCommand(NewsItemId.From(newsItemId)),
+                ct
+            ),
+            () => getById.HandleAsync(new GetNewsItemByIdQuery(NewsItemId.From(newsItemId)), ct)
         );
     }
 }

@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Common;
+using CodigoActivo.API.Errors;
 
 namespace CodigoActivo.API.Extensions;
 
@@ -13,7 +13,7 @@ public static class HttpContextExtensions
     /// <param name="context">Database context used for persistence.</param>
     /// <param name="error">Application error associated with a failed result or response.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public static async Task WriteApiErrorAsync(this HttpContext context, Error error)
+    public static async Task WriteApiErrorAsync(this HttpContext context, ApiError error)
     {
         var (statusCode, body) = ApiErrorResponseExtensions.Create(error, context);
         context.Response.StatusCode = statusCode;

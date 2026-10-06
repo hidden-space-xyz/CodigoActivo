@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CodigoActivo.API.Contracts;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.API.Extensions;
@@ -29,7 +30,10 @@ public static class ApiErrorResponseExtensions
     /// <param name="error">Application error associated with a failed result or response.</param>
     /// <param name="context">Database context used for persistence.</param>
     /// <returns>The resulting (int status code, api error response body) value.</returns>
-    public static (int StatusCode, ApiErrorResponse Body) Create(Error error, HttpContext context)
+    public static (int StatusCode, ApiErrorResponse Body) Create(
+        ApiError error,
+        HttpContext context
+    )
     {
         var (status, title) = MapKind(error.Kind);
         return (status, new ApiErrorResponse(title, status, error.Code, context.TraceIdentifier));

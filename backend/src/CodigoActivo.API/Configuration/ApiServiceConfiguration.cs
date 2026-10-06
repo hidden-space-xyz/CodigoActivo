@@ -1,10 +1,12 @@
 using System.Net;
 using System.Text.Json.Serialization;
 using CodigoActivo.API.Diagnostics;
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
 using CodigoActivo.API.OpenApi;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -25,7 +27,9 @@ internal static class ApiServiceConfiguration
 
     internal static void AddApiServices(this WebApplicationBuilder builder)
     {
-        builder.Services.AddCodigoActivo(builder.Configuration);
+        builder.Services.AddCodigoActivo(builder.Configuration, builder.Environment.IsProduction());
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
         builder.Services.AddScoped<SessionTicketValidator>();
         builder.Services.AddScoped<TwoFactorTicketValidator>();
         builder.Services.AddSingleton<DeploymentModeLock>();
@@ -74,7 +78,7 @@ internal static class ApiServiceConfiguration
                 options.InvalidModelStateResponseFactory = context =>
                 {
                     var (statusCode, body) = ApiErrorResponseExtensions.Create(
-                        Error.Validation(ErrorCode.RequestValidationFailed),
+                        ApiError.Validation(ErrorCode.RequestValidationFailed),
                         context.HttpContext
                     );
                     return new ObjectResult(body) { StatusCode = statusCode };

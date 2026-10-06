@@ -1,13 +1,15 @@
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
+using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace CodigoActivo.API.Controllers;
+namespace CodigoActivo.API.Reports;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing reports.
@@ -28,7 +30,7 @@ public class ReportsController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventSummaryResponse>> EventSummaryAsync(
         Guid eventId,
-        [FromServices] GetEventSummaryQueryHandler handler,
+        [FromServices] IQueryHandler<GetEventSummaryQuery, Result<EventSummaryResponse>> handler,
         CancellationToken ct
     )
     {
@@ -48,7 +50,8 @@ public class ReportsController : ApiControllerBase
     public async Task<ActionResult<PagedResult<EventAttendeeResponse>>> EventAttendeesAsync(
         Guid eventId,
         [FromQuery] EventAttendeeListQuery query,
-        [FromServices] ListEventAttendeesQueryHandler handler,
+        [FromServices]
+            IQueryHandler<ListEventAttendeesQuery, PagedResult<EventAttendeeResponse>> handler,
         CancellationToken ct
     )
     {
@@ -66,7 +69,7 @@ public class ReportsController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventBadgesResponse>> EventBadgesAsync(
         Guid eventId,
-        [FromServices] GetEventBadgesQueryHandler handler,
+        [FromServices] IQueryHandler<GetEventBadgesQuery, Result<EventBadgesResponse>> handler,
         CancellationToken ct
     )
     {
@@ -84,7 +87,7 @@ public class ReportsController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventRosterResponse>> EventRosterAsync(
         Guid eventId,
-        [FromServices] GetEventRosterQueryHandler handler,
+        [FromServices] IQueryHandler<GetEventRosterQuery, Result<EventRosterResponse>> handler,
         CancellationToken ct
     )
     {
@@ -100,7 +103,7 @@ public class ReportsController : ApiControllerBase
     [HttpGet("dashboard")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<DashboardSummaryResponse>> DashboardAsync(
-        [FromServices] GetDashboardSummaryQueryHandler handler,
+        [FromServices] IQueryHandler<GetDashboardSummaryQuery, DashboardSummaryResponse> handler,
         CancellationToken ct
     )
     {
@@ -118,7 +121,8 @@ public class ReportsController : ApiControllerBase
     [AllowOnlyAdmin]
     public async Task<ActionResult<DashboardAnalyticsResponse>> DashboardAnalyticsAsync(
         [FromQuery] DashboardAnalyticsQuery query,
-        [FromServices] GetDashboardAnalyticsQueryHandler handler,
+        [FromServices]
+            IQueryHandler<GetDashboardAnalyticsQuery, DashboardAnalyticsResponse> handler,
         CancellationToken ct
     )
     {

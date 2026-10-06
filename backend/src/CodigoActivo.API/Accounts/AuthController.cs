@@ -1,13 +1,18 @@
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Diagnostics;
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -16,7 +21,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace CodigoActivo.API.Controllers;
+namespace CodigoActivo.API.Accounts;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing auth.
@@ -58,11 +63,11 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> RegisterAsync(
         [FromBody] RegisterRequest request,
-        [FromServices] RegisterCommandHandler handler,
+        [FromServices] ICommandHandler<RegisterCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new RegisterCommand(request), ct));
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(), ct));
     }
 
     /// <summary>
@@ -80,13 +85,13 @@ public class AuthController : ApiControllerBase
     public async Task<ActionResult<UserResponse>> VerifyAsync(
         Guid userId,
         [FromBody] VerifyRequest request,
-        [FromServices] VerifyUserCommandHandler handler,
-        [FromServices] GetCurrentUserQueryHandler getUser,
+        [FromServices] ICommandHandler<VerifyUserCommand, Result> handler,
+        [FromServices] IQueryHandler<GetCurrentUserQuery, Result<UserResponse>> getUser,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
-            await handler.HandleAsync(new VerifyUserCommand(userId, request.Otp), ct),
+            await handler.HandleAsync(new VerifyUserCommand(UserId.From(userId), request.Otp), ct),
             () => getUser.HandleAsync(new GetCurrentUserQuery(userId), ct)
         );
     }
@@ -105,11 +110,11 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> ResendVerificationAsync(
         [FromBody] ResendVerificationRequest request,
-        [FromServices] ResendVerificationCommandHandler handler,
+        [FromServices] ICommandHandler<ResendVerificationCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new ResendVerificationCommand(request), ct));
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(), ct));
     }
 
     /// <summary>
@@ -127,12 +132,15 @@ public class AuthController : ApiControllerBase
     public async Task<ActionResult> ConfirmEmailChangeAsync(
         Guid userId,
         [FromBody] VerifyRequest request,
-        [FromServices] ConfirmEmailChangeCommandHandler handler,
+        [FromServices] ICommandHandler<ConfirmEmailChangeCommand, Result> handler,
         CancellationToken ct
     )
     {
         return ToNoContent(
-            await handler.HandleAsync(new ConfirmEmailChangeCommand(userId, request.Otp), ct)
+            await handler.HandleAsync(
+                new ConfirmEmailChangeCommand(UserId.From(userId), request.Otp),
+                ct
+            )
         );
     }
 
@@ -148,11 +156,11 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> ForgotPasswordAsync(
         [FromBody] ForgotPasswordRequest request,
-        [FromServices] ForgotPasswordCommandHandler handler,
+        [FromServices] ICommandHandler<ForgotPasswordCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(await handler.HandleAsync(new ForgotPasswordCommand(request), ct));
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(), ct));
     }
 
     /// <summary>
@@ -169,13 +177,11 @@ public class AuthController : ApiControllerBase
     public async Task<ActionResult> ResetPasswordAsync(
         Guid userId,
         [FromBody] ResetPasswordRequest request,
-        [FromServices] ResetPasswordCommandHandler handler,
+        [FromServices] ICommandHandler<ResetPasswordCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(
-            await handler.HandleAsync(new ResetPasswordCommand(userId, request), ct)
-        );
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(UserId.From(userId)), ct));
     }
 
     /// <summary>
@@ -192,12 +198,12 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<LoginChallengeResponse>> LoginAsync(
         [FromBody] LoginRequest request,
-        [FromServices] LoginCommandHandler handler,
+        [FromServices] ICommandHandler<LoginCommand, Result<LoginChallenge>> handler,
         [FromServices] TwoFactorTicketValidator tickets,
         CancellationToken ct
     )
     {
-        var result = await handler.HandleAsync(new LoginCommand(request), ct);
+        var result = await handler.HandleAsync(request.ToCommand(), ct);
         if (result.IsFailure)
         {
             return ToProblem(result.Error!);
@@ -207,7 +213,7 @@ public class AuthController : ApiControllerBase
         var principal = await tickets.CreatePrincipalAsync(challenge.UserId, ct);
         if (principal is null)
         {
-            return ToProblem(Error.Unauthorized(ErrorCode.InvalidCredentials));
+            return ToProblem(ApiError.Unauthorized(ErrorCode.InvalidCredentials));
         }
 
         await HttpContext.SignInAsync(
@@ -228,14 +234,15 @@ public class AuthController : ApiControllerBase
     [AllowAnonymous]
     [OutputCache(NoStore = true)]
     public async Task<ActionResult<LoginChallengeResponse>> TwoFactorChallengeAsync(
-        [FromServices] GetLoginChallengeQueryHandler handler,
+        [FromServices]
+            IQueryHandler<GetLoginChallengeQuery, Result<LoginChallengeResponse>> handler,
         CancellationToken ct
     )
     {
         var userId = await GetPendingTwoFactorUserIdAsync();
         if (userId is null)
         {
-            return ToProblem(Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
+            return ToProblem(ApiError.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
         }
 
         return ToOk(await handler.HandleAsync(new GetLoginChallengeQuery(userId.Value), ct));
@@ -257,8 +264,8 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<UserResponse>> VerifyTwoFactorAsync(
         [FromBody] TwoFactorLoginRequest request,
-        [FromServices] VerifyTwoFactorLoginCommandHandler handler,
-        [FromServices] GetCurrentUserQueryHandler getUser,
+        [FromServices] ICommandHandler<VerifyTwoFactorLoginCommand, Result> handler,
+        [FromServices] IQueryHandler<GetCurrentUserQuery, Result<UserResponse>> getUser,
         [FromServices] SessionTicketValidator sessionTickets,
         CancellationToken ct
     )
@@ -266,11 +273,11 @@ public class AuthController : ApiControllerBase
         var userId = await GetPendingTwoFactorUserIdAsync();
         if (userId is null)
         {
-            return ToProblem(Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
+            return ToProblem(ApiError.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
         }
 
         var result = await handler.HandleAsync(
-            new VerifyTwoFactorLoginCommand(userId.Value, request.Code),
+            new VerifyTwoFactorLoginCommand(UserId.From(userId.Value), request.Code),
             ct
         );
         if (result.IsFailure)
@@ -281,7 +288,7 @@ public class AuthController : ApiControllerBase
         var principal = await sessionTickets.StartSessionAsync(userId.Value, ct);
         if (principal is null)
         {
-            return ToProblem(Error.Unauthorized(ErrorCode.InvalidCredentials));
+            return ToProblem(ApiError.Unauthorized(ErrorCode.InvalidCredentials));
         }
 
         await HttpContext.SignOutAsync(TwoFactorAuthentication.Scheme);
@@ -307,18 +314,18 @@ public class AuthController : ApiControllerBase
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> ResendTwoFactorCodeAsync(
-        [FromServices] ResendTwoFactorCodeCommandHandler handler,
+        [FromServices] ICommandHandler<ResendTwoFactorCodeCommand, Result> handler,
         CancellationToken ct
     )
     {
         var userId = await GetPendingTwoFactorUserIdAsync();
         if (userId is null)
         {
-            return ToProblem(Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
+            return ToProblem(ApiError.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
         }
 
         return ToNoContent(
-            await handler.HandleAsync(new ResendTwoFactorCodeCommand(userId.Value), ct)
+            await handler.HandleAsync(new ResendTwoFactorCodeCommand(UserId.From(userId.Value)), ct)
         );
     }
 
@@ -334,12 +341,13 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<AuthenticatorSetupResponse>> BeginAuthenticatorSetupAsync(
         [FromBody] AuthenticatorSetupRequest request,
-        [FromServices] BeginAuthenticatorSetupCommandHandler handler,
+        [FromServices]
+            ICommandHandler<BeginAuthenticatorSetupCommand, Result<AuthenticatorSetup>> handler,
         CancellationToken ct
     )
     {
         return ToOk(
-            await handler.HandleAsync(new BeginAuthenticatorSetupCommand(UserId, request), ct),
+            await handler.HandleAsync(request.ToCommand(), ct),
             setup => new AuthenticatorSetupResponse(setup.SharedKey, setup.AuthenticatorUri)
         );
     }
@@ -356,13 +364,11 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> ConfirmAuthenticatorAsync(
         [FromBody] ConfirmAuthenticatorRequest request,
-        [FromServices] ConfirmAuthenticatorCommandHandler handler,
+        [FromServices] ICommandHandler<ConfirmAuthenticatorCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(
-            await handler.HandleAsync(new ConfirmAuthenticatorCommand(UserId, request), ct)
-        );
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(), ct));
     }
 
     /// <summary>
@@ -377,13 +383,11 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> DisableAuthenticatorAsync(
         [FromBody] DisableAuthenticatorRequest request,
-        [FromServices] DisableAuthenticatorCommandHandler handler,
+        [FromServices] ICommandHandler<DisableAuthenticatorCommand, Result> handler,
         CancellationToken ct
     )
     {
-        return ToNoContent(
-            await handler.HandleAsync(new DisableAuthenticatorCommand(UserId, request), ct)
-        );
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(), ct));
     }
 
     /// <summary>
@@ -440,11 +444,11 @@ public class AuthController : ApiControllerBase
     [HttpGet("me")]
     [Authorize]
     public async Task<ActionResult<UserResponse>> MeAsync(
-        [FromServices] GetCurrentUserQueryHandler handler,
+        [FromServices] IQueryHandler<GetCurrentUserQuery, Result<UserResponse>> handler,
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetCurrentUserQuery(UserId), ct));
+        return ToOk(await handler.HandleAsync(new GetCurrentUserQuery(CurrentUserId), ct));
     }
 
     private async Task<Guid?> GetPendingTwoFactorUserIdAsync()

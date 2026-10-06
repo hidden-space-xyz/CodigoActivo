@@ -1,7 +1,7 @@
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
 using CodigoActivo.Application.Accounts;
-using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -37,8 +37,6 @@ internal static class ApiSecurityConfiguration
 
     private static void AddAuthentication(WebApplicationBuilder builder)
     {
-        var session = SessionLifetimeConfiguration.Read(builder.Configuration);
-
         builder
             .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
@@ -53,14 +51,15 @@ internal static class ApiSecurityConfiguration
                     : CookieSecurePolicy.Always;
                 options.Cookie.SameSite = SameSiteMode.Lax;
                 options.SlidingExpiration = false;
-                options.ExpireTimeSpan = session.Lifetime;
 
                 options.Events.OnRedirectToLogin = context =>
                     context.HttpContext.WriteApiErrorAsync(
-                        Error.Unauthorized(ErrorCode.AuthenticationRequired)
+                        ApiError.Unauthorized(ErrorCode.AuthenticationRequired)
                     );
                 options.Events.OnRedirectToAccessDenied = context =>
-                    context.HttpContext.WriteApiErrorAsync(Error.Forbidden(ErrorCode.AccessDenied));
+                    context.HttpContext.WriteApiErrorAsync(
+                        ApiError.Forbidden(ErrorCode.AccessDenied)
+                    );
                 options.Events.OnValidatePrincipal = context =>
                     context
                         .HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>()
@@ -80,21 +79,28 @@ internal static class ApiSecurityConfiguration
                         : CookieSecurePolicy.Always;
                     options.Cookie.SameSite = SameSiteMode.Lax;
                     options.SlidingExpiration = false;
-                    options.ExpireTimeSpan = TwoFactorOptions.DefaultChallengeLifetime;
 
                     options.Events.OnRedirectToLogin = context =>
                         context.HttpContext.WriteApiErrorAsync(
-                            Error.Unauthorized(ErrorCode.TwoFactorChallengeExpired)
+                            ApiError.Unauthorized(ErrorCode.TwoFactorChallengeExpired)
                         );
                     options.Events.OnRedirectToAccessDenied = context =>
                         context.HttpContext.WriteApiErrorAsync(
-                            Error.Forbidden(ErrorCode.AccessDenied)
+                            ApiError.Forbidden(ErrorCode.AccessDenied)
                         );
                     options.Events.OnValidatePrincipal = context =>
                         context
                             .HttpContext.RequestServices.GetRequiredService<TwoFactorTicketValidator>()
                             .ValidateAsync(context);
                 }
+            );
+
+        builder
+            .Services.AddOptions<CookieAuthenticationOptions>(
+                CookieAuthenticationDefaults.AuthenticationScheme
+            )
+            .Configure<SessionLifetimeOptions>(
+                (options, session) => options.ExpireTimeSpan = session.Lifetime
             );
 
         builder
