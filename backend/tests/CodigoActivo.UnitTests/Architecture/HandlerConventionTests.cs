@@ -26,7 +26,9 @@ public sealed class HandlerConventionTests
         [
             .. typeof(IQuery<>)
                 .Assembly.GetTypes()
-                .Where(type => type is { IsClass: true, IsAbstract: false })
+                .Where(type =>
+                    type is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
+                )
                 .SelectMany(type =>
                     type.GetInterfaces()
                         .Where(IsHandlerContract)

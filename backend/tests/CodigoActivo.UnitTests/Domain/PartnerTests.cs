@@ -1,5 +1,7 @@
 using AwesomeAssertions;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
+using CodigoActivo.Domain.Users;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
@@ -20,19 +22,19 @@ public sealed class PartnerTests
                 new DateOnly(2024, 5, 6),
                 2,
                 "  https://acme.test ",
-                thumbnailId
+                StoredFileId.From(thumbnailId)
             ),
-            authorId,
+            UserId.From(authorId),
             Now
         );
 
-        partner.Id.Should().NotBeEmpty();
+        partner.Id.Value.Should().NotBeEmpty();
         partner.Name.Should().Be("Acme");
         partner.FromDate.Should().Be(new DateOnly(2024, 5, 6));
         partner.Tier.Should().Be(2);
         partner.Web.Should().Be("https://acme.test");
-        partner.ThumbnailId.Should().Be(thumbnailId);
-        partner.CreatedBy.Should().Be(authorId);
+        partner.ThumbnailId.Value.Should().Be(thumbnailId);
+        partner.CreatedBy.Value.Should().Be(authorId);
         partner.CreatedAt.Should().Be(Now);
         partner.UpdatedAt.Should().BeNull();
         partner.UpdatedBy.Should().BeNull();
@@ -42,8 +44,14 @@ public sealed class PartnerTests
     public void CreateBlankWebStoresNoWebsite()
     {
         var partner = Partner.Create(
-            new PartnerDetails("Acme", new DateOnly(2024, 1, 1), 1, "   ", Guid.NewGuid()),
-            Guid.NewGuid(),
+            new PartnerDetails(
+                "Acme",
+                new DateOnly(2024, 1, 1),
+                1,
+                "   ",
+                StoredFileId.From(Guid.NewGuid())
+            ),
+            UserId.From(Guid.NewGuid()),
             Now
         );
 
@@ -55,8 +63,14 @@ public sealed class PartnerTests
     {
         var authorId = Guid.NewGuid();
         var partner = Partner.Create(
-            new PartnerDetails("Old", new DateOnly(2024, 1, 1), 1, null, Guid.NewGuid()),
-            authorId,
+            new PartnerDetails(
+                "Old",
+                new DateOnly(2024, 1, 1),
+                1,
+                null,
+                StoredFileId.From(Guid.NewGuid())
+            ),
+            UserId.From(authorId),
             Now
         );
         var editorId = Guid.NewGuid();
@@ -68,9 +82,9 @@ public sealed class PartnerTests
                 new DateOnly(2025, 2, 2),
                 3,
                 "https://new.test",
-                thumbnailId
+                StoredFileId.From(thumbnailId)
             ),
-            editorId,
+            UserId.From(editorId),
             Now.AddDays(1)
         );
 
@@ -78,10 +92,10 @@ public sealed class PartnerTests
         partner.FromDate.Should().Be(new DateOnly(2025, 2, 2));
         partner.Tier.Should().Be(3);
         partner.Web.Should().Be("https://new.test");
-        partner.ThumbnailId.Should().Be(thumbnailId);
-        partner.CreatedBy.Should().Be(authorId);
+        partner.ThumbnailId.Value.Should().Be(thumbnailId);
+        partner.CreatedBy.Value.Should().Be(authorId);
         partner.CreatedAt.Should().Be(Now);
-        partner.UpdatedBy.Should().Be(editorId);
+        partner.UpdatedBy.Should().Be(UserId.From(editorId));
         partner.UpdatedAt.Should().Be(Now.AddDays(1));
     }
 }

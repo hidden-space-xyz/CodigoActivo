@@ -1,6 +1,10 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
@@ -51,28 +55,36 @@ public sealed class EventTests
     {
         return EventTermsLinks
             .Create([
-                .. links.Select(link => new EventTermsLink(link.TermsDocumentId, link.Required)),
+                .. links.Select(link => new EventTermsLink(
+                    TermsDocumentId.From(link.TermsDocumentId),
+                    link.Required
+                )),
             ])
             .Value;
     }
 
-    private static EventCategorySelection Categories(params Guid[] categoryTypeIds)
+    private static EventCategorySelection Categories(params EventCategoryTypeId[] categoryTypeIds)
     {
         return EventCategorySelection.Create(categoryTypeIds).Value;
     }
 
     private static Event NewEvent(
-        Guid[]? categoryTypeIds = null,
+        EventCategoryTypeId[]? categoryTypeIds = null,
         EventTermsLinks? terms = null,
         EventSchedule? schedule = null
     )
     {
         return Event.Create(
-            new EventContent("Feria", "Verano", "{}", Guid.NewGuid()),
+            new EventContent(
+                "Feria",
+                "Verano",
+                RichText.From("{}"),
+                StoredFileId.From(Guid.NewGuid())
+            ),
             schedule ?? Schedule(),
-            Categories(categoryTypeIds ?? [Guid.NewGuid()]),
+            Categories(categoryTypeIds ?? [EventCategoryTypeId.New()]),
             terms ?? EventTermsLinks.None,
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             Now
         );
     }
@@ -88,7 +100,7 @@ public sealed class EventTests
     {
         var schedule = EventSchedule.Create(eventStart, eventEnd, null, signupStart, signupEnd);
 
-        schedule.ShouldFail(ErrorKind.Validation, ErrorCode.EventScheduleRequired);
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleRequired);
     }
 
     [Fact]
@@ -102,7 +114,7 @@ public sealed class EventTests
             SignupEnd
         );
 
-        schedule.ShouldFail(ErrorKind.Validation, ErrorCode.EventScheduleInvalidRange);
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleInvalidRange);
     }
 
     [Theory]
@@ -118,7 +130,7 @@ public sealed class EventTests
             SignupStart.AddHours(closesHoursAfter)
         );
 
-        schedule.ShouldFail(ErrorKind.Validation, ErrorCode.EventScheduleInvalidRange);
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleInvalidRange);
     }
 
     [Theory]
@@ -136,7 +148,7 @@ public sealed class EventTests
             SignupEnd
         );
 
-        schedule.ShouldFail(ErrorKind.Validation, ErrorCode.EventEarlySignupNotBeforeSignup);
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventEarlySignupNotBeforeSignup);
     }
 
     [Fact]
@@ -152,7 +164,7 @@ public sealed class EventTests
             opensAt.AddDays(1)
         );
 
-        schedule.ShouldFail(ErrorKind.Validation, ErrorCode.EventScheduleInvalidRange);
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleInvalidRange);
     }
 
     [Fact]
@@ -166,7 +178,7 @@ public sealed class EventTests
             new DateTimeOffset(2026, 8, 4, 0, 0, 0, TimeSpan.Zero)
         );
 
-        schedule.ShouldFail(ErrorKind.Validation, ErrorCode.EventSignupEndsAfterEvent);
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventSignupEndsAfterEvent);
     }
 
     [Fact]
@@ -177,7 +189,7 @@ public sealed class EventTests
         var schedule = EventSchedule.Create(EventStart, EventEnd, null, SignupStart, closesAt);
 
         schedule.IsSuccess.Should().BeTrue();
-        schedule.Value.SignupEndsAt.Should().Be(closesAt);
+        schedule.Value.SignupWindow.EndsAt.Should().Be(closesAt);
     }
 
     [Fact]
@@ -194,7 +206,7 @@ public sealed class EventTests
         );
 
         schedule.IsSuccess.Should().BeTrue();
-        schedule.Value.SignupStartsAt.Should().Be(opensAt);
+        schedule.Value.SignupWindow.StartsAt.Should().Be(opensAt);
     }
 
     [Fact]
@@ -212,23 +224,23 @@ public sealed class EventTests
             )
             .Value;
 
-        schedule.EventStartsAt.Should().Be(EventStart);
-        schedule.EventEndsAt.Should().Be(EventEnd);
+        schedule.Calendar.Start.Should().Be(EventStart);
+        schedule.Calendar.End.Should().Be(EventEnd);
         schedule
-            .EarlySignupStartsAt.Should()
+            .SignupWindow.EarlyStartsAt.Should()
             .BeExactly(new DateTimeOffset(2026, 6, 20, 10, 0, 0, TimeSpan.Zero));
         schedule
-            .SignupStartsAt.Should()
+            .SignupWindow.StartsAt.Should()
             .BeExactly(new DateTimeOffset(2026, 7, 1, 7, 0, 0, TimeSpan.Zero));
         schedule
-            .SignupEndsAt.Should()
+            .SignupWindow.EndsAt.Should()
             .BeExactly(new DateTimeOffset(2026, 7, 20, 21, 30, 0, TimeSpan.Zero));
     }
 
     [Fact]
     public void ScheduleCreateWithoutEarlySignupLeavesItMissing()
     {
-        Schedule().EarlySignupStartsAt.Should().BeNull();
+        Schedule().SignupWindow.EarlyStartsAt.Should().BeNull();
     }
 
     [Fact]
@@ -237,11 +249,11 @@ public sealed class EventTests
         var termsDocumentId = Guid.NewGuid();
 
         var links = EventTermsLinks.Create([
-            new EventTermsLink(termsDocumentId, true),
-            new EventTermsLink(termsDocumentId, false),
+            new EventTermsLink(TermsDocumentId.From(termsDocumentId), true),
+            new EventTermsLink(TermsDocumentId.From(termsDocumentId), false),
         ]);
 
-        links.ShouldFail(ErrorKind.Validation, ErrorCode.EventTermsDocumentDuplicated);
+        links.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsDocumentDuplicated);
     }
 
     [Fact]
@@ -255,8 +267,8 @@ public sealed class EventTests
     [Fact]
     public void TermsLinksCreateDistinctDocumentsKeepsThemInOrder()
     {
-        var first = new EventTermsLink(Guid.NewGuid(), false);
-        var second = new EventTermsLink(Guid.NewGuid(), true);
+        var first = new EventTermsLink(TermsDocumentId.From(Guid.NewGuid()), false);
+        var second = new EventTermsLink(TermsDocumentId.From(Guid.NewGuid()), true);
 
         var links = EventTermsLinks.Create([first, second]);
 
@@ -268,7 +280,7 @@ public sealed class EventTests
     {
         var selection = EventCategorySelection.Create(null);
 
-        selection.ShouldFail(ErrorKind.Validation, ErrorCode.EventCategoriesRequired);
+        selection.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventCategoriesRequired);
     }
 
     [Fact]
@@ -276,7 +288,7 @@ public sealed class EventTests
     {
         var selection = EventCategorySelection.Create([]);
 
-        selection.ShouldFail(ErrorKind.Validation, ErrorCode.EventCategoriesRequired);
+        selection.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventCategoriesRequired);
     }
 
     [Fact]
@@ -287,15 +299,21 @@ public sealed class EventTests
         var concursos = Guid.NewGuid();
 
         var selection = EventCategorySelection.Create([
-            charlas,
-            talleres,
-            charlas,
-            concursos,
-            talleres,
+            EventCategoryTypeId.From(charlas),
+            EventCategoryTypeId.From(talleres),
+            EventCategoryTypeId.From(charlas),
+            EventCategoryTypeId.From(concursos),
+            EventCategoryTypeId.From(talleres),
         ]);
 
         selection.IsSuccess.Should().BeTrue();
-        selection.Value.CategoryTypeIds.Should().Equal(charlas, talleres, concursos);
+        selection
+            .Value.CategoryTypeIds.Should()
+            .Equal(
+                EventCategoryTypeId.From(charlas),
+                EventCategoryTypeId.From(talleres),
+                EventCategoryTypeId.From(concursos)
+            );
     }
 
     [Fact]
@@ -305,27 +323,32 @@ public sealed class EventTests
         var thumbnailId = Guid.NewGuid();
 
         var ev = Event.Create(
-            new EventContent("  Feria  ", " Verano ", "{\"a\":1}", thumbnailId),
+            new EventContent(
+                "  Feria  ",
+                " Verano ",
+                RichText.From("{\"a\":1}"),
+                StoredFileId.From(thumbnailId)
+            ),
             Schedule(EarlyStart),
-            Categories(Guid.NewGuid()),
+            Categories(EventCategoryTypeId.From(Guid.NewGuid())),
             EventTermsLinks.None,
-            authorId,
+            UserId.From(authorId),
             Now
         );
 
-        ev.Id.Should().NotBeEmpty();
+        ev.Id.Value.Should().NotBeEmpty();
         ev.Title.Should().Be("Feria");
         ev.Subtitle.Should().Be("Verano");
-        ev.Description.Should().Be("{\"a\":1}");
-        ev.ThumbnailId.Should().Be(thumbnailId);
-        ev.EventStartsAt.Should().Be(EventStart);
-        ev.EventEndsAt.Should().Be(EventEnd);
-        ev.EarlySignupStartsAt.Should().Be(EarlyStart);
-        ev.SignupStartsAt.Should().Be(SignupStart);
-        ev.SignupEndsAt.Should().Be(SignupEnd);
+        ev.Description!.Json.Should().Be("{\"a\":1}");
+        ev.ThumbnailId.Value.Should().Be(thumbnailId);
+        ev.Calendar.Start.Should().Be(EventStart);
+        ev.Calendar.End.Should().Be(EventEnd);
+        ev.SignupWindow.EarlyStartsAt.Should().Be(EarlyStart);
+        ev.SignupWindow.StartsAt.Should().Be(SignupStart);
+        ev.SignupWindow.EndsAt.Should().Be(SignupEnd);
         ev.Featured.Should().BeFalse();
         ev.TermsDocuments.Should().BeEmpty();
-        ev.CreatedBy.Should().Be(authorId);
+        ev.CreatedBy.Value.Should().Be(authorId);
         ev.CreatedAt.Should().Be(Now);
         ev.UpdatedBy.Should().BeNull();
         ev.UpdatedAt.Should().BeNull();
@@ -337,9 +360,16 @@ public sealed class EventTests
         var talleres = Guid.NewGuid();
         var charlas = Guid.NewGuid();
 
-        var ev = NewEvent(categoryTypeIds: [talleres, charlas, talleres]);
+        var ev = NewEvent(
+            categoryTypeIds:
+            [
+                EventCategoryTypeId.From(talleres),
+                EventCategoryTypeId.From(charlas),
+                EventCategoryTypeId.From(talleres),
+            ]
+        );
 
-        ev.Categories.Select(category => category.EventCategoryTypeId)
+        ev.Categories.Select(category => category.EventCategoryTypeId.Value)
             .Should()
             .BeEquivalentTo([talleres, charlas]);
         ev.Categories.Should().OnlyContain(category => category.EventId == ev.Id);
@@ -359,7 +389,11 @@ public sealed class EventTests
                 (document.TermsDocumentId, document.IsRequired, document.DisplayOrder)
             )
             .Should()
-            .Equal((first, true, 0), (second, false, 1), (third, true, 2));
+            .Equal(
+                (TermsDocumentId.From(first), true, 0),
+                (TermsDocumentId.From(second), false, 1),
+                (TermsDocumentId.From(third), true, 2)
+            );
         ev.TermsDocuments.Should().OnlyContain(document => document.EventId == ev.Id);
     }
 
@@ -381,26 +415,31 @@ public sealed class EventTests
             .Value;
 
         ev.Update(
-            new EventContent(" Nueva ", " Otoño  ", "{\"b\":2}", thumbnailId),
+            new EventContent(
+                " Nueva ",
+                " Otoño  ",
+                RichText.From("{\"b\":2}"),
+                StoredFileId.From(thumbnailId)
+            ),
             schedule,
-            Categories(Guid.NewGuid()),
+            Categories(EventCategoryTypeId.From(Guid.NewGuid())),
             EventTermsLinks.None,
-            editorId,
+            UserId.From(editorId),
             Now.AddDays(1)
         );
 
         ev.Title.Should().Be("Nueva");
         ev.Subtitle.Should().Be("Otoño");
-        ev.Description.Should().Be("{\"b\":2}");
-        ev.ThumbnailId.Should().Be(thumbnailId);
-        ev.EventStartsAt.Should().Be(new DateOnly(2026, 9, 1));
-        ev.EventEndsAt.Should().Be(new DateOnly(2026, 9, 2));
-        ev.EarlySignupStartsAt.Should().BeNull();
-        ev.SignupStartsAt.Should().Be(schedule.SignupStartsAt);
-        ev.SignupEndsAt.Should().Be(schedule.SignupEndsAt);
+        ev.Description!.Json.Should().Be("{\"b\":2}");
+        ev.ThumbnailId.Value.Should().Be(thumbnailId);
+        ev.Calendar.Start.Should().Be(new DateOnly(2026, 9, 1));
+        ev.Calendar.End.Should().Be(new DateOnly(2026, 9, 2));
+        ev.SignupWindow.EarlyStartsAt.Should().BeNull();
+        ev.SignupWindow.StartsAt.Should().Be(schedule.SignupWindow.StartsAt);
+        ev.SignupWindow.EndsAt.Should().Be(schedule.SignupWindow.EndsAt);
         ev.CreatedBy.Should().Be(authorId);
         ev.CreatedAt.Should().Be(Now);
-        ev.UpdatedBy.Should().Be(editorId);
+        ev.UpdatedBy.Should().Be(UserId.From(editorId));
         ev.UpdatedAt.Should().Be(Now.AddDays(1));
     }
 
@@ -410,19 +449,23 @@ public sealed class EventTests
         var kept = Guid.NewGuid();
         var dropped = Guid.NewGuid();
         var added = Guid.NewGuid();
-        var ev = NewEvent(categoryTypeIds: [kept, dropped]);
-        var keptCategory = ev.Categories.Single(category => category.EventCategoryTypeId == kept);
+        var ev = NewEvent(
+            categoryTypeIds: [EventCategoryTypeId.From(kept), EventCategoryTypeId.From(dropped)]
+        );
+        var keptCategory = ev.Categories.Single(category =>
+            category.EventCategoryTypeId == EventCategoryTypeId.From(kept)
+        );
 
         ev.Update(
-            new EventContent("Feria", "Verano", "{}", ev.ThumbnailId),
+            new EventContent("Feria", "Verano", RichText.From("{}"), ev.ThumbnailId),
             Schedule(),
-            Categories(kept, added),
+            Categories(EventCategoryTypeId.From(kept), EventCategoryTypeId.From(added)),
             EventTermsLinks.None,
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             Now
         );
 
-        ev.Categories.Select(category => category.EventCategoryTypeId)
+        ev.Categories.Select(category => category.EventCategoryTypeId.Value)
             .Should()
             .BeEquivalentTo([kept, added]);
         ev.Categories.Should().Contain(keptCategory);
@@ -436,14 +479,16 @@ public sealed class EventTests
         var dropped = Guid.NewGuid();
         var added = Guid.NewGuid();
         var ev = NewEvent(terms: Terms((kept, true), (dropped, false)));
-        var keptDocument = ev.TermsDocuments.Single(document => document.TermsDocumentId == kept);
+        var keptDocument = ev.TermsDocuments.Single(document =>
+            document.TermsDocumentId == TermsDocumentId.From(kept)
+        );
 
         ev.Update(
-            new EventContent("Feria", "Verano", "{}", ev.ThumbnailId),
+            new EventContent("Feria", "Verano", RichText.From("{}"), ev.ThumbnailId),
             Schedule(),
-            Categories(Guid.NewGuid()),
+            Categories(EventCategoryTypeId.From(Guid.NewGuid())),
             Terms((added, true), (kept, false)),
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             Now
         );
 
@@ -452,7 +497,7 @@ public sealed class EventTests
                 (document.TermsDocumentId, document.IsRequired, document.DisplayOrder)
             )
             .Should()
-            .Equal((added, true, 0), (kept, false, 1));
+            .Equal((TermsDocumentId.From(added), true, 0), (TermsDocumentId.From(kept), false, 1));
         ev.TermsDocuments.Should().Contain(keptDocument);
     }
 
@@ -513,10 +558,10 @@ public sealed class EventTests
     {
         var eventId = Guid.NewGuid();
 
-        var rating = EventRating.Submit(eventId, 4, "   ", string.Empty, null).Value;
+        var rating = EventRating.Submit(EventId.From(eventId), 4, "   ", string.Empty, null).Value;
 
-        rating.Id.Should().NotBeEmpty();
-        rating.EventId.Should().Be(eventId);
+        rating.Id.Value.Should().NotBeEmpty();
+        rating.EventId.Value.Should().Be(eventId);
         rating.Score.Should().Be(4);
         rating.MostLiked.Should().BeNull();
         rating.LeastLiked.Should().BeNull();
@@ -527,7 +572,7 @@ public sealed class EventTests
     public void RatingSubmitAnswersWithSpacesStoresThemTrimmed()
     {
         var rating = EventRating
-            .Submit(Guid.NewGuid(), 5, " Bien ", "La cola  ", "  Más talleres")
+            .Submit(EventId.From(Guid.NewGuid()), 5, " Bien ", "La cola  ", "  Más talleres")
             .Value;
 
         rating.MostLiked.Should().Be("Bien");
@@ -538,7 +583,9 @@ public sealed class EventTests
     [Fact]
     public void RatingSubmitWithoutScoreKeepsTheAnswers()
     {
-        var rating = EventRating.Submit(Guid.NewGuid(), null, null, null, "Más talleres").Value;
+        var rating = EventRating
+            .Submit(EventId.From(Guid.NewGuid()), null, null, null, "Más talleres")
+            .Value;
 
         rating.Score.Should().BeNull();
         rating.Suggestions.Should().Be("Más talleres");
@@ -547,11 +594,17 @@ public sealed class EventTests
     [Fact]
     public void RatingSubmitWithoutScoreOrAnswersReturnsEmptyError()
     {
-        var result = EventRating.Submit(Guid.NewGuid(), null, "  ", string.Empty, null);
+        var result = EventRating.Submit(
+            EventId.From(Guid.NewGuid()),
+            null,
+            "  ",
+            string.Empty,
+            null
+        );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventRatingEmpty);
+        result.Error.Code.Should().Be(DomainErrorCode.EventRatingEmpty);
     }
 
     [Fact]
@@ -561,11 +614,17 @@ public sealed class EventTests
         var userId = Guid.NewGuid();
         var termsDocumentId = Guid.NewGuid();
 
-        var acceptance = EventTermsAcceptance.Record(eventId, userId, termsDocumentId, false, Now);
+        var acceptance = EventTermsAcceptance.Record(
+            EventId.From(eventId),
+            UserId.From(userId),
+            TermsDocumentId.From(termsDocumentId),
+            false,
+            Now
+        );
 
-        acceptance.EventId.Should().Be(eventId);
-        acceptance.UserId.Should().Be(userId);
-        acceptance.TermsDocumentId.Should().Be(termsDocumentId);
+        acceptance.EventId.Value.Should().Be(eventId);
+        acceptance.UserId.Value.Should().Be(userId);
+        acceptance.TermsDocumentId.Value.Should().Be(termsDocumentId);
         acceptance.Accepted.Should().BeFalse();
         acceptance.DecidedAt.Should().Be(Now);
     }
@@ -575,9 +634,9 @@ public sealed class EventTests
     {
         var termsDocumentId = Guid.NewGuid();
         var acceptance = EventTermsAcceptance.Record(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            termsDocumentId,
+            EventId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
+            TermsDocumentId.From(termsDocumentId),
             false,
             Now
         );
@@ -586,6 +645,6 @@ public sealed class EventTests
 
         acceptance.Accepted.Should().BeTrue();
         acceptance.DecidedAt.Should().Be(Now.AddHours(3));
-        acceptance.TermsDocumentId.Should().Be(termsDocumentId);
+        acceptance.TermsDocumentId.Value.Should().Be(termsDocumentId);
     }
 }

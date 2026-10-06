@@ -7,6 +7,7 @@ using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Application.Resources.Queries;
 using CodigoActivo.Application.Users.Queries;
+using CodigoActivo.Infrastructure.Caching;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -19,16 +20,16 @@ namespace CodigoActivo.UnitTests.Architecture;
 public sealed class CachingConventionTests
 {
     private static readonly string[] ReadMethods = ["GET", "HEAD"];
-    private static readonly Type[] ApprovedHybridCacheConsumers =
+    private static readonly Type[] ApprovedCachedQueries =
     [
-        typeof(ListUserTypesQueryHandler),
-        typeof(ListUserStatusTypesQueryHandler),
-        typeof(ListResourceTypesQueryHandler),
-        typeof(ListActivityRoleTypesQueryHandler),
-        typeof(ListActivityModalityTypesQueryHandler),
-        typeof(ListAssignmentStatusTypesQueryHandler),
-        typeof(GetDashboardSummaryQueryHandler),
-        typeof(GetDashboardAnalyticsQueryHandler),
+        typeof(ListUserTypesQuery),
+        typeof(ListUserStatusTypesQuery),
+        typeof(ListResourceTypesQuery),
+        typeof(ListActivityRoleTypesQuery),
+        typeof(ListActivityModalityTypesQuery),
+        typeof(ListAssignmentStatusTypesQuery),
+        typeof(GetDashboardSummaryQuery),
+        typeof(GetDashboardAnalyticsQuery),
     ];
 
     [Fact]
@@ -67,10 +68,21 @@ public sealed class CachingConventionTests
     }
 
     [Fact]
-    public void HybridCacheConsumersAlwaysMatchExplicitSafeSet()
+    public void CachedQueriesAlwaysMatchExplicitSafeSet()
     {
-        var consumers = typeof(CachePolicies)
+        var cached = typeof(ICachedQuery)
             .Assembly.GetTypes()
+            .Where(type => type.IsClass && typeof(ICachedQuery).IsAssignableFrom(type))
+            .ToList();
+
+        cached.Should().BeEquivalentTo(ApprovedCachedQueries);
+    }
+
+    [Fact]
+    public void HybridCacheIsOnlyUsedByTheCachingDecorator()
+    {
+        var consumers = new[] { typeof(ICachedQuery).Assembly, typeof(CachePolicies).Assembly }
+            .SelectMany(assembly => assembly.GetTypes())
             .Where(type =>
                 type.GetConstructors()
                     .SelectMany(constructor => constructor.GetParameters())
@@ -78,7 +90,7 @@ public sealed class CachingConventionTests
             )
             .ToList();
 
-        consumers.Should().BeEquivalentTo(ApprovedHybridCacheConsumers);
+        consumers.Should().Equal(typeof(CachingQueryDecorator<,>));
     }
 
     private static IEnumerable<MethodInfo> ControllerActions()

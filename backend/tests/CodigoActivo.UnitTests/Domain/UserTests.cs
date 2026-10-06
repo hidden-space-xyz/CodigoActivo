@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -14,20 +15,20 @@ public sealed class UserTests
     public static TheoryData<Guid, bool, bool, bool> StatusFlags =>
         new()
         {
-            { SeedIds.UserStatusTypes.Pending, false, false, true },
-            { SeedIds.UserStatusTypes.Active, false, false, false },
-            { SeedIds.UserStatusTypes.Blocked, true, false, false },
-            { SeedIds.UserStatusTypes.Dependent, false, true, false },
+            { KnownIds.UserStatusTypes.Pending, false, false, true },
+            { KnownIds.UserStatusTypes.Active, false, false, false },
+            { KnownIds.UserStatusTypes.Blocked, true, false, false },
+            { KnownIds.UserStatusTypes.Dependent, false, true, false },
         };
 
     public static TheoryData<Guid, string?, bool> SignInStates =>
         new()
         {
-            { SeedIds.UserStatusTypes.Active, "hash", true },
-            { SeedIds.UserStatusTypes.Active, null, false },
-            { SeedIds.UserStatusTypes.Pending, "hash", false },
-            { SeedIds.UserStatusTypes.Blocked, "hash", false },
-            { SeedIds.UserStatusTypes.Dependent, "hash", false },
+            { KnownIds.UserStatusTypes.Active, "hash", true },
+            { KnownIds.UserStatusTypes.Active, null, false },
+            { KnownIds.UserStatusTypes.Pending, "hash", false },
+            { KnownIds.UserStatusTypes.Blocked, "hash", false },
+            { KnownIds.UserStatusTypes.Dependent, "hash", false },
         };
 
     private static User UserWithStatus(Guid statusId, string? passwordHash = "hash")
@@ -39,7 +40,7 @@ public sealed class UserTests
                 FirstName = "Ada",
                 LastName = "Lovelace",
                 PasswordHash = passwordHash,
-                UserStatusTypeId = statusId,
+                Status = CatalogIds.UserStatuses.ValueOf(statusId),
                 CreatedAt = Seeded,
             }
         );
@@ -55,7 +56,7 @@ public sealed class UserTests
                 LastName = "Lovelace",
                 Email = "ada@test.local",
                 BirthDate = new DateOnly(1990, 1, 1),
-                UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
+                Status = UserStatus.Pending,
                 OtpCodeHash = "ABCDEF",
                 OtpExpiresAt = Seeded,
                 OtpLastSentAt = Seeded,
@@ -71,7 +72,7 @@ public sealed class UserTests
 
         user.Verify(Now);
 
-        user.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
+        user.Status.Should().Be(UserStatus.Active);
         user.IsPendingVerification.Should().BeFalse();
         user.OtpCodeHash.Should().BeNull();
         user.OtpExpiresAt.Should().BeNull();
@@ -129,12 +130,12 @@ public sealed class UserTests
     public void RegisterLoginPendingUserDoesNotChangeStatusOrOtp()
     {
         var user = NewPendingUser();
-        var status = user.UserStatusTypeId;
+        var status = user.Status;
         var otpHash = user.OtpCodeHash;
 
         user.RegisterLogin(Now);
 
-        user.UserStatusTypeId.Should().Be(status);
+        user.Status.Should().Be(status);
         user.OtpCodeHash.Should().Be(otpHash);
         user.UpdatedAt.Should().BeNull();
     }
@@ -308,7 +309,7 @@ public sealed class UserTests
 
         var begun = user.BeginAuthenticatorSetup("ANOTHER", Now, TimeSpan.FromMinutes(15));
 
-        begun.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorAlreadyEnabled);
+        begun.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
         user.PendingAuthenticatorKey.Should().BeNull();
         user.AuthenticatorKey.Should().Be("PENDING");
     }
@@ -330,7 +331,7 @@ public sealed class UserTests
 
         var enabled = user.EnableAuthenticator(43, Now.AddMinutes(1));
 
-        enabled.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorAlreadyEnabled);
+        enabled.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
         user.AuthenticatorKey.Should().Be("PENDING");
         user.AuthenticatorLastUsedStep.Should().Be(42);
     }
@@ -615,26 +616,30 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
 
-        user.ChangeType(SeedIds.UserTypes.Sponsor, Now);
+        user.ChangeType(UserType.Sponsor, Now);
 
-        user.UserTypeId.Should().Be(SeedIds.UserTypes.Sponsor);
+        user.UserType.Should().Be(UserType.Sponsor);
         user.UpdatedAt.Should().Be(Now);
     }
 
     [Fact]
     public void CreateInitialAdministratorBuildsAnActiveAdministratorUnderTheFixedIdentifier()
     {
-        var administrator = User.CreateInitialAdministrator("admin@test.local", "hash", Now);
+        var administrator = User.CreateInitialAdministrator(
+            EmailAddress.FromStored("admin@test.local"),
+            "hash",
+            Now
+        );
 
-        administrator.Id.Should().Be(SeedIds.Users.InitialAdministrator);
+        administrator.Id.Value.Should().Be(KnownIds.Users.InitialAdministrator);
         administrator.FirstName.Should().Be("Administrador");
         administrator.LastName.Should().Be("Código Activo");
-        administrator.Email.Should().Be("admin@test.local");
+        administrator.Email!.Value.Should().Be("admin@test.local");
         administrator.PasswordHash.Should().Be("hash");
         administrator.NationalId.Should().Be(SpanishNationalId.FromDniNumber(0));
         administrator.Gender.Should().Be(Gender.Other);
-        administrator.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
-        administrator.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
+        administrator.Status.Should().Be(UserStatus.Active);
+        administrator.UserType.Should().Be(UserType.Member);
         administrator.ParentId.Should().BeNull();
         administrator.IsAdmin.Should().BeTrue();
         administrator.CreatedAt.Should().Be(Now);
@@ -651,7 +656,8 @@ public sealed class UserTests
         string? passwordHash
     )
     {
-        var act = () => User.CreateInitialAdministrator(email!, passwordHash!, Now);
+        var act = () =>
+            User.CreateInitialAdministrator(EmailAddress.FromStored(email!), passwordHash!, Now);
 
         act.Should().Throw<ArgumentException>();
     }
@@ -757,10 +763,10 @@ public sealed class UserTests
     {
         var userId = Guid.NewGuid();
 
-        var session = UserSession.Start(userId, Now, TimeSpan.FromHours(8));
+        var session = UserSession.Start(UserId.From(userId), Now, TimeSpan.FromHours(8));
 
-        session.Id.Should().NotBeEmpty();
-        session.UserId.Should().Be(userId);
+        session.Id.Value.Should().NotBeEmpty();
+        session.UserId.Value.Should().Be(userId);
         session.CreatedAt.Should().Be(Now);
         session.ExpiresAt.Should().Be(Now.AddHours(8));
     }

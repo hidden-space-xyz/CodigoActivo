@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Activities;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -10,60 +9,46 @@ namespace CodigoActivo.UnitTests.Domain;
 
 public sealed class SignupRulesTests
 {
-    private static readonly Guid UnknownId = new("6f1c2a57-0b3e-4c1d-9a8e-2d4b5c6e7f80");
+    public static TheoryData<UserType> NonMemberTypes =>
+        new() { UserType.Sponsor, UserType.Participant };
 
-    public static TheoryData<Guid> NonMemberTypes =>
-        new() { SeedIds.UserTypes.Sponsor, SeedIds.UserTypes.Participant };
-
-    public static TheoryData<Guid, Guid, bool> RoleRequests =>
+    public static TheoryData<UserType, ActivityRole, bool> RoleRequests =>
         new()
         {
-            { SeedIds.UserTypes.Member, SeedIds.ActivityRoleTypes.Leader, true },
-            { SeedIds.UserTypes.Member, SeedIds.ActivityRoleTypes.Volunteer, true },
-            { SeedIds.UserTypes.Member, SeedIds.ActivityRoleTypes.Participant, true },
-            { SeedIds.UserTypes.Sponsor, SeedIds.ActivityRoleTypes.Leader, false },
-            { SeedIds.UserTypes.Sponsor, SeedIds.ActivityRoleTypes.Volunteer, true },
-            { SeedIds.UserTypes.Participant, SeedIds.ActivityRoleTypes.Leader, false },
-            { SeedIds.UserTypes.Participant, SeedIds.ActivityRoleTypes.Participant, true },
-            { SeedIds.UserTypes.Member, UnknownId, false },
+            { UserType.Member, ActivityRole.Leader, true },
+            { UserType.Member, ActivityRole.Volunteer, true },
+            { UserType.Member, ActivityRole.Participant, true },
+            { UserType.Sponsor, ActivityRole.Leader, false },
+            { UserType.Sponsor, ActivityRole.Volunteer, true },
+            { UserType.Participant, ActivityRole.Leader, false },
+            { UserType.Participant, ActivityRole.Participant, true },
         };
 
-    public static TheoryData<Guid, bool> DecisionStatuses =>
+    public static TheoryData<AssignmentStatus, bool> DecisionStatuses =>
         new()
         {
-            { SeedIds.AssignmentStatusTypes.Confirmed, true },
-            { SeedIds.AssignmentStatusTypes.Denied, true },
-            { SeedIds.AssignmentStatusTypes.Requested, false },
-            { UnknownId, false },
+            { AssignmentStatus.Confirmed, true },
+            { AssignmentStatus.Denied, true },
+            { AssignmentStatus.Requested, false },
         };
 
-    public static TheoryData<Guid, bool> ConfirmationStatuses =>
+    public static TheoryData<AssignmentStatus, bool> ConfirmationStatuses =>
         new()
         {
-            { SeedIds.AssignmentStatusTypes.Confirmed, true },
-            { SeedIds.AssignmentStatusTypes.Denied, false },
-            { SeedIds.AssignmentStatusTypes.Requested, false },
-            { UnknownId, false },
+            { AssignmentStatus.Confirmed, true },
+            { AssignmentStatus.Denied, false },
+            { AssignmentStatus.Requested, false },
         };
 
-    public static TheoryData<Guid, int> RoleOrders =>
+    public static TheoryData<UserType, bool> EarlySignupTypes =>
         new()
         {
-            { SeedIds.ActivityRoleTypes.Leader, 0 },
-            { SeedIds.ActivityRoleTypes.Volunteer, 1 },
-            { SeedIds.ActivityRoleTypes.Participant, 2 },
-            { UnknownId, 3 },
+            { UserType.Member, true },
+            { UserType.Sponsor, true },
+            { UserType.Participant, false },
         };
 
-    public static TheoryData<Guid, bool> EarlySignupTypes =>
-        new()
-        {
-            { SeedIds.UserTypes.Member, true },
-            { SeedIds.UserTypes.Sponsor, true },
-            { SeedIds.UserTypes.Participant, false },
-        };
-
-    private static User Person(Guid userTypeId, Guid? guardianId = null)
+    private static User Person(UserType userType, Guid? guardianId = null)
     {
         return Persisted.As<User>(
             new
@@ -71,7 +56,7 @@ public sealed class SignupRulesTests
                 Id = Guid.NewGuid(),
                 FirstName = "Ana",
                 LastName = "López",
-                UserTypeId = userTypeId,
+                UserType = userType,
                 ParentId = guardianId,
             }
         );
@@ -81,77 +66,66 @@ public sealed class SignupRulesTests
     public void SignupRolesForMemberIncludesLeading()
     {
         SignupRoles
-            .For(SeedIds.UserTypes.Member)
+            .For(UserType.Member)
             .Should()
-            .Equal(
-                SeedIds.ActivityRoleTypes.Participant,
-                SeedIds.ActivityRoleTypes.Volunteer,
-                SeedIds.ActivityRoleTypes.Leader
-            );
+            .Equal(ActivityRole.Participant, ActivityRole.Volunteer, ActivityRole.Leader);
     }
 
     [Theory]
     [MemberData(nameof(NonMemberTypes))]
-    public void SignupRolesForOtherTypesOnlyParticipatesOrVolunteers(Guid userTypeId)
+    public void SignupRolesForOtherTypesOnlyParticipatesOrVolunteers(UserType userType)
     {
-        SignupRoles
-            .For(userTypeId)
-            .Should()
-            .Equal(SeedIds.ActivityRoleTypes.Participant, SeedIds.ActivityRoleTypes.Volunteer);
+        SignupRoles.For(userType).Should().Equal(ActivityRole.Participant, ActivityRole.Volunteer);
     }
 
     [Theory]
     [MemberData(nameof(RoleRequests))]
     public void SignupRolesAllowsRoleOfferedToTheMembershipType(
-        Guid userTypeId,
-        Guid roleTypeId,
+        UserType userType,
+        ActivityRole role,
         bool expected
     )
     {
-        SignupRoles.Allows(userTypeId, roleTypeId).Should().Be(expected);
+        SignupRoles.Allows(userType, role).Should().Be(expected);
     }
 
     [Theory]
     [MemberData(nameof(DecisionStatuses))]
-    public void AssignmentDecisionsIsDecisionOnlyForConfirmedAndDenied(Guid statusId, bool expected)
+    public void AssignmentDecisionsIsDecisionOnlyForConfirmedAndDenied(
+        AssignmentStatus status,
+        bool expected
+    )
     {
-        AssignmentDecisions.IsDecision(statusId).Should().Be(expected);
+        AssignmentDecisions.IsDecision(status).Should().Be(expected);
     }
 
     [Theory]
     [MemberData(nameof(ConfirmationStatuses))]
-    public void AssignmentDecisionsIsConfirmationOnlyForConfirmed(Guid statusId, bool expected)
-    {
-        AssignmentDecisions.IsConfirmation(statusId).Should().Be(expected);
-    }
-
-    [Theory]
-    [MemberData(nameof(RoleOrders))]
-    public void ActivityRoleOrderOfRanksLeadersVolunteersParticipantsThenAnyOtherRole(
-        Guid roleTypeId,
-        int expected
+    public void AssignmentDecisionsIsConfirmationOnlyForConfirmed(
+        AssignmentStatus status,
+        bool expected
     )
     {
-        ActivityRoleOrder.Of(roleTypeId).Should().Be(expected);
+        AssignmentDecisions.IsConfirmation(status).Should().Be(expected);
     }
 
     [Theory]
     [MemberData(nameof(EarlySignupTypes))]
-    public void EarlySignupIsEntitledOnlyForMembersAndSponsors(Guid userTypeId, bool expected)
+    public void EarlySignupIsEntitledOnlyForMembersAndSponsors(UserType userType, bool expected)
     {
-        EarlySignup.IsEntitled(userTypeId).Should().Be(expected);
-        EarlySignup.IsEntitled(Person(userTypeId), null).Should().Be(expected);
+        EarlySignup.IsEntitled(userType).Should().Be(expected);
+        EarlySignup.IsEntitled(Person(userType), null).Should().Be(expected);
     }
 
     [Theory]
     [MemberData(nameof(EarlySignupTypes))]
     public void EarlySignupIsEntitledDependentCountsTheGuardianType(
-        Guid guardianTypeId,
+        UserType guardianType,
         bool expected
     )
     {
-        var guardian = Person(guardianTypeId);
-        var dependent = Person(SeedIds.UserTypes.Participant, guardian.Id);
+        var guardian = Person(guardianType);
+        var dependent = Person(UserType.Participant, guardian.Id.Value);
 
         EarlySignup.IsEntitled(dependent, guardian).Should().Be(expected);
     }
@@ -159,8 +133,8 @@ public sealed class SignupRulesTests
     [Fact]
     public void EarlySignupIsEntitledDependentIgnoresItsOwnType()
     {
-        var guardian = Person(SeedIds.UserTypes.Participant);
-        var dependent = Person(SeedIds.UserTypes.Member, guardian.Id);
+        var guardian = Person(UserType.Participant);
+        var dependent = Person(UserType.Member, guardian.Id.Value);
 
         EarlySignup.IsEntitled(dependent, guardian).Should().BeFalse();
     }

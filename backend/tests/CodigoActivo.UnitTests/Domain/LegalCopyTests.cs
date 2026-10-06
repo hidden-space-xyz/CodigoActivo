@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
@@ -15,7 +16,7 @@ public sealed class LegalCopyTests
     private static readonly Guid GuardianId = new("20000000-0000-0000-0000-000000000000");
     private static readonly AccountErasure Erasure = new(
         AccountDeletionOrigin.Guardian,
-        GuardianId,
+        UserId.From(GuardianId),
         Now
     );
 
@@ -42,9 +43,9 @@ public sealed class LegalCopyTests
             null,
             Gender.Other,
             false,
-            SeedIds.UserTypes.Participant,
+            KnownIds.UserTypes.Participant,
             "Participante",
-            SeedIds.UserStatusTypes.Active,
+            KnownIds.UserStatusTypes.Active,
             "Activa",
             false,
             TwoFactorMethod.Email,

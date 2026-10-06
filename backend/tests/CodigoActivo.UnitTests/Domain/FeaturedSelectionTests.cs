@@ -1,6 +1,8 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.Users;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
@@ -10,8 +12,8 @@ public sealed class FeaturedSelectionTests
     private static NewsItem NewNewsItem(bool featured = false)
     {
         var newsItem = NewsItem.Create(
-            new NewsItemContent("T", "S", "{}", Guid.NewGuid()),
-            Guid.NewGuid(),
+            new NewsItemContent("T", "S", RichText.From("{}"), StoredFileId.From(Guid.NewGuid())),
+            UserId.From(Guid.NewGuid()),
             DateTimeOffset.UnixEpoch
         );
         if (featured)

@@ -1,0 +1,54 @@
+using AwesomeAssertions;
+using CodigoActivo.Domain.Files;
+using Xunit;
+
+namespace CodigoActivo.UnitTests.Domain;
+
+public sealed class RichTextFileReferencesTests
+{
+    [Fact]
+    public void ContentUrlMarkerGuidBuildsStoredUrlShape()
+    {
+        var id = Guid.Parse("11111111-2222-3333-4444-555555555555");
+
+        RichTextFileReferences
+            .ContentUrlMarker(id)
+            .Should()
+            .Be("/api/files/11111111-2222-3333-4444-555555555555/content");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("{}")]
+    [InlineData("{\"src\":\"/api/files/not-a-guid/content\"}")]
+    public void ExtractNoValidReferenceEmbeddedReturnsEmpty(string? json)
+    {
+        RichTextFileReferences.Extract(json).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ExtractDuplicateAndAbsoluteUrlsFindsIdsDeduped()
+    {
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        var json =
+            $"{{\"img1\":\"/api/files/{a}/content\","
+            + $"\"img2\":\"https://api.example.org/api/files/{b}/content\","
+            + $"\"again\":\"/api/files/{a}/content\"}}";
+
+        RichTextFileReferences.Extract(json).Should().BeEquivalentTo([a, b]);
+    }
+
+    [Fact]
+    public void ExtractRemovedIdDroppedFromDocumentReturnsOnlyDroppedIds()
+    {
+        var removed = Guid.NewGuid();
+        var kept = Guid.NewGuid();
+        var previous =
+            $"{{\"a\":\"/api/files/{removed}/content\",\"b\":\"/api/files/{kept}/content\"}}";
+        var current = $"{{\"b\":\"/api/files/{kept}/content\"}}";
+
+        RichTextFileReferences.ExtractRemoved(previous, current).Should().BeEquivalentTo([removed]);
+    }
+}

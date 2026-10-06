@@ -1,5 +1,6 @@
 using System.Globalization;
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -88,45 +89,57 @@ public sealed class UserProfileRulesTests
         account.FirstName.Should().Be("Ana");
         account.LastName.Should().Be("Ruiz");
         account.Gender.Should().Be(Gender.Female);
-        account.Email.Should().Be("ana@test.com");
-        account.Phone.Should().Be("600111222");
+        account.Email!.Value.Should().Be("ana@test.com");
+        account.Phone!.Value.Should().Be("600111222");
         account.SecondaryPhone.Should().BeNull();
-        account.NationalId.Should().Be("X1234567L");
+        account.NationalId!.Value.Should().Be("X1234567L");
         account.PromotionalConsent.Should().BeTrue();
         account.BirthDate.Should().BeNull();
         account.ParentId.Should().BeNull();
         account.PasswordHash.Should().BeNull();
         account.IsAdmin.Should().BeFalse();
-        account.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
-        account.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
+        account.Status.Should().Be(UserStatus.Pending);
+        account.UserType.Should().Be(UserType.Participant);
         account.CreatedAt.Should().Be(Now);
         account.UpdatedAt.Should().BeNull();
     }
 
     [Theory]
-    [InlineData(null, "600111222", null, "12345678Z", ErrorCode.UserContactInfoRequired)]
-    [InlineData("   ", "600111222", null, "12345678Z", ErrorCode.UserContactInfoRequired)]
-    [InlineData("ana@test.com", " ", null, "12345678Z", ErrorCode.UserContactInfoRequired)]
+    [InlineData(null, "600111222", null, "12345678Z", DomainErrorCode.UserContactInfoRequired)]
+    [InlineData("   ", "600111222", null, "12345678Z", DomainErrorCode.UserContactInfoRequired)]
+    [InlineData("ana@test.com", " ", null, "12345678Z", DomainErrorCode.UserContactInfoRequired)]
     [InlineData(
         "ana@test.com",
         "600111222",
         " 600111222 ",
         "12345678Z",
-        ErrorCode.SecondaryPhoneSameAsPrimary
+        DomainErrorCode.SecondaryPhoneSameAsPrimary
     )]
-    [InlineData("ana@test.com", "123", null, "12345678Z", ErrorCode.UserPhoneInvalid)]
-    [InlineData("ana@test.com", "abc", null, "12345678Z", ErrorCode.UserPhoneInvalid)]
-    [InlineData("ana@test.com", "600111222", "6+00111222", "12345678Z", ErrorCode.UserPhoneInvalid)]
-    [InlineData("ana@test.com", "600111222", null, null, ErrorCode.UserNationalIdRequired)]
-    [InlineData("ana@test.com", "600111222", null, " - ", ErrorCode.UserNationalIdRequired)]
-    [InlineData("ana@test.com", "600111222", null, "12345678A", ErrorCode.RequestValidationFailed)]
-    [InlineData(null, null, null, null, ErrorCode.UserNationalIdRequired)]
+    [InlineData("ana@test.com", "123", null, "12345678Z", DomainErrorCode.UserPhoneInvalid)]
+    [InlineData("ana@test.com", "abc", null, "12345678Z", DomainErrorCode.UserPhoneInvalid)]
+    [InlineData(
+        "ana@test.com",
+        "600111222",
+        "6+00111222",
+        "12345678Z",
+        DomainErrorCode.UserPhoneInvalid
+    )]
+    [InlineData("ana@test.com", "600111222", null, null, DomainErrorCode.UserNationalIdRequired)]
+    [InlineData("ana@test.com", "600111222", null, " - ", DomainErrorCode.UserNationalIdRequired)]
+    [InlineData(
+        "ana@test.com",
+        "600111222",
+        null,
+        "12345678A",
+        DomainErrorCode.UserNationalIdInvalid
+    )]
+    [InlineData(null, null, null, null, DomainErrorCode.UserNationalIdRequired)]
     public void CreateIndependentAndPlanProfileChangeRefuseTheSameBrokenIndependentRules(
         string? email,
         string? phone,
         string? secondaryPhone,
         string? nationalId,
-        ErrorCode expected
+        DomainErrorCode expected
     )
     {
         var details = AdultDetails(email, phone, secondaryPhone, nationalId);
@@ -144,7 +157,7 @@ public sealed class UserProfileRulesTests
     {
         var result = User.CreateIndependent(AdultDetails(birthDate: AdultDob), Now);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserBirthDateNotAllowedForAdult);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserBirthDateNotAllowedForAdult);
     }
 
     [Fact]
@@ -167,8 +180,8 @@ public sealed class UserProfileRulesTests
         child.NationalId.Should().BeNull();
         child.PromotionalConsent.Should().BeFalse();
         child.PasswordHash.Should().BeNull();
-        child.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Dependent);
-        child.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
+        child.Status.Should().Be(UserStatus.Dependent);
+        child.UserType.Should().Be(UserType.Participant);
         child.CreatedAt.Should().Be(Now);
         child.UpdatedAt.Should().BeNull();
     }
@@ -189,13 +202,13 @@ public sealed class UserProfileRulesTests
     }
 
     [Theory]
-    [InlineData(null, ErrorCode.UserChildBirthDateRequired)]
-    [InlineData("2008-07-04", ErrorCode.UserChildBirthDateNotMinor)]
-    [InlineData("1986-07-04", ErrorCode.UserChildBirthDateNotMinor)]
-    [InlineData("2026-07-05", ErrorCode.RequestValidationFailed)]
+    [InlineData(null, DomainErrorCode.UserChildBirthDateRequired)]
+    [InlineData("2008-07-04", DomainErrorCode.UserChildBirthDateNotMinor)]
+    [InlineData("1986-07-04", DomainErrorCode.UserChildBirthDateNotMinor)]
+    [InlineData("2026-07-05", DomainErrorCode.UserChildBirthDateInFuture)]
     public void CreateDependentWithoutAMinorBirthDateIsRefused(
         string? birthDate,
-        ErrorCode expected
+        DomainErrorCode expected
     )
     {
         var result = User.CreateDependent(
@@ -215,7 +228,7 @@ public sealed class UserProfileRulesTests
 
         var result = User.CreateDependent(dependent, ChildDetails(MinorDob), Today, Now);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserParentIsMinor);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserParentIsMinor);
     }
 
     [Fact]
@@ -237,7 +250,7 @@ public sealed class UserProfileRulesTests
 
         planned.IsSuccess.Should().BeTrue();
         account.FirstName.Should().Be("Ana");
-        account.Email.Should().Be("ana@test.com");
+        account.Email!.Value.Should().Be("ana@test.com");
         account.UpdatedAt.Should().BeNull();
 
         account.ApplyProfileChange(planned.Value, Now);
@@ -245,10 +258,10 @@ public sealed class UserProfileRulesTests
         account.FirstName.Should().Be("Anabel");
         account.LastName.Should().Be("Soto");
         account.Gender.Should().Be(Gender.PreferNotToSay);
-        account.Email.Should().Be("new@test.com");
-        account.Phone.Should().Be("600000000");
+        account.Email!.Value.Should().Be("new@test.com");
+        account.Phone!.Value.Should().Be("600000000");
         account.SecondaryPhone.Should().BeNull();
-        account.NationalId.Should().Be("Y1234567X");
+        account.NationalId!.Value.Should().Be("Y1234567X");
         account.PromotionalConsent.Should().BeTrue();
         account.BirthDate.Should().BeNull();
         account.UpdatedAt.Should().Be(Now);
@@ -274,8 +287,8 @@ public sealed class UserProfileRulesTests
             .PlanProfileChange(AdultDetails(email, phone, secondaryPhone), null, Today)
             .Value;
 
-        change.Email.Should().Be(email.Trim().ToLowerInvariant());
-        change.NewEmail.Should().Be(expectedNewEmail);
+        change.Email!.Value.Should().Be(email.Trim().ToLowerInvariant());
+        (change.NewEmail?.Value).Should().Be(expectedNewEmail);
         change.ReplacesContact.Should().Be(expectedReplacesContact);
     }
 
@@ -295,7 +308,7 @@ public sealed class UserProfileRulesTests
 
         var change = account.PlanProfileChange(AdultDetails(), null, Today).Value;
 
-        change.NewEmail.Should().Be("ana@test.com");
+        change.NewEmail!.Value.Should().Be("ana@test.com");
         change.ReplacesContact.Should().BeTrue();
     }
 
@@ -306,11 +319,11 @@ public sealed class UserProfileRulesTests
 
         var result = account.PlanProfileChange(
             AdultDetails(birthDate: MinorDob),
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             Today
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserBirthDateNotAllowedForAdult);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserBirthDateNotAllowedForAdult);
     }
 
     [Fact]
@@ -318,9 +331,9 @@ public sealed class UserProfileRulesTests
     {
         var account = StoredAdult();
 
-        var result = account.PlanProfileChange(AdultDetails(), Guid.NewGuid(), Today);
+        var result = account.PlanProfileChange(AdultDetails(), UserId.From(Guid.NewGuid()), Today);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserParentNotAllowedForAdult);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserParentNotAllowedForAdult);
     }
 
     [Fact]
@@ -352,9 +365,13 @@ public sealed class UserProfileRulesTests
     {
         var child = StoredChild(StoredAdult(), MinorDob);
 
-        var result = child.PlanProfileChange(ChildDetails(MinorDob), Guid.NewGuid(), Today);
+        var result = child.PlanProfileChange(
+            ChildDetails(MinorDob),
+            UserId.From(Guid.NewGuid()),
+            Today
+        );
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserParentReassignmentForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.UserParentReassignmentForbidden);
     }
 
     [Theory]
@@ -362,14 +379,14 @@ public sealed class UserProfileRulesTests
     [InlineData("2016-07-04", "2010-01-01", null)]
     [InlineData("1986-07-04", "1986-07-04", null)]
     [InlineData("1986-07-04", "2016-07-04", null)]
-    [InlineData("2016-07-04", null, ErrorCode.UserChildBirthDateRequired)]
-    [InlineData("2016-07-04", "2008-07-04", ErrorCode.UserChildBirthDateNotMinor)]
-    [InlineData("1986-07-04", "1986-07-05", ErrorCode.UserChildBirthDateNotMinor)]
-    [InlineData("2016-07-04", "2026-07-05", ErrorCode.RequestValidationFailed)]
+    [InlineData("2016-07-04", null, DomainErrorCode.UserChildBirthDateRequired)]
+    [InlineData("2016-07-04", "2008-07-04", DomainErrorCode.UserChildBirthDateNotMinor)]
+    [InlineData("1986-07-04", "1986-07-05", DomainErrorCode.UserChildBirthDateNotMinor)]
+    [InlineData("2016-07-04", "2026-07-05", DomainErrorCode.UserChildBirthDateInFuture)]
     public void PlanProfileChangeDependentBirthDateMustKeepItAMinorOnlyWhenItChanges(
         string stored,
         string? requested,
-        ErrorCode? expected
+        DomainErrorCode? expected
     )
     {
         var guardian = StoredAdult();
@@ -422,16 +439,16 @@ public sealed class UserProfileRulesTests
     {
         var account = AdultChangingEmail();
 
-        account.Email.Should().Be("ana@test.com");
-        account.Phone.Should().Be("600999999");
-        account.PendingEmail.Should().Be("new@test.com");
+        account.Email!.Value.Should().Be("ana@test.com");
+        account.Phone!.Value.Should().Be("600999999");
+        account.PendingEmail!.Value.Should().Be("new@test.com");
         account.UsableEmailChangeCodeHash(Now.AddMinutes(15)).Should().Be("hash");
         account.UsableEmailChangeCodeHash(Now.AddMinutes(16)).Should().BeNull();
         account.UpdatedAt.Should().Be(Now);
 
         account.ConfirmEmailChange(Now.AddMinutes(1));
 
-        account.Email.Should().Be("new@test.com");
+        account.Email!.Value.Should().Be("new@test.com");
         account.PendingEmail.Should().BeNull();
         account.EmailChangeCodeHash.Should().BeNull();
         account.EmailChangeExpiresAt.Should().BeNull();
@@ -453,7 +470,7 @@ public sealed class UserProfileRulesTests
             );
 
         act.Should().Throw<ArgumentException>();
-        account.Phone.Should().Be("600111222");
+        account.Phone!.Value.Should().Be("600111222");
         account.PendingEmail.Should().BeNull();
         account.UpdatedAt.Should().BeNull();
     }
@@ -465,7 +482,7 @@ public sealed class UserProfileRulesTests
 
         account.ApplyProfileChange(NewEmailChange(account, "set-directly@test.com"), Now);
 
-        account.Email.Should().Be("set-directly@test.com");
+        account.Email!.Value.Should().Be("set-directly@test.com");
         account.PendingEmail.Should().BeNull();
         account.UsableEmailChangeCodeHash(Now).Should().BeNull();
     }
@@ -480,8 +497,8 @@ public sealed class UserProfileRulesTests
             Now
         );
 
-        account.Email.Should().Be("ana@test.com");
-        account.PendingEmail.Should().Be("new@test.com");
+        account.Email!.Value.Should().Be("ana@test.com");
+        account.PendingEmail!.Value.Should().Be("new@test.com");
         account.UsableEmailChangeCodeHash(Now).Should().Be("hash");
     }
 
@@ -493,7 +510,7 @@ public sealed class UserProfileRulesTests
         var act = () => account.ConfirmEmailChange(Now);
 
         act.Should().Throw<InvalidOperationException>();
-        account.Email.Should().Be("ana@test.com");
+        account.Email!.Value.Should().Be("ana@test.com");
         account.UpdatedAt.Should().BeNull();
     }
 }

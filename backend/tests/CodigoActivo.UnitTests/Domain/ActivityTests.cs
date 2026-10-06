@@ -1,6 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
@@ -53,11 +56,17 @@ public sealed class ActivityTests
     private static Activity NewActivity(RoleCapacityPlan? capacities = null)
     {
         return Activity.Create(
-            Guid.NewGuid(),
-            new ActivityDetails("Taller", "{}", "Sala", Guid.NewGuid(), Guid.NewGuid()),
+            EventId.From(Guid.NewGuid()),
+            new ActivityDetails(
+                "Taller",
+                "{}",
+                "Sala",
+                ActivityModality.Presencial,
+                StoredFileId.From(Guid.NewGuid())
+            ),
             Schedule(),
             capacities ?? RoleCapacityPlan.None,
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             Now
         );
     }
@@ -77,7 +86,7 @@ public sealed class ActivityTests
             TimeZoneInfo.Utc
         );
 
-        schedule.ShouldFail(ErrorKind.Validation, ErrorCode.ActivityScheduleRequired);
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleRequired);
     }
 
     [Theory]
@@ -93,7 +102,7 @@ public sealed class ActivityTests
             TimeZoneInfo.Utc
         );
 
-        schedule.ShouldFail(ErrorKind.Validation, ErrorCode.ActivityScheduleInvalidRange);
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleInvalidRange);
     }
 
     [Theory]
@@ -121,7 +130,7 @@ public sealed class ActivityTests
         var inZone = ActivitySchedule.Create(startsAt, endsAt, EventStart, EventEnd, zone);
 
         inUtc.IsSuccess.Should().BeTrue();
-        inZone.ShouldFail(ErrorKind.Validation, ErrorCode.ActivityScheduleOutsideEventRange);
+        inZone.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleOutsideEventRange);
     }
 
     [Fact]
@@ -135,7 +144,7 @@ public sealed class ActivityTests
 
         ActivitySchedule
             .Create(startsAt, endsAt, EventStart, EventEnd, TimeZoneInfo.Utc)
-            .ShouldFail(ErrorKind.Validation, ErrorCode.ActivityScheduleOutsideEventRange);
+            .ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleOutsideEventRange);
         schedule
             .Value.StartsAt.Should()
             .BeExactly(new DateTimeOffset(2026, 6, 30, 22, 30, 0, TimeSpan.Zero));
@@ -148,11 +157,11 @@ public sealed class ActivityTests
     public void CapacityPlanCreateRoleListedTwiceReturnsRoleCapacityDuplicated()
     {
         var plan = RoleCapacityPlan.Create([
-            new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 5),
-            new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 8),
+            new RoleCapacity(ActivityRole.Participant, 5),
+            new RoleCapacity(ActivityRole.Participant, 8),
         ]);
 
-        plan.ShouldFail(ErrorKind.Validation, ErrorCode.ActivityRoleCapacityDuplicated);
+        plan.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityRoleCapacityDuplicated);
     }
 
     [Fact]
@@ -166,8 +175,8 @@ public sealed class ActivityTests
     [Fact]
     public void CapacityPlanCreateDistinctRolesKeepsThem()
     {
-        var participants = new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 12);
-        var volunteers = new RoleCapacity(SeedIds.ActivityRoleTypes.Volunteer, 3);
+        var participants = new RoleCapacity(ActivityRole.Participant, 12);
+        var volunteers = new RoleCapacity(ActivityRole.Volunteer, 3);
 
         var plan = RoleCapacityPlan.Create([participants, volunteers]);
 
@@ -181,11 +190,17 @@ public sealed class ActivityTests
     public void HasStartedByComparesWithStartTime(int minutesAfterStart, bool started)
     {
         var activity = Activity.Create(
-            Guid.NewGuid(),
-            new ActivityDetails("Taller", "{}", "Sala", Guid.NewGuid(), Guid.NewGuid()),
+            EventId.From(Guid.NewGuid()),
+            new ActivityDetails(
+                "Taller",
+                "{}",
+                "Sala",
+                ActivityModality.Presencial,
+                StoredFileId.From(Guid.NewGuid())
+            ),
             Schedule(),
             Plan(),
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             Now
         );
 
@@ -196,35 +211,41 @@ public sealed class ActivityTests
     public void CreateDetailsWithSpacesStoresTrimmedDetailsCapacitiesAndAuthor()
     {
         var eventId = Guid.NewGuid();
-        var modalityId = Guid.NewGuid();
+        var modality = ActivityModality.Online;
         var thumbnailId = Guid.NewGuid();
         var authorId = Guid.NewGuid();
         var schedule = Schedule();
 
         var activity = Activity.Create(
-            eventId,
-            new ActivityDetails("  Taller ", "{\"a\":1}", " Sala A  ", modalityId, thumbnailId),
+            EventId.From(eventId),
+            new ActivityDetails(
+                "  Taller ",
+                "{\"a\":1}",
+                " Sala A  ",
+                modality,
+                StoredFileId.From(thumbnailId)
+            ),
             schedule,
-            Plan(new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 12)),
-            authorId,
+            Plan(new RoleCapacity(ActivityRole.Participant, 12)),
+            UserId.From(authorId),
             Now
         );
 
-        activity.Id.Should().NotBeEmpty();
-        activity.EventId.Should().Be(eventId);
+        activity.Id.Value.Should().NotBeEmpty();
+        activity.EventId.Value.Should().Be(eventId);
         activity.Title.Should().Be("Taller");
         activity.Description.Should().Be("{\"a\":1}");
         activity.Location.Should().Be("Sala A");
-        activity.ActivityModalityTypeId.Should().Be(modalityId);
-        activity.ThumbnailId.Should().Be(thumbnailId);
-        activity.ActivityStartsAt.Should().Be(schedule.StartsAt);
-        activity.ActivityEndsAt.Should().Be(schedule.EndsAt);
+        activity.Modality.Should().Be(modality);
+        activity.ThumbnailId.Value.Should().Be(thumbnailId);
+        activity.Schedule.StartsAt.Should().Be(schedule.StartsAt);
+        activity.Schedule.EndsAt.Should().Be(schedule.EndsAt);
         var capacity = activity.RoleCapacities.Should().ContainSingle().Which;
         capacity.ActivityId.Should().Be(activity.Id);
-        capacity.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Participant);
+        capacity.Role.Should().Be(ActivityRole.Participant);
         capacity.DesiredCount.Should().Be(12);
         activity.Assignments.Should().BeEmpty();
-        activity.CreatedBy.Should().Be(authorId);
+        activity.CreatedBy.Value.Should().Be(authorId);
         activity.CreatedAt.Should().Be(Now);
         activity.UpdatedBy.Should().BeNull();
         activity.UpdatedAt.Should().BeNull();
@@ -235,32 +256,35 @@ public sealed class ActivityTests
     {
         var activity = NewActivity(
             Plan(
-                new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 5),
-                new RoleCapacity(SeedIds.ActivityRoleTypes.Leader, 1)
+                new RoleCapacity(ActivityRole.Participant, 5),
+                new RoleCapacity(ActivityRole.Leader, 1)
             )
         );
         var participants = activity.RoleCapacities.Single(capacity =>
-            capacity.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
+            capacity.Role == ActivityRole.Participant
         );
 
         activity.Update(
-            new ActivityDetails("Taller", "{}", "Sala", Guid.NewGuid(), activity.ThumbnailId),
+            new ActivityDetails(
+                "Taller",
+                "{}",
+                "Sala",
+                ActivityModality.Presencial,
+                activity.ThumbnailId
+            ),
             Schedule(),
             Plan(
-                new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 2),
-                new RoleCapacity(SeedIds.ActivityRoleTypes.Volunteer, 4)
+                new RoleCapacity(ActivityRole.Participant, 2),
+                new RoleCapacity(ActivityRole.Volunteer, 4)
             ),
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             Now
         );
 
         activity
-            .RoleCapacities.Select(capacity => (capacity.ActivityRoleTypeId, capacity.DesiredCount))
+            .RoleCapacities.Select(capacity => (capacity.Role, capacity.DesiredCount))
             .Should()
-            .BeEquivalentTo([
-                (SeedIds.ActivityRoleTypes.Participant, 2),
-                (SeedIds.ActivityRoleTypes.Volunteer, 4),
-            ]);
+            .BeEquivalentTo([(ActivityRole.Participant, 2), (ActivityRole.Volunteer, 4)]);
         activity.RoleCapacities.Should().Contain(participants);
         activity
             .RoleCapacities.Should()
@@ -270,33 +294,39 @@ public sealed class ActivityTests
     [Fact]
     public void UpdateNewDetailsReplacesThemKeepsSignupsAndRecordsEditor()
     {
-        var activity = NewActivity(Plan(new RoleCapacity(SeedIds.ActivityRoleTypes.Leader, 1)));
+        var activity = NewActivity(Plan(new RoleCapacity(ActivityRole.Leader, 1)));
         var userId = Guid.NewGuid();
-        activity.RequestAssignment(userId, SeedIds.ActivityRoleTypes.Participant, Now);
-        var modalityId = Guid.NewGuid();
+        activity.RequestAssignment(UserId.From(userId), ActivityRole.Participant, Now);
+        var modality = ActivityModality.Online;
         var thumbnailId = Guid.NewGuid();
         var editorId = Guid.NewGuid();
         var schedule = Schedule(StartsAt.AddDays(1));
 
         activity.Update(
-            new ActivityDetails(" Charla ", "{\"b\":2}", " Aula ", modalityId, thumbnailId),
+            new ActivityDetails(
+                " Charla ",
+                "{\"b\":2}",
+                " Aula ",
+                modality,
+                StoredFileId.From(thumbnailId)
+            ),
             schedule,
             RoleCapacityPlan.None,
-            editorId,
+            UserId.From(editorId),
             Now.AddDays(1)
         );
 
         activity.Title.Should().Be("Charla");
         activity.Description.Should().Be("{\"b\":2}");
         activity.Location.Should().Be("Aula");
-        activity.ActivityModalityTypeId.Should().Be(modalityId);
-        activity.ThumbnailId.Should().Be(thumbnailId);
-        activity.ActivityStartsAt.Should().Be(schedule.StartsAt);
-        activity.ActivityEndsAt.Should().Be(schedule.EndsAt);
+        activity.Modality.Should().Be(modality);
+        activity.ThumbnailId.Value.Should().Be(thumbnailId);
+        activity.Schedule.StartsAt.Should().Be(schedule.StartsAt);
+        activity.Schedule.EndsAt.Should().Be(schedule.EndsAt);
         activity.RoleCapacities.Should().BeEmpty();
-        activity.AssignmentOf(userId).Should().NotBeNull();
+        activity.AssignmentOf(UserId.From(userId)).Should().NotBeNull();
         activity.CreatedAt.Should().Be(Now);
-        activity.UpdatedBy.Should().Be(editorId);
+        activity.UpdatedBy.Should().Be(UserId.From(editorId));
         activity.UpdatedAt.Should().Be(Now.AddDays(1));
     }
 
@@ -306,16 +336,16 @@ public sealed class ActivityTests
         var activity = NewActivity();
         var userId = Guid.NewGuid();
 
-        var result = activity.RequestAssignment(userId, SeedIds.ActivityRoleTypes.Volunteer, Now);
+        var result = activity.RequestAssignment(UserId.From(userId), ActivityRole.Volunteer, Now);
 
         result.IsSuccess.Should().BeTrue();
         var assignment = activity.Assignments.Should().ContainSingle().Which;
-        assignment.UserId.Should().Be(userId);
+        assignment.UserId.Value.Should().Be(userId);
         assignment.ActivityId.Should().Be(activity.Id);
-        assignment.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
-        assignment.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
+        assignment.Role.Should().Be(ActivityRole.Volunteer);
+        assignment.Status.Should().Be(AssignmentStatus.Requested);
         assignment.CreatedAt.Should().Be(Now);
-        activity.AssignmentOf(userId).Should().BeSameAs(assignment);
+        activity.AssignmentOf(UserId.From(userId)).Should().BeSameAs(assignment);
     }
 
     [Fact]
@@ -323,25 +353,25 @@ public sealed class ActivityTests
     {
         var activity = NewActivity();
         var userId = Guid.NewGuid();
-        activity.RequestAssignment(userId, SeedIds.ActivityRoleTypes.Participant, Now);
+        activity.RequestAssignment(UserId.From(userId), ActivityRole.Participant, Now);
 
-        var result = activity.RequestAssignment(userId, SeedIds.ActivityRoleTypes.Volunteer, Now);
+        var result = activity.RequestAssignment(UserId.From(userId), ActivityRole.Volunteer, Now);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.ActivityAssignmentAlreadyExists);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.ActivityAssignmentAlreadyExists);
         activity
             .Assignments.Should()
             .ContainSingle()
-            .Which.ActivityRoleTypeId.Should()
-            .Be(SeedIds.ActivityRoleTypes.Participant);
+            .Which.Role.Should()
+            .Be(ActivityRole.Participant);
     }
 
     [Fact]
     public void AssignmentOfPersonNotSignedUpReturnsNull()
     {
         var activity = NewActivity();
-        activity.RequestAssignment(Guid.NewGuid(), SeedIds.ActivityRoleTypes.Participant, Now);
+        activity.RequestAssignment(UserId.From(Guid.NewGuid()), ActivityRole.Participant, Now);
 
-        activity.AssignmentOf(Guid.NewGuid()).Should().BeNull();
+        activity.AssignmentOf(UserId.From(Guid.NewGuid())).Should().BeNull();
     }
 
     [Fact]
@@ -350,14 +380,14 @@ public sealed class ActivityTests
         var activity = NewActivity();
         var userId = Guid.NewGuid();
         var otherId = Guid.NewGuid();
-        activity.RequestAssignment(userId, SeedIds.ActivityRoleTypes.Participant, Now);
-        activity.RequestAssignment(otherId, SeedIds.ActivityRoleTypes.Participant, Now);
+        activity.RequestAssignment(UserId.From(userId), ActivityRole.Participant, Now);
+        activity.RequestAssignment(UserId.From(otherId), ActivityRole.Participant, Now);
 
-        var result = activity.Unassign(userId);
+        var result = activity.Unassign(UserId.From(userId));
 
         result.IsSuccess.Should().BeTrue();
-        activity.AssignmentOf(userId).Should().BeNull();
-        activity.Assignments.Should().ContainSingle().Which.UserId.Should().Be(otherId);
+        activity.AssignmentOf(UserId.From(userId)).Should().BeNull();
+        activity.Assignments.Should().ContainSingle().Which.UserId.Value.Should().Be(otherId);
     }
 
     [Fact]
@@ -365,9 +395,9 @@ public sealed class ActivityTests
     {
         var activity = NewActivity();
 
-        var result = activity.Unassign(Guid.NewGuid());
+        var result = activity.Unassign(UserId.From(Guid.NewGuid()));
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.ActivityAssignmentNotFound);
+        result.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
     }
 
     [Fact]
@@ -375,17 +405,17 @@ public sealed class ActivityTests
     {
         var activity = NewActivity();
         var userId = Guid.NewGuid();
-        activity.RequestAssignment(userId, SeedIds.ActivityRoleTypes.Participant, Now);
-        activity.ChangeAssignmentStatus(userId, SeedIds.AssignmentStatusTypes.Confirmed);
+        activity.RequestAssignment(UserId.From(userId), ActivityRole.Participant, Now);
+        activity.ChangeAssignmentStatus(UserId.From(userId), AssignmentStatus.Confirmed);
 
-        var changed = activity.ChangeAssignmentRole(userId, SeedIds.ActivityRoleTypes.Leader);
+        var changed = activity.ChangeAssignmentRole(UserId.From(userId), ActivityRole.Leader);
 
         changed.Should().BeTrue();
         var assignment = activity.Assignments.Should().ContainSingle().Which;
-        assignment.UserId.Should().Be(userId);
+        assignment.UserId.Value.Should().Be(userId);
         assignment.ActivityId.Should().Be(activity.Id);
-        assignment.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
-        assignment.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        assignment.Role.Should().Be(ActivityRole.Leader);
+        assignment.Status.Should().Be(AssignmentStatus.Confirmed);
         assignment.CreatedAt.Should().Be(Now);
     }
 
@@ -394,10 +424,10 @@ public sealed class ActivityTests
     {
         var activity = NewActivity();
         var userId = Guid.NewGuid();
-        activity.RequestAssignment(userId, SeedIds.ActivityRoleTypes.Volunteer, Now);
-        var assignment = activity.AssignmentOf(userId);
+        activity.RequestAssignment(UserId.From(userId), ActivityRole.Volunteer, Now);
+        var assignment = activity.AssignmentOf(UserId.From(userId));
 
-        var changed = activity.ChangeAssignmentRole(userId, SeedIds.ActivityRoleTypes.Volunteer);
+        var changed = activity.ChangeAssignmentRole(UserId.From(userId), ActivityRole.Volunteer);
 
         changed.Should().BeFalse();
         activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(assignment);
@@ -409,7 +439,7 @@ public sealed class ActivityTests
         var activity = NewActivity();
 
         var act = () =>
-            activity.ChangeAssignmentRole(Guid.NewGuid(), SeedIds.ActivityRoleTypes.Leader);
+            activity.ChangeAssignmentRole(UserId.From(Guid.NewGuid()), ActivityRole.Leader);
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -419,23 +449,20 @@ public sealed class ActivityTests
     {
         var activity = NewActivity();
         var userId = Guid.NewGuid();
-        activity.RequestAssignment(userId, SeedIds.ActivityRoleTypes.Participant, Now);
+        activity.RequestAssignment(UserId.From(userId), ActivityRole.Participant, Now);
 
         var fromRequested = activity.ChangeAssignmentStatus(
-            userId,
-            SeedIds.AssignmentStatusTypes.Confirmed
+            UserId.From(userId),
+            AssignmentStatus.Confirmed
         );
         var fromConfirmed = activity.ChangeAssignmentStatus(
-            userId,
-            SeedIds.AssignmentStatusTypes.Denied
+            UserId.From(userId),
+            AssignmentStatus.Denied
         );
 
-        fromRequested.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
-        fromConfirmed.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
-        activity
-            .AssignmentOf(userId)!
-            .AssignmentStatusId.Should()
-            .Be(SeedIds.AssignmentStatusTypes.Denied);
+        fromRequested.Should().Be(AssignmentStatus.Requested);
+        fromConfirmed.Should().Be(AssignmentStatus.Confirmed);
+        activity.AssignmentOf(UserId.From(userId))!.Status.Should().Be(AssignmentStatus.Denied);
     }
 
     [Fact]
@@ -445,8 +472,8 @@ public sealed class ActivityTests
 
         var act = () =>
             activity.ChangeAssignmentStatus(
-                Guid.NewGuid(),
-                SeedIds.AssignmentStatusTypes.Confirmed
+                UserId.From(Guid.NewGuid()),
+                AssignmentStatus.Confirmed
             );
 
         act.Should().Throw<InvalidOperationException>();
