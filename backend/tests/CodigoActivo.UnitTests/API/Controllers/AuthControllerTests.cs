@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using AwesomeAssertions;
-using CodigoActivo.API.Controllers;
+using CodigoActivo.API.Accounts;
 using CodigoActivo.API.Security;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
@@ -26,7 +26,7 @@ public sealed class AuthControllerTests
     {
         var sessions = Substitute.For<IUserSessionRepository>();
         sessions
-            .EndAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .EndAsync(Arg.Any<UserSessionId>(), Arg.Any<UserId>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new InvalidOperationException("db down"));
         var validator = new SessionTicketValidator(
             new StartSessionCommandHandler(

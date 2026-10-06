@@ -60,7 +60,13 @@ public sealed class SessionTicketValidatorTests
                 TestContext.Current.CancellationToken
             );
 
-        await sessions.Received(1).EndAsync(sessionId, userId, Arg.Any<CancellationToken>());
+        await sessions
+            .Received(1)
+            .EndAsync(
+                UserSessionId.From(sessionId),
+                UserId.From(userId),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Theory]

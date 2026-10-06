@@ -61,22 +61,27 @@ public sealed class EmailGuardConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void AddCodigoActivoMissingOrInvalidValuesFallsBackToTheShippedLimits()
+    public void AddCodigoActivoMissingValuesTakeTheShippedLimits()
     {
-        var options = Build(
-            new Dictionary<string, string?>(StringComparer.Ordinal)
-            {
-                ["EmailGuard:RecipientBurst"] = "0",
-                ["EmailGuard:RecipientPerDay"] = "not-a-number",
-                ["EmailGuard:GlobalPerHour"] = "-5",
-                ["EmailGuard:SweepIntervalMinutes"] = "Infinity",
-            }
-        );
+        var options = Build(new Dictionary<string, string?>(StringComparer.Ordinal));
 
         options.RecipientBurst.Should().Be(EmailGuardOptions.DefaultRecipientBurst);
         options.RecipientPerDay.Should().Be(EmailGuardOptions.DefaultRecipientPerDay);
         options.GlobalPerHour.Should().Be(EmailGuardOptions.DefaultGlobalPerHour);
         options.SweepInterval.Should().Be(EmailGuardOptions.DefaultSweepInterval);
+    }
+
+    [Theory]
+    [InlineData("EmailGuard:RecipientBurst", "0")]
+    [InlineData("EmailGuard:RecipientPerDay", "not-a-number")]
+    [InlineData("EmailGuard:GlobalPerHour", "-5")]
+    [InlineData("EmailGuard:SweepIntervalMinutes", "Infinity")]
+    public void AddCodigoActivoUnusableValueStopsTheStart(string key, string value)
+    {
+        var act = () =>
+            Build(new Dictionary<string, string?>(StringComparer.Ordinal) { [key] = value });
+
+        act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
     }
 
     [Fact]

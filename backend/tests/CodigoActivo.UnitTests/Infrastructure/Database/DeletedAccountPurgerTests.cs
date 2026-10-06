@@ -1,8 +1,10 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
+using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -32,7 +34,10 @@ public sealed class DeletedAccountPurgerTests : IDisposable
         provider = new ServiceCollection()
             .AddScoped<IDeletedAccountRepository>(_ => deletedAccounts)
             .AddSingleton<IClock>(clock)
-            .AddScoped<PurgeDeletedAccountsCommandHandler>()
+            .AddScoped<
+                ICommandHandler<PurgeDeletedAccountsCommand, int>,
+                PurgeDeletedAccountsCommandHandler
+            >()
             .BuildServiceProvider();
     }
 

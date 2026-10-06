@@ -86,7 +86,10 @@ public sealed class ReadModelMappingTests : IDisposable
 
     private static Type StoredType(IProperty property)
     {
-        var type = property.GetProviderClrType() ?? property.ClrType;
+        var type =
+            property.GetValueConverter()?.ProviderClrType
+            ?? property.GetProviderClrType()
+            ?? property.ClrType;
         return Nullable.GetUnderlyingType(type) ?? type;
     }
 

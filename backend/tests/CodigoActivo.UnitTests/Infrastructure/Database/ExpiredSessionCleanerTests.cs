@@ -1,8 +1,10 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
+using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -25,7 +27,10 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         provider = new ServiceCollection()
             .AddScoped<IUserSessionRepository>(_ => sessions)
             .AddSingleton<IClock>(clock)
-            .AddScoped<RemoveExpiredSessionsCommandHandler>()
+            .AddScoped<
+                ICommandHandler<RemoveExpiredSessionsCommand, int>,
+                RemoveExpiredSessionsCommandHandler
+            >()
             .BuildServiceProvider();
     }
 
@@ -48,7 +53,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         sessions
             .RemoveExpiredAsync(
                 Arg.Any<DateTimeOffset>(),
-                Arg.Any<Guid?>(),
+                Arg.Any<UserId?>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(_ =>
@@ -64,7 +69,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         sessions
             .RemoveExpiredAsync(
                 Arg.Any<DateTimeOffset>(),
-                Arg.Any<Guid?>(),
+                Arg.Any<UserId?>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(3);
@@ -124,7 +129,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         sessions
             .RemoveExpiredAsync(
                 Arg.Any<DateTimeOffset>(),
-                Arg.Any<Guid?>(),
+                Arg.Any<UserId?>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns<Task<int>>(_ =>

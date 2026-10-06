@@ -6,6 +6,7 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
+using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -49,8 +50,8 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     [
         nameof(Assignment.UserId),
         nameof(Assignment.ActivityId),
-        nameof(Assignment.ActivityRoleTypeId),
-        nameof(Assignment.AssignmentStatusId),
+        nameof(Assignment.Role),
+        nameof(Assignment.Status),
         nameof(Assignment.CreatedAt),
     ];
 
@@ -85,6 +86,14 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         return Entity<T>().GetProperties().Select(property => property.Name);
     }
 
+    private static readonly Dictionary<string, string> UserPropertyOfCatalogId = new(
+        StringComparer.Ordinal
+    )
+    {
+        [nameof(LegalCopyPerson.UserTypeId)] = nameof(User.UserType),
+        [nameof(LegalCopyPerson.UserStatusTypeId)] = nameof(User.Status),
+    };
+
     private static List<string> CopiedUserProperties()
     {
         return
@@ -92,7 +101,8 @@ public sealed class DeletedAccountCoverageTests : IDisposable
             .. typeof(LegalCopyPerson)
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Select(property => property.Name)
-                .Except(LegalCopyPerson.CatalogNameProperties),
+                .Except(LegalCopyPerson.CatalogNameProperties)
+                .Select(name => UserPropertyOfCatalogId.GetValueOrDefault(name, name)),
         ];
     }
 
@@ -201,7 +211,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     [Fact]
     public void SaveChangesDeletingTheInitialAdministratorIsRefusedEvenWithItsCopy()
     {
-        var administrator = NewUser(id: SeedIds.Users.InitialAdministrator);
+        var administrator = NewUser(id: KnownIds.Users.InitialAdministrator);
         context.Users.Attach(administrator);
         context.Users.Remove(administrator);
         context.DeletedAccounts.Add(Persisted.As<DeletedAccount>(new { Id = administrator.Id }));

@@ -8,6 +8,7 @@ using CodigoActivo.Infrastructure.Communication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Composition;
@@ -117,28 +118,57 @@ public sealed class EmailSenderWiringTests
     }
 
     [Fact]
-    public void AddCodigoActivoQueueSettingsAreReadAndClamped()
+    public void AddCodigoActivoQueueSettingsAreRead()
     {
         using var provider = BuildProvider(
             new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["EmailQueue:Capacity"] = "25",
-                ["EmailQueue:Workers"] = "999",
-                ["EmailQueue:BatchSize"] = "9999",
+                ["EmailQueue:Workers"] = "3",
+                ["EmailQueue:BatchSize"] = "50",
                 ["EmailQueue:PollIntervalSeconds"] = "2",
-                ["EmailQueue:SendTimeoutSeconds"] = "99999",
-                ["EmailQueue:ShutdownDrainSeconds"] = "0",
+                ["EmailQueue:SendTimeoutSeconds"] = "90",
+                ["EmailQueue:ShutdownDrainSeconds"] = "30",
             }
         );
 
         var options = provider.GetRequiredService<EmailQueueOptions>();
 
         options.Capacity.Should().Be(25);
-        options.Workers.Should().Be(EmailQueueOptions.MaxWorkers);
-        options.BatchSize.Should().Be(EmailQueueOptions.MaxBatchSize);
+        options.Workers.Should().Be(3);
+        options.BatchSize.Should().Be(50);
         options.PollInterval.Should().Be(TimeSpan.FromSeconds(2));
-        options.SendTimeout.Should().Be(EmailQueueOptions.MaxSendTimeout);
-        options.ShutdownDrain.Should().Be(EmailQueueOptions.DefaultShutdownDrain);
+        options.SendTimeout.Should().Be(TimeSpan.FromSeconds(90));
+        options.ShutdownDrain.Should().Be(TimeSpan.FromSeconds(30));
+    }
+
+    [Theory]
+    [InlineData("EmailQueue:Workers", "999")]
+    [InlineData("EmailQueue:BatchSize", "9999")]
+    [InlineData("EmailQueue:SendTimeoutSeconds", "99999")]
+    public void AddCodigoActivoQueueSettingAboveItsLimitStopsTheStart(string key, string value)
+    {
+        using var provider = BuildProvider(
+            new Dictionary<string, string?>(StringComparer.Ordinal) { [key] = value }
+        );
+
+        var act = () => provider.GetRequiredService<EmailQueueOptions>();
+
+        act.Should().Throw<OptionsValidationException>().WithMessage("*EmailQueue*limits*");
+    }
+
+    [Theory]
+    [InlineData("EmailQueue:Capacity", "zero")]
+    [InlineData("EmailQueue:ShutdownDrainSeconds", "0")]
+    public void AddCodigoActivoUnusableQueueSettingStopsTheStart(string key, string value)
+    {
+        using var provider = BuildProvider(
+            new Dictionary<string, string?>(StringComparer.Ordinal) { [key] = value }
+        );
+
+        var act = () => provider.GetRequiredService<EmailQueueOptions>();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
     }
 
     private static ServiceProvider BuildProvider(Dictionary<string, string?>? settings = null)

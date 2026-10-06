@@ -28,24 +28,30 @@ public sealed class DisposableEmailDomainWiringTests
 
     private static DisposableEmailDomainOptions Options(string? sourceUrl)
     {
-        return (DisposableEmailDomainOptions)
-            Build(sourceUrl)
-                .Single(descriptor =>
-                    descriptor.ServiceType == typeof(DisposableEmailDomainOptions)
-                )
-                .ImplementationInstance!;
+        using var provider = Build(sourceUrl).BuildServiceProvider();
+        return provider.GetRequiredService<DisposableEmailDomainOptions>();
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
+    public void SourceUrlMissingTakesTheDefault(string? value)
+    {
+        Options(value).SourceUrl.Should().Be(DisposableEmailDomainOptions.DefaultSourceUrl);
+    }
+
+    [Theory]
     [InlineData("not a url")]
     [InlineData("/relative/list.conf")]
     [InlineData("http://mirror.example.test/list.conf")]
     [InlineData("ftp://mirror.example.test/list.conf")]
-    public void SourceUrlMissingInvalidOrInsecureFallsBackToTheDefault(string? value)
+    public void SourceUrlInvalidOrInsecureStopsTheStart(string value)
     {
-        Options(value).SourceUrl.Should().Be(DisposableEmailDomainOptions.DefaultSourceUrl);
+        var act = () => Options(value);
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*DisposableEmailDomains:SourceUrl*");
     }
 
     [Fact]

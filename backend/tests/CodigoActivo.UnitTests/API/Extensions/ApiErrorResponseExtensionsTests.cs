@@ -1,7 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -65,7 +67,7 @@ public sealed class ApiErrorResponseExtensionsTests
         string expectedTitle
     )
     {
-        var error = new Error(kind, ErrorCode.PartnerNotFound);
+        var error = new ApiError(kind, ErrorCode.PartnerNotFound);
 
         var (status, body) = ApiErrorResponseExtensions.Create(error, ContextWithTrace());
 
@@ -77,7 +79,7 @@ public sealed class ApiErrorResponseExtensionsTests
     [Fact]
     public void CreateOutOfRangeKindThrowsArgumentOutOfRangeException()
     {
-        var error = new Error((ErrorKind)99, ErrorCode.UnexpectedError);
+        var error = new ApiError((ErrorKind)99, ErrorCode.UnexpectedError);
 
         var act = () => ApiErrorResponseExtensions.Create(error, ContextWithTrace());
 
@@ -100,7 +102,7 @@ public sealed class ApiErrorResponseExtensionsTests
     public void ToOkFailureResultReturnsProblem()
     {
         var controller = NewController();
-        Result<int> result = Error.NotFound(ErrorCode.PartnerNotFound);
+        Result<int> result = Error.NotFound(ApplicationErrorCode.PartnerNotFound);
 
         var actionResult = controller.ToOk(result);
 
@@ -129,7 +131,7 @@ public sealed class ApiErrorResponseExtensionsTests
     public void ToNoContentFailureResultReturnsProblem()
     {
         var controller = NewController();
-        Result result = Error.Conflict(ErrorCode.PartnerNotFound);
+        Result result = Error.Conflict(ApplicationErrorCode.PartnerNotFound);
 
         var actionResult = controller.ToNoContent(result);
 
@@ -142,7 +144,7 @@ public sealed class ApiErrorResponseExtensionsTests
     public void ToProblemErrorWithTraceIdBuildsObjectResultWithStatusAndTrace()
     {
         var controller = NewController("trace-problem");
-        var error = Error.Validation(ErrorCode.PartnerThumbnailNotFound);
+        var error = Error.Validation(ApplicationErrorCode.PartnerThumbnailNotFound);
 
         var actionResult = controller.ToProblem(error);
 

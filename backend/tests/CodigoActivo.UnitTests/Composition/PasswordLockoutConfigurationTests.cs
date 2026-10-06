@@ -45,12 +45,22 @@ public sealed class PasswordLockoutConfigurationTests : IDisposable
         provider.GetRequiredService<PasswordLockoutOptions>().MaxFailedAttempts.Should().Be(8);
     }
 
+    [Fact]
+    public void AddCodigoActivoMissingValueTakesTheDefault()
+    {
+        var provider = Build(new Dictionary<string, string?>(StringComparer.Ordinal));
+
+        provider
+            .GetRequiredService<PasswordLockoutOptions>()
+            .MaxFailedAttempts.Should()
+            .Be(PasswordLockoutOptions.DefaultMaxFailedAttempts);
+    }
+
     [Theory]
-    [InlineData(null)]
     [InlineData("zero")]
     [InlineData("0")]
     [InlineData("-3")]
-    public void AddCodigoActivoMissingOrInvalidValueDefaultsPasswordLockoutOptions(string? value)
+    public void AddCodigoActivoUnusableValueStopsTheStart(string value)
     {
         var provider = Build(
             new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -59,10 +69,11 @@ public sealed class PasswordLockoutConfigurationTests : IDisposable
             }
         );
 
-        provider
-            .GetRequiredService<PasswordLockoutOptions>()
-            .MaxFailedAttempts.Should()
-            .Be(PasswordLockoutOptions.DefaultMaxFailedAttempts);
+        var act = () => provider.GetRequiredService<PasswordLockoutOptions>();
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*PasswordLockout:MaxFailedAttempts*");
     }
 
     [Fact]

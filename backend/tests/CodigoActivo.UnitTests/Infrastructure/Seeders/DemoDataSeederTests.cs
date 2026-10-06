@@ -4,6 +4,8 @@ using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.UnitTests.TestSupport;
@@ -92,10 +94,10 @@ public sealed class DemoDataSeederTests
             .Events.Should()
             .AllSatisfy(ev =>
             {
-                ev.EventEndsAt.Should().BeOnOrAfter(ev.EventStartsAt);
-                ev.SignupEndsAt.Should().BeAfter(ev.SignupStartsAt);
-                LocalDate(ev.SignupStartsAt).Should().BeOnOrBefore(ev.EventEndsAt);
-                ev.CreatedAt.Should().BeOnOrBefore(ev.SignupStartsAt);
+                ev.Calendar.End.Should().BeOnOrAfter(ev.Calendar.Start);
+                ev.SignupWindow.EndsAt.Should().BeAfter(ev.SignupWindow.StartsAt);
+                LocalDate(ev.SignupWindow.StartsAt).Should().BeOnOrBefore(ev.Calendar.End);
+                ev.CreatedAt.Should().BeOnOrBefore(ev.SignupWindow.StartsAt);
                 ev.CreatedAt.Should().BeOnOrBefore(clock.UtcNow);
             });
     }
@@ -103,8 +105,8 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultLeavesFiveUpcomingEventsAndFinishesTheRest()
     {
-        var upcoming = graph.Events.Where(e => e.EventEndsAt >= clock.Today).ToList();
-        var finished = graph.Events.Where(e => e.EventEndsAt < clock.Today).ToList();
+        var upcoming = graph.Events.Where(e => e.Calendar.End >= clock.Today).ToList();
+        var finished = graph.Events.Where(e => e.Calendar.End < clock.Today).ToList();
 
         upcoming.Should().HaveCount(5);
         finished.Should().HaveCount(15);
@@ -116,7 +118,7 @@ public sealed class DemoDataSeederTests
         var featured = graph.Events.Where(e => e.Featured).ToList();
 
         featured.Should().ContainSingle();
-        featured[0].EventEndsAt.Should().BeOnOrAfter(clock.Today);
+        featured[0].Calendar.End.Should().BeOnOrAfter(clock.Today);
     }
 
     [Fact]
@@ -129,9 +131,9 @@ public sealed class DemoDataSeederTests
     public void BuildGraphDefaultKeepsSomeUpcomingSignupsOpen()
     {
         var open = graph.Events.Where(e =>
-            e.EventEndsAt >= clock.Today
-            && e.SignupStartsAt <= clock.UtcNow
-            && e.SignupEndsAt >= clock.UtcNow
+            e.Calendar.End >= clock.Today
+            && e.SignupWindow.StartsAt <= clock.UtcNow
+            && e.SignupWindow.EndsAt >= clock.UtcNow
         );
 
         open.Should().NotBeEmpty();
@@ -149,7 +151,7 @@ public sealed class DemoDataSeederTests
             {
                 var ev = eventsById[eventByActivity[assignment.ActivityId]];
                 assignment.CreatedAt.Should().BeOnOrAfter(ev.CreatedAt);
-                assignment.CreatedAt.Should().BeOnOrBefore(ev.SignupEndsAt);
+                assignment.CreatedAt.Should().BeOnOrBefore(ev.SignupWindow.EndsAt);
                 assignment.CreatedAt.Should().BeOnOrBefore(clock.UtcNow);
             });
     }
@@ -191,9 +193,9 @@ public sealed class DemoDataSeederTests
             .AllSatisfy(activity =>
             {
                 var ev = eventsById[activity.EventId];
-                activity.ActivityEndsAt.Should().BeAfter(activity.ActivityStartsAt);
-                LocalDate(activity.ActivityStartsAt).Should().BeOnOrAfter(ev.EventStartsAt);
-                LocalDate(activity.ActivityEndsAt).Should().BeOnOrBefore(ev.EventEndsAt);
+                activity.Schedule.EndsAt.Should().BeAfter(activity.Schedule.StartsAt);
+                LocalDate(activity.Schedule.StartsAt).Should().BeOnOrAfter(ev.Calendar.Start);
+                LocalDate(activity.Schedule.EndsAt).Should().BeOnOrBefore(ev.Calendar.End);
             });
     }
 
@@ -201,7 +203,7 @@ public sealed class DemoDataSeederTests
     public void BuildGraphDefaultEachActivityHasFiveDistinctUsers()
     {
         var openEventIds = graph
-            .Events.Where(ev => ev.SignupStartsAt < clock.UtcNow)
+            .Events.Where(ev => ev.SignupWindow.StartsAt < clock.UtcNow)
             .Select(ev => ev.Id)
             .ToHashSet();
         var byActivity = Assignments.GroupBy(x => x.ActivityId).ToList();
@@ -223,15 +225,17 @@ public sealed class DemoDataSeederTests
             .Activities.Where(activity => activity.Assignments.Count > 0)
             .Should()
             .OnlyContain(activity =>
-                events[activity.EventId].SignupStartsAt < clock.UtcNow
+                events[activity.EventId].SignupWindow.StartsAt < clock.UtcNow
                 && activity.Assignments.All(assignment =>
-                    assignment.CreatedAt >= events[activity.EventId].SignupStartsAt
-                    && assignment.CreatedAt <= events[activity.EventId].SignupEndsAt
+                    assignment.CreatedAt >= events[activity.EventId].SignupWindow.StartsAt
+                    && assignment.CreatedAt <= events[activity.EventId].SignupWindow.EndsAt
                     && assignment.CreatedAt <= clock.UtcNow
                 )
             );
         graph
-            .Activities.Where(activity => events[activity.EventId].SignupStartsAt >= clock.UtcNow)
+            .Activities.Where(activity =>
+                events[activity.EventId].SignupWindow.StartsAt >= clock.UtcNow
+            )
             .Should()
             .OnlyContain(activity => activity.Assignments.Count == 0);
     }
@@ -243,37 +247,31 @@ public sealed class DemoDataSeederTests
 
         byActivity
             .Should()
-            .OnlyContain(g =>
-                g.Where(x => x.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader)
-                    .Take(2)
-                    .Count() == 1
-            );
+            .OnlyContain(g => g.Where(x => x.Role == ActivityRole.Leader).Take(2).Count() == 1);
     }
 
     [Fact]
     public void BuildGraphDefaultEveryAssignedRoleComesFromTheFixedCatalog()
     {
-        var catalog = new HashSet<Guid>
+        var catalog = new HashSet<ActivityRole>
         {
-            SeedIds.ActivityRoleTypes.Leader,
-            SeedIds.ActivityRoleTypes.Volunteer,
-            SeedIds.ActivityRoleTypes.Participant,
+            ActivityRole.Leader,
+            ActivityRole.Volunteer,
+            ActivityRole.Participant,
         };
 
-        Assignments.Should().OnlyContain(x => catalog.Contains(x.ActivityRoleTypeId));
+        Assignments.Should().OnlyContain(x => catalog.Contains(x.Role));
     }
 
     [Fact]
     public void BuildGraphDefaultLeaderAssignmentsBelongToMemberTypeUsers()
     {
         var memberIds = graph
-            .Users.Where(u => u.UserTypeId == SeedIds.UserTypes.Member)
+            .Users.Where(u => u.UserType == UserType.Member)
             .Select(u => u.Id)
             .ToHashSet();
 
-        var leaders = Assignments
-            .Where(x => x.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Leader)
-            .ToList();
+        var leaders = Assignments.Where(x => x.Role == ActivityRole.Leader).ToList();
 
         leaders.Should().NotBeEmpty();
         leaders.Should().OnlyContain(x => memberIds.Contains(x.UserId));
@@ -284,21 +282,18 @@ public sealed class DemoDataSeederTests
     {
         var userIds = graph.Users.Select(u => u.Id).ToHashSet();
 
-        Assignments
-            .Select(x => (x.UserId, x.ActivityId, x.ActivityRoleTypeId))
-            .Should()
-            .OnlyHaveUniqueItems();
+        Assignments.Select(x => (x.UserId, x.ActivityId, x.Role)).Should().OnlyHaveUniqueItems();
         Assignments.Should().OnlyContain(x => userIds.Contains(x.UserId));
     }
 
     [Fact]
     public void BuildGraphDefaultRoleCapacitiesAreDeterministicAndFromTheCatalog()
     {
-        var catalog = new HashSet<Guid>
+        var catalog = new HashSet<ActivityRole>
         {
-            SeedIds.ActivityRoleTypes.Leader,
-            SeedIds.ActivityRoleTypes.Volunteer,
-            SeedIds.ActivityRoleTypes.Participant,
+            ActivityRole.Leader,
+            ActivityRole.Volunteer,
+            ActivityRole.Participant,
         };
         var withCapacities = graph.Activities.Where(a => a.RoleCapacities.Count > 0).ToList();
 
@@ -307,12 +302,10 @@ public sealed class DemoDataSeederTests
         withCapacities
             .SelectMany(a => a.RoleCapacities)
             .Should()
-            .OnlyContain(c => c.DesiredCount >= 1 && catalog.Contains(c.ActivityRoleTypeId));
+            .OnlyContain(c => c.DesiredCount >= 1 && catalog.Contains(c.Role));
         withCapacities
             .Should()
-            .AllSatisfy(a =>
-                a.RoleCapacities.Select(c => c.ActivityRoleTypeId).Should().OnlyHaveUniqueItems()
-            );
+            .AllSatisfy(a => a.RoleCapacities.Select(c => c.Role).Should().OnlyHaveUniqueItems());
     }
 
     [Fact]
@@ -323,8 +316,8 @@ public sealed class DemoDataSeederTests
                 Assignments
                     .Where(x =>
                         x.ActivityId == activity.Id
-                        && x.ActivityRoleTypeId == capacity.ActivityRoleTypeId
-                        && x.AssignmentStatusId != SeedIds.AssignmentStatusTypes.Denied
+                        && x.Role == capacity.Role
+                        && x.Status != AssignmentStatus.Denied
                     )
                     .Skip(capacity.DesiredCount)
                     .Any()
@@ -366,8 +359,8 @@ public sealed class DemoDataSeederTests
             .AllSatisfy(adult =>
             {
                 adult.BirthDate.Should().BeNull();
-                adult.NationalId.Should().NotBeNull().And.HaveLength(9);
-                SpanishNationalId.IsValid(adult.NationalId).Should().BeTrue();
+                adult.NationalId!.Value.Should().HaveLength(9);
+                SpanishNationalId.IsValid(adult.NationalId!.Value).Should().BeTrue();
             });
         adults.Select(u => u.NationalId).Should().OnlyHaveUniqueItems();
         adults.Should().Contain(u => u.PromotionalConsent);
@@ -384,16 +377,16 @@ public sealed class DemoDataSeederTests
             .Should()
             .AllSatisfy(adult =>
             {
-                adult.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
+                adult.Status.Should().Be(UserStatus.Active);
                 adult.CanSignIn.Should().BeTrue();
                 adult.OtpCodeHash.Should().BeNull();
                 adult.LastLoginAt.Should().NotBeNull().And.BeOnOrBefore(clock.UtcNow);
             });
         adults
-            .Select(u => u.UserTypeId)
+            .Select(u => u.UserType)
             .Distinct()
             .Should()
-            .BeEquivalentTo([SeedIds.UserTypes.Member, SeedIds.UserTypes.Sponsor]);
+            .BeEquivalentTo([UserType.Member, UserType.Sponsor]);
     }
 
     [Fact]
@@ -434,8 +427,8 @@ public sealed class DemoDataSeederTests
                 child.Email.Should().BeNull();
                 child.Phone.Should().BeNull();
                 child.PasswordHash.Should().BeNull();
-                child.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Dependent);
-                child.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
+                child.Status.Should().Be(UserStatus.Dependent);
+                child.UserType.Should().Be(UserType.Participant);
                 child.BirthDate.Should().NotBeNull();
                 child.BirthDate!.Value.Year.Should().BeGreaterThan(2008);
                 child.NationalId.Should().BeNull();
@@ -494,7 +487,7 @@ public sealed class DemoDataSeederTests
             .Should()
             .AllSatisfy(value =>
             {
-                using var doc = JsonDocument.Parse(value);
+                using var doc = JsonDocument.Parse(value.Json);
                 doc.RootElement.GetProperty("type").GetString().Should().Be("doc");
             });
     }
@@ -508,7 +501,7 @@ public sealed class DemoDataSeederTests
         graph
             .Ratings.Should()
             .AllSatisfy(rating =>
-                eventsById[rating.EventId].EventEndsAt.Should().BeBefore(clock.Today)
+                eventsById[rating.EventId].Calendar.End.Should().BeBefore(clock.Today)
             );
     }
 
@@ -516,7 +509,7 @@ public sealed class DemoDataSeederTests
     public void BuildGraphDefaultSomeFinishedEventsHaveNoRatings()
     {
         var ratedEventIds = graph.Ratings.Select(r => r.EventId).ToHashSet();
-        var finished = graph.Events.Where(e => e.EventEndsAt < clock.Today).ToList();
+        var finished = graph.Events.Where(e => e.Calendar.End < clock.Today).ToList();
 
         finished.Should().Contain(ev => ratedEventIds.Contains(ev.Id));
         finished.Should().Contain(ev => !ratedEventIds.Contains(ev.Id));
@@ -565,8 +558,8 @@ public sealed class DemoDataSeederTests
             .Should()
             .AllSatisfy(r =>
             {
-                r.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.External);
-                r.Description.Should().Be("{}");
+                r.ResourceType.Should().Be(ResourceType.External);
+                r.Description.Json.Should().Be("{}");
                 Uri.TryCreate(r.Url, UriKind.Absolute, out var uri).Should().BeTrue();
                 uri!.Scheme.Should().Be(Uri.UriSchemeHttps);
             });
@@ -576,8 +569,8 @@ public sealed class DemoDataSeederTests
             .Should()
             .AllSatisfy(r =>
             {
-                r.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.Internal);
-                RichTextDocument.IsEmpty(r.Description).Should().BeFalse();
+                r.ResourceType.Should().Be(ResourceType.Internal);
+                r.Description.IsEmpty.Should().BeFalse();
             });
     }
 }
