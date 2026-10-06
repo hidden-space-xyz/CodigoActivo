@@ -46,7 +46,9 @@ public sealed class PasswordAttemptGuardTests
 
     private Task AssertSessionsRevokedAsync(int times)
     {
-        return sessions.Received(times).EndAllAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        return sessions
+            .Received(times)
+            .EndAllAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>());
     }
 
     private Task AssertFailuresCountedAsync(int times)
@@ -188,11 +190,11 @@ public sealed class PasswordAttemptGuardTests
             .And.NotContain(user.Id.ToString())
             .And.NotContain(Correct)
             .And.NotContain("guessed-secret")
-            .And.NotContain(user.Email!);
+            .And.NotContain(user.Email!.Value);
 
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email);
+        message.ToAddress.Should().Be(user.Email!.Value);
         message.TextBody.Should().NotContain(Correct).And.NotContain("#userId=");
     }
 

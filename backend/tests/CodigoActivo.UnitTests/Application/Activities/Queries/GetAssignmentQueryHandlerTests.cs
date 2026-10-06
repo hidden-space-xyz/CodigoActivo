@@ -37,9 +37,9 @@ public sealed class GetAssignmentQueryHandlerTests
             NewAssignmentRow(
                 userId,
                 activityId,
-                SeedIds.ActivityRoleTypes.Volunteer,
+                KnownIds.ActivityRoleTypes.Volunteer,
                 "Voluntario",
-                SeedIds.AssignmentStatusTypes.Confirmed,
+                KnownIds.AssignmentStatusTypes.Confirmed,
                 "Confirmada"
             ),
         ]);
@@ -53,10 +53,10 @@ public sealed class GetAssignmentQueryHandlerTests
                 new AssignmentResponse(
                     userId,
                     activityId,
-                    SeedIds.ActivityRoleTypes.Volunteer,
+                    KnownIds.ActivityRoleTypes.Volunteer,
                     "Voluntario",
                     new AssignmentStatusResponse(
-                        SeedIds.AssignmentStatusTypes.Confirmed,
+                        KnownIds.AssignmentStatusTypes.Confirmed,
                         "Confirmada"
                     )
                 )
@@ -75,6 +75,6 @@ public sealed class GetAssignmentQueryHandlerTests
 
         var result = await QueryAsync(activityId, userId);
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.ActivityAssignmentNotFound);
+        result.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
     }
 }

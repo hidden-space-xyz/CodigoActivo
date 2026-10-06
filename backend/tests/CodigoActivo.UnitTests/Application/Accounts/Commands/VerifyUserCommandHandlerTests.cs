@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -40,11 +41,11 @@ public sealed class VerifyUserCommandHandlerTests
         users.FindReturns(null);
 
         var result = await sut.HandleAsync(
-            new VerifyUserCommand(Guid.NewGuid(), "123456"),
+            new VerifyUserCommand(UserId.New(), "123456"),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
@@ -53,7 +54,7 @@ public sealed class VerifyUserCommandHandlerTests
     {
         var user = users.FindReturns(
             NewUser(
-                statusId: SeedIds.UserStatusTypes.Active,
+                statusId: KnownIds.UserStatusTypes.Active,
                 otpCodeHash: FakePasswordHasher.Prefix + "123456",
                 otpExpiresAt: clock.UtcNow.AddMinutes(5)
             )
@@ -64,7 +65,7 @@ public sealed class VerifyUserCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.OtpInvalidOrExpired);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
         await AssertNotSavedAsync();
     }
 
@@ -89,7 +90,7 @@ public sealed class VerifyUserCommandHandlerTests
     {
         var user = users.FindReturns(
             NewUser(
-                statusId: SeedIds.UserStatusTypes.Pending,
+                statusId: KnownIds.UserStatusTypes.Pending,
                 otpCodeHash: hasStoredHash ? FakePasswordHasher.Prefix + "123456" : null,
                 otpExpiresAt: expiresInMinutes is null
                     ? null
@@ -102,7 +103,7 @@ public sealed class VerifyUserCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.OtpInvalidOrExpired);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
         await AssertNotSavedAsync();
     }
 
@@ -116,8 +117,8 @@ public sealed class VerifyUserCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.OtpInvalidOrExpired);
-        user.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
+        user.Status.Should().Be(UserStatus.Pending);
         await AssertNotSavedAsync();
     }
 
@@ -132,7 +133,7 @@ public sealed class VerifyUserCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        user.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
+        user.Status.Should().Be(UserStatus.Active);
         user.OtpCodeHash.Should().BeNull();
         user.OtpExpiresAt.Should().BeNull();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());

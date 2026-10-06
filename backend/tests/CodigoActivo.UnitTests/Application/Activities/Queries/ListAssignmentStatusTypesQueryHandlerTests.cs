@@ -13,11 +13,7 @@ public sealed class ListAssignmentStatusTypesQueryHandlerTests
 
     public ListAssignmentStatusTypesQueryHandlerTests()
     {
-        sut = new ListAssignmentStatusTypesQueryHandler(
-            store,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
-        );
+        sut = new ListAssignmentStatusTypesQueryHandler(store, new FakeQueryExecutor());
     }
 
     [Fact]

@@ -1,10 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Partners.Commands;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
@@ -16,14 +13,11 @@ namespace CodigoActivo.UnitTests.Application.Partners.Commands;
 public sealed class DeletePartnerCommandHandlerTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
-    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly DeletePartnerCommandHandler sut;
 
     public DeletePartnerCommandHandlerTests()
     {
-        sut = new DeletePartnerCommandHandler(partners, orphanCleaner, uow, cacheInvalidator);
+        sut = new DeletePartnerCommandHandler(partners);
     }
 
     [Fact]
@@ -32,25 +26,19 @@ public sealed class DeletePartnerCommandHandlerTests
         partners.Finds(null);
 
         var result = await sut.HandleAsync(
-            new DeletePartnerCommand(Guid.NewGuid()),
+            new DeletePartnerCommand(PartnerId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.PartnerNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await orphanCleaner
-            .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
-        await cacheInvalidator
-            .DidNotReceive()
-            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+        result.Error!.Code.Should().Be(ApplicationErrorCode.PartnerNotFound);
+        partners.DidNotReceiveWithAnyArgs().Remove(Arg.Any<Partner>());
     }
 
     [Fact]
-    public async Task HandleAsyncPartnerExistsInvalidatesPartnersCache()
+    public async Task HandleAsyncPartnerExistsRemovesItAndRaisesDeletion()
     {
         var partner = NewPartner();
+        partner.PullDomainEvents();
         partners.Finds(partner);
 
         var result = await sut.HandleAsync(
@@ -60,12 +48,9 @@ public sealed class DeletePartnerCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         partners.Received(1).Remove(partner);
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Partners)
-                )
-            );
+        partner
+            .PullDomainEvents()
+            .Should()
+            .Equal(new PartnerDeleted(partner.Id, partner.ThumbnailId));
     }
 }

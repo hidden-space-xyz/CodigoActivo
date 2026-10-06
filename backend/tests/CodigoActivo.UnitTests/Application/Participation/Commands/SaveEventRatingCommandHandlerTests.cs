@@ -1,10 +1,13 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Participation.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Participation.Commands;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -27,20 +30,22 @@ public sealed class SaveEventRatingCommandHandlerTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IEventRatingRepository ratings = Substitute.For<IEventRatingRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly TestCurrentUser currentUser = new(
+        global::CodigoActivo.Domain.Users.UserId.From(UserId)
+    );
     private readonly TestClock clock = new(today: new DateOnly(2026, 7, 10));
     private readonly SaveEventRatingCommandHandler sut;
 
     public SaveEventRatingCommandHandlerTests()
     {
-        sut = new SaveEventRatingCommandHandler(events, ratings, activities, clock, uow);
+        sut = new SaveEventRatingCommandHandler(events, ratings, activities, currentUser, clock);
 
         // Attendance defaults to none; individual tests seed a confirmed assignment when the
         // scenario requires one.
         activities
             .HasConfirmedAttendanceAsync(
-                Arg.Any<Guid>(),
-                Arg.Any<Guid>(),
+                Arg.Any<EventId>(),
+                Arg.Any<UserId>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(false);
@@ -66,7 +71,12 @@ public sealed class SaveEventRatingCommandHandlerTests
 
     private void SeedEvent(DateOnly endsAt)
     {
-        events.GetByIdAsync(EventId, Arg.Any<CancellationToken>()).Returns(NewEvent(endsAt));
+        events
+            .GetByIdAsync(
+                global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(NewEvent(endsAt));
     }
 
     private void SeedFinishedEvent()
@@ -78,8 +88,8 @@ public sealed class SaveEventRatingCommandHandlerTests
     {
         activities
             .HasConfirmedAttendanceAsync(
-                EventId,
-                parentId ?? attendeeUserId,
+                global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                global::CodigoActivo.Domain.Users.UserId.From(parentId ?? attendeeUserId),
                 Arg.Any<CancellationToken>()
             )
             .Returns(true);
@@ -91,12 +101,12 @@ public sealed class SaveEventRatingCommandHandlerTests
         events.Finds(null);
 
         var result = await sut.HandleAsync(
-            new SaveEventRatingCommand(EventId, UserId, ValidRequest),
+            ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeFalse();
-        result.Error!.Code.Should().Be(ErrorCode.EventNotFound);
+        result.Error!.Code.Should().Be(ApplicationErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -105,11 +115,11 @@ public sealed class SaveEventRatingCommandHandlerTests
         SeedEvent(clock.Today.AddDays(1));
 
         var result = await sut.HandleAsync(
-            new SaveEventRatingCommand(EventId, UserId, ValidRequest),
+            ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.EventRatingNotFinished);
+        result.Error!.Code.Should().Be(ApplicationErrorCode.EventRatingNotFinished);
     }
 
     [Fact]
@@ -118,16 +128,14 @@ public sealed class SaveEventRatingCommandHandlerTests
         SeedFinishedEvent();
 
         var result = await sut.HandleAsync(
-            new SaveEventRatingCommand(EventId, UserId, ValidRequest),
+            ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.EventRatingAttendanceRequired);
+        result.Error!.Code.Should().Be(ApplicationErrorCode.EventRatingAttendanceRequired);
         await ratings
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -137,15 +145,19 @@ public sealed class SaveEventRatingCommandHandlerTests
         SeedConfirmedAssignment(ChildId, parentId: UserId);
 
         var result = await sut.HandleAsync(
-            new SaveEventRatingCommand(EventId, UserId, ValidRequest),
+            ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         await ratings
             .Received(1)
-            .AddAsync(Arg.Is<EventRating>(r => r.EventId == EventId), Arg.Any<CancellationToken>());
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+            .AddAsync(
+                Arg.Is<EventRating>(r =>
+                    r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]
@@ -155,7 +167,7 @@ public sealed class SaveEventRatingCommandHandlerTests
         SeedConfirmedAssignment(UserId);
 
         var result = await sut.HandleAsync(
-            new SaveEventRatingCommand(EventId, UserId, ValidRequest),
+            ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -164,7 +176,7 @@ public sealed class SaveEventRatingCommandHandlerTests
             .Received(1)
             .AddAsync(
                 Arg.Is<EventRating>(r =>
-                    r.EventId == EventId
+                    r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId)
                     && r.Score == 5
                     && r.MostLiked == "Bien"
                     && r.LeastLiked == "La cola"
@@ -172,7 +184,6 @@ public sealed class SaveEventRatingCommandHandlerTests
                 ),
                 Arg.Any<CancellationToken>()
             );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -182,14 +193,12 @@ public sealed class SaveEventRatingCommandHandlerTests
         SeedConfirmedAssignment(UserId);
 
         var first = await sut.HandleAsync(
-            new SaveEventRatingCommand(EventId, UserId, ValidRequest),
+            ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
             TestContext.Current.CancellationToken
         );
         var second = await sut.HandleAsync(
-            new SaveEventRatingCommand(
-                EventId,
-                UserId,
-                new SaveEventRatingRequest(1, "Otra cosa", null, null)
+            new SaveEventRatingRequest(1, "Otra cosa", null, null).ToCommand(
+                global::CodigoActivo.Domain.Events.EventId.From(EventId)
             ),
             TestContext.Current.CancellationToken
         );
@@ -197,7 +206,6 @@ public sealed class SaveEventRatingCommandHandlerTests
         first.IsSuccess.Should().BeTrue();
         second.IsSuccess.Should().BeTrue();
         await ratings.Received(2).AddAsync(Arg.Any<EventRating>(), Arg.Any<CancellationToken>());
-        await uow.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -207,21 +215,17 @@ public sealed class SaveEventRatingCommandHandlerTests
         SeedConfirmedAssignment(UserId);
 
         var result = await sut.HandleAsync(
-            new SaveEventRatingCommand(
-                EventId,
-                UserId,
-                new SaveEventRatingRequest(null, "  ", null, string.Empty)
+            new SaveEventRatingRequest(null, "  ", null, string.Empty).ToCommand(
+                global::CodigoActivo.Domain.Events.EventId.From(EventId)
             ),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventRatingEmpty);
+        result.Error.Code.Should().Be(DomainErrorCode.EventRatingEmpty);
         await ratings
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -231,10 +235,8 @@ public sealed class SaveEventRatingCommandHandlerTests
         SeedConfirmedAssignment(UserId);
 
         var result = await sut.HandleAsync(
-            new SaveEventRatingCommand(
-                EventId,
-                UserId,
-                new SaveEventRatingRequest(null, null, null, "Más talleres")
+            new SaveEventRatingRequest(null, null, null, "Más talleres").ToCommand(
+                global::CodigoActivo.Domain.Events.EventId.From(EventId)
             ),
             TestContext.Current.CancellationToken
         );

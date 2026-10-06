@@ -1,13 +1,15 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.Resources.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Resources.Commands;
 using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -20,24 +22,13 @@ public sealed class UpdateResourceCommandHandlerTests
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
     private readonly FakeReadStore readStore = new();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
-    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly UpdateResourceCommandHandler sut;
 
     public UpdateResourceCommandHandlerTests()
     {
-        sut = new UpdateResourceCommandHandler(
-            resources,
-            readStore,
-            new FakeQueryExecutor(),
-            files,
-            orphanCleaner,
-            clock,
-            uow,
-            cacheInvalidator
-        );
+        sut = new UpdateResourceCommandHandler(resources, files, currentUser, clock);
     }
 
     [Fact]
@@ -54,17 +45,15 @@ public sealed class UpdateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(Guid.NewGuid(), request, Guid.NewGuid()),
+            request.ToCommand(ResourceId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.ResourceNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(Arg.Any<Guid>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+            .ExistsAsync(Arg.Any<StoredFileId>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -79,18 +68,16 @@ public sealed class UpdateResourceCommandHandlerTests
             SomeRichText,
             null,
             Guid.NewGuid(),
-            resource.ThumbnailId
+            resource.ThumbnailId.Value
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, Guid.NewGuid()),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceTypeNotFound);
     }
 
     [Fact]
@@ -105,18 +92,16 @@ public sealed class UpdateResourceCommandHandlerTests
             SomeRichText,
             "https://ejemplo.es",
             type.Id,
-            resource.ThumbnailId
+            resource.ThumbnailId.Value
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, Guid.NewGuid()),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceUrlNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ResourceUrlNotAllowed);
     }
 
     [Fact]
@@ -131,18 +116,16 @@ public sealed class UpdateResourceCommandHandlerTests
             SomeRichText,
             "https://ejemplo.es",
             type.Id,
-            resource.ThumbnailId
+            resource.ThumbnailId.Value
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, Guid.NewGuid()),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceDescriptionNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ResourceDescriptionNotAllowed);
     }
 
     [Fact]
@@ -162,24 +145,23 @@ public sealed class UpdateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, Guid.NewGuid()),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceThumbnailNotFound);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestMutatesPersistsResourceAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestReplacesResourceByTheCurrentUser()
     {
         var resource = NewResource("Old", "OldSub");
         resources.Finds(resource);
         var type = readStore.TypeExists();
         files.ThumbnailExists(true);
         var caller = Guid.NewGuid();
+        currentUser.Id = UserId.From(caller);
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         const string NewDescription =
@@ -194,30 +176,22 @@ public sealed class UpdateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, caller),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         resource.Title.Should().Be("New");
         resource.Subtitle.Should().Be("NewSub");
-        resource.Description.Should().Be(NewDescription);
-        resource.ResourceTypeId.Should().Be(type.Id);
-        resource.ThumbnailId.Should().Be(thumbnailId);
-        resource.UpdatedBy.Should().Be(caller);
+        resource.Description!.Json.Should().Be(NewDescription);
+        resource.ResourceType.Should().Be(CatalogIds.ResourceTypes.ValueOf(type.Id));
+        resource.ThumbnailId.Value.Should().Be(thumbnailId);
+        resource.UpdatedBy.Should().Be(UserId.From(caller));
         resource.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Resources)
-                )
-            );
     }
 
     [Fact]
-    public async Task HandleAsyncSwitchToExternalClearsDescriptionAndCleansEmbeddedImages()
+    public async Task HandleAsyncSwitchToExternalClearsDescriptionAndReleasesEmbeddedImages()
     {
         var embeddedId = Guid.NewGuid();
         var resource = NewResource(
@@ -232,23 +206,23 @@ public sealed class UpdateResourceCommandHandlerTests
             null,
             "https://ejemplo.es/curso",
             type.Id,
-            resource.ThumbnailId
+            resource.ThumbnailId.Value
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, Guid.NewGuid()),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        resource.Description.Should().Be("{}");
+        resource.Description!.Json.Should().Be("{}");
         resource.Url.Should().Be("https://ejemplo.es/curso");
-        resource.ResourceTypeId.Should().Be(type.Id);
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Contains(embeddedId)),
-                Arg.Any<CancellationToken>()
+        resource.ResourceType.Should().Be(CatalogIds.ResourceTypes.ValueOf(type.Id));
+        DomainEvents
+            .ReleasedFiles(resource)
+            .Should()
+            .Match<IReadOnlyCollection<StoredFileId>>(ids =>
+                ids != null && ids.Contains(StoredFileId.From(embeddedId))
             );
     }
 
@@ -265,21 +239,21 @@ public sealed class UpdateResourceCommandHandlerTests
             SomeRichText,
             null,
             type.Id,
-            resource.ThumbnailId
+            resource.ThumbnailId.Value
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, Guid.NewGuid()),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         resource.Url.Should().BeNull();
-        resource.Description.Should().Be(SomeRichText);
+        resource.Description!.Json.Should().Be(SomeRichText);
     }
 
     [Fact]
-    public async Task HandleAsyncThumbnailReplacedCleansUpPreviousThumbnailAfterSave()
+    public async Task HandleAsyncThumbnailReplacedReleasesPreviousThumbnail()
     {
         var resource = NewResource();
         var previousThumbnailId = resource.ThumbnailId;
@@ -296,23 +270,21 @@ public sealed class UpdateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, Guid.NewGuid()),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids != null && ids.Count == 1 && ids.Contains(previousThumbnailId)
-                ),
-                Arg.Any<CancellationToken>()
+        DomainEvents
+            .ReleasedFiles(resource)
+            .Should()
+            .Match<IReadOnlyCollection<StoredFileId>>(ids =>
+                ids != null && ids.Count == 1 && ids.Contains(previousThumbnailId)
             );
     }
 
     [Fact]
-    public async Task HandleAsyncThumbnailUnchangedDoesNotCleanUpThumbnail()
+    public async Task HandleAsyncThumbnailUnchangedReleasesNothing()
     {
         var resource = NewResource(description: SomeRichText);
         resources.Finds(resource);
@@ -324,25 +296,23 @@ public sealed class UpdateResourceCommandHandlerTests
             SomeRichText,
             null,
             type.Id,
-            resource.ThumbnailId
+            resource.ThumbnailId.Value
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, Guid.NewGuid()),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Count == 0),
-                Arg.Any<CancellationToken>()
-            );
+        DomainEvents
+            .ReleasedFiles(resource)
+            .Should()
+            .Match<IReadOnlyCollection<StoredFileId>>(ids => ids != null && ids.Count == 0);
     }
 
     [Fact]
-    public async Task HandleAsyncImageRemovedFromDescriptionCleansUpRemovedImageOnly()
+    public async Task HandleAsyncImageRemovedFromDescriptionReleasesRemovedImageOnly()
     {
         var removedId = Guid.NewGuid();
         var keptId = Guid.NewGuid();
@@ -358,22 +328,22 @@ public sealed class UpdateResourceCommandHandlerTests
             $"{{\"text\":\"cuerpo\",\"b\":\"/api/files/{keptId}/content\"}}",
             null,
             type.Id,
-            resource.ThumbnailId
+            resource.ThumbnailId.Value
         );
 
         var result = await sut.HandleAsync(
-            new UpdateResourceCommand(resource.Id, request, Guid.NewGuid()),
+            request.ToCommand(resource.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids != null && ids.Contains(removedId) && !ids.Contains(keptId)
-                ),
-                Arg.Any<CancellationToken>()
+        DomainEvents
+            .ReleasedFiles(resource)
+            .Should()
+            .Match<IReadOnlyCollection<StoredFileId>>(ids =>
+                ids != null
+                && ids.Contains(StoredFileId.From(removedId))
+                && !ids.Contains(StoredFileId.From(keptId))
             );
     }
 }

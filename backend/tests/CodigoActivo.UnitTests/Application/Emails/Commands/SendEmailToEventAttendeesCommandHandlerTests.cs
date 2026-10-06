@@ -1,9 +1,11 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Emails.EmailTestData;
@@ -41,7 +43,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
                 {
                     UserId = user.Id,
                     ActivityId = Guid.NewGuid(),
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    ActivityRoleTypeId = KnownIds.ActivityRoleTypes.Participant,
                     AssignmentStatusId = statusId,
                     Activity = new ActivityRow
                     {
@@ -61,14 +63,14 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
     public async Task HandleAsyncStatusFilterOnlyMailsMatchingAttendees()
     {
         store.Users.AddRange([
-            NewAttendee("Ana", "ana@test.local", SeedIds.AssignmentStatusTypes.Confirmed),
-            NewAttendee("Berto", "berto@test.local", SeedIds.AssignmentStatusTypes.Requested),
+            NewAttendee("Ana", "ana@test.local", KnownIds.AssignmentStatusTypes.Confirmed),
+            NewAttendee("Berto", "berto@test.local", KnownIds.AssignmentStatusTypes.Requested),
         ]);
 
         var result = await sut.HandleAsync(
             new SendEmailToEventAttendeesCommand(
-                EventId,
-                new EventAttendeeListQuery { StatusId = SeedIds.AssignmentStatusTypes.Confirmed },
+                global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                new EventAttendeeListQuery { StatusId = KnownIds.AssignmentStatusTypes.Confirmed },
                 Request(),
                 []
             ),
@@ -86,7 +88,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
 
         var result = await sut.HandleAsync(
             new SendEmailToEventAttendeesCommand(
-                EventId,
+                global::CodigoActivo.Domain.Events.EventId.From(EventId),
                 new EventAttendeeListQuery(),
                 Request(),
                 []
@@ -94,7 +96,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.EventNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
         outbox.Messages.Should().BeEmpty();
     }
 }

@@ -1,15 +1,16 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Contracts;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -22,22 +23,17 @@ public sealed class UpdateActivityCommandHandlerTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
-    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
-    private readonly FakeReadStore readStore = new();
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly UpdateActivityCommandHandler sut;
 
     public UpdateActivityCommandHandlerTests()
     {
         sut = new UpdateActivityCommandHandler(
             activities,
-            new ActivityValidator(events, files, readStore, new FakeQueryExecutor(), clock),
-            orphanCleaner,
-            clock,
-            uow,
-            cacheInvalidator
+            new ActivityValidator(events, files, clock),
+            currentUser,
+            clock
         );
     }
 
@@ -45,7 +41,7 @@ public sealed class UpdateActivityCommandHandlerTests
     {
         events
             .GetByIdAsync(activity.EventId, Arg.Any<CancellationToken>())
-            .Returns(NewEvent(id: activity.EventId));
+            .Returns(NewEvent(id: activity.EventId.Value));
     }
 
     private static UpdateActivityRequest UpdateRequest(
@@ -74,14 +70,12 @@ public sealed class UpdateActivityCommandHandlerTests
         activities.Finds(null);
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(Guid.NewGuid(), UpdateRequest(), Guid.NewGuid()),
+            UpdateRequest().ToCommand(ActivityId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.ActivityNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityNotFound);
     }
 
     [Fact]
@@ -92,14 +86,12 @@ public sealed class UpdateActivityCommandHandlerTests
         events.Finds(null);
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(activity.Id, UpdateRequest(), Guid.NewGuid()),
+            UpdateRequest().ToCommand(activity.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -121,14 +113,12 @@ public sealed class UpdateActivityCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(activity.Id, request, Guid.NewGuid()),
+            request.ToCommand(activity.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ActivityScheduleRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleRequired);
     }
 
     [Fact]
@@ -140,13 +130,11 @@ public sealed class UpdateActivityCommandHandlerTests
         files.ThumbnailExists(false);
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(activity.Id, UpdateRequest(), Guid.NewGuid()),
+            UpdateRequest().ToCommand(activity.Id),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.ActivityThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error!.Code.Should().Be(ApplicationErrorCode.ActivityThumbnailNotFound);
     }
 
     [Fact]
@@ -156,48 +144,39 @@ public sealed class UpdateActivityCommandHandlerTests
         activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        readStore.ModalityExists(false);
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(activity.Id, UpdateRequest(), Guid.NewGuid()),
+            (UpdateRequest() with { ActivityModalityTypeId = Guid.NewGuid() }).ToCommand(
+                activity.Id
+            ),
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Code.Should().Be(ErrorCode.ActivityModalityTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error!.Code.Should().Be(ApplicationErrorCode.ActivityModalityTypeNotFound);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestMutatesPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestMutatesStages()
     {
         var eventId = Guid.NewGuid();
         var caller = Guid.NewGuid();
+        currentUser.Id = UserId.From(caller);
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
         var activity = NewActivity(title: "Old", eventId: eventId);
         var activityId = activity.Id;
         activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        readStore.ModalityExists(true);
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(activityId, UpdateRequest(title: "  New  "), caller),
+            UpdateRequest(title: "  New  ").ToCommand(activityId),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         activity.Title.Should().Be("New");
-        activity.UpdatedBy.Should().Be(caller);
+        activity.UpdatedBy.Should().Be(UserId.From(caller));
         activity.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Activities)
-                )
-            );
     }
 
     [Fact]
@@ -206,59 +185,48 @@ public sealed class UpdateActivityCommandHandlerTests
         var activity = NewActivity(
             capacities:
             [
-                new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 5),
-                new RoleCapacity(SeedIds.ActivityRoleTypes.Leader, 1),
+                new RoleCapacity(ActivityRole.Participant, 5),
+                new RoleCapacity(ActivityRole.Leader, 1),
             ]
         );
         activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        readStore.ModalityExists(true);
-        readStore.CatalogRoles();
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(
-                activity.Id,
-                UpdateRequest(
+            UpdateRequest(
                     roleCapacities:
                     [
-                        new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Participant, 2),
-                        new ActivityRoleCapacityRequest(SeedIds.ActivityRoleTypes.Volunteer, 4),
+                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 2),
+                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Volunteer, 4),
                     ]
-                ),
-                Guid.NewGuid()
-            ),
+                )
+                .ToCommand(activity.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         activity.RoleCapacities.Should().HaveCount(2);
         activity
-            .RoleCapacities.Single(c =>
-                c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Participant
-            )
+            .RoleCapacities.Single(c => c.Role == ActivityRole.Participant)
             .DesiredCount.Should()
             .Be(2);
         activity
-            .RoleCapacities.Single(c => c.ActivityRoleTypeId == SeedIds.ActivityRoleTypes.Volunteer)
+            .RoleCapacities.Single(c => c.Role == ActivityRole.Volunteer)
             .DesiredCount.Should()
             .Be(4);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task HandleAsyncNullRoleCapacitiesClearsExisting()
     {
-        var activity = NewActivity(
-            capacities: [new RoleCapacity(SeedIds.ActivityRoleTypes.Participant, 5)]
-        );
+        var activity = NewActivity(capacities: [new RoleCapacity(ActivityRole.Participant, 5)]);
         activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        readStore.ModalityExists(true);
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(activity.Id, UpdateRequest(), Guid.NewGuid()),
+            UpdateRequest().ToCommand(activity.Id),
             TestContext.Current.CancellationToken
         );
 
@@ -267,28 +235,21 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncReplacingThumbnailCleansUpPreviousFileAfterSave()
+    public async Task HandleAsyncReplacingThumbnailReleasesPreviousFile()
     {
         var activity = NewActivity();
         var previousThumbnailId = activity.ThumbnailId;
         activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        readStore.ModalityExists(true);
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(
-                activity.Id,
-                UpdateRequest(thumbnailId: Guid.NewGuid()),
-                Guid.NewGuid()
-            ),
+            UpdateRequest(thumbnailId: Guid.NewGuid()).ToCommand(activity.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteIfOrphanedAsync(previousThumbnailId, Arg.Any<CancellationToken>());
+        DomainEvents.ReleasedFiles(activity).Should().Equal(previousThumbnailId);
     }
 
     [Fact]
@@ -298,20 +259,13 @@ public sealed class UpdateActivityCommandHandlerTests
         activities.Finds(activity);
         EventExistsFor(activity);
         files.ThumbnailExists(true);
-        readStore.ModalityExists(true);
 
         var result = await sut.HandleAsync(
-            new UpdateActivityCommand(
-                activity.Id,
-                UpdateRequest(thumbnailId: activity.ThumbnailId),
-                Guid.NewGuid()
-            ),
+            UpdateRequest(thumbnailId: activity.ThumbnailId.Value).ToCommand(activity.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .DidNotReceiveWithAnyArgs()
-            .DeleteIfOrphanedAsync(Guid.Empty, TestContext.Current.CancellationToken);
+        DomainEvents.ReleasedFiles(activity).Should().BeEmpty();
     }
 }

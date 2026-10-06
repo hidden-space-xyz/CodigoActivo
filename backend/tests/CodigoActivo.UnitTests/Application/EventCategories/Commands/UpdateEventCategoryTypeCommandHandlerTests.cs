@@ -1,7 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.EventCategories.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.EventCategories.Commands;
 using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Domain.Common;
@@ -17,13 +17,11 @@ public sealed class UpdateEventCategoryTypeCommandHandlerTests
 {
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly UpdateEventCategoryTypeCommandHandler sut;
 
     public UpdateEventCategoryTypeCommandHandlerTests()
     {
-        sut = new UpdateEventCategoryTypeCommandHandler(categoryTypes, uow, cacheInvalidator);
+        sut = new UpdateEventCategoryTypeCommandHandler(categoryTypes);
     }
 
     [Fact]
@@ -32,17 +30,14 @@ public sealed class UpdateEventCategoryTypeCommandHandlerTests
         categoryTypes.Finds(null);
 
         var result = await sut.HandleAsync(
-            new UpdateEventCategoryTypeCommand(
-                Guid.NewGuid(),
-                new UpdateEventCategoryTypeRequest("Talleres", "#112233")
+            new UpdateEventCategoryTypeRequest("Talleres", "#112233").ToCommand(
+                EventCategoryTypeId.New()
             ),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeNotFound);
     }
 
     [Fact]
@@ -61,21 +56,16 @@ public sealed class UpdateEventCategoryTypeCommandHandlerTests
         categoryTypes.CategoryTypeNameTaken(true);
 
         var result = await sut.HandleAsync(
-            new UpdateEventCategoryTypeCommand(
-                id,
-                new UpdateEventCategoryTypeRequest("Talleres", "#112233")
-            ),
+            new UpdateEventCategoryTypeRequest("Talleres", "#112233").ToCommand(existing.Id),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNameAlreadyExists);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeNameAlreadyExists);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestMutatesPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestRenamesTheCategoryType()
     {
         var id = Guid.NewGuid();
         var existing = Persisted.As<EventCategoryType>(
@@ -90,25 +80,13 @@ public sealed class UpdateEventCategoryTypeCommandHandlerTests
         categoryTypes.CategoryTypeNameTaken(false);
 
         var result = await sut.HandleAsync(
-            new UpdateEventCategoryTypeCommand(
-                id,
-                new UpdateEventCategoryTypeRequest("  New  ", "  #abcdef  ")
-            ),
+            new UpdateEventCategoryTypeRequest("  New  ", "  #abcdef  ").ToCommand(existing.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         existing.Name.Should().Be("New");
         existing.Color.Should().Be("#abcdef");
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null
-                    && tags.Contains(CacheTags.EventCategoryTypes)
-                    && tags.Contains(CacheTags.Events)
-                )
-            );
+        existing.PullDomainEvents().Should().Equal(new EventCategoryTypeRenamed(existing.Id));
     }
 }

@@ -20,7 +20,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
         sut = new GetHouseholdSignupRolesQueryHandler(
             store,
             executor,
-            new ListActivityRoleTypesQueryHandler(store, executor, new FakeHybridCache())
+            new ListActivityRoleTypesQueryHandler(store, executor)
         );
     }
 
@@ -37,7 +37,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
                 Id = Guid.NewGuid(),
                 FirstName = "Stranger",
                 LastName = "Socio",
-                UserTypeId = SeedIds.UserTypes.Member,
+                UserTypeId = KnownIds.UserTypes.Member,
             },
         ]);
         store.ActivityRoleTypes.AddRange(CatalogRoleRows());
@@ -52,16 +52,16 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
         parent
             .Roles.Should()
             .Equal(
-                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Participant, "Participante"),
-                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Volunteer, "Voluntario"),
-                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Leader, "Líder")
+                new SignupRoleResponse(KnownIds.ActivityRoleTypes.Participant, "Participante"),
+                new SignupRoleResponse(KnownIds.ActivityRoleTypes.Volunteer, "Voluntario"),
+                new SignupRoleResponse(KnownIds.ActivityRoleTypes.Leader, "Líder")
             );
         var child = result.Single(m => m.UserId == childId);
         child
             .Roles.Should()
             .Equal(
-                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Participant, "Participante"),
-                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Volunteer, "Voluntario")
+                new SignupRoleResponse(KnownIds.ActivityRoleTypes.Participant, "Participante"),
+                new SignupRoleResponse(KnownIds.ActivityRoleTypes.Volunteer, "Voluntario")
             );
     }
 
@@ -75,7 +75,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
                 Id = actingUserId,
                 FirstName = "Solo",
                 LastName = "User",
-                UserTypeId = SeedIds.UserTypes.Participant,
+                UserTypeId = KnownIds.UserTypes.Participant,
             }
         );
         store.ActivityRoleTypes.AddRange(CatalogRoleRows());
@@ -90,8 +90,8 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
         result[0]
             .Roles.Should()
             .Equal(
-                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Participant, "Participante"),
-                new SignupRoleResponse(SeedIds.ActivityRoleTypes.Volunteer, "Voluntario")
+                new SignupRoleResponse(KnownIds.ActivityRoleTypes.Participant, "Participante"),
+                new SignupRoleResponse(KnownIds.ActivityRoleTypes.Volunteer, "Voluntario")
             );
     }
 }

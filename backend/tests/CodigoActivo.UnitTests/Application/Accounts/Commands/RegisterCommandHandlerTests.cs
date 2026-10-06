@@ -1,12 +1,12 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
@@ -32,7 +33,6 @@ public sealed class RegisterCommandHandlerTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly FakeDisposableEmailDomainRepository disposableDomains = new();
     private readonly RegisterCommandHandler sut;
 
@@ -52,7 +52,6 @@ public sealed class RegisterCommandHandlerTests
                 new TwoFactorOptions()
             ),
             NullLogger<RegisterCommandHandler>.Instance,
-            cacheInvalidator,
             new DisposableEmailChecker(disposableDomains),
             new EmailClaims(AccountErasers.Create(users, deletedAccounts, erasureStore, uow), uow)
         );
@@ -60,7 +59,7 @@ public sealed class RegisterCommandHandlerTests
 
     private Task<Result> HandleAsync(RegisterRequest request)
     {
-        return sut.HandleAsync(new RegisterCommand(request), TestContext.Current.CancellationToken);
+        return sut.HandleAsync(request.ToCommand(), TestContext.Current.CancellationToken);
     }
 
     private async Task<List<User>> CaptureAddedUsersAsync()
@@ -73,7 +72,9 @@ public sealed class RegisterCommandHandlerTests
     private User HolderOfTheAddress(Guid statusId)
     {
         var holder = NewUser(email: "ana@test.com", statusId: statusId);
-        users.GetByEmailAsync("ana@test.com", Arg.Any<CancellationToken>()).Returns(holder);
+        users
+            .GetByEmailAsync(EmailAddress.FromStored("ana@test.com"), Arg.Any<CancellationToken>())
+            .Returns(holder);
         return holder;
     }
 
@@ -116,13 +117,6 @@ public sealed class RegisterCommandHandlerTests
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private ValueTask AssertNotInvalidatedAsync()
-    {
-        return cacheInvalidator
-            .DidNotReceive()
-            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
-    }
-
     private static bool IsPendingParticipantAdult(User? user)
     {
         if (user is null)
@@ -130,12 +124,11 @@ public sealed class RegisterCommandHandlerTests
             return false;
         }
 
-        var isPendingNonAdmin =
-            user.UserStatusTypeId == SeedIds.UserStatusTypes.Pending && !user.IsAdmin;
+        var isPendingNonAdmin = user.Status == UserStatus.Pending && !user.IsAdmin;
 
         return isPendingNonAdmin
-            && user.Gender is Gender.Female
-            && user.UserTypeId == SeedIds.UserTypes.Participant;
+            && user.Gender is CodigoActivo.Domain.Users.Gender.Female
+            && user.UserType == UserType.Participant;
     }
 
     private static bool IsDependentParticipantMinor(User? user)
@@ -146,13 +139,13 @@ public sealed class RegisterCommandHandlerTests
         }
 
         var isDependentLeo =
-            user.UserStatusTypeId == SeedIds.UserStatusTypes.Dependent
+            user.Status == UserStatus.Dependent
             && string.Equals(user.FirstName, "Leo", StringComparison.Ordinal);
 
         return isDependentLeo
-            && user.Gender is Gender.Other
+            && user.Gender is CodigoActivo.Domain.Users.Gender.Other
             && user.ParentId is not null
-            && user.UserTypeId == SeedIds.UserTypes.Participant;
+            && user.UserType == UserType.Participant;
     }
 
     [Fact]
@@ -167,7 +160,7 @@ public sealed class RegisterCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         added.Should().HaveCount(2);
         var adult = added[0];
-        adult.NationalId.Should().Be("X1234567L");
+        adult.NationalId!.Value.Should().Be("X1234567L");
         adult.PromotionalConsent.Should().BeTrue();
         adult.BirthDate.Should().BeNull();
         var minor = added[1];
@@ -181,7 +174,7 @@ public sealed class RegisterCommandHandlerTests
     {
         var result = await HandleAsync(NewRegister(secondaryPhone: " +34123456789 "));
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.SecondaryPhoneSameAsPrimary);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.SecondaryPhoneSameAsPrimary);
         await AssertNotSavedAsync();
         await users
             .DidNotReceiveWithAnyArgs()
@@ -196,14 +189,14 @@ public sealed class RegisterCommandHandlerTests
     {
         var result = await HandleAsync(NewRegister(password: "   "));
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.RequestValidationFailed);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.RegistrationInvalid);
         await AssertNotSavedAsync();
     }
 
     [Fact]
     public async Task HandleAsyncAddressOwnedByAnAccountGetsANoticeAndNothingIsCreated()
     {
-        var holder = HolderOfTheAddress(SeedIds.UserStatusTypes.Active);
+        var holder = HolderOfTheAddress(KnownIds.UserStatusTypes.Active);
 
         var result = await HandleAsync(NewRegister(minors: [NewMinor()]));
 
@@ -211,20 +204,19 @@ public sealed class RegisterCommandHandlerTests
         hasher.Hashes.Should().Be(2, "every outcome hashes the password and the code");
         var notice = emailSender.Sent.Should().ContainSingle().Subject;
         notice.Kind.Should().Be(EmailKind.AccountVerification);
-        notice.ToAddress.Should().Be(holder.Email);
+        notice.ToAddress.Should().Be(holder.Email!.Value);
         notice.Subject.Should().Be(AppStrings.EmailsEmailInUseSubject);
         notice.TextBody.Should().NotContain("verify-account");
         await users
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
         await AssertNotSavedAsync();
-        await AssertNotInvalidatedAsync();
     }
 
     [Fact]
     public async Task HandleAsyncNoticeRefusedByTheLimiterStillSucceeds()
     {
-        HolderOfTheAddress(SeedIds.UserStatusTypes.Active);
+        HolderOfTheAddress(KnownIds.UserStatusTypes.Active);
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
 
         var result = await HandleAsync(NewRegister());
@@ -236,7 +228,7 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task HandleAsyncNoticeThatCannotBeQueuedStillSucceeds()
     {
-        HolderOfTheAddress(SeedIds.UserStatusTypes.Blocked);
+        HolderOfTheAddress(KnownIds.UserStatusTypes.Blocked);
         emailSender.ThrowOnSend = new InvalidOperationException("outbox unavailable");
 
         var result = await HandleAsync(NewRegister());
@@ -248,7 +240,7 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAddressOfAnUnverifiedAccountReplacesItWithTheNewOne()
     {
-        var holder = HolderOfTheAddress(SeedIds.UserStatusTypes.Pending);
+        var holder = HolderOfTheAddress(KnownIds.UserStatusTypes.Pending);
         var added = await CaptureAddedUsersAsync();
 
         var result = await HandleAsync(NewRegister());
@@ -290,7 +282,6 @@ public sealed class RegisterCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotInvalidatedAsync();
     }
 
     [Theory]
@@ -304,7 +295,7 @@ public sealed class RegisterCommandHandlerTests
 
         var result = await HandleAsync(NewRegister(email: email));
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.DisposableEmailNotAllowed);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.DisposableEmailNotAllowed);
         await AssertNotSavedAsync();
         await users
             .DidNotReceiveWithAnyArgs()
@@ -336,7 +327,7 @@ public sealed class RegisterCommandHandlerTests
     {
         var result = await HandleAsync(NewRegister(minors: [NewMinor(birthDate: AdultBirthDate)]));
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserChildBirthDateNotMinor);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserChildBirthDateNotMinor);
         await AssertNotSavedAsync();
         await users
             .DidNotReceiveWithAnyArgs()
@@ -350,7 +341,7 @@ public sealed class RegisterCommandHandlerTests
 
         var result = await HandleAsync(NewRegister(minors: minors));
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.RequestValidationFailed);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.RegistrationInvalid);
         await AssertNotSavedAsync();
     }
 
@@ -374,7 +365,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncNewAdultSendsGuidOtpHashedAtRestAndInvalidatesCache()
+    public async Task HandleAsyncNewAdultSendsGuidOtpHashedAtRest()
     {
         var added = await CaptureAddedUsersAsync();
 
@@ -400,13 +391,6 @@ public sealed class RegisterCommandHandlerTests
 
         added.Should().ContainSingle();
         added[0].OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Users)
-                )
-            );
     }
 
     [Fact]

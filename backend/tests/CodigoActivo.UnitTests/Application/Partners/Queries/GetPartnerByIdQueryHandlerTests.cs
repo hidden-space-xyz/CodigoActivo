@@ -1,6 +1,8 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Partners.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Partners;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Partners.PartnerTestData;
@@ -24,7 +26,7 @@ public sealed class GetPartnerByIdQueryHandlerTests
         store.Partners.Add(partner);
 
         var result = await sut.HandleAsync(
-            new GetPartnerByIdQuery(partner.Id),
+            new GetPartnerByIdQuery(PartnerId.From(partner.Id)),
             TestContext.Current.CancellationToken
         );
 
@@ -36,12 +38,12 @@ public sealed class GetPartnerByIdQueryHandlerTests
     public async Task HandleAsyncPartnerMissingReturnsNotFound()
     {
         var result = await sut.HandleAsync(
-            new GetPartnerByIdQuery(Guid.NewGuid()),
+            new GetPartnerByIdQuery(PartnerId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.PartnerNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.PartnerNotFound);
     }
 }

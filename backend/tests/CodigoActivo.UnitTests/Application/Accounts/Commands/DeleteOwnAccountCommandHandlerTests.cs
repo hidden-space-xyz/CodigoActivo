@@ -1,11 +1,11 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
+using TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
@@ -28,7 +29,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         Substitute.For<IDeletedAccountRepository>();
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
+    private readonly TestCurrentUser currentUser = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly TestClock clock = new();
     private readonly TwoFactorOptions options = new() { MaxFailedAttempts = 2 };
@@ -39,6 +40,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var hasher = new FakePasswordHasher();
         sut = new DeleteOwnAccountCommandHandler(
             users,
+            currentUser,
             AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
             uow,
             clock,
@@ -51,7 +53,6 @@ public sealed class DeleteOwnAccountCommandHandlerTests
                 NullLogger<AuthenticatorCodeVerifier>.Instance
             ),
             options,
-            cacheInvalidator,
             NullLogger<DeleteOwnAccountCommandHandler>.Instance
         );
     }
@@ -96,8 +97,9 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         string code = EmailCode
     )
     {
+        currentUser.Id = UserId.From(userId);
         return sut.HandleAsync(
-            new DeleteOwnAccountCommand(userId, new DeleteAccountRequest(password, code)),
+            new DeleteAccountRequest(password, code).ToCommand(),
             TestContext.Current.CancellationToken
         );
     }
@@ -141,13 +143,6 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         users.Received(1).Remove(user);
     }
 
-    private ValueTask AssertCacheKeptAsync()
-    {
-        return cacheInvalidator
-            .DidNotReceive()
-            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
-    }
-
     [Fact]
     public async Task HandleAsyncUserMissingReturnsNotFound()
     {
@@ -155,7 +150,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
 
         var result = await DeleteAsync(Guid.NewGuid());
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         AssertNothingRemoved();
         await AssertNotSavedAsync();
     }
@@ -163,15 +158,14 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     [Fact]
     public async Task HandleAsyncInitialAdministratorReturnsForbiddenWithoutCheckingThePassword()
     {
-        var result = await DeleteAsync(SeedIds.Users.InitialAdministrator);
+        var result = await DeleteAsync(KnownIds.Users.InitialAdministrator);
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.UserDeleteInitialAdminForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.UserDeleteInitialAdminForbidden);
         await users
             .DidNotReceiveWithAnyArgs()
             .GetByIdAsync(default, TestContext.Current.CancellationToken);
         AssertNothingRemoved();
         await AssertNotSavedAsync();
-        await AssertCacheKeptAsync();
     }
 
     [Fact]
@@ -179,7 +173,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     {
         var user = Signed(isAdmin: true);
 
-        var result = await DeleteAsync(user.Id);
+        var result = await DeleteAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
         await AssertErasedAsync(user);
@@ -190,9 +184,9 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     {
         var user = Signed();
 
-        var result = await DeleteAsync(user.Id, password: "WrongPassword!");
+        var result = await DeleteAsync(user.Id.Value, password: "WrongPassword!");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.PasswordFailedAttempts.Should().Be(1);
         AssertNothingRemoved();
@@ -205,9 +199,9 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     {
         var user = Signed(passwordHash: null);
 
-        var result = await DeleteAsync(user.Id);
+        var result = await DeleteAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         AssertNothingRemoved();
     }
 
@@ -217,9 +211,9 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var user = Signed();
         Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(1) });
 
-        var result = await DeleteAsync(user.Id);
+        var result = await DeleteAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
         AssertNothingRemoved();
         await AssertNotSavedAsync();
     }
@@ -239,9 +233,9 @@ public sealed class DeleteOwnAccountCommandHandlerTests
                 return true;
             });
 
-        var result = await DeleteAsync(user.Id);
+        var result = await DeleteAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
         AssertNothingRemoved();
         await AssertNotSavedAsync();
     }
@@ -251,13 +245,12 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     {
         var user = Signed();
 
-        var result = await DeleteAsync(user.Id, code: "000000");
+        var result = await DeleteAsync(user.Id.Value, code: "000000");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         user.TwoFactorFailedAttempts.Should().Be(1);
         AssertNothingRemoved();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await AssertCacheKeptAsync();
     }
 
     [Fact]
@@ -266,9 +259,9 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var user = Signed();
         Persisted.Overwrite(user, new { LoginCodeExpiresAt = clock.UtcNow.AddMinutes(-1) });
 
-        var result = await DeleteAsync(user.Id);
+        var result = await DeleteAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         AssertNothingRemoved();
     }
 
@@ -278,7 +271,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var user = Signed();
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 1 });
 
-        await DeleteAsync(user.Id, code: "000000");
+        await DeleteAsync(user.Id.Value, code: "000000");
 
         user.TwoFactorLockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
         user.LoginCodeHash.Should().BeNull("locking discards the challenged code");
@@ -290,9 +283,9 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var user = SignedWithAuthenticator();
         totp.MatchStep(Secret, "000000", clock.UtcNow).Returns(default(long?));
 
-        var result = await DeleteAsync(user.Id, code: "000000");
+        var result = await DeleteAsync(user.Id.Value, code: "000000");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         user.TwoFactorFailedAttempts.Should().Be(1);
         AssertNothingRemoved();
     }
@@ -303,9 +296,9 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var user = SignedWithAuthenticator(lastUsedStep: 50);
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(50);
 
-        var result = await DeleteAsync(user.Id, code: "123456");
+        var result = await DeleteAsync(user.Id.Value, code: "123456");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         AssertNothingRemoved();
     }
 
@@ -315,7 +308,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var user = SignedWithAuthenticator(lastUsedStep: 50);
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(51);
 
-        var result = await DeleteAsync(user.Id, code: "123456");
+        var result = await DeleteAsync(user.Id.Value, code: "123456");
 
         result.IsSuccess.Should().BeTrue();
         await AssertErasedAsync(user);
@@ -327,28 +320,20 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var user = Signed();
         erasureStore.LockHouseholdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
 
-        var result = await DeleteAsync(user.Id);
+        var result = await DeleteAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         AssertNothingRemoved();
-        await AssertCacheKeptAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncPasswordAndEmailCodeCorrectErasesAndInvalidatesCache()
+    public async Task HandleAsyncPasswordAndEmailCodeCorrectErasesTheAccount()
     {
         var user = Signed();
 
-        var result = await DeleteAsync(user.Id);
+        var result = await DeleteAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
         await AssertErasedAsync(user);
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.SequenceEqual(CacheTags.Erasure)
-                )
-            );
     }
 }

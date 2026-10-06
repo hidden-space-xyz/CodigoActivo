@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -18,10 +19,10 @@ public sealed class StartSessionCommandHandlerTests
     public static TheoryData<Guid, string?> AccountsThatCannotSignIn =>
         new()
         {
-            { SeedIds.UserStatusTypes.Pending, PasswordHash },
-            { SeedIds.UserStatusTypes.Blocked, PasswordHash },
-            { SeedIds.UserStatusTypes.Dependent, PasswordHash },
-            { SeedIds.UserStatusTypes.Active, null },
+            { KnownIds.UserStatusTypes.Pending, PasswordHash },
+            { KnownIds.UserStatusTypes.Blocked, PasswordHash },
+            { KnownIds.UserStatusTypes.Dependent, PasswordHash },
+            { KnownIds.UserStatusTypes.Active, null },
         };
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
@@ -39,7 +40,7 @@ public sealed class StartSessionCommandHandlerTests
     private Task<Result<SessionTicket>> StartAsync(Guid userId)
     {
         return sut.HandleAsync(
-            new StartSessionCommand(userId),
+            new StartSessionCommand(UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
     }
@@ -63,7 +64,7 @@ public sealed class StartSessionCommandHandlerTests
 
         var result = await StartAsync(Guid.NewGuid());
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         await AssertNoSessionStartedAsync();
     }
 
@@ -77,9 +78,9 @@ public sealed class StartSessionCommandHandlerTests
         var user = NewUser(statusId: statusId, passwordHash: passwordHash);
         users.Finds(user);
 
-        var result = await StartAsync(user.Id);
+        var result = await StartAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         await AssertNoSessionStartedAsync();
     }
 
@@ -89,14 +90,14 @@ public sealed class StartSessionCommandHandlerTests
         var user = NewUser(
             email: "ana@test.com",
             isAdmin: true,
-            statusId: SeedIds.UserStatusTypes.Active,
+            statusId: KnownIds.UserStatusTypes.Active,
             passwordHash: PasswordHash
         );
         users.Finds(user);
         var added = new List<UserSession>();
         await sessions.AddAsync(Arg.Do<UserSession>(added.Add), Arg.Any<CancellationToken>());
 
-        var result = await StartAsync(user.Id);
+        var result = await StartAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
         var session = added.Should().ContainSingle().Subject;
@@ -107,9 +108,9 @@ public sealed class StartSessionCommandHandlerTests
             .Value.Should()
             .Be(
                 new SessionTicket(
-                    session.Id,
+                    session.Id.Value,
                     new SessionIdentity(
-                        user.Id,
+                        user.Id.Value,
                         user.FirstName,
                         user.LastName,
                         "ana@test.com",

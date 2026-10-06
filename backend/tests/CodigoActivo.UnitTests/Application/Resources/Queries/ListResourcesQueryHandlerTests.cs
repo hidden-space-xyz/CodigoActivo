@@ -102,7 +102,10 @@ public sealed class ListResourcesQueryHandlerTests
     public async Task HandleAsyncResourceTypeIdFilterKeepsResourcesOfThatType()
     {
         var target = NewResourceRow("Interno");
-        store.Resources.AddRange([target, NewResourceRow("Otro")]);
+        store.Resources.AddRange([
+            target,
+            NewResourceRow("Otro", type: NewResourceTypeRow(isExternal: true)),
+        ]);
 
         var result = await sut.HandleAsync(
             new ListResourcesQuery(

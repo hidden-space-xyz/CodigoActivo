@@ -1,10 +1,9 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.News.Commands;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
@@ -16,14 +15,11 @@ namespace CodigoActivo.UnitTests.Application.News.Commands;
 public sealed class DeleteNewsItemCommandHandlerTests
 {
     private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
-    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly DeleteNewsItemCommandHandler sut;
 
     public DeleteNewsItemCommandHandlerTests()
     {
-        sut = new DeleteNewsItemCommandHandler(news, orphanCleaner, uow, cacheInvalidator);
+        sut = new DeleteNewsItemCommandHandler(news);
     }
 
     [Fact]
@@ -32,25 +28,18 @@ public sealed class DeleteNewsItemCommandHandlerTests
         news.Finds(null);
 
         var result = await sut.HandleAsync(
-            new DeleteNewsItemCommand(Guid.NewGuid()),
+            new DeleteNewsItemCommand(NewsItemId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.NewsItemNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await orphanCleaner
-            .DidNotReceiveWithAnyArgs()
-            .DeleteOrphanedAsync(
-                Arg.Any<IReadOnlyCollection<Guid>>(),
-                TestContext.Current.CancellationToken
-            );
+        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemNotFound);
+        news.DidNotReceiveWithAnyArgs().Remove(Arg.Any<NewsItem>());
     }
 
     [Fact]
-    public async Task HandleAsyncImagesEmbeddedInDescriptionCleansUpAndInvalidatesCache()
+    public async Task HandleAsyncImagesEmbeddedInDescriptionReleasesThemWithTheThumbnail()
     {
         var embeddedId = Guid.NewGuid();
         var newsItem = NewNewsItem(description: $"{{\"img\":\"/api/files/{embeddedId}/content\"}}");
@@ -62,20 +51,17 @@ public sealed class DeleteNewsItemCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids != null && ids.Contains(embeddedId) && ids.Contains(newsItem.ThumbnailId)
-                ),
-                Arg.Any<CancellationToken>()
-            );
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.News)
-                )
-            );
+        news.Received(1).Remove(newsItem);
+        var deleted = newsItem
+            .PullDomainEvents()
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<NewsItemDeleted>()
+            .Subject;
+        deleted.NewsItemId.Should().Be(newsItem.Id);
+        deleted
+            .ReleasedFileIds.Should()
+            .BeEquivalentTo([StoredFileId.From(embeddedId), newsItem.ThumbnailId]);
     }
 }

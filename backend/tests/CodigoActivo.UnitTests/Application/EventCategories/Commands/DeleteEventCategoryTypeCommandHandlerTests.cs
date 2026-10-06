@@ -1,7 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.EventCategories.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
@@ -17,18 +16,11 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly DeleteEventCategoryTypeCommandHandler sut;
 
     public DeleteEventCategoryTypeCommandHandlerTests()
     {
-        sut = new DeleteEventCategoryTypeCommandHandler(
-            categoryTypes,
-            events,
-            uow,
-            cacheInvalidator
-        );
+        sut = new DeleteEventCategoryTypeCommandHandler(categoryTypes, events);
     }
 
     [Fact]
@@ -37,14 +29,12 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
         categoryTypes.Finds(null);
 
         var result = await sut.HandleAsync(
-            new DeleteEventCategoryTypeCommand(Guid.NewGuid()),
+            new DeleteEventCategoryTypeCommand(EventCategoryTypeId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeNotFound);
     }
 
     [Fact]
@@ -62,34 +52,27 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeOnlyCategoryOfEvent);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeOnlyCategoryOfEvent);
         categoryTypes.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncRemovedInvalidatesCategoryTypesAndEventsCache()
+    public async Task HandleAsyncFoundRemovesItAndRaisesDeletion()
     {
         var categoryType = EventCategoryType.Create("Talleres", "#112233");
+        categoryType.PullDomainEvents();
         categoryTypes.Finds(categoryType);
 
         var result = await sut.HandleAsync(
-            new DeleteEventCategoryTypeCommand(Guid.NewGuid()),
+            new DeleteEventCategoryTypeCommand(categoryType.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         categoryTypes.Received(1).Remove(categoryType);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null
-                    && tags.Contains(CacheTags.EventCategoryTypes)
-                    && tags.Contains(CacheTags.Events)
-                )
-            );
+        categoryType
+            .PullDomainEvents()
+            .Should()
+            .Equal(new EventCategoryTypeDeleted(categoryType.Id));
     }
 }

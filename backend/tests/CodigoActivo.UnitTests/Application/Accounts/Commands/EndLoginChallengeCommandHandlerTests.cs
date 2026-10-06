@@ -26,7 +26,7 @@ public sealed class EndLoginChallengeCommandHandlerTests
         users.Finds(null);
 
         var result = await sut.HandleAsync(
-            new EndLoginChallengeCommand(Guid.NewGuid(), Guid.NewGuid()),
+            new EndLoginChallengeCommand(UserId.New(), Guid.NewGuid()),
             TestContext.Current.CancellationToken
         );
 

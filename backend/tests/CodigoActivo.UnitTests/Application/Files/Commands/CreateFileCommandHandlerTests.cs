@@ -1,10 +1,12 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -17,6 +19,7 @@ public sealed class CreateFileCommandHandlerTests
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IFileStorage storage = Substitute.For<IFileStorage>();
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
     private readonly FileUploadOptions options = new();
     private readonly CreateFileCommandHandler sut;
@@ -27,6 +30,7 @@ public sealed class CreateFileCommandHandlerTests
             files,
             uow,
             storage,
+            currentUser,
             clock,
             new FileUploadValidator(options)
         );
@@ -43,11 +47,11 @@ public sealed class CreateFileCommandHandlerTests
     public async Task HandleAsyncUploadMissingReturnsValidationError()
     {
         var result = await sut.HandleAsync(
-            new CreateFileCommand(null, Guid.NewGuid()),
+            new CreateFileCommand(null),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadMissing);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.FileUploadMissing);
         await AssertNothingPersistedAsync();
     }
 
@@ -58,11 +62,11 @@ public sealed class CreateFileCommandHandlerTests
         var upload = new FileUpload(content, "empty.png", 0);
 
         var result = await sut.HandleAsync(
-            new CreateFileCommand(upload, Guid.NewGuid()),
+            new CreateFileCommand(upload),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadEmpty);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.FileUploadEmpty);
         await AssertNothingPersistedAsync();
     }
 
@@ -73,11 +77,11 @@ public sealed class CreateFileCommandHandlerTests
         var upload = new FileUpload(PngStream(), "big.png", 11);
 
         var result = await sut.HandleAsync(
-            new CreateFileCommand(upload, Guid.NewGuid()),
+            new CreateFileCommand(upload),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadTooLarge);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.FileUploadTooLarge);
         await AssertNothingPersistedAsync();
     }
 
@@ -90,7 +94,7 @@ public sealed class CreateFileCommandHandlerTests
         var added = await CaptureAddedFilesAsync();
 
         var result = await sut.HandleAsync(
-            new CreateFileCommand(upload, Guid.NewGuid()),
+            new CreateFileCommand(upload),
             TestContext.Current.CancellationToken
         );
 
@@ -110,11 +114,11 @@ public sealed class CreateFileCommandHandlerTests
         var upload = new FileUpload(new NonSeekableStream(PngBytes()), "x.png", 32);
 
         var result = await sut.HandleAsync(
-            new CreateFileCommand(upload, Guid.NewGuid()),
+            new CreateFileCommand(upload),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadStreamNotSeekable);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.FileUploadStreamNotSeekable);
         await AssertNothingPersistedAsync();
     }
 
@@ -124,11 +128,11 @@ public sealed class CreateFileCommandHandlerTests
         var upload = new FileUpload(JunkStream(), "junk.bin", 32);
 
         var result = await sut.HandleAsync(
-            new CreateFileCommand(upload, Guid.NewGuid()),
+            new CreateFileCommand(upload),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.FileUploadUnsupportedFormat);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.FileUploadUnsupportedFormat);
         await AssertNothingPersistedAsync();
         await storage
             .DidNotReceiveWithAnyArgs()
@@ -139,13 +143,14 @@ public sealed class CreateFileCommandHandlerTests
     public async Task HandleAsyncValidUploadSavesContentPersistsEntityAndReturnsId()
     {
         var caller = Guid.NewGuid();
+        currentUser.Id = UserId.From(caller);
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         var content = PngStream();
         var upload = new FileUpload(content, "  C:\\folder\\avatar.png  ", 32);
         var added = await CaptureAddedFilesAsync();
 
         var result = await sut.HandleAsync(
-            new CreateFileCommand(upload, caller),
+            new CreateFileCommand(upload),
             TestContext.Current.CancellationToken
         );
 
@@ -154,7 +159,7 @@ public sealed class CreateFileCommandHandlerTests
         result.Value.Should().Be(created.Id);
         created.Name.Should().Be("avatar.png");
         created.Extension.Should().Be("png");
-        created.UploadedBy.Should().Be(caller);
+        created.UploadedBy.Value.Should().Be(caller);
         created.UploadedAt.Should().Be(clock.UtcNow);
 
         await storage
@@ -170,7 +175,7 @@ public sealed class CreateFileCommandHandlerTests
         var added = await CaptureAddedFilesAsync();
 
         var result = await sut.HandleAsync(
-            new CreateFileCommand(upload, Guid.NewGuid()),
+            new CreateFileCommand(upload),
             TestContext.Current.CancellationToken
         );
 
@@ -186,7 +191,7 @@ public sealed class CreateFileCommandHandlerTests
         var added = await CaptureAddedFilesAsync();
 
         var result = await sut.HandleAsync(
-            new CreateFileCommand(upload, Guid.NewGuid()),
+            new CreateFileCommand(upload),
             TestContext.Current.CancellationToken
         );
 
@@ -205,7 +210,7 @@ public sealed class CreateFileCommandHandlerTests
 
         var act = async () =>
             await sut.HandleAsync(
-                new CreateFileCommand(upload, Guid.NewGuid()),
+                new CreateFileCommand(upload),
                 TestContext.Current.CancellationToken
             );
 

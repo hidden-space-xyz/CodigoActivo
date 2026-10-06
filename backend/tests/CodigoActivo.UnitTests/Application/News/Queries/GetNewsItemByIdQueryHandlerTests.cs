@@ -1,6 +1,8 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.News.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.News;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
@@ -20,12 +22,12 @@ public sealed class GetNewsItemByIdQueryHandlerTests
     public async Task HandleAsyncNewsItemMissingReturnsNotFound()
     {
         var result = await sut.HandleAsync(
-            new GetNewsItemByIdQuery(Guid.NewGuid()),
+            new GetNewsItemByIdQuery(NewsItemId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.NewsItemNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemNotFound);
     }
 }

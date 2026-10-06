@@ -1,11 +1,14 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
@@ -13,9 +16,11 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
 
 namespace CodigoActivo.UnitTests.Application.Users.Commands;
 
@@ -27,13 +32,14 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly FakePasswordHasher hasher = new();
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly RecordingEmailSender emailSender = new();
     private readonly RecordingLogger<AccountSecurityNotifier> notifierLogger = new();
     private readonly RecordingLogger<EmailChangeLinkIssuer> issuerLogger = new();
     private readonly FakeDisposableEmailDomainRepository disposableDomains = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly User actingUser;
+    private readonly TestCurrentUser currentUser = new(isAdmin: true);
+    private readonly AccountSecurityNotifications notifications;
     private readonly UpdateUserCommandHandler sut;
 
     public UpdateUserCommandHandlerTests()
@@ -44,13 +50,18 @@ public sealed class UpdateUserCommandHandlerTests
             new ApplicationOptions { BaseUrl = "https://app.test" },
             clock
         );
+        currentUser.Id = actingUser.Id;
+        notifications = new AccountSecurityNotifications(
+            users,
+            new AccountSecurityNotifier(emailSender, clock, composer, notifierLogger),
+            NullLogger<AccountSecurityNotifications>.Instance
+        );
         sut = new UpdateUserCommandHandler(
             users,
+            new ActingUserPolicy(currentUser, users),
+            currentUser,
             PasswordGuards.Create(hasher, uow, clock),
             clock,
-            uow,
-            cacheInvalidator,
-            new AccountSecurityNotifier(emailSender, clock, composer, notifierLogger),
             new DisposableEmailChecker(disposableDomains),
             new EmailChangeLinkIssuer(
                 users,
@@ -71,16 +82,24 @@ public sealed class UpdateUserCommandHandlerTests
     private Task<Result> HandleAsync(Guid userId, UpdateUserRequest request)
     {
         return sut.HandleAsync(
-            new UpdateUserCommand(userId, actingUser.Id, request),
+            request.ToCommand(UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
+    }
+
+    private async Task PublishAsync(User user)
+    {
+        foreach (var replaced in DomainEvents.Raised<ContactDetailsReplaced>(user))
+        {
+            await notifications.HandleAsync(replaced, TestContext.Current.CancellationToken);
+        }
     }
 
     private void EditOwnAccount(User? newAddressHolder = null)
     {
         users.FindReturns(actingUser, actingUser);
         users
-            .GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GetByEmailAsync(Arg.Any<EmailAddress>(), Arg.Any<CancellationToken>())
             .Returns(newAddressHolder);
     }
 
@@ -112,7 +131,7 @@ public sealed class UpdateUserCommandHandlerTests
 
     private Task<User?> AssertActingUserNotLoadedAsync()
     {
-        return users.Received(1).GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        return users.Received(1).GetByIdAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -134,7 +153,7 @@ public sealed class UpdateUserCommandHandlerTests
 
         var result = await HandleAsync(Guid.NewGuid(), request);
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
@@ -143,7 +162,11 @@ public sealed class UpdateUserCommandHandlerTests
     {
         users.FindReturns(NewUser(), actingUser);
         users
-            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .EmailExistsAsync(
+                Arg.Any<EmailAddress>(),
+                Arg.Any<UserId?>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(true);
         var request = new UpdateUserRequest(
             "F",
@@ -160,7 +183,7 @@ public sealed class UpdateUserCommandHandlerTests
 
         var result = await HandleAsync(Guid.NewGuid(), request);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserEmailAlreadyInUse);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.UserEmailAlreadyInUse);
         await AssertNotSavedAsync();
     }
 
@@ -171,7 +194,11 @@ public sealed class UpdateUserCommandHandlerTests
         var user = NewUser(id: id);
         users.FindReturns(user, actingUser);
         users
-            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .EmailExistsAsync(
+                Arg.Any<EmailAddress>(),
+                Arg.Any<UserId?>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(false);
         clock.UtcNow = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
         var request = new UpdateUserRequest(
@@ -192,19 +219,11 @@ public sealed class UpdateUserCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.FirstName.Should().Be("New");
         user.LastName.Should().Be("Name");
-        user.Email.Should().Be("new@test.com");
-        user.Phone.Should().Be("600 999 999");
-        user.Gender.Should().Be(Gender.Female);
+        user.Email!.Value.Should().Be("new@test.com");
+        user.Phone!.Value.Should().Be("600 999 999");
+        user.Gender.Should().Be(CodigoActivo.Domain.Users.Gender.Female);
         user.ParentId.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Users)
-                )
-            );
     }
 
     [Fact]
@@ -214,7 +233,11 @@ public sealed class UpdateUserCommandHandlerTests
         var user = NewUser(id: id, email: "old@test.com");
         users.FindReturns(user, actingUser);
         users
-            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .EmailExistsAsync(
+                Arg.Any<EmailAddress>(),
+                Arg.Any<UserId?>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(false);
         var request = new UpdateUserRequest(
             "Ana",
@@ -230,6 +253,7 @@ public sealed class UpdateUserCommandHandlerTests
         );
 
         var result = await HandleAsync(id, request);
+        await PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
         var message = emailSender.Sent.Should().ContainSingle().Subject;
@@ -257,6 +281,7 @@ public sealed class UpdateUserCommandHandlerTests
         );
 
         var result = await HandleAsync(id, request);
+        await PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
         var message = emailSender.Sent.Should().ContainSingle().Subject;
@@ -284,9 +309,10 @@ public sealed class UpdateUserCommandHandlerTests
         );
 
         var result = await HandleAsync(id, request);
+        await PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
-        user.Email.Should().Be("ana@test.com");
+        user.Email!.Value.Should().Be("ana@test.com");
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -311,6 +337,7 @@ public sealed class UpdateUserCommandHandlerTests
         );
 
         var result = await HandleAsync(id, request);
+        await PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
@@ -346,11 +373,10 @@ public sealed class UpdateUserCommandHandlerTests
         var result = await HandleAsync(id, request);
 
         result.IsSuccess.Should().BeTrue();
-        user.Email.Should().Be("ana@test.com");
-        user.Phone.Should().Be("555-0100");
-        user.SecondaryPhone.Should().Be("555-0200");
+        user.Email!.Value.Should().Be("ana@test.com");
+        user.Phone!.Value.Should().Be("555-0100");
+        user.SecondaryPhone!.Value.Should().Be("555-0200");
         await AssertActingUserNotLoadedAsync();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -380,8 +406,8 @@ public sealed class UpdateUserCommandHandlerTests
 
         var result = await HandleAsync(id, request);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
-        user.Email.Should().Be("ana@test.com");
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
+        user.Email!.Value.Should().Be("ana@test.com");
         actingUser.PasswordFailedAttempts.Should().Be(countedFailures);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -414,8 +440,8 @@ public sealed class UpdateUserCommandHandlerTests
 
         var result = await HandleAsync(id, request);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.SecondaryPhoneSameAsPrimary);
-        user.Phone.Should().Be("555-0100");
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.SecondaryPhoneSameAsPrimary);
+        user.Phone!.Value.Should().Be("555-0100");
         user.SecondaryPhone.Should().BeNull();
         actingUser.PasswordFailedAttempts.Should().Be(0);
         await AssertNotSavedAsync();
@@ -447,8 +473,8 @@ public sealed class UpdateUserCommandHandlerTests
 
         var result = await HandleAsync(id, request);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.DisposableEmailNotAllowed);
-        user.Email.Should().Be("ana@test.com");
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.DisposableEmailNotAllowed);
+        user.Email!.Value.Should().Be("ana@test.com");
         actingUser.PasswordFailedAttempts.Should().Be(0);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
@@ -462,7 +488,11 @@ public sealed class UpdateUserCommandHandlerTests
         var user = NewUser(id: id, email: "ana@mailinator.com");
         users.FindReturns(user, actingUser);
         users
-            .EmailExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .EmailExistsAsync(
+                Arg.Any<EmailAddress>(),
+                Arg.Any<UserId?>(),
+                Arg.Any<CancellationToken>()
+            )
             .Returns(false);
         var request = new UpdateUserRequest(
             "Anabel",
@@ -481,9 +511,8 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.FirstName.Should().Be("Anabel");
-        user.Email.Should().Be("ana@mailinator.com");
+        user.Email!.Value.Should().Be("ana@mailinator.com");
         disposableDomains.Lookups.Should().BeEmpty();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -508,8 +537,8 @@ public sealed class UpdateUserCommandHandlerTests
 
         var result = await HandleAsync(id, request);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
-        user.Email.Should().Be("ana@test.com");
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
+        user.Email!.Value.Should().Be("ana@test.com");
         await AssertNotSavedAsync();
     }
 
@@ -535,11 +564,10 @@ public sealed class UpdateUserCommandHandlerTests
         var result = await HandleAsync(id, request);
 
         result.IsSuccess.Should().BeTrue();
-        user.NationalId.Should().Be("X1234567L");
+        user.NationalId!.Value.Should().Be("X1234567L");
         user.PromotionalConsent.Should().BeTrue();
         user.BirthDate.Should().BeNull();
         await AssertActingUserNotLoadedAsync();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -568,8 +596,8 @@ public sealed class UpdateUserCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.FirstName.Should().Be("Kid");
         user.BirthDate.Should().Be(MinorDob.AddDays(1));
-        user.Gender.Should().Be(Gender.Female);
-        user.ParentId.Should().Be(parentId);
+        user.Gender.Should().Be(CodigoActivo.Domain.Users.Gender.Female);
+        user.ParentId.Should().Be(UserId.From(parentId));
         user.Email.Should()
             .BeNull("a dependent's contact details are never taken from the request");
         user.Phone.Should().BeNull();
@@ -577,7 +605,6 @@ public sealed class UpdateUserCommandHandlerTests
         user.NationalId.Should().BeNull("a dependent never stores a DNI or NIE");
         user.PromotionalConsent.Should().BeFalse();
         await AssertActingUserNotLoadedAsync();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -587,14 +614,14 @@ public sealed class UpdateUserCommandHandlerTests
         clock.UtcNow = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
 
         var result = await HandleAsync(
-            actingUser.Id,
+            actingUser.Id.Value,
             ContactChange("  New@Test.com ", firstName: "Anabel")
         );
 
         result.IsSuccess.Should().BeTrue();
         actingUser.FirstName.Should().Be("Anabel");
-        actingUser.Email.Should().Be("acting@test.com");
-        actingUser.PendingEmail.Should().Be("new@test.com");
+        actingUser.Email!.Value.Should().Be("acting@test.com");
+        actingUser.PendingEmail!.Value.Should().Be("new@test.com");
         actingUser.EmailChangeExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);
         var link = emailSender.Sent.Should().ContainSingle().Subject;
         link.Kind.Should().Be(EmailKind.AccountVerification);
@@ -603,7 +630,6 @@ public sealed class UpdateUserCommandHandlerTests
         link.TextBody.Should()
             .Contain($"https://app.test/confirm-email#userId={actingUser.Id}&code=");
         actingUser.EmailChangeCodeHash.Should().Be(hasher.Hash(emailSender.LastCode()));
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -612,13 +638,13 @@ public sealed class UpdateUserCommandHandlerTests
         EditOwnAccount(NewUser(email: "taken@test.com"));
 
         var result = await HandleAsync(
-            actingUser.Id,
+            actingUser.Id.Value,
             ContactChange("taken@test.com", firstName: "Anabel")
         );
 
         result.IsSuccess.Should().BeTrue();
         actingUser.FirstName.Should().Be("Anabel");
-        actingUser.Email.Should().Be("acting@test.com");
+        actingUser.Email!.Value.Should().Be("acting@test.com");
         actingUser.UsableEmailChangeCodeHash(clock.UtcNow).Should().NotBeNull();
         var notice = emailSender.Sent.Should().ContainSingle().Subject;
         notice.ToAddress.Should().Be("taken@test.com");
@@ -627,15 +653,16 @@ public sealed class UpdateUserCommandHandlerTests
         await users
             .DidNotReceiveWithAnyArgs()
             .EmailExistsAsync(default!, default, TestContext.Current.CancellationToken);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task HandleAsyncOwnNewEmailOfAnUnverifiedAccountGetsTheLink()
     {
-        EditOwnAccount(NewUser(email: "taken@test.com", statusId: SeedIds.UserStatusTypes.Pending));
+        EditOwnAccount(
+            NewUser(email: "taken@test.com", statusId: KnownIds.UserStatusTypes.Pending)
+        );
 
-        var result = await HandleAsync(actingUser.Id, ContactChange("taken@test.com"));
+        var result = await HandleAsync(actingUser.Id.Value, ContactChange("taken@test.com"));
 
         result.IsSuccess.Should().BeTrue();
         emailSender
@@ -651,13 +678,14 @@ public sealed class UpdateUserCommandHandlerTests
         EditOwnAccount();
 
         var result = await HandleAsync(
-            actingUser.Id,
+            actingUser.Id.Value,
             ContactChange("new@test.com", phone: "555-0199")
         );
+        await PublishAsync(actingUser);
 
         result.IsSuccess.Should().BeTrue();
-        actingUser.Phone.Should().Be("555-0199");
-        actingUser.Email.Should().Be("acting@test.com");
+        actingUser.Phone!.Value.Should().Be("555-0199");
+        actingUser.Email!.Value.Should().Be("acting@test.com");
         emailSender
             .Sent.Select(message => message.ToAddress)
             .Should()
@@ -674,11 +702,11 @@ public sealed class UpdateUserCommandHandlerTests
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
 
         var result = await HandleAsync(
-            actingUser.Id,
+            actingUser.Id.Value,
             ContactChange("new@test.com", firstName: "Anabel")
         );
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.OtpResendCooldownActive);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.OtpResendCooldownActive);
         actingUser.FirstName.Should().Be("Ana");
         actingUser.PendingEmail.Should().BeNull();
         await AssertNotSavedAsync();
@@ -690,9 +718,9 @@ public sealed class UpdateUserCommandHandlerTests
         EditOwnAccount();
         emailSender.ThrowOnSend = new InvalidOperationException("outbox unavailable");
 
-        var result = await HandleAsync(actingUser.Id, ContactChange("new@test.com"));
+        var result = await HandleAsync(actingUser.Id.Value, ContactChange("new@test.com"));
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.EmailSendFailed);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.EmailSendFailed);
         actingUser.PendingEmail.Should().BeNull();
         var entry = issuerLogger.LevelEntries.Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Error);

@@ -13,11 +13,7 @@ public sealed class ListActivityRoleTypesQueryHandlerTests
 
     public ListActivityRoleTypesQueryHandlerTests()
     {
-        sut = new ListActivityRoleTypesQueryHandler(
-            store,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
-        );
+        sut = new ListActivityRoleTypesQueryHandler(store, new FakeQueryExecutor());
     }
 
     [Fact]

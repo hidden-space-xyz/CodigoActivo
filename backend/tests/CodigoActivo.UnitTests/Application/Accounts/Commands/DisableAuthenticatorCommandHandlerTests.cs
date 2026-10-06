@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -6,6 +7,7 @@ using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
@@ -14,6 +16,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
+using TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
@@ -27,12 +30,27 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly TwoFactorOptions options = new() { MaxFailedAttempts = 2 };
     private readonly RecordingEmailSender emailSender = new();
+    private readonly TestCurrentUser currentUser = new();
+    private readonly CommittedEvents events;
     private readonly DisableAuthenticatorCommandHandler sut;
 
     public DisableAuthenticatorCommandHandlerTests()
     {
+        events = new CommittedEvents(
+            new AccountSecurityNotifications(
+                users,
+                new AccountSecurityNotifier(
+                    emailSender,
+                    clock,
+                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    NullLogger<AccountSecurityNotifier>.Instance
+                ),
+                NullLogger<AccountSecurityNotifications>.Instance
+            )
+        );
         sut = new DisableAuthenticatorCommandHandler(
             users,
+            currentUser,
             uow,
             clock,
             PasswordGuards.Create(new FakePasswordHasher(), uow, clock),
@@ -43,12 +61,6 @@ public sealed class DisableAuthenticatorCommandHandlerTests
                 NullLogger<AuthenticatorCodeVerifier>.Instance
             ),
             options,
-            new AccountSecurityNotifier(
-                emailSender,
-                clock,
-                new AccountEmailComposer(new ApplicationOptions(), clock),
-                NullLogger<AccountSecurityNotifier>.Instance
-            ),
             NullLogger<DisableAuthenticatorCommandHandler>.Instance
         );
     }
@@ -59,11 +71,9 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         string code = "123456"
     )
     {
+        currentUser.Id = UserId.From(userId);
         return sut.HandleAsync(
-            new DisableAuthenticatorCommand(
-                userId,
-                new DisableAuthenticatorRequest(password, code)
-            ),
+            new DisableAuthenticatorRequest(password, code).ToCommand(),
             TestContext.Current.CancellationToken
         );
     }
@@ -81,7 +91,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
 
         var result = await DisableAsync(Guid.NewGuid());
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
@@ -90,9 +100,9 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     {
         var user = users.FindReturns(NewUser());
 
-        var result = await DisableAsync(user.Id);
+        var result = await DisableAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorNotEnabled);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.AuthenticatorNotEnabled);
         await AssertNotSavedAsync();
     }
 
@@ -101,9 +111,9 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     {
         var user = users.FindReturns(NewUserWithAuthenticator(Secret));
 
-        var result = await DisableAsync(user.Id, password: "wrong");
+        var result = await DisableAsync(user.Id.Value, password: "wrong");
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.UserCurrentPasswordIncorrect);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         totp.DidNotReceiveWithAnyArgs().MatchStep(default!, default!, default);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
         user.PasswordFailedAttempts.Should().Be(1);
@@ -117,9 +127,9 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         var user = users.FindReturns(NewUserWithAuthenticator(Secret));
         Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(1) });
 
-        var result = await DisableAsync(user.Id);
+        var result = await DisableAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
         await AssertNotSavedAsync();
     }
 
@@ -129,9 +139,9 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         var user = users.FindReturns(NewUserWithAuthenticator(Secret));
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(default(long?));
 
-        var result = await DisableAsync(user.Id);
+        var result = await DisableAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
         user.AuthenticatorKey.Should().NotBeNull();
         user.TwoFactorFailedAttempts.Should().Be(1);
@@ -145,7 +155,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 1 });
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(default(long?));
 
-        await DisableAsync(user.Id);
+        await DisableAsync(user.Id.Value);
 
         user.TwoFactorLockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
     }
@@ -163,9 +173,10 @@ public sealed class DisableAuthenticatorCommandHandlerTests
                 return true;
             });
 
-        var result = await DisableAsync(user.Id);
+        var result = await DisableAsync(user.Id.Value);
+        await events.PublishAsync(user);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
         emailSender.Sent.Should().BeEmpty();
     }
@@ -182,9 +193,10 @@ public sealed class DisableAuthenticatorCommandHandlerTests
                 return true;
             });
 
-        var result = await DisableAsync(user.Id);
+        var result = await DisableAsync(user.Id.Value);
+        await events.PublishAsync(user);
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.AuthenticatorNotEnabled);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.AuthenticatorNotEnabled);
         totp.DidNotReceiveWithAnyArgs().MatchStep(default!, default!, default);
         emailSender.Sent.Should().BeEmpty();
     }
@@ -195,9 +207,9 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         var user = users.FindReturns(NewUserWithAuthenticator(Secret, lastUsedStep: 50));
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(50);
 
-        var result = await DisableAsync(user.Id);
+        var result = await DisableAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.TwoFactorCodeInvalid);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
     }
 
     [Fact]
@@ -207,7 +219,8 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 1 });
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(51);
 
-        var result = await DisableAsync(user.Id);
+        var result = await DisableAsync(user.Id.Value);
+        await events.PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
@@ -218,7 +231,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email);
+        message.ToAddress.Should().Be(user.Email!.Value);
         message.TextBody.Should().NotContain(Secret).And.NotContain("123456");
     }
 }

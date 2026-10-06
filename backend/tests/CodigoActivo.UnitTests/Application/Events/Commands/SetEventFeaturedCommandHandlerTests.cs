@@ -1,7 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -16,12 +15,11 @@ public sealed class SetEventFeaturedCommandHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>().RunsTransactions();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly SetEventFeaturedCommandHandler sut;
 
     public SetEventFeaturedCommandHandlerTests()
     {
-        sut = new SetEventFeaturedCommandHandler(events, uow, cacheInvalidator);
+        sut = new SetEventFeaturedCommandHandler(events, uow);
     }
 
     [Fact]
@@ -30,18 +28,16 @@ public sealed class SetEventFeaturedCommandHandlerTests
         events.Finds(null);
 
         var result = await sut.HandleAsync(
-            new SetEventFeaturedCommand(Guid.NewGuid()),
+            new SetEventFeaturedCommand(EventId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.EventNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
     }
 
     [Fact]
-    public async Task HandleAsyncEventExistsFeaturesTheEventAndInvalidatesCache()
+    public async Task HandleAsyncEventExistsFeaturesTheEvent()
     {
         var chosen = NewEvent();
         events.GetByIdAsync(chosen.Id, Arg.Any<CancellationToken>()).Returns(chosen);
@@ -58,13 +54,6 @@ public sealed class SetEventFeaturedCommandHandlerTests
             .ExecuteInTransactionAsync(
                 Arg.Any<Func<CancellationToken, Task<bool>>>(),
                 Arg.Any<CancellationToken>()
-            );
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Events)
-                )
             );
     }
 

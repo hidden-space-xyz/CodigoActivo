@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
@@ -60,7 +61,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         var user = users.FindReturns(NewUser());
 
         var result = await sut.HandleAsync(
-            new ForgotPasswordCommand(new ForgotPasswordRequest(user.Email!)),
+            new ForgotPasswordCommand(user.Email!.Value),
             TestContext.Current.CancellationToken
         );
 
@@ -76,7 +77,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         users.FindReturns(null);
 
         var result = await sut.HandleAsync(
-            new ForgotPasswordCommand(new ForgotPasswordRequest("nobody@test.com")),
+            new ForgotPasswordCommand("nobody@test.com"),
             TestContext.Current.CancellationToken
         );
 
@@ -92,7 +93,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         users.FindReturns(NewUser(passwordHash: null));
 
         var result = await sut.HandleAsync(
-            new ForgotPasswordCommand(new ForgotPasswordRequest("ana@test.com")),
+            new ForgotPasswordCommand("ana@test.com"),
             TestContext.Current.CancellationToken
         );
 
@@ -103,7 +104,7 @@ public sealed class ForgotPasswordCommandHandlerTests
 
     public static TheoryData<Guid> IneligibleResetStatuses()
     {
-        return [SeedIds.UserStatusTypes.Blocked, SeedIds.UserStatusTypes.Dependent];
+        return [KnownIds.UserStatusTypes.Blocked, KnownIds.UserStatusTypes.Dependent];
     }
 
     [Theory]
@@ -113,7 +114,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         users.FindReturns(NewUser(statusId: statusId));
 
         var result = await sut.HandleAsync(
-            new ForgotPasswordCommand(new ForgotPasswordRequest("ana@test.com")),
+            new ForgotPasswordCommand("ana@test.com"),
             TestContext.Current.CancellationToken
         );
 
@@ -129,7 +130,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         Persisted.Overwrite(user, new { PasswordResetLastSentAt = clock.UtcNow.AddSeconds(-10) });
 
         var result = await sut.HandleAsync(
-            new ForgotPasswordCommand(new ForgotPasswordRequest("ana@test.com")),
+            new ForgotPasswordCommand("ana@test.com"),
             TestContext.Current.CancellationToken
         );
 
@@ -144,7 +145,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         var user = users.FindReturns(NewUser());
 
         var result = await sut.HandleAsync(
-            new ForgotPasswordCommand(new ForgotPasswordRequest("ana@test.com")),
+            new ForgotPasswordCommand("ana@test.com"),
             TestContext.Current.CancellationToken
         );
 
@@ -156,7 +157,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         user.PasswordResetExpiresAt.Should().Be(clock.UtcNow + passwordReset.CodeLifetime);
         user.PasswordResetLastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
-        emailSender.Sent[0].ToAddress.Should().Be(user.Email);
+        emailSender.Sent[0].ToAddress.Should().Be(user.Email!.Value);
         emailSender.Sent[0].TextBody.Should().Contain("/reset-password#userId=");
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -169,7 +170,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new ForgotPasswordCommand(new ForgotPasswordRequest("ana@test.com")),
+            new ForgotPasswordCommand("ana@test.com"),
             TestContext.Current.CancellationToken
         );
 
@@ -187,7 +188,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         var user = users.FindReturns(NewUser());
 
         var result = await sut.HandleAsync(
-            new ForgotPasswordCommand(new ForgotPasswordRequest("ana@test.com")),
+            new ForgotPasswordCommand("ana@test.com"),
             TestContext.Current.CancellationToken
         );
 

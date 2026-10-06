@@ -14,7 +14,7 @@ public sealed class ListUserTypesQueryHandlerTests
 
     public ListUserTypesQueryHandlerTests()
     {
-        sut = new ListUserTypesQueryHandler(store, new FakeQueryExecutor(), new FakeHybridCache());
+        sut = new ListUserTypesQueryHandler(store, new FakeQueryExecutor());
     }
 
     [Fact]

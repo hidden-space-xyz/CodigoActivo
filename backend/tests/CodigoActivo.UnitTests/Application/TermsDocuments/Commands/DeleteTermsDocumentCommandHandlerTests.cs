@@ -1,11 +1,14 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.TermsDocuments.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.UnitTests.Application.Events;
+using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
@@ -19,19 +22,11 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IEventTermsAcceptanceRepository termsAcceptances =
         Substitute.For<IEventTermsAcceptanceRepository>();
-    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly DeleteTermsDocumentCommandHandler sut;
 
     public DeleteTermsDocumentCommandHandlerTests()
     {
-        sut = new DeleteTermsDocumentCommandHandler(
-            termsDocuments,
-            events,
-            termsAcceptances,
-            orphanCleaner,
-            uow
-        );
+        sut = new DeleteTermsDocumentCommandHandler(termsDocuments, events, termsAcceptances);
     }
 
     [Fact]
@@ -40,14 +35,12 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
         termsDocuments.TermsDocumentFound(null);
 
         var result = await sut.HandleAsync(
-            new DeleteTermsDocumentCommand(Guid.NewGuid()),
+            new DeleteTermsDocumentCommand(TermsDocumentId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.TermsDocumentNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNotFound);
     }
 
     [Fact]
@@ -57,15 +50,13 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
         events.TermsDocumentInUse(true);
 
         var result = await sut.HandleAsync(
-            new DeleteTermsDocumentCommand(Guid.NewGuid()),
+            new DeleteTermsDocumentCommand(TermsDocumentId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.TermsDocumentInUse);
+        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentInUse);
         termsDocuments.DidNotReceiveWithAnyArgs().Remove(Arg.Any<TermsDocument>());
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -76,19 +67,17 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
         termsAcceptances.TermsDocumentAccepted(true);
 
         var result = await sut.HandleAsync(
-            new DeleteTermsDocumentCommand(Guid.NewGuid()),
+            new DeleteTermsDocumentCommand(TermsDocumentId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.TermsDocumentInUse);
+        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentInUse);
         termsDocuments.DidNotReceiveWithAnyArgs().Remove(Arg.Any<TermsDocument>());
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestRemovesAndCleansOrphanedFiles()
+    public async Task HandleAsyncValidRequestRemovesItAndReleasesItsFiles()
     {
         var fileId = Guid.NewGuid();
         var termsDocument = NewTermsDocument(
@@ -104,12 +93,11 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         termsDocuments.Received(1).Remove(termsDocument);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Contains(fileId)),
-                Arg.Any<CancellationToken>()
+        DomainEvents
+            .ReleasedFiles(termsDocument)
+            .Should()
+            .Match<IReadOnlyCollection<StoredFileId>>(ids =>
+                ids != null && ids.Contains(StoredFileId.From(fileId))
             );
     }
 }

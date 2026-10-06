@@ -1,7 +1,9 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Emails.EmailTestData;
@@ -32,11 +34,11 @@ public sealed class SendEmailToUserCommandHandlerTests
         store.Users.AddRange([parent, child]);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUserCommand(child.Id, Request(), []),
+            new SendEmailToUserCommand(UserId.From(child.Id), Request(), []),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ErrorCode.EmailRecipientWithoutAddress);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailRecipientWithoutAddress);
         outbox.Messages.Should().BeEmpty();
     }
 
@@ -46,11 +48,11 @@ public sealed class SendEmailToUserCommandHandlerTests
         store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         var result = await sut.HandleAsync(
-            new SendEmailToUserCommand(Guid.NewGuid(), Request(), []),
+            new SendEmailToUserCommand(UserId.New(), Request(), []),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
     }
 
     [Fact]
@@ -60,7 +62,11 @@ public sealed class SendEmailToUserCommandHandlerTests
         store.Users.AddRange([ana, NewUserRow("Berto", "berto@test.local")]);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUserCommand(ana.Id, Request(body: "Nos vemos el sábado"), []),
+            new SendEmailToUserCommand(
+                UserId.From(ana.Id),
+                Request(body: "Nos vemos el sábado"),
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 

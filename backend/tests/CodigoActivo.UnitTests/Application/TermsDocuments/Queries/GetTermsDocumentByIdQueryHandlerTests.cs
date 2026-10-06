@@ -1,7 +1,9 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.TermsDocuments.Contracts;
 using CodigoActivo.Application.TermsDocuments.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
@@ -27,7 +29,7 @@ public sealed class GetTermsDocumentByIdQueryHandlerTests
         store.TermsDocuments.AddRange([NewTermsDocumentRow("Otras normas"), termsDocument]);
 
         var result = await sut.HandleAsync(
-            new GetTermsDocumentByIdQuery(termsDocument.Id),
+            new GetTermsDocumentByIdQuery(TermsDocumentId.From(termsDocument.Id)),
             TestContext.Current.CancellationToken
         );
 
@@ -43,10 +45,10 @@ public sealed class GetTermsDocumentByIdQueryHandlerTests
         store.TermsDocuments.Add(NewTermsDocumentRow());
 
         var result = await sut.HandleAsync(
-            new GetTermsDocumentByIdQuery(Guid.NewGuid()),
+            new GetTermsDocumentByIdQuery(TermsDocumentId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.TermsDocumentNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.TermsDocumentNotFound);
     }
 }

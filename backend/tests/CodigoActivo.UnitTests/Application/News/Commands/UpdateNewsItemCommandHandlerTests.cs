@@ -1,10 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
-using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.News.Commands;
-using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
@@ -19,148 +16,130 @@ public sealed class UpdateNewsItemCommandHandlerTests
 {
     private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
-    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly UpdateNewsItemCommandHandler sut;
 
     public UpdateNewsItemCommandHandlerTests()
     {
-        sut = new UpdateNewsItemCommandHandler(
-            news,
-            files,
-            orphanCleaner,
-            clock,
-            uow,
-            cacheInvalidator
-        );
+        sut = new UpdateNewsItemCommandHandler(news, files, currentUser, clock);
+    }
+
+    private static UpdateNewsItemCommand Command(
+        NewsItemId newsItemId,
+        StoredFileId thumbnailId,
+        string title = "Title",
+        string subtitle = "Subtitle",
+        string description = "{}"
+    )
+    {
+        return new UpdateNewsItemCommand(newsItemId, title, subtitle, description, thumbnailId);
+    }
+
+    private static NewsItemUpdated SingleUpdate(NewsItem newsItem)
+    {
+        return newsItem
+            .PullDomainEvents()
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<NewsItemUpdated>()
+            .Subject;
     }
 
     [Fact]
     public async Task HandleAsyncNewsItemMissingReturnsNotFound()
     {
         news.Finds(null);
-        var request = new UpdateNewsItemRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
         var result = await sut.HandleAsync(
-            new UpdateNewsItemCommand(Guid.NewGuid(), request, Guid.NewGuid()),
+            Command(NewsItemId.New(), StoredFileId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ErrorCode.NewsItemNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(Arg.Any<Guid>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await cacheInvalidator
-            .DidNotReceive()
-            .InvalidateAsync(Arg.Any<IReadOnlyCollection<string>>());
+            .ExistsAsync(Arg.Any<StoredFileId>(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncThumbnailMissingReturnsBadRequest()
+    public async Task HandleAsyncThumbnailMissingReturnsBadRequestAndKeepsTheItem()
     {
-        var newsItem = NewNewsItem();
+        var newsItem = NewNewsItem("Old");
         news.Finds(newsItem);
         files.ThumbnailExists(false);
-        var request = new UpdateNewsItemRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
         var result = await sut.HandleAsync(
-            new UpdateNewsItemCommand(newsItem.Id, request, Guid.NewGuid()),
+            Command(newsItem.Id, StoredFileId.New(), "New"),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.NewsItemThumbnailNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemThumbnailNotFound);
+        newsItem.Title.Should().Be("Old");
+        newsItem.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestMutatesPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidCommandReplacesContentByTheCurrentUser()
     {
         var newsItem = NewNewsItem("Old", "OldSub");
         news.Finds(newsItem);
         files.ThumbnailExists(true);
-        var caller = Guid.NewGuid();
-        var thumbnailId = Guid.NewGuid();
+        var thumbnailId = StoredFileId.New();
         clock.UtcNow = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero);
-        var request = new UpdateNewsItemRequest("  New  ", "  NewSub  ", "{\"y\":2}", thumbnailId);
 
         var result = await sut.HandleAsync(
-            new UpdateNewsItemCommand(newsItem.Id, request, caller),
+            Command(newsItem.Id, thumbnailId, "  New  ", "  NewSub  ", "{\"y\":2}"),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         newsItem.Title.Should().Be("New");
         newsItem.Subtitle.Should().Be("NewSub");
-        newsItem.Description.Should().Be("{\"y\":2}");
+        newsItem.Description.Json.Should().Be("{\"y\":2}");
         newsItem.ThumbnailId.Should().Be(thumbnailId);
-        newsItem.UpdatedBy.Should().Be(caller);
+        newsItem.UpdatedBy.Should().Be(currentUser.Id);
         newsItem.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.News)
-                )
-            );
     }
 
     [Fact]
-    public async Task HandleAsyncThumbnailReplacedCleansUpPreviousFileAfterSave()
+    public async Task HandleAsyncThumbnailReplacedReleasesThePreviousFile()
     {
         var newsItem = NewNewsItem();
         var previousThumbnailId = newsItem.ThumbnailId;
         news.Finds(newsItem);
         files.ThumbnailExists(true);
-        var request = new UpdateNewsItemRequest("Title", "Subtitle", "{}", Guid.NewGuid());
 
         var result = await sut.HandleAsync(
-            new UpdateNewsItemCommand(newsItem.Id, request, Guid.NewGuid()),
+            Command(newsItem.Id, StoredFileId.New()),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids != null && ids.Count == 1 && ids.Contains(previousThumbnailId)
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        SingleUpdate(newsItem).ReleasedFileIds.Should().Equal(previousThumbnailId);
     }
 
     [Fact]
-    public async Task HandleAsyncThumbnailUnchangedDoesNotCleanUp()
+    public async Task HandleAsyncThumbnailUnchangedReleasesNothing()
     {
         var newsItem = NewNewsItem();
         news.Finds(newsItem);
         files.ThumbnailExists(true);
-        var request = new UpdateNewsItemRequest("Title", "Subtitle", "{}", newsItem.ThumbnailId);
 
         var result = await sut.HandleAsync(
-            new UpdateNewsItemCommand(newsItem.Id, request, Guid.NewGuid()),
+            Command(newsItem.Id, newsItem.ThumbnailId),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids => ids != null && ids.Count == 0),
-                Arg.Any<CancellationToken>()
-            );
+        SingleUpdate(newsItem).ReleasedFileIds.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncImagesDroppedFromDescriptionCleansUpDroppedKeepsRest()
+    public async Task HandleAsyncImagesDroppedFromDescriptionReleasesDroppedKeepsRest()
     {
         var removedId = Guid.NewGuid();
         var keptId = Guid.NewGuid();
@@ -169,26 +148,17 @@ public sealed class UpdateNewsItemCommandHandlerTests
         );
         news.Finds(newsItem);
         files.ThumbnailExists(true);
-        var request = new UpdateNewsItemRequest(
-            "Title",
-            "Subtitle",
-            $"{{\"b\":\"/api/files/{keptId}/content\"}}",
-            newsItem.ThumbnailId
-        );
 
         var result = await sut.HandleAsync(
-            new UpdateNewsItemCommand(newsItem.Id, request, Guid.NewGuid()),
+            Command(
+                newsItem.Id,
+                newsItem.ThumbnailId,
+                description: $"{{\"b\":\"/api/files/{keptId}/content\"}}"
+            ),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await orphanCleaner
-            .Received(1)
-            .DeleteOrphanedAsync(
-                Arg.Is<IReadOnlyCollection<Guid>>(ids =>
-                    ids != null && ids.Contains(removedId) && !ids.Contains(keptId)
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        SingleUpdate(newsItem).ReleasedFileIds.Should().Equal(StoredFileId.From(removedId));
     }
 }

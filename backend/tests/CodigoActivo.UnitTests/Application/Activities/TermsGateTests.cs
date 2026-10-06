@@ -1,9 +1,16 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -34,7 +41,7 @@ public sealed class TermsGateTests
     private Guid HasDocuments(params (Guid TermsDocumentId, bool Required)[] documents)
     {
         var ev = Event.Create(
-            new EventContent("Feria", "s", "{}", Guid.NewGuid()),
+            new EventContent("Feria", "s", RichText.From("{}"), StoredFileId.From(Guid.NewGuid())),
             EventSchedule
                 .Create(
                     new DateOnly(2026, 7, 1),
@@ -44,23 +51,26 @@ public sealed class TermsGateTests
                     OpenEnd
                 )
                 .Value,
-            EventCategorySelection.Create([Guid.NewGuid()]).Value,
+            EventCategorySelection.Create([EventCategoryTypeId.From(Guid.NewGuid())]).Value,
             EventTermsLinks
                 .Create([
-                    .. documents.Select(d => new EventTermsLink(d.TermsDocumentId, d.Required)),
+                    .. documents.Select(d => new EventTermsLink(
+                        TermsDocumentId.From(d.TermsDocumentId),
+                        d.Required
+                    )),
                 ])
                 .Value,
-            Guid.NewGuid(),
+            UserId.From(Guid.NewGuid()),
             clock.UtcNow
         );
         events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
-        return ev.Id;
+        return ev.Id.Value;
     }
 
     private void HasAcceptances(params EventTermsAcceptance[] acceptances)
     {
         termsAcceptances
-            .ListAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ListAsync(Arg.Any<EventId>(), Arg.Any<UserId>(), Arg.Any<CancellationToken>())
             .Returns(acceptances);
     }
 
@@ -70,9 +80,9 @@ public sealed class TermsGateTests
         events.Finds(null);
 
         var result = await sut.EnsureDecidedAsync(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            [new TermsDecisionRequest(Guid.NewGuid(), true)],
+            EventId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.New(), true)],
             TestContext.Current.CancellationToken
         );
 
@@ -88,9 +98,9 @@ public sealed class TermsGateTests
         var eventId = HasDocuments();
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            Guid.NewGuid(),
-            [new TermsDecisionRequest(Guid.NewGuid(), true)],
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.New(), true)],
             TestContext.Current.CancellationToken
         );
 
@@ -112,9 +122,9 @@ public sealed class TermsGateTests
         HasAcceptances(StoredDecision(linkedRequiredId, true, clock.UtcNow));
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            Guid.NewGuid(),
-            [new TermsDecisionRequest(unlinkedId, true)],
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.From(unlinkedId), true)],
             TestContext.Current.CancellationToken
         );
 
@@ -134,9 +144,9 @@ public sealed class TermsGateTests
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            Guid.NewGuid(),
-            [new TermsDecisionRequest(termsDocumentId, true)],
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.From(termsDocumentId), true)],
             TestContext.Current.CancellationToken
         );
 
@@ -162,9 +172,9 @@ public sealed class TermsGateTests
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            Guid.NewGuid(),
-            [new TermsDecisionRequest(termsDocumentId, true)],
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.From(termsDocumentId), true)],
             TestContext.Current.CancellationToken
         );
 
@@ -191,9 +201,9 @@ public sealed class TermsGateTests
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            Guid.NewGuid(),
-            [new TermsDecisionRequest(termsDocumentId, false)],
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
             TestContext.Current.CancellationToken
         );
 
@@ -223,9 +233,9 @@ public sealed class TermsGateTests
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            Guid.NewGuid(),
-            [new TermsDecisionRequest(termsDocumentId, false)],
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
             TestContext.Current.CancellationToken
         );
 
@@ -252,14 +262,14 @@ public sealed class TermsGateTests
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            Guid.NewGuid(),
-            [new TermsDecisionRequest(termsDocumentId, false)],
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
         stored.Accepted.Should().BeFalse();
         stored.DecidedAt.Should().Be(originalDecidedAt);
         await termsAcceptances
@@ -275,14 +285,14 @@ public sealed class TermsGateTests
         HasAcceptances();
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            Guid.NewGuid(),
-            [new TermsDecisionRequest(termsDocumentId, false)],
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
         await termsAcceptances
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
@@ -296,14 +306,14 @@ public sealed class TermsGateTests
         HasAcceptances();
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            Guid.NewGuid(),
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
             null,
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.EventTermsAcceptanceRequired);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
         await termsAcceptances
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
@@ -319,9 +329,9 @@ public sealed class TermsGateTests
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            userId,
-            [new TermsDecisionRequest(termsDocumentId, false)],
+            EventId.From(eventId),
+            UserId.From(userId),
+            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
             TestContext.Current.CancellationToken
         );
 
@@ -333,9 +343,9 @@ public sealed class TermsGateTests
             .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
-                    && a.EventId == eventId
-                    && a.UserId == userId
-                    && a.TermsDocumentId == termsDocumentId
+                    && a.EventId == EventId.From(eventId)
+                    && a.UserId == UserId.From(userId)
+                    && a.TermsDocumentId == TermsDocumentId.From(termsDocumentId)
                     && !a.Accepted
                     && a.DecidedAt == clock.UtcNow
                 ),
@@ -354,11 +364,11 @@ public sealed class TermsGateTests
         clock.UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
         var result = await sut.EnsureDecidedAsync(
-            eventId,
-            userId,
+            EventId.From(eventId),
+            UserId.From(userId),
             [
-                new TermsDecisionRequest(requiredOne, true),
-                new TermsDecisionRequest(requiredTwo, true),
+                new TermsDecision(TermsDocumentId.From(requiredOne), true),
+                new TermsDecision(TermsDocumentId.From(requiredTwo), true),
             ],
             TestContext.Current.CancellationToken
         );
@@ -369,7 +379,7 @@ public sealed class TermsGateTests
             .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
-                    && a.TermsDocumentId == requiredOne
+                    && a.TermsDocumentId == TermsDocumentId.From(requiredOne)
                     && a.Accepted
                     && a.DecidedAt == clock.UtcNow
                 ),
@@ -380,7 +390,7 @@ public sealed class TermsGateTests
             .AddAsync(
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
-                    && a.TermsDocumentId == requiredTwo
+                    && a.TermsDocumentId == TermsDocumentId.From(requiredTwo)
                     && a.Accepted
                     && a.DecidedAt == clock.UtcNow
                 ),

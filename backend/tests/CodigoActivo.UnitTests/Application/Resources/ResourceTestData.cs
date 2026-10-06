@@ -10,22 +10,11 @@ internal static class ResourceTestData
         "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Contenido\"}]}]}";
     public const string EmptyRichText = "{\"type\":\"doc\",\"content\":[]}";
 
-    public static ResourceType NewResourceType(bool isExternal = false, string? name = null)
-    {
-        return ResourceType.Create(
-            Guid.NewGuid(),
-            name ?? (isExternal ? "Externo" : "Interno"),
-            isExternal ? "Recurso enlazado" : "Recurso propio",
-            "#3B82F6",
-            isExternal
-        );
-    }
-
     public static ResourceTypeRow NewResourceTypeRow(bool isExternal = false, string? name = null)
     {
         return new()
         {
-            Id = Guid.NewGuid(),
+            Id = isExternal ? KnownIds.ResourceTypes.External : KnownIds.ResourceTypes.Internal,
             Name = name ?? (isExternal ? "Externo" : "Interno"),
             Description = isExternal ? "Recurso enlazado" : "Recurso propio",
             Color = "#3B82F6",
@@ -38,11 +27,10 @@ internal static class ResourceTestData
         string subtitle = "Intro",
         int year = 2024,
         string? url = null,
-        ResourceType? type = null,
+        ResourceType type = ResourceType.Internal,
         string description = SomeRichText
     )
     {
-        var resourceType = type ?? NewResourceType();
         return Persisted.As<Resource>(
             new
             {
@@ -51,7 +39,7 @@ internal static class ResourceTestData
                 Subtitle = subtitle,
                 Description = description,
                 Url = url,
-                ResourceTypeId = resourceType.Id,
+                ResourceType = type,
                 ThumbnailId = Guid.NewGuid(),
                 CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 CreatedBy = Guid.NewGuid(),

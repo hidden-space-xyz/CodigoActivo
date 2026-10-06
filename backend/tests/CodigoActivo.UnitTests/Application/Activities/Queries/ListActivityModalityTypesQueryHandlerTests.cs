@@ -13,11 +13,7 @@ public sealed class ListActivityModalityTypesQueryHandlerTests
 
     public ListActivityModalityTypesQueryHandlerTests()
     {
-        sut = new ListActivityModalityTypesQueryHandler(
-            store,
-            new FakeQueryExecutor(),
-            new FakeHybridCache()
-        );
+        sut = new ListActivityModalityTypesQueryHandler(store, new FakeQueryExecutor());
     }
 
     [Fact]

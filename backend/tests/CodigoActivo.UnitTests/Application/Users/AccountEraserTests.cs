@@ -27,7 +27,7 @@ public sealed class AccountEraserTests
 
     private static AccountErasure ErasureBy(Guid actorId)
     {
-        return new AccountErasure(AccountDeletionOrigin.Administrator, actorId, Now);
+        return new AccountErasure(AccountDeletionOrigin.Administrator, UserId.From(actorId), Now);
     }
 
     [Fact]

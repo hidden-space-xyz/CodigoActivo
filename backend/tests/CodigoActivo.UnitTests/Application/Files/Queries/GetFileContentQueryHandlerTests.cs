@@ -1,7 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Storage;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -27,11 +29,11 @@ public sealed class GetFileContentQueryHandlerTests
     public async Task HandleAsyncMetadataMissingReturnsNotFound()
     {
         var result = await sut.HandleAsync(
-            new GetFileContentQuery(Guid.NewGuid()),
+            new GetFileContentQuery(StoredFileId.New()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.FileNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.FileNotFound);
         await storage
             .DidNotReceiveWithAnyArgs()
             .OpenReadAsync(string.Empty, TestContext.Current.CancellationToken);
@@ -46,7 +48,7 @@ public sealed class GetFileContentQueryHandlerTests
         storage.OpenReadAsync($"{file.Id}.png", Arg.Any<CancellationToken>()).Returns(stream);
 
         var result = await sut.HandleAsync(
-            new GetFileContentQuery(file.Id),
+            new GetFileContentQuery(StoredFileId.From(file.Id)),
             TestContext.Current.CancellationToken
         );
 
@@ -67,7 +69,7 @@ public sealed class GetFileContentQueryHandlerTests
             .Returns(JunkStream());
 
         var result = await sut.HandleAsync(
-            new GetFileContentQuery(file.Id),
+            new GetFileContentQuery(StoredFileId.From(file.Id)),
             TestContext.Current.CancellationToken
         );
 

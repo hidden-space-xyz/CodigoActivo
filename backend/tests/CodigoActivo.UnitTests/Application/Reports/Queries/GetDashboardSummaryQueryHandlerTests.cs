@@ -15,7 +15,7 @@ public sealed class GetDashboardSummaryQueryHandlerTests
 
     public GetDashboardSummaryQueryHandlerTests()
     {
-        sut = new GetDashboardSummaryQueryHandler(dashboard, new FakeHybridCache());
+        sut = new GetDashboardSummaryQueryHandler(dashboard);
     }
 
     [Fact]

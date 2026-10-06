@@ -1,8 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -16,40 +15,12 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 public sealed class ChangeUserTypeCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly FakeReadStore readStore = new();
     private readonly TestClock clock = new(today: Today);
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly ChangeUserTypeCommandHandler sut;
 
     public ChangeUserTypeCommandHandlerTests()
     {
-        sut = new ChangeUserTypeCommandHandler(
-            users,
-            readStore,
-            new FakeQueryExecutor(),
-            clock,
-            uow,
-            cacheInvalidator
-        );
-    }
-
-    private Task<int> AssertNotSavedAsync()
-    {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    private void TypeExists(Guid typeId, bool exists)
-    {
-        readStore.UserTypes.Add(
-            new UserTypeRow
-            {
-                Id = exists ? typeId : Guid.NewGuid(),
-                Name = "Tipo",
-                Color = "#000",
-            }
-        );
+        sut = new ChangeUserTypeCommandHandler(users, clock);
     }
 
     [Fact]
@@ -58,12 +29,11 @@ public sealed class ChangeUserTypeCommandHandlerTests
         users.FindReturns(null);
 
         var result = await sut.HandleAsync(
-            new ChangeUserTypeCommand(Guid.NewGuid(), Guid.NewGuid()),
+            new ChangeUserTypeCommand(UserId.New(), Guid.NewGuid()),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserNotFound);
-        await AssertNotSavedAsync();
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
     }
 
     [Fact]
@@ -71,61 +41,50 @@ public sealed class ChangeUserTypeCommandHandlerTests
     {
         var roleId = Guid.NewGuid();
         users.FindReturns(NewUser());
-        TypeExists(roleId, false);
 
         var result = await sut.HandleAsync(
-            new ChangeUserTypeCommand(Guid.NewGuid(), roleId),
+            new ChangeUserTypeCommand(UserId.New(), roleId),
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.UserTypeNotFound);
-        await AssertNotSavedAsync();
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserTypeNotFound);
     }
 
     [Fact]
-    public async Task HandleAsyncNewTypeDiffersFromCurrentReplacesTypeSavesAndInvalidatesCache()
+    public async Task HandleAsyncNewTypeDiffersFromCurrentReplacesTypeSaves()
     {
         var id = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
+        var roleId = KnownIds.UserTypes.Member;
         var user = NewUser(id: id, dob: AdultDob);
         users.FindReturns(user);
-        TypeExists(roleId, true);
         clock.UtcNow = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero);
 
         var result = await sut.HandleAsync(
-            new ChangeUserTypeCommand(id, roleId),
+            new ChangeUserTypeCommand(UserId.From(id), roleId),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        user.UserTypeId.Should().Be(roleId);
+        user.UserType.Should().Be(UserType.Member);
         user.UpdatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Users)
-                )
-            );
+        user.PullDomainEvents().Should().Equal(new UserTypeChanged(user.Id));
     }
 
     [Fact]
-    public async Task HandleAsyncTypeUnchangedIsNoopAndDoesNotSave()
+    public async Task HandleAsyncTypeUnchangedChangesNothing()
     {
         var id = Guid.NewGuid();
-        var roleId = Guid.NewGuid();
+        var roleId = KnownIds.UserTypes.Member;
         var user = NewUser(id: id, dob: AdultDob);
-        Persisted.Overwrite(user, new { UserTypeId = roleId });
+        Persisted.Overwrite(user, new { UserType = UserType.Member });
         users.FindReturns(user);
-        TypeExists(roleId, true);
 
         var result = await sut.HandleAsync(
-            new ChangeUserTypeCommand(id, roleId),
+            new ChangeUserTypeCommand(UserId.From(id), roleId),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        await AssertNotSavedAsync();
+        user.PullDomainEvents().Should().BeEmpty();
     }
 }

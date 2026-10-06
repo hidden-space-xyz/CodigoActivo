@@ -1,12 +1,14 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.Resources.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Resources.Commands;
 using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -19,22 +21,13 @@ public sealed class CreateResourceCommandHandlerTests
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
     private readonly FakeReadStore readStore = new();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly CreateResourceCommandHandler sut;
 
     public CreateResourceCommandHandlerTests()
     {
-        sut = new CreateResourceCommandHandler(
-            resources,
-            readStore,
-            new FakeQueryExecutor(),
-            files,
-            clock,
-            uow,
-            cacheInvalidator
-        );
+        sut = new CreateResourceCommandHandler(resources, files, currentUser, clock);
     }
 
     private async Task<List<Resource>> CaptureAddedResourcesAsync()
@@ -58,18 +51,16 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateResourceCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceTypeNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceTypeNotFound);
         await resources
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<Resource>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -86,14 +77,12 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateResourceCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceUrlNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ResourceUrlNotAllowed);
     }
 
     [Theory]
@@ -114,14 +103,12 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateResourceCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceDescriptionRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ResourceDescriptionRequired);
     }
 
     [Fact]
@@ -138,14 +125,12 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateResourceCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceDescriptionNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ResourceDescriptionNotAllowed);
     }
 
     [Fact]
@@ -162,14 +147,12 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateResourceCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceUrlRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.Error.Code.Should().Be(DomainErrorCode.ResourceUrlRequired);
     }
 
     [Fact]
@@ -187,26 +170,25 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateResourceCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ErrorCode.ResourceThumbnailNotFound);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceThumbnailNotFound);
         await resources
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<Resource>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncValidInternalRequestPersistsTrimmedResourceAndInvalidatesCache()
+    public async Task HandleAsyncValidInternalRequestStagesTrimmedResource()
     {
         var type = readStore.TypeExists();
         files.ThumbnailExists(true);
         var caller = Guid.NewGuid();
+        currentUser.Id = UserId.From(caller);
         var thumbnailId = Guid.NewGuid();
         clock.UtcNow = new DateTimeOffset(2026, 5, 1, 8, 0, 0, TimeSpan.Zero);
         var added = await CaptureAddedResourcesAsync();
@@ -220,7 +202,7 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateResourceCommand(request, caller),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
@@ -229,20 +211,12 @@ public sealed class CreateResourceCommandHandlerTests
         result.Value.Should().Be(created.Id);
         created.Title.Should().Be("Title");
         created.Subtitle.Should().Be("Subtitle");
-        created.Description.Should().Be(SomeRichText);
+        created.Description!.Json.Should().Be(SomeRichText);
         created.Url.Should().BeNull();
-        created.ResourceTypeId.Should().Be(type.Id);
-        created.ThumbnailId.Should().Be(thumbnailId);
-        created.CreatedBy.Should().Be(caller);
+        created.ResourceType.Should().Be(CatalogIds.ResourceTypes.ValueOf(type.Id));
+        created.ThumbnailId.Value.Should().Be(thumbnailId);
+        created.CreatedBy.Value.Should().Be(caller);
         created.CreatedAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.Resources)
-                )
-            );
     }
 
     [Fact]
@@ -261,7 +235,7 @@ public sealed class CreateResourceCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateResourceCommand(request, Guid.NewGuid()),
+            request.ToCommand(),
             TestContext.Current.CancellationToken
         );
 
@@ -269,7 +243,7 @@ public sealed class CreateResourceCommandHandlerTests
         var created = added.Should().ContainSingle().Which;
         result.Value.Should().Be(created.Id);
         created.Url.Should().Be("https://ejemplo.es/curso");
-        created.Description.Should().Be("{}");
-        created.ResourceTypeId.Should().Be(type.Id);
+        created.Description!.Json.Should().Be("{}");
+        created.ResourceType.Should().Be(CatalogIds.ResourceTypes.ValueOf(type.Id));
     }
 }

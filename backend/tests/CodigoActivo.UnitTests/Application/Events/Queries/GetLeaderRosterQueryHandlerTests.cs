@@ -12,12 +12,12 @@ namespace CodigoActivo.UnitTests.Application.Events.Queries;
 public sealed class GetLeaderRosterQueryHandlerTests
 {
     private static readonly Guid EventId = new("aaaaaaaa-0000-0000-0000-000000000001");
-    private static readonly Guid Leader = SeedIds.ActivityRoleTypes.Leader;
-    private static readonly Guid Volunteer = SeedIds.ActivityRoleTypes.Volunteer;
-    private static readonly Guid Participant = SeedIds.ActivityRoleTypes.Participant;
-    private static readonly Guid Confirmed = SeedIds.AssignmentStatusTypes.Confirmed;
-    private static readonly Guid Requested = SeedIds.AssignmentStatusTypes.Requested;
-    private static readonly Guid Denied = SeedIds.AssignmentStatusTypes.Denied;
+    private static readonly Guid Leader = KnownIds.ActivityRoleTypes.Leader;
+    private static readonly Guid Volunteer = KnownIds.ActivityRoleTypes.Volunteer;
+    private static readonly Guid Participant = KnownIds.ActivityRoleTypes.Participant;
+    private static readonly Guid Confirmed = KnownIds.AssignmentStatusTypes.Confirmed;
+    private static readonly Guid Requested = KnownIds.AssignmentStatusTypes.Requested;
+    private static readonly Guid Denied = KnownIds.AssignmentStatusTypes.Denied;
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset SignedUp = new(2026, 6, 1, 9, 30, 0, TimeSpan.Zero);
 

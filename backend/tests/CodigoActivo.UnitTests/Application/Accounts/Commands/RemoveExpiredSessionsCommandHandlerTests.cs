@@ -24,7 +24,7 @@ public sealed class RemoveExpiredSessionsCommandHandlerTests
         sessions
             .RemoveExpiredAsync(
                 Arg.Any<DateTimeOffset>(),
-                Arg.Any<Guid?>(),
+                Arg.Any<UserId?>(),
                 Arg.Any<CancellationToken>()
             )
             .Returns(3);

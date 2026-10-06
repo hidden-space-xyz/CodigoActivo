@@ -1,7 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Caching;
+using CodigoActivo.API.EventCategories.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.EventCategories.Commands;
 using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Domain.Common;
@@ -16,13 +16,11 @@ public sealed class CreateEventCategoryTypeCommandHandlerTests
 {
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ICacheInvalidator cacheInvalidator = Substitute.For<ICacheInvalidator>();
     private readonly CreateEventCategoryTypeCommandHandler sut;
 
     public CreateEventCategoryTypeCommandHandlerTests()
     {
-        sut = new CreateEventCategoryTypeCommandHandler(categoryTypes, uow, cacheInvalidator);
+        sut = new CreateEventCategoryTypeCommandHandler(categoryTypes);
     }
 
     [Fact]
@@ -31,23 +29,19 @@ public sealed class CreateEventCategoryTypeCommandHandlerTests
         categoryTypes.CategoryTypeNameTaken(true);
 
         var result = await sut.HandleAsync(
-            new CreateEventCategoryTypeCommand(
-                new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  ")
-            ),
+            new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  ").ToCommand(),
             TestContext.Current.CancellationToken
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ErrorCode.EventCategoryTypeNameAlreadyExists);
+        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeNameAlreadyExists);
         await categoryTypes
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<EventCategoryType>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestPersistsTrimmedTypeAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestStagesTrimmedType()
     {
         categoryTypes.CategoryTypeNameTaken(false);
         var added = new List<EventCategoryType>();
@@ -57,9 +51,7 @@ public sealed class CreateEventCategoryTypeCommandHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new CreateEventCategoryTypeCommand(
-                new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  ")
-            ),
+            new CreateEventCategoryTypeRequest("  Talleres  ", "  #112233  ").ToCommand(),
             TestContext.Current.CancellationToken
         );
 
@@ -68,13 +60,6 @@ public sealed class CreateEventCategoryTypeCommandHandlerTests
         result.Value.Should().Be(created.Id);
         created.Name.Should().Be("Talleres");
         created.Color.Should().Be("#112233");
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await cacheInvalidator
-            .Received(1)
-            .InvalidateAsync(
-                Arg.Is<IReadOnlyCollection<string>>(tags =>
-                    tags != null && tags.Contains(CacheTags.EventCategoryTypes)
-                )
-            );
+        created.PullDomainEvents().Should().Equal(new EventCategoryTypeCreated(created.Id));
     }
 }

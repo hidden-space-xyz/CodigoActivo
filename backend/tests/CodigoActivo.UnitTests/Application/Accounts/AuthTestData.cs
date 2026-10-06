@@ -1,7 +1,10 @@
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts;
 
@@ -30,7 +33,9 @@ internal static class AuthTestData
                 Phone = "+34123456789",
                 PasswordHash = passwordHash,
                 NationalId = "12345678Z",
-                UserStatusTypeId = statusId ?? SeedIds.UserStatusTypes.Active,
+                Status = CatalogIds.UserStatuses.ValueOf(
+                    statusId ?? KnownIds.UserStatusTypes.Active
+                ),
                 OtpCodeHash = otpCodeHash,
                 OtpExpiresAt = otpExpiresAt,
                 OtpLastSentAt = otpLastSentAt,
@@ -59,7 +64,7 @@ internal static class AuthTestData
             Phone = "+34123456789",
             PasswordHash = passwordHash,
             NationalId = "12345678Z",
-            UserStatusTypeId = statusId ?? SeedIds.UserStatusTypes.Active,
+            UserStatusTypeId = statusId ?? KnownIds.UserStatusTypes.Active,
             IsAdmin = isAdmin,
             TwoFactorMethod = twoFactorMethod,
             LoginChallengeId = loginChallengeId,
@@ -75,7 +80,7 @@ internal static class AuthTestData
     )
     {
         return NewUser(
-            statusId: SeedIds.UserStatusTypes.Pending,
+            statusId: KnownIds.UserStatusTypes.Pending,
             otpCodeHash: FakePasswordHasher.Prefix + code,
             otpExpiresAt: clock.UtcNow.AddMinutes(5),
             otpLastSentAt: otpLastSentAt ?? clock.UtcNow.AddMinutes(-10)

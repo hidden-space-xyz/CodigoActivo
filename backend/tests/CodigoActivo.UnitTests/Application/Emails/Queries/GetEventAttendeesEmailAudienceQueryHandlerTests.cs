@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Emails.Queries;
 using CodigoActivo.Application.Reports.Contracts;
@@ -31,7 +32,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
             {
                 UserId = user.Id,
                 ActivityId = Guid.NewGuid(),
-                ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                ActivityRoleTypeId = KnownIds.ActivityRoleTypes.Participant,
                 AssignmentStatusId = statusId,
                 Activity = new ActivityRow
                 {
@@ -48,7 +49,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
     [Fact]
     public async Task HandleAsyncAttendeesOfTheEventAreCountedWithTheirConsent()
     {
-        var confirmed = SeedIds.AssignmentStatusTypes.Confirmed;
+        var confirmed = KnownIds.AssignmentStatusTypes.Confirmed;
         store.Users.AddRange([
             NewAttendee(
                 NewUserRow("Ana", "ana@test.local", promotionalConsent: true),
@@ -76,19 +77,19 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
             NewAttendee(
                 NewUserRow("Ana", "ana@test.local", promotionalConsent: true),
                 EventId,
-                SeedIds.AssignmentStatusTypes.Confirmed
+                KnownIds.AssignmentStatusTypes.Confirmed
             ),
             NewAttendee(
                 NewUserRow("Berto", "berto@test.local"),
                 EventId,
-                SeedIds.AssignmentStatusTypes.Requested
+                KnownIds.AssignmentStatusTypes.Requested
             ),
         ]);
 
         var result = await sut.HandleAsync(
             new GetEventAttendeesEmailAudienceQuery(
                 EventId,
-                new EventAttendeeListQuery { StatusId = SeedIds.AssignmentStatusTypes.Confirmed }
+                new EventAttendeeListQuery { StatusId = KnownIds.AssignmentStatusTypes.Confirmed }
             ),
             TestContext.Current.CancellationToken
         );
@@ -107,7 +108,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.NotFound, ErrorCode.EventNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
         store.ReadsOf<UserRow>().Should().Be(0);
     }
 }

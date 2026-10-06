@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -6,6 +7,7 @@ using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
@@ -14,6 +16,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
+using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
@@ -60,14 +63,14 @@ public sealed class LoginCommandHandlerTests
     )
     {
         return sut.HandleAsync(
-            new LoginCommand(new LoginRequest(identifier, password)),
+            new LoginCommand(identifier, password),
             TestContext.Current.CancellationToken
         );
     }
 
     private User Returns(User user)
     {
-        users.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
+        users.GetByEmailAsync(Arg.Any<EmailAddress>(), Arg.Any<CancellationToken>()).Returns(user);
         return user;
     }
 
@@ -81,11 +84,13 @@ public sealed class LoginCommandHandlerTests
     public async Task HandleAsyncUserNotFoundReturnsUnauthorized()
     {
         User? missing = null;
-        users.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(missing);
+        users
+            .GetByEmailAsync(Arg.Any<EmailAddress>(), Arg.Any<CancellationToken>())
+            .Returns(missing);
 
         var result = await LoginAsync("nobody@test.com");
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -94,11 +99,13 @@ public sealed class LoginCommandHandlerTests
     public async Task HandleAsyncUnknownIdentifierStillPaysTheSameHashingWorkAsAKnownOne()
     {
         User? missing = null;
-        users.GetByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(missing);
+        users
+            .GetByEmailAsync(Arg.Any<EmailAddress>(), Arg.Any<CancellationToken>())
+            .Returns(missing);
 
         var result = await LoginAsync("nobody@test.com");
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         hasher.VerifyCalls.Should().Be(1);
 
         Returns(NewUser(passwordHash: "fake:correct"));
@@ -116,7 +123,7 @@ public sealed class LoginCommandHandlerTests
 
         var result = await LoginAsync();
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         await AssertNotSavedAsync();
     }
 
@@ -127,7 +134,7 @@ public sealed class LoginCommandHandlerTests
 
         var result = await LoginAsync(password: "wrong");
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         emailSender.Sent.Should().BeEmpty();
         user.PasswordFailedAttempts.Should().Be(1, "the guard counts the failure on its own");
         user.PasswordLockedAt.Should().BeNull();
@@ -136,7 +143,10 @@ public sealed class LoginCommandHandlerTests
 
     [Theory]
     [MemberData(nameof(BlockedStatuses))]
-    public async Task HandleAsyncNonActiveStatusReturnsForbidden(Guid statusId, ErrorCode expected)
+    public async Task HandleAsyncNonActiveStatusReturnsForbidden(
+        Guid statusId,
+        ApplicationErrorCode expected
+    )
     {
         Returns(NewUser(statusId: statusId));
 
@@ -147,13 +157,16 @@ public sealed class LoginCommandHandlerTests
         await AssertNotSavedAsync();
     }
 
-    public static TheoryData<Guid, ErrorCode> BlockedStatuses()
+    public static TheoryData<Guid, ApplicationErrorCode> BlockedStatuses()
     {
         return new()
         {
-            { SeedIds.UserStatusTypes.Blocked, ErrorCode.UserAccountBlocked },
-            { SeedIds.UserStatusTypes.Dependent, ErrorCode.UserAccountIsDependent },
-            { SeedIds.UserStatusTypes.Pending, ErrorCode.UserAccountPendingVerification },
+            { KnownIds.UserStatusTypes.Blocked, ApplicationErrorCode.UserAccountBlocked },
+            { KnownIds.UserStatusTypes.Dependent, ApplicationErrorCode.UserAccountIsDependent },
+            {
+                KnownIds.UserStatusTypes.Pending,
+                ApplicationErrorCode.UserAccountPendingVerification
+            },
         };
     }
 
@@ -167,7 +180,7 @@ public sealed class LoginCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result
             .Value.Should()
-            .Be(new LoginChallenge(user.Id, TwoFactorMethod.Email, "a***@test.com"));
+            .Be(new LoginChallenge(user.Id.Value, TwoFactorMethod.Email, "a***@test.com"));
         result
             .Value.ToResponse()
             .Should()
@@ -179,7 +192,9 @@ public sealed class LoginCommandHandlerTests
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + twoFactor.ChallengeLifetime);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
         user.LastLoginAt.Should().BeNull("the login only completes after the second factor");
-        await users.Received(1).GetByEmailAsync("ana@test.com", Arg.Any<CancellationToken>());
+        await users
+            .Received(1)
+            .GetByEmailAsync(EmailAddress.FromStored("ana@test.com"), Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -220,7 +235,9 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync();
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(new LoginChallenge(user.Id, TwoFactorMethod.Authenticator, null));
+        result
+            .Value.Should()
+            .Be(new LoginChallenge(user.Id.Value, TwoFactorMethod.Authenticator, null));
         emailSender.Sent.Should().BeEmpty();
         user.LoginCodeHash.Should().BeNull();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -235,7 +252,7 @@ public sealed class LoginCommandHandlerTests
 
         var result = await LoginAsync();
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         hasher.VerifyCalls.Should().Be(before + 1);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
@@ -305,7 +322,7 @@ public sealed class LoginCommandHandlerTests
 
         var result = await LoginAsync(password: "not-the-password");
 
-        result.ShouldFail(ErrorKind.Unauthorized, ErrorCode.InvalidCredentials);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         user.LoginChallengeId.Should().Be(challengeId);
     }
 
@@ -330,7 +347,7 @@ public sealed class LoginCommandHandlerTests
 
         var result = await LoginAsync();
 
-        result.ShouldFail(ErrorKind.Forbidden, ErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -355,7 +372,7 @@ public sealed class LoginCommandHandlerTests
 
         var result = await LoginAsync();
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.TwoFactorResendCooldownActive);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
         user.LoginCodeHash.Should().BeNull();
         await AssertNotSavedAsync();
     }
@@ -368,7 +385,7 @@ public sealed class LoginCommandHandlerTests
 
         var result = await LoginAsync();
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.EmailSendFailed);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.EmailSendFailed);
         user.LoginCodeHash.Should().BeNull();
         await AssertNotSavedAsync();
     }
@@ -378,9 +395,9 @@ public sealed class LoginCommandHandlerTests
     {
         Returns(NewUser(email: null));
 
-        var result = await LoginAsync("+34123456789");
+        var result = await LoginAsync("nobody@test.com");
 
-        result.ShouldFail(ErrorKind.Conflict, ErrorCode.UserContactInfoRequired);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserContactInfoRequired);
         await AssertNotSavedAsync();
     }
 
