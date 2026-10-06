@@ -14,6 +14,12 @@ public interface IUnitOfWork
     public Task<int> SaveChangesAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// Forgets every change staged since the last commit, with the domain events it raised, so a
+    /// use case that gives up after the database refused a commit leaves nothing for a later one.
+    /// </summary>
+    public void DiscardChanges();
+
+    /// <summary>
     /// Runs work inside a database transaction and commits it when the work succeeds. When the
     /// database aborts the transaction because of a deadlock, the work runs again from the start;
     /// entities the failed attempt staged as new are dropped first. Inside a transaction already

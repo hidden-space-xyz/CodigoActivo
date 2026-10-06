@@ -63,6 +63,19 @@ public static partial class ApplicationLog
     public static partial void AuthenticatorKeyUnreadable(this ILogger logger, Exception exception);
 
     /// <summary>
+    /// Records that a command or query took longer than expected.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="useCase">Type name of the command or query.</param>
+    /// <param name="elapsedMilliseconds">Time it took.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{UseCase} took {ElapsedMilliseconds} ms")]
+    public static partial void SlowUseCase(
+        this ILogger logger,
+        string useCase,
+        long elapsedMilliseconds
+    );
+
+    /// <summary>
     /// Records that best-effort cleanup left unreferenced file data behind, which only wastes
     /// storage.
     /// </summary>
