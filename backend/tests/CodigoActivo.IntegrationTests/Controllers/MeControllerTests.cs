@@ -1,5 +1,6 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
@@ -75,7 +76,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
                         ActivityStartsAt = activityStartsAt,
                         ActivityEndsAt = activityStartsAt.AddHours(2),
                         EventId = eventId,
-                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        Modality = ActivityModality.Presencial,
                         ThumbnailId = activityThumbnailId,
                         CreatedAt = SeededAt,
                         CreatedBy = TestSeedData.Users.AdminId,
@@ -88,8 +89,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
                     {
                         UserId = userId,
                         ActivityId = activityId,
-                        ActivityRoleTypeId = roleTypeId,
-                        AssignmentStatusId = statusId,
+                        Role = CatalogIds.ActivityRoles.ValueOf(roleTypeId),
+                        Status = CatalogIds.AssignmentStatuses.ValueOf(statusId),
                     }
                 )
             );
@@ -124,8 +125,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller de robótica",
             new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Leader,
-            SeedIds.AssignmentStatusTypes.Confirmed
+            KnownIds.ActivityRoleTypes.Leader,
+            KnownIds.AssignmentStatusTypes.Confirmed
         );
         var client = await LoginAsMemberAsync();
 
@@ -136,9 +137,9 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         var assigned = items.Should().ContainSingle().Subject;
         assigned.Title.Should().Be("Taller de robótica");
         assigned.Description.Should().Be("Descripción");
-        assigned.RoleType.Id.Should().Be(SeedIds.ActivityRoleTypes.Leader);
+        assigned.RoleType.Id.Should().Be(KnownIds.ActivityRoleTypes.Leader);
         assigned.RoleType.Name.Should().Be("Líder");
-        assigned.Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        assigned.Status.Id.Should().Be(KnownIds.AssignmentStatusTypes.Confirmed);
         assigned.Status.Name.Should().Be("Confirmada");
     }
 
@@ -149,15 +150,15 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Dentro del evento",
             new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Requested
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Requested
         );
         await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
             "Fuera del evento",
             new DateTimeOffset(2026, 3, 2, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Requested
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Requested
         );
         var client = await LoginAsMemberAsync();
 
@@ -212,8 +213,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller pasado",
             new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Requested,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Requested,
             PastStart,
             PastEnd
         );
@@ -230,8 +231,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller pasado",
             new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Confirmed,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Confirmed,
             PastStart,
             PastEnd
         );
@@ -251,8 +252,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller futuro",
             new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Volunteer,
-            SeedIds.AssignmentStatusTypes.Requested,
+            KnownIds.ActivityRoleTypes.Volunteer,
+            KnownIds.AssignmentStatusTypes.Requested,
             FutureStart,
             FutureEnd
         );
@@ -263,7 +264,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         entry.IsPast.Should().BeFalse();
         entry.CanRate.Should().BeFalse();
         var activity = entry.Activities.Should().ContainSingle().Subject;
-        activity.StatusId.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
+        activity.StatusId.Should().Be(KnownIds.AssignmentStatusTypes.Requested);
         activity.StatusName.Should().Be("Solicitada");
         activity.RoleTypeName.Should().Be("Voluntario");
     }
@@ -275,8 +276,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberChildId,
             "Taller del menor",
             new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Requested,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Requested,
             FutureStart,
             FutureEnd
         );
@@ -297,8 +298,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller pasado",
             new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Confirmed,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Confirmed,
             PastStart,
             PastEnd
         );
@@ -306,8 +307,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller futuro",
             new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Confirmed,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Confirmed,
             FutureStart,
             FutureEnd
         );
@@ -326,8 +327,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.AdminId,
             "Taller ajeno",
             new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Leader,
-            SeedIds.AssignmentStatusTypes.Confirmed,
+            KnownIds.ActivityRoleTypes.Leader,
+            KnownIds.AssignmentStatusTypes.Confirmed,
             FutureStart,
             FutureEnd
         );
@@ -360,7 +361,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
                         ActivityStartsAt = new DateTimeOffset(2026, 6, 1, 16, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 6, 1, 18, 0, 0, TimeSpan.Zero),
                         EventId = eventId,
-                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        Modality = ActivityModality.Presencial,
                         ThumbnailId = thumbnailId,
                         CreatedAt = SeededAt,
                         CreatedBy = TestSeedData.Users.AdminId,
@@ -373,8 +374,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
                     {
                         UserId = userId,
                         ActivityId = activityId,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                        AssignmentStatusId = statusId,
+                        Role = ActivityRole.Participant,
+                        Status = CatalogIds.AssignmentStatuses.ValueOf(statusId),
                     }
                 )
             );
@@ -396,8 +397,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             userId,
             activityTitle,
             new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Confirmed,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Confirmed,
             PastStart,
             PastEnd
         );
@@ -442,8 +443,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller pasado",
             new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Requested,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Requested,
             PastStart,
             PastEnd
         );
@@ -460,8 +461,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller que acaba hoy",
             new DateTimeOffset(2026, 7, 4, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Confirmed,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Confirmed,
             TodayStart,
             TodayEnd
         );
@@ -478,8 +479,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller futuro",
             new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Confirmed,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Confirmed,
             FutureStart,
             FutureEnd
         );
@@ -500,7 +501,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             eventId,
             TestSeedData.Users.MemberId,
             "Segunda actividad",
-            SeedIds.AssignmentStatusTypes.Confirmed
+            KnownIds.AssignmentStatusTypes.Confirmed
         );
 
         var certificates = await GetCertificatesAsMemberAsync();
@@ -519,7 +520,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             eventId,
             TestSeedData.Users.MemberChildId,
             "Actividad del menor",
-            SeedIds.AssignmentStatusTypes.Confirmed
+            KnownIds.AssignmentStatusTypes.Confirmed
         );
 
         var certificates = await GetCertificatesAsMemberAsync();
@@ -560,8 +561,8 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             TestSeedData.Users.MemberId,
             "Taller pasado",
             new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
-            SeedIds.ActivityRoleTypes.Participant,
-            SeedIds.AssignmentStatusTypes.Confirmed,
+            KnownIds.ActivityRoleTypes.Participant,
+            KnownIds.AssignmentStatusTypes.Confirmed,
             PastStart,
             PastEnd
         );

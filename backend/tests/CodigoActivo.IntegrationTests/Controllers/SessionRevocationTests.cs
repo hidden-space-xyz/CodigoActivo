@@ -1,6 +1,7 @@
 using System.Net;
 using System.Security.Claims;
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Domain.Users;
@@ -50,7 +51,7 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
     private Task<List<UserSession>> SessionsForAsync(Guid userId)
     {
         return Factory.QueryAsync(db =>
-            db.Set<UserSession>().Where(s => s.UserId == userId).ToListAsync(Ct)
+            db.Set<UserSession>().Where(s => s.UserId == UserId.From(userId)).ToListAsync(Ct)
         );
     }
 
@@ -58,7 +59,10 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
     {
         await Factory.SeedAsync(async db =>
         {
-            var user = await db.Users.SingleAsync(u => u.Id == TestSeedData.Users.MemberId, Ct);
+            var user = await db.Users.SingleAsync(
+                u => u.Id == UserId.From(TestSeedData.Users.MemberId),
+                Ct
+            );
             Persisted.Overwrite(user, new { FirstName = "Martita" });
         });
 
@@ -132,7 +136,7 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var rows = await db.Set<UserSession>()
-                .Where(s => s.UserId == TestSeedData.Users.MemberId)
+                .Where(s => s.UserId == UserId.From(TestSeedData.Users.MemberId))
                 .ToListAsync(Ct);
             db.Set<UserSession>().RemoveRange(rows);
         });
@@ -281,7 +285,7 @@ public sealed class SessionRevocationTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var rows = await db.Set<UserSession>()
-                .Where(s => s.UserId == TestSeedData.Users.MemberId)
+                .Where(s => s.UserId == UserId.From(TestSeedData.Users.MemberId))
                 .ToListAsync(Ct);
             db.Set<UserSession>().RemoveRange(rows);
         });

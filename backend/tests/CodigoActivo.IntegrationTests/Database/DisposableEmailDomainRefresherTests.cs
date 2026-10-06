@@ -1,5 +1,7 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -69,7 +71,7 @@ public sealed class DisposableEmailDomainRefresherTests(CodigoActivoWebAppFactor
                     "+34600000099",
                     TestSeedData.Password,
                     "87654321X",
-                    Gender.Female,
+                    CodigoActivo.Application.Users.Contracts.Gender.Female,
                     false,
                     null
                 ),

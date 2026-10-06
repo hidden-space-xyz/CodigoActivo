@@ -1,6 +1,9 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Activities.Contracts;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -89,7 +92,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
                         Title = "Actividad",
                         Description = "Descripcion",
                         Location = "Sala",
-                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        Modality = ActivityModality.Presencial,
                         ActivityStartsAt = activityStart ?? ActivityStart,
                         ActivityEndsAt = activityEnd ?? ActivityEnd,
                         EventId = eventId,
@@ -119,8 +122,12 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
                     {
                         ActivityId = activityId,
                         UserId = userId,
-                        ActivityRoleTypeId = roleId ?? SeedIds.ActivityRoleTypes.Leader,
-                        AssignmentStatusId = statusId ?? SeedIds.AssignmentStatusTypes.Requested,
+                        Role = CatalogIds.ActivityRoles.ValueOf(
+                            roleId ?? KnownIds.ActivityRoleTypes.Leader
+                        ),
+                        Status = CatalogIds.AssignmentStatuses.ValueOf(
+                            statusId ?? KnownIds.AssignmentStatusTypes.Requested
+                        ),
                     }
                 )
             );
@@ -132,7 +139,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         return Factory.QueryAsync(db =>
             db.Assignments.FirstOrDefaultAsync(
-                a => a.ActivityId == activityId && a.UserId == userId,
+                a => a.ActivityId == ActivityId.From(activityId) && a.UserId == UserId.From(userId),
                 Ct
             )
         );
@@ -143,7 +150,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
-        var request = new AssignRequest(SeedIds.ActivityRoleTypes.Leader);
+        var request = new AssignRequest(KnownIds.ActivityRoleTypes.Leader);
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
@@ -154,9 +161,9 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.ReadJsonAsync<AssignmentResponse>(Ct);
         body!.UserId.Should().Be(TestSeedData.Users.MemberId);
-        body.Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
+        body.Status.Id.Should().Be(KnownIds.AssignmentStatusTypes.Requested);
         var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
-        stored!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
+        stored!.Role.Should().Be(ActivityRole.Leader);
     }
 
     [Fact]
@@ -170,7 +177,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
-            new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
             Ct
         );
 
@@ -206,10 +213,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var path = $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign";
 
         var responses = await Task.WhenAll(
-            client.PatchJsonAsync(path, new AssignRequest(SeedIds.ActivityRoleTypes.Leader), Ct),
+            client.PatchJsonAsync(path, new AssignRequest(KnownIds.ActivityRoleTypes.Leader), Ct),
             client.PatchJsonAsync(
                 path,
-                new AssignRequest(SeedIds.ActivityRoleTypes.Participant),
+                new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
                 Ct
             )
         );
@@ -223,7 +230,9 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
             .ShouldBeConflictAsync(ErrorCode.ActivityAssignmentAlreadyExists);
         var stored = await Factory.QueryAsync(db =>
             db.Assignments.CountAsync(
-                a => a.ActivityId == activityId && a.UserId == TestSeedData.Users.MemberId,
+                a =>
+                    a.ActivityId == ActivityId.From(activityId)
+                    && a.UserId == UserId.From(TestSeedData.Users.MemberId),
                 Ct
             )
         );
@@ -234,7 +243,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     public async Task AssignActivityMissingReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();
-        var request = new AssignRequest(SeedIds.ActivityRoleTypes.Leader);
+        var request = new AssignRequest(KnownIds.ActivityRoleTypes.Leader);
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{Guid.NewGuid()}/{TestSeedData.Users.MemberId}/assign",
@@ -250,7 +259,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
-        var request = new AssignRequest(SeedIds.ActivityRoleTypes.Leader);
+        var request = new AssignRequest(KnownIds.ActivityRoleTypes.Leader);
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberChildId}/assign",
@@ -267,7 +276,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
-        var request = new AssignRequest(SeedIds.ActivityRoleTypes.Leader);
+        var request = new AssignRequest(KnownIds.ActivityRoleTypes.Leader);
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.BlockedId}/assign",
@@ -284,8 +293,8 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
         var request = new AssignHouseholdRequest([
-            new(TestSeedData.Users.MemberId, SeedIds.ActivityRoleTypes.Leader),
-            new(TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Participant),
+            new(TestSeedData.Users.MemberId, KnownIds.ActivityRoleTypes.Leader),
+            new(TestSeedData.Users.MemberChildId, KnownIds.ActivityRoleTypes.Participant),
         ]);
 
         var response = await client.PostJsonAsync(
@@ -298,9 +307,9 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var created = await response.ReadJsonAsync<IReadOnlyList<AssignmentResponse>>(Ct);
         created!.Should().HaveCount(2);
         var member = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
-        member!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
+        member!.Role.Should().Be(ActivityRole.Leader);
         var child = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId);
-        child!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Participant);
+        child!.Role.Should().Be(ActivityRole.Participant);
     }
 
     [Fact]
@@ -313,7 +322,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
                 .Range(0, Household.MaxMembers + 1)
                 .Select(_ => new HouseholdAssignmentRequest(
                     Guid.NewGuid(),
-                    SeedIds.ActivityRoleTypes.Participant
+                    KnownIds.ActivityRoleTypes.Participant
                 )),
         ]);
 
@@ -332,8 +341,8 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
         var request = new AssignHouseholdRequest([
-            new(TestSeedData.Users.MemberId, SeedIds.ActivityRoleTypes.Leader),
-            new(TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Participant),
+            new(TestSeedData.Users.MemberId, KnownIds.ActivityRoleTypes.Leader),
+            new(TestSeedData.Users.MemberChildId, KnownIds.ActivityRoleTypes.Participant),
         ]);
 
         var response = await client.PostJsonAsync(
@@ -353,10 +362,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         await SeedAssignmentAsync(
             activityId,
             TestSeedData.Users.MemberChildId,
-            SeedIds.ActivityRoleTypes.Participant
+            KnownIds.ActivityRoleTypes.Participant
         );
         var client = await LoginAsAdminAsync();
-        var request = new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Confirmed);
+        var request = new ChangeAssignmentStatusRequest(KnownIds.AssignmentStatusTypes.Confirmed);
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberChildId}/change-status",
@@ -396,7 +405,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var (_, activityId) = await SeedActivityAsync();
         await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberId);
         var client = await LoginAsAdminAsync();
-        var request = new ChangeAssignmentStatusRequest(SeedIds.AssignmentStatusTypes.Confirmed);
+        var request = new ChangeAssignmentStatusRequest(KnownIds.AssignmentStatusTypes.Confirmed);
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/change-status",
@@ -406,9 +415,9 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.ReadJsonAsync<AssignmentResponse>(Ct);
-        body!.Status.Id.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        body!.Status.Id.Should().Be(KnownIds.AssignmentStatusTypes.Confirmed);
         var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
-        stored!.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        stored!.Status.Should().Be(AssignmentStatus.Confirmed);
     }
 
     [Fact]
@@ -418,10 +427,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         await SeedAssignmentAsync(
             activityId,
             TestSeedData.Users.MemberId,
-            SeedIds.ActivityRoleTypes.Leader
+            KnownIds.ActivityRoleTypes.Leader
         );
         var client = await LoginAsAdminAsync();
-        var request = new ChangeAssignmentRoleRequest(SeedIds.ActivityRoleTypes.Volunteer);
+        var request = new ChangeAssignmentRoleRequest(KnownIds.ActivityRoleTypes.Volunteer);
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/change-role",
@@ -431,9 +440,9 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.ReadJsonAsync<AssignmentResponse>(Ct);
-        body!.RoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
+        body!.RoleTypeId.Should().Be(KnownIds.ActivityRoleTypes.Volunteer);
         var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
-        stored!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
+        stored!.Role.Should().Be(ActivityRole.Volunteer);
     }
 
     [Fact]
@@ -443,10 +452,10 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         await SeedAssignmentAsync(
             activityId,
             TestSeedData.Users.MemberChildId,
-            SeedIds.ActivityRoleTypes.Participant
+            KnownIds.ActivityRoleTypes.Participant
         );
         var client = await LoginAsAdminAsync();
-        var request = new ChangeAssignmentRoleRequest(SeedIds.ActivityRoleTypes.Leader);
+        var request = new ChangeAssignmentRoleRequest(KnownIds.ActivityRoleTypes.Leader);
 
         var response = await client.PatchJsonAsync(
             $"/api/activities/{activityId}/{TestSeedData.Users.MemberChildId}/change-role",
@@ -456,7 +465,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId);
-        stored!.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Leader);
+        stored!.Role.Should().Be(ActivityRole.Leader);
     }
 
     [Fact]
@@ -544,8 +553,8 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
         var request = new AssignHouseholdRequest([
-            new(TestSeedData.Users.MemberId, SeedIds.ActivityRoleTypes.Leader),
-            new(TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Leader),
+            new(TestSeedData.Users.MemberId, KnownIds.ActivityRoleTypes.Leader),
+            new(TestSeedData.Users.MemberChildId, KnownIds.ActivityRoleTypes.Leader),
         ]);
 
         var response = await client.PostJsonAsync(
@@ -573,16 +582,16 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         self.Roles.Select(r => r.Id)
             .Should()
             .Equal(
-                SeedIds.ActivityRoleTypes.Participant,
-                SeedIds.ActivityRoleTypes.Volunteer,
-                SeedIds.ActivityRoleTypes.Leader
+                KnownIds.ActivityRoleTypes.Participant,
+                KnownIds.ActivityRoleTypes.Volunteer,
+                KnownIds.ActivityRoleTypes.Leader
             );
         self.Roles.Select(r => r.Name).Should().Equal("Participante", "Voluntario", "Líder");
         var child = body.Single(m => m.UserId == TestSeedData.Users.MemberChildId);
         child
             .Roles.Select(r => r.Id)
             .Should()
-            .Equal(SeedIds.ActivityRoleTypes.Participant, SeedIds.ActivityRoleTypes.Volunteer);
+            .Equal(KnownIds.ActivityRoleTypes.Participant, KnownIds.ActivityRoleTypes.Volunteer);
         child.Roles.Select(r => r.Name).Should().Equal("Participante", "Voluntario");
     }
 

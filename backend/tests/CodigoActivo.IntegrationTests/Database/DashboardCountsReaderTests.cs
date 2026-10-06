@@ -11,6 +11,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
+using CodigoActivo.Infrastructure.Reports;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
 using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
@@ -91,7 +92,7 @@ public sealed class DashboardCountsReaderTests(PostgresContainerFixture postgres
 
         var firstEvent = NewEvent("Evento 1");
         ctx.Events.AddRange(firstEvent, NewEvent("Evento 2"));
-        AddActivities(ctx, firstEvent.Id);
+        AddActivities(ctx, firstEvent.Id.Value);
 
         ctx.Resources.Add(
             Persisted.As<Resource>(
@@ -101,7 +102,7 @@ public sealed class DashboardCountsReaderTests(PostgresContainerFixture postgres
                     Title = "Recurso",
                     Subtitle = "Sub",
                     Description = "{}",
-                    ResourceTypeId = SeedIds.ResourceTypes.Internal,
+                    ResourceType = ResourceType.Internal,
                     ThumbnailId = ThumbId,
                     CreatedAt = Fixed,
                     CreatedBy = AuthorId,
@@ -187,8 +188,8 @@ public sealed class DashboardCountsReaderTests(PostgresContainerFixture postgres
                 FirstName = firstName,
                 LastName = "Fixture",
                 BirthDate = new DateOnly(1980, 1, 1),
-                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                UserTypeId = SeedIds.UserTypes.Member,
+                Status = UserStatus.Active,
+                UserType = UserType.Member,
                 CreatedAt = Fixed,
             }
         );
@@ -224,7 +225,7 @@ public sealed class DashboardCountsReaderTests(PostgresContainerFixture postgres
                 ActivityStartsAt = Fixed,
                 ActivityEndsAt = Fixed.AddHours(1),
                 EventId = eventId,
-                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                Modality = ActivityModality.Presencial,
                 ThumbnailId = ThumbId,
                 CreatedAt = Fixed,
                 CreatedBy = AuthorId,

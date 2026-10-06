@@ -1,5 +1,9 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
+using CodigoActivo.API.EventCategories.Contracts;
+using CodigoActivo.API.Events.Contracts;
+using CodigoActivo.API.TermsDocuments.Contracts;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Application.Events.Contracts;
@@ -9,6 +13,7 @@ using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -562,10 +567,13 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         created!.Title.Should().Be("Creado");
 
         var stored = await Factory.QueryAsync(db =>
-            db.Events.Include(e => e.Categories).FirstOrDefaultAsync(e => e.Id == created.Id, Ct)
+            db.Events.Include(e => e.Categories)
+                .FirstOrDefaultAsync(e => e.Id == EventId.From(created.Id), Ct)
         );
-        stored!.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
-        stored.Categories.Should().ContainSingle(c => c.EventCategoryTypeId == categoryId);
+        stored!.CreatedBy.Value.Should().Be(TestSeedData.Users.AdminId);
+        stored
+            .Categories.Should()
+            .ContainSingle(c => c.EventCategoryTypeId == EventCategoryTypeId.From(categoryId));
     }
 
     [Fact]
@@ -624,7 +632,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stored = await FindAsync<Event>(id);
         stored!.Title.Should().Be("Después");
-        stored.UpdatedBy.Should().Be(TestSeedData.Users.AdminId);
+        stored.UpdatedBy.Should().Be(UserId.From(TestSeedData.Users.AdminId));
     }
 
     [Fact]
@@ -645,7 +653,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PutJsonAsync($"/api/events/{id}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var oldFile = await FindAsync<StoredFile>(oldThumbnailId);
+        var oldFile = await FindAsync<StoredFile>(oldThumbnailId.Value);
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
         var newFile = await FindAsync<StoredFile>(newThumbnailId);
         newFile.Should().NotBeNull();
@@ -667,7 +675,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<Event>(id);
         stored.Should().BeNull();
-        var file = await FindAsync<StoredFile>(thumbnailId);
+        var file = await FindAsync<StoredFile>(thumbnailId.Value);
         file.Should()
             .BeNull("the deleted event's thumbnail is orphaned and must be cascade-deleted");
     }
@@ -879,11 +887,11 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var remaining = await Factory.QueryAsync(db =>
-            db.EventCategories.Where(c => c.EventId == eventId)
+            db.EventCategories.Where(c => c.EventId == EventId.From(eventId))
                 .Select(c => c.EventCategoryTypeId)
                 .ToListAsync(Ct)
         );
-        remaining.Should().Equal(keptId);
+        remaining.Should().Equal(EventCategoryTypeId.From(keptId));
     }
 
     [Fact]
@@ -902,11 +910,11 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeConflictAsync(ErrorCode.EventCategoryTypeOnlyCategoryOfEvent);
         (await FindAsync<EventCategoryType>(id)).Should().NotBeNull();
         var remaining = await Factory.QueryAsync(db =>
-            db.EventCategories.Where(c => c.EventId == eventId)
+            db.EventCategories.Where(c => c.EventId == EventId.From(eventId))
                 .Select(c => c.EventCategoryTypeId)
                 .ToListAsync(Ct)
         );
-        remaining.Should().Equal(id);
+        remaining.Should().Equal(EventCategoryTypeId.From(id));
     }
 
     [Theory]
@@ -1034,7 +1042,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
 
         await created.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
         await updated.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-        (await FindAsync<TermsDocument>(termsDocumentId))!.Description.Should().Be("{}");
+        (await FindAsync<TermsDocument>(termsDocumentId))!.Description!.Json.Should().Be("{}");
         await Factory.QueryAsync(async db =>
         {
             (await db.TermsDocuments.AnyAsync(d => d.Name == "Con imagen", Ct)).Should().BeFalse();

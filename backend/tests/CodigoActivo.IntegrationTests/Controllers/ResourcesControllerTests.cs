@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
+using CodigoActivo.API.Resources.Contracts;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Resources.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
@@ -38,9 +41,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                         Subtitle = subtitle,
                         Description = url is null ? Description : "{}",
                         Url = url,
-                        ResourceTypeId = url is null
-                            ? SeedIds.ResourceTypes.Internal
-                            : SeedIds.ResourceTypes.External,
+                        ResourceType = url is null ? ResourceType.Internal : ResourceType.External,
                         ThumbnailId = thumbnailId,
                         CreatedAt = createdAt
                             ?? new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
@@ -66,7 +67,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         page!.Total.Should().Be(1);
         page.Page.Should().Be(1);
         var item = page.Items.Should().ContainSingle(r => r.Title == "Alpha").Subject;
-        item.Type.Id.Should().Be(SeedIds.ResourceTypes.Internal);
+        item.Type.Id.Should().Be(KnownIds.ResourceTypes.Internal);
         item.Type.Name.Should().Be("Interno");
         item.Type.IsExternal.Should().BeFalse();
         item.Url.Should().BeNull();
@@ -80,7 +81,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var client = CreateClient();
 
         var response = await client.GetAsync(
-            TestUri.Rel($"/api/resources?resourceTypeId={SeedIds.ResourceTypes.External}"),
+            TestUri.Rel($"/api/resources?resourceTypeId={KnownIds.ResourceTypes.External}"),
             Ct
         );
 
@@ -89,7 +90,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         page!.Total.Should().Be(1);
         var item = page.Items.Should().ContainSingle().Subject;
         item.Id.Should().Be(externalId);
-        item.Type.Id.Should().Be(SeedIds.ResourceTypes.External);
+        item.Type.Id.Should().Be(KnownIds.ResourceTypes.External);
     }
 
     [Fact]
@@ -235,7 +236,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var resource = await response.ReadJsonAsync<ResourceResponse>(Ct);
         resource!.Url.Should().Be(ExternalUrl);
-        resource.Type.Id.Should().Be(SeedIds.ResourceTypes.External);
+        resource.Type.Id.Should().Be(KnownIds.ResourceTypes.External);
         resource.Type.IsExternal.Should().BeTrue();
     }
 
@@ -249,7 +250,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             "Tagline",
             Description,
             null,
-            SeedIds.ResourceTypes.Internal,
+            KnownIds.ResourceTypes.Internal,
             thumbnailId
         );
 
@@ -259,13 +260,13 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         response.Headers.Location.Should().NotBeNull();
         var created = await response.ReadJsonAsync<ResourceResponse>(Ct);
         created!.Title.Should().Be("Gamma");
-        created.Type.Id.Should().Be(SeedIds.ResourceTypes.Internal);
+        created.Type.Id.Should().Be(KnownIds.ResourceTypes.Internal);
 
         var stored = await FindAsync<Resource>(created.Id);
         stored!.Subtitle.Should().Be("Tagline");
-        stored.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.Internal);
+        stored.ResourceType.Should().Be(ResourceType.Internal);
         stored.Url.Should().BeNull();
-        stored.CreatedBy.Should().Be(TestSeedData.Users.AdminId);
+        stored.CreatedBy.Value.Should().Be(TestSeedData.Users.AdminId);
     }
 
     [Fact]
@@ -278,7 +279,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             "Sub",
             null,
             ExternalUrl,
-            SeedIds.ResourceTypes.External,
+            KnownIds.ResourceTypes.External,
             thumbnailId
         );
 
@@ -291,8 +292,8 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
 
         var stored = await FindAsync<Resource>(created.Id);
         stored!.Url.Should().Be(ExternalUrl);
-        stored.Description.Should().Be("{}");
-        stored.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.External);
+        stored.Description!.Json.Should().Be("{}");
+        stored.ResourceType.Should().Be(ResourceType.External);
     }
 
     [Theory]
@@ -313,7 +314,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     "Sub",
                     Description,
                     ExternalUrl,
-                    SeedIds.ResourceTypes.Internal,
+                    KnownIds.ResourceTypes.Internal,
                     thumbnailId
                 ),
                 ErrorCode.ResourceUrlNotAllowed
@@ -324,7 +325,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     "Sub",
                     Description,
                     ExternalUrl,
-                    SeedIds.ResourceTypes.External,
+                    KnownIds.ResourceTypes.External,
                     thumbnailId
                 ),
                 ErrorCode.ResourceDescriptionNotAllowed
@@ -335,7 +336,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     "Sub",
                     null,
                     null,
-                    SeedIds.ResourceTypes.External,
+                    KnownIds.ResourceTypes.External,
                     thumbnailId
                 ),
                 ErrorCode.ResourceUrlRequired
@@ -346,7 +347,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     "Sub",
                     "{}",
                     null,
-                    SeedIds.ResourceTypes.Internal,
+                    KnownIds.ResourceTypes.Internal,
                     thumbnailId
                 ),
                 ErrorCode.ResourceDescriptionRequired
@@ -379,7 +380,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             "Sub",
             null,
             "no-es-una-url",
-            SeedIds.ResourceTypes.External,
+            KnownIds.ResourceTypes.External,
             thumbnailId
         );
 
@@ -398,7 +399,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             "Sub",
             Description,
             null,
-            SeedIds.ResourceTypes.Internal,
+            KnownIds.ResourceTypes.Internal,
             thumbnailId
         );
 
@@ -416,7 +417,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             "Sub",
             Description,
             null,
-            SeedIds.ResourceTypes.Internal,
+            KnownIds.ResourceTypes.Internal,
             Guid.NewGuid()
         );
 
@@ -437,7 +438,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             subtitle,
             Description,
             null,
-            SeedIds.ResourceTypes.Internal,
+            KnownIds.ResourceTypes.Internal,
             thumbnailId
         );
 
@@ -459,7 +460,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     "Sub",
                     Description,
                     null,
-                    SeedIds.ResourceTypes.Internal,
+                    KnownIds.ResourceTypes.Internal,
                     thumbnailId
                 ),
                 options: TestJson.Options
@@ -483,14 +484,14 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             "Sub",
             Description,
             null,
-            SeedIds.ResourceTypes.Internal,
+            KnownIds.ResourceTypes.Internal,
             newThumbnailId
         );
 
         var response = await client.PutJsonAsync($"/api/resources/{id}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var oldFile = await FindAsync<StoredFile>(oldThumbnailId);
+        var oldFile = await FindAsync<StoredFile>(oldThumbnailId.Value);
         oldFile.Should().BeNull("the replaced thumbnail is orphaned and must be cascade-deleted");
         var newFile = await FindAsync<StoredFile>(newThumbnailId);
         newFile.Should().NotBeNull();
@@ -507,17 +508,17 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
             "Sub",
             null,
             ExternalUrl,
-            SeedIds.ResourceTypes.External,
-            thumbnailId
+            KnownIds.ResourceTypes.External,
+            thumbnailId.Value
         );
 
         var response = await client.PutJsonAsync($"/api/resources/{id}", request, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var stored = await FindAsync<Resource>(id);
-        stored!.ResourceTypeId.Should().Be(SeedIds.ResourceTypes.External);
+        stored!.ResourceType.Should().Be(ResourceType.External);
         stored.Url.Should().Be(ExternalUrl);
-        stored.Description.Should().Be("{}");
+        stored.Description!.Json.Should().Be("{}");
     }
 
     [Theory]
@@ -541,8 +542,8 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     "Sub",
                     Description,
                     ExternalUrl,
-                    SeedIds.ResourceTypes.Internal,
-                    thumbnailId
+                    KnownIds.ResourceTypes.Internal,
+                    thumbnailId.Value
                 ),
                 ErrorCode.ResourceUrlNotAllowed
             ),
@@ -552,8 +553,8 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     "Sub",
                     Description,
                     ExternalUrl,
-                    SeedIds.ResourceTypes.External,
-                    thumbnailId
+                    KnownIds.ResourceTypes.External,
+                    thumbnailId.Value
                 ),
                 ErrorCode.ResourceDescriptionNotAllowed
             ),
@@ -563,8 +564,8 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     "Sub",
                     null,
                     null,
-                    SeedIds.ResourceTypes.External,
-                    thumbnailId
+                    KnownIds.ResourceTypes.External,
+                    thumbnailId.Value
                 ),
                 ErrorCode.ResourceUrlRequired
             ),
@@ -574,8 +575,8 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     "Sub",
                     "{}",
                     null,
-                    SeedIds.ResourceTypes.Internal,
-                    thumbnailId
+                    KnownIds.ResourceTypes.Internal,
+                    thumbnailId.Value
                 ),
                 ErrorCode.ResourceDescriptionRequired
             ),
@@ -586,7 +587,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     Description,
                     null,
                     Guid.NewGuid(),
-                    thumbnailId
+                    thumbnailId.Value
                 ),
                 ErrorCode.ResourceTypeNotFound
             ),
@@ -611,7 +612,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<Resource>(id);
         stored.Should().BeNull();
-        var file = await FindAsync<StoredFile>(thumbnailId);
+        var file = await FindAsync<StoredFile>(thumbnailId.Value);
         file.Should()
             .BeNull("the deleted resource's thumbnail is orphaned and must be cascade-deleted");
     }

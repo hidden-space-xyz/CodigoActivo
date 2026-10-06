@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
+using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +24,9 @@ public sealed class DeletedAccountPurgerTests(CodigoActivoWebAppFactory factory)
 
     private Task<List<Guid>> RemainingCopyIdsAsync()
     {
-        return Factory.QueryAsync(db => db.DeletedAccounts.Select(copy => copy.Id).ToListAsync(Ct));
+        return Factory.QueryAsync(db =>
+            db.DeletedAccounts.Select(copy => copy.Id.Value).ToListAsync(Ct)
+        );
     }
 
     [Fact]

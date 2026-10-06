@@ -1,5 +1,10 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Activities.Contracts;
+using CodigoActivo.API.EventCategories.Contracts;
+using CodigoActivo.API.Events.Contracts;
+using CodigoActivo.API.News.Contracts;
+using CodigoActivo.API.TermsDocuments.Contracts;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Caching;
@@ -227,8 +232,8 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         using var assigned = await member.PostJsonAsync(
             $"/api/activities/{activityId}/assign-household",
             new AssignHouseholdRequest([
-                new(TestSeedData.Users.MemberId, SeedIds.ActivityRoleTypes.Participant),
-                new(TestSeedData.Users.MemberChildId, SeedIds.ActivityRoleTypes.Participant),
+                new(TestSeedData.Users.MemberId, KnownIds.ActivityRoleTypes.Participant),
+                new(TestSeedData.Users.MemberChildId, KnownIds.ActivityRoleTypes.Participant),
             ]),
             Ct
         );
@@ -445,7 +450,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
                         Title = "Actividad",
                         Description = "{}",
                         Location = "Sala",
-                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        Modality = ActivityModality.Presencial,
                         ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
                         EventId = eventId,
@@ -458,7 +463,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
                                 new
                                 {
                                     ActivityId = activityId,
-                                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                                    Role = ActivityRole.Participant,
                                     DesiredCount = 1,
                                 }
                             ),

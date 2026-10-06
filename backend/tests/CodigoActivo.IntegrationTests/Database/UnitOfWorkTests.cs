@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -71,14 +72,14 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
                     ActivityStartsAt = Fixed.AddDays(40),
                     ActivityEndsAt = Fixed.AddDays(40).AddHours(2),
                     EventId = EventId,
-                    ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                    Modality = ActivityModality.Presencial,
                     ThumbnailId = FileId,
                     CreatedAt = Fixed,
                     CreatedBy = UserId,
                 }
             )
         );
-        db.Assignments.Add(NewAssignment(ActivityId, SeedIds.ActivityRoleTypes.Participant));
+        db.Assignments.Add(NewAssignment(ActivityId, KnownIds.ActivityRoleTypes.Participant));
         await db.SaveChangesAsync(Ct);
     }
 
@@ -97,8 +98,8 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
                 LastName = "De Trabajo",
                 Email = email,
                 Gender = Gender.Other,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                UserTypeId = SeedIds.UserTypes.Member,
+                Status = UserStatus.Active,
+                UserType = UserType.Member,
                 CreatedAt = Fixed,
             }
         );
@@ -147,8 +148,8 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
             {
                 UserId = UserId,
                 ActivityId = activityId,
-                ActivityRoleTypeId = roleTypeId,
-                AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+                Role = CatalogIds.ActivityRoles.ValueOf(roleTypeId),
+                Status = AssignmentStatus.Requested,
                 CreatedAt = Fixed,
             }
         );
@@ -158,8 +159,8 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task SaveChangesAsyncSecondAssignmentOfAUserToAnActivityThrowsForAssignments()
     {
         await using var db = postgres.CreateContext();
-        db.Assignments.Add(NewAssignment(ActivityId, SeedIds.ActivityRoleTypes.Leader));
-        IUnitOfWork uow = db;
+        db.Assignments.Add(NewAssignment(ActivityId, KnownIds.ActivityRoleTypes.Leader));
+        var uow = TestUnitOfWork.For(db);
 
         var act = () => uow.SaveChangesAsync(Ct);
 
@@ -173,7 +174,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var db = postgres.CreateContext();
         db.Users.Add(NewUser(Guid.NewGuid(), UserEmail));
-        IUnitOfWork uow = db;
+        var uow = TestUnitOfWork.For(db);
 
         var act = () => uow.SaveChangesAsync(Ct);
 
@@ -185,11 +186,14 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task SaveChangesAsyncSecondFeaturedEventNamesTheEventEntity()
     {
         await using var db = postgres.CreateContext();
-        var seeded = await db.Events.SingleAsync(e => e.Id == EventId, Ct);
+        var seeded = await db.Events.SingleAsync(
+            e => e.Id == global::CodigoActivo.Domain.Events.EventId.From(EventId),
+            Ct
+        );
         seeded.Feature();
         await db.SaveChangesAsync(Ct);
         db.Events.Add(FeaturedEvent());
-        IUnitOfWork uow = db;
+        var uow = TestUnitOfWork.For(db);
 
         var act = () => uow.SaveChangesAsync(Ct);
 
@@ -202,7 +206,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var db = postgres.CreateContext();
         db.News.AddRange(FeaturedNewsItem(), FeaturedNewsItem());
-        IUnitOfWork uow = db;
+        var uow = TestUnitOfWork.For(db);
 
         var act = () => uow.SaveChangesAsync(Ct);
 
@@ -214,8 +218,8 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task SaveChangesAsyncOtherDatabaseErrorsAreNotTranslated()
     {
         await using var db = postgres.CreateContext();
-        db.Assignments.Add(NewAssignment(Guid.NewGuid(), SeedIds.ActivityRoleTypes.Participant));
-        IUnitOfWork uow = db;
+        db.Assignments.Add(NewAssignment(Guid.NewGuid(), KnownIds.ActivityRoleTypes.Participant));
+        var uow = TestUnitOfWork.For(db);
 
         var act = () => uow.SaveChangesAsync(Ct);
 
@@ -228,24 +232,27 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var db = postgres.CreateContext())
         {
             var current = await db.Assignments.SingleAsync(
-                a => a.UserId == UserId && a.ActivityId == ActivityId,
+                a =>
+                    a.UserId == global::CodigoActivo.Domain.Users.UserId.From(UserId)
+                    && a.ActivityId
+                        == global::CodigoActivo.Domain.Activities.ActivityId.From(ActivityId),
                 Ct
             );
             db.Assignments.Remove(current);
-            db.Assignments.Add(NewAssignment(ActivityId, SeedIds.ActivityRoleTypes.Volunteer));
-            IUnitOfWork uow = db;
+            db.Assignments.Add(NewAssignment(ActivityId, KnownIds.ActivityRoleTypes.Volunteer));
+            var uow = TestUnitOfWork.For(db);
 
             await uow.SaveChangesAsync(Ct);
         }
 
         await using var verify = postgres.CreateContext();
         var stored = await verify
-            .Assignments.Where(a => a.UserId == UserId && a.ActivityId == ActivityId)
+            .Assignments.Where(a =>
+                a.UserId == global::CodigoActivo.Domain.Users.UserId.From(UserId)
+                && a.ActivityId
+                    == global::CodigoActivo.Domain.Activities.ActivityId.From(ActivityId)
+            )
             .ToListAsync(Ct);
-        stored
-            .Should()
-            .ContainSingle()
-            .Which.ActivityRoleTypeId.Should()
-            .Be(SeedIds.ActivityRoleTypes.Volunteer);
+        stored.Should().ContainSingle().Which.Role.Should().Be(ActivityRole.Volunteer);
     }
 }

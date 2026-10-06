@@ -1,6 +1,9 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
+using CodigoActivo.API.Participation.Contracts;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
@@ -80,7 +83,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
                         ActivityStartsAt = At,
                         ActivityEndsAt = At.AddHours(2),
                         EventId = EventId,
-                        ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                        Modality = ActivityModality.Presencial,
                         ThumbnailId = ActivityThumbnailId,
                         CreatedAt = At,
                         CreatedBy = TestSeedData.Users.AdminId,
@@ -95,8 +98,8 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
                         {
                             UserId = TestSeedData.Users.MemberId,
                             ActivityId = ActivityId,
-                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                            AssignmentStatusId = statusId,
+                            Role = ActivityRole.Participant,
+                            Status = CatalogIds.AssignmentStatuses.ValueOf(statusId),
                         }
                     )
                 );
@@ -110,8 +113,8 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
                         {
                             UserId = TestSeedData.Users.MemberChildId,
                             ActivityId = ActivityId,
-                            ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                            AssignmentStatusId = childStatusId,
+                            Role = ActivityRole.Participant,
+                            Status = CatalogIds.AssignmentStatuses.ValueOf(childStatusId),
                         }
                     )
                 );
@@ -138,7 +141,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SaveRatingAnonymousReturnsUnauthorized()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = CreateClient();
 
         using var response = await client.PostJsonAsync(
@@ -167,7 +170,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SaveRatingEventNotFinishedReturnsConflict()
     {
-        await SeedEventAsync(FutureStart, FutureEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(FutureStart, FutureEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
         using var response = await client.PostJsonAsync(
@@ -182,7 +185,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SaveRatingWithoutConfirmedAssignmentReturnsConflict()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Requested);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Requested);
         var client = await LoginAsMemberAsync();
 
         using var response = await client.PostJsonAsync(
@@ -197,7 +200,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SaveRatingScoreOutOfRangeReturnsBadRequest()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
         using var response = await client.PostJsonAsync(
@@ -212,7 +215,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SaveRatingZeroScoreReturnsBadRequest()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
         using var response = await client.PostJsonAsync(
@@ -227,7 +230,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SaveRatingWithoutScoreOrAnswersReturnsEmptyError()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
         using var response = await client.PostJsonAsync(
@@ -239,7 +242,14 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeBadRequestAsync(ErrorCode.EventRatingEmpty);
         await Factory.QueryAsync(async db =>
         {
-            (await db.EventRatings.AnyAsync(r => r.EventId == EventId, Ct)).Should().BeFalse();
+            (
+                await db.EventRatings.AnyAsync(
+                    r => r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                    Ct
+                )
+            )
+                .Should()
+                .BeFalse();
             return true;
         });
     }
@@ -247,7 +257,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SaveRatingAnswersWithoutScorePersistsUnscoredRating()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
         using var response = await client.PostJsonAsync(
@@ -259,7 +269,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Factory.QueryAsync(async db =>
         {
-            var rating = await db.EventRatings.SingleAsync(r => r.EventId == EventId, Ct);
+            var rating = await db.EventRatings.SingleAsync(
+                r => r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                Ct
+            );
             rating.Score.Should().BeNull();
             rating.Suggestions.Should().Be("Más talleres");
             return true;
@@ -269,7 +282,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SaveRatingPastEventWithConfirmedAssignmentReturnsNoContentAndPersistsAnonymousRating()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
         using var response = await client.PostJsonAsync(
@@ -281,7 +294,11 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Factory.QueryAsync(async db =>
         {
-            var ratings = await db.EventRatings.Where(r => r.EventId == EventId).ToListAsync(Ct);
+            var ratings = await db
+                .EventRatings.Where(r =>
+                    r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId)
+                )
+                .ToListAsync(Ct);
             var rating = ratings.Should().ContainSingle().Subject;
             rating.Score.Should().Be(5);
             rating.MostLiked.Should().Be("La organización");
@@ -298,7 +315,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             PastStart,
             PastEnd,
             assignmentStatusId: null,
-            childAssignmentStatusId: SeedIds.AssignmentStatusTypes.Confirmed
+            childAssignmentStatusId: KnownIds.AssignmentStatusTypes.Confirmed
         );
         var client = await LoginAsMemberAsync();
 
@@ -311,7 +328,14 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Factory.QueryAsync(async db =>
         {
-            (await db.EventRatings.CountAsync(r => r.EventId == EventId, Ct)).Should().Be(1);
+            (
+                await db.EventRatings.CountAsync(
+                    r => r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                    Ct
+                )
+            )
+                .Should()
+                .Be(1);
             return true;
         });
     }
@@ -323,7 +347,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             PastStart,
             PastEnd,
             assignmentStatusId: null,
-            childAssignmentStatusId: SeedIds.AssignmentStatusTypes.Requested
+            childAssignmentStatusId: KnownIds.AssignmentStatusTypes.Requested
         );
         var client = await LoginAsMemberAsync();
 
@@ -339,7 +363,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task SaveRatingCalledTwiceBySameUserStoresBothAnonymousRatings()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
         using var first = await client.PostJsonAsync(
@@ -357,7 +381,11 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         second.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await Factory.QueryAsync(async db =>
         {
-            var ratings = await db.EventRatings.Where(r => r.EventId == EventId).ToListAsync(Ct);
+            var ratings = await db
+                .EventRatings.Where(r =>
+                    r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId)
+                )
+                .ToListAsync(Ct);
             ratings
                 .Should()
                 .HaveCount(2, "a second opinion is stored next to the first, not over it");
@@ -370,7 +398,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task RatingsMemberUserReturnsForbidden()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
         var response = await client.GetAsync(TestUri.Rel($"/api/events/{EventId}/ratings"), Ct);
@@ -394,7 +422,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task RatingsAdminReturnsAnonymousOpinionsWithoutDateFields()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.Add(
@@ -433,7 +461,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task RatingsDefaultSortOrdersByDescendingScore()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.AddRange(
@@ -455,7 +483,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task RatingsAscendingSortOrdersByScore()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.AddRange(
@@ -480,7 +508,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task EventRatingsTableHasNoUserOrDateColumns()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
 
         var columns = await Factory.QueryAsync(async db =>
         {
@@ -536,7 +564,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task EventSummaryWithRatingsReturnsCountAndAverage()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.AddRange(
@@ -562,7 +590,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task EventSummaryWithUnscoredRatingsAveragesOnlyScoredOnes()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.AddRange(
@@ -588,7 +616,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task RatingsDefaultSortListsUnscoredRatingsLast()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.AddRange(
@@ -610,7 +638,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task EventSummaryWithoutRatingsReturnsNullAverage()
     {
-        await SeedEventAsync(PastStart, PastEnd, SeedIds.AssignmentStatusTypes.Confirmed);
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(

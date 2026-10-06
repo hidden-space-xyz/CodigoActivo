@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
@@ -9,8 +10,16 @@ using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Activities;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Database.Seeders;
+using CodigoActivo.Infrastructure.EventCategories;
+using CodigoActivo.Infrastructure.Events;
+using CodigoActivo.Infrastructure.Files;
+using CodigoActivo.Infrastructure.News;
+using CodigoActivo.Infrastructure.Partners;
+using CodigoActivo.Infrastructure.TermsDocuments;
+using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -40,8 +49,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                     LastName = "Fixture",
                     BirthDate = new DateOnly(1980, 1, 1),
                     Gender = Gender.Other,
-                    UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                    UserTypeId = SeedIds.UserTypes.Member,
+                    Status = UserStatus.Active,
+                    UserType = UserType.Member,
                     CreatedAt = Fixed,
                 }
             )
@@ -69,8 +78,14 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     private static Partner NewPartner(string name = "Partner", int tier = 1)
     {
         return Partner.Create(
-            new PartnerDetails(name, new DateOnly(2024, 1, 1), tier, null, ThumbId),
-            AuthorId,
+            new PartnerDetails(
+                name,
+                new DateOnly(2024, 1, 1),
+                tier,
+                null,
+                StoredFileId.From(ThumbId)
+            ),
+            UserId.From(AuthorId),
             Fixed
         );
     }
@@ -94,8 +109,10 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 Email = email,
                 Phone = phone,
                 BirthDate = new DateOnly(1990, 1, 1),
-                UserStatusTypeId = statusId ?? SeedIds.UserStatusTypes.Active,
-                UserTypeId = userTypeId ?? SeedIds.UserTypes.Member,
+                Status = CatalogIds.UserStatuses.ValueOf(
+                    statusId ?? KnownIds.UserStatusTypes.Active
+                ),
+                UserType = CatalogIds.UserTypes.ValueOf(userTypeId ?? KnownIds.UserTypes.Member),
                 ParentId = parentId,
                 CreatedAt = Fixed,
             }
@@ -155,7 +172,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 Title = title,
                 Subtitle = "sub",
                 Description = description,
-                ResourceTypeId = SeedIds.ResourceTypes.Internal,
+                ResourceType = ResourceType.Internal,
                 ThumbnailId = ThumbId,
                 CreatedAt = Fixed,
                 CreatedBy = AuthorId,
@@ -180,7 +197,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 ActivityStartsAt = startsAt ?? Fixed,
                 ActivityEndsAt = endsAt ?? Fixed.AddHours(1),
                 EventId = eventId,
-                ActivityModalityTypeId = SeedIds.ActivityModalityTypes.Presencial,
+                Modality = ActivityModality.Presencial,
                 ThumbnailId = ThumbId,
                 CreatedAt = Fixed,
                 CreatedBy = AuthorId,
@@ -226,7 +243,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         found.Should().NotBeNull();
         found.Name.Should().Be("Target");
         ctx.ChangeTracker.Entries<Partner>().Should().ContainSingle();
-        (await repo.GetByIdAsync(Guid.NewGuid(), Ct)).Should().BeNull();
+        (await repo.GetByIdAsync(PartnerId.From(Guid.NewGuid()), Ct)).Should().BeNull();
     }
 
     [Fact]
@@ -257,8 +274,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var result = await repo.GetByIdAsync(user.Id, Ct);
 
         result.Should().NotBeNull();
-        result.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
-        result.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
+        result.Status.Should().Be(UserStatus.Active);
+        result.UserType.Should().Be(UserType.Member);
     }
 
     [Fact]
@@ -267,7 +284,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using var ctx = postgres.CreateContext();
         var repo = new UserRepository(ctx);
 
-        (await repo.GetByIdAsync(Guid.NewGuid(), Ct)).Should().BeNull();
+        (await repo.GetByIdAsync(UserId.From(Guid.NewGuid()), Ct)).Should().BeNull();
     }
 
     [Fact]
@@ -279,7 +296,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         var repo = new UserRepository(ctx);
 
-        var result = await repo.GetByEmailAsync("user@x.test", Ct);
+        var result = await repo.GetByEmailAsync(EmailAddress.FromStored("user@x.test"), Ct);
 
         result!.Id.Should().Be(user.Id);
     }
@@ -292,7 +309,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         var repo = new UserRepository(ctx);
 
-        var result = await repo.GetByEmailAsync("nobody@x.test", Ct);
+        var result = await repo.GetByEmailAsync(EmailAddress.FromStored("nobody@x.test"), Ct);
 
         result.Should().BeNull();
     }
@@ -312,7 +329,12 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         (
             await ctx
                 .Users.AsNoTracking()
-                .CountAsync(u => u.Phone == "+34600000000" && u.NationalId == "12345678Z", Ct)
+                .CountAsync(
+                    u =>
+                        u.Phone == PhoneNumber.FromStored("+34600000000")
+                        && u.NationalId == SpanishNationalId.FromStored("12345678Z"),
+                    Ct
+                )
         )
             .Should()
             .Be(2);
@@ -329,7 +351,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         var repo = new UserRepository(ctx);
 
-        (await repo.EmailExistsAsync(email, ct: Ct)).Should().Be(expected);
+        (await repo.EmailExistsAsync(EmailAddress.FromStored(email), ct: Ct)).Should().Be(expected);
     }
 
     [Fact]
@@ -341,7 +363,13 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         var repo = new UserRepository(ctx);
 
-        (await repo.EmailExistsAsync("dup@x.test", excludeUserId: user.Id, ct: Ct))
+        (
+            await repo.EmailExistsAsync(
+                EmailAddress.FromStored("dup@x.test"),
+                excludeUserId: user.Id,
+                ct: Ct
+            )
+        )
             .Should()
             .BeFalse("owner is excluded");
     }
@@ -355,7 +383,13 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         var repo = new UserRepository(ctx);
 
-        (await repo.EmailExistsAsync("dup@x.test", excludeUserId: Guid.NewGuid(), ct: Ct))
+        (
+            await repo.EmailExistsAsync(
+                EmailAddress.FromStored("dup@x.test"),
+                excludeUserId: UserId.From(Guid.NewGuid()),
+                ct: Ct
+            )
+        )
             .Should()
             .BeTrue("another user still collides");
     }
@@ -372,7 +406,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         ctx.ChangeTracker.Clear();
         var repo = new UserRepository(ctx);
 
-        var users = await repo.ListByIdsAsync([ada.Id, bob.Id, Guid.NewGuid()], Ct);
+        var users = await repo.ListByIdsAsync([ada.Id, bob.Id, UserId.From(Guid.NewGuid())], Ct);
 
         users.Select(u => u.Id).Should().BeEquivalentTo([ada.Id, bob.Id]);
     }
@@ -437,7 +471,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
 
         loaded.Should().NotBeNull();
         loaded.Categories.Should().ContainSingle();
-        (await repo.GetByIdAsync(Guid.NewGuid(), Ct)).Should().BeNull();
+        (await repo.GetByIdAsync(EventId.From(Guid.NewGuid()), Ct)).Should().BeNull();
     }
 
     [Theory]
@@ -458,7 +492,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         ctx.Events.Add(ev);
         ctx.Activities.Add(
             NewActivity(
-                ev.Id,
+                ev.Id.Value,
                 startsAt: Fixed.AddMinutes(startOffsetMinutes),
                 endsAt: Fixed.AddMinutes(endOffsetMinutes)
             )
@@ -476,9 +510,15 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var target = NewEvent("Target");
         var other = NewEvent("Other");
         ctx.Events.AddRange(target, other);
-        ctx.Activities.Add(NewActivity(other.Id, startsAt: Fixed.AddMinutes(-120), endsAt: Fixed));
         ctx.Activities.Add(
-            NewActivity(target.Id, startsAt: Fixed.AddMinutes(10), endsAt: Fixed.AddMinutes(50))
+            NewActivity(other.Id.Value, startsAt: Fixed.AddMinutes(-120), endsAt: Fixed)
+        );
+        ctx.Activities.Add(
+            NewActivity(
+                target.Id.Value,
+                startsAt: Fixed.AddMinutes(10),
+                endsAt: Fixed.AddMinutes(50)
+            )
         );
         await ctx.SaveChangesAsync(Ct);
         var repo = new ActivityRepository(ctx);
@@ -494,14 +534,14 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using var ctx = postgres.CreateContext();
         var user = NewUser();
         var ev = NewEvent();
-        var activity = NewActivity(ev.Id);
+        var activity = NewActivity(ev.Id.Value);
         ctx.AddRange(user, ev, activity);
         ctx.ActivityRoleCapacities.Add(
             Persisted.As<ActivityRoleCapacity>(
                 new
                 {
                     ActivityId = activity.Id,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
+                    Role = ActivityRole.Participant,
                     DesiredCount = 3,
                 }
             )
@@ -512,8 +552,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 {
                     UserId = user.Id,
                     ActivityId = activity.Id,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Volunteer,
-                    AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+                    Role = ActivityRole.Volunteer,
+                    Status = AssignmentStatus.Confirmed,
                 }
             )
         );
@@ -525,11 +565,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
 
         found.Should().NotBeNull();
         found.RoleCapacities.Should().ContainSingle().Which.DesiredCount.Should().Be(3);
-        found
-            .AssignmentOf(user.Id)!
-            .ActivityRoleTypeId.Should()
-            .Be(SeedIds.ActivityRoleTypes.Volunteer);
-        (await repo.GetByIdAsync(Guid.NewGuid(), Ct)).Should().BeNull();
+        found.AssignmentOf(user.Id)!.Role.Should().Be(ActivityRole.Volunteer);
+        (await repo.GetByIdAsync(ActivityId.From(Guid.NewGuid()), Ct)).Should().BeNull();
     }
 
     [Fact]
@@ -537,7 +574,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     {
         var user = NewUser();
         var ev = NewEvent();
-        var activity = NewActivity(ev.Id);
+        var activity = NewActivity(ev.Id.Value);
         await using (var seed = postgres.CreateContext())
         {
             seed.AddRange(user, ev, activity);
@@ -548,7 +585,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         {
             var loaded = await new ActivityRepository(ctx).GetByIdAsync(activity.Id, Ct);
             loaded!
-                .RequestAssignment(user.Id, SeedIds.ActivityRoleTypes.Participant, Fixed)
+                .RequestAssignment(user.Id, ActivityRole.Participant, Fixed)
                 .IsSuccess.Should()
                 .BeTrue();
             await ctx.SaveChangesAsync(Ct);
@@ -557,7 +594,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using var verify = postgres.CreateContext();
         var stored = await verify.Assignments.SingleAsync(Ct);
         stored.UserId.Should().Be(user.Id);
-        stored.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Requested);
+        stored.Status.Should().Be(AssignmentStatus.Requested);
         stored.CreatedAt.Should().Be(Fixed);
     }
 
@@ -566,7 +603,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     {
         var user = NewUser();
         var ev = NewEvent();
-        var activity = NewActivity(ev.Id);
+        var activity = NewActivity(ev.Id.Value);
         await using (var seed = postgres.CreateContext())
         {
             seed.AddRange(user, ev, activity);
@@ -576,8 +613,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                     {
                         UserId = user.Id,
                         ActivityId = activity.Id,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+                        Role = ActivityRole.Participant,
+                        Status = AssignmentStatus.Confirmed,
                         CreatedAt = Fixed,
                     }
                 )
@@ -588,17 +625,14 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var ctx = postgres.CreateContext())
         {
             var loaded = await new ActivityRepository(ctx).GetByIdAsync(activity.Id, Ct);
-            loaded!
-                .ChangeAssignmentRole(user.Id, SeedIds.ActivityRoleTypes.Volunteer)
-                .Should()
-                .BeTrue();
+            loaded!.ChangeAssignmentRole(user.Id, ActivityRole.Volunteer).Should().BeTrue();
             await ctx.SaveChangesAsync(Ct);
         }
 
         await using var verify = postgres.CreateContext();
         var stored = await verify.Assignments.SingleAsync(Ct);
-        stored.ActivityRoleTypeId.Should().Be(SeedIds.ActivityRoleTypes.Volunteer);
-        stored.AssignmentStatusId.Should().Be(SeedIds.AssignmentStatusTypes.Confirmed);
+        stored.Role.Should().Be(ActivityRole.Volunteer);
+        stored.Status.Should().Be(AssignmentStatus.Confirmed);
         stored.CreatedAt.Should().Be(Fixed);
     }
 
@@ -607,7 +641,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     {
         var user = NewUser();
         var ev = NewEvent();
-        var activity = NewActivity(ev.Id);
+        var activity = NewActivity(ev.Id.Value);
         await using (var seed = postgres.CreateContext())
         {
             seed.AddRange(user, ev, activity);
@@ -617,8 +651,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                     {
                         UserId = user.Id,
                         ActivityId = activity.Id,
-                        ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                        AssignmentStatusId = SeedIds.AssignmentStatusTypes.Requested,
+                        Role = ActivityRole.Participant,
+                        Status = AssignmentStatus.Requested,
                     }
                 )
             );
@@ -641,10 +675,10 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var ctx = postgres.CreateContext();
         var guardian = NewUser("Tutora");
-        var child = NewUser("Menor", parentId: guardian.Id);
+        var child = NewUser("Menor", parentId: guardian.Id.Value);
         var ev = NewEvent();
         var otherEvent = NewEvent("Otro");
-        var activity = NewActivity(ev.Id);
+        var activity = NewActivity(ev.Id.Value);
         ctx.AddRange(guardian, child, ev, otherEvent, activity);
         ctx.Assignments.Add(
             Persisted.As<Assignment>(
@@ -652,8 +686,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 {
                     UserId = child.Id,
                     ActivityId = activity.Id,
-                    ActivityRoleTypeId = SeedIds.ActivityRoleTypes.Participant,
-                    AssignmentStatusId = SeedIds.AssignmentStatusTypes.Confirmed,
+                    Role = ActivityRole.Participant,
+                    Status = AssignmentStatus.Confirmed,
                 }
             )
         );
@@ -663,7 +697,9 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         (await repo.HasConfirmedAttendanceAsync(ev.Id, guardian.Id, Ct)).Should().BeTrue();
         (await repo.HasConfirmedAttendanceAsync(ev.Id, child.Id, Ct)).Should().BeTrue();
         (await repo.HasConfirmedAttendanceAsync(otherEvent.Id, guardian.Id, Ct)).Should().BeFalse();
-        (await repo.HasConfirmedAttendanceAsync(ev.Id, AuthorId, Ct)).Should().BeFalse();
+        (await repo.HasConfirmedAttendanceAsync(ev.Id, UserId.From(AuthorId), Ct))
+            .Should()
+            .BeFalse();
     }
 
     [Fact]
@@ -671,11 +707,13 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var ctx = postgres.CreateContext();
         var ev = NewEvent();
-        ctx.AddRange(ev, NewActivity(ev.Id, "Una"), NewActivity(ev.Id, "Otra"));
+        ctx.AddRange(ev, NewActivity(ev.Id.Value, "Una"), NewActivity(ev.Id.Value, "Otra"));
         await ctx.SaveChangesAsync(Ct);
         var repo = new ActivityRepository(ctx);
 
-        (await repo.ListThumbnailIdsAsync(ev.Id, Ct)).Should().Equal(ThumbId, ThumbId);
+        (await repo.ListThumbnailIdsAsync(ev.Id, Ct))
+            .Should()
+            .Equal(StoredFileId.From(ThumbId), StoredFileId.From(ThumbId));
     }
 
     [Fact]
@@ -694,10 +732,10 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         var repo = new StoredFileRepository(ctx);
 
-        (await repo.IsInUseAsync(ThumbId, Ct)).Should().BeTrue();
-        (await repo.IsInUseAsync(eventEmbeddedFileId, Ct)).Should().BeTrue();
-        (await repo.IsInUseAsync(newsItemEmbeddedFileId, Ct)).Should().BeTrue();
-        (await repo.IsInUseAsync(Guid.NewGuid(), Ct)).Should().BeFalse();
+        (await repo.IsInUseAsync(StoredFileId.From(ThumbId), Ct)).Should().BeTrue();
+        (await repo.IsInUseAsync(StoredFileId.From(eventEmbeddedFileId), Ct)).Should().BeTrue();
+        (await repo.IsInUseAsync(StoredFileId.From(newsItemEmbeddedFileId), Ct)).Should().BeTrue();
+        (await repo.IsInUseAsync(StoredFileId.From(Guid.NewGuid()), Ct)).Should().BeFalse();
     }
 
     [Fact]
@@ -727,16 +765,17 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
 
         var inUse = await repo.GetInUseAsync(
             [
-                ThumbId,
-                embeddedInEventId,
-                embeddedInNewsItemId,
-                embeddedInResourceId,
-                unreferencedId,
+                StoredFileId.From(ThumbId),
+                StoredFileId.From(embeddedInEventId),
+                StoredFileId.From(embeddedInNewsItemId),
+                StoredFileId.From(embeddedInResourceId),
+                StoredFileId.From(unreferencedId),
             ],
             Ct
         );
 
         inUse
+            .Select(id => id.Value)
             .Should()
             .BeEquivalentTo([
                 ThumbId,
@@ -782,7 +821,9 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         var repo = new EventCategoryTypeRepository(ctx);
 
-        (await repo.CountExistingAsync([stored.Id, Guid.NewGuid()], Ct)).Should().Be(1);
+        (await repo.CountExistingAsync([stored.Id, EventCategoryTypeId.From(Guid.NewGuid())], Ct))
+            .Should()
+            .Be(1);
     }
 
     [Fact]
@@ -804,8 +845,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task LinksTermsDocumentAsyncEventLinksDocumentReportsIt()
     {
         await using var ctx = postgres.CreateContext();
-        var linked = TermsDocument.Create("Vinculado", "{}");
-        var unlinked = TermsDocument.Create("Suelto", "{}");
+        var linked = TermsDocument.Create("Vinculado", RichText.From("{}"));
+        var unlinked = TermsDocument.Create("Suelto", RichText.From("{}"));
         var ev = NewEvent();
         Persisted.Add(
             ev.TermsDocuments,
@@ -830,7 +871,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task ListAsyncTermsAcceptancesReturnsOnlyTheDecisionsOfTheUserForTheEvent()
     {
         await using var ctx = postgres.CreateContext();
-        var document = TermsDocument.Create("Normas del listado", "{}");
+        var document = TermsDocument.Create("Normas del listado", RichText.From("{}"));
         var user = NewUser("Ada", "A");
         var other = NewUser("Bob", "B");
         var ev = NewEvent();
@@ -854,8 +895,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task AnyForDocumentAsyncDecisionOnTheDocumentReportsIt()
     {
         await using var ctx = postgres.CreateContext();
-        var decided = TermsDocument.Create("Documento decidido", "{}");
-        var undecided = TermsDocument.Create("Documento sin decisiones", "{}");
+        var decided = TermsDocument.Create("Documento decidido", RichText.From("{}"));
+        var undecided = TermsDocument.Create("Documento sin decisiones", RichText.From("{}"));
         var user = NewUser("Ada", "A");
         var ev = NewEvent();
         ctx.AddRange(decided, undecided, user, ev);
@@ -871,12 +912,14 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task CountExistingAsyncTermsDocumentsCountsOnlyStoredOnes()
     {
         await using var ctx = postgres.CreateContext();
-        var stored = TermsDocument.Create("Documento contado", "{}");
+        var stored = TermsDocument.Create("Documento contado", RichText.From("{}"));
         ctx.TermsDocuments.Add(stored);
         await ctx.SaveChangesAsync(Ct);
         var repo = new TermsDocumentRepository(ctx);
 
-        (await repo.CountExistingAsync([stored.Id, Guid.NewGuid()], Ct)).Should().Be(1);
+        (await repo.CountExistingAsync([stored.Id, TermsDocumentId.From(Guid.NewGuid())], Ct))
+            .Should()
+            .Be(1);
     }
 
     [Fact]

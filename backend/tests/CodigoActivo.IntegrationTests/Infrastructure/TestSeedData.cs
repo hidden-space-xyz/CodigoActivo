@@ -13,7 +13,7 @@ public static class TestSeedData
 
     public static class Users
     {
-        public static readonly Guid AdminId = SeedIds.Users.InitialAdministrator;
+        public static readonly Guid AdminId = KnownIds.Users.InitialAdministrator;
         public static readonly Guid MemberId = new("22222222-2222-2222-2222-222222222222");
         public static readonly Guid MemberChildId = new("33333333-3333-3333-3333-333333333333");
         public static readonly Guid PendingId = new("44444444-4444-4444-4444-444444444444");
@@ -60,8 +60,8 @@ public static class TestSeedData
                 PasswordHash = PasswordHash,
                 NationalId = AdminNationalId,
                 Gender = Gender.Female,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                UserTypeId = SeedIds.UserTypes.Member,
+                Status = UserStatus.Active,
+                UserType = UserType.Member,
                 IsAdmin = true,
                 CreatedAt = SeededAt,
             }
@@ -79,8 +79,8 @@ public static class TestSeedData
                 NationalId = MemberNationalId,
                 PromotionalConsent = true,
                 Gender = Gender.Female,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                UserTypeId = SeedIds.UserTypes.Member,
+                Status = UserStatus.Active,
+                UserType = UserType.Member,
                 CreatedAt = SeededAt,
             }
         );
@@ -94,8 +94,8 @@ public static class TestSeedData
                 BirthDate = new DateOnly(2015, 5, 5),
                 Gender = Gender.Male,
                 ParentId = Users.MemberId,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Dependent,
-                UserTypeId = SeedIds.UserTypes.Participant,
+                Status = UserStatus.Dependent,
+                UserType = UserType.Participant,
                 CreatedAt = SeededAt,
             }
         );
@@ -111,8 +111,8 @@ public static class TestSeedData
                 PasswordHash = PasswordHash,
                 NationalId = PendingNationalId,
                 Gender = Gender.Male,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Pending,
-                UserTypeId = SeedIds.UserTypes.Member,
+                Status = UserStatus.Pending,
+                UserType = UserType.Member,
                 CreatedAt = SeededAt,
             }
         );
@@ -128,8 +128,8 @@ public static class TestSeedData
                 PasswordHash = PasswordHash,
                 NationalId = BlockedNationalId,
                 Gender = Gender.Other,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Blocked,
-                UserTypeId = SeedIds.UserTypes.Member,
+                Status = UserStatus.Blocked,
+                UserType = UserType.Member,
                 CreatedAt = SeededAt,
             }
         );

@@ -33,15 +33,15 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
         );
 
         var administrator = await db.Users.AsNoTracking().SingleAsync(TestCancellation.Ct);
-        administrator.Id.Should().Be(SeedIds.Users.InitialAdministrator);
-        administrator.Email.Should().Be("admin@codigoactivo.test");
+        administrator.Id.Value.Should().Be(KnownIds.Users.InitialAdministrator);
+        administrator.Email!.Value.Should().Be("admin@codigoactivo.test");
         administrator.PasswordHash.Should().Be("fake:bootstrap-password-123");
         administrator.IsAdmin.Should().BeTrue();
-        administrator.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
-        administrator.UserTypeId.Should().Be(SeedIds.UserTypes.Member);
+        administrator.Status.Should().Be(UserStatus.Active);
+        administrator.UserType.Should().Be(UserType.Member);
         administrator.CreatedAt.Should().Be(CreatedAt);
         administrator.BirthDate.Should().BeNull();
-        administrator.NationalId.Should().Be("00000000T");
+        administrator.NationalId!.Value.Should().Be("00000000T");
         administrator.PromotionalConsent.Should().BeFalse();
     }
 
@@ -49,7 +49,7 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
     public async Task SeedAsyncExistingInitialAdministratorIgnoresMissingBootstrapCredentials()
     {
         await using var db = postgres.CreateContext();
-        db.Users.Add(NewExistingUser(SeedIds.Users.InitialAdministrator));
+        db.Users.Add(NewExistingUser(KnownIds.Users.InitialAdministrator));
         await db.SaveChangesAsync(TestCancellation.Ct);
         var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), new TestClock());
 
@@ -110,8 +110,8 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
                 Email = "existing@codigoactivo.test",
                 BirthDate = new DateOnly(1990, 1, 1),
                 Gender = Gender.Other,
-                UserStatusTypeId = SeedIds.UserStatusTypes.Active,
-                UserTypeId = SeedIds.UserTypes.Participant,
+                Status = UserStatus.Active,
+                UserType = UserType.Participant,
                 CreatedAt = CreatedAt,
             }
         );

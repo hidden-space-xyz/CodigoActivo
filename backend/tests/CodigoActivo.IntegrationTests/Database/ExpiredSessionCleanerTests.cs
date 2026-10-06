@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
+using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,7 +46,7 @@ public sealed class ExpiredSessionCleanerTests(CodigoActivoWebAppFactory factory
     private Task<List<Guid>> RemainingSessionIdsAsync()
     {
         return Factory.QueryAsync(db =>
-            db.Set<UserSession>().Select(session => session.Id).ToListAsync(Ct)
+            db.Set<UserSession>().Select(session => session.Id.Value).ToListAsync(Ct)
         );
     }
 

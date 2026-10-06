@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Contracts;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
@@ -10,6 +12,10 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
+using ContractGender = CodigoActivo.Application.Users.Contracts.Gender;
+using ContractTwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
+using Gender = CodigoActivo.Domain.Users.Gender;
+using TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
@@ -26,7 +32,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         string password = "Str0ngPass!23",
         string firstName = "Nadia",
         string nationalId = NewAdultNationalId,
-        Gender gender = Gender.Female,
+        ContractGender gender = ContractGender.Female,
         bool promotionalConsent = false,
         IReadOnlyList<RegisterMinorRequest>? minors = null,
         string? secondaryPhone = null
@@ -55,20 +61,22 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         );
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var adult = await FindByEmailAsync(NewAdultEmail);
-        return (adult!.Id, Factory.EmailSender.LastOtpSentTo(NewAdultEmail));
+        return (adult!.Id.Value, Factory.EmailSender.LastOtpSentTo(NewAdultEmail));
     }
 
     private Task<User?> FindByEmailAsync(string email)
     {
         return Factory.QueryAsync(db =>
-            Task.FromResult(db.Users.SingleOrDefault(u => u.Email == email))
+            Task.FromResult(
+                db.Users.SingleOrDefault(u => u.Email == EmailAddress.FromStored(email))
+            )
         );
     }
 
     private Task<int> CountNewAdultsAsync()
     {
         return Factory.QueryAsync(db =>
-            Task.FromResult(db.Users.Count(u => u.Email == NewAdultEmail))
+            Task.FromResult(db.Users.Count(u => u.Email == EmailAddress.FromStored(NewAdultEmail)))
         );
     }
 
@@ -111,10 +119,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var otp = Factory.EmailSender.LastOtpSentTo(NewAdultEmail);
 
         var stored = await FindByEmailAsync(NewAdultEmail);
-        stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        stored!.Status.Should().Be(UserStatus.Pending);
         stored.IsAdmin.Should().BeFalse();
         stored.Gender.Should().Be(Gender.Female);
-        stored.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
+        stored.UserType.Should().Be(UserType.Participant);
         stored.OtpCodeHash.Should().NotBeNullOrEmpty();
         stored.OtpCodeHash.Should().NotBe(otp, "the OTP must be stored hashed, not in plaintext");
         stored.OtpExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
@@ -135,7 +143,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
                         "Leo",
                         "Nueva",
                         new DateOnly(2016, 3, 10),
-                        Gender.Other
+                        ContractGender.Other
                     ),
                 ]
             ),
@@ -144,12 +152,12 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var storedAdult = await FindByEmailAsync(NewAdultEmail);
-        storedAdult!.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
+        storedAdult!.UserType.Should().Be(UserType.Participant);
 
         var storedMinor = await Factory.QueryAsync(db =>
             Task.FromResult(db.Users.Single(u => u.ParentId == storedAdult.Id))
         );
-        storedMinor.UserTypeId.Should().Be(SeedIds.UserTypes.Participant);
+        storedMinor.UserType.Should().Be(UserType.Participant);
         storedMinor.Gender.Should().Be(Gender.Other);
     }
 
@@ -290,10 +298,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindByEmailAsync(NewAdultEmail);
-        stored!.NationalId.Should().Be(TestSeedData.MemberNationalId);
-        stored.Phone.Should().Be("+34600000002");
+        stored!.NationalId!.Value.Should().Be(TestSeedData.MemberNationalId);
+        stored.Phone!.Value.Should().Be("+34600000002");
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .NationalId.Should()
+            .NationalId!.Value.Should()
             .Be(TestSeedData.MemberNationalId);
     }
 
@@ -314,7 +322,11 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         notice.Subject.Should().Be(AppStrings.EmailsEmailInUseSubject);
         (
             await Factory.QueryAsync(db =>
-                Task.FromResult(db.Users.Count(u => u.Email == TestSeedData.MemberEmail))
+                Task.FromResult(
+                    db.Users.Count(u =>
+                        u.Email == EmailAddress.FromStored(TestSeedData.MemberEmail)
+                    )
+                )
             )
         )
             .Should()
@@ -337,7 +349,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().BeNull();
         var replacement = await FindByEmailAsync(TestSeedData.PendingEmail);
         replacement!.FirstName.Should().Be("Nadia");
-        replacement.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        replacement.Status.Should().Be(UserStatus.Pending);
         (await FindAsync<DeletedAccount>(TestSeedData.Users.PendingId)).Should().NotBeNull();
         Factory
             .EmailSender.Sent.Should()
@@ -368,7 +380,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var normalized = email.Trim().ToLowerInvariant();
         (
             await Factory.QueryAsync(db =>
-                Task.FromResult(db.Users.Count(u => u.Email == normalized))
+                Task.FromResult(db.Users.Count(u => u.Email == EmailAddress.FromStored(normalized)))
             )
         )
             .Should()
@@ -404,8 +416,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindByEmailAsync(NewAdultEmail);
-        stored!.Phone.Should().Be("+34600000099");
-        stored.SecondaryPhone.Should().Be("+34700000099");
+        stored!.Phone!.Value.Should().Be("+34600000099");
+        stored.SecondaryPhone!.Value.Should().Be("+34700000099");
     }
 
     [Theory]
@@ -468,7 +480,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindByEmailAsync(NewAdultEmail);
-        stored!.NationalId.Should().Be(NewAdultNationalId);
+        stored!.NationalId!.Value.Should().Be(NewAdultNationalId);
         stored.PromotionalConsent.Should().BeTrue();
         stored.BirthDate.Should().BeNull();
     }
@@ -487,10 +499,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.ReadJsonAsync<UserResponse>(Ct);
-        body!.Status.Id.Should().Be(SeedIds.UserStatusTypes.Active);
+        body!.Status.Id.Should().Be(KnownIds.UserStatusTypes.Active);
 
         var stored = await FindAsync<User>(userId);
-        stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Active);
+        stored!.Status.Should().Be(UserStatus.Active);
         stored.OtpCodeHash.Should().BeNull();
     }
 
@@ -511,7 +523,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             client,
             new TestCredentials(NewAdultEmail, "Str0ngPass!23")
         );
-        challenge.Method.Should().Be(TwoFactorMethod.Email);
+        challenge.Method.Should().Be(ContractTwoFactorMethod.Email);
 
         var body = await CompleteTwoFactorAsync(
             client,
@@ -535,7 +547,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeBadRequestAsync(ErrorCode.OtpInvalidOrExpired);
 
         var stored = await FindAsync<User>(userId);
-        stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        stored!.Status.Should().Be(UserStatus.Pending);
         stored.OtpCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
     }
 
@@ -704,7 +716,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             .NotContain(c => c.Contains("CodigoActivo.Session=", StringComparison.Ordinal));
         var raw = await response.Content.ReadAsStringAsync(Ct);
         var body = await response.ReadJsonAsync<LoginChallengeResponse>(Ct);
-        body!.Method.Should().Be(TwoFactorMethod.Email);
+        body!.Method.Should().Be(ContractTwoFactorMethod.Email);
         body.MaskedEmail.Should().Be("a***@codigoactivo.test");
 
         var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.AdminEmail);
@@ -793,8 +805,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
         await Factory.SeedAsync(async db =>
         {
-            var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
-            Persisted.Overwrite(user!, new { UserStatusTypeId = SeedIds.UserStatusTypes.Blocked });
+            var user = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
+            Persisted.Overwrite(user!, new { Status = UserStatus.Blocked });
         });
 
         var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
@@ -808,7 +820,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
         await Factory.SeedAsync(async db =>
         {
-            var admin = await db.Users.FindAsync([TestSeedData.Users.AdminId], Ct);
+            var admin = await db.Users.FindAsync([UserId.From(TestSeedData.Users.AdminId)], Ct);
             Persisted.Overwrite(admin!, new { IsAdmin = false });
         });
 
@@ -823,7 +835,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsMemberAsync();
         await Factory.SeedAsync(async db =>
         {
-            var user = await db.Users.FindAsync([TestSeedData.Users.MemberId], Ct);
+            var user = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
             Persisted.Overwrite(
                 user!,
                 new { PasswordHash = FakePasswordHasher.Prefix + "A-Different-Password" }
@@ -1186,7 +1198,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var stored = await FindAsync<User>(TestSeedData.Users.PendingId);
-        stored!.UserStatusTypeId.Should().Be(SeedIds.UserStatusTypes.Pending);
+        stored!.Status.Should().Be(UserStatus.Pending);
         stored.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "NuevaPass123!");
     }
 
