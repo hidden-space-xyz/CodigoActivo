@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -10,7 +12,7 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="UserId">Identifier of the assigned user.</param>
-public sealed record GetAssignmentQuery(Guid ActivityId, Guid UserId)
+public sealed record GetAssignmentQuery(ActivityId ActivityId, UserId UserId)
     : IQuery<Result<AssignmentResponse>>;
 
 /// <summary>
@@ -35,7 +37,7 @@ public sealed class GetAssignmentQueryHandler(IReadStore readStore, IQueryExecut
         var response = await executor.FirstOrDefaultAsync(
             readStore
                 .Assignments.Where(a =>
-                    a.ActivityId == query.ActivityId && a.UserId == query.UserId
+                    a.ActivityId == query.ActivityId.Value && a.UserId == query.UserId.Value
                 )
                 .Select(ActivityProjections.Assignment),
             ct

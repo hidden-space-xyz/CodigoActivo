@@ -1,6 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="UserIds">Identifiers of the assigned users, in the order the response keeps.</param>
-public sealed record GetAssignmentsQuery(Guid ActivityId, IReadOnlyList<Guid> UserIds)
+public sealed record GetAssignmentsQuery(ActivityId ActivityId, IReadOnlyList<UserId> UserIds)
     : IQuery<IReadOnlyList<AssignmentResponse>>;
 
 /// <summary>
@@ -32,12 +34,11 @@ public sealed class GetAssignmentsQueryHandler(IReadStore readStore, IQueryExecu
     )
     {
         ArgumentNullException.ThrowIfNull(query);
-        var userIds = query.UserIds.ToList();
+        var activityId = query.ActivityId.Value;
+        var userIds = query.UserIds.Select(userId => userId.Value).ToList();
         var found = await executor.ToListAsync(
             readStore
-                .Assignments.Where(a =>
-                    a.ActivityId == query.ActivityId && userIds.Contains(a.UserId)
-                )
+                .Assignments.Where(a => a.ActivityId == activityId && userIds.Contains(a.UserId))
                 .Select(ActivityProjections.Assignment),
             ct
         );

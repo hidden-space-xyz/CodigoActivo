@@ -1,6 +1,8 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Queries;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
@@ -78,7 +80,7 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new GetHouseholdAssignmentsQuery(actingUserId, eventId),
+            new GetHouseholdAssignmentsQuery(UserId.From(actingUserId), EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -105,7 +107,7 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
         store.Assignments.AddRange([late, early]);
 
         var result = await sut.HandleAsync(
-            new GetHouseholdAssignmentsQuery(actingUserId, eventId),
+            new GetHouseholdAssignmentsQuery(UserId.From(actingUserId), EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -127,7 +129,7 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new GetHouseholdAssignmentsQuery(actingUserId, eventId),
+            new GetHouseholdAssignmentsQuery(UserId.From(actingUserId), EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 

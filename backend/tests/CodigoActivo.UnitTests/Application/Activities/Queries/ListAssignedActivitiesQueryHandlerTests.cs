@@ -1,6 +1,8 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Queries;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
@@ -67,7 +69,7 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new ListAssignedActivitiesQuery(userId, EventId: null),
+            new ListAssignedActivitiesQuery(UserId.From(userId), EventId: null),
             TestContext.Current.CancellationToken
         );
 
@@ -95,7 +97,7 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new ListAssignedActivitiesQuery(userId, eventId),
+            new ListAssignedActivitiesQuery(UserId.From(userId), EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
