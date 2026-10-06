@@ -4,7 +4,6 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -29,7 +28,7 @@ public sealed class UnassignActivityCommandHandlerTests
     {
         sut = new UnassignActivityCommandHandler(
             activities,
-            new ActingUserPolicy(currentUser, users),
+            ActingUsers.Policy(currentUser),
             currentUser,
             new SignupGate(events, users, clock)
         );

@@ -1,7 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
@@ -22,13 +21,14 @@ public sealed class DeleteUserCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly TestCurrentUser currentUser = new(isAdmin: true);
+    private readonly FakeReadStore guardianships = new();
     private readonly DeleteUserCommandHandler sut;
 
     public DeleteUserCommandHandlerTests()
     {
         sut = new DeleteUserCommandHandler(
             users,
-            new ActingUserPolicy(currentUser, users),
+            ActingUsers.Policy(currentUser, guardianships),
             currentUser,
             AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
             clock
@@ -154,6 +154,7 @@ public sealed class DeleteUserCommandHandlerTests
         var guardianId = Guid.NewGuid();
         var minor = NewUser(first: "Leo", parentId: guardianId);
         users.FindReturns(minor);
+        guardianships.AddDependent(minor.Id.Value, guardianId);
 
         var result = await DeleteAsync(minor.Id.Value, guardianId, isAdmin: false);
 

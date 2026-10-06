@@ -2,14 +2,12 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
-using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Activities.ActivityTestData;
 
@@ -18,7 +16,6 @@ namespace CodigoActivo.UnitTests.Application.Activities.Queries;
 public sealed class VerifyTimeOverlapsQueryHandlerTests
 {
     private readonly FakeReadStore store = new();
-    private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestCurrentUser currentUser = new(isAdmin: true);
     private readonly VerifyTimeOverlapsQueryHandler sut;
 
@@ -27,7 +24,7 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
         sut = new VerifyTimeOverlapsQueryHandler(
             store,
             new FakeQueryExecutor(),
-            new ActingUserPolicy(currentUser, users)
+            ActingUsers.Policy(currentUser, store)
         );
     }
 

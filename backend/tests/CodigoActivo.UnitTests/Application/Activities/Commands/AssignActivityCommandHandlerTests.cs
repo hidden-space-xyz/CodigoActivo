@@ -8,7 +8,6 @@ using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -32,6 +31,7 @@ public sealed class AssignActivityCommandHandlerTests
         Substitute.For<IEventTermsAcceptanceRepository>();
     private readonly TestClock clock = new();
     private readonly TestCurrentUser currentUser = new();
+    private readonly FakeReadStore guardianships = new();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly AssignActivityCommandHandler sut;
 
@@ -40,7 +40,7 @@ public sealed class AssignActivityCommandHandlerTests
         sut = new AssignActivityCommandHandler(
             activities,
             users,
-            new ActingUserPolicy(currentUser, users),
+            ActingUsers.Policy(currentUser, guardianships),
             currentUser,
             new SignupGate(events, users, clock),
             new TermsGate(events, termsAcceptances, clock),
@@ -815,6 +815,7 @@ public sealed class AssignActivityCommandHandlerTests
             termsDocumentId: termsDocumentId
         );
         users.HouseholdUsers(ParticipantChild(childId, parentId));
+        guardianships.AddDependent(childId, parentId);
         termsAcceptances.TermsAccepted(null);
 
         var result = await AssignAsync(

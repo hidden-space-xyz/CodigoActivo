@@ -152,12 +152,14 @@ when several saves form one transaction. Commands return `Result`, or `Result<TI
 they create; they return data only when it exists nowhere else after the operation, such as the authenticator
 secret of `BeginAuthenticatorSetup` or the recipient count of `SendEmail*`. The controller then runs the query
 that builds the HTTP response. Commands never call query handlers; they may read the read store only for lookups
-that change nothing: email audiences and the names the signup notifier shows.
+that change nothing: email audiences, the names the signup notifier shows and the guardianship
+`ActingUserPolicy` checks.
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
 tells who is signed in; commands take the author, the acting user and the administrator flag from it, never
 from their input. `ActingUserPolicy` lets the signed-in user act for themselves or one of their dependents, and
-an administrator for anyone, and answers anything else with `ActingForAnotherUserForbidden` (403
+an administrator for anyone, reading the guardianship from the read side so commands and queries share it, and
+answers anything else with `ActingForAnotherUserForbidden` (403
 `AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a minor,
 updating or deleting a user and changing a password check it. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]`
 attributes still refuse early at the HTTP edge.

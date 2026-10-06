@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
@@ -7,11 +8,17 @@ namespace CodigoActivo.Application.Common.Security;
 
 /// <summary>
 /// Decides whether the signed-in user may act for a person: for themselves, for one of their
-/// dependents, or for anyone when they are an administrator.
+/// dependents, or for anyone when they are an administrator. The guardianship is read from the
+/// read side, so commands and queries can both check it without loading the account.
 /// </summary>
 /// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="users">Repository used to persist and retrieve users.</param>
-public sealed class ActingUserPolicy(ICurrentUser currentUser, IUserRepository users)
+/// <param name="readStore">Read side the guardianship is read from.</param>
+/// <param name="executor">Executor of the read-side queries.</param>
+public sealed class ActingUserPolicy(
+    ICurrentUser currentUser,
+    IReadStore readStore,
+    IQueryExecutor executor
+)
 {
     /// <summary>
     /// Checks that the signed-in user may act for a person.
@@ -27,8 +34,12 @@ public sealed class ActingUserPolicy(ICurrentUser currentUser, IUserRepository u
             return Result.Success();
         }
 
-        var person = await users.GetByIdAsync(userId, ct);
-        return person is not null && person.IsDependentOf(actingUserId)
+        var personId = userId.Value;
+        var guardianId = actingUserId.Value;
+        return await executor.AnyAsync(
+            readStore.Users.Where(user => user.Id == personId && user.ParentId == guardianId),
+            ct
+        )
             ? Result.Success()
             : Error.Forbidden(ApplicationErrorCode.ActingForAnotherUserForbidden);
     }
