@@ -59,7 +59,7 @@ aggregate roots.
 - Aggregates record domain events for the changes other parts react to (`PartnerUpdated`, `NewsItemDeleted`,
   `AssignmentStatusChanged`, `PasswordChanged`, `ContactDetailsReplaced`, `AccountErased`...). `UnitOfWork`
   collects them when it saves and publishes them only after the commit, or after the explicit transaction the
-  save ran in commits; a failed commit publishes nothing. `ICommittedEventsHandler`s see the whole commit once
+  save ran in commits; a failed commit publishes nothing and keeps them with the changes they describe. `ICommittedEventsHandler`s see the whole commit once
   (`CacheInvalidationOnCommit` evicts the tags `CacheTagsByEvent` maps; `ReleasedFilesCleanup` removes the files
   that events implementing `IReleasesFiles` stopped referencing, when nothing else references them) and then every
   `IDomainEventListener<T>` of each event runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`,
@@ -91,8 +91,9 @@ aggregate roots.
   `SetNewsItemFeatured` save the unfeaturing of the current item before featuring the chosen one, in one
   transaction; a concurrent featuring that loses the race fails instead of leaving two items featured.
 - `IUnitOfWork.ExecuteInTransactionAsync` runs work in one explicit transaction and, when PostgreSQL aborts it
-  to resolve a deadlock, runs it again (three attempts in total) after discarding what the failed attempt
-  staged. `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`),
+  to resolve a deadlock, runs it again (three attempts in total) from the state the failed attempt started
+  from: entities tracked since are dropped, the others get back their values and state, and the domain events
+  raised during the attempt are discarded. `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`),
   so parallel attempts lose no increment and only one of them sees the account lock. Second-factor checks and
   adding a dependent lock and reload the account the same way (`IUserRepository.LockAsync`).
 - Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
