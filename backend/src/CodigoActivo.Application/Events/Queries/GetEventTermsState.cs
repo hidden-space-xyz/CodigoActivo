@@ -1,6 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -9,7 +11,7 @@ namespace CodigoActivo.Application.Events.Queries;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="UserId">Identifier of the user.</param>
-public sealed record GetEventTermsStateQuery(Guid EventId, Guid UserId)
+public sealed record GetEventTermsStateQuery(EventId EventId, UserId UserId)
     : IQuery<EventTermsStateResponse>;
 
 /// <summary>
@@ -31,9 +33,12 @@ public sealed class GetEventTermsStateQueryHandler(IReadStore readStore, IQueryE
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(query);
+        var eventId = query.EventId.Value;
+        var userId = query.UserId.Value;
         var documents = await executor.ToListAsync(
             readStore
-                .EventTermsDocuments.Where(d => d.EventId == query.EventId)
+                .EventTermsDocuments.Where(d => d.EventId == eventId)
                 .OrderBy(d => d.DisplayOrder)
                 .Select(d => new
                 {
@@ -52,9 +57,7 @@ public sealed class GetEventTermsStateQueryHandler(IReadStore readStore, IQueryE
 
         var acceptances = await executor.ToListAsync(
             readStore
-                .EventTermsAcceptances.Where(a =>
-                    a.EventId == query.EventId && a.UserId == query.UserId
-                )
+                .EventTermsAcceptances.Where(a => a.EventId == eventId && a.UserId == userId)
                 .Select(a => new
                 {
                     a.TermsDocumentId,

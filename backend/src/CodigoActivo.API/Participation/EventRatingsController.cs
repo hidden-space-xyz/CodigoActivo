@@ -43,7 +43,9 @@ public class EventRatingsController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new ListEventRatingsQuery(eventId, query), ct));
+        return ToOk(
+            await handler.HandleAsync(new ListEventRatingsQuery(EventId.From(eventId), query), ct)
+        );
     }
 
     /// <summary>

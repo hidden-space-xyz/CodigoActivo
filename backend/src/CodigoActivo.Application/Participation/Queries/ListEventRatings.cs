@@ -4,6 +4,7 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
@@ -12,7 +13,7 @@ namespace CodigoActivo.Application.Participation.Queries;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
-public sealed record ListEventRatingsQuery(Guid EventId, EventRatingListQuery Filters)
+public sealed record ListEventRatingsQuery(EventId EventId, EventRatingListQuery Filters)
     : IQuery<Result<PagedResult<EventRatingListItemResponse>>>;
 
 /// <summary>
@@ -40,13 +41,15 @@ public sealed class ListEventRatingsQueryHandler(IReadStore readStore, IQueryExe
         CancellationToken ct = default
     )
     {
-        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == query.EventId), ct))
+        ArgumentNullException.ThrowIfNull(query);
+        var eventId = query.EventId.Value;
+        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == eventId), ct))
         {
             return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
         var source = readStore
-            .EventRatings.Where(r => r.EventId == query.EventId)
+            .EventRatings.Where(r => r.EventId == eventId)
             .Select(EventRatingProjections.EventRatingListItem);
 
         return await executor.ToPagedAsync(

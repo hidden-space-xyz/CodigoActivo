@@ -5,6 +5,7 @@ using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Emails.Queries;
 
@@ -14,7 +15,7 @@ namespace CodigoActivo.Application.Emails.Queries;
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Filters">The same attendee filters the send endpoint receives.</param>
 public sealed record GetEventAttendeesEmailAudienceQuery(
-    Guid EventId,
+    EventId EventId,
     EventAttendeeListQuery Filters
 ) : IQuery<Result<EmailAudienceResponse>>;
 
@@ -40,13 +41,15 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandler(
         CancellationToken ct = default
     )
     {
-        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == query.EventId), ct))
+        ArgumentNullException.ThrowIfNull(query);
+        var eventId = query.EventId.Value;
+        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == eventId), ct))
         {
             return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
         var audience = await ManualEmailAudience.LoadAsync(
-            UserFilters.ApplyEventAttendees(readStore.Users, query.EventId, query.Filters),
+            UserFilters.ApplyEventAttendees(readStore.Users, eventId, query.Filters),
             executor,
             ct
         );

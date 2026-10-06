@@ -15,6 +15,9 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
 {
     private static readonly Guid EventId = new("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
+    private static readonly global::CodigoActivo.Domain.Events.EventId TypedEventId =
+        global::CodigoActivo.Domain.Events.EventId.From(EventId);
+
     private readonly FakeReadStore store = new();
     private readonly GetEventAttendeesEmailAudienceQueryHandler sut;
 
@@ -62,7 +65,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new GetEventAttendeesEmailAudienceQuery(EventId, new EventAttendeeListQuery()),
+            new GetEventAttendeesEmailAudienceQuery(TypedEventId, new EventAttendeeListQuery()),
             TestContext.Current.CancellationToken
         );
 
@@ -88,7 +91,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
 
         var result = await sut.HandleAsync(
             new GetEventAttendeesEmailAudienceQuery(
-                EventId,
+                TypedEventId,
                 new EventAttendeeListQuery { StatusId = KnownIds.AssignmentStatusTypes.Confirmed }
             ),
             TestContext.Current.CancellationToken
@@ -104,7 +107,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
         store.Events.Clear();
 
         var result = await sut.HandleAsync(
-            new GetEventAttendeesEmailAudienceQuery(EventId, new EventAttendeeListQuery()),
+            new GetEventAttendeesEmailAudienceQuery(TypedEventId, new EventAttendeeListQuery()),
             TestContext.Current.CancellationToken
         );
 

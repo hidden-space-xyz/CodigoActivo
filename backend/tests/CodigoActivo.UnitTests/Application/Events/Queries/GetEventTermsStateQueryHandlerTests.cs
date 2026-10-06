@@ -1,6 +1,8 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Events.Queries;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
@@ -56,7 +58,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         HasDocuments();
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(eventId, Guid.NewGuid()),
+            new GetEventTermsStateQuery(EventId.From(eventId), UserId.New()),
             TestContext.Current.CancellationToken
         );
 
@@ -78,7 +80,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         HasAcceptances();
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(eventId, Guid.NewGuid()),
+            new GetEventTermsStateQuery(EventId.From(eventId), UserId.New()),
             TestContext.Current.CancellationToken
         );
 
@@ -96,7 +98,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         HasAcceptances();
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(eventId, Guid.NewGuid()),
+            new GetEventTermsStateQuery(EventId.From(eventId), UserId.New()),
             TestContext.Current.CancellationToken
         );
 
@@ -128,7 +130,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(eventId, userId),
+            new GetEventTermsStateQuery(EventId.From(eventId), UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
 
@@ -183,7 +185,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(eventId, userId),
+            new GetEventTermsStateQuery(EventId.From(eventId), UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
 
@@ -213,7 +215,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(eventId, userId),
+            new GetEventTermsStateQuery(EventId.From(eventId), UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
 
@@ -236,7 +238,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         HasAcceptances();
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(eventId, Guid.NewGuid()),
+            new GetEventTermsStateQuery(EventId.From(eventId), UserId.New()),
             TestContext.Current.CancellationToken
         );
 

@@ -7,6 +7,8 @@ using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -16,7 +18,7 @@ namespace CodigoActivo.Application.Events.Queries;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="UserId">Identifier of the requesting user.</param>
-public sealed record GetLeaderRosterQuery(Guid EventId, Guid UserId)
+public sealed record GetLeaderRosterQuery(EventId EventId, UserId UserId)
     : IQuery<IReadOnlyList<LeaderRosterActivityResponse>>;
 
 /// <summary>
@@ -45,15 +47,18 @@ public sealed class GetLeaderRosterQueryHandler(
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(query);
         var now = clock.UtcNow;
+        var eventId = query.EventId.Value;
+        var userId = query.UserId.Value;
         var ledActivities = await executor.ToListAsync(
             readStore
                 .Assignments.Where(a =>
-                    a.UserId == query.UserId
+                    a.UserId == userId
                     && a.ActivityRoleTypeId == CatalogIds.ActivityRoles.IdOf(ActivityRole.Leader)
                     && a.AssignmentStatusId
                         == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
-                    && a.Activity.EventId == query.EventId
+                    && a.Activity.EventId == eventId
                     && a.Activity.ActivityEndsAt > now
                 )
                 .Select(a => new LedActivity(

@@ -182,7 +182,10 @@ public class EmailsController : ApiControllerBase
     )
     {
         return ToOk(
-            await handler.HandleAsync(new GetEventAttendeesEmailAudienceQuery(eventId, query), ct)
+            await handler.HandleAsync(
+                new GetEventAttendeesEmailAudienceQuery(EventId.From(eventId), query),
+                ct
+            )
         );
     }
 
