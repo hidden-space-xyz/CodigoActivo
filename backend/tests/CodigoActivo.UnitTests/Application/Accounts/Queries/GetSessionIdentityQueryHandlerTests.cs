@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
@@ -40,7 +41,10 @@ public sealed class GetSessionIdentityQueryHandlerTests
     private Task<SessionIdentity?> QueryAsync(Guid userId, Guid? sessionId = null)
     {
         return sut.HandleAsync(
-            new GetSessionIdentityQuery(userId, sessionId ?? SessionId),
+            new GetSessionIdentityQuery(
+                UserId.From(userId),
+                UserSessionId.From(sessionId ?? SessionId)
+            ),
             TestContext.Current.CancellationToken
         );
     }

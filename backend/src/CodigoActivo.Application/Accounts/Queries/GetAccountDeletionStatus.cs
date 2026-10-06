@@ -9,7 +9,7 @@ namespace CodigoActivo.Application.Accounts.Queries;
 /// Carries the criteria used to tell whether the signed-in user may delete their own account.
 /// </summary>
 /// <param name="UserId">Identifier of the signed-in user.</param>
-public sealed record GetAccountDeletionStatusQuery(Guid UserId)
+public sealed record GetAccountDeletionStatusQuery(UserId UserId)
     : IQuery<AccountDeletionStatusResponse>;
 
 /// <summary>
@@ -31,7 +31,7 @@ public sealed class GetAccountDeletionStatusQueryHandler
     )
     {
         return Task.FromResult(
-            new AccountDeletionStatusResponse(query.UserId != InitialAdministrator.Id.Value)
+            new AccountDeletionStatusResponse(query.UserId != InitialAdministrator.Id)
         );
     }
 }

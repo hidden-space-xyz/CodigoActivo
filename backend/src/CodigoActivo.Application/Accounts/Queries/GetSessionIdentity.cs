@@ -12,7 +12,7 @@ namespace CodigoActivo.Application.Accounts.Queries;
 /// </summary>
 /// <param name="UserId">Identifier of the account named by the cookie.</param>
 /// <param name="SessionId">Identifier of the session named by the cookie.</param>
-public sealed record GetSessionIdentityQuery(Guid UserId, Guid SessionId)
+public sealed record GetSessionIdentityQuery(UserId UserId, UserSessionId SessionId)
     : IQuery<SessionIdentity?>;
 
 /// <summary>
@@ -43,17 +43,17 @@ public sealed class GetSessionIdentityQueryHandler(
     {
         ArgumentNullException.ThrowIfNull(query);
         var now = clock.UtcNow;
+        var userId = query.UserId.Value;
+        var sessionId = query.SessionId.Value;
         var user = await executor.FirstOrDefaultAsync(
             readStore
                 .Users.Where(candidate =>
-                    candidate.Id == query.UserId
+                    candidate.Id == userId
                     && candidate.UserStatusTypeId == CatalogIds.UserStatuses.IdOf(UserStatus.Active)
                     && candidate.PasswordHash != null
                     && candidate.PasswordLockedAt == null
                     && readStore.UserSessions.Any(row =>
-                        row.Id == query.SessionId
-                        && row.UserId == candidate.Id
-                        && row.ExpiresAt > now
+                        row.Id == sessionId && row.UserId == candidate.Id && row.ExpiresAt > now
                     )
                 )
                 .Select(candidate => new

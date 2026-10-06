@@ -29,7 +29,7 @@ public class MyParticipationController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new GetEventHistoryQuery(CurrentUserId), ct));
+        return Ok(await handler.HandleAsync(new GetEventHistoryQuery(CurrentUserId.Value), ct));
     }
 
     /// <summary>
@@ -48,6 +48,8 @@ public class MyParticipationController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new GetEventCertificatesQuery(CurrentUserId), ct));
+        return Ok(
+            await handler.HandleAsync(new GetEventCertificatesQuery(CurrentUserId.Value), ct)
+        );
     }
 }

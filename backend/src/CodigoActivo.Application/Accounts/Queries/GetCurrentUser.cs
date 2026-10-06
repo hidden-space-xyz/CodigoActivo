@@ -4,6 +4,7 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Queries;
 
@@ -11,7 +12,7 @@ namespace CodigoActivo.Application.Accounts.Queries;
 /// Carries the criteria used to retrieve current user.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-public sealed record GetCurrentUserQuery(Guid UserId) : IQuery<Result<UserResponse>>;
+public sealed record GetCurrentUserQuery(UserId UserId) : IQuery<Result<UserResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve current user.
@@ -33,7 +34,7 @@ public sealed class GetCurrentUserQueryHandler(IReadStore readStore, IQueryExecu
     )
     {
         var response = await executor.FirstOrDefaultAsync(
-            readStore.Users.Where(u => u.Id == query.UserId).Select(UserProjections.User),
+            readStore.Users.Where(u => u.Id == query.UserId.Value).Select(UserProjections.User),
             ct
         );
         return response is null

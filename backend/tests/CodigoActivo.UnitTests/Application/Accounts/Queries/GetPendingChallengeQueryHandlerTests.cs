@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
@@ -24,7 +25,7 @@ public sealed class GetPendingChallengeQueryHandlerTests
     private Task<PendingChallenge?> QueryAsync(Guid userId)
     {
         return sut.HandleAsync(
-            new GetPendingChallengeQuery(userId),
+            new GetPendingChallengeQuery(UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
     }
