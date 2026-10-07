@@ -1,16 +1,10 @@
 import { generateHTML } from '@tiptap/core'
 import type { AnyExtension, JSONContent } from '@tiptap/core'
-import { Color } from '@tiptap/extension-color'
 import Highlight from '@tiptap/extension-highlight'
 import Image from '@tiptap/extension-image'
-import Link from '@tiptap/extension-link'
-import { Table } from '@tiptap/extension-table'
-import { TableCell } from '@tiptap/extension-table-cell'
-import { TableHeader } from '@tiptap/extension-table-header'
-import { TableRow } from '@tiptap/extension-table-row'
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import TextAlign from '@tiptap/extension-text-align'
-import { TextStyle } from '@tiptap/extension-text-style'
-import Underline from '@tiptap/extension-underline'
+import { Color, TextStyle } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 
 import { hasControlCharacter } from '@/shared/lib/navigation'
@@ -94,19 +88,19 @@ const SameOriginImage = Image.extend({
 export function richTextExtensions(options: RichTextOptions = {}): AnyExtension[] {
   const images = options.images !== false
   return [
-    StarterKit.configure({ link: false, underline: false }),
+    StarterKit.configure({
+      link: {
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: 'https',
+        isAllowedUri: (url, { defaultValidate }) =>
+          defaultValidate(url) && normalizeLink(url, false) !== null,
+        HTMLAttributes: { rel: 'noopener nofollow', target: '_blank' },
+      },
+    }),
     TextStyle,
     Color,
     Highlight.configure({ multicolor: true }),
-    Underline,
-    Link.configure({
-      openOnClick: false,
-      autolink: true,
-      defaultProtocol: 'https',
-      isAllowedUri: (url, { defaultValidate }) =>
-        defaultValidate(url) && normalizeLink(url, false) !== null,
-      HTMLAttributes: { rel: 'noopener nofollow', target: '_blank' },
-    }),
     TextAlign.configure({
       types: images ? ['heading', 'paragraph', 'image'] : ['heading', 'paragraph'],
     }),
