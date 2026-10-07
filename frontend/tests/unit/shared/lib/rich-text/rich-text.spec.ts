@@ -1,4 +1,4 @@
-import { generateJSON, type JSONContent } from '@tiptap/core'
+import { flattenExtensions, generateJSON, type JSONContent } from '@tiptap/core'
 import { describe, expect, it } from 'vitest'
 import {
   cleanRichText,
@@ -451,7 +451,9 @@ describe('cleanRichText', () => {
 
 describe('richTextExtensions links', () => {
   it('only lets the editor create links to allowed targets', () => {
-    const link = richTextExtensions().find((extension) => extension.name === 'link')
+    const link = flattenExtensions(richTextExtensions()).find(
+      (extension) => extension.name === 'link',
+    )
     const isAllowedUri = link?.options.isAllowedUri as (
       url: string,
       context: { defaultValidate: (url: string) => boolean },
