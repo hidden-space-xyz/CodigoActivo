@@ -12,6 +12,8 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <param name="options">Configuration values used by the component.</param>
 public sealed class SmtpEmailSender(SmtpOptions options) : IEmailTransport
 {
+    private static readonly string[] CompositeMediaTypes = ["message", "multipart"];
+
     /// <summary>
     /// Sends the prepared smtp email sender message.
     /// </summary>
@@ -111,7 +113,7 @@ public sealed class SmtpEmailSender(SmtpOptions options) : IEmailTransport
     {
         return
             ContentType.TryParse(value, out var parsed)
-            && !string.Equals(parsed.MediaType, "message", StringComparison.OrdinalIgnoreCase)
+            && !CompositeMediaTypes.Contains(parsed.MediaType, StringComparer.OrdinalIgnoreCase)
             ? parsed
             : new ContentType("application", "octet-stream");
     }

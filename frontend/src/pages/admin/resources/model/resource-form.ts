@@ -1,6 +1,7 @@
 import type { LearningResource, ResourceInput, ResourceType } from '@/entities/resource'
 import type { FormProblem, FormReading } from '@/shared/lib/form'
-import { isRichTextBlank } from '@/shared/lib/rich-text'
+import { toWebUrl } from '@/shared/lib/navigation'
+import { isRichTextBlank, isRichTextTooLong } from '@/shared/lib/rich-text'
 
 /** What the resource dialog binds its inputs to. */
 export interface ResourceDraft {
@@ -13,16 +14,6 @@ export interface ResourceDraft {
 
 /** Field of the resource form that can be refused. */
 type ResourceField = 'title' | 'subtitle' | 'resourceTypeId' | 'description' | 'url'
-
-function isHttpUrl(value: string): boolean {
-  if (!/^https?:\/\//i.test(value)) return false
-  try {
-    new URL(value)
-    return true
-  } catch {
-    return false
-  }
-}
 
 /** A blank draft, or one filled with the resource being edited. */
 export function toResourceDraft(resource: LearningResource | null): ResourceDraft {
@@ -57,9 +48,11 @@ export function readResourceDraft(
   else if (!type) problems.resourceTypeId = true
   if (type && !type.isExternal && isRichTextBlank(draft.description)) {
     problems.description = 'pages.admin.resources.form.problems.descriptionRequired'
+  } else if (type && !type.isExternal && isRichTextTooLong(draft.description)) {
+    problems.description = 'validation.richTextTooLong'
   }
   if (type?.isExternal && !url) problems.url = 'pages.admin.resources.form.problems.urlRequired'
-  else if (type?.isExternal && !isHttpUrl(url))
+  else if (type?.isExternal && !toWebUrl(url))
     problems.url = 'pages.admin.resources.form.problems.urlInvalid'
 
   if (!type || Object.keys(problems).length > 0) return { problems, value: null }

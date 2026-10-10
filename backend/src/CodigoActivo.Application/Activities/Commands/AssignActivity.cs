@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -23,7 +24,7 @@ public sealed record AssignActivityCommand(
     ActivityId ActivityId,
     UserId UserId,
     Guid ActivityRoleTypeId,
-    IReadOnlyList<TermsDecision>? TermsDecisions
+    [property: MaxLength(50)] IReadOnlyList<TermsDecision>? TermsDecisions
 ) : ICommand<Result>;
 
 /// <summary>

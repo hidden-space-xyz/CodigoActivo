@@ -58,4 +58,14 @@ public sealed class LocalDayRangeTests
 
         upper.Should().Be(new DateTimeOffset(2026, 7, 12, 22, 0, 0, TimeSpan.Zero));
     }
+
+    [Fact]
+    public void UpperExclusiveUtcLastRepresentableDayReturnsMaxValueInsteadOfThrowing()
+    {
+        var zone = TimeZoneInfo.CreateCustomTimeZone("Test/Fixed", TimeSpan.FromHours(2), "F", "F");
+
+        var upper = LocalDayRange.UpperExclusiveUtc(DateOnly.MaxValue, zone);
+
+        upper.Should().Be(DateTimeOffset.MaxValue);
+    }
 }

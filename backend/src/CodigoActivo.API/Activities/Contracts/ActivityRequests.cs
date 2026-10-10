@@ -38,7 +38,7 @@ public record CreateActivityRequest(
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
     Guid ThumbnailId,
-    IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
+    [MaxLength(50)] IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
 )
 {
     /// <summary>
@@ -83,7 +83,7 @@ public record UpdateActivityRequest(
     [Required] DateTimeOffset? ActivityStartsAt,
     [Required] DateTimeOffset? ActivityEndsAt,
     Guid ThumbnailId,
-    IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
+    [MaxLength(50)] IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
 )
 {
     /// <summary>
@@ -123,7 +123,7 @@ public record TermsDecisionRequest([Required] Guid TermsDocumentId, [Required] b
 /// <param name="TermsDecisions">The terms decisions supplied for the event's linked documents.</param>
 public record AssignRequest(
     [Required] Guid ActivityRoleTypeId,
-    IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
+    [MaxLength(50)] IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
 )
 {
     /// <summary>
@@ -152,7 +152,7 @@ public record AssignHouseholdRequest(
     [Required]
     [MaxLength(Household.MaxMembers)]
         IReadOnlyList<HouseholdAssignmentRequest> Assignments,
-    IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
+    [MaxLength(50)] IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
 )
 {
     /// <summary>

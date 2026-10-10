@@ -64,7 +64,8 @@
     "newPasswordSameAsCurrent": "La nueva contraseña debe ser distinta de la actual.",
     "passwordsMismatch": "Las contraseñas no coinciden.",
     "nationalIdFormat": "Escribe 8 números y la letra (DNI) o X, Y o Z, 7 números y la letra (NIE).",
-    "nationalIdLetter": "El número y la letra no concuerdan. Revisa que estén bien escritos."
+    "nationalIdLetter": "El número y la letra no concuerdan. Revisa que estén bien escritos.",
+    "richTextTooLong": "El contenido es demasiado largo. Acórtalo o divídelo en varias partes."
   },
   "seo": {
     "siteName": "Código Activo",
@@ -183,6 +184,7 @@
     "rowRemove": "− Fila",
     "headerCell": "Cabecera",
     "uploadError": "No se pudo subir la imagen.",
+    "imageTooLarge": "La imagen supera el tamaño máximo de 10 MB.",
     "linkPrompt": "Dirección del enlace, por ejemplo https://ejemplo.org, mailto:hola{'@'}ejemplo.org o /eventos (déjalo vacío para quitarlo):",
     "linkInvalid": "Ese enlace no está permitido. Usa una dirección web (https://…), un correo (mailto:…), un teléfono (tel:…) o una ruta de esta web que empiece por /.",
     "placeholder": "Escribe aquí…"
@@ -723,7 +725,8 @@
           "problems": {
             "nameRequired": "El nombre es obligatorio.",
             "fromDateRequired": "La fecha de alta es obligatoria.",
-            "fromDateFuture": "La fecha de alta no puede ser posterior a hoy."
+            "fromDateFuture": "La fecha de alta no puede ser posterior a hoy.",
+            "websiteInvalid": "El sitio web debe ser una URL válida que empiece por http:// o https://."
           }
         }
       },
@@ -1542,7 +1545,8 @@
         "remove": "Quitar adjunto",
         "summary": "1 archivo ({size}) | {count} archivos ({size})",
         "tooMany": "Puedes adjuntar como máximo {max} archivos.",
-        "tooLarge": "Los adjuntos no pueden superar {max} en total."
+        "tooLarge": "Los adjuntos no pueden superar {max} en total.",
+        "empty": "No se pueden adjuntar archivos vacíos."
       },
       "confirm": {
         "header": "¿Enviar el correo?",

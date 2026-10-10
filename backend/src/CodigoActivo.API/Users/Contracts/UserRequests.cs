@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using CodigoActivo.Application.Common.Mapping;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
@@ -10,11 +11,17 @@ namespace CodigoActivo.API.Users.Contracts;
 /// <summary>
 /// Contains the client-supplied data used to set admin.
 /// </summary>
-/// <param name="IsAdmin">Whether admin.</param>
+/// <param name="IsAdmin">
+/// Whether the user must be an administrator. It must be present: a body without it is refused
+/// instead of being read as a revocation.
+/// </param>
 /// <param name="CurrentPassword">
 /// Password of the acting administrator. Required to grant the role; ignored when revoking it.
 /// </param>
-public record SetAdminRequest(bool IsAdmin, [MaxLength(128)] string? CurrentPassword)
+public record SetAdminRequest(
+    [property: JsonRequired] bool IsAdmin,
+    [MaxLength(128)] string? CurrentPassword
+)
 {
     /// <summary>
     /// Builds the command that grants or revokes the rights.

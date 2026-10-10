@@ -4,13 +4,14 @@ import { useMutation } from '@tanstack/vue-query'
 
 import { accountMutations } from '@/entities/account'
 import { getErrorMessage, useCrudFeedback } from '@/shared/lib/feedback'
+import { isGuid } from '@/shared/lib/navigation'
 
 /** Progress of verifying the emailed link: in flight, activated, or failed/incomplete. */
 export type LinkVerificationState = 'verifying' | 'success' | 'error'
 
 /**
- * Verification page flow: `verify` checks the link's user id and code (an incomplete link fails
- * without calling the API), and `resend` asks for a new link for the address in `resendForm`,
+ * Verification page flow: `verify` checks the link's user id and code (an incomplete link, or one
+ * whose user id is not a GUID, fails without calling the API), and `resend` asks for a new link for the address in `resendForm`,
  * reporting with a toast that never tells whether the address has a pending account.
  */
 export function useAccountVerification() {
@@ -46,7 +47,7 @@ export function useAccountVerification() {
   })
 
   function verify(id: string | null, code: string | null): void {
-    if (!id || !code) {
+    if (!isGuid(id) || !code) {
       state.value = 'error'
       errorMessage.value = t('pages.verifyAccount.incompleteLink')
       return

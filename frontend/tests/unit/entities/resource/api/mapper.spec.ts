@@ -47,6 +47,12 @@ describe('toLearningResourceSummary', () => {
       toLearningResourceSummary(buildResourceListItem({ url: 'https://scratch.mit.edu' })).url,
     ).toBe('https://scratch.mit.edu')
   })
+
+  it('never turns a url that is not http(s) into a link', () => {
+    expect(
+      toLearningResourceSummary(buildResourceListItem({ url: 'javascript:alert(1)' })).url,
+    ).toBeNull()
+  })
 })
 
 describe('toLearningResource', () => {

@@ -90,7 +90,7 @@ describe('readResourceDraft', () => {
     expect(readResourceDraft(external, TYPES).problems).toEqual({
       url: 'pages.admin.resources.form.problems.urlRequired',
     })
-    for (const url of ['ftp://example.test', 'https://']) {
+    for (const url of ['ftp://example.test', 'https://', 'https://user:secret@vuejs.org']) {
       expect(readResourceDraft({ ...external, url }, TYPES).problems).toEqual({
         url: 'pages.admin.resources.form.problems.urlInvalid',
       })
@@ -101,6 +101,15 @@ describe('readResourceDraft', () => {
       description: null,
       url: 'https://vuejs.org',
       resourceTypeId: 'type-link',
+    })
+  })
+
+  it('refuses an internal description longer than the API stores', () => {
+    const long = draftOf({ description: richText('a'.repeat(262_144)) })
+
+    expect(readResourceDraft(long, TYPES)).toEqual({
+      problems: { description: 'validation.richTextTooLong' },
+      value: null,
     })
   })
 })

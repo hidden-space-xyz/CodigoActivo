@@ -254,6 +254,33 @@ describe('httpClient', () => {
     expect(error.code).toBe(ErrorCode.EventNotFound)
   })
 
+  it.each([
+    '/api/auth/../users/1/admin',
+    '/api/auth/%2e%2e/users/1/admin',
+    '/api/auth/.\t./users/1/admin',
+    '/api/auth\\..\\users/1/admin',
+    '/api/auth/./verify',
+  ])('refuses the non-canonical path %j without sending a request', async (url) => {
+    let sent = 0
+    server.use(
+      http.all('*', () => {
+        sent += 1
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await expect(httpClient(url, { method: 'PATCH' })).rejects.toBeInstanceOf(TypeError)
+    expect(sent).toBe(0)
+  })
+
+  it('keeps the query string out of the path check', async () => {
+    server.use(http.get('/api/things', () => HttpResponse.json({ id: 1 })))
+
+    const result = await httpClient<ClientResult>('/api/things?search=../a/./b')
+
+    expect(result.data).toEqual({ id: 1 })
+  })
+
   describe('error parsing', () => {
     it('builds an ApiError from a problem-details body preferring detail', async () => {
       server.use(

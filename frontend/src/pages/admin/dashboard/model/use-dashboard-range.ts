@@ -21,6 +21,12 @@ export const RANGE_OPTIONS: readonly RangeOption[] = [
   { value: '12m', labelKey: 'pages.admin.dashboard.range.preset12m' },
 ]
 
+/** Whether the API refuses to chart `date`: analytics only cover days from 2000 to 2099. */
+export function isOutsideAnalyticsDays(date: Date): boolean {
+  const year = date.getFullYear()
+  return year < 2000 || year > 2099
+}
+
 function startOfToday(): Date {
   const date = new Date()
   date.setHours(0, 0, 0, 0)

@@ -25,7 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const form = useForm({ initial: () => toNewsDraft(null), read: readNewsDraft })
-const { draft, submitted, invalid } = form
+const { draft, submitted, errors, invalid } = form
 const thumbnail = useThumbnailUpload(() => props.newsItem?.thumbnailId)
 const { pickedFile, uploading, uploadError, missingThumbnail } = thumbnail
 
@@ -75,7 +75,9 @@ async function save(): Promise<void> {
           v-model="draft.description"
           :label="$t('pages.admin.news.form.description')"
           :upload="uploadFileRequest"
+          :invalid="!!errors.description"
         />
+        <small v-if="errors.description" class="form__error">{{ errors.description }}</small>
       </div>
       <div class="form__field">
         <div id="news-image-label" class="form__label">{{ $t('common.image') }}</div>

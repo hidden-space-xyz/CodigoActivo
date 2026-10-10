@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { renderApp, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
 
+const USER_ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+
 function serveVerify(response: () => Response | Promise<Response>) {
   const calls: { userId: unknown; body: unknown }[] = []
   server.use(
@@ -47,7 +49,7 @@ describe('verify account page', () => {
         }),
     )
 
-    const { wrapper, router } = await renderApp('/verify-account#userId=user-1&code=otp-1')
+    const { wrapper, router } = await renderApp(`/verify-account#userId=${USER_ID}&code=otp-1`)
 
     await vi.waitFor(() => expect(calls).toHaveLength(1))
     await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/verify-account'))
@@ -57,7 +59,7 @@ describe('verify account page', () => {
     release()
 
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.verifyAccount.successTitle')))
-    expect(calls).toEqual([{ userId: 'user-1', body: { otp: 'otp-1' } }])
+    expect(calls).toEqual([{ userId: USER_ID, body: { otp: 'otp-1' } }])
     expect(wrapper.get('.status-panel a').attributes('href')).toBe(
       router.resolve({ name: 'login' }).href,
     )
@@ -86,7 +88,7 @@ describe('verify account page', () => {
     serveVerify(() => apiError(400, 'OtpInvalidOrExpired'))
     serveResend(() => apiError(400, 'RequestValidationFailed'))
 
-    const { wrapper } = await renderApp('/verify-account#userId=user-1&code=expired')
+    const { wrapper } = await renderApp(`/verify-account#userId=${USER_ID}&code=expired`)
 
     await vi.waitFor(() =>
       expect(wrapper.find('[role="alert"]').text()).toBe(t('errors.OtpInvalidOrExpired')),

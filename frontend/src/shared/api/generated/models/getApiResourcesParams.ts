@@ -6,14 +6,29 @@
  */
 
 export type GetApiResourcesParams = {
+/**
+ * @maxLength 200
+ */
 search?: string;
+/**
+ * @maxLength 200
+ */
 title?: string;
+/**
+ * @maxLength 200
+ */
 subtitle?: string;
 resourceTypeId?: string;
+/**
+ * @maxLength 200
+ */
 url?: string;
 createdFrom?: string;
 createdTo?: string;
 page?: number;
 pageSize?: number;
+/**
+ * @maxLength 200
+ */
 sort?: string;
 };

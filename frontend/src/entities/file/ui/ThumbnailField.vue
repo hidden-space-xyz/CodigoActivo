@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { getThumbnailNameRequest } from '../api/requests'
 import { fileContentUrl } from '@/shared/api'
+import { IMAGE_UPLOAD_ACCEPT, MAX_IMAGE_UPLOAD_BYTES } from '@/shared/config'
 import { ActionButton } from '@/shared/ui/action-button'
 
 const { t } = useI18n()
@@ -28,7 +29,6 @@ const previewUrl = ref<string | null>(null)
 const fileName = ref<string>('')
 const pickedFile = ref<File | null>(null)
 const sizeError = ref('')
-const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
 let objectUrl: string | null = null
 
 function revokeObjectUrl(): void {
@@ -72,7 +72,7 @@ function onChange(event: Event): void {
   const file = input.files?.[0] ?? null
   input.value = ''
   if (!file) return
-  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+  if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
     sizeError.value = t('entities.file.thumbnail.tooLarge')
     return
   }
@@ -135,7 +135,7 @@ onBeforeUnmount(revokeObjectUrl)
     <input
       ref="fileInput"
       type="file"
-      accept="image/*"
+      :accept="IMAGE_UPLOAD_ACCEPT"
       class="thumb__input"
       aria-hidden="true"
       tabindex="-1"

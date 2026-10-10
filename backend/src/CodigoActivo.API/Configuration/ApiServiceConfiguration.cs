@@ -72,6 +72,9 @@ internal static class ApiServiceConfiguration
                 options.JsonSerializerOptions.Converters.Add(
                     new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false)
                 );
+                options.JsonSerializerOptions.Converters.Add(
+                    new ControlCharacterRejectingConverter()
+                );
             })
             .ConfigureApiBehaviorOptions(options =>
             {

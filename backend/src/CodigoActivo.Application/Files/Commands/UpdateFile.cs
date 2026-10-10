@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 
@@ -64,7 +65,11 @@ public sealed class UpdateFileCommandHandler(
 
         await storage.SaveAsync(newStoredName, upload!.Content, ct);
 
-        file.Replace(FileNaming.SanitizeName(upload.FileName), format.Extension, clock.UtcNow);
+        file.Replace(
+            FileNaming.SanitizeName(upload.FileName, AppStrings.FilesFallbackFileName),
+            format.Extension,
+            clock.UtcNow
+        );
 
         try
         {

@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { InputInstance } from 'element-plus'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
+import { MAX_SEARCH_LENGTH } from '@/shared/config'
 
 const props = withDefaults(
   defineProps<{
@@ -101,6 +102,7 @@ onBeforeUnmount(() => {
       ref="input"
       v-model="draft"
       :type="inputType"
+      :maxlength="MAX_SEARCH_LENGTH"
       :placeholder="placeholder || $t('table.searchBy', { label })"
       @input="onInput"
       @keydown.enter="applyNow"

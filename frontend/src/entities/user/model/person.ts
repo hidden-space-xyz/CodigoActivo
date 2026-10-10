@@ -5,7 +5,8 @@ import type { Gender } from './gender'
 import { nationalIdError, normalizeNationalId } from './national-id'
 import type { UpdateUserInput } from './types'
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_PATTERN =
+  /^[^\s@()<>[\]:;,\\"\p{Cc}]+@[^\s@()<>[\]:;,\\"\p{Cc}]+\.[^\s@()<>[\]:;,\\"\p{Cc}]+$/u
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 const ADULT_AGE = 18
 const PHONE_MIN_DIGITS = 7
@@ -223,6 +224,9 @@ export function parseDependentPerson(
     },
   }
 }
+
+/** Most dependents one guardian may hold, as the API enforces (`Household.MaxDependents`). */
+export const MAX_DEPENDENTS = 20
 
 /**
  * Birth dates a new dependent may have on `today`, as `YYYY-MM-DD` bounds for date inputs: from

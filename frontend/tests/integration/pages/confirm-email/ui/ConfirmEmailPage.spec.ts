@@ -4,6 +4,8 @@ import { buildUserResponse } from '../../../../support/builders'
 import { renderApp, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
 
+const USER_ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+
 function serveConfirm(response: () => Response | Promise<Response> = noContent) {
   const calls: { userId: unknown; body: unknown }[] = []
   server.use(
@@ -25,7 +27,7 @@ describe('confirm email page', () => {
         }),
     )
 
-    const { wrapper, router } = await renderApp('/confirm-email#userId=user-1&code=code-1')
+    const { wrapper, router } = await renderApp(`/confirm-email#userId=${USER_ID}&code=code-1`)
 
     await vi.waitFor(() => expect(calls).toHaveLength(1))
     await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/confirm-email'))
@@ -35,7 +37,7 @@ describe('confirm email page', () => {
     release()
 
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.confirmEmail.successTitle')))
-    expect(calls).toEqual([{ userId: 'user-1', body: { otp: 'code-1' } }])
+    expect(calls).toEqual([{ userId: USER_ID, body: { otp: 'code-1' } }])
     expect(wrapper.get('.status-panel a').attributes('href')).toBe(
       router.resolve({ name: 'login' }).href,
     )
@@ -45,7 +47,7 @@ describe('confirm email page', () => {
     serveConfirm()
     server.use(http.get('/api/auth/me', () => HttpResponse.json(buildUserResponse())))
 
-    const { wrapper, router } = await renderApp('/confirm-email#userId=user-1&code=code-1', {
+    const { wrapper, router } = await renderApp(`/confirm-email#userId=${USER_ID}&code=code-1`, {
       user: {},
     })
 
@@ -69,7 +71,7 @@ describe('confirm email page', () => {
   it('shows the API error for an expired link', async () => {
     serveConfirm(() => apiError(400, 'OtpInvalidOrExpired'))
 
-    const { wrapper } = await renderApp('/confirm-email#userId=user-1&code=expired')
+    const { wrapper } = await renderApp(`/confirm-email#userId=${USER_ID}&code=expired`)
 
     await vi.waitFor(() =>
       expect(wrapper.find('[role="alert"]').text()).toBe(t('errors.OtpInvalidOrExpired')),

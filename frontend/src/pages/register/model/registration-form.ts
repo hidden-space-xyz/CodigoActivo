@@ -1,5 +1,10 @@
 import type { RegistrationInput } from '@/entities/account'
-import { parseDependentPerson, parseIndependentPerson, type Gender } from '@/entities/user'
+import {
+  MAX_DEPENDENTS,
+  parseDependentPerson,
+  parseIndependentPerson,
+  type Gender,
+} from '@/entities/user'
 
 /** Editable data for a minor registered alongside the adult. */
 export interface MinorForm {
@@ -37,6 +42,11 @@ export interface RegistrationForm {
 export function createEmptyMinor(): MinorForm {
   minorKeySeq += 1
   return { key: minorKeySeq, firstName: '', lastName: '', birthDate: '', gender: null }
+}
+
+/** Whether another minor fits in the household the form registers (`MAX_DEPENDENTS`). */
+export function canAddMinor(form: RegistrationForm): boolean {
+  return form.minors.length < MAX_DEPENDENTS
 }
 
 /** Blank registration form with no minors, used initially and when the flow is reset. */

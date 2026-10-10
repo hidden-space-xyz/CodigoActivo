@@ -24,7 +24,7 @@ public sealed record ActivityDraft(
     DateTimeOffset? ActivityStartsAt,
     DateTimeOffset? ActivityEndsAt,
     StoredFileId ThumbnailId,
-    IReadOnlyList<RoleCapacityDraft> RoleCapacities
+    [property: MaxLength(50)] IReadOnlyList<RoleCapacityDraft> RoleCapacities
 );
 
 /// <summary>

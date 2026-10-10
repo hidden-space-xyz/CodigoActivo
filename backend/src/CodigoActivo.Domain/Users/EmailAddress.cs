@@ -1,13 +1,18 @@
+using System.Buffers;
 using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Domain.Users;
 
 /// <summary>
 /// Email an account logs in with and is reached at: trimmed and lowercase, with a single
-/// <c>@</c> that is neither its first nor its last character and no line breaks.
+/// <c>@</c> that is neither its first nor its last character, and no whitespace, control
+/// character or address separator such as a comma or angle bracket, so a mail transport reads it
+/// as exactly one mailbox.
 /// </summary>
 public sealed record EmailAddress
 {
+    private static readonly SearchValues<char> Separators = SearchValues.Create("()<>[]:;,\\\"");
+
     private EmailAddress(string value)
     {
         Value = value;
@@ -26,7 +31,13 @@ public sealed record EmailAddress
     public static Result<EmailAddress> Create(string? value)
     {
         var normalized = value.NormalizeEmailOrNull();
-        if (normalized is null || normalized.Contains('\r') || normalized.Contains('\n'))
+        if (
+            normalized is null
+            || normalized.AsSpan().ContainsAny(Separators)
+            || normalized.Any(character =>
+                char.IsWhiteSpace(character) || char.IsControl(character)
+            )
+        )
         {
             return Error.Validation(DomainErrorCode.UserEmailInvalid);
         }

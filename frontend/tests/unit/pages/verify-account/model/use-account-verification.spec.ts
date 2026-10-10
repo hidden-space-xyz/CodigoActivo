@@ -7,6 +7,8 @@ import { t } from '../../../../support/render'
 import { apiError, http, noContent, server } from '../../../../support/server'
 import { mountComposable } from '../../../../support/render'
 
+const USER_ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+
 function serveVerify(response: () => Response = noContent) {
   const calls: { userId: unknown; body: unknown }[] = []
   server.use(
@@ -46,18 +48,19 @@ describe('useAccountVerification', () => {
     const calls = serveVerify()
     const { result } = await mountComposable(() => useAccountVerification())
 
-    result.verify('user-1', 'otp-1')
+    result.verify(USER_ID, 'otp-1')
     expect(result.state.value).toBe('verifying')
     await vi.waitFor(() => expect(result.state.value).toBe('success'))
 
-    expect(calls).toEqual([{ userId: 'user-1', body: { otp: 'otp-1' } }])
+    expect(calls).toEqual([{ userId: USER_ID, body: { otp: 'otp-1' } }])
   })
 
   it.each([
     { id: null, code: 'otp-1' },
-    { id: 'user-1', code: null },
+    { id: USER_ID, code: null },
+    { id: `../users/${USER_ID}/admin?`, code: 'otp-1' },
   ])(
-    'fails an incomplete link (user $id, code $code) without calling the API',
+    'fails an incomplete or malformed link (user $id, code $code) without calling the API',
     async ({ id, code }) => {
       const calls = serveVerify()
       const { result } = await mountComposable(() => useAccountVerification())
@@ -75,7 +78,7 @@ describe('useAccountVerification', () => {
     serveVerify(() => apiError(400, 'OtpInvalidOrExpired'))
     const { result } = await mountComposable(() => useAccountVerification())
 
-    result.verify('user-1', 'expired')
+    result.verify(USER_ID, 'expired')
     await vi.waitFor(() => expect(result.state.value).toBe('error'))
 
     expect(result.errorMessage.value).toBe(t('errors.OtpInvalidOrExpired'))

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 
+import { MAX_SEARCH_LENGTH } from '@/shared/config'
 import { AppIcon } from '@/shared/ui/app-icon'
 
 const props = withDefaults(
@@ -55,6 +56,7 @@ onBeforeUnmount(() => {
     class="search-input"
     clearable
     enterkeyhint="search"
+    :maxlength="MAX_SEARCH_LENGTH"
     :placeholder="label"
     :aria-label="label"
     @input="onInput"

@@ -27,6 +27,12 @@ describe('readTermsDocumentDraft', () => {
     })
   })
 
+  it('refuses content longer than the API stores', () => {
+    expect(
+      readTermsDocumentDraft({ name: 'Cookies', description: richText('a'.repeat(262_144)) }),
+    ).toEqual({ problems: { description: 'validation.richTextTooLong' }, value: null })
+  })
+
   it('trims the name and keeps the content', () => {
     expect(readTermsDocumentDraft({ name: ' Cookies ', description: richText('Body') })).toEqual({
       problems: {},

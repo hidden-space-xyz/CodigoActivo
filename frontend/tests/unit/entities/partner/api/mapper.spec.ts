@@ -20,6 +20,13 @@ describe('toPartner', () => {
     expect(toPartner(omit(buildPartnerResponse(), 'website')).website).toBeNull()
     expect(toPartner(buildPartnerResponse({ website: null })).website).toBeNull()
   })
+
+  it('never turns a website that is not http(s) into a link', () => {
+    const website = 'javascript:alert(1)'
+
+    expect(toPartner(buildPartnerResponse({ website })).website).toBeNull()
+    expect(toSponsor(buildPartnerResponse({ website })).website).toBe('')
+  })
 })
 
 describe('toSponsor', () => {

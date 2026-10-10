@@ -23,6 +23,7 @@
             "name": "title",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -38,6 +39,7 @@
             "name": "location",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -77,6 +79,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -1060,6 +1063,7 @@
             "name": "name",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1067,6 +1071,7 @@
             "name": "email",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1074,6 +1079,7 @@
             "name": "phone",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1081,6 +1087,7 @@
             "name": "nationalId",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1158,6 +1165,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -1236,6 +1244,7 @@
             "name": "search",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1298,6 +1307,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -1375,6 +1385,7 @@
             "name": "name",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1382,6 +1393,7 @@
             "name": "email",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1389,6 +1401,7 @@
             "name": "phone",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1396,6 +1409,7 @@
             "name": "nationalId",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1473,6 +1487,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -1510,6 +1525,7 @@
             "name": "search",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1572,6 +1588,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -1600,6 +1617,7 @@
             "name": "search",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1607,6 +1625,7 @@
             "name": "title",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1614,6 +1633,7 @@
             "name": "subtitle",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1699,6 +1719,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -1886,6 +1907,7 @@
             "name": "name",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1893,6 +1915,7 @@
             "name": "color",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1916,6 +1939,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -1970,6 +1994,7 @@
             "name": "name",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -1993,6 +2018,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -2165,6 +2191,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -2641,6 +2668,7 @@
             "name": "search",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -2648,6 +2676,7 @@
             "name": "title",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -2655,6 +2684,7 @@
             "name": "subtitle",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -2709,6 +2739,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -2904,6 +2935,7 @@
             "name": "name",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -2911,6 +2943,7 @@
             "name": "website",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -2958,6 +2991,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -3139,6 +3173,7 @@
             "name": "search",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -3201,6 +3236,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -3345,6 +3381,7 @@
             "name": "search",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -3352,6 +3389,7 @@
             "name": "title",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -3359,6 +3397,7 @@
             "name": "subtitle",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -3374,6 +3413,7 @@
             "name": "url",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -3413,6 +3453,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }
@@ -3585,6 +3626,7 @@
             "name": "name",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -3592,6 +3634,7 @@
             "name": "email",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -3599,6 +3642,7 @@
             "name": "phone",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -3606,6 +3650,7 @@
             "name": "nationalId",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           },
@@ -3683,6 +3728,7 @@
             "name": "sort",
             "in": "query",
             "schema": {
+              "maxLength": 200,
               "type": "string"
             }
           }

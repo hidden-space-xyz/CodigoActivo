@@ -83,11 +83,13 @@ function onFilesPicked(event: Event): void {
   const added = addAttachments(draft.attachments, picked)
   if ('problem' in added) {
     attachmentError.value =
-      added.problem === 'tooMany'
-        ? t('features.sendEmail.attachments.tooMany', { max: MAX_ATTACHMENTS })
-        : t('features.sendEmail.attachments.tooLarge', {
-            max: formatFileSize(MAX_ATTACHMENTS_BYTES),
-          })
+      added.problem === 'empty'
+        ? t('features.sendEmail.attachments.empty')
+        : added.problem === 'tooMany'
+          ? t('features.sendEmail.attachments.tooMany', { max: MAX_ATTACHMENTS })
+          : t('features.sendEmail.attachments.tooLarge', {
+              max: formatFileSize(MAX_ATTACHMENTS_BYTES),
+            })
     return
   }
   draft.attachments = added.attachments

@@ -1,6 +1,7 @@
 import type { Partner, PartnerInput } from '@/entities/partner'
 import { isDayAfter, parseDateOnly, toDateOnly } from '@/shared/lib/date'
 import type { FormProblem, FormReading } from '@/shared/lib/form'
+import { toWebUrl } from '@/shared/lib/navigation'
 
 /** What the partner dialog binds its inputs to; the day comes from a date picker. */
 export interface PartnerDraft {
@@ -11,7 +12,7 @@ export interface PartnerDraft {
 }
 
 /** Field of the partner form that can be refused. */
-type PartnerField = 'name' | 'fromDate'
+type PartnerField = 'name' | 'fromDate' | 'website'
 
 /** A blank draft, or one filled with the partner being edited. */
 export function toPartnerDraft(partner: Partner | null): PartnerDraft {
@@ -25,22 +26,27 @@ export function toPartnerDraft(partner: Partner | null): PartnerDraft {
 
 /**
  * Reads the partner dialog: a name and a start day no later than today are required, an empty tier
- * counts as 0 and a blank website is saved as none. The thumbnail is resolved separately when
- * saving.
+ * counts as 0 and a blank website is saved as none, while any other website must be an http(s)
+ * address the API accepts. The thumbnail is resolved separately when saving.
  */
 export function readPartnerDraft(
   draft: PartnerDraft,
 ): FormReading<PartnerField, Omit<PartnerInput, 'thumbnailId'>> {
   const name = draft.name.trim()
+  const website = draft.website.trim()
   const problems: Partial<Record<PartnerField, FormProblem>> = {}
   if (!name) problems.name = 'pages.admin.partners.form.problems.nameRequired'
   if (!draft.fromDate) problems.fromDate = 'pages.admin.partners.form.problems.fromDateRequired'
   else if (isDayAfter(draft.fromDate, new Date())) {
     problems.fromDate = 'pages.admin.partners.form.problems.fromDateFuture'
   }
-  if (!name || !draft.fromDate || problems.fromDate) return { problems, value: null }
+  if (website && !toWebUrl(website)) {
+    problems.website = 'pages.admin.partners.form.problems.websiteInvalid'
+  }
+  if (!name || !draft.fromDate || problems.fromDate || problems.website) {
+    return { problems, value: null }
+  }
 
-  const website = draft.website.trim()
   return {
     problems,
     value: {

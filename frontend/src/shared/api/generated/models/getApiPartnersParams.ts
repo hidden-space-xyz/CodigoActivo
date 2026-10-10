@@ -6,12 +6,21 @@
  */
 
 export type GetApiPartnersParams = {
+/**
+ * @maxLength 200
+ */
 name?: string;
+/**
+ * @maxLength 200
+ */
 website?: string;
 tier?: number;
 fromDateFrom?: string;
 fromDateTo?: string;
 page?: number;
 pageSize?: number;
+/**
+ * @maxLength 200
+ */
 sort?: string;
 };

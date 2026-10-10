@@ -228,12 +228,22 @@ const {
             v-model="passwordForm.current"
             type="password"
             show-password
+            autocomplete="current-password"
+            :maxlength="128"
             required
           />
         </div>
         <div class="acc-form__field">
           <label for="p-new">{{ $t('pages.account.profile.newPassword') }}</label>
-          <el-input id="p-new" v-model="passwordForm.next" type="password" show-password required />
+          <el-input
+            id="p-new"
+            v-model="passwordForm.next"
+            type="password"
+            show-password
+            autocomplete="new-password"
+            :maxlength="128"
+            required
+          />
         </div>
         <div class="acc-form__field">
           <label for="p-conf">{{ $t('pages.account.profile.confirmNewPassword') }}</label>
@@ -242,6 +252,8 @@ const {
             v-model="passwordForm.confirm"
             type="password"
             show-password
+            autocomplete="new-password"
+            :maxlength="128"
             required
           />
         </div>

@@ -3,6 +3,7 @@ export {
   EMPTY_DOC_JSON,
   isRichTextBlank,
   isRichTextEmpty,
+  isRichTextTooLong,
   normalizeLink,
   parseRichText,
   renderRichTextHtml,

@@ -28,6 +28,15 @@ describe('readNewsDraft', () => {
     })
   })
 
+  it('refuses a description longer than the API stores', () => {
+    const description = richText('a'.repeat(262_144))
+
+    expect(readNewsDraft({ title: 'Title', subtitle: 'Sub', description })).toEqual({
+      problems: { description: 'validation.richTextTooLong' },
+      value: null,
+    })
+  })
+
   it('trims the text and saves an empty description as an empty document', () => {
     expect(readNewsDraft({ title: ' Demo day ', subtitle: ' Friday ', description: ' ' })).toEqual({
       problems: {},

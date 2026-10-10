@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Common.Validation;
 
 namespace CodigoActivo.Application.Partners.Contracts;
 
@@ -10,11 +12,15 @@ public sealed class PartnerListQuery : PageQuery
     /// <summary>
     /// Gets or sets the human-readable name.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Name { get; set; }
 
     /// <summary>
     /// Gets or sets the website value.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Website { get; set; }
 
     /// <summary>

@@ -105,7 +105,14 @@ async function parseData(response: Response): Promise<unknown> {
   return blob.size > 0 ? blob : undefined
 }
 
+function isCanonicalPath(url: string): boolean {
+  const path = url.split(/[?#]/, 1)[0] ?? ''
+  return new URL(path, window.location.origin).pathname === path
+}
+
 async function request<T>(url: string, init: RequestInit, retry: boolean): Promise<T> {
+  if (!isCanonicalPath(url)) throw new TypeError('Refused a request to a non-canonical API path')
+
   const method = (init.method ?? 'GET').toUpperCase()
   const headers = new Headers(init.headers)
   if (!headers.has('Accept')) headers.set('Accept', 'application/json')
@@ -138,6 +145,8 @@ async function request<T>(url: string, init: RequestInit, retry: boolean): Promi
 /**
  * Orval mutator behind every generated endpoint. Sends cookies, disables HTTP caching, attaches the
  * CSRF header to POST/PUT/PATCH/DELETE and retries once with a fresh token on `InvalidCsrfToken`.
+ * Generated paths interpolate their parameters unencoded, so a path the browser would rewrite
+ * (dot segments, backslashes, stripped tabs) is refused with a `TypeError` before anything is sent.
  * Resolves to `{ status, data, headers }`, where `data` is parsed JSON, text or a non-empty `Blob`
  * and `undefined` for empty bodies; throws `ApiError` for non-2xx responses.
  */

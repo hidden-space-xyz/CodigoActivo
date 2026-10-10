@@ -71,6 +71,11 @@ public sealed class SmtpEmailSenderTests
                 new EmailAttachment("notes.txt", "text/plain", "hello"u8.ToArray()),
                 new EmailAttachment("data.bin", "not a content type", [1, 2, 3]),
                 new EmailAttachment("forwarded.eml", "message/rfc822", "Subject: x"u8.ToArray()),
+                new EmailAttachment(
+                    "parts.bin",
+                    "multipart/mixed; boundary=x",
+                    "--x--"u8.ToArray()
+                ),
             ],
             inlineImages: [new EmailInlineImage("logo", "logo.png", "image/png", [137, 80, 78])]
         );
@@ -98,7 +103,8 @@ public sealed class SmtpEmailSenderTests
             .Equal(
                 ("notes.txt", "text/plain"),
                 ("data.bin", "application/octet-stream"),
-                ("forwarded.eml", "application/octet-stream")
+                ("forwarded.eml", "application/octet-stream"),
+                ("parts.bin", "application/octet-stream")
             );
 
         var inline = delivered

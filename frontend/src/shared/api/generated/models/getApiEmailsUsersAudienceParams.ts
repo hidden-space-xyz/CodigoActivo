@@ -7,9 +7,21 @@
 
 export type GetApiEmailsUsersAudienceParams = {
 id?: string;
+/**
+ * @maxLength 200
+ */
 name?: string;
+/**
+ * @maxLength 200
+ */
 email?: string;
+/**
+ * @maxLength 200
+ */
 phone?: string;
+/**
+ * @maxLength 200
+ */
 nationalId?: string;
 userTypeId?: string;
 userStatusTypeId?: string;
@@ -20,5 +32,8 @@ birthDateFrom?: string;
 birthDateTo?: string;
 page?: number;
 pageSize?: number;
+/**
+ * @maxLength 200
+ */
 sort?: string;
 };

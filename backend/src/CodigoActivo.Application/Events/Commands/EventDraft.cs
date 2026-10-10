@@ -30,6 +30,6 @@ public sealed record EventDraft(
     DateTimeOffset? SignupStartsAt,
     DateTimeOffset? SignupEndsAt,
     StoredFileId ThumbnailId,
-    IReadOnlyList<EventCategoryTypeId> CategoryTypeIds,
-    IReadOnlyList<EventTermsLink> TermsDocuments
+    [property: MaxLength(50)] IReadOnlyList<EventCategoryTypeId> CategoryTypeIds,
+    [property: MaxLength(50)] IReadOnlyList<EventTermsLink> TermsDocuments
 );
