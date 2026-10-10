@@ -27,7 +27,6 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
 
     public ResendTwoFactorCodeCommandHandlerTests()
     {
-        var hasher = new FakePasswordHasher();
         var accountEmails = new AccountEmails(
             emailSender,
             new AccountEmailComposer(
@@ -44,7 +43,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
             clock,
             options,
             new LoginCodeIssuer(
-                hasher,
+                new FakeOneTimeCodeHasher(),
                 options,
                 accountEmails,
                 NullLogger<LoginCodeIssuer>.Instance
@@ -127,7 +126,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         var code = emailSender.LastLoginCode();
         code.Should().NotBe("111111");
-        user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -155,7 +154,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         var result = await ResendAsync(user.Id.Value);
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
-        user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + "111111");
+        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + "111111");
         await AssertNotSavedAsync();
     }
 }

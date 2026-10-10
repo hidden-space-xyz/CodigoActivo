@@ -64,7 +64,7 @@ public sealed class UpdateUserCommandHandlerTests
             new DisposableEmailChecker(disposableDomains),
             new EmailChangeLinkIssuer(
                 users,
-                hasher,
+                new FakeOneTimeCodeHasher(),
                 verification,
                 new AccountEmails(
                     emailSender,
@@ -628,7 +628,9 @@ public sealed class UpdateUserCommandHandlerTests
         link.ToName.Should().BeEmpty();
         link.TextBody.Should()
             .Contain($"https://app.test/confirm-email#userId={actingUser.Id}&code=");
-        actingUser.EmailChangeCodeHash.Should().Be(hasher.Hash(emailSender.LastCode()));
+        actingUser
+            .EmailChangeCodeHash.Should()
+            .Be(FakeOneTimeCodeHasher.Prefix + emailSender.LastCode());
     }
 
     [Fact]

@@ -98,4 +98,14 @@ public sealed class TwoFactorConfigurationTests : IDisposable
         protector.Should().BeOfType<DataProtectionSecretProtector>();
         protector.Unprotect(protector.Protect("secret")).Should().Be("secret");
     }
+
+    [Fact]
+    public void AddCodigoActivoRegistersTheKeyedOneTimeCodeHasher()
+    {
+        var provider = Build(new Dictionary<string, string?>(StringComparer.Ordinal));
+
+        var hasher = provider.GetRequiredService<IOneTimeCodeHasher>();
+        hasher.Should().BeOfType<HmacOneTimeCodeHasher>();
+        hasher.Verify("123456", hasher.Hash("123456")).Should().BeTrue();
+    }
 }

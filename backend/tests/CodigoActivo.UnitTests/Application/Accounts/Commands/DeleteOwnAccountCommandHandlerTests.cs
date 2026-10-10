@@ -45,7 +45,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
             uow,
             clock,
             PasswordGuards.Create(hasher, uow, clock),
-            new OtpValidator(hasher),
+            new OtpValidator(new FakeOneTimeCodeHasher()),
             new AuthenticatorCodeVerifier(
                 totp,
                 new FakeSecretProtector(),
@@ -67,7 +67,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
             user,
             new
             {
-                LoginCodeHash = FakePasswordHasher.Prefix + EmailCode,
+                LoginCodeHash = FakeOneTimeCodeHasher.Prefix + EmailCode,
                 LoginCodeExpiresAt = clock.UtcNow.AddMinutes(5),
             }
         );

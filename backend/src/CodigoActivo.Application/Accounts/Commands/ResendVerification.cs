@@ -26,7 +26,7 @@ public sealed record ResendVerificationCommand(
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="hasher">The hasher value.</param>
+/// <param name="codeHasher">Hasher used so the verification code is never stored in plaintext.</param>
 /// <param name="verification">The verification value.</param>
 /// <param name="accountEmails">The account emails value.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -34,7 +34,7 @@ public sealed class ResendVerificationCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    IPasswordHasher hasher,
+    IOneTimeCodeHasher codeHasher,
     AccountVerificationOptions verification,
     AccountEmails accountEmails,
     ILogger<ResendVerificationCommandHandler> logger
@@ -43,8 +43,8 @@ public sealed class ResendVerificationCommandHandler(
     /// <summary>
     /// Handles the request to resend verification. A new link reaches the address only when it
     /// belongs to an account waiting for verification whose last link is older than the resend
-    /// cooldown; every request succeeds alike and hashes a code first, so neither the answer nor
-    /// its timing tells whether the address has an account.
+    /// cooldown; every request succeeds alike, so the answer never tells whether the address has
+    /// an account.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -54,8 +54,6 @@ public sealed class ResendVerificationCommandHandler(
         CancellationToken ct = default
     )
     {
-        var otpCode = AccountTokens.Create();
-        var otpCodeHash = hasher.Hash(otpCode);
         var email = EmailAddress.Create(command.Email);
         var user = email.IsSuccess ? await users.GetByEmailAsync(email.Value, ct) : null;
         var now = clock.UtcNow;
@@ -67,6 +65,7 @@ public sealed class ResendVerificationCommandHandler(
             return Result.Success();
         }
 
+        var otpCode = AccountTokens.Create();
         try
         {
             await accountEmails.SendVerificationEmailAsync(user, otpCode, ct);
@@ -81,7 +80,7 @@ public sealed class ResendVerificationCommandHandler(
             return Result.Success();
         }
 
-        user.IssueOtp(otpCodeHash, now, verification.OtpLifetime);
+        user.IssueOtp(codeHasher.Hash(otpCode), now, verification.OtpLifetime);
         await uow.SaveChangesAsync(ct);
         return Result.Success();
     }

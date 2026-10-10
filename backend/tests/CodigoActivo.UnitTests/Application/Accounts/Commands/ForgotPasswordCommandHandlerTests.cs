@@ -22,7 +22,6 @@ public sealed class ForgotPasswordCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
-    private readonly FakePasswordHasher hasher = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly PasswordResetOptions passwordReset = new();
@@ -35,7 +34,7 @@ public sealed class ForgotPasswordCommandHandlerTests
             users,
             uow,
             clock,
-            hasher,
+            new FakeOneTimeCodeHasher(),
             passwordReset,
             new AccountEmails(
                 emailSender,
@@ -82,7 +81,6 @@ public sealed class ForgotPasswordCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        hasher.Hashes.Should().Be(1, "every request hashes a code, so timing tells nothing");
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -153,7 +151,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         var code = emailSender.LastCode();
         code.Should()
             .MatchRegex("^[0-9a-f]{64}$", "the reset code is 256 random bits in lowercase hex");
-        user.PasswordResetCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+        user.PasswordResetCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.PasswordResetExpiresAt.Should().Be(clock.UtcNow + passwordReset.CodeLifetime);
         user.PasswordResetLastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
@@ -177,7 +175,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         var newCode = emailSender.LastCode();
         newCode.Should().NotBe("old-code");
-        user.PasswordResetCodeHash.Should().Be(FakePasswordHasher.Prefix + newCode);
+        user.PasswordResetCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + newCode);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

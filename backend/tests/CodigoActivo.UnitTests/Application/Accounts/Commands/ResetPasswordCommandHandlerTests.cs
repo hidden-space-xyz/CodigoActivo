@@ -47,7 +47,7 @@ public sealed class ResetPasswordCommandHandlerTests
             users,
             clock,
             new FakePasswordHasher(),
-            new OtpValidator(new FakePasswordHasher())
+            new OtpValidator(new FakeOneTimeCodeHasher())
         );
     }
 

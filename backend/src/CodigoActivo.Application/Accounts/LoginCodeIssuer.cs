@@ -13,12 +13,12 @@ namespace CodigoActivo.Application.Accounts;
 /// <summary>
 /// Generates, emails and stores the one-time codes of email-based second-factor challenges.
 /// </summary>
-/// <param name="hasher">Hasher used so the code is never stored in plaintext.</param>
+/// <param name="codeHasher">Hasher used so the code is never stored in plaintext.</param>
 /// <param name="options">Second-factor configuration.</param>
 /// <param name="accountEmails">Builder and sender of account emails.</param>
 /// <param name="logger">Logger used to record delivery failures.</param>
 public sealed class LoginCodeIssuer(
-    IPasswordHasher hasher,
+    IOneTimeCodeHasher codeHasher,
     TwoFactorOptions options,
     AccountEmails accountEmails,
     ILogger<LoginCodeIssuer> logger
@@ -84,7 +84,7 @@ public sealed class LoginCodeIssuer(
             return Error.Conflict(ApplicationErrorCode.EmailSendFailed);
         }
 
-        user.IssueLoginCode(hasher.Hash(code), now, options.ChallengeLifetime);
+        user.IssueLoginCode(codeHasher.Hash(code), now, options.ChallengeLifetime);
         return Result.Success();
     }
 

@@ -56,8 +56,8 @@ authentication are not supported.
   an address held by an account nobody verified gets the link of a new account that replaces it, erased
   with its blocked copy, so registering someone else's email reserves nothing. The notice is budgeted as the
   verification mail it replaces. `POST /api/auth/resend-verification` (by email) and `forgot-password` also
-  answer 204 alike. All three hash their password or code before looking the address up, so every outcome
-  costs the same Argon2 work. Unverified accounts are never purged on a schedule.
+  answer 204 alike. Registration hashes the password before looking the address up, so every outcome costs
+  the same Argon2 work. Unverified accounts are never purged on a schedule.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns
   `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password. Public registration never
@@ -109,7 +109,7 @@ second factor is accepted, which is also when the login timestamp is recorded.
 
 Each user chooses one second factor from their account:
 
-- **Email (default)**: a 6-digit code, emailed on the password step, stored hashed with Argon2id, expiring
+- **Email (default)**: a 6-digit code, emailed on the password step, stored as a keyed hash, expiring
   with the challenge, single use. The password step reuses a code sent within the last minute instead of
   resending; `POST /api/auth/login/two-factor/resend` enforces the same 60-second cooldown. These emails
   count as credential mail in the automatic-message limiter.
@@ -173,8 +173,15 @@ need the same administrator reset.
 ### Passwords and credential endpoints
 
 Passwords require 12–128 characters and are hashed with Argon2id, never stored or logged in plaintext. Login
-performs fallback Argon2 work for unknown identifiers, and registration, verification resend and password
-recovery hash before looking the address up, to reduce timing differences.
+performs fallback Argon2 work for unknown identifiers, and registration hashes the password before looking
+the address up, to reduce timing differences.
+
+Emailed one-time codes and link tokens (login and account-deletion codes, verification, password reset and
+email-change links) are random, short-lived and stored only as HMAC-SHA256 under a server-side key
+(`HmacOneTimeCodeHasher`), so a copy of the database alone cannot test guesses against them. Production
+derives that key with HKDF-SHA256 from the Data Protection certificate's private key, so it exists only in
+`api-dataprotection`; other environments use a random key per process, so a restart invalidates pending codes
+and links.
 
 Five consecutive wrong passwords for the same account — counted together by `PasswordAttemptGuard` across the
 login password step and every route that asks the caller to re-enter their own password — lock the account,
@@ -371,13 +378,13 @@ Ed25519 certificate's own private key is stored the same way, in a fixed-size bi
 salt, nonce, tag, ciphertext) with the certificate's DER bytes as associated data. BouncyCastle is used only
 to generate and parse the Ed25519 certificate and to sign/verify; it performs no encryption. Since the
 certificate password derives the key-wrapping key, there is no rotation procedure: changing it means
-recreating the volume, which invalidates every session and every stored authenticator secret. Outside
-Production the key ring is unencrypted on disk, but every environment protects Data Protection payloads
-themselves — session and two-factor cookies, antiforgery tokens, authenticator secrets and the email outbox
-content described below — with AES-256-GCM. Application containers run as non-root, drop all capabilities,
-enable `no-new-privileges` and use read-only root filesystems; PostgreSQL drops every capability its
-entrypoint does not need and is reachable only on the internal backend network. The development override
-removes parts of this boundary and must not be deployed.
+recreating the volume, which invalidates every session, every stored authenticator secret and every pending
+one-time code or link. Outside Production the key ring is unencrypted on disk, but every environment protects
+Data Protection payloads themselves — session and two-factor cookies, antiforgery tokens, authenticator
+secrets and the email outbox content described below — with AES-256-GCM. Application containers run as
+non-root, drop all capabilities, enable `no-new-privileges` and use read-only root filesystems; PostgreSQL
+drops every capability its entrypoint does not need and is reachable only on the internal backend network.
+The development override removes parts of this boundary and must not be deployed.
 
 ### Files and multipart requests
 

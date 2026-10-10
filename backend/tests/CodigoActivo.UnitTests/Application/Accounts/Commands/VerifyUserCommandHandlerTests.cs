@@ -25,7 +25,7 @@ public sealed class VerifyUserCommandHandlerTests
             users,
             uow,
             clock,
-            new OtpValidator(new FakePasswordHasher())
+            new OtpValidator(new FakeOneTimeCodeHasher())
         );
     }
 
@@ -55,7 +55,7 @@ public sealed class VerifyUserCommandHandlerTests
         var user = users.FindReturns(
             NewUser(
                 statusId: KnownIds.UserStatusTypes.Active,
-                otpCodeHash: FakePasswordHasher.Prefix + "123456",
+                otpCodeHash: FakeOneTimeCodeHasher.Prefix + "123456",
                 otpExpiresAt: clock.UtcNow.AddMinutes(5)
             )
         );
@@ -91,7 +91,7 @@ public sealed class VerifyUserCommandHandlerTests
         var user = users.FindReturns(
             NewUser(
                 statusId: KnownIds.UserStatusTypes.Pending,
-                otpCodeHash: hasStoredHash ? FakePasswordHasher.Prefix + "123456" : null,
+                otpCodeHash: hasStoredHash ? FakeOneTimeCodeHasher.Prefix + "123456" : null,
                 otpExpiresAt: expiresInMinutes is null
                     ? null
                     : clock.UtcNow.AddMinutes(expiresInMinutes.Value)

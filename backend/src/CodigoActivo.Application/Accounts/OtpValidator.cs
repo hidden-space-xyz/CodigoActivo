@@ -6,8 +6,8 @@ namespace CodigoActivo.Application.Accounts;
 /// Checks a one-time code a person typed against the hash of the stored code. Whether the stored
 /// code can still be used is decided by the account.
 /// </summary>
-/// <param name="hasher">Hasher used to verify the code.</param>
-public sealed class OtpValidator(IPasswordHasher hasher)
+/// <param name="codeHasher">Hasher used to verify the code.</param>
+public sealed class OtpValidator(IOneTimeCodeHasher codeHasher)
 {
     /// <summary>
     /// Determines whether the typed code is the stored one; spacing and casing are ignored.
@@ -19,6 +19,6 @@ public sealed class OtpValidator(IPasswordHasher hasher)
     {
         return !string.IsNullOrWhiteSpace(code)
             && usableCodeHash is not null
-            && hasher.Verify(code.Trim().ToLowerInvariant(), usableCodeHash);
+            && codeHasher.Verify(code.Trim().ToLowerInvariant(), usableCodeHash);
     }
 }
