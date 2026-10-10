@@ -22,19 +22,16 @@ public sealed class InitialAdministratorSeeder(
 )
 {
     /// <summary>
-    /// Creates the initial administrator when the database has no users. A database that has users
-    /// but not the initial administrator is refused, because deleting accounts relies on it.
+    /// Creates the initial administrator when the database has no users, with a password nobody
+    /// knows: its owner chooses one through a password reset sent to the configured email. A
+    /// database that has users but not the initial administrator is refused, because deleting
+    /// accounts relies on it.
     /// </summary>
     /// <param name="configuredEmail">The configured email value.</param>
-    /// <param name="configuredPassword">The configured password value.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <exception cref="InvalidOperationException">The bootstrap credentials are invalid on an empty database, or the database has users but not the initial administrator.</exception>
-    public async Task SeedAsync(
-        string? configuredEmail,
-        string? configuredPassword,
-        CancellationToken ct = default
-    )
+    /// <exception cref="InvalidOperationException">The bootstrap email is invalid on an empty database, or the database has users but not the initial administrator.</exception>
+    public async Task SeedAsync(string? configuredEmail, CancellationToken ct = default)
     {
         if (await context.Users.AnyAsync(ct))
         {
@@ -60,20 +57,10 @@ public sealed class InitialAdministratorSeeder(
             );
         }
 
-        if (
-            string.IsNullOrWhiteSpace(configuredPassword)
-            || configuredPassword.Length is < 12 or > 128
-        )
-        {
-            throw new InvalidOperationException(
-                "BOOTSTRAP_ADMIN_PASSWORD must contain between 12 and 128 characters when the database has no users."
-            );
-        }
-
         context.Users.Add(
             User.CreateInitialAdministrator(
                 EmailAddress.Create(email).Value,
-                passwordHasher.Hash(configuredPassword),
+                UnusablePassword.Hash(passwordHasher),
                 clock.UtcNow
             )
         );

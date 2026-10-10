@@ -18,7 +18,6 @@ services:
       SMTP_PORT: 1025
       SMTP_SECURITY: None
       SMTP_USERNAME: ""
-      SMTP_PASSWORD: ""
       SMTP_FROM_ADDRESS: no-reply@codigoactivo.local
       SMTP_FROM_NAME: Código Activo (desarrollo)
     ports:

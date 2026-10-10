@@ -7,6 +7,7 @@ example/
 .env.*
 !.env.example
 !.env.*.example
+/secrets/
 *.local
 *.pfx
 *.key

@@ -103,7 +103,6 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         builder.UseSetting("DEMO_MODE", "false");
         builder.UseSetting("DOTNET_RUNNING_IN_CONTAINER", "true");
         builder.UseSetting("BOOTSTRAP_ADMIN_EMAIL", "bootstrap@codigoactivo.test");
-        builder.UseSetting("BOOTSTRAP_ADMIN_PASSWORD", "bootstrap-password-123");
         builder.UseSetting("SMTP_HOST", "smtp.test");
         builder.UseSetting("SMTP_FROM_ADDRESS", "no-reply@codigoactivo.test");
 

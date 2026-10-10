@@ -38,19 +38,15 @@ public static class DatabaseInitialization
     /// </summary>
     /// <param name="services">Scoped service provider.</param>
     /// <param name="email">Configured bootstrap administrator email.</param>
-    /// <param name="password">Configured bootstrap administrator password.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public static Task SeedInitialAdministratorAsync(
         this IServiceProvider services,
         string? email,
-        string? password,
         CancellationToken ct
     )
     {
-        return services
-            .GetRequiredService<InitialAdministratorSeeder>()
-            .SeedAsync(email, password, ct);
+        return services.GetRequiredService<InitialAdministratorSeeder>().SeedAsync(email, ct);
     }
 
     /// <summary>

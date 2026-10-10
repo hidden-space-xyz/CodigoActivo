@@ -158,6 +158,29 @@ public sealed class EmailSenderWiringTests
     }
 
     [Theory]
+    [InlineData(null, null, SmtpSecurityMode.StartTls)]
+    [InlineData("465", null, SmtpSecurityMode.SslOnConnect)]
+    [InlineData("2525", "", SmtpSecurityMode.StartTls)]
+    [InlineData("465", "StartTls", SmtpSecurityMode.StartTls)]
+    [InlineData("587", "SslOnConnect", SmtpSecurityMode.SslOnConnect)]
+    public void AddCodigoActivoSmtpSecurityDefaultsToTheEncryptionOfThePort(
+        string? port,
+        string? security,
+        SmtpSecurityMode expected
+    )
+    {
+        using var provider = BuildProvider(
+            new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["SMTP_PORT"] = port,
+                ["SMTP_SECURITY"] = security,
+            }
+        );
+
+        provider.GetRequiredService<SmtpOptions>().Security.Should().Be(expected);
+    }
+
+    [Theory]
     [InlineData("EmailQueue:Capacity", "zero")]
     [InlineData("EmailQueue:ShutdownDrainSeconds", "0")]
     public void AddCodigoActivoUnusableQueueSettingStopsTheStart(string key, string value)

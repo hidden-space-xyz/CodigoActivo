@@ -4,8 +4,11 @@ namespace CodigoActivo.API.Configuration;
 
 internal static class ApiHostConfiguration
 {
+    private const string SecretsDirectory = "/run/secrets";
+
     internal static void ConfigureApiHost(this WebApplicationBuilder builder, ApiLogging logging)
     {
+        builder.Configuration.AddKeyPerFile(SecretsDirectory, optional: true);
         logging.Configure(builder.Logging);
         ConfigureAllowedHosts(builder);
         ValidateProductionConfiguration(builder.Environment, builder.Configuration);

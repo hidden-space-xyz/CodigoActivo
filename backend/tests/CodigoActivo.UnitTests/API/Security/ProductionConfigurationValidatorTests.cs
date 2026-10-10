@@ -26,6 +26,21 @@ public sealed class ProductionConfigurationValidatorTests
     }
 
     [Theory]
+    [InlineData("SMTP_PORT", null)]
+    [InlineData("SMTP_PORT", "")]
+    [InlineData("SMTP_SECURITY", null)]
+    [InlineData("SMTP_SECURITY", " ")]
+    [InlineData("SMTP_SECURITY", "SslOnConnect")]
+    public void ValidateOptionalSmtpSettingDoesNotThrow(string key, string? value)
+    {
+        var config = BuildConfiguration(new KeyValuePair<string, string?>(key, value));
+
+        var act = () => ProductionConfigurationValidator.Validate(config);
+
+        act.Should().NotThrow();
+    }
+
+    [Theory]
     [InlineData("POSTGRES_PASSWORD", "short", "POSTGRES_PASSWORD")]
     [InlineData(
         "DATA_PROTECTION_CERTIFICATE_PASSWORD",
@@ -37,8 +52,10 @@ public sealed class ProductionConfigurationValidatorTests
     [InlineData("APP_BASE_URL", "https://app.test", "APP_BASE_URL")]
     [InlineData("APP_BASE_URL", "https://192.168.1.20", "APP_BASE_URL")]
     [InlineData("SMTP_SECURITY", "None", "SMTP_SECURITY")]
+    [InlineData("SMTP_SECURITY", "Auto", "SMTP_SECURITY")]
     [InlineData("SMTP_HOST", "bad host", "SMTP_HOST")]
     [InlineData("SMTP_PORT", "70000", "SMTP_PORT")]
+    [InlineData("SMTP_PORT", "smtp", "SMTP_PORT")]
     [InlineData("SMTP_FROM_ADDRESS", "Sender <sender@app.test>", "SMTP_FROM_ADDRESS")]
     [InlineData("SMTP_USERNAME", "mailer", "SMTP_USERNAME")]
     public void ValidateUnsafeConfigurationThrows(string key, string value, string expectedMessage)

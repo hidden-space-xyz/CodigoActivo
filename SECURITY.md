@@ -62,10 +62,10 @@ authentication are not supported.
   session cookie alone cannot promote another account); a wrong password returns
   `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password. Public registration never
   grants administrator access; on an empty database, startup creates the initial administrator from
-  `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD`, ignored once a user exists, under the fixed id
-  `InitialAdministrator.Id`. That generic account can be neither demoted
-  (`UserCannotRemoveInitialAdmin`) nor deleted, so the application always keeps an administrator; the SPA
-  disables both actions for it.
+  `BOOTSTRAP_ADMIN_EMAIL`, ignored once a user exists, under the fixed id `InitialAdministrator.Id` and with a
+  random, discarded password, so its first password is set through a password reset to that address. That
+  generic account can be neither demoted (`UserCannotRemoveInitialAdmin`) nor deleted, so the application
+  always keeps an administrator; the SPA disables both actions for it.
 - `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
   password whenever the update would replace the account's email, phone or secondary phone. A missing or
   wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three
@@ -356,13 +356,20 @@ endpoint's route template, and exception type/message/stack traces.
 ### Production configuration and secrets
 
 Production startup fails when `POSTGRES_PASSWORD` is under 16 characters, `DATA_PROTECTION_CERTIFICATE_PASSWORD`
-is under 32, `APP_BASE_URL` is not a clean public HTTPS origin, SMTP host/port/sender/transport encryption is
-invalid, or only one of `SMTP_USERNAME`/`SMTP_PASSWORD` is set.
+is under 32, `APP_BASE_URL` is not a clean public HTTPS origin, SMTP host/port/sender is invalid, SMTP
+transport encryption is `None` or `Auto`, or only one of `SMTP_USERNAME`/`SMTP_PASSWORD` is set. An empty
+`SMTP_SECURITY` always encrypts: TLS on connect on port 465, mandatory STARTTLS on any other.
 
-Secrets are flat environment variables in the ignored root `.env`; `appsettings.json` contains no
-credentials. Restrict `.env` to the deployment account and keep it out of images and unencrypted backups.
-Rotating the database password must update both the PostgreSQL role and the API configuration. Keep the Data
-Protection certificate password separate from the key-volume backup.
+`POSTGRES_PASSWORD`, `DATA_PROTECTION_CERTIFICATE_PASSWORD` and `SMTP_PASSWORD` are Compose file secrets in
+the ignored root `secrets/` directory, mounted at `/run/secrets` and never passed as environment variables, so
+they stay out of `docker inspect`, `docker compose config` and every process environment; code running inside
+a container can still read the files mounted into it. The root `.env` holds no secret and
+`appsettings.json` contains no credentials. There is no bootstrap password: the initial administrator chooses
+one through a password reset sent to `BOOTSTRAP_ADMIN_EMAIL`. Compose fixes the database host to the `db`
+service, so the API's database connection never leaves the internal `backend` network. Restrict `secrets/` to
+the deployment account and keep it out of images and unencrypted backups. Rotating the database password must
+update both the PostgreSQL role and `secrets/postgres_password`. Keep the Data Protection certificate password
+separate from the key-volume backup.
 
 ### Data Protection and containers
 
@@ -480,5 +487,5 @@ requires deleting all named volumes, see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode
 - Alert on authentication abuse, email-budget exhaustion, queue saturation and SMTP delivery failures.
 - Review administrator access; smoke-test session revocation, file authorization and account recovery after
   releases.
-- Treat the development override, the bootstrap credentials of demo deployments and any copied production
-  `.env` as sensitive operational risks.
+- Treat the development override, the bootstrap administrator of demo deployments and any copied production
+  `secrets/` directory as sensitive operational risks.

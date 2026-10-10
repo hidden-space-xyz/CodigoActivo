@@ -30,12 +30,16 @@ from a clone, use `docker compose -f docker-compose.yml ...` so the override is 
 
 ## Configuration facts
 
-- The API reads flat environment variables. It does not load the root `.env`; Docker Compose does.
+- The API reads flat environment variables plus the Compose file secrets in `/run/secrets`, each file named
+  after its key. It does not load the root `.env` or `secrets/`; Docker Compose does. Secrets
+  (`POSTGRES_PASSWORD`, `DATA_PROTECTION_CERTIFICATE_PASSWORD`, `SMTP_PASSWORD`) belong in `secrets/`, never
+  in `.env` or `api.environment`.
 - `SMTP_HOST` and `SMTP_FROM_ADDRESS` are always required at startup: every login is completed with a
   one-time code (mandatory two-factor authentication), emailed by default. Locally point them at a mail
   catcher such as Mailpit; the Compose development override already does.
 - New accounts always confirm their email before the first login; there is no configuration switch.
-- An empty database requires valid `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` values.
+- An empty database requires a valid `BOOTSTRAP_ADMIN_EMAIL`. That administrator gets a discarded random
+  password and sets the first one through password reset; there is no bootstrap password.
 - Production nginx is published on host port `8080` on all IPv4 interfaces; IPv6 is not supported. Do not
   describe it as loopback-only.
 - Configuration names in checked-in examples are uppercase. .NET nested overrides use `SECTION__KEY` and

@@ -65,7 +65,10 @@ internal static class EmailsRegistration
             {
                 options.Host = settings.Text("SMTP_HOST", string.Empty);
                 options.Port = settings.PositiveInt("SMTP_PORT", SmtpOptions.DefaultPort);
-                options.Security = settings.Choice("SMTP_SECURITY", SmtpSecurityMode.StartTls);
+                options.Security = settings.Choice(
+                    "SMTP_SECURITY",
+                    SmtpOptions.DefaultSecurity(options.Port)
+                );
                 options.Username = settings.Verbatim("SMTP_USERNAME");
                 options.Password = settings.Verbatim("SMTP_PASSWORD");
                 options.FromAddress = settings.Text("SMTP_FROM_ADDRESS", string.Empty);

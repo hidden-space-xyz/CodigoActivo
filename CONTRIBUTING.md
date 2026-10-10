@@ -17,43 +17,45 @@ A separate PostgreSQL installation is optional.
 
 ### Database and backend
 
-Docker Compose reads the root `.env`; `dotnet run` does not. Start PostgreSQL with Compose, then provide the
-API configuration as real process environment variables:
+Docker Compose reads the root `.env` and `secrets/`; `dotnet run` reads neither. Start PostgreSQL with
+Compose, then provide the API configuration as real process environment variables:
 
 ```bash
 cp .env.example .env
-# Set POSTGRES_PASSWORD in .env.
+mkdir -m 700 secrets
+openssl rand -base64 32 | tr -d '\r\n' > secrets/postgres_password
+touch secrets/data_protection_certificate_password secrets/smtp_password
 docker compose up -d db mailpit
 
-export POSTGRES_PASSWORD=...
+export POSTGRES_PASSWORD="$(cat secrets/postgres_password)"
 export BOOTSTRAP_ADMIN_EMAIL=admin@example.test
-export BOOTSTRAP_ADMIN_PASSWORD=...
 export SMTP_HOST=localhost SMTP_PORT=1025 SMTP_SECURITY=None SMTP_FROM_ADDRESS=no-reply@codigoactivo.local
 cd backend
 dotnet run --project src/CodigoActivo.API
 ```
 
-In PowerShell, set variables with `$env:POSTGRES_PASSWORD="..."` and the equivalent names above. SMTP is
-always required because every login is completed with an emailed one-time code; the Mailpit service from the
-development override catches that mail at <http://localhost:8025>, which is where you read login codes and
-verification links.
+Compose needs all three [secret files](DEPLOYMENT.md#secrets) even though Development ignores the Data
+Protection password. In PowerShell, set variables with `$env:POSTGRES_PASSWORD="..."` and the equivalent
+names above. SMTP is always required because every login is completed with an emailed one-time code; the
+Mailpit service from the development override catches that mail at <http://localhost:8025>, which is where
+you read login codes, verification links and the password reset that sets the bootstrap administrator's
+first password.
 
 The API starts at <http://localhost:5150>; the `https` launch profile also uses <https://localhost:7039>.
 Swagger is available at `/swagger` only in Development. Startup applies migrations, seeds catalogs and
-requires bootstrap credentials when the user table is empty. Without `LOG_DIRECTORY` set, the API logs to the
-console; see [DEPLOYMENT.md](DEPLOYMENT.md#development-overlay) for the containerized case.
+requires `BOOTSTRAP_ADMIN_EMAIL` when the user table is empty. Without `LOG_DIRECTORY` set, the API logs to
+the console; see [DEPLOYMENT.md](DEPLOYMENT.md#development-overlay) for the containerized case.
 
 ### Frontend
 
 ```bash
 cd frontend
 npm ci
-cp .env.example .env.local
 npm run dev
 ```
 
-Vite serves <http://localhost:5173> and proxies `/api`, `/sitemap.xml` and `/robots.txt` to the configured
-backend.
+Vite serves <http://localhost:5173> and proxies `/api`, `/sitemap.xml` and `/robots.txt` to
+<http://localhost:5150>, or to `VITE_API_PROXY_TARGET` when `frontend/.env.local` sets it.
 
 ### Complete Docker development stack
 

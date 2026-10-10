@@ -3,20 +3,24 @@ name: codigoactivo
 x-logging: &logging
   driver: none
 
+x-database: &database
+  POSTGRES_DB: codigoactivo
+  POSTGRES_USER: codigoactivo
+
 services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
     command: ["postgres", "-c", "log_error_verbosity=terse"]
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      <<: *database
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
     volumes:
       - db-data:/var/lib/postgresql
     networks: [backend]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,25 +38,19 @@ services:
       db:
         condition: service_healthy
     environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      DATA_PROTECTION_CERTIFICATE_PASSWORD: ${DATA_PROTECTION_CERTIFICATE_PASSWORD}
+      <<: *database
+      POSTGRES_HOST: db
       APP_BASE_URL: ${APP_BASE_URL}
-      APP_TIMEZONE: ${APP_TIMEZONE}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Madrid}
       DEMO_MODE: ${DEMO_MODE}
-      LOG_DIRECTORY: /var/log/codigoactivo
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL}
-      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD}
       SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT}
-      SMTP_SECURITY: ${SMTP_SECURITY}
-      SMTP_USERNAME: ${SMTP_USERNAME}
-      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_SECURITY: ${SMTP_SECURITY:-}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
+    secrets: [postgres_password, data_protection_certificate_password, smtp_password]
     volumes:
       - api-files:/app/files
       - api-dataprotection:/home/app/.aspnet/DataProtection-Keys
@@ -99,3 +97,11 @@ volumes:
   api-dataprotection:
   api-state:
   logs-api:
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password
+  data_protection_certificate_password:
+    file: ./secrets/data_protection_certificate_password
+  smtp_password:
+    file: ./secrets/smtp_password

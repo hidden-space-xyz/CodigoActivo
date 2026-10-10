@@ -3,7 +3,6 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS base
 RUN apk add --no-cache krb5-libs tzdata && mkdir -p /home/app
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true \
-    TZ=Europe/Madrid \
     ASPNETCORE_HTTP_PORTS=8080 \
     HOME=/home/app \
     DOTNET_RUNNING_IN_CONTAINER=true \
@@ -29,7 +28,8 @@ RUN dotnet publish src/CodigoActivo.API/CodigoActivo.API.csproj \
     -c $BUILD_CONFIGURATION -o /app/publish --no-restore -p:UseAppHost=false
 
 FROM base AS final
-ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_ENVIRONMENT=Production \
+    LOG_DIRECTORY=/var/log/codigoactivo
 WORKDIR /app
 COPY --from=publish --chown=1654:1654 /app/publish ./
 RUN mkdir -p /app/files /app/state /home/app/.aspnet/DataProtection-Keys /var/log/codigoactivo \

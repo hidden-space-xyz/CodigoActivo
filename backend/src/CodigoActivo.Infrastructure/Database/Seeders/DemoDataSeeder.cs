@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 using CodigoActivo.Application.Abstractions.Security;
@@ -35,13 +34,6 @@ public sealed class DemoDataSeeder(
     IClock clock
 )
 {
-    /// <summary>
-    /// Bytes of entropy in the throwaway password given to demo accounts. Nobody is meant to log
-    /// in as one of them: demonstrations use the bootstrap administrator, and the password is
-    /// generated on each seeding run and never stored, logged or shown anywhere.
-    /// </summary>
-    private const int DemoPasswordBytes = 32;
-
     /// <summary>
     /// Largest demo image accepted from the image service, the same as the default upload limit, so
     /// an oversized response is refused instead of being buffered in memory.
@@ -148,9 +140,7 @@ public sealed class DemoDataSeeder(
     internal static DemoGraph BuildGraph(IClock clock, IPasswordHasher passwordHasher)
     {
         var now = clock.UtcNow;
-        var passwordHash = passwordHasher.Hash(
-            Convert.ToBase64String(RandomNumberGenerator.GetBytes(DemoPasswordBytes))
-        );
+        var passwordHash = UnusablePassword.Hash(passwordHasher);
         var files = new List<StoredFile>();
         var users = BuildUsers(now, clock.Today, passwordHash);
         var (categoryTypes, categoryIdByName) = BuildCategoryTypes();
