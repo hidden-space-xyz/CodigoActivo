@@ -61,7 +61,10 @@ From a clone, Compose automatically merges `docker-compose.override.yml`, which 
 
 ```bash
 cp .env.example .env
-# Set POSTGRES_PASSWORD, BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD.
+# Set BOOTSTRAP_ADMIN_EMAIL, then set its password with the password reset caught by Mailpit.
+mkdir -m 700 secrets
+openssl rand -base64 32 | tr -d '\r\n' > secrets/postgres_password
+touch secrets/data_protection_certificate_password secrets/smtp_password
 docker compose up --build
 ```
 
@@ -80,7 +83,7 @@ The base Compose file pulls released images from GHCR and does not depend on a r
 ```bash
 curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
 curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/.env.example
-# Replace every required or placeholder value in .env.
+# Replace every required or placeholder value in .env and create secrets/ as DEPLOYMENT.md describes.
 docker compose up -d
 ```
 

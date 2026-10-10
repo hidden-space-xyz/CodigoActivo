@@ -1,7 +1,8 @@
 # Deployment
 
 The production distribution is the root `docker-compose.yml`. It pulls released images from GitHub Container
-Registry and reads configuration from a sibling `.env` file; it does not require a repository clone.
+Registry and reads configuration from a sibling `.env` file and secrets from a sibling `secrets/` directory;
+it does not require a repository clone.
 
 > [!WARNING]
 > Running Compose inside a clone without `-f` also loads `docker-compose.override.yml`, a development overlay
@@ -59,24 +60,28 @@ host targeting 1,000 concurrently active users; validate on production-equivalen
 curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
 curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/.env.example
 # Edit .env and replace all required or placeholder values.
+mkdir -m 700 secrets
+openssl rand -base64 32 | tr -d '\r\n' > secrets/postgres_password
+openssl rand -base64 48 | tr -d '\r\n' > secrets/data_protection_certificate_password
+touch secrets/smtp_password
 docker compose up -d
 docker compose ps
 docker compose exec api sh -c 'tail -n 100 /var/log/codigoactivo/api-*.log'
 ```
 
-Set at least `POSTGRES_PASSWORD` (16+ chars), `DATA_PROTECTION_CERTIFICATE_PASSWORD` (32+ chars),
-`APP_BASE_URL` (final public HTTPS origin, no path/query/fragment), `DEMO_MODE` (permanent for these
-volumes), `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` (used only when the user table is empty), and
-`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_FROM_ADDRESS` plus any SMTP credentials.
+Set at least `APP_BASE_URL` (final public HTTPS origin, no path/query/fragment), `DEMO_MODE` (permanent for
+these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty), `SMTP_HOST` and
+`SMTP_FROM_ADDRESS`, plus `SMTP_USERNAME` and its password in `secrets/smtp_password` when the server needs a
+login. See [Secrets](#secrets) for the file rules.
 
 With `logging: driver: none`, an `api` container that keeps restarting without a new file appearing in
 `logs-api` means `LOG_DIRECTORY` is not writable or the startup configuration is invalid; the fatal event
 still reaches the file whenever the directory is writable.
 
 Every login is completed with a one-time code, emailed unless the user enrolled an authenticator app, so
-startup fails everywhere when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing. Production also requires an
-encrypted SMTP mode (`StartTls` or `SslOnConnect`) and valid host/port/sender values. `APP_BASE_URL` must use
-a public DNS name; IP addresses, localhost and reserved example/test domains are rejected.
+startup fails everywhere when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing. Production also rejects an
+unencrypted SMTP mode (`None` or `Auto`) and invalid host/port/sender values. `APP_BASE_URL` must use a public
+DNS name; IP addresses, localhost and reserved example/test domains are rejected.
 
 ### TLS and proxy boundary
 
@@ -101,36 +106,51 @@ origin.
 
 The base Compose file forwards an explicit variable list to the API. Adding an arbitrary .NET `SECTION__KEY`
 value to `.env` has no effect until the same variable is added under `api.environment` in
-`docker-compose.yml`.
+`docker-compose.yml`. Compose fixes the database connection itself (host `db`, port `5432`, database and user
+`codigoactivo`), so the API only reaches PostgreSQL over the internal `backend` network. Optional variables
+take the listed default when empty or missing.
 
-| Variable                               | Meaning                                                                            | Template value                                 |
-| -------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `POSTGRES_HOST`                        | Database host used by the API                                                      | `db`                                           |
-| `POSTGRES_PORT`                        | Database port                                                                      | `5432`                                         |
-| `POSTGRES_DB`                          | Database name                                                                      | `codigoactivo`                                 |
-| `POSTGRES_USER`                        | Database user                                                                      | `codigoactivo`                                 |
-| `POSTGRES_PASSWORD`                    | Database password; 16+ characters in Production                                    | Empty                                          |
-| `DATA_PROTECTION_CERTIFICATE_PASSWORD` | Encrypts the Ed25519 private key and the key ring; 32+ characters, not rotatable   | Empty                                          |
-| `APP_BASE_URL`                         | Public origin for links and SEO output                                             | `https://example.org` (invalid for Production) |
-| `APP_TIMEZONE`                         | IANA or Windows time-zone ID used by the application clock                         | `Europe/Madrid`                                |
-| `DEMO_MODE`                            | `true` or `false`; locked on first start                                           | `false`                                        |
-| `BOOTSTRAP_ADMIN_EMAIL`                | Initial administrator email for an empty database                                  | Empty                                          |
-| `BOOTSTRAP_ADMIN_PASSWORD`             | Initial administrator password, 12–128 characters                                  | Empty                                          |
-| `SMTP_HOST`                            | SMTP host; always required because login codes are emailed                         | Empty                                          |
-| `SMTP_PORT`                            | SMTP port                                                                          | `587`                                          |
-| `SMTP_SECURITY`                        | `StartTls`, `SslOnConnect`, `None` or `Auto`; Production allows only the first two | `StartTls`                                     |
-| `SMTP_USERNAME`                        | SMTP username; must be paired with a password                                      | Empty                                          |
-| `SMTP_PASSWORD`                        | SMTP password; must be paired with a username                                      | Empty                                          |
-| `SMTP_FROM_ADDRESS`                    | Single sender address                                                              | Empty                                          |
-| `SMTP_FROM_NAME`                       | Sender display name                                                                | Empty                                          |
+| Variable                | Meaning                                                                       | Default                                     | Template value                                 |
+| ----------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
+| `APP_BASE_URL`          | Public origin for links and SEO output                                        | Required                                    | `https://example.org` (invalid for Production) |
+| `APP_TIMEZONE`          | IANA or Windows time-zone ID used by the application clock                    | `Europe/Madrid`                             | `Europe/Madrid`                                |
+| `DEMO_MODE`             | `true` or `false`; locked on first start                                      | Required                                    | `false`                                        |
+| `BOOTSTRAP_ADMIN_EMAIL` | Initial administrator email for an empty database                             | Required on an empty database               | Empty                                          |
+| `SMTP_HOST`             | SMTP host; always required because login codes are emailed                    | Required                                    | Empty                                          |
+| `SMTP_PORT`             | SMTP port                                                                     | `587`                                       | `587`                                          |
+| `SMTP_SECURITY`         | `StartTls`, `SslOnConnect`, `None` or `Auto`; Production rejects the last two | `SslOnConnect` on port 465, else `StartTls` | Empty                                          |
+| `SMTP_USERNAME`         | SMTP username; set exactly when `secrets/smtp_password` is not empty          | No login                                    | Empty                                          |
+| `SMTP_FROM_ADDRESS`     | Single sender address                                                         | Required                                    | Empty                                          |
+| `SMTP_FROM_NAME`        | Sender display name                                                           | `Código Activo`                             | Empty                                          |
 
 Neither the template nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
-volume mounted at `/var/lib/postgresql`.
+volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the log files; only the
+application clock follows `APP_TIMEZONE`.
 
-For a direct `dotnet run`, missing database variables fall back to `localhost:5432` and database/user
-`codigoactivo` with an empty password; missing `APP_BASE_URL` falls back to `http://localhost:5173`. SMTP has
-no fallback: point `SMTP_HOST` at a mail catcher such as the development overlay's Mailpit
-(`localhost:1025`, security `None`), where login codes can also be read.
+### Secrets
+
+Secrets are Compose file secrets, never environment variables, so they stay out of `docker inspect`,
+`docker compose config` and the process environment. Each file in the ignored `secrets/` directory is
+mounted at `/run/secrets/<name>`, and the API reads it as the configuration key named after the file
+(`postgres_password` is `POSTGRES_PASSWORD`); a secret file wins over an environment variable with the same
+name.
+
+| File                                           | Meaning                                                                                          |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `secrets/postgres_password`                    | Database password, read by PostgreSQL on its first initialization and by the API; 16+ characters |
+| `secrets/data_protection_certificate_password` | Encrypts the Ed25519 private key and the key ring; 32+ characters, not rotatable                 |
+| `secrets/smtp_password`                        | SMTP password; empty when the server needs no login                                              |
+
+All three files must exist. A single trailing newline is ignored, but a carriage return is not: PostgreSQL
+strips it from its password and the API keeps it, so a CRLF file (as Windows tools write) fails the database
+login. Keep the directory private to the deployment account (`0700`) and the files readable (`0644`): Compose
+without Swarm bind-mounts them unchanged, and the containers read them as unprivileged users.
+
+For a direct `dotnet run`, secrets are plain environment variables with those uppercase names. Missing
+database variables fall back to `localhost:5432` and database/user `codigoactivo` with an empty password;
+missing `APP_BASE_URL` falls back to `http://localhost:5173`. SMTP has no fallback: point `SMTP_HOST` at a
+mail catcher such as the development overlay's Mailpit (`localhost:1025`, security `None`), where login codes
+can also be read.
 
 ### Application settings
 
@@ -248,7 +268,7 @@ alert on the `PasswordLockoutTriggered` log event. If every administrator is loc
 unavailable, unlock against the `db` container:
 
 ```bash
-docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+docker compose exec db psql -U codigoactivo -d codigoactivo -c \
   "UPDATE users SET password_failed_attempts = 0, password_locked_at = NULL WHERE email = 'admin@example.org';"
 ```
 
@@ -261,7 +281,7 @@ a local `dotnet run` still validates `DEMO_MODE`, logs that the lock is skipped 
 developer's filesystem, while the Compose development overlay still locks the mode in `api-state`.
 Demo mode seeds realistic content and invented accounts under
 `demo.codigoactivo.es` with random, discarded passwords, so they cannot log in; the demonstrator signs in with
-the bootstrap administrator from `.env`, the only administrator, whose login codes arrive at
+the bootstrap administrator, the only administrator, whose password reset and login codes arrive at
 `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server.
 
 Changing mode requires destroying all named volumes and therefore all application data:
@@ -275,10 +295,12 @@ docker compose up -d
 > `docker compose down -v` permanently deletes the database, uploads, Data Protection keys and mode lock. Use
 > it only for a deliberately disposable environment.
 
-When the user table is empty, startup requires a valid bootstrap email and a 12–128 character password and
-creates the first active administrator before accepting requests, seeded with the fixed DNI/NIE `00000000T`;
-change it from the administrator's profile after first login, since no other account can register with that
-value while it is in use. Once any user exists, both bootstrap variables are ignored. This generic account has
+When the user table is empty, startup requires a valid bootstrap email and creates the first active
+administrator before accepting requests, with a random password that is discarded: set the first password
+through the login page's password reset for that email, which also proves the mailbox and SMTP work. It is
+seeded with the fixed DNI/NIE `00000000T`; change it from the administrator's profile after first login, since
+no other account can register with that value while it is in use. Once any user exists, the bootstrap email
+is ignored. This generic account has
 a fixed id, can be neither deleted nor demoted, and receives the content of deleted accounts; startup fails on
 a database that has users but not that account, which only happens with databases created before the id was
 fixed and means the database must be recreated.
@@ -333,7 +355,8 @@ dump and restore.
 ## Backups and recovery
 
 Back up `db-data`, `api-files`, `api-dataprotection` and `api-state`, and test restoration regularly. Keep
-`DATA_PROTECTION_CERTIFICATE_PASSWORD` separately from the `api-dataprotection` backup; losing either makes
+`secrets/` separately from the `api-dataprotection` backup; losing either the key volume or
+`secrets/data_protection_certificate_password` makes
 the protected key ring unusable and invalidates sessions. That password also derives the key-wrapping key of
 every stored key element, so it cannot be rotated on its own: a new password requires recreating the volume,
 which invalidates all sessions and stored authenticator secrets (see

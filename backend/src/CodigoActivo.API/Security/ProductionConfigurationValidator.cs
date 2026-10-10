@@ -50,11 +50,12 @@ public static class ProductionConfigurationValidator
 
         var smtpSecurity = config["SMTP_SECURITY"]?.Trim();
         if (
-            !string.Equals(smtpSecurity, "StartTls", StringComparison.OrdinalIgnoreCase)
+            !string.IsNullOrEmpty(smtpSecurity)
+            && !string.Equals(smtpSecurity, "StartTls", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(smtpSecurity, "SslOnConnect", StringComparison.OrdinalIgnoreCase)
         )
         {
-            errors.Add("SMTP_SECURITY must be StartTls or SslOnConnect");
+            errors.Add("SMTP_SECURITY must be empty, StartTls or SslOnConnect");
         }
 
         var smtpHost = config["SMTP_HOST"]?.Trim();
@@ -66,9 +67,13 @@ public static class ProductionConfigurationValidator
             errors.Add("SMTP_HOST must be a valid host name or IP address");
         }
 
-        if (!int.TryParse(config["SMTP_PORT"], out var smtpPort) || smtpPort is < 1 or > 65_535)
+        var smtpPort = config["SMTP_PORT"];
+        if (
+            !string.IsNullOrWhiteSpace(smtpPort)
+            && (!int.TryParse(smtpPort, out var port) || port is < 1 or > 65_535)
+        )
         {
-            errors.Add("SMTP_PORT must be between 1 and 65535");
+            errors.Add("SMTP_PORT must be empty or between 1 and 65535");
         }
 
         var smtpFromAddress = config["SMTP_FROM_ADDRESS"]?.Trim();

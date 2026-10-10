@@ -26,16 +26,17 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
         var clock = new TestClock { UtcNow = CreatedAt };
         var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), clock);
 
-        await seeder.SeedAsync(
-            "  ADMIN@CodigoActivo.Test  ",
-            "bootstrap-password-123",
-            TestCancellation.Ct
-        );
+        await seeder.SeedAsync("  ADMIN@CodigoActivo.Test  ", TestCancellation.Ct);
 
         var administrator = await db.Users.AsNoTracking().SingleAsync(TestCancellation.Ct);
         administrator.Id.Value.Should().Be(KnownIds.Users.InitialAdministrator);
         administrator.Email!.Value.Should().Be("admin@codigoactivo.test");
-        administrator.PasswordHash.Should().Be("fake:bootstrap-password-123");
+        administrator
+            .PasswordHash.Should()
+            .MatchRegex(
+                "^fake:[A-Za-z0-9+/]{43}=$",
+                "the password is 32 random bytes nobody knows"
+            );
         administrator.IsAdmin.Should().BeTrue();
         administrator.Status.Should().Be(UserStatus.Active);
         administrator.UserType.Should().Be(UserType.Member);
@@ -46,14 +47,14 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
     }
 
     [Fact]
-    public async Task SeedAsyncExistingInitialAdministratorIgnoresMissingBootstrapCredentials()
+    public async Task SeedAsyncExistingInitialAdministratorIgnoresMissingBootstrapEmail()
     {
         await using var db = postgres.CreateContext();
         db.Users.Add(NewExistingUser(KnownIds.Users.InitialAdministrator));
         await db.SaveChangesAsync(TestCancellation.Ct);
         var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), new TestClock());
 
-        var act = () => seeder.SeedAsync(null, null, TestCancellation.Ct);
+        var act = () => seeder.SeedAsync(null, TestCancellation.Ct);
 
         await act.Should().NotThrowAsync();
         (await db.Users.CountAsync(TestCancellation.Ct)).Should().Be(1);
@@ -67,12 +68,7 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
         await db.SaveChangesAsync(TestCancellation.Ct);
         var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), new TestClock());
 
-        var act = () =>
-            seeder.SeedAsync(
-                "admin@codigoactivo.test",
-                "bootstrap-password-123",
-                TestCancellation.Ct
-            );
+        var act = () => seeder.SeedAsync("admin@codigoactivo.test", TestCancellation.Ct);
 
         await act.Should()
             .ThrowAsync<InvalidOperationException>()
@@ -81,16 +77,16 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
     }
 
     [Fact]
-    public async Task SeedAsyncEmptyDatabaseWithoutPasswordFails()
+    public async Task SeedAsyncEmptyDatabaseWithoutEmailFails()
     {
         await using var db = postgres.CreateContext();
         var seeder = new InitialAdministratorSeeder(db, new FakePasswordHasher(), new TestClock());
 
-        var act = () => seeder.SeedAsync("admin@codigoactivo.test", null, TestCancellation.Ct);
+        var act = () => seeder.SeedAsync(null, TestCancellation.Ct);
 
         await act.Should()
             .ThrowAsync<InvalidOperationException>()
-            .WithMessage("*BOOTSTRAP_ADMIN_PASSWORD*");
+            .WithMessage("*BOOTSTRAP_ADMIN_EMAIL*");
         (await db.Users.CountAsync(TestCancellation.Ct)).Should().Be(0);
     }
 

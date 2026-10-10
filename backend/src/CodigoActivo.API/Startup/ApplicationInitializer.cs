@@ -32,7 +32,6 @@ internal static class ApplicationInitializer
         await SeedDatabaseAsync(services, logger, cancellationToken);
         await services.SeedInitialAdministratorAsync(
             app.Configuration["BOOTSTRAP_ADMIN_EMAIL"],
-            app.Configuration["BOOTSTRAP_ADMIN_PASSWORD"],
             cancellationToken
         );
         await SyncDemoDataAsync(services, demoMode);

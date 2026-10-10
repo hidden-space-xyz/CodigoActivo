@@ -37,6 +37,11 @@ public sealed class SmtpOptions
     public const int DefaultPort = 587;
 
     /// <summary>
+    /// Identifies the port whose servers expect TLS from the first byte.
+    /// </summary>
+    public const int ImplicitTlsPort = 465;
+
+    /// <summary>
     /// Gets or sets the host value.
     /// </summary>
     public string Host { get; set; } = string.Empty;
@@ -70,4 +75,15 @@ public sealed class SmtpOptions
     /// Gets or sets the from name value.
     /// </summary>
     public string FromName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Chooses the encryption a port implies when none is configured: TLS from the first byte on
+    /// <see cref="ImplicitTlsPort"/> and a mandatory STARTTLS upgrade on any other port.
+    /// </summary>
+    /// <param name="port">Port of the SMTP server.</param>
+    /// <returns>The security mode the port implies.</returns>
+    public static SmtpSecurityMode DefaultSecurity(int port)
+    {
+        return port == ImplicitTlsPort ? SmtpSecurityMode.SslOnConnect : SmtpSecurityMode.StartTls;
+    }
 }
