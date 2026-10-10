@@ -11,7 +11,7 @@ namespace CodigoActivo.Application.Emails;
 public sealed record ManualEmailText(
     [property: Required, MaxLength(ManualEmailText.SubjectMaxLength), NotBlank, SingleLine]
         string Subject,
-    [property: Required, MaxLength(ManualEmailText.BodyMaxLength), NotBlank] string Body
+    [property: Required, MaxLength(ManualEmailText.BodyMaxLength), NotBlank, PlainText] string Body
 )
 {
     /// <summary>

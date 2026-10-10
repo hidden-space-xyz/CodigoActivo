@@ -49,7 +49,7 @@ describe('App', () => {
 
   it('renders printable pages without layout chrome', async () => {
     const { wrapper } = await renderWithProviders(App, {
-      route: '/admin/events/event-1/roster',
+      route: '/admin/events/3f2504e0-4f89-41d3-9a0c-0305e82c3301/roster',
       user: { isAdmin: true },
       attach: true,
     })

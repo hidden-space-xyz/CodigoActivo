@@ -51,6 +51,15 @@ describe('readEmailDraft', () => {
       value: null,
     })
   })
+
+  it('refuses a subject holding a tab or a line break', () => {
+    for (const subject of ['Hola\tequipo', 'Hola\nequipo']) {
+      expect(readEmailDraft({ subject, body: 'Hello', attachments: [] })).toEqual({
+        problems: { subject: 'features.sendEmail.form.problems.subjectSingleLine' },
+        value: null,
+      })
+    }
+  })
 })
 
 describe('addAttachments', () => {

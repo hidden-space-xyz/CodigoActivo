@@ -219,15 +219,18 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
   again on every command before its handler runs, whatever starts it. JSON bodies accept enum values only by
   their declared name, never as integers, and enums bound from the query string reject undefined values.
 - JSON bodies refuse any string holding a control character other than a tab or a line break
-  (`ControlCharacterRejectingConverter`); free-text list criteria and `sort` take at most 200 characters and
-  no control character (`[SingleLine]`); lists in request bodies are bounded with `MaxLength`. Such input is
-  answered `RequestValidationFailed` instead of failing in PostgreSQL, which refuses U+0000.
+  (`ControlCharacterRejectingConverter`), and so do rich-text texts and labels and the multipart email body
+  (`[PlainText]`); free-text list criteria and `sort` take at most 200 characters and no control character
+  (`[SingleLine]`); lists in request bodies are bounded with `MaxLength`. Such input is answered
+  `RequestValidationFailed` instead of failing in PostgreSQL, which refuses U+0000. `null` items of those
+  lists are skipped.
 - A list `sort` parameter keeps only the first occurrence of each known key, so a request cannot grow the
   query EF Core translates recursively.
 - Account emails must read as one mailbox: no whitespace, control character or `()<>[]:;,\"`
   (`UserEmailInvalid`).
 - The SPA refuses to send a request whose path the browser would rewrite (dot segments, backslashes,
-  stripped tabs), because generated paths interpolate their parameters unencoded, and treats an emailed
+  stripped tabs), because generated paths interpolate their parameters unencoded; its detail routes only
+  match GUID ids, since Vue Router decodes `%2F`, `%3F` and `%23` in params, and it treats an emailed
   account link whose user id is not a GUID as incomplete, so a crafted link cannot steer a signed-in
   visitor's request to another endpoint.
 - Expected failures use a string `ErrorCode`; all failures return

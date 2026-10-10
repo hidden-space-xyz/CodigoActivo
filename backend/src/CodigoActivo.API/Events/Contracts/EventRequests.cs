@@ -149,10 +149,12 @@ internal static class EventRequestMapping
             StoredFileId.From(thumbnailId),
             [.. (categoryTypeIds ?? []).Select(EventCategoryTypeId.From)],
             [
-                .. (termsDocuments ?? []).Select(link => new EventTermsLink(
-                    TermsDocumentId.From(link.TermsDocumentId),
-                    link.Required
-                )),
+                .. (termsDocuments ?? [])
+                    .OfType<EventTermsDocumentRequest>()
+                    .Select(link => new EventTermsLink(
+                        TermsDocumentId.From(link.TermsDocumentId),
+                        link.Required
+                    )),
             ]
         );
     }

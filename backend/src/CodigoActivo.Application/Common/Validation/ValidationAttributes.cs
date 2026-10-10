@@ -33,6 +33,35 @@ public sealed class SingleLineAttribute : ValidationAttribute
 }
 
 /// <summary>
+/// Refuses text holding a control character other than a tab or a line break, for multi-line text
+/// that does not travel as a JSON string, such as a form field. No text the application accepts
+/// needs them, and PostgreSQL refuses U+0000. Values that are not strings are left to other
+/// attributes.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+public sealed class PlainTextAttribute : ValidationAttribute
+{
+    /// <summary>
+    /// Tells whether a text holds no control character other than a tab or a line break.
+    /// </summary>
+    /// <param name="text">Text to check.</param>
+    /// <returns><see langword="true"/> when the text is plain.</returns>
+    public static bool IsPlain(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return !text.Any(character =>
+            char.IsControl(character) && character is not ('\t' or '\n' or '\r')
+        );
+    }
+
+    /// <inheritdoc />
+    public override bool IsValid(object? value)
+    {
+        return value is not string text || IsPlain(text);
+    }
+}
+
+/// <summary>
 /// Accepts only rich-text JSON documents made of allowed nodes, marks and attributes, as checked by
 /// <see cref="RichTextAllowlist"/>. Values that are not strings are left to other attributes.
 /// </summary>

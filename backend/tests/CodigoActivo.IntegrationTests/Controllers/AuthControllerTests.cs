@@ -130,6 +130,25 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task RegisterWithNullMinorRegistersTheAdultAlone()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            NewAdultRequest(minors: [null!]),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var adult = await FindByEmailAsync(NewAdultEmail);
+        var minors = await Factory.QueryAsync(db =>
+            Task.FromResult(db.Users.Count(u => u.ParentId == adult!.Id))
+        );
+        minors.Should().Be(0);
+    }
+
+    [Fact]
     public async Task RegisterWithMinorsAssignsParticipantTypeToAdultAndMinors()
     {
         var client = CreateClient();

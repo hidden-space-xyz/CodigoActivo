@@ -304,6 +304,17 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task SendToUsersBodyWithControlCharacterReturnsBadRequestValidationFailed()
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.SendEmailFormAsync(UsersUrl, body: "Hola\u0000\u001B");
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task SendToUsersMissingBodyPartReturnsBadRequestValidationFailed()
     {
         var client = await LoginAsAdminAsync();

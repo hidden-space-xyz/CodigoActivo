@@ -8,7 +8,9 @@ namespace CodigoActivo.Application.Common.Validation;
 /// ones the client keeps when it parses a document. Links may only point to absolute HTTP(S) URLs
 /// without credentials, <c>mailto:</c>, <c>tel:</c>, a root-relative path (never <c>//</c> or
 /// <c>/\</c>, which browsers read as another host) or a fragment; images may only reference the
-/// file content endpoint of this application; colors are hex or rgb values.
+/// file content endpoint of this application; colors are hex or rgb values. Text and labels are
+/// plain text (<see cref="PlainTextAttribute"/>), since an escaped U+0000 would only fail in the
+/// PostgreSQL <c>jsonb</c> column.
 /// </summary>
 public static partial class RichTextAllowlist
 {
@@ -151,7 +153,7 @@ public static partial class RichTextAllowlist
 
         var isText = IsText(type, "text");
         var hasText = node.TryGetProperty("text", out var text);
-        if (isText != hasText || (hasText && text.ValueKind is not JsonValueKind.String))
+        if (isText != hasText || (hasText && !IsPlainText(text)))
         {
             return false;
         }
@@ -293,11 +295,13 @@ public static partial class RichTextAllowlist
 
     private static bool IsOptionalLabel(JsonElement value)
     {
-        return IsNull(value)
-            || (
-                value.ValueKind is JsonValueKind.String
-                && value.GetString()!.Length <= MaxLabelLength
-            );
+        return IsNull(value) || (IsPlainText(value) && value.GetString()!.Length <= MaxLabelLength);
+    }
+
+    private static bool IsPlainText(JsonElement value)
+    {
+        return value.ValueKind is JsonValueKind.String
+            && PlainTextAttribute.IsPlain(value.GetString()!);
     }
 
     private static bool IsColumnWidths(JsonElement value)

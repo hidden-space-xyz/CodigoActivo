@@ -1560,6 +1560,7 @@
       "form": {
         "problems": {
           "subjectRequired": "Escribe un asunto.",
+          "subjectSingleLine": "El asunto no puede contener tabuladores ni saltos de línea.",
           "bodyRequired": "Escribe un mensaje."
         }
       }

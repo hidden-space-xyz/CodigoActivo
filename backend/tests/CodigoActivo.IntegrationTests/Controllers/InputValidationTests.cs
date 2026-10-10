@@ -116,4 +116,18 @@ public sealed class InputValidationTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
+
+    [Fact]
+    public async Task SignupWithNullTermsDecisionSkipsIt()
+    {
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.PatchJsonAsync(
+            $"/api/activities/{Guid.NewGuid()}/{TestSeedData.Users.MemberId}/assign",
+            new { activityRoleTypeId = Guid.NewGuid(), termsDecisions = new object?[] { null } },
+            Ct
+        );
+
+        await response.ShouldBeNotFoundAsync(ErrorCode.ActivityNotFound);
+    }
 }

@@ -165,10 +165,12 @@ public record AssignHouseholdRequest(
         return new AssignHouseholdCommand(
             activityId,
             [
-                .. (Assignments ?? []).Select(assignment => new HouseholdMemberSignup(
-                    UserId.From(assignment.UserId),
-                    assignment.ActivityRoleTypeId
-                )),
+                .. (Assignments ?? [])
+                    .OfType<HouseholdAssignmentRequest>()
+                    .Select(assignment => new HouseholdMemberSignup(
+                        UserId.From(assignment.UserId),
+                        assignment.ActivityRoleTypeId
+                    )),
             ],
             ActivityRequestMapping.Decisions(TermsDecisions)
         );
@@ -219,10 +221,12 @@ internal static class ActivityRequestMapping
             endsAt,
             StoredFileId.From(thumbnailId),
             [
-                .. (roleCapacities ?? []).Select(capacity => new RoleCapacityDraft(
-                    capacity.ActivityRoleTypeId,
-                    capacity.DesiredCount.GetValueOrDefault()
-                )),
+                .. (roleCapacities ?? [])
+                    .OfType<ActivityRoleCapacityRequest>()
+                    .Select(capacity => new RoleCapacityDraft(
+                        capacity.ActivityRoleTypeId,
+                        capacity.DesiredCount.GetValueOrDefault()
+                    )),
             ]
         );
     }
@@ -232,7 +236,8 @@ internal static class ActivityRequestMapping
     )
     {
         return decisions
-            ?.Select(decision => new TermsDecision(
+            ?.OfType<TermsDecisionRequest>()
+            .Select(decision => new TermsDecision(
                 TermsDocumentId.From(decision.TermsDocumentId),
                 decision.Accepted ?? false
             ))

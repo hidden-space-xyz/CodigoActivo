@@ -1,4 +1,5 @@
 import type { FormProblem, FormReading } from '@/shared/lib/form'
+import { hasControlCharacter } from '@/shared/lib/navigation'
 
 import type { SendEmailPayload } from './types'
 
@@ -26,10 +27,17 @@ export function toEmailDraft(): EmailDraft {
   return { subject: '', body: '', attachments: [] }
 }
 
-/** Reads the email dialog: subject and body are required and sent as typed. */
+/**
+ * Reads the email dialog: subject and body are required and sent as typed, and the subject stays on
+ * one line, without the tab a paste can bring, as the API requires.
+ */
 export function readEmailDraft(draft: EmailDraft): FormReading<EmailField, SendEmailPayload> {
   const problems: Partial<Record<EmailField, FormProblem>> = {}
-  if (!draft.subject.trim()) problems.subject = 'features.sendEmail.form.problems.subjectRequired'
+  if (!draft.subject.trim()) {
+    problems.subject = 'features.sendEmail.form.problems.subjectRequired'
+  } else if (hasControlCharacter(draft.subject)) {
+    problems.subject = 'features.sendEmail.form.problems.subjectSingleLine'
+  }
   if (!draft.body.trim()) problems.body = 'features.sendEmail.form.problems.bodyRequired'
   if (problems.subject || problems.body) return { problems, value: null }
   return {
