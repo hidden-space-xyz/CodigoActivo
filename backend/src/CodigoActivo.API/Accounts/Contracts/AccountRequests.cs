@@ -140,7 +140,7 @@ public record RegisterRequest(
             NationalId,
             Gender.ToDomain(),
             PromotionalConsent,
-            [.. (Minors ?? []).Select(minor => minor.ToDraft())],
+            [.. (Minors ?? []).OfType<RegisterMinorRequest>().Select(minor => minor.ToDraft())],
             SecondaryPhone
         );
     }

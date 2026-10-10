@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using CodigoActivo.Application.Common.Validation;
 
 namespace CodigoActivo.API.Security;
 
@@ -19,7 +20,7 @@ public sealed class ControlCharacterRejectingConverter : JsonConverter<string>
     )
     {
         var value = reader.GetString();
-        return value is not null && value.Any(IsRefused)
+        return value is not null && !PlainTextAttribute.IsPlain(value)
             ? throw new JsonException("The string holds a control character.")
             : value;
     }
@@ -29,10 +30,5 @@ public sealed class ControlCharacterRejectingConverter : JsonConverter<string>
     {
         ArgumentNullException.ThrowIfNull(writer);
         writer.WriteStringValue(value);
-    }
-
-    private static bool IsRefused(char character)
-    {
-        return char.IsControl(character) && character is not ('\t' or '\n' or '\r');
     }
 }

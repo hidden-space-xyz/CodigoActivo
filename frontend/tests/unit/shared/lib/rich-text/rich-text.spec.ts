@@ -285,6 +285,8 @@ describe('richTextExtensions image parsing', () => {
         `<img src="${window.location.origin}/local.png">`,
         '<img src="https://evil.test/x.png">',
         '<img src="//evil.test/x.png">',
+        '<img src="/\\evil.test/x.png">',
+        '<img src="/&#9;/evil.test/x.png">',
         '<img src="http://[">',
       ].join(''),
       extensions,

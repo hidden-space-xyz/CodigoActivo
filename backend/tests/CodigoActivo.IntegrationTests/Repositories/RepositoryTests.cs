@@ -724,7 +724,9 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var eventEmbeddedFileId = Guid.NewGuid();
         var newsItemEmbeddedFileId = Guid.NewGuid();
 
-        var ev = NewEvent(description: $"{{\"img\":\"/api/files/{eventEmbeddedFileId}/content\"}}");
+        var ev = NewEvent(
+            description: $"{{\"img\":\"/api/files/{eventEmbeddedFileId.ToString().ToUpperInvariant()}/content\"}}"
+        );
         var newsItem = NewNewsItem(
             description: $"{{\"img\":\"https://api.example.org/api/files/{newsItemEmbeddedFileId}/content\"}}"
         );

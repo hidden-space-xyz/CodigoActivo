@@ -57,7 +57,6 @@ export interface RichTextOptions {
 }
 
 function isSameOriginImageSrc(src: string): boolean {
-  if (src.startsWith('/') && !src.startsWith('//')) return true
   try {
     return new URL(src, window.location.origin).origin === window.location.origin
   } catch {

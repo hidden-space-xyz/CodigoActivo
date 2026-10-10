@@ -83,4 +83,16 @@ describe('application router', () => {
 
     expect(router.currentRoute.value.name).toBe('not-found')
   })
+
+  it('opens detail pages only for GUID ids', async () => {
+    const router = createAppRouter(createTestQueryClient())
+
+    await router.push('/events/3F2504E0-4F89-41D3-9A0C-0305E82C3301')
+    expect(router.currentRoute.value.name).toBe('event-detail')
+
+    for (const path of ['/events/abc%2Ffeature', '/news/abc%3Fx%3D1', '/resources/abc%23']) {
+      await router.push(path)
+      expect(router.currentRoute.value.name).toBe('not-found')
+    }
+  })
 })

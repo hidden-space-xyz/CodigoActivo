@@ -53,6 +53,26 @@ public sealed class ValidationAttributesTests
         new SingleLineAttribute().IsValid(value).Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData(42)]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("Hola,\r\n\tequipo")]
+    public void IsValidPlainTextWithoutOtherControlCharactersReturnsTrue(object? value)
+    {
+        new PlainTextAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("Hola\u0000")]
+    [InlineData("Hola\u001B[31m")]
+    [InlineData("Hola\u007F")]
+    [InlineData("Hola\u0085")]
+    public void IsValidPlainTextWithOtherControlCharacterReturnsFalse(string value)
+    {
+        new PlainTextAttribute().IsValid(value).Should().BeFalse();
+    }
+
     private const string FileUrl = "/api/files/0f8fad5b-d9cb-469f-a165-70867728950e/content";
 
     private static string Doc(string content)
@@ -158,6 +178,8 @@ public sealed class ValidationAttributesTests
     [InlineData("{\"type\":\"paragraph\",\"text\":\"x\"}")]
     [InlineData("{\"type\":\"text\"}")]
     [InlineData("{\"type\":\"text\",\"text\":1}")]
+    [InlineData("{\"type\":\"text\",\"text\":\"a\\u0000b\"}")]
+    [InlineData("{\"type\":\"image\",\"attrs\":{\"src\":\"" + FileUrl + "\",\"alt\":\"\\u001b\"}}")]
     [InlineData("{\"type\":\"text\",\"text\":\"x\",\"content\":[]}")]
     [InlineData("{\"type\":\"paragraph\",\"content\":{}}")]
     [InlineData("{\"type\":\"paragraph\",\"marks\":{}}")]
@@ -180,6 +202,16 @@ public sealed class ValidationAttributesTests
     public void IsValidRichTextMalformedOrForeignJsonReturnsFalse(string value)
     {
         new RichTextAttribute().IsValid(value).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsValidRichTextTextWithTabsAndLineBreaksReturnsTrue()
+    {
+        var value = Doc(
+            "{\"type\":\"codeBlock\",\"content\":[{\"type\":\"text\",\"text\":\"if (x)\\n\\treturn;\\r\\n\"}]}"
+        );
+
+        new RichTextAttribute().IsValid(value).Should().BeTrue();
     }
 
     [Fact]

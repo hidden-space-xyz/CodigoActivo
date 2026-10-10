@@ -57,13 +57,13 @@ public class StoredFileRepository(CodigoActivoDbContext context)
                 UNION ALL
                 SELECT 1 FROM partners WHERE thumbnail_id = {fileId.Value}
                 UNION ALL
-                SELECT 1 FROM events WHERE description::text LIKE {pattern}
+                SELECT 1 FROM events WHERE description::text ILIKE {pattern}
                 UNION ALL
-                SELECT 1 FROM news WHERE description::text LIKE {pattern}
+                SELECT 1 FROM news WHERE description::text ILIKE {pattern}
                 UNION ALL
-                SELECT 1 FROM resources WHERE description::text LIKE {pattern}
+                SELECT 1 FROM resources WHERE description::text ILIKE {pattern}
                 UNION ALL
-                SELECT 1 FROM terms_documents WHERE description::text LIKE {pattern}
+                SELECT 1 FROM terms_documents WHERE description::text ILIKE {pattern}
             ) AS "Value"
             """;
 

@@ -1,5 +1,6 @@
 import type { RouteMeta, RouteRecordRaw } from 'vue-router'
 
+import { GUID_PARAM } from '@/shared/lib/navigation'
 import type { RouteName } from '@/shared/routes'
 
 function adminRoute(
@@ -20,7 +21,7 @@ function adminRoute(
 /**
  * Application route table with lazily loaded pages. Admin routes use the admin layout (or `blank`
  * for printable pages) and are for administrators only; detail pages receive their path params as
- * props.
+ * props, which only match GUIDs because they become path segments of API requests.
  */
 export const routes: readonly RouteRecordRaw[] = [
   {
@@ -54,7 +55,7 @@ export const routes: readonly RouteRecordRaw[] = [
     },
   },
   {
-    path: '/events/:eventId',
+    path: `/events/:eventId(${GUID_PARAM})`,
     name: 'event-detail',
     component: () => import('@/pages/event-detail').then((m) => m.EventDetailPage),
     props: true,
@@ -73,7 +74,7 @@ export const routes: readonly RouteRecordRaw[] = [
     },
   },
   {
-    path: '/resources/:resourceId',
+    path: `/resources/:resourceId(${GUID_PARAM})`,
     name: 'resource-detail',
     component: () => import('@/pages/resource-detail').then((m) => m.ResourceDetailPage),
     props: true,
@@ -91,7 +92,7 @@ export const routes: readonly RouteRecordRaw[] = [
     },
   },
   {
-    path: '/news/:newsItemId',
+    path: `/news/:newsItemId(${GUID_PARAM})`,
     name: 'news-detail',
     component: () => import('@/pages/news-detail').then((m) => m.NewsDetailPage),
     props: true,
@@ -172,17 +173,17 @@ export const routes: readonly RouteRecordRaw[] = [
   adminRoute('/admin/events', 'admin-events', () =>
     import('@/pages/admin/events').then((m) => m.EventsAdminPage),
   ),
-  adminRoute('/admin/events/:eventId', 'admin-event-detail', () =>
+  adminRoute(`/admin/events/:eventId(${GUID_PARAM})`, 'admin-event-detail', () =>
     import('@/pages/admin/event-detail').then((m) => m.EventDetailPage),
   ),
   adminRoute(
-    '/admin/events/:eventId/badges',
+    `/admin/events/:eventId(${GUID_PARAM})/badges`,
     'admin-event-badges',
     () => import('@/pages/admin/event-badges').then((m) => m.EventBadgesPage),
     { layout: 'blank', seo: { titleKey: 'seo.routes.eventBadges.title', noindex: true } },
   ),
   adminRoute(
-    '/admin/events/:eventId/roster',
+    `/admin/events/:eventId(${GUID_PARAM})/roster`,
     'admin-event-roster',
     () => import('@/pages/admin/event-roster').then((m) => m.EventRosterPage),
     { layout: 'blank', seo: { titleKey: 'seo.routes.eventRoster.title', noindex: true } },

@@ -57,7 +57,7 @@ describe('SiteHeader', () => {
 
   it('marks the current section as active, including event details under events', async () => {
     const { wrapper, router } = await renderWithProviders(SiteHeader, {
-      route: '/events/event-1',
+      route: '/events/3f2504e0-4f89-41d3-9a0c-0305e82c3301',
       attach: true,
     })
 
