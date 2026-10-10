@@ -22,7 +22,7 @@ namespace CodigoActivo.Application.Activities.Commands;
 public sealed record AssignHouseholdCommand(
     ActivityId ActivityId,
     [property: MaxLength(Household.MaxMembers)] IReadOnlyList<HouseholdMemberSignup> Assignments,
-    IReadOnlyList<TermsDecision>? TermsDecisions
+    [property: MaxLength(50)] IReadOnlyList<TermsDecision>? TermsDecisions
 ) : ICommand<Result<IReadOnlyList<UserId>>>;
 
 /// <summary>

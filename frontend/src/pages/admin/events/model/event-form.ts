@@ -1,7 +1,7 @@
 import type { EventDetail, EventInput } from '@/entities/event'
 import { isDayAfter, parseDateOnly, toDateOnly } from '@/shared/lib/date'
 import type { FormProblem, FormReading } from '@/shared/lib/form'
-import { EMPTY_DOC_JSON } from '@/shared/lib/rich-text'
+import { EMPTY_DOC_JSON, isRichTextTooLong } from '@/shared/lib/rich-text'
 
 /** What the event dialog binds its inputs to; each date picker holds `null` until one is picked. */
 export interface EventDraft {
@@ -25,6 +25,7 @@ export interface EventDraft {
 type EventField =
   | 'title'
   | 'subtitle'
+  | 'description'
   | 'categoryIds'
   | 'startsAt'
   | 'endsAt'
@@ -55,6 +56,7 @@ function readProblems(draft: EventDraft): Partial<Record<EventField, FormProblem
   const problems: Partial<Record<EventField, FormProblem>> = {}
   if (!draft.title.trim()) problems.title = true
   if (!draft.subtitle.trim()) problems.subtitle = true
+  if (isRichTextTooLong(draft.description)) problems.description = 'validation.richTextTooLong'
   if (draft.categoryIds.length === 0) {
     problems.categoryIds = 'pages.admin.events.form.problems.categoriesRequired'
   }

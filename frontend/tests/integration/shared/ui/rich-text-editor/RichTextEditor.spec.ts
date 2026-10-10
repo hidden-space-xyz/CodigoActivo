@@ -356,7 +356,22 @@ describe('RichTextEditor', () => {
       await button(wrapper, t('editor.insertImage')).trigger('click')
 
       expect(click).toHaveBeenCalledTimes(1)
-      expect(wrapper.find('input[type="file"]').attributes('accept')).toBe('image/*')
+      expect(wrapper.find('input[type="file"]').attributes('accept')).toBe(
+        'image/jpeg,image/png,image/gif,image/webp',
+      )
+    })
+
+    it('refuses an image over the upload limit without sending it', async () => {
+      const upload = vi.fn<Upload>()
+      const { wrapper } = await renderEditor({ upload })
+      const file = new File(['png'], 'huge.png', { type: 'image/png' })
+      Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 + 1 })
+
+      chooseFile(wrapper, [file])
+      await settle()
+
+      expect(upload).not.toHaveBeenCalled()
+      expect(wrapper.find('.rt__error').text()).toBe(t('editor.imageTooLarge'))
     })
 
     it('uploads the chosen image and inserts it with the stored file URL', async () => {

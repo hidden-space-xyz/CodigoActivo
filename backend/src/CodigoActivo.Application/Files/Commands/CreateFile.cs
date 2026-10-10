@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
@@ -54,7 +55,7 @@ public sealed class CreateFileCommandHandler(
 
         var format = detection.Value;
         var file = StoredFile.Upload(
-            FileNaming.SanitizeName(upload!.FileName),
+            FileNaming.SanitizeName(upload!.FileName, AppStrings.FilesFallbackFileName),
             format.Extension,
             currentUser.RequiredId(),
             clock.UtcNow

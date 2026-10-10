@@ -87,6 +87,8 @@ async function save(): Promise<void> {
           id="partner-tier"
           v-model="draft.tier"
           :min="0"
+          :max="2147483647"
+          :precision="0"
           controls-position="right"
         />
       </div>
@@ -96,8 +98,12 @@ async function save(): Promise<void> {
         <el-input
           id="partner-website"
           v-model="draft.website"
+          type="url"
+          :maxlength="500"
           :placeholder="$t('pages.admin.partners.form.urlPlaceholder')"
+          :class="{ 'ca-invalid': errors.website }"
         />
+        <small v-if="errors.website" class="form__error">{{ errors.website }}</small>
       </div>
 
       <div class="form__field">

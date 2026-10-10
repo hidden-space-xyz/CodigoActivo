@@ -1,6 +1,6 @@
 import type { NewsItem, NewsItemInput } from '@/entities/news-item'
 import type { FormProblem, FormReading } from '@/shared/lib/form'
-import { EMPTY_DOC_JSON } from '@/shared/lib/rich-text'
+import { EMPTY_DOC_JSON, isRichTextTooLong } from '@/shared/lib/rich-text'
 
 /** What the news dialog binds its inputs to; `description` is a rich-text document. */
 export interface NewsDraft {
@@ -10,7 +10,7 @@ export interface NewsDraft {
 }
 
 /** Field of the news form that can be refused. */
-type NewsField = 'title' | 'subtitle'
+type NewsField = 'title' | 'subtitle' | 'description'
 
 /** A blank draft, or one filled with the news item being edited. */
 export function toNewsDraft(newsItem: NewsItem | null): NewsDraft {
@@ -22,8 +22,9 @@ export function toNewsDraft(newsItem: NewsItem | null): NewsDraft {
 }
 
 /**
- * Reads the news dialog: a title and a subtitle are required and an empty description is saved as
- * an empty rich-text document. The thumbnail is resolved separately when saving.
+ * Reads the news dialog: a title and a subtitle are required, the description must fit what the API
+ * stores and an empty one is saved as an empty rich-text document. The thumbnail is resolved
+ * separately when saving.
  */
 export function readNewsDraft(
   draft: NewsDraft,
@@ -33,7 +34,8 @@ export function readNewsDraft(
   const problems: Partial<Record<NewsField, FormProblem>> = {}
   if (!title) problems.title = true
   if (!subtitle) problems.subtitle = true
-  if (!title || !subtitle) return { problems, value: null }
+  if (isRichTextTooLong(draft.description)) problems.description = 'validation.richTextTooLong'
+  if (Object.keys(problems).length > 0) return { problems, value: null }
 
   return {
     problems,

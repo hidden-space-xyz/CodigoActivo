@@ -17,6 +17,22 @@ public sealed class NotBlankAttribute : ValidationAttribute
 }
 
 /// <summary>
+/// Refuses text holding a control character, line breaks and tabs included, for values that must
+/// stay on one line, such as an email subject or a search term. PostgreSQL refuses U+0000 in text,
+/// so such a value would otherwise fail in the database instead of being answered as invalid input.
+/// Values that are not strings are left to other attributes.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+public sealed class SingleLineAttribute : ValidationAttribute
+{
+    /// <inheritdoc />
+    public override bool IsValid(object? value)
+    {
+        return value is not string text || !text.Any(char.IsControl);
+    }
+}
+
+/// <summary>
 /// Accepts only rich-text JSON documents made of allowed nodes, marks and attributes, as checked by
 /// <see cref="RichTextAllowlist"/>. Values that are not strings are left to other attributes.
 /// </summary>

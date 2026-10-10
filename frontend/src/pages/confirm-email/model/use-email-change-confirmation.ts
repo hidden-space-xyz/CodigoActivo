@@ -5,14 +5,15 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { accountMutations } from '@/entities/account'
 import { refreshSession } from '@/entities/session'
 import { getErrorMessage } from '@/shared/lib/feedback'
+import { isGuid } from '@/shared/lib/navigation'
 
 /** Progress of confirming the emailed link: in flight, confirmed, or failed/incomplete. */
 export type EmailChangeConfirmationState = 'confirming' | 'success' | 'error'
 
 /**
- * Confirmation page flow: `confirm` sends the link's user id and code (an incomplete link fails
- * without calling the API). Once the account uses its new email the session is refreshed, so a
- * holder signed in on this browser sees the new address.
+ * Confirmation page flow: `confirm` sends the link's user id and code (an incomplete link, or one
+ * whose user id is not a GUID, fails without calling the API). Once the account uses its new email
+ * the session is refreshed, so a holder signed in on this browser sees the new address.
  */
 export function useEmailChangeConfirmation() {
   const { t } = useI18n()
@@ -34,7 +35,7 @@ export function useEmailChangeConfirmation() {
   })
 
   function confirm(userId: string | null, code: string | null): void {
-    if (!userId || !code) {
+    if (!isGuid(userId) || !code) {
       state.value = 'error'
       errorMessage.value = t('pages.confirmEmail.incompleteLink')
       return

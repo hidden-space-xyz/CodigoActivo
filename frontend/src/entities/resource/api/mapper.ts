@@ -4,6 +4,7 @@ import type {
   ResourceResponse,
   ResourceTypeResponse,
 } from '@/shared/api/generated/models'
+import { toWebUrl } from '@/shared/lib/navigation'
 
 import type {
   LearningResource,
@@ -17,7 +18,7 @@ export function toResourceType(type: ResourceTypeResponse): ResourceType {
   return { id: type.id, name: type.name, color: type.color, isExternal: type.isExternal }
 }
 
-/** Maps a resource of a list; a missing url becomes `null`. */
+/** Maps a resource of a list; a missing or non-http(s) url becomes `null`. */
 export function toLearningResourceSummary(
   response: ResourceListItemResponse,
 ): LearningResourceSummary {
@@ -26,7 +27,7 @@ export function toLearningResourceSummary(
     title: response.title,
     subtitle: response.subtitle,
     type: toResourceType(response.type),
-    url: response.url ?? null,
+    url: toWebUrl(response.url),
     createdAt: response.createdAt,
     thumbnailId: response.thumbnailId,
   }

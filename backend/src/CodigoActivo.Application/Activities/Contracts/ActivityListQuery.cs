@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Common.Validation;
 
 namespace CodigoActivo.Application.Activities.Contracts;
 
@@ -15,6 +17,8 @@ public sealed class ActivityListQuery : PageQuery
     /// <summary>
     /// Gets or sets the title displayed to users.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Title { get; set; }
 
     /// <summary>
@@ -25,6 +29,8 @@ public sealed class ActivityListQuery : PageQuery
     /// <summary>
     /// Gets or sets the location value.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Location { get; set; }
 
     /// <summary>

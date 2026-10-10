@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { fullName, GENDERS, genderLabelKey } from '@/entities/user'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
+import { MAX_SEARCH_LENGTH } from '@/shared/config'
 import { normalizeHexColor } from '@/shared/lib/color'
 import { ageFrom, formatDateTime, todayIso } from '@/shared/lib/date'
 import { type CsvValue, useCsvExport } from '@/shared/lib/download'
@@ -154,6 +155,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
     <div class="toolbar">
       <el-input
         v-model="searchText"
+        :maxlength="MAX_SEARCH_LENGTH"
         :placeholder="$t('pages.admin.eventDetail.attendees.search.placeholder')"
         class="toolbar__search"
       />

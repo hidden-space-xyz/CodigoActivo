@@ -1,3 +1,4 @@
+using System.Globalization;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Common;
@@ -23,20 +24,29 @@ public static class FileNaming
     }
 
     /// <summary>
-    /// Removes unsafe characters from the name.
+    /// Keeps only the last segment of a client-supplied name, without control or invisible
+    /// formatting characters (a right-to-left override can disguise the extension), trimmed and cut
+    /// to 260 characters.
     /// </summary>
     /// <param name="fileName">The file name value.</param>
+    /// <param name="fallbackName">Name used when nothing remains.</param>
     /// <returns>The generated text.</returns>
-    public static string SanitizeName(string? fileName)
+    public static string SanitizeName(string? fileName, string fallbackName)
     {
         var normalizedFileName = (fileName ?? string.Empty).Replace('\\', '/');
-        var name = Path.GetFileName(normalizedFileName).Trim();
+        var name = string.Concat(Path.GetFileName(normalizedFileName).Where(IsVisible)).Trim();
         if (string.IsNullOrEmpty(name))
         {
-            name = AppStrings.FilesFallbackFileName;
+            name = fallbackName;
         }
 
         return name.Length > MaxNameLength ? name[..MaxNameLength] : name;
+    }
+
+    private static bool IsVisible(char character)
+    {
+        return !char.IsControl(character)
+            && char.GetUnicodeCategory(character) != UnicodeCategory.Format;
     }
 }
 

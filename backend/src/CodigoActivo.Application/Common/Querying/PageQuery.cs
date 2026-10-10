@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Common.Validation;
+
 namespace CodigoActivo.Application.Common.Querying;
 
 /// <summary>
@@ -9,6 +12,12 @@ public abstract class PageQuery
     /// Identifies the max page size configuration or policy value.
     /// </summary>
     public const int MaxPageSize = 100;
+
+    /// <summary>
+    /// Longest text a criterion bound from the query string accepts, such as a search term or the
+    /// sort keys.
+    /// </summary>
+    public const int MaxTextLength = 200;
 
     /// <summary>
     /// Identifies the default page size configuration or policy value.
@@ -42,5 +51,7 @@ public abstract class PageQuery
     /// <summary>
     /// Gets or sets the sort value.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Sort { get; set; }
 }

@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Common.Validation;
 
 namespace CodigoActivo.Application.News.Contracts;
 
@@ -10,16 +12,22 @@ public sealed class NewsListQuery : PageQuery
     /// <summary>
     /// Gets or sets the text matched against the title or the subtitle.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Search { get; set; }
 
     /// <summary>
     /// Gets or sets the title displayed to users.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Title { get; set; }
 
     /// <summary>
     /// Gets or sets the supporting subtitle displayed to users.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Subtitle { get; set; }
 
     /// <summary>

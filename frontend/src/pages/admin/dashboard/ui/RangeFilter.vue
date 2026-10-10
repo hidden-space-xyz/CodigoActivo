@@ -6,7 +6,11 @@ import { formatDate } from '@/shared/lib/date'
 import { useMediaQuery } from '@/shared/lib/media-query'
 import { AppIcon } from '@/shared/ui/app-icon'
 
-import { RANGE_OPTIONS, type RangePreset } from '../model/use-dashboard-range'
+import {
+  isOutsideAnalyticsDays,
+  RANGE_OPTIONS,
+  type RangePreset,
+} from '../model/use-dashboard-range'
 
 const { t } = useI18n()
 
@@ -97,6 +101,7 @@ function onSelect(value: unknown): void {
           :single-panel="narrow"
           :unlink-panels="!narrow"
           :editable="narrow"
+          :disabled-date="isOutsideAnalyticsDays"
           :start-placeholder="$t('table.rangeFrom')"
           :end-placeholder="$t('table.rangeTo')"
           :append-to="panelEl"

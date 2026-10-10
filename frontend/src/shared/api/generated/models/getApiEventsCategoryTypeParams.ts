@@ -6,9 +6,18 @@
  */
 
 export type GetApiEventsCategoryTypeParams = {
+/**
+ * @maxLength 200
+ */
 name?: string;
+/**
+ * @maxLength 200
+ */
 color?: string;
 page?: number;
 pageSize?: number;
+/**
+ * @maxLength 200
+ */
 sort?: string;
 };

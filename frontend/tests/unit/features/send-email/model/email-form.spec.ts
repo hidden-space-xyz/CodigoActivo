@@ -78,4 +78,10 @@ describe('addAttachments', () => {
     expect(outcomeOf(addAttachments([], [limit]))).toEqual(['big.bin'])
     expect(outcomeOf(addAttachments([limit], files(1)))).toBe('tooLarge')
   })
+
+  it('refuses an empty file, which the API would not send', () => {
+    const empty = new File([], 'empty.txt')
+
+    expect(outcomeOf(addAttachments(files(1), [empty, ...files(1, 'picked')]))).toBe('empty')
+  })
 })

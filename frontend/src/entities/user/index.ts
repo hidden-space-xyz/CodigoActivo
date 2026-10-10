@@ -4,6 +4,7 @@ export type { PersonField, PersonProblem } from './model/person'
 export { GENDERS, genderLabelKey } from './model/gender'
 export {
   isSameEmail,
+  MAX_DEPENDENTS,
   minorBirthDateRange,
   parseDependentPerson,
   parseIndependentPerson,

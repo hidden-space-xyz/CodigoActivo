@@ -5,6 +5,7 @@ using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Emails.Contracts;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
 using Microsoft.Extensions.Logging;
 
@@ -34,8 +35,6 @@ public sealed class ManualEmailDispatcher(
     ILogger<ManualEmailDispatcher> logger
 )
 {
-    private static readonly char[] PathSeparators = ['/', '\\'];
-
     /// <summary>
     /// Gets the to recipient value.
     /// </summary>
@@ -123,17 +122,17 @@ public sealed class ManualEmailDispatcher(
             var content = new byte[upload.Length];
             await upload.Content.ReadExactlyAsync(content, ct);
             buffered.Add(
-                new EmailAttachment(SafeName(upload.FileName), upload.ContentType, content)
+                new EmailAttachment(
+                    FileNaming.SanitizeName(
+                        upload.FileName,
+                        AppStrings.FilesFallbackAttachmentName
+                    ),
+                    upload.ContentType,
+                    content
+                )
             );
         }
 
         return Result.Success<IReadOnlyList<EmailAttachment>>(buffered);
-    }
-
-    private static string SafeName(string fileName)
-    {
-        var separator = fileName.LastIndexOfAny(PathSeparators);
-        var name = separator < 0 ? fileName : fileName[(separator + 1)..];
-        return string.IsNullOrWhiteSpace(name) ? AppStrings.FilesFallbackAttachmentName : name;
     }
 }

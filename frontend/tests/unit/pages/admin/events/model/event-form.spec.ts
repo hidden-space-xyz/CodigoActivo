@@ -101,6 +101,13 @@ describe('readEventDraft', () => {
     ).toMatchObject({ description: EMPTY_DOC_JSON, earlySignupStartsAt: early.toISOString() })
   })
 
+  it('refuses a description longer than the API stores', () => {
+    expect(readEventDraft(validDraft({ description: richText('a'.repeat(262_144)) }))).toEqual({
+      problems: { description: 'validation.richTextTooLong' },
+      value: null,
+    })
+  })
+
   it('refuses every missing field', () => {
     expect(readEventDraft(toEventDraft(null))).toEqual({
       problems: {

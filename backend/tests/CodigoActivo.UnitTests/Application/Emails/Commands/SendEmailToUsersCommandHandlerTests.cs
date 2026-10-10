@@ -209,6 +209,29 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         outbox.Messages[0].Attachments![0].FileName.Should().Be("passwd");
     }
 
+    [Theory]
+    [InlineData("ac\u0000ta\r\n.pdf", "acta.pdf")]
+    [InlineData("‮fdp.exe", "fdp.exe")]
+    [InlineData("\u0001\u0002", "adjunto")]
+    public async Task HandleAsyncAttachmentNameDropsControlAndFormatCharacters(
+        string fileName,
+        string expected
+    )
+    {
+        store.Users.Add(NewUserRow("Ana", "ana@test.local"));
+
+        await sut.HandleAsync(
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                [Attachment(name: fileName)]
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        outbox.Messages[0].Attachments![0].FileName.Should().Be(expected);
+    }
+
     [Fact]
     public async Task HandleAsyncAttachmentsOverTheSizeCapReturnsAttachmentsTooLarge()
     {

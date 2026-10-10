@@ -7,7 +7,7 @@ import TextAlign from '@tiptap/extension-text-align'
 import { Color, TextStyle } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 
-import { hasControlCharacter } from '@/shared/lib/navigation'
+import { hasControlCharacter, toWebUrl } from '@/shared/lib/navigation'
 
 const EMPTY_DOC: JSONContent = { type: 'doc', content: [] }
 /** Serialized empty Tiptap document, stored when a rich-text field is left blank. */
@@ -286,13 +286,12 @@ export function normalizeLink(value: string, assumeHttps = true): string | null 
   }
   if (href.startsWith('/') || href.startsWith('#')) return href
   try {
-    const parsed = new URL(href)
-    if (parsed.protocol === 'mailto:' || parsed.protocol === 'tel:') return href
-    const web = parsed.protocol === 'http:' || parsed.protocol === 'https:'
-    return web && parsed.hostname && !parsed.username && !parsed.password ? href : null
+    const { protocol } = new URL(href)
+    if (protocol === 'mailto:' || protocol === 'tel:') return href
   } catch {
     return null
   }
+  return toWebUrl(href)
 }
 
 function boundedInteger(value: unknown, minimum: number, maximum: number): number | undefined {
@@ -303,6 +302,16 @@ function boundedInteger(value: unknown, minimum: number, maximum: number): numbe
 /** Serializes editor JSON into the string format persisted by the API. */
 export function serializeRichText(json: JSONContent): string {
   return JSON.stringify(json)
+}
+
+const RICH_TEXT_MAX_LENGTH = 262_144
+
+/**
+ * Whether a serialized document is longer than the API stores: every rich-text description is
+ * limited to 262,144 characters of JSON.
+ */
+export function isRichTextTooLong(value: string): boolean {
+  return value.length > RICH_TEXT_MAX_LENGTH
 }
 
 /**

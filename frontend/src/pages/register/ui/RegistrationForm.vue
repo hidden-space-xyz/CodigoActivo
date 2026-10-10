@@ -17,7 +17,7 @@ import {
 import { toDateOnly } from '@/shared/lib/date'
 import { BrandButton } from '@/shared/ui/brand-button'
 
-import { createEmptyMinor, type RegistrationForm } from '../model/registration-form'
+import { canAddMinor, createEmptyMinor, type RegistrationForm } from '../model/registration-form'
 
 const props = defineProps<{
   /** Reactive form state owned by the parent; the component edits it in place. */
@@ -103,7 +103,7 @@ function onSubmit(): void {
 }
 
 function addMinor(): void {
-  model.minors.push(createEmptyMinor())
+  if (canAddMinor(model)) model.minors.push(createEmptyMinor())
 }
 
 function removeMinor(index: number): void {
@@ -367,9 +367,14 @@ function removeMinor(index: number): void {
           </fieldset>
         </transition-group>
 
-        <BrandButton variant="ghost" type="button" class="reg__add-minor" @click="addMinor">{{
-          $t('pages.register.form.addMinor')
-        }}</BrandButton>
+        <BrandButton
+          v-if="canAddMinor(model)"
+          variant="ghost"
+          type="button"
+          class="reg__add-minor"
+          @click="addMinor"
+          >{{ $t('pages.register.form.addMinor') }}</BrandButton
+        >
       </section>
 
       <div class="reg__footer">

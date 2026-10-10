@@ -1,6 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { RANGE_OPTIONS, useDashboardRange } from '@/pages/admin/dashboard/model/use-dashboard-range'
+import {
+  isOutsideAnalyticsDays,
+  RANGE_OPTIONS,
+  useDashboardRange,
+} from '@/pages/admin/dashboard/model/use-dashboard-range'
+
+describe('isOutsideAnalyticsDays', () => {
+  it('lets only days from 2000 to 2099 be picked', () => {
+    expect(isOutsideAnalyticsDays(new Date(1999, 11, 31))).toBe(true)
+    expect(isOutsideAnalyticsDays(new Date(2000, 0, 1))).toBe(false)
+    expect(isOutsideAnalyticsDays(new Date(2099, 11, 31))).toBe(false)
+    expect(isOutsideAnalyticsDays(new Date(2100, 0, 1))).toBe(true)
+  })
+})
 
 describe('useDashboardRange', () => {
   beforeEach(() => {

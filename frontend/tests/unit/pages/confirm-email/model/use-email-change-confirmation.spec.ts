@@ -8,6 +8,8 @@ import { mountComposable, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
 import { sessionOf } from '../../../../support/session'
 
+const USER_ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+
 function serveConfirm(response: () => Response = noContent) {
   const calls: { userId: unknown; body: unknown }[] = []
   server.use(
@@ -29,19 +31,20 @@ describe('useEmailChangeConfirmation', () => {
     )
     const { result, queryClient } = await mountComposable(() => useEmailChangeConfirmation())
 
-    result.confirm('user-1', 'code-1')
+    result.confirm(USER_ID, 'code-1')
     expect(result.state.value).toBe('confirming')
     await vi.waitFor(() => expect(result.state.value).toBe('success'))
 
-    expect(calls).toEqual([{ userId: 'user-1', body: { otp: 'code-1' } }])
+    expect(calls).toEqual([{ userId: USER_ID, body: { otp: 'code-1' } }])
     await vi.waitFor(() => expect(sessionOf(queryClient).user?.email).toBe('nueva@example.com'))
   })
 
   it.each([
     { id: null, code: 'code-1' },
-    { id: 'user-1', code: null },
+    { id: USER_ID, code: null },
+    { id: `../users/${USER_ID}/admin?`, code: 'code-1' },
   ])(
-    'fails an incomplete link (user $id, code $code) without calling the API',
+    'fails an incomplete or malformed link (user $id, code $code) without calling the API',
     async ({ id, code }) => {
       const calls = serveConfirm()
       const { result } = await mountComposable(() => useEmailChangeConfirmation())
@@ -59,7 +62,7 @@ describe('useEmailChangeConfirmation', () => {
     serveConfirm(() => apiError(400, 'OtpInvalidOrExpired'))
     const { result } = await mountComposable(() => useEmailChangeConfirmation())
 
-    result.confirm('user-1', 'expired')
+    result.confirm(USER_ID, 'expired')
     await vi.waitFor(() => expect(result.state.value).toBe('error'))
 
     expect(result.errorMessage.value).toBe(t('errors.OtpInvalidOrExpired'))

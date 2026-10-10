@@ -32,6 +32,27 @@ public sealed class ValidationAttributesTests
         new NotBlankAttribute().IsValid("Acme").Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("Convocatoria de mayo: ¡apúntate!")]
+    public void IsValidSingleLineTextWithoutControlCharactersReturnsTrue(string? value)
+    {
+        new SingleLineAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("Hola\r\nBcc: otro@example.com")]
+    [InlineData("Hola\nadiós")]
+    [InlineData("Hola\tadiós")]
+    [InlineData("Hola\u0000")]
+    [InlineData("Hola\u007F")]
+    [InlineData("Hola\u0085")]
+    public void IsValidSingleLineTextWithControlCharacterReturnsFalse(string value)
+    {
+        new SingleLineAttribute().IsValid(value).Should().BeFalse();
+    }
+
     private const string FileUrl = "/api/files/0f8fad5b-d9cb-469f-a165-70867728950e/content";
 
     private static string Doc(string content)

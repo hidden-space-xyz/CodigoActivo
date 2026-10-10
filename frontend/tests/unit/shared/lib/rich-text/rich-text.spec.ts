@@ -5,6 +5,7 @@ import {
   EMPTY_DOC_JSON,
   isRichTextBlank,
   isRichTextEmpty,
+  isRichTextTooLong,
   normalizeLink,
   parseRichText,
   renderRichTextHtml,
@@ -322,6 +323,13 @@ describe('text-only rich text', () => {
 describe('serializeRichText', () => {
   it('serializes editor JSON', () => {
     expect(serializeRichText({ type: 'doc', content: [] })).toBe(EMPTY_DOC_JSON)
+  })
+})
+
+describe('isRichTextTooLong', () => {
+  it('accepts documents up to the length the API stores and refuses longer ones', () => {
+    expect(isRichTextTooLong('a'.repeat(262_144))).toBe(false)
+    expect(isRichTextTooLong('a'.repeat(262_145))).toBe(true)
   })
 })
 

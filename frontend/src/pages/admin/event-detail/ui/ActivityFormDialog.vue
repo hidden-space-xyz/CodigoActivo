@@ -198,6 +198,7 @@ async function save(): Promise<void> {
               :aria-label="role.name"
               :min="1"
               :max="10000"
+              :precision="0"
               controls-position="right"
               :placeholder="$t('pages.admin.eventDetail.activities.form.noTargetPlaceholder')"
             />

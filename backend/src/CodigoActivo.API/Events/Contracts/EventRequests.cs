@@ -32,8 +32,8 @@ public record CreateEventRequest(
     [Required] DateTimeOffset? SignupStartsAt,
     [Required] DateTimeOffset? SignupEndsAt,
     Guid ThumbnailId,
-    IReadOnlyList<Guid>? CategoryTypeIds,
-    IReadOnlyList<EventTermsDocumentRequest>? TermsDocuments
+    [MaxLength(50)] IReadOnlyList<Guid>? CategoryTypeIds,
+    [MaxLength(50)] IReadOnlyList<EventTermsDocumentRequest>? TermsDocuments
 )
 {
     /// <summary>
@@ -84,8 +84,8 @@ public record UpdateEventRequest(
     [Required] DateTimeOffset? SignupStartsAt,
     [Required] DateTimeOffset? SignupEndsAt,
     Guid ThumbnailId,
-    IReadOnlyList<Guid>? CategoryTypeIds,
-    IReadOnlyList<EventTermsDocumentRequest>? TermsDocuments
+    [MaxLength(50)] IReadOnlyList<Guid>? CategoryTypeIds,
+    [MaxLength(50)] IReadOnlyList<EventTermsDocumentRequest>? TermsDocuments
 )
 {
     /// <summary>

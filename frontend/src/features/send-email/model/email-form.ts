@@ -19,7 +19,7 @@ export interface EmailDraft {
 type EmailField = 'subject' | 'body'
 
 /** Why picked files cannot be attached. */
-export type AttachmentProblem = 'tooMany' | 'tooLarge'
+export type AttachmentProblem = 'tooMany' | 'tooLarge' | 'empty'
 
 /** A blank email. */
 export function toEmailDraft(): EmailDraft {
@@ -39,13 +39,14 @@ export function readEmailDraft(draft: EmailDraft): FormReading<EmailField, SendE
 }
 
 /**
- * The attachments once `picked` files are added, or why they do not fit: at most
- * `MAX_ATTACHMENTS` files of `MAX_ATTACHMENTS_BYTES` together.
+ * The attachments once `picked` files are added, or why they do not fit: no empty file, and at
+ * most `MAX_ATTACHMENTS` files of `MAX_ATTACHMENTS_BYTES` together.
  */
 export function addAttachments(
   current: readonly File[],
   picked: readonly File[],
 ): { readonly attachments: File[] } | { readonly problem: AttachmentProblem } {
+  if (picked.some((file) => file.size === 0)) return { problem: 'empty' }
   const attachments = [...current, ...picked]
   if (attachments.length > MAX_ATTACHMENTS) return { problem: 'tooMany' }
   const size = attachments.reduce((sum, file) => sum + file.size, 0)

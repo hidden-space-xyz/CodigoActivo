@@ -1269,6 +1269,27 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task SetAdminWithoutIsAdminReturnsBadRequestAndKeepsAdmin()
+    {
+        var client = await LoginAsAdminAsync();
+        var grant = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/admin",
+            new SetAdminRequest(true, TestSeedData.Password),
+            Ct
+        );
+        grant.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/admin",
+            new { Otp = "0123456789abcdef" },
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.IsAdmin.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task SetAdminRevokeInitialAdministratorReturnsForbiddenEvenToAnotherAdministrator()
     {
         var initial = await LoginAsAdminAsync();

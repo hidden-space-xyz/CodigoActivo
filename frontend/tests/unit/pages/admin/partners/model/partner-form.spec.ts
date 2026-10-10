@@ -66,4 +66,16 @@ describe('readPartnerDraft', () => {
       }).value,
     ).toMatchObject({ tier: 3, website: 'https://initech.test' })
   })
+
+  it.each(['initech.test', 'javascript:alert(1)', 'https://user:secret@initech.test'])(
+    'refuses the website %j that the API would refuse',
+    (website) => {
+      expect(
+        readPartnerDraft({ name: 'Initech', fromDate: new Date(2025, 5, 7), tier: 0, website }),
+      ).toEqual({
+        problems: { website: 'pages.admin.partners.form.problems.websiteInvalid' },
+        value: null,
+      })
+    },
+  )
 })

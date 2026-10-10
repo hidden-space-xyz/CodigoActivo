@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Common.Validation;
 
 namespace CodigoActivo.Application.Users.Contracts;
 
@@ -15,21 +17,29 @@ public sealed class UserListQuery : PageQuery
     /// <summary>
     /// Gets or sets the human-readable name.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Name { get; set; }
 
     /// <summary>
     /// Gets or sets the email value.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Email { get; set; }
 
     /// <summary>
     /// Gets or sets text the phone or the secondary phone must contain.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Phone { get; set; }
 
     /// <summary>
     /// Gets or sets text the stored DNI or NIE must contain.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? NationalId { get; set; }
 
     /// <summary>

@@ -254,6 +254,7 @@ export default withVueTs(
             '/^entities\\.user\\.gender\\./u',
             '/^entities\\.user\\.person\\./u',
             '/\\.form\\.problems\\./u',
+            '/^validation\\.richTextTooLong$/u',
           ],
         },
       ],

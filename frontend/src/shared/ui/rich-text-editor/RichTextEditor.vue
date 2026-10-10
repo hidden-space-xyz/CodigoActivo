@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 
 import { AppIcon } from '@/shared/ui/app-icon'
 import { fileContentUrl } from '@/shared/api'
+import { IMAGE_UPLOAD_ACCEPT, MAX_IMAGE_UPLOAD_BYTES } from '@/shared/config'
 import {
   cleanRichText,
   normalizeLink,
@@ -84,6 +85,10 @@ async function onFileChange(event: Event): Promise<void> {
   const file = input.files?.[0]
   input.value = ''
   if (!file || !editor.value || !upload) return
+  if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+    uploadError.value = t('editor.imageTooLarge')
+    return
+  }
   uploading.value = true
   uploadError.value = ''
   try {
@@ -403,7 +408,7 @@ onBeforeUnmount(() => editor.value?.destroy())
       v-if="upload"
       ref="fileInput"
       type="file"
-      accept="image/*"
+      :accept="IMAGE_UPLOAD_ACCEPT"
       class="rt__file"
       aria-hidden="true"
       tabindex="-1"

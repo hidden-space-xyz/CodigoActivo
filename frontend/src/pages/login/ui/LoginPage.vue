@@ -26,6 +26,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
               v-model="form.identifier"
               type="email"
               autocomplete="username"
+              :maxlength="256"
               autocapitalize="none"
               autocorrect="off"
               spellcheck="false"
@@ -40,6 +41,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
               type="password"
               show-password
               autocomplete="current-password"
+              :maxlength="128"
               required
             />
           </div>

@@ -9,7 +9,8 @@ namespace CodigoActivo.Application.Emails;
 /// <param name="Subject">Subject of the email.</param>
 /// <param name="Body">Body of the email as plain text.</param>
 public sealed record ManualEmailText(
-    [property: Required, MaxLength(ManualEmailText.SubjectMaxLength), NotBlank] string Subject,
+    [property: Required, MaxLength(ManualEmailText.SubjectMaxLength), NotBlank, SingleLine]
+        string Subject,
     [property: Required, MaxLength(ManualEmailText.BodyMaxLength), NotBlank] string Body
 )
 {

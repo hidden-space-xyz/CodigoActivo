@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { MAX_DEPENDENTS } from '@/entities/user'
 import {
+  canAddMinor,
   createEmptyMinor,
   createEmptyRegistrationForm,
 } from '@/pages/register/model/registration-form'
@@ -41,5 +43,14 @@ describe('registration form factories', () => {
       gender: null,
     })
     expect(second.key).toBeGreaterThan(first.key)
+  })
+
+  it('allows minors up to the most one guardian may hold', () => {
+    const form = createEmptyRegistrationForm()
+    form.minors = Array.from({ length: MAX_DEPENDENTS - 1 }, createEmptyMinor)
+
+    expect(canAddMinor(form)).toBe(true)
+    form.minors.push(createEmptyMinor())
+    expect(canAddMinor(form)).toBe(false)
   })
 })

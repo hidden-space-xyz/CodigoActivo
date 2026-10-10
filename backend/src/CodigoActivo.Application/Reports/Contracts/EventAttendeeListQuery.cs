@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Application.Users.Contracts;
 
 namespace CodigoActivo.Application.Reports.Contracts;
@@ -12,6 +13,8 @@ public sealed class EventAttendeeListQuery : PageQuery
     /// <summary>
     /// Gets or sets the search value.
     /// </summary>
+    [MaxLength(MaxTextLength)]
+    [SingleLine]
     public string? Search { get; set; }
 
     /// <summary>

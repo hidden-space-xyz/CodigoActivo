@@ -170,7 +170,9 @@ async function save(): Promise<void> {
           v-model="draft.description"
           :label="$t('pages.admin.events.form.fields.description')"
           :upload="uploadFileRequest"
+          :invalid="!!errors.description"
         />
+        <small v-if="errors.description" class="form__error">{{ errors.description }}</small>
       </div>
       <div class="form__row">
         <div class="form__field">

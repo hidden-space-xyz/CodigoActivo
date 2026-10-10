@@ -4,11 +4,10 @@ import { useMutation } from '@tanstack/vue-query'
 
 import { accountMutations, isPasswordTooShort } from '@/entities/account'
 import { getErrorMessage } from '@/shared/lib/feedback'
+import { isGuid } from '@/shared/lib/navigation'
 
 /** Reset page step: the password form, or the confirmation shown after a successful reset. */
 export type ResetPasswordState = 'form' | 'success'
-
-const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * Reset-password form for the emailed link. Validates the length and the confirmation locally before
@@ -46,7 +45,7 @@ export function useResetPassword(userId: string | null, code: string | null) {
       errorMessage.value = t('validation.passwordsMismatch')
       return
     }
-    if (!userId || !code) return
+    if (!isGuid(userId) || !code) return
     mutation.mutate({ userId, otp: code, newPassword: form.password })
   }
 
@@ -56,7 +55,7 @@ export function useResetPassword(userId: string | null, code: string | null) {
     errorMessage,
     canRequestNewLink,
     submit,
-    hasValidLink: userId !== null && GUID_PATTERN.test(userId) && code !== null,
+    hasValidLink: isGuid(userId) && code !== null,
     isSubmitting: mutation.isPending,
   }
 }

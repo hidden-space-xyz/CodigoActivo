@@ -202,6 +202,21 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncFileNameWithControlOrFormatCharactersDropsThem()
+    {
+        var upload = new FileUpload(PngStream(), "fac\u0000tura\r\n‮gnp.exe", 32);
+        var added = await CaptureAddedFilesAsync();
+
+        var result = await sut.HandleAsync(
+            new CreateFileCommand(upload),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        added.Should().ContainSingle().Which.Name.Should().Be("facturagnp.exe");
+    }
+
+    [Fact]
     public async Task HandleAsyncPersistenceThrowsRollsBackStorage()
     {
         var upload = new FileUpload(PngStream(), "avatar.png", 32);

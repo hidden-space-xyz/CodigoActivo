@@ -60,7 +60,8 @@ authentication are not supported.
   the same Argon2 work. Unverified accounts are never purged on a schedule.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns
-  `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password. Public registration never
+  `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password, but the body must state
+  `isAdmin`: one without it is refused instead of being read as a revocation. Public registration never
   grants administrator access; on an empty database, startup creates the initial administrator from
   `BOOTSTRAP_ADMIN_EMAIL`, ignored once a user exists, under the fixed id `InitialAdministrator.Id` and with a
   random, discarded password, so its first password is set through a password reset to that address. That
@@ -217,8 +218,18 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
   (`[NotBlank]`, `[HttpUrl]`, `[RichText]`, `[SpanishNationalId]`, `[NotDefaultOrFutureDate]`), are checked
   again on every command before its handler runs, whatever starts it. JSON bodies accept enum values only by
   their declared name, never as integers, and enums bound from the query string reject undefined values.
+- JSON bodies refuse any string holding a control character other than a tab or a line break
+  (`ControlCharacterRejectingConverter`); free-text list criteria and `sort` take at most 200 characters and
+  no control character (`[SingleLine]`); lists in request bodies are bounded with `MaxLength`. Such input is
+  answered `RequestValidationFailed` instead of failing in PostgreSQL, which refuses U+0000.
 - A list `sort` parameter keeps only the first occurrence of each known key, so a request cannot grow the
   query EF Core translates recursively.
+- Account emails must read as one mailbox: no whitespace, control character or `()<>[]:;,\"`
+  (`UserEmailInvalid`).
+- The SPA refuses to send a request whose path the browser would rewrite (dot segments, backslashes,
+  stripped tabs), because generated paths interpolate their parameters unencoded, and treats an emailed
+  account link whose user id is not a GUID as incomplete, so a crafted link cannot steer a signed-in
+  visitor's request to another endpoint.
 - Expected failures use a string `ErrorCode`; all failures return
   `ApiErrorResponse(Title, Status, Code, TraceId)` without stack traces or internal details.
 - User-supplied links allow only absolute HTTP(S) URLs without embedded credentials.
@@ -231,7 +242,10 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
   allowlist. Terms documents are text only: their editor has no image option and drops images from loaded
   or pasted content, and the API refuses a description with an image node (`RequestValidationFailed`).
 - User-controlled values inserted into email templates are HTML-encoded; administrator-authored bodies are
-  plain text rendered inside the branded template.
+  plain text rendered inside the branded template, and their subjects stay on one line. Upload and
+  attachment names keep only their last path segment, without control or invisible formatting characters,
+  cut to 260 characters; an attachment declared `message/*` or `multipart/*` is sent as
+  `application/octet-stream`.
 
 ### Transport and proxy trust
 
@@ -396,8 +410,9 @@ The development override removes parts of this boundary and must not be deployed
 ### Files and multipart requests
 
 Stored uploads are limited to 10 MiB by default and saved under `/app/files` in the `api-files` volume; nginx
-also enforces a `12m` request-body limit. Access to stored files goes through API authorization, not a direct
-static volume mount. Administrator email attachments never reach the `api-files` volume: they are read once
+also enforces a `12m` request-body limit. Kestrel refuses any other request body above 2 MiB, which no valid
+JSON request reaches; only the multipart upload and email endpoints raise it to their own limit. Access to
+stored files goes through API authorization, not a direct static volume mount. Administrator email attachments never reach the `api-files` volume: they are read once
 per batch into the Data Protection-protected outbox content described above and removed once every message
 referencing them is delivered or discarded, with count, combined bytes and recipient count bounded by
 application settings.

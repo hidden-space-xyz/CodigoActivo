@@ -131,7 +131,9 @@ runs through `LoggingCommandDecorator` (warns about slow use cases), `Validation
 
 Commands and queries are application messages, not HTTP contracts: they carry typed identifiers and domain
 values, and their fields carry the DataAnnotations of their rules (`[property: Required, MaxLength(200),
-NotBlank]`), which `MessageValidator` checks, nested messages included, before any handler runs. The current day
+NotBlank]`), which `MessageValidator` checks, nested messages included, before any command handler runs and
+before any query handler whose result can report the failure (`Result`); the criteria of list queries, which
+cannot, are checked by MVC when the request binds them. The current day
 reaches the date rules through the validation context, never through a service locator. The HTTP request
 records live in the API (`API/<Feature>/Contracts/`) with only the standard attributes the OpenAPI document
 describes, and map themselves to the command (`request.ToCommand(id)`). Response records and list criteria stay
