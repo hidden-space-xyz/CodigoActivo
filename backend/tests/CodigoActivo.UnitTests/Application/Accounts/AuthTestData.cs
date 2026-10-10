@@ -81,7 +81,7 @@ internal static class AuthTestData
     {
         return NewUser(
             statusId: KnownIds.UserStatusTypes.Pending,
-            otpCodeHash: FakePasswordHasher.Prefix + code,
+            otpCodeHash: FakeOneTimeCodeHasher.Prefix + code,
             otpExpiresAt: clock.UtcNow.AddMinutes(5),
             otpLastSentAt: otpLastSentAt ?? clock.UtcNow.AddMinutes(-10)
         );
@@ -99,7 +99,7 @@ internal static class AuthTestData
             user,
             new
             {
-                LoginCodeHash = FakePasswordHasher.Prefix + code,
+                LoginCodeHash = FakeOneTimeCodeHasher.Prefix + code,
                 LoginCodeExpiresAt = expiresAt ?? clock.UtcNow.AddMinutes(5),
                 LoginCodeLastSentAt = lastSentAt ?? clock.UtcNow.AddMinutes(-2),
             }
@@ -134,7 +134,7 @@ internal static class AuthTestData
             user,
             new
             {
-                PasswordResetCodeHash = FakePasswordHasher.Prefix + code,
+                PasswordResetCodeHash = FakeOneTimeCodeHasher.Prefix + code,
                 PasswordResetExpiresAt = expiresAt ?? clock.UtcNow.AddMinutes(5),
                 PasswordResetLastSentAt = lastSentAt ?? clock.UtcNow.AddMinutes(-10),
             }

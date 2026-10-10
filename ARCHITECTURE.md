@@ -26,7 +26,7 @@ outbox for events or event sourcing.
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `CodigoActivo.Domain`         | Aggregates, typed identifiers, value objects, domain events and policies, repository ports, `Result`, `Error` and `DomainErrorCode` | None                                |
 | `CodigoActivo.Application`    | Use cases with their validated messages, response contracts, the read model, the use case decorators and the ports they need       | Domain                              |
-| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, file storage, Argon2id, TOTP (Otp.NET), SMTP, email templates and the clock | Domain, Application                 |
+| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, file storage, Argon2id, HMAC-SHA256 one-time code hashing, TOTP (Otp.NET), SMTP, email templates and the clock | Domain, Application                 |
 | `CodigoActivo.Composition`    | The composition root: registrations by feature, strict configuration-to-options mapping checked on start, data protection and database initialization | Domain, Application, Infrastructure |
 | `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, output caching, OpenAPI, SEO documents and startup | Composition                         |
 
@@ -106,9 +106,9 @@ aggregate roots.
   `PurgeDeletedAccounts` and `RemoveExpiredSessions` commands delete legal copies past their retention and
   expired sessions; hosted services in Infrastructure only run them on a schedule. What the copy holds and how
   long it is kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
-- Technical ports (`IClock`, `IPasswordHasher`, `ITotpService`, `ISecretProtector`, `IFileStorage`, the email,
-  persistence and read ports) live in `Application/Abstractions` or in the feature that consumes them. Domain
-  declares only the repositories of its aggregates.
+- Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
+  `IFileStorage`, the email, persistence and read ports) live in `Application/Abstractions` or in the feature
+  that consumes them. Domain declares only the repositories of its aggregates.
 - EF Core uses Npgsql and snake-case names. IDs are client-generated `Guid` values wrapped in typed
   identifiers. Closed value sets are domain enums stored as strings or as the `Guid` of their catalog row.
 - Startup locks the selected demo mode, applies migrations, seeds catalogs, creates the initial administrator

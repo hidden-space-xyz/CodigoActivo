@@ -23,7 +23,8 @@ namespace CodigoActivo.Infrastructure.Security;
 /// and the encrypted 32-byte Ed25519 seed. The key encrypting it is Argon2id over the certificate
 /// password, and the DER bytes of the certificate are the associated data, so a key file only opens
 /// next to the certificate it belongs to. The store also carries the certificate password because the
-/// same derivation protects the Data Protection key ring elements.
+/// same derivation protects the Data Protection key ring elements, and it derives the other server-side
+/// keys that must outlive a restart from the private key seed.
 /// </summary>
 public sealed class Ed25519CertificateStore
 {
@@ -63,6 +64,34 @@ public sealed class Ed25519CertificateStore
     internal Ed25519PrivateKeyParameters PrivateKey => privateKey;
 
     internal string CertificatePassword { get; }
+
+    /// <summary>
+    /// Derives a key for <paramref name="purpose"/> from the private key seed with HKDF-SHA256. Each
+    /// purpose gets an independent key that reveals nothing about the seed, and the key stays the same
+    /// for as long as the certificate does.
+    /// </summary>
+    /// <param name="purpose">Label that tells the derived keys apart.</param>
+    /// <param name="length">Length in bytes of the key.</param>
+    /// <returns>The derived key.</returns>
+    public byte[] DeriveKey(string purpose, int length)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(purpose);
+
+        var seed = privateKey.GetEncoded();
+        try
+        {
+            return HKDF.DeriveKey(
+                HashAlgorithmName.SHA256,
+                seed,
+                length,
+                info: Encoding.UTF8.GetBytes(purpose)
+            );
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(seed);
+        }
+    }
 
     /// <summary>
     /// Loads the signing certificate or creates and persists a new one.

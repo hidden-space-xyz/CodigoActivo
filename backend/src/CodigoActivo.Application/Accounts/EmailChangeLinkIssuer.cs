@@ -13,13 +13,13 @@ namespace CodigoActivo.Application.Accounts;
 /// it confirms.
 /// </summary>
 /// <param name="users">Repository used to find the account that has the new address.</param>
-/// <param name="hasher">Hasher used so the code is never stored in plaintext.</param>
+/// <param name="codeHasher">Hasher used so the code is never stored in plaintext.</param>
 /// <param name="verification">Lifetime of the code, shared with account verification.</param>
 /// <param name="accountEmails">Builder and sender of account emails.</param>
 /// <param name="logger">Logger used to record delivery failures.</param>
 public sealed class EmailChangeLinkIssuer(
     IUserRepository users,
-    IPasswordHasher hasher,
+    IOneTimeCodeHasher codeHasher,
     AccountVerificationOptions verification,
     AccountEmails accountEmails,
     ILogger<EmailChangeLinkIssuer> logger
@@ -72,7 +72,7 @@ public sealed class EmailChangeLinkIssuer(
 
         user.ApplyProfileChangeConfirmingEmail(
             change,
-            hasher.Hash(code),
+            codeHasher.Hash(code),
             now,
             verification.OtpLifetime
         );

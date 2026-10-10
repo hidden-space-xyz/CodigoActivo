@@ -24,7 +24,6 @@ public sealed class ResendVerificationCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
-    private readonly FakePasswordHasher hasher = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
@@ -37,7 +36,7 @@ public sealed class ResendVerificationCommandHandlerTests
             users,
             uow,
             clock,
-            hasher,
+            new FakeOneTimeCodeHasher(),
             verification,
             new AccountEmails(
                 emailSender,
@@ -73,12 +72,11 @@ public sealed class ResendVerificationCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAddressWithoutAccountSucceedsAfterTheSameHashing()
+    public async Task HandleAsyncAddressWithoutAccountSucceedsWithoutSending()
     {
         var result = await HandleAsync();
 
         result.IsSuccess.Should().BeTrue();
-        hasher.Hashes.Should().Be(1, "every request hashes a code, so timing tells nothing");
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -110,7 +108,7 @@ public sealed class ResendVerificationCommandHandlerTests
         var result = await HandleAsync();
 
         result.IsSuccess.Should().BeTrue();
-        user.OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + emailSender.LastCode());
+        user.OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + emailSender.LastCode());
         user.OtpLastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -143,7 +141,7 @@ public sealed class ResendVerificationCommandHandlerTests
             .Should()
             .MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
         newCode.Should().NotBe("old-code");
-        user.OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + newCode);
+        user.OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + newCode);
         user.OtpExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);
         user.OtpLastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);

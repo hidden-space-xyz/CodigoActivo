@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common;
@@ -64,16 +65,18 @@ internal static class PlatformRegistration
             .AddDataProtection()
             .SetApplicationName("CodigoActivo")
             .ProtectPayloadsWithAesGcm();
-        if (production)
-        {
-            dataProtection.ProtectKeysWithEd25519Certificate(
-                services,
-                new DirectoryInfo(KeysDirectory),
-                configuration["DATA_PROTECTION_CERTIFICATE_PASSWORD"]!,
-                new SystemClock(TimeZoneInfo.Utc)
-            );
-        }
+        var oneTimeCodeKey = production
+            ? dataProtection
+                .ProtectKeysWithEd25519Certificate(
+                    services,
+                    new DirectoryInfo(KeysDirectory),
+                    configuration["DATA_PROTECTION_CERTIFICATE_PASSWORD"]!,
+                    new SystemClock(TimeZoneInfo.Utc)
+                )
+                .DeriveKey(HmacOneTimeCodeHasher.KeyPurpose, HmacOneTimeCodeHasher.KeySize)
+            : RandomNumberGenerator.GetBytes(HmacOneTimeCodeHasher.KeySize);
 
         services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
+        services.AddSingleton<IOneTimeCodeHasher>(new HmacOneTimeCodeHasher(oneTimeCodeKey));
     }
 }

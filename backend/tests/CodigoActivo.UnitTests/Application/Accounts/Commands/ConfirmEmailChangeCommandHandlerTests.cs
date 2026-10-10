@@ -50,7 +50,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
         sut = new ConfirmEmailChangeCommandHandler(
             users,
             clock,
-            new OtpValidator(new FakePasswordHasher()),
+            new OtpValidator(new FakeOneTimeCodeHasher()),
             new EmailClaims(AccountErasers.Create(users, deletedAccounts, erasureStore, uow), uow)
         );
     }
@@ -75,7 +75,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
             new
             {
                 PendingEmail = pendingEmail,
-                EmailChangeCodeHash = FakePasswordHasher.Prefix + Code,
+                EmailChangeCodeHash = FakeOneTimeCodeHasher.Prefix + Code,
                 EmailChangeExpiresAt = clock.UtcNow.AddMinutes(expiresIn),
             }
         );

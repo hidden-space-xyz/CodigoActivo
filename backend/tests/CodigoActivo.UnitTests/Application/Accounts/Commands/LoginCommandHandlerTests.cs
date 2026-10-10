@@ -49,7 +49,7 @@ public sealed class LoginCommandHandlerTests
             PasswordGuards.Create(hasher, uow, clock, emailSender: emailSender),
             twoFactor,
             new LoginCodeIssuer(
-                hasher,
+                new FakeOneTimeCodeHasher(),
                 twoFactor,
                 accountEmails,
                 NullLogger<LoginCodeIssuer>.Instance
@@ -188,7 +188,7 @@ public sealed class LoginCommandHandlerTests
 
         var code = emailSender.LastLoginCode();
         emailSender.Sent.Should().ContainSingle().Which.Kind.Should().Be(EmailKind.TwoFactorCode);
-        user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + twoFactor.ChallengeLifetime);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
         user.LastLoginAt.Should().BeNull("the login only completes after the second factor");
@@ -209,7 +209,7 @@ public sealed class LoginCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + "654321");
+        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + "654321");
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -224,7 +224,7 @@ public sealed class LoginCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().ContainSingle();
-        user.LoginCodeHash.Should().NotBe(FakePasswordHasher.Prefix + "654321");
+        user.LoginCodeHash.Should().NotBe(FakeOneTimeCodeHasher.Prefix + "654321");
     }
 
     [Fact]

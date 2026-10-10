@@ -53,7 +53,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
             PasswordGuards.Create(hasher, uow, clock, sessions, emailSender, lockout),
             options,
             new LoginCodeIssuer(
-                hasher,
+                new FakeOneTimeCodeHasher(),
                 options,
                 accountEmails,
                 NullLogger<LoginCodeIssuer>.Instance
@@ -266,7 +266,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         message.Subject.Should().Contain("eliminación");
         var code = emailSender.LastLoginCode();
         code.Should().MatchRegex("^[0-9]{6}$");
-        user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + options.ChallengeLifetime);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
     }

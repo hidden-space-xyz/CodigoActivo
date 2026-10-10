@@ -92,6 +92,31 @@ public sealed class Ed25519DataProtectionTests : IDisposable
     }
 
     [Fact]
+    public void DeriveKeyStaysStableAcrossReloadsAndIsSeparatedByPurpose()
+    {
+        var store = Load(directory);
+        var key = store.DeriveKey("first-purpose", 32);
+
+        key.Should().HaveCount(32);
+        key.Should().NotEqual(store.PrivateKey.GetEncoded());
+        Load(directory).DeriveKey("first-purpose", 32).Should().Equal(key);
+        store.DeriveKey("second-purpose", 32).Should().NotEqual(key);
+        Load(Path.Join(directory, "other")).DeriveKey("first-purpose", 32).Should().NotEqual(key);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void DeriveKeyBlankPurposeThrows(string purpose)
+    {
+        var store = Load(directory);
+
+        var act = () => store.DeriveKey(purpose, 32);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
     public void LoadWithWrongPasswordFailsClosed()
     {
         Load(directory);

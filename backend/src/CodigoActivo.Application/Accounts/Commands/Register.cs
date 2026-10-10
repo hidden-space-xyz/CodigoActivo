@@ -47,6 +47,7 @@ public sealed record RegisterCommand(
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="hasher">The hasher value.</param>
+/// <param name="codeHasher">Hasher used so the verification code is never stored in plaintext.</param>
 /// <param name="verification">The verification value.</param>
 /// <param name="accountEmails">The account emails value.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -57,6 +58,7 @@ public sealed class RegisterCommandHandler(
     IUnitOfWork uow,
     IClock clock,
     IPasswordHasher hasher,
+    IOneTimeCodeHasher codeHasher,
     AccountVerificationOptions verification,
     AccountEmails accountEmails,
     ILogger<RegisterCommandHandler> logger,
@@ -71,8 +73,8 @@ public sealed class RegisterCommandHandler(
     /// whether the address has an account: a new address gets the verification link; an address
     /// whose account <see cref="User.OwnsEmail"/> gets a notice instead and nothing is created; an
     /// address held by an account nobody verified gets the link of a new account that replaces it.
-    /// The password and the code are hashed before the address is looked up, so every outcome does
-    /// the same expensive work.
+    /// The password is hashed before the address is looked up, so every outcome does the same
+    /// expensive work.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -92,10 +94,7 @@ public sealed class RegisterCommandHandler(
             return Error.Validation(ApplicationErrorCode.DisposableEmailNotAllowed);
         }
 
-        var now = clock.UtcNow;
-        var otpCode = AccountTokens.Create();
         adult.AssignPassword(hasher.Hash(command.Password));
-        adult.IssueOtp(hasher.Hash(otpCode), now, verification.OtpLifetime);
 
         var holder = await users.GetByEmailAsync(email, ct);
         if (holder is { OwnsEmail: true })
@@ -104,6 +103,9 @@ public sealed class RegisterCommandHandler(
             return Result.Success();
         }
 
+        var now = clock.UtcNow;
+        var otpCode = AccountTokens.Create();
+        adult.IssueOtp(codeHasher.Hash(otpCode), now, verification.OtpLifetime);
         await users.AddAsync(adult, ct);
         foreach (var child in minors)
         {

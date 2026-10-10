@@ -26,7 +26,7 @@ public sealed record ForgotPasswordCommand(
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="hasher">The hasher value.</param>
+/// <param name="codeHasher">Hasher used so the reset code is never stored in plaintext.</param>
 /// <param name="passwordReset">The password reset value.</param>
 /// <param name="accountEmails">The account emails value.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -34,15 +34,15 @@ public sealed class ForgotPasswordCommandHandler(
     IUserRepository users,
     IUnitOfWork uow,
     IClock clock,
-    IPasswordHasher hasher,
+    IOneTimeCodeHasher codeHasher,
     PasswordResetOptions passwordReset,
     AccountEmails accountEmails,
     ILogger<ForgotPasswordCommandHandler> logger
 ) : ICommandHandler<ForgotPasswordCommand, Result>
 {
     /// <summary>
-    /// Handles the request to forgot password. Every request succeeds alike and hashes a code
-    /// first, so neither the answer nor its timing tells whether the address has an account.
+    /// Handles the request to forgot password. Every request succeeds alike, so the answer never
+    /// tells whether the address has an account.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -52,8 +52,6 @@ public sealed class ForgotPasswordCommandHandler(
         CancellationToken ct = default
     )
     {
-        var code = AccountTokens.Create();
-        var codeHash = hasher.Hash(code);
         var email = EmailAddress.Create(command.Email);
         var user = email.IsSuccess ? await users.GetByEmailAsync(email.Value, ct) : null;
         if (
@@ -72,6 +70,7 @@ public sealed class ForgotPasswordCommandHandler(
             return Result.Success();
         }
 
+        var code = AccountTokens.Create();
         try
         {
             await accountEmails.SendPasswordResetEmailAsync(user, code, ct);
@@ -86,7 +85,7 @@ public sealed class ForgotPasswordCommandHandler(
             return Result.Success();
         }
 
-        user.IssuePasswordResetCode(codeHash, now, passwordReset.CodeLifetime);
+        user.IssuePasswordResetCode(codeHasher.Hash(code), now, passwordReset.CodeLifetime);
         await uow.SaveChangesAsync(ct);
 
         return Result.Success();

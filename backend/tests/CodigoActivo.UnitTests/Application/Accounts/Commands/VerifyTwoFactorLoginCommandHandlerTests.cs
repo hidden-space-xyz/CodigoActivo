@@ -33,7 +33,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
             users,
             uow.RunsTransactions(),
             clock,
-            new OtpValidator(new FakePasswordHasher()),
+            new OtpValidator(new FakeOneTimeCodeHasher()),
             new AuthenticatorCodeVerifier(
                 totp,
                 new FakeSecretProtector(),
@@ -281,7 +281,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
             user,
             new
             {
-                LoginCodeHash = FakePasswordHasher.Prefix + "123456",
+                LoginCodeHash = FakeOneTimeCodeHasher.Prefix + "123456",
                 LoginCodeExpiresAt = clock.UtcNow.AddMinutes(5),
             }
         );

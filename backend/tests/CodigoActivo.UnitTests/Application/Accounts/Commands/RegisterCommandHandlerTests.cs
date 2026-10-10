@@ -43,6 +43,7 @@ public sealed class RegisterCommandHandlerTests
             uow,
             clock,
             hasher,
+            new FakeOneTimeCodeHasher(),
             verification,
             new AccountEmails(
                 emailSender,
@@ -201,7 +202,7 @@ public sealed class RegisterCommandHandlerTests
         var result = await HandleAsync(NewRegister(minors: [NewMinor()]));
 
         result.IsSuccess.Should().BeTrue();
-        hasher.Hashes.Should().Be(2, "every outcome hashes the password and the code");
+        hasher.Hashes.Should().Be(1, "every outcome hashes the password");
         var notice = emailSender.Sent.Should().ContainSingle().Subject;
         notice.Kind.Should().Be(EmailKind.AccountVerification);
         notice.ToAddress.Should().Be(holder.Email!.Value);
@@ -372,7 +373,7 @@ public sealed class RegisterCommandHandlerTests
         var result = await HandleAsync(NewRegister());
 
         result.IsSuccess.Should().BeTrue();
-        hasher.Hashes.Should().Be(2);
+        hasher.Hashes.Should().Be(1);
         emailSender.Sent.Should().HaveCount(1);
         var code = emailSender.LastCode();
         code.Should().MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
@@ -390,7 +391,7 @@ public sealed class RegisterCommandHandlerTests
         email.HtmlBody.Should().Contain("/verify-account#userId=");
 
         added.Should().ContainSingle();
-        added[0].OtpCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+        added[0].OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
     }
 
     [Fact]

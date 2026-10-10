@@ -35,7 +35,7 @@ public sealed class LoginCodeIssuerTests
             options
         );
         sut = new LoginCodeIssuer(
-            new FakePasswordHasher(),
+            new FakeOneTimeCodeHasher(),
             options,
             accountEmails,
             NullLogger<LoginCodeIssuer>.Instance
@@ -60,7 +60,7 @@ public sealed class LoginCodeIssuerTests
         code.Should().MatchRegex("^[0-9]{6}$");
         message.Subject.Should().NotContain(code, "the code must not leak into the subject line");
         message.TextBody.Should().Contain("7 minutos");
-        user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow.AddMinutes(7));
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
     }
@@ -132,7 +132,7 @@ public sealed class LoginCodeIssuerTests
         code.Should().MatchRegex("^[0-9]{6}$");
         message.Subject.Should().NotContain(code, "the code must not leak into the subject line");
         message.TextBody.Should().Contain("7 minutos");
-        user.LoginCodeHash.Should().Be(FakePasswordHasher.Prefix + code);
+        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow.AddMinutes(7));
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
     }
