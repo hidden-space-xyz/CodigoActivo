@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -30,9 +31,10 @@ public sealed class ExpiredSessionCleaner(
     {
         await using var scope = scopes.CreateAsyncScope();
         var cleanup = scope.ServiceProvider.GetRequiredService<
-            ICommandHandler<RemoveExpiredSessionsCommand, int>
+            ICommandHandler<RemoveExpiredSessionsCommand, Result<int>>
         >();
-        return await cleanup.HandleAsync(new RemoveExpiredSessionsCommand(), ct);
+        var removed = await cleanup.HandleAsync(new RemoveExpiredSessionsCommand(), ct);
+        return removed.Value;
     }
 
     /// <summary>

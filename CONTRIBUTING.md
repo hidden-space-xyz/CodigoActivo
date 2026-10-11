@@ -129,10 +129,11 @@ The five required steps are documented once, in
 - Put one command or query and its sealed handler in each use-case file. Controllers inject handlers; they do
   not contain business logic.
 - Keep business rules in the domain: entities have private setters, factories and behavior methods, and
-  handlers only load, call the domain, persist and run the effects after the commit.
+  handlers only load, call the domain and stage the changes; effects run in domain event listeners after the
+  commit.
 - Queries read through `IReadStore` and do not mutate, commit, invalidate caches or send email. Commands load
-  aggregates through repositories, return `Result` or `Result<Guid>` without calling queries, commit through
-  `IUnitOfWork` and invalidate caches after the commit.
+  aggregates through repositories, return a `Result` without calling queries and leave the commit to the unit of
+  work decorator unless they must react to the outcome of a save or run several saves in one transaction.
 - Never access `DateTime.Now` or `DateTime.UtcNow`; inject `IClock`.
 - Do not add `Version` attributes to `PackageReference`; versions are centralized in
   `backend/Directory.Packages.props`.

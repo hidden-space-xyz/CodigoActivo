@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Users;
@@ -35,7 +36,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
             .AddScoped<IDeletedAccountRepository>(_ => deletedAccounts)
             .AddSingleton<IClock>(clock)
             .AddScoped<
-                ICommandHandler<PurgeDeletedAccountsCommand, int>,
+                ICommandHandler<PurgeDeletedAccountsCommand, Result<int>>,
                 PurgeDeletedAccountsCommandHandler
             >()
             .BuildServiceProvider();

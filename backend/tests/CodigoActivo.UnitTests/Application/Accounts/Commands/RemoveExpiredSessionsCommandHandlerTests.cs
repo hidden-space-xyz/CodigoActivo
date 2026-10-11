@@ -34,7 +34,7 @@ public sealed class RemoveExpiredSessionsCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        removed.Should().Be(3);
+        removed.Value.Should().Be(3);
         await sessions
             .Received(1)
             .RemoveExpiredAsync(clock.UtcNow, null, TestContext.Current.CancellationToken);

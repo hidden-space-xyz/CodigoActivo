@@ -31,7 +31,7 @@ public sealed class PurgeDeletedAccountsCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        purged.Should().Be(5);
+        purged.Value.Should().Be(5);
         await deletedAccounts
             .Received(1)
             .RemoveDeletedUpToAsync(
