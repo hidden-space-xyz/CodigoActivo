@@ -8,7 +8,6 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
@@ -34,12 +33,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
             uow.RunsTransactions(),
             clock,
             new OtpValidator(new FakeOneTimeCodeHasher()),
-            new AuthenticatorCodeVerifier(
-                totp,
-                new FakeSecretProtector(),
-                clock,
-                NullLogger<AuthenticatorCodeVerifier>.Instance
-            ),
+            new AuthenticatorCodeVerifier(totp, new FakeSecretProtector(), clock),
             options,
             logger
         );

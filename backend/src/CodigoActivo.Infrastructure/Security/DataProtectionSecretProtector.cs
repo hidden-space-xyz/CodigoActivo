@@ -1,5 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Security;
 
@@ -12,34 +16,42 @@ public sealed class DataProtectionSecretProtector : ISecretProtector
     private const string Purpose = "CodigoActivo.Authenticator.v1";
 
     private readonly IDataProtector protector;
+    private readonly ILogger<DataProtectionSecretProtector> logger;
 
     /// <summary>
     /// Initializes the protector for the authenticator purpose.
     /// </summary>
     /// <param name="provider">Data protection provider configured by the host.</param>
-    public DataProtectionSecretProtector(IDataProtectionProvider provider)
+    /// <param name="logger">Logger used to record the secrets that could not be read.</param>
+    public DataProtectionSecretProtector(
+        IDataProtectionProvider provider,
+        ILogger<DataProtectionSecretProtector> logger
+    )
     {
         ArgumentNullException.ThrowIfNull(provider);
         protector = provider.CreateProtector(Purpose);
+        this.logger = logger;
     }
 
-    /// <summary>
-    /// Encrypts the supplied value for storage.
-    /// </summary>
-    /// <param name="plaintext">Value to protect.</param>
-    /// <returns>The protected representation.</returns>
+    /// <inheritdoc />
     public string Protect(string plaintext)
     {
         return protector.Protect(plaintext);
     }
 
-    /// <summary>
-    /// Decrypts a value produced by <see cref="Protect"/>.
-    /// </summary>
-    /// <param name="protectedValue">Protected representation to reverse.</param>
-    /// <returns>The original value.</returns>
-    public string Unprotect(string protectedValue)
+    /// <inheritdoc />
+    public bool TryUnprotect(string protectedValue, [NotNullWhen(true)] out string? plaintext)
     {
-        return protector.Unprotect(protectedValue);
+        try
+        {
+            plaintext = protector.Unprotect(protectedValue);
+            return true;
+        }
+        catch (CryptographicException ex)
+        {
+            logger.AuthenticatorKeyUnreadable(ex);
+            plaintext = null;
+            return false;
+        }
     }
 }

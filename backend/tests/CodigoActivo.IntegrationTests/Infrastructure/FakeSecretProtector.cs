@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+using System.Diagnostics.CodeAnalysis;
 using CodigoActivo.Application.Abstractions.Security;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
@@ -12,10 +12,11 @@ public sealed class FakeSecretProtector : ISecretProtector
         return Prefix + plaintext;
     }
 
-    public string Unprotect(string protectedValue)
+    public bool TryUnprotect(string protectedValue, [NotNullWhen(true)] out string? plaintext)
     {
-        return protectedValue.StartsWith(Prefix, StringComparison.Ordinal)
+        plaintext = protectedValue.StartsWith(Prefix, StringComparison.Ordinal)
             ? protectedValue[Prefix.Length..]
-            : throw new CryptographicException("The value was not protected by this protector.");
+            : null;
+        return plaintext is not null;
     }
 }

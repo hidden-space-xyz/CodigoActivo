@@ -1,8 +1,5 @@
-using System.Security.Cryptography;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Diagnostics;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Accounts;
 
@@ -13,12 +10,10 @@ namespace CodigoActivo.Application.Accounts;
 /// <param name="totp">Time-based one-time password implementation.</param>
 /// <param name="protector">Protector that decrypts stored authenticator keys.</param>
 /// <param name="clock">Clock used to obtain the current time step.</param>
-/// <param name="logger">Logger used to record unreadable keys.</param>
 public sealed class AuthenticatorCodeVerifier(
     ITotpService totp,
     ISecretProtector protector,
-    IClock clock,
-    ILogger<AuthenticatorCodeVerifier> logger
+    IClock clock
 )
 {
     /// <summary>
@@ -34,17 +29,8 @@ public sealed class AuthenticatorCodeVerifier(
             return null;
         }
 
-        string secret;
-        try
-        {
-            secret = protector.Unprotect(protectedKey);
-        }
-        catch (CryptographicException ex)
-        {
-            logger.AuthenticatorKeyUnreadable(ex);
-            return null;
-        }
-
-        return totp.MatchStep(secret, code, clock.UtcNow);
+        return protector.TryUnprotect(protectedKey, out var secret)
+            ? totp.MatchStep(secret, code, clock.UtcNow)
+            : null;
     }
 }
