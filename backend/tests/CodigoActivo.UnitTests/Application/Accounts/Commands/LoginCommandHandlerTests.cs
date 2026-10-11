@@ -44,7 +44,6 @@ public sealed class LoginCommandHandlerTests
         );
         sut = new LoginCommandHandler(
             users,
-            uow,
             clock,
             PasswordGuards.Create(hasher, uow, clock, emailSender: emailSender),
             twoFactor,
@@ -195,7 +194,6 @@ public sealed class LoginCommandHandlerTests
         await users
             .Received(1)
             .GetByEmailAsync(EmailAddress.FromStored("ana@test.com"), Arg.Any<CancellationToken>());
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -210,7 +208,6 @@ public sealed class LoginCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
         user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + "654321");
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -240,7 +237,6 @@ public sealed class LoginCommandHandlerTests
             .Be(new LoginChallenge(user.Id.Value, TwoFactorMethod.Authenticator, null));
         emailSender.Sent.Should().BeEmpty();
         user.LoginCodeHash.Should().BeNull();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

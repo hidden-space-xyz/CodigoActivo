@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common;
@@ -19,7 +18,6 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 public sealed class ResendTwoFactorCodeCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly TwoFactorOptions options = new();
@@ -39,7 +37,6 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         );
         sut = new ResendTwoFactorCodeCommandHandler(
             users,
-            uow,
             clock,
             options,
             new LoginCodeIssuer(
@@ -59,12 +56,6 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         );
     }
 
-    private Task<int> AssertNotSavedAsync()
-    {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
     [Fact]
     public async Task HandleAsyncUserMissingReturnsNotFound()
     {
@@ -73,7 +64,6 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         var result = await ResendAsync(Guid.NewGuid());
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -85,7 +75,6 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendNotAllowed);
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -111,7 +100,6 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -128,7 +116,6 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         code.Should().NotBe("111111");
         user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -155,6 +142,5 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
         user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + "111111");
-        await AssertNotSavedAsync();
     }
 }

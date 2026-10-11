@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
@@ -19,13 +18,11 @@ public sealed record StartSessionCommand(UserId UserId) : ICommand<Result<Sessio
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="sessions">Repository used to persist and retrieve user sessions.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="options">Lifetime applied to the new session.</param>
 public sealed class StartSessionCommandHandler(
     IUserRepository users,
     IUserSessionRepository sessions,
-    IUnitOfWork uow,
     IClock clock,
     SessionLifetimeOptions options
 ) : ICommandHandler<StartSessionCommand, Result<SessionTicket>>
@@ -53,8 +50,6 @@ public sealed class StartSessionCommandHandler(
 
         var session = UserSession.Start(command.UserId, now, options.Lifetime);
         await sessions.AddAsync(session, ct);
-        await uow.SaveChangesAsync(ct);
-
         return new SessionTicket(
             session.Id.Value,
             new SessionIdentity(

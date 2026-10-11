@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Validation;
@@ -23,12 +22,10 @@ public sealed record VerifyUserCommand(
 /// Executes the command to verify user.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="otpValidator">The otp validator value.</param>
 public sealed class VerifyUserCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
     IClock clock,
     OtpValidator otpValidator
 ) : ICommandHandler<VerifyUserCommand, Result>
@@ -57,8 +54,6 @@ public sealed class VerifyUserCommandHandler(
         }
 
         user.Verify(now);
-        await uow.SaveChangesAsync(ct);
-
         return Result.Success();
     }
 }

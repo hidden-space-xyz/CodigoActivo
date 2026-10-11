@@ -1,7 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
@@ -22,7 +21,6 @@ public sealed class ResendVerificationCommandHandlerTests
     private const string Email = "ana@test.com";
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
@@ -34,7 +32,6 @@ public sealed class ResendVerificationCommandHandlerTests
     {
         sut = new ResendVerificationCommandHandler(
             users,
-            uow,
             clock,
             new FakeOneTimeCodeHasher(),
             verification,
@@ -65,12 +62,6 @@ public sealed class ResendVerificationCommandHandlerTests
         return user;
     }
 
-    private Task<int> AssertNotSavedAsync()
-    {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
     [Fact]
     public async Task HandleAsyncAddressWithoutAccountSucceedsWithoutSending()
     {
@@ -78,7 +69,6 @@ public sealed class ResendVerificationCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -90,7 +80,6 @@ public sealed class ResendVerificationCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -111,7 +100,6 @@ public sealed class ResendVerificationCommandHandlerTests
         user.OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + emailSender.LastCode());
         user.OtpLastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -123,11 +111,10 @@ public sealed class ResendVerificationCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncCooldownElapsedIssuesNewCodeAndPersists()
+    public async Task HandleAsyncCooldownElapsedIssuesNewCode()
     {
         var user = HolderOfTheAddress(
             NewPendingWithOtp(clock, code: "old-code", otpLastSentAt: clock.UtcNow.AddMinutes(-5))
@@ -145,7 +132,6 @@ public sealed class ResendVerificationCommandHandlerTests
         user.OtpExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);
         user.OtpLastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -161,7 +147,6 @@ public sealed class ResendVerificationCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.OtpCodeHash.Should().Be(previousHash);
-        await AssertNotSavedAsync();
         logger
             .LevelEntries.Should()
             .ContainSingle(entry => entry.Level == LogLevel.Error)
@@ -186,6 +171,5 @@ public sealed class ResendVerificationCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.OtpCodeHash.Should().Be(previousHash);
         user.OtpLastSentAt.Should().Be(previousSentAt);
-        await AssertNotSavedAsync();
     }
 }

@@ -1,7 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
@@ -20,7 +19,6 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 public sealed class ForgotPasswordCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
@@ -32,7 +30,6 @@ public sealed class ForgotPasswordCommandHandlerTests
     {
         sut = new ForgotPasswordCommandHandler(
             users,
-            uow,
             clock,
             new FakeOneTimeCodeHasher(),
             passwordReset,
@@ -45,12 +42,6 @@ public sealed class ForgotPasswordCommandHandlerTests
             ),
             NullLogger<ForgotPasswordCommandHandler>.Instance
         );
-    }
-
-    private Task<int> AssertNotSavedAsync()
-    {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -67,7 +58,6 @@ public sealed class ForgotPasswordCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.PasswordResetCodeHash.Should().BeNull();
         user.PasswordResetLastSentAt.Should().BeNull();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -82,7 +72,6 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -97,7 +86,6 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     public static TheoryData<Guid> IneligibleResetStatuses()
@@ -118,7 +106,6 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -134,11 +121,10 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncEligibleUserSendsRandomCodeAndPersistsHash()
+    public async Task HandleAsyncEligibleUserSendsRandomCodeAndKeepsItsHash()
     {
         var user = users.FindReturns(NewUser());
 
@@ -157,7 +143,6 @@ public sealed class ForgotPasswordCommandHandlerTests
         emailSender.Sent.Should().HaveCount(1);
         emailSender.Sent[0].ToAddress.Should().Be(user.Email!.Value);
         emailSender.Sent[0].TextBody.Should().Contain("/reset-password#userId=");
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -176,11 +161,10 @@ public sealed class ForgotPasswordCommandHandlerTests
         var newCode = emailSender.LastCode();
         newCode.Should().NotBe("old-code");
         user.PasswordResetCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + newCode);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task HandleAsyncEmailSendFailsReturnsSuccessWithoutPersisting()
+    public async Task HandleAsyncEmailSendFailsReturnsSuccessWithoutIssuingCode()
     {
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
         var user = users.FindReturns(NewUser());
@@ -192,6 +176,5 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.PasswordResetCodeHash.Should().BeNull();
-        await AssertNotSavedAsync();
     }
 }

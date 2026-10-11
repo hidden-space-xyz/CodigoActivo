@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Queries;
@@ -22,7 +21,6 @@ public sealed class SessionTicketValidatorTests
             new StartSessionCommandHandler(
                 Substitute.For<IUserRepository>(),
                 sessions,
-                Substitute.For<IUnitOfWork>(),
                 new TestClock(),
                 new SessionLifetimeOptions()
             ),
