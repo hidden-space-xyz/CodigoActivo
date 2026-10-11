@@ -25,17 +25,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Activities.Activity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("ActivityEndsAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("activity_ends_at");
-
-                    b.Property<Guid>("ActivityModalityTypeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("activity_modality_type_id");
 
                     b.Property<DateTimeOffset>("ActivityStartsAt")
                         .HasColumnType("timestamp with time zone")
@@ -63,6 +58,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("location");
 
+                    b.Property<Guid>("Modality")
+                        .HasColumnType("uuid")
+                        .HasColumnName("activity_modality_type_id");
+
                     b.Property<Guid>("ThumbnailId")
                         .HasColumnType("uuid")
                         .HasColumnName("thumbnail_id");
@@ -83,14 +82,14 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasKey("Id")
                         .HasName("pk_activities");
 
-                    b.HasIndex("ActivityModalityTypeId")
-                        .HasDatabaseName("ix_activities_activity_modality_type_id");
-
                     b.HasIndex("ActivityStartsAt")
                         .HasDatabaseName("ix_activities_activity_starts_at");
 
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_activities_created_by");
+
+                    b.HasIndex("Modality")
+                        .HasDatabaseName("ix_activities_activity_modality_type_id");
 
                     b.HasIndex("ThumbnailId")
                         .HasDatabaseName("ix_activities_thumbnail_id");
@@ -104,35 +103,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("activities", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Activities.ActivityModalityType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_activity_modality_types");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_activity_modality_types_name");
-
-                    b.ToTable("activity_modality_types", (string)null);
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.Activities.ActivityRoleCapacity", b =>
                 {
                     b.Property<Guid>("ActivityId")
                         .HasColumnType("uuid")
                         .HasColumnName("activity_id");
 
-                    b.Property<Guid>("ActivityRoleTypeId")
+                    b.Property<Guid>("Role")
                         .HasColumnType("uuid")
                         .HasColumnName("activity_role_type_id");
 
@@ -140,40 +117,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("desired_count");
 
-                    b.HasKey("ActivityId", "ActivityRoleTypeId")
+                    b.HasKey("ActivityId", "Role")
                         .HasName("pk_activity_role_capacities");
 
-                    b.HasIndex("ActivityRoleTypeId")
+                    b.HasIndex("Role")
                         .HasDatabaseName("ix_activity_role_capacities_activity_role_type_id");
 
                     b.ToTable("activity_role_capacities", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Activities.ActivityRoleType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_activity_role_types");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_activity_role_types_name");
-
-                    b.ToTable("activity_role_types", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Activities.Assignment", b =>
@@ -186,28 +136,28 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("activity_id");
 
-                    b.Property<Guid>("ActivityRoleTypeId")
+                    b.Property<Guid>("Role")
                         .HasColumnType("uuid")
                         .HasColumnName("activity_role_type_id");
-
-                    b.Property<Guid>("AssignmentStatusId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("assignment_status_id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.HasKey("UserId", "ActivityId", "ActivityRoleTypeId")
+                    b.Property<Guid>("Status")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assignment_status_id");
+
+                    b.HasKey("UserId", "ActivityId", "Role")
                         .HasName("pk_assignments");
 
                     b.HasIndex("ActivityId")
                         .HasDatabaseName("ix_assignments_activity_id");
 
-                    b.HasIndex("ActivityRoleTypeId")
+                    b.HasIndex("Role")
                         .HasDatabaseName("ix_assignments_activity_role_type_id");
 
-                    b.HasIndex("AssignmentStatusId")
+                    b.HasIndex("Status")
                         .HasDatabaseName("ix_assignments_assignment_status_id");
 
                     b.HasIndex("UserId", "ActivityId")
@@ -217,43 +167,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("assignments", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Activities.AssignmentStatusType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(9)
-                        .HasColumnType("character varying(9)")
-                        .HasColumnName("color");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_assignment_status_types");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_assignment_status_types_name");
-
-                    b.ToTable("assignment_status_types", (string)null);
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.EventCategories.EventCategoryType", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -281,7 +197,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Events.Event", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -392,7 +307,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Events.EventRating", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -492,7 +406,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Files.StoredFile", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -526,7 +439,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.News.NewsItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -595,7 +507,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Partners.Partner", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -657,7 +568,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Resources.Resource", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -674,7 +584,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("description");
 
-                    b.Property<Guid>("ResourceTypeId")
+                    b.Property<Guid>("ResourceType")
                         .HasColumnType("uuid")
                         .HasColumnName("resource_type_id");
 
@@ -713,7 +623,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_resources_created_by");
 
-                    b.HasIndex("ResourceTypeId")
+                    b.HasIndex("ResourceType")
                         .HasDatabaseName("ix_resources_resource_type_id");
 
                     b.HasIndex("ThumbnailId")
@@ -725,47 +635,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("resources", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Resources.ResourceType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(9)
-                        .HasColumnType("character varying(9)")
-                        .HasColumnName("color");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsExternal")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_external");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_resource_types");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_resource_types_name");
-
-                    b.ToTable("resource_types", (string)null);
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.TermsDocuments.TermsDocument", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -816,7 +688,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -957,6 +828,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("secondary_phone");
 
+                    b.Property<Guid>("Status")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_status_type_id");
+
                     b.Property<int>("TwoFactorFailedAttempts")
                         .HasColumnType("integer")
                         .HasColumnName("two_factor_failed_attempts");
@@ -975,11 +850,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<Guid>("UserStatusTypeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_status_type_id");
-
-                    b.Property<Guid>("UserTypeId")
+                    b.Property<Guid>("UserType")
                         .HasColumnType("uuid")
                         .HasColumnName("user_type_id");
 
@@ -993,10 +864,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("ParentId")
                         .HasDatabaseName("ix_users_parent_id");
 
-                    b.HasIndex("UserStatusTypeId")
+                    b.HasIndex("Status")
                         .HasDatabaseName("ix_users_user_status_type_id");
 
-                    b.HasIndex("UserTypeId")
+                    b.HasIndex("UserType")
                         .HasDatabaseName("ix_users_user_type_id");
 
                     b.HasIndex("FirstName", "LastName")
@@ -1008,7 +879,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Users.UserSession", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
@@ -1031,72 +901,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_user_sessions_user_id");
 
                     b.ToTable("user_sessions", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Users.UserStatusType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(9)
-                        .HasColumnType("character varying(9)")
-                        .HasColumnName("color");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_user_status_types");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_status_types_name");
-
-                    b.ToTable("user_status_types", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Users.UserType", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(9)
-                        .HasColumnType("character varying(9)")
-                        .HasColumnName("color");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_user_types");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_types_name");
-
-                    b.ToTable("user_types", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.DisposableEmailDomain", b =>
@@ -1255,15 +1059,187 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("email_outbox_messages", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.ActivityModalityEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_activity_modality_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_activity_modality_types_name");
+
+                    b.ToTable("activity_modality_types", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.ActivityRoleEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_activity_role_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_activity_role_types_name");
+
+                    b.ToTable("activity_role_types", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.AssignmentStatusEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("color");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_assignment_status_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_assignment_status_types_name");
+
+                    b.ToTable("assignment_status_types", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.ResourceTypeEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("color");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsExternal")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_external");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_resource_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_resource_types_name");
+
+                    b.ToTable("resource_types", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.UserStatusEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("color");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_status_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_status_types_name");
+
+                    b.ToTable("user_status_types", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.UserTypeEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("color");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_types");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_types_name");
+
+                    b.ToTable("user_types", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Activities.Activity", b =>
                 {
-                    b.HasOne("CodigoActivo.Domain.Activities.ActivityModalityType", null)
-                        .WithMany()
-                        .HasForeignKey("ActivityModalityTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_activities_activity_modality_types_activity_modality_type_id");
-
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("CreatedBy")
@@ -1277,6 +1253,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_activities_events_event_id");
+
+                    b.HasOne("CodigoActivo.Infrastructure.Database.Catalogs.ActivityModalityEntry", null)
+                        .WithMany()
+                        .HasForeignKey("Modality")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_activities_activity_modality_types_activity_modality_type_id");
 
                     b.HasOne("CodigoActivo.Domain.Files.StoredFile", null)
                         .WithMany()
@@ -1301,9 +1284,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_activity_role_capacities_activities_activity_id");
 
-                    b.HasOne("CodigoActivo.Domain.Activities.ActivityRoleType", null)
+                    b.HasOne("CodigoActivo.Infrastructure.Database.Catalogs.ActivityRoleEntry", null)
                         .WithMany()
-                        .HasForeignKey("ActivityRoleTypeId")
+                        .HasForeignKey("Role")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_activity_role_capacities_activity_role_types_activity_role_");
@@ -1318,16 +1301,16 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_assignments_activities_activity_id");
 
-                    b.HasOne("CodigoActivo.Domain.Activities.ActivityRoleType", null)
+                    b.HasOne("CodigoActivo.Infrastructure.Database.Catalogs.ActivityRoleEntry", null)
                         .WithMany()
-                        .HasForeignKey("ActivityRoleTypeId")
+                        .HasForeignKey("Role")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_assignments_activity_role_types_activity_role_type_id");
 
-                    b.HasOne("CodigoActivo.Domain.Activities.AssignmentStatusType", null)
+                    b.HasOne("CodigoActivo.Infrastructure.Database.Catalogs.AssignmentStatusEntry", null)
                         .WithMany()
-                        .HasForeignKey("AssignmentStatusId")
+                        .HasForeignKey("Status")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_assignments_assignment_status_types_assignment_status_id");
@@ -1368,7 +1351,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.EventCategories.EventCategoryType", null)
                         .WithMany()
                         .HasForeignKey("EventCategoryTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_event_categories_event_category_types_event_category_type_id");
 
@@ -1496,9 +1479,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_resources_users_created_by");
 
-                    b.HasOne("CodigoActivo.Domain.Resources.ResourceType", null)
+                    b.HasOne("CodigoActivo.Infrastructure.Database.Catalogs.ResourceTypeEntry", null)
                         .WithMany()
-                        .HasForeignKey("ResourceTypeId")
+                        .HasForeignKey("ResourceType")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_resources_resource_types_resource_type_id");
@@ -1525,16 +1508,16 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_users_users_parent_id");
 
-                    b.HasOne("CodigoActivo.Domain.Users.UserStatusType", null)
+                    b.HasOne("CodigoActivo.Infrastructure.Database.Catalogs.UserStatusEntry", null)
                         .WithMany()
-                        .HasForeignKey("UserStatusTypeId")
+                        .HasForeignKey("Status")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_users_user_status_types_user_status_type_id");
 
-                    b.HasOne("CodigoActivo.Domain.Users.UserType", null)
+                    b.HasOne("CodigoActivo.Infrastructure.Database.Catalogs.UserTypeEntry", null)
                         .WithMany()
-                        .HasForeignKey("UserTypeId")
+                        .HasForeignKey("UserType")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_users_user_types_user_type_id");

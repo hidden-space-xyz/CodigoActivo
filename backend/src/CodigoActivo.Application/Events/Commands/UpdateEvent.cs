@@ -20,7 +20,9 @@ namespace CodigoActivo.Application.Events.Commands;
 public sealed record UpdateEventCommand(EventId EventId, EventDraft Event) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to update the event.
+/// Executes the command to update the event. The event stays locked from the moment it is loaded
+/// until its new state is stored, so a concurrent change of its categories, such as the deletion of
+/// one of them, sees the stored categories and cannot leave the event without any.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
@@ -29,6 +31,7 @@ public sealed record UpdateEventCommand(EventId EventId, EventDraft Event) : ICo
 /// <param name="categoryChecker">The category checker value.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work that stores the event while it is locked.</param>
 public sealed class UpdateEventCommandHandler(
     IEventRepository events,
     IActivityRepository activities,
@@ -36,7 +39,8 @@ public sealed class UpdateEventCommandHandler(
     ITermsDocumentRepository termsDocuments,
     EventCategoryChecker categoryChecker,
     ICurrentUser currentUser,
-    IClock clock
+    IClock clock,
+    IUnitOfWork uow
 ) : ICommandHandler<UpdateEventCommand, Result>
 {
     /// <summary>
@@ -71,13 +75,27 @@ public sealed class UpdateEventCommandHandler(
             return categories.Error!;
         }
 
-        var ev = await events.GetByIdAsync(command.EventId, ct);
+        return await uow.ExecuteInTransactionAsync(
+            attempt => UpdateLockedAsync(command, schedule.Value, categories.Value, attempt),
+            ct
+        );
+    }
+
+    private async Task<Result> UpdateLockedAsync(
+        UpdateEventCommand command,
+        EventSchedule schedule,
+        EventCategorySelection categories,
+        CancellationToken ct
+    )
+    {
+        var draft = command.Event;
+        var ev = await events.GetLockedAsync(command.EventId, ct);
         if (ev is null)
         {
             return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
-        var (lowerInclusive, upperExclusive) = schedule.Value.Calendar.InstantsIn(clock.TimeZone);
+        var (lowerInclusive, upperExclusive) = schedule.Calendar.InstantsIn(clock.TimeZone);
         if (
             await activities.AnyOutsideRangeAsync(
                 command.EventId,
@@ -108,12 +126,13 @@ public sealed class UpdateEventCommandHandler(
                 RichText.From(draft.Description),
                 draft.ThumbnailId
             ),
-            schedule.Value,
-            categories.Value,
+            schedule,
+            categories,
             terms.Value,
             currentUser.RequiredId(),
             clock.UtcNow
         );
+        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

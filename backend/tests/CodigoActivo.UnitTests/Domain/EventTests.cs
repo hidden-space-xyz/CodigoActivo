@@ -376,6 +376,46 @@ public sealed class EventTests
     }
 
     [Fact]
+    public void RemoveCategoryOneOfSeveralKeepsTheOthers()
+    {
+        var talleres = EventCategoryTypeId.New();
+        var charlas = EventCategoryTypeId.New();
+        var ev = NewEvent(categoryTypeIds: [talleres, charlas]);
+
+        var removed = ev.RemoveCategory(talleres);
+
+        removed.IsSuccess.Should().BeTrue();
+        ev.Categories.Select(category => category.EventCategoryTypeId).Should().Equal(charlas);
+    }
+
+    [Fact]
+    public void RemoveCategoryOnlyOneIsRefusedAndKept()
+    {
+        var talleres = EventCategoryTypeId.New();
+        var ev = NewEvent(categoryTypeIds: [talleres]);
+
+        var removed = ev.RemoveCategory(talleres);
+
+        removed.ShouldFail(
+            ErrorKind.Conflict,
+            DomainErrorCode.EventCategoryTypeOnlyCategoryOfEvent
+        );
+        ev.Categories.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void RemoveCategoryNotTaggedChangesNothing()
+    {
+        var talleres = EventCategoryTypeId.New();
+        var ev = NewEvent(categoryTypeIds: [talleres]);
+
+        var removed = ev.RemoveCategory(EventCategoryTypeId.New());
+
+        removed.IsSuccess.Should().BeTrue();
+        ev.Categories.Should().ContainSingle();
+    }
+
+    [Fact]
     public void CreateTermsLinksDocumentsInDisplayOrder()
     {
         var first = Guid.NewGuid();

@@ -211,4 +211,9 @@ public enum DomainErrorCode
     /// An answer of a rating is longer than allowed.
     /// </summary>
     EventRatingAnswerTooLong,
+
+    /// <summary>
+    /// The category is the only one of an event, which must keep at least one.
+    /// </summary>
+    EventCategoryTypeOnlyCategoryOfEvent,
 }

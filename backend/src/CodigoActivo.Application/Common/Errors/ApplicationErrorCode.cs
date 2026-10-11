@@ -91,11 +91,6 @@ public enum ApplicationErrorCode
     EventCategoryTypeNameAlreadyExists,
 
     /// <summary>
-    /// Selects the event category type only category of event option.
-    /// </summary>
-    EventCategoryTypeOnlyCategoryOfEvent,
-
-    /// <summary>
     /// Selects the event thumbnail not found option.
     /// </summary>
     EventThumbnailNotFound,

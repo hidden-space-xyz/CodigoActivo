@@ -42,16 +42,40 @@ public class EventRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public Task<bool> HasEventWithOnlyCategoryAsync(
+    public async Task<IReadOnlyList<Event>> LockTaggedWithAsync(
         EventCategoryTypeId categoryTypeId,
         CancellationToken ct = default
     )
     {
-        return Set.AnyAsync(
-            e =>
-                e.Categories.Count == 1
-                && e.Categories.Any(category => category.EventCategoryTypeId == categoryTypeId),
-            ct
-        );
+        FormattableString sql = $"""
+            SELECT e.id AS "Value"
+            FROM events e
+            WHERE EXISTS (
+                SELECT 1 FROM event_categories c
+                WHERE c.event_id = e.id AND c.event_category_type_id = {categoryTypeId.Value}
+            )
+            ORDER BY e.id
+            FOR NO KEY UPDATE OF e
+            """;
+        var ids = (await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct))
+            .Select(EventId.From)
+            .ToList();
+        return ids.Count is 0
+            ? []
+            : await Set.Include(e => e.Categories)
+                .Include(e => e.TermsDocuments)
+                .Where(e => ids.Contains(e.Id))
+                .ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Event?> GetLockedAsync(EventId id, CancellationToken ct = default)
+    {
+        FormattableString sql = $"""
+            SELECT id AS "Value" FROM events WHERE id = {id.Value} FOR NO KEY UPDATE
+            """;
+        return (await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Count is 0
+            ? null
+            : await GetByIdAsync(id, ct);
     }
 }
