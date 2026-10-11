@@ -12,8 +12,10 @@ namespace CodigoActivo.UnitTests.Domain;
 public sealed class ActivityTests
 {
     private static readonly DateTimeOffset Now = new(2026, 3, 4, 5, 6, 7, TimeSpan.Zero);
-    private static readonly DateOnly EventStart = new(2026, 7, 1);
-    private static readonly DateOnly EventEnd = new(2026, 7, 31);
+    private static readonly DateRange EventDays = DateRange.FromStored(
+        new DateOnly(2026, 7, 1),
+        new DateOnly(2026, 7, 31)
+    );
     private static readonly DateTimeOffset StartsAt = new(2026, 7, 10, 10, 0, 0, TimeSpan.Zero);
     private static readonly TimeZoneInfo PlusTwo = TimeZoneInfo.CreateCustomTimeZone(
         "Test",
@@ -43,9 +45,7 @@ public sealed class ActivityTests
     private static ActivitySchedule Schedule(DateTimeOffset? startsAt = null)
     {
         var start = startsAt ?? StartsAt;
-        return ActivitySchedule
-            .Create(start, start.AddHours(2), EventStart, EventEnd, TimeZoneInfo.Utc)
-            .Value;
+        return ActivitySchedule.Create(start, start.AddHours(2), EventDays, TimeZoneInfo.Utc).Value;
     }
 
     private static RoleCapacityPlan Plan(params RoleCapacity[] capacities)
@@ -78,13 +78,7 @@ public sealed class ActivityTests
         DateTimeOffset? endsAt
     )
     {
-        var schedule = ActivitySchedule.Create(
-            startsAt,
-            endsAt,
-            EventStart,
-            EventEnd,
-            TimeZoneInfo.Utc
-        );
+        var schedule = ActivitySchedule.Create(startsAt, endsAt, EventDays, TimeZoneInfo.Utc);
 
         schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleRequired);
     }
@@ -97,8 +91,7 @@ public sealed class ActivityTests
         var schedule = ActivitySchedule.Create(
             StartsAt,
             StartsAt.AddMinutes(endsMinutesAfterStart),
-            EventStart,
-            EventEnd,
+            EventDays,
             TimeZoneInfo.Utc
         );
 
@@ -120,14 +113,8 @@ public sealed class ActivityTests
             "Test"
         );
 
-        var inUtc = ActivitySchedule.Create(
-            startsAt,
-            endsAt,
-            EventStart,
-            EventEnd,
-            TimeZoneInfo.Utc
-        );
-        var inZone = ActivitySchedule.Create(startsAt, endsAt, EventStart, EventEnd, zone);
+        var inUtc = ActivitySchedule.Create(startsAt, endsAt, EventDays, TimeZoneInfo.Utc);
+        var inZone = ActivitySchedule.Create(startsAt, endsAt, EventDays, zone);
 
         inUtc.IsSuccess.Should().BeTrue();
         inZone.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleOutsideEventRange);
@@ -140,10 +127,10 @@ public sealed class ActivityTests
         var startsAt = new DateTimeOffset(2026, 7, 1, 0, 30, 0, offset);
         var endsAt = new DateTimeOffset(2026, 7, 1, 2, 0, 0, offset);
 
-        var schedule = ActivitySchedule.Create(startsAt, endsAt, EventStart, EventEnd, PlusTwo);
+        var schedule = ActivitySchedule.Create(startsAt, endsAt, EventDays, PlusTwo);
 
         ActivitySchedule
-            .Create(startsAt, endsAt, EventStart, EventEnd, TimeZoneInfo.Utc)
+            .Create(startsAt, endsAt, EventDays, TimeZoneInfo.Utc)
             .ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleOutsideEventRange);
         schedule
             .Value.StartsAt.Should()

@@ -46,7 +46,9 @@ aggregate roots.
   be passed for another. Values with rules are value objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`,
   `RichText`, `DateRange` (the event calendar), `SignupWindow` and `ActivitySchedule`. EF Core maps them onto the
   existing columns through conventions and converters (`Infrastructure/Database/Conversions`), so the schema does
-  not change; the read model keeps plain `Guid` and primitive columns.
+  not change; the read model keeps plain `Guid` and primitive columns. `DateRange.InstantsIn` gives the UTC bounds
+  of the event days that both `DateRange.Covers` (a new activity schedule) and
+  `IActivityRepository.AnyOutsideRangeAsync` (a shortened event) compare activities against.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
   `DeletedAccount`, `Event` (with its categories and terms links), `Activity` (with its role capacities and
   signups), `EventTermsAcceptance`, `EventRating`, `NewsItem`, `Resource`, `Partner`, `TermsDocument`,
@@ -214,8 +216,9 @@ found, 409 conflict, 500 unexpected. A path under `/api` that matches no endpoin
 `ErrorCode` is serialized as a string and is part of the frontend contract; the API registers the string enum
 converter for MVC and for the responses it writes directly, since the Domain carries no serialization
 attributes. Request records live in `API/<Feature>/Contracts/`, response records in
-`Application/<Feature>/Contracts/`; the shared binding primitives (`PageQuery`, `SortMap`, `TextSearch`,
-`LocalDayRange`) in `Application/Common/Querying`. Mapping is handwritten.
+`Application/<Feature>/Contracts/`; the shared binding primitives (`PageQuery`, `SortMap`, `TextSearch`) in
+`Application/Common/Querying`; day filters turn a local day into UTC instants with `LocalDayRange` (Domain).
+Mapping is handwritten.
 
 Configuration is read once, in the composition root (`AddCodigoActivo`), into options registered with
 `IOptions<T>` and `ValidateOnStart`: a missing setting takes its default, and a setting that is present but

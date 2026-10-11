@@ -1,8 +1,8 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Domain.Common;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Application.Common.Querying;
+namespace CodigoActivo.UnitTests.Domain;
 
 public sealed class LocalDayRangeTests
 {
@@ -30,6 +30,39 @@ public sealed class LocalDayRangeTests
             ),
         ]
     );
+
+    private static readonly TimeZoneInfo MidnightTwiceZone = TimeZoneInfo.CreateCustomTimeZone(
+        "Test/MidnightTwice",
+        TimeSpan.FromHours(-5),
+        "Midnight Twice",
+        "Midnight Twice Standard",
+        "Midnight Twice Daylight",
+        [
+            TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+                new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
+                new DateTime(9999, 12, 31, 0, 0, 0, DateTimeKind.Unspecified),
+                TimeSpan.FromHours(1),
+                TimeZoneInfo.TransitionTime.CreateFixedDateRule(
+                    new DateTime(1, 1, 1, 2, 0, 0, DateTimeKind.Unspecified),
+                    3,
+                    8
+                ),
+                TimeZoneInfo.TransitionTime.CreateFixedDateRule(
+                    new DateTime(1, 1, 1, 1, 0, 0, DateTimeKind.Unspecified),
+                    11,
+                    1
+                )
+            ),
+        ]
+    );
+
+    [Fact]
+    public void LowerUtcDstOverlapRepeatsMidnightReturnsTheFirstMidnight()
+    {
+        var lower = LocalDayRange.LowerUtc(new DateOnly(2026, 11, 1), MidnightTwiceZone);
+
+        lower.Should().Be(new DateTimeOffset(2026, 11, 1, 4, 0, 0, TimeSpan.Zero));
+    }
 
     [Fact]
     public void LowerUtcRegularDayReturnsUtcMidnightOfZone()

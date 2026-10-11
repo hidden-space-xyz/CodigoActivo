@@ -62,4 +62,32 @@ public sealed record DateRange
     {
         return End < day;
     }
+
+    /// <summary>
+    /// Calculates the instants the days of the range cover in a time zone.
+    /// </summary>
+    /// <param name="zone">Time zone the days are counted in.</param>
+    /// <returns>The first instant of the first day and the first instant after the last day.</returns>
+    public (DateTimeOffset LowerInclusive, DateTimeOffset UpperExclusive) InstantsIn(
+        TimeZoneInfo zone
+    )
+    {
+        return (LocalDayRange.LowerUtc(Start, zone), LocalDayRange.UpperExclusiveUtc(End, zone));
+    }
+
+    /// <summary>
+    /// Tells whether a span of time lies within the days of the range counted in a time zone.
+    /// </summary>
+    /// <param name="startsAt">When the span starts.</param>
+    /// <param name="endsAt">When the span ends.</param>
+    /// <param name="zone">Time zone the days are counted in.</param>
+    /// <returns>
+    /// <see langword="true"/> when the span starts on the first day or later and ends on the last
+    /// day or earlier.
+    /// </returns>
+    public bool Covers(DateTimeOffset startsAt, DateTimeOffset endsAt, TimeZoneInfo zone)
+    {
+        var (lowerInclusive, upperExclusive) = InstantsIn(zone);
+        return startsAt >= lowerInclusive && endsAt < upperExclusive;
+    }
 }

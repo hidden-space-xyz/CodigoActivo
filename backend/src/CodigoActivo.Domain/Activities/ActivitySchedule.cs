@@ -40,18 +40,17 @@ public sealed record ActivitySchedule
     /// </summary>
     /// <param name="startsAt">When the activity starts.</param>
     /// <param name="endsAt">When the activity ends.</param>
-    /// <param name="eventStartsAt">First day of the event.</param>
-    /// <param name="eventEndsAt">Last day of the event.</param>
+    /// <param name="eventCalendar">Days of the event, which the activity must lie within.</param>
     /// <param name="zone">Time zone the days of the event are counted in.</param>
     /// <returns>The schedule in UTC, or a validation error when it does not fit the event.</returns>
     public static Result<ActivitySchedule> Create(
         DateTimeOffset? startsAt,
         DateTimeOffset? endsAt,
-        DateOnly eventStartsAt,
-        DateOnly eventEndsAt,
+        DateRange eventCalendar,
         TimeZoneInfo zone
     )
     {
+        ArgumentNullException.ThrowIfNull(eventCalendar);
         ArgumentNullException.ThrowIfNull(zone);
 
         if (startsAt is not { } start || endsAt is not { } end)
@@ -64,10 +63,8 @@ public sealed record ActivitySchedule
             return Error.Validation(DomainErrorCode.ActivityScheduleInvalidRange);
         }
 
-        var startDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(start, zone).DateTime);
-        var endDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(end, zone).DateTime);
-        return startDate < eventStartsAt || endDate > eventEndsAt
-            ? Error.Validation(DomainErrorCode.ActivityScheduleOutsideEventRange)
-            : new ActivitySchedule(start.ToUniversalTime(), end.ToUniversalTime());
+        return eventCalendar.Covers(start, end, zone)
+            ? new ActivitySchedule(start.ToUniversalTime(), end.ToUniversalTime())
+            : Error.Validation(DomainErrorCode.ActivityScheduleOutsideEventRange);
     }
 }

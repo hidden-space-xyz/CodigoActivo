@@ -363,8 +363,7 @@ public sealed class DemoDataSeeder(
                         .Create(
                             activityStart,
                             activityStart.AddMinutes(90),
-                            start,
-                            end,
+                            ev.Calendar,
                             clock.TimeZone
                         )
                         .Value,

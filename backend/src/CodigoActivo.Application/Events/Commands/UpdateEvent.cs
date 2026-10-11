@@ -3,7 +3,6 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
@@ -78,10 +77,7 @@ public sealed class UpdateEventCommandHandler(
             return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
-        var (lowerInclusive, upperExclusive) = DayBounds(
-            schedule.Value.Calendar.Start,
-            schedule.Value.Calendar.End
-        );
+        var (lowerInclusive, upperExclusive) = schedule.Value.Calendar.InstantsIn(clock.TimeZone);
         if (
             await activities.AnyOutsideRangeAsync(
                 command.EventId,
@@ -119,16 +115,5 @@ public sealed class UpdateEventCommandHandler(
             clock.UtcNow
         );
         return Result.Success();
-    }
-
-    private (DateTimeOffset LowerInclusive, DateTimeOffset UpperExclusive) DayBounds(
-        DateOnly eventStart,
-        DateOnly eventEnd
-    )
-    {
-        return (
-            LocalDayRange.LowerUtc(eventStart, clock.TimeZone),
-            LocalDayRange.UpperExclusiveUtc(eventEnd, clock.TimeZone)
-        );
     }
 }
