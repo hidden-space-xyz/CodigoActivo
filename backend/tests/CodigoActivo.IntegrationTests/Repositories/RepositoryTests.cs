@@ -672,7 +672,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task HasConfirmedAttendanceAsyncDependentConfirmedCountsForTheGuardian()
+    public async Task AnyConfirmedSignupAsyncConfirmedSignupOfAPersonGivenCounts()
     {
         await using var ctx = postgres.CreateContext();
         var guardian = NewUser("Tutora");
@@ -681,7 +681,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var otherEvent = NewEvent("Otro");
         var activity = NewActivity(ev.Id.Value);
         ctx.AddRange(guardian, child, ev, otherEvent, activity);
-        ctx.Assignments.Add(
+        ctx.Assignments.AddRange(
             Persisted.As<Assignment>(
                 new
                 {
@@ -690,17 +690,41 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                     Role = ActivityRole.Participant,
                     Status = AssignmentStatus.Confirmed,
                 }
+            ),
+            Persisted.As<Assignment>(
+                new
+                {
+                    UserId = guardian.Id,
+                    ActivityId = activity.Id,
+                    Role = ActivityRole.Participant,
+                    Status = AssignmentStatus.Requested,
+                }
             )
         );
         await ctx.SaveChangesAsync(Ct);
         var repo = new ActivityRepository(ctx);
 
-        (await repo.HasConfirmedAttendanceAsync(ev.Id, guardian.Id, Ct)).Should().BeTrue();
-        (await repo.HasConfirmedAttendanceAsync(ev.Id, child.Id, Ct)).Should().BeTrue();
-        (await repo.HasConfirmedAttendanceAsync(otherEvent.Id, guardian.Id, Ct)).Should().BeFalse();
-        (await repo.HasConfirmedAttendanceAsync(ev.Id, UserId.From(AuthorId), Ct))
+        (await repo.AnyConfirmedSignupAsync(ev.Id, [guardian.Id, child.Id], Ct)).Should().BeTrue();
+        (await repo.AnyConfirmedSignupAsync(ev.Id, [guardian.Id], Ct)).Should().BeFalse();
+        (await repo.AnyConfirmedSignupAsync(otherEvent.Id, [guardian.Id, child.Id], Ct))
             .Should()
             .BeFalse();
+        (await repo.AnyConfirmedSignupAsync(ev.Id, [], Ct)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ListDependentsAsyncOtherGuardiansChildLeavesItOut()
+    {
+        await using var ctx = postgres.CreateContext();
+        var guardian = NewUser("Tutora");
+        var child = NewUser("Menor", parentId: guardian.Id.Value);
+        var otherChild = NewUser("Otro", parentId: AuthorId);
+        ctx.AddRange(guardian, child, otherChild);
+        await ctx.SaveChangesAsync(Ct);
+
+        var dependents = await new UserRepository(ctx).ListDependentsAsync(guardian.Id, Ct);
+
+        dependents.Select(user => user.Id).Should().Equal(child.Id);
     }
 
     [Fact]

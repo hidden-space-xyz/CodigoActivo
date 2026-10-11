@@ -59,21 +59,19 @@ public class ActivityRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public Task<bool> HasConfirmedAttendanceAsync(
+    public Task<bool> AnyConfirmedSignupAsync(
         EventId eventId,
-        UserId userId,
+        IReadOnlyCollection<UserId> userIds,
         CancellationToken ct = default
     )
     {
-        return (
-            from activity in Set
-            from assignment in activity.Assignments
-            join user in Context.Users on assignment.UserId equals user.Id
-            where
-                activity.EventId == eventId
-                && assignment.Status == AssignmentStatus.Confirmed
-                && (user.Id == userId || user.ParentId == userId)
-            select assignment
-        ).AnyAsync(ct);
+        return Set.Where(activity => activity.EventId == eventId)
+            .SelectMany(activity => activity.Assignments)
+            .AnyAsync(
+                assignment =>
+                    assignment.Status == AssignmentStatus.Confirmed
+                    && userIds.Contains(assignment.UserId),
+                ct
+            );
     }
 }

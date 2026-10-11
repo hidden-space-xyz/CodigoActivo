@@ -44,6 +44,17 @@ public interface IUserRepository : IRepository<User>
     public Task<int> CountDependentsAsync(UserId guardianId, CancellationToken ct = default);
 
     /// <summary>
+    /// Loads the dependents in the care of a guardian.
+    /// </summary>
+    /// <param name="guardianId">Identifier of the guardian.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the dependents.</returns>
+    public Task<IReadOnlyList<User>> ListDependentsAsync(
+        UserId guardianId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Tells whether an account already uses an email address.
     /// </summary>
     /// <param name="email">Normalized email address.</param>

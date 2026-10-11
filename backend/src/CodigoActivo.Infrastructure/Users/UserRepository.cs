@@ -43,6 +43,15 @@ public class UserRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<User>> ListDependentsAsync(
+        UserId guardianId,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Where(user => user.ParentId == guardianId).ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
     public Task<bool> EmailExistsAsync(
         EmailAddress email,
         UserId? excludeUserId = null,

@@ -8,6 +8,7 @@ using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Participation.Commands;
 
@@ -30,17 +31,21 @@ public sealed record SaveEventRatingCommand(
 /// <summary>
 /// Executes the command to save event rating. Every accepted call appends one anonymous rating row:
 /// nothing records who wrote it, so an attendee may rate the same event more than once and no
-/// answer is ever overwritten. Only someone who attended the event may rate it.
+/// answer is ever overwritten. Only someone whose household attended the event may rate it: the
+/// rater or a dependent in their care (<see cref="Household.MemberIds"/>) had a confirmed place in
+/// one of its activities.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="ratings">Repository used to persist and retrieve ratings.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
+/// <param name="users">Repository used to retrieve the dependents of the rater.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class SaveEventRatingCommandHandler(
     IEventRepository events,
     IEventRatingRepository ratings,
     IActivityRepository activities,
+    IUserRepository users,
     ICurrentUser currentUser,
     IClock clock
 ) : ICommandHandler<SaveEventRatingCommand, Result>
@@ -69,7 +74,9 @@ public sealed class SaveEventRatingCommandHandler(
             return Error.Conflict(ApplicationErrorCode.EventRatingNotFinished);
         }
 
-        if (!await activities.HasConfirmedAttendanceAsync(ev.Id, currentUser.RequiredId(), ct))
+        var raterId = currentUser.RequiredId();
+        var household = Household.MemberIds(raterId, await users.ListDependentsAsync(raterId, ct));
+        if (!await activities.AnyConfirmedSignupAsync(ev.Id, household, ct))
         {
             return Error.Conflict(ApplicationErrorCode.EventRatingAttendanceRequired);
         }

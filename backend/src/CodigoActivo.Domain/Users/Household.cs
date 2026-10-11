@@ -33,6 +33,24 @@ public static class Household
     }
 
     /// <summary>
+    /// Lists who belongs to the household of a guardian: the guardian and those of the given
+    /// people in their care, leaving anyone else out.
+    /// </summary>
+    /// <param name="guardianId">Identifier of the guardian.</param>
+    /// <param name="people">People that may be dependents of the guardian.</param>
+    /// <returns>The identifiers of the household members, the guardian first.</returns>
+    public static IReadOnlyList<UserId> MemberIds(UserId guardianId, IEnumerable<User> people)
+    {
+        ArgumentNullException.ThrowIfNull(people);
+
+        return
+        [
+            guardianId,
+            .. people.Where(person => person.IsDependentOf(guardianId)).Select(person => person.Id),
+        ];
+    }
+
+    /// <summary>
     /// Checks that a guardian may add another dependent.
     /// </summary>
     /// <param name="dependents">Dependents the guardian has now.</param>
