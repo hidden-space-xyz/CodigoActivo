@@ -38,8 +38,7 @@ public sealed class ActivityValidator(
         var schedule = ActivitySchedule.Create(
             draft.ActivityStartsAt,
             draft.ActivityEndsAt,
-            ev.Calendar.Start,
-            ev.Calendar.End,
+            ev.Calendar,
             clock.TimeZone
         );
         if (schedule.IsFailure)

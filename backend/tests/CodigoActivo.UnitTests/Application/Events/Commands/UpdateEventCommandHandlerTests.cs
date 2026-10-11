@@ -186,11 +186,17 @@ public sealed class UpdateEventCommandHandlerTests
         var ev = NewEvent();
         categoryTypes.HasCategoryCount(1);
         events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "Test/PlusTwo",
+            TimeSpan.FromHours(2),
+            "Plus Two",
+            "Plus Two"
+        );
         activities
             .AnyOutsideRangeAsync(
                 ev.Id,
-                Arg.Any<DateTimeOffset>(),
-                Arg.Any<DateTimeOffset>(),
+                new DateTimeOffset(2026, 7, 31, 22, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 8, 3, 22, 0, 0, TimeSpan.Zero),
                 Arg.Any<CancellationToken>()
             )
             .Returns(true);

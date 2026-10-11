@@ -84,8 +84,7 @@ internal static class ActivityTestData
                 .Create(
                     new DateTimeOffset(2026, 7, 31, 10, 0, 0, TimeSpan.Zero),
                     new DateTimeOffset(2026, 7, 31, 12, 0, 0, TimeSpan.Zero),
-                    EventStartsAt,
-                    EventEndsAt,
+                    DateRange.FromStored(EventStartsAt, EventEndsAt),
                     TimeZoneInfo.Utc
                 )
                 .Value,

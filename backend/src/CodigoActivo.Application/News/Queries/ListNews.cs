@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.News.Contracts;
+using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.News.Queries;
 

@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
