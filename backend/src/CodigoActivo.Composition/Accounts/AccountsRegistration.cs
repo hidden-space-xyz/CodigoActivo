@@ -2,10 +2,8 @@ using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Communication.Templates;
-using CodigoActivo.Infrastructure.Database;
-using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.Infrastructure.Users;
 using Microsoft.Extensions.Configuration;
@@ -33,8 +31,8 @@ internal static class AccountsRegistration
         AddOptions(services, settings);
 
         services.AddScoped<IUserSessionRepository, UserSessionRepository>();
-        services.AddScoped<IDisposableEmailDomainStore, DisposableEmailDomainRepository>();
-        services.AddScoped<IDisposableEmailDomainRepository>(provider =>
+        services.AddScoped<IDisposableEmailDomainStore, DisposableEmailDomainStore>();
+        services.AddScoped<IDisposableEmailDomainLookup>(provider =>
             provider.GetRequiredService<IDisposableEmailDomainStore>()
         );
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();

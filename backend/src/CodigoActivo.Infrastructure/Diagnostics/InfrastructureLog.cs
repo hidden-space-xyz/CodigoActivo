@@ -1,5 +1,5 @@
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Accounts;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Diagnostics;

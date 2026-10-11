@@ -34,7 +34,7 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly RecordingLogger<AccountSecurityNotifier> notifierLogger = new();
     private readonly RecordingLogger<EmailChangeLinkIssuer> issuerLogger = new();
-    private readonly FakeDisposableEmailDomainRepository disposableDomains = new();
+    private readonly FakeDisposableEmailDomainStore disposableDomains = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly User actingUser;
     private readonly TestCurrentUser currentUser = new(isAdmin: true);

@@ -1,14 +1,13 @@
-using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
-namespace CodigoActivo.Infrastructure.Communication;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Persists and retrieves the disposable email domain list from the database.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
-public sealed class DisposableEmailDomainRepository(CodigoActivoDbContext context)
+public sealed class DisposableEmailDomainStore(CodigoActivoDbContext context)
     : IDisposableEmailDomainStore
 {
     /// <inheritdoc />

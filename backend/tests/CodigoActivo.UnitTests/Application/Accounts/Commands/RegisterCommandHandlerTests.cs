@@ -33,7 +33,7 @@ public sealed class RegisterCommandHandlerTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
-    private readonly FakeDisposableEmailDomainRepository disposableDomains = new();
+    private readonly FakeDisposableEmailDomainStore disposableDomains = new();
     private readonly RegisterCommandHandler sut;
 
     public RegisterCommandHandlerTests()

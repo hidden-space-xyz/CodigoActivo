@@ -1,4 +1,4 @@
-using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Accounts;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 

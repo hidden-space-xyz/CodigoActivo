@@ -1,10 +1,10 @@
 using System.Text;
 using AwesomeAssertions;
-using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Infrastructure.Communication;
+namespace CodigoActivo.UnitTests.Infrastructure.Accounts;
 
 public sealed class DisposableEmailDomainListTests
 {

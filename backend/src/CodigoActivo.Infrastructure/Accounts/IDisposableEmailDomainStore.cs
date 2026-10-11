@@ -1,12 +1,12 @@
 using CodigoActivo.Application.Accounts;
 
-namespace CodigoActivo.Infrastructure.Communication;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Reads and replaces the stored disposable email domain list. The list is only ever replaced as a
 /// whole, by the background refresher.
 /// </summary>
-public interface IDisposableEmailDomainStore : IDisposableEmailDomainRepository
+public interface IDisposableEmailDomainStore : IDisposableEmailDomainLookup
 {
     /// <summary>
     /// Replaces the stored list with <paramref name="domains"/>, writing only the differences. The

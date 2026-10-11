@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using CodigoActivo.Application.Accounts;
 
-namespace CodigoActivo.Infrastructure.Communication;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Identifies why a downloaded disposable email domain list was not stored.

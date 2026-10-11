@@ -8,8 +8,8 @@ namespace CodigoActivo.Application.Accounts;
 /// domain is on the stored list, which a background worker keeps up to date. While no list has ever
 /// been stored nothing matches, so every address is accepted.
 /// </summary>
-/// <param name="domains">Repository holding the last valid disposable email domain list.</param>
-public sealed class DisposableEmailChecker(IDisposableEmailDomainRepository domains)
+/// <param name="domains">Lookup of the last valid disposable email domain list.</param>
+public sealed class DisposableEmailChecker(IDisposableEmailDomainLookup domains)
 {
     /// <summary>
     /// Determines whether the address uses a disposable email domain.

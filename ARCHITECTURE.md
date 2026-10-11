@@ -253,7 +253,7 @@ preview always matches what the corresponding send would reach. Operational valu
 
 Registration and email changes ask `DisposableEmailChecker` whether an address belongs to a disposable
 mailbox provider; it looks the domain and its parent domains (`EmailDomains`) up in
-`disposable_email_domains` through `IDisposableEmailDomainRepository`. The `DisposableEmailDomainRefresher`
+`disposable_email_domains` through `IDisposableEmailDomainLookup`. The `DisposableEmailDomainRefresher`
 hosted service keeps that table filled from an external list, replacing it only with a download that
 `DisposableEmailDomainList` validated ([DEPLOYMENT.md](DEPLOYMENT.md#disposable-email-domains)).
 

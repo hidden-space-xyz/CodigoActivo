@@ -1,6 +1,5 @@
 using AwesomeAssertions;
-using CodigoActivo.Infrastructure.Communication;
-using CodigoActivo.Infrastructure.Database.Repositories;
+using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -8,7 +7,7 @@ using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Repositories;
 
-public sealed class DisposableEmailDomainRepositoryTests(PostgresContainerFixture postgres)
+public sealed class DisposableEmailDomainStoreTests(PostgresContainerFixture postgres)
     : IAsyncLifetime
 {
     public async ValueTask InitializeAsync()
@@ -25,7 +24,7 @@ public sealed class DisposableEmailDomainRepositoryTests(PostgresContainerFixtur
     private async Task ReplaceAsync(params string[] domains)
     {
         await using var db = postgres.CreateContext();
-        await new DisposableEmailDomainRepository(db).ReplaceAsync(
+        await new DisposableEmailDomainStore(db).ReplaceAsync(
             domains.ToHashSet(StringComparer.Ordinal),
             Ct
         );
@@ -34,7 +33,7 @@ public sealed class DisposableEmailDomainRepositoryTests(PostgresContainerFixtur
     private async Task<bool> ContainsAnyAsync(params string[] domains)
     {
         await using var db = postgres.CreateContext();
-        return await new DisposableEmailDomainRepository(db).ContainsAnyAsync(domains, Ct);
+        return await new DisposableEmailDomainStore(db).ContainsAnyAsync(domains, Ct);
     }
 
     private async Task<List<string>> StoredAsync()
