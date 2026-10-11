@@ -35,46 +35,13 @@ public class StoredFileRepository(CodigoActivoDbContext context)
         return Set.AnyAsync(file => file.Id == id, ct);
     }
 
-    /// <summary>
-    /// Determines whether in use.
-    /// </summary>
-    /// <param name="fileId">Identifier of the file.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    /// <inheritdoc />
     public async Task<bool> IsInUseAsync(StoredFileId fileId, CancellationToken ct = default)
     {
-        var pattern = $"%{RichTextFileReferences.ContentUrl(fileId)}%";
-        FormattableString sql = $"""
-            SELECT EXISTS (
-                SELECT 1 FROM events WHERE thumbnail_id = {fileId.Value}
-                UNION ALL
-                SELECT 1 FROM activities WHERE thumbnail_id = {fileId.Value}
-                UNION ALL
-                SELECT 1 FROM news WHERE thumbnail_id = {fileId.Value}
-                UNION ALL
-                SELECT 1 FROM resources WHERE thumbnail_id = {fileId.Value}
-                UNION ALL
-                SELECT 1 FROM partners WHERE thumbnail_id = {fileId.Value}
-                UNION ALL
-                SELECT 1 FROM events WHERE description::text ILIKE {pattern}
-                UNION ALL
-                SELECT 1 FROM news WHERE description::text ILIKE {pattern}
-                UNION ALL
-                SELECT 1 FROM resources WHERE description::text ILIKE {pattern}
-                UNION ALL
-                SELECT 1 FROM terms_documents WHERE description::text ILIKE {pattern}
-            ) AS "Value"
-            """;
-
-        return await Context.Database.SqlQuery<bool>(sql).SingleAsync(ct);
+        return (await GetInUseAsync([fileId], ct)).Count > 0;
     }
 
-    /// <summary>
-    /// Gets the requested in use.
-    /// </summary>
-    /// <param name="fileIds">Identifiers of the file items.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching guid items.</returns>
+    /// <inheritdoc />
     public async Task<IReadOnlyList<StoredFileId>> GetInUseAsync(
         IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default

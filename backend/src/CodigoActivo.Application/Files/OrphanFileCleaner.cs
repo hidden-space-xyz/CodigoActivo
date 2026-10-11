@@ -12,17 +12,9 @@ namespace CodigoActivo.Application.Files;
 public interface IOrphanFileCleaner
 {
     /// <summary>
-    /// Deletes an if orphaned when it is no longer referenced.
+    /// Deletes the files among the candidates that nothing references any more.
     /// </summary>
-    /// <param name="fileId">Identifier of the file.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    public Task DeleteIfOrphanedAsync(StoredFileId fileId, CancellationToken ct = default);
-
-    /// <summary>
-    /// Deletes an orphaned when it is no longer referenced.
-    /// </summary>
-    /// <param name="fileIds">Identifiers of the file items.</param>
+    /// <param name="fileIds">Identifiers of the candidate files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task DeleteOrphanedAsync(
@@ -32,7 +24,9 @@ public interface IOrphanFileCleaner
 }
 
 /// <summary>
-/// Removes orphan file data that is no longer referenced.
+/// Removes orphan file data that is no longer referenced. The rows are deleted in one transaction,
+/// so a refused delete leaves nothing staged for a later commit of the same request; the stored
+/// content is only deleted once the rows are gone.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -45,47 +39,7 @@ public sealed class OrphanFileCleaner(
     ILogger<OrphanFileCleaner> logger
 ) : IOrphanFileCleaner
 {
-    /// <summary>
-    /// Deletes an if orphaned when it is no longer referenced.
-    /// </summary>
-    /// <param name="fileId">Identifier of the file.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task DeleteIfOrphanedAsync(StoredFileId fileId, CancellationToken ct = default)
-    {
-        try
-        {
-            var file = await files.GetByIdAsync(fileId, ct);
-            if (file is null)
-            {
-                return;
-            }
-
-            if (await files.IsInUseAsync(fileId, ct))
-            {
-                return;
-            }
-
-            var storedName = FileNaming.StoredName(file.Id, file.Extension);
-
-            file.Delete();
-            files.Remove(file);
-            await uow.SaveChangesAsync(ct);
-
-            storage.Delete(storedName);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.OrphanFileCleanupFailed(ex);
-        }
-    }
-
-    /// <summary>
-    /// Deletes an orphaned when it is no longer referenced.
-    /// </summary>
-    /// <param name="fileIds">Identifiers of the file items.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public async Task DeleteOrphanedAsync(
         IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default
@@ -99,28 +53,12 @@ public sealed class OrphanFileCleaner(
                 return;
             }
 
-            var inUse = await files.GetInUseAsync(candidates, ct);
-            var orphanIds = candidates.Except(inUse).ToList();
-            if (orphanIds.Count is 0)
-            {
-                return;
-            }
+            var removed = await uow.ExecuteInTransactionAsync(
+                attempt => RemoveOrphansAsync(candidates, attempt),
+                ct
+            );
 
-            var orphans = await files.ListByIdsAsync(orphanIds, ct);
-            if (orphans.Count is 0)
-            {
-                return;
-            }
-
-            foreach (var file in orphans)
-            {
-                file.Delete();
-                files.Remove(file);
-            }
-
-            await uow.SaveChangesAsync(ct);
-
-            foreach (var file in orphans)
+            foreach (var file in removed)
             {
                 DeleteStoredContent(file.Id, file.Extension);
             }
@@ -129,6 +67,29 @@ public sealed class OrphanFileCleaner(
         {
             logger.OrphanFileCleanupFailed(ex);
         }
+    }
+
+    private async Task<IReadOnlyList<StoredFile>> RemoveOrphansAsync(
+        List<StoredFileId> candidates,
+        CancellationToken ct
+    )
+    {
+        var inUse = await files.GetInUseAsync(candidates, ct);
+        var orphanIds = candidates.Except(inUse).ToList();
+        if (orphanIds.Count is 0)
+        {
+            return [];
+        }
+
+        var orphans = await files.ListByIdsAsync(orphanIds, ct);
+        foreach (var file in orphans)
+        {
+            file.Delete();
+            files.Remove(file);
+        }
+
+        await uow.SaveChangesAsync(ct);
+        return orphans;
     }
 
     private void DeleteStoredContent(StoredFileId fileId, string extension)

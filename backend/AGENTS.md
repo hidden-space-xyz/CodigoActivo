@@ -64,6 +64,9 @@ Domain + Application + Infrastructure <- Composition <- API
   a new author column must be handed over to the initial administrator in `AccountErasureStore`;
   `DeletedAccountCoverageTests` only checks that the decision was recorded, not that the data is copied or
   handed over.
+- A new `StoredFileId` or `RichText` column must be checked by `StoredFileRepository.GetInUseAsync`, and a
+  `StoredFileId` column needs a foreign key to `StoredFile` with `DeleteBehavior.Restrict`;
+  `FileReferenceCoverageTests` lists them.
 - Expected failures return `Result`/`Result<T>` with a `DomainErrorCode` or an `ApplicationErrorCode`. Do not
   throw for business outcomes. The wire `ErrorCode` belongs to the API; a new code needs its member there (or a
   rename in `WireErrorCodes`) and a translation in the frontend.

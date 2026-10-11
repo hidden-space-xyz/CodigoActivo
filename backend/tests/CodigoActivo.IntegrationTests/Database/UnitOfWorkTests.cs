@@ -282,6 +282,36 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
+    public async Task ExecuteInTransactionAsyncRefusedAttemptLeavesNothingForTheNextSave()
+    {
+        var fileId = StoredFileId.From(FileId);
+        await using (var db = postgres.CreateContext())
+        {
+            var publisher = new RecordingPublisher();
+            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+
+            var refused = () =>
+                uow.ExecuteInTransactionAsync(
+                    async attempt =>
+                    {
+                        var file = await db.Files.SingleAsync(f => f.Id == fileId, attempt);
+                        file.Delete();
+                        db.Files.Remove(file);
+                        return await uow.SaveChangesAsync(attempt);
+                    },
+                    Ct
+                );
+
+            await refused.Should().ThrowAsync<DbUpdateException>();
+            (await uow.SaveChangesAsync(Ct)).Should().Be(0);
+            publisher.Published.Should().BeEmpty();
+        }
+
+        await using var verify = postgres.CreateContext();
+        (await verify.Files.AnyAsync(f => f.Id == fileId, Ct)).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task ExecuteInTransactionAsyncDeadlockedAttemptKeepsTheChangesStagedBeforeIt()
     {
         await using (var db = postgres.CreateContext())

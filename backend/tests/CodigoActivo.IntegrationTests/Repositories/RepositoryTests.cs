@@ -181,6 +181,20 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         );
     }
 
+    private static StoredFile NewStoredFile()
+    {
+        return Persisted.As<StoredFile>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Name = "thumb",
+                Extension = "png",
+                UploadedAt = Fixed,
+                UploadedBy = AuthorId,
+            }
+        );
+    }
+
     private static Activity NewActivity(
         Guid eventId,
         string title = "Activity",
@@ -748,6 +762,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
 
         var eventEmbeddedFileId = Guid.NewGuid();
         var newsItemEmbeddedFileId = Guid.NewGuid();
+        var resourceEmbeddedFileId = Guid.NewGuid();
+        var termsEmbeddedFileId = Guid.NewGuid();
 
         var ev = NewEvent(
             description: $"{{\"img\":\"/api/files/{eventEmbeddedFileId.ToString().ToUpperInvariant()}/content\"}}"
@@ -755,13 +771,22 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var newsItem = NewNewsItem(
             description: $"{{\"img\":\"https://api.example.org/api/files/{newsItemEmbeddedFileId}/content\"}}"
         );
-        ctx.AddRange(ev, newsItem);
+        var resource = NewResource(
+            description: $"{{\"img\":\"/api/files/{resourceEmbeddedFileId}/content\"}}"
+        );
+        var terms = TermsDocument.Create(
+            "Condiciones",
+            RichText.From($"{{\"img\":\"/api/files/{termsEmbeddedFileId}/content\"}}")
+        );
+        ctx.AddRange(ev, newsItem, resource, terms);
         await ctx.SaveChangesAsync(Ct);
         var repo = new StoredFileRepository(ctx);
 
         (await repo.IsInUseAsync(StoredFileId.From(ThumbId), Ct)).Should().BeTrue();
         (await repo.IsInUseAsync(StoredFileId.From(eventEmbeddedFileId), Ct)).Should().BeTrue();
         (await repo.IsInUseAsync(StoredFileId.From(newsItemEmbeddedFileId), Ct)).Should().BeTrue();
+        (await repo.IsInUseAsync(StoredFileId.From(resourceEmbeddedFileId), Ct)).Should().BeTrue();
+        (await repo.IsInUseAsync(StoredFileId.From(termsEmbeddedFileId), Ct)).Should().BeTrue();
         (await repo.IsInUseAsync(StoredFileId.From(Guid.NewGuid()), Ct)).Should().BeFalse();
     }
 
@@ -773,6 +798,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var embeddedInEventId = Guid.NewGuid();
         var embeddedInNewsItemId = Guid.NewGuid();
         var embeddedInResourceId = Guid.NewGuid();
+        var embeddedInTermsId = Guid.NewGuid();
         var embeddedButNotCandidateId = Guid.NewGuid();
         var unreferencedId = Guid.NewGuid();
 
@@ -786,7 +812,11 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var resource = NewResource(
             description: $"{{\"img\":\"/api/files/{embeddedInResourceId}/content\"}}"
         );
-        ctx.AddRange(ev, newsItem, resource);
+        var terms = TermsDocument.Create(
+            "Condiciones",
+            RichText.From($"{{\"img\":\"/api/files/{embeddedInTermsId}/content\"}}")
+        );
+        ctx.AddRange(ev, newsItem, resource, terms);
         await ctx.SaveChangesAsync(Ct);
         var repo = new StoredFileRepository(ctx);
 
@@ -796,6 +826,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 StoredFileId.From(embeddedInEventId),
                 StoredFileId.From(embeddedInNewsItemId),
                 StoredFileId.From(embeddedInResourceId),
+                StoredFileId.From(embeddedInTermsId),
                 StoredFileId.From(unreferencedId),
             ],
             Ct
@@ -809,7 +840,37 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 embeddedInEventId,
                 embeddedInNewsItemId,
                 embeddedInResourceId,
+                embeddedInTermsId,
             ]);
+    }
+
+    [Fact]
+    public async Task GetInUseAsyncThumbnailOfEachContentTypeIsInUse()
+    {
+        await using var ctx = postgres.CreateContext();
+        var files = Enumerable.Range(0, 5).Select(_ => NewStoredFile()).ToList();
+        var ev = NewEvent();
+        var activity = NewActivity(ev.Id.Value);
+        var newsItem = NewNewsItem();
+        var resource = NewResource();
+        var partner = NewPartner();
+        object[] thumbnailed = [ev, activity, newsItem, resource, partner];
+        foreach (var (content, file) in thumbnailed.Zip(files))
+        {
+            Persisted.Overwrite(content, new { ThumbnailId = file.Id.Value });
+        }
+
+        ctx.Files.AddRange(files);
+        ctx.AddRange(thumbnailed);
+        await ctx.SaveChangesAsync(Ct);
+        var repo = new StoredFileRepository(ctx);
+
+        var inUse = await repo.GetInUseAsync(
+            [.. files.Select(file => file.Id), StoredFileId.New()],
+            Ct
+        );
+
+        inUse.Should().BeEquivalentTo(files.Select(file => file.Id));
     }
 
     [Fact]
