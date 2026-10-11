@@ -563,9 +563,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId))
-            .Should()
-            .BeNull();
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId)).Should().BeNull();
     }
 
     [Fact]
