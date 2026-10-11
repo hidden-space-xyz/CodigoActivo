@@ -193,7 +193,7 @@ public class User : AggregateRoot<UserId>
     /// Gets the identifier of the open second-factor challenge. The challenge cookie
     /// carries it, so a copied cookie stops working as soon as this value changes or is cleared.
     /// </summary>
-    public Guid? LoginChallengeId { get; private set; }
+    public LoginChallengeId? LoginChallengeId { get; private set; }
 
     /// <summary>
     /// Gets the consecutive wrong second-factor codes since the last success or lockout.
@@ -722,7 +722,7 @@ public class User : AggregateRoot<UserId>
     /// cookie of an earlier password step stops being accepted.
     /// </summary>
     /// <param name="challengeId">Identifier the challenge cookie will carry.</param>
-    public void StartLoginChallenge(Guid challengeId)
+    public void StartLoginChallenge(LoginChallengeId challengeId)
     {
         LoginChallengeId = challengeId;
     }
@@ -1084,7 +1084,7 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     /// <param name="challengeId">Identifier of the challenge.</param>
     /// <returns><see langword="true"/> when it is the open challenge.</returns>
-    public bool HasLoginChallenge(Guid challengeId)
+    public bool HasLoginChallenge(LoginChallengeId challengeId)
     {
         return LoginChallengeId == challengeId;
     }

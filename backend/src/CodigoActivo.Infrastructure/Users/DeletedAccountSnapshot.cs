@@ -225,7 +225,7 @@ internal static class DeletedAccountSnapshot
         ));
 
         var copy = LegalCopy.Compose(
-            userId.Value,
+            userId,
             erasure,
             household,
             guardian,

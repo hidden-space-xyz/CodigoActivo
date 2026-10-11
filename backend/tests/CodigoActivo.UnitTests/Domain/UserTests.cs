@@ -244,7 +244,7 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
-        user.StartLoginChallenge(Guid.NewGuid());
+        user.StartLoginChallenge(LoginChallengeId.New());
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 2 });
 
         user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeTrue();
@@ -261,8 +261,8 @@ public sealed class UserTests
     public void StartLoginChallengeReplacesTheIdentifierOfAnyOpenChallenge()
     {
         var user = NewPendingUser();
-        var first = Guid.NewGuid();
-        var second = Guid.NewGuid();
+        var first = LoginChallengeId.New();
+        var second = LoginChallengeId.New();
 
         user.StartLoginChallenge(first);
         user.LoginChallengeId.Should().Be(first);
@@ -278,7 +278,7 @@ public sealed class UserTests
     public void RecordTwoFactorFailureBelowTheLimitKeepsTheOpenChallenge()
     {
         var user = NewPendingUser();
-        var challengeId = Guid.NewGuid();
+        var challengeId = LoginChallengeId.New();
         user.StartLoginChallenge(challengeId);
 
         user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeFalse();
@@ -290,7 +290,7 @@ public sealed class UserTests
     public void ResetPasswordClosesAnyOpenChallenge()
     {
         var user = NewPendingUser();
-        user.StartLoginChallenge(Guid.NewGuid());
+        user.StartLoginChallenge(LoginChallengeId.New());
 
         user.ResetPassword("new-hash", Now);
 
@@ -302,7 +302,7 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
-        user.StartLoginChallenge(Guid.NewGuid());
+        user.StartLoginChallenge(LoginChallengeId.New());
         Persisted.Overwrite(
             user,
             new { TwoFactorFailedAttempts = 2, TwoFactorLockedUntil = Now.AddMinutes(-1) }
@@ -613,7 +613,7 @@ public sealed class UserTests
     public void RecordPasswordFailureBelowTheLimitOnlyCounts()
     {
         var user = NewPendingUser();
-        var challengeId = Guid.NewGuid();
+        var challengeId = LoginChallengeId.New();
         user.StartLoginChallenge(challengeId);
 
         user.RecordPasswordFailure(3, Now).Should().BeFalse();
@@ -628,7 +628,7 @@ public sealed class UserTests
     public void RecordPasswordFailureReachingTheLimitLocksAndClosesTheChallenge()
     {
         var user = NewPendingUser();
-        user.StartLoginChallenge(Guid.NewGuid());
+        user.StartLoginChallenge(LoginChallengeId.New());
         Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
 
         user.RecordPasswordFailure(3, Now).Should().BeTrue();
@@ -644,7 +644,7 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         var lockedAt = Now.AddDays(-1);
-        var challengeId = Guid.NewGuid();
+        var challengeId = LoginChallengeId.New();
         Persisted.Overwrite(user, new { PasswordFailedAttempts = 3, PasswordLockedAt = lockedAt });
         user.StartLoginChallenge(challengeId);
 
@@ -836,14 +836,14 @@ public sealed class UserTests
     public void HasLoginChallengeOnlyMatchesTheOpenChallenge()
     {
         var user = NewPendingUser();
-        var challengeId = Guid.NewGuid();
+        var challengeId = LoginChallengeId.New();
 
         user.HasLoginChallenge(challengeId).Should().BeFalse();
 
         user.StartLoginChallenge(challengeId);
 
         user.HasLoginChallenge(challengeId).Should().BeTrue();
-        user.HasLoginChallenge(Guid.NewGuid()).Should().BeFalse();
+        user.HasLoginChallenge(LoginChallengeId.New()).Should().BeFalse();
     }
 
     [Fact]

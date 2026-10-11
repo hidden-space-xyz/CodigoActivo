@@ -43,7 +43,7 @@ public sealed class GetFileContentQueryHandler(
         }
 
         var stream = await storage.OpenReadAsync(
-            FileNaming.StoredName(meta.Value.Id, meta.Value.Extension),
+            FileNaming.StoredName(StoredFileId.From(meta.Value.Id), meta.Value.Extension),
             ct
         );
         if (stream is null)

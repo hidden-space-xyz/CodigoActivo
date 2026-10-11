@@ -55,8 +55,8 @@ public sealed class UpdateFileCommandHandler(
         }
 
         var format = detection.Value;
-        var oldStoredName = FileNaming.StoredName(file.Id.Value, file.Extension);
-        var newStoredName = FileNaming.StoredName(file.Id.Value, format.Extension);
+        var oldStoredName = FileNaming.StoredName(file.Id, file.Extension);
+        var newStoredName = FileNaming.StoredName(file.Id, format.Extension);
         var extensionChanged = !string.Equals(
             oldStoredName,
             newStoredName,

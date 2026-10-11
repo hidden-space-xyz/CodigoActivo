@@ -2,6 +2,7 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
@@ -24,7 +25,7 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     /// <inheritdoc />
     public EmailMessage AccountVerification(
         EmailRecipient recipient,
-        Guid userId,
+        UserId userId,
         string code,
         TimeSpan lifetime
     )
@@ -42,7 +43,7 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     /// <inheritdoc />
     public EmailMessage EmailChangeConfirmation(
         EmailRecipient recipient,
-        Guid userId,
+        UserId userId,
         string code,
         TimeSpan lifetime
     )
@@ -72,7 +73,7 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     /// <inheritdoc />
     public EmailMessage PasswordReset(
         EmailRecipient recipient,
-        Guid userId,
+        UserId userId,
         string code,
         TimeSpan lifetime
     )
@@ -131,7 +132,7 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
         );
     }
 
-    private string BuildAccountUrl(string path, Guid userId, string code)
+    private string BuildAccountUrl(string path, UserId userId, string code)
     {
         return $"{SiteUrl}{path}#userId={userId}&code={Uri.EscapeDataString(code)}";
     }

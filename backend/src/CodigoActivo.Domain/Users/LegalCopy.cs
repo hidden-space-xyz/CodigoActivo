@@ -72,7 +72,7 @@ public sealed record LegalCopy(
     /// <param name="events">Events the signups and decisions refer to, without decisions or signups.</param>
     /// <returns>The copy.</returns>
     public static LegalCopy Compose(
-        Guid accountId,
+        UserId accountId,
         AccountErasure erasure,
         IReadOnlyCollection<LegalCopyPerson> household,
         LegalCopyGuardian? guardian,
@@ -89,7 +89,7 @@ public sealed record LegalCopy(
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(events);
 
-        var account = household.Single(person => person.Id == accountId);
+        var account = household.Single(person => person.Id == accountId.Value);
         var householdIds = household.Select(person => person.Id).ToHashSet();
         var signupEventIds = signups.Select(signup => signup.EventId).ToHashSet();
         var kept = decisions
@@ -110,7 +110,7 @@ public sealed record LegalCopy(
             guardian,
             [
                 .. household
-                    .Where(person => person.Id != accountId)
+                    .Where(person => person.Id != accountId.Value)
                     .OrderBy(person => person.FirstName, StringComparer.Ordinal)
                     .ThenBy(person => person.LastName, StringComparer.Ordinal)
                     .ThenBy(person => person.Id),

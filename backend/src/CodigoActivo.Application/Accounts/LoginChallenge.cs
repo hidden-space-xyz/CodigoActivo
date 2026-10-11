@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Accounts.Contracts;
+using UserId = CodigoActivo.Domain.Users.UserId;
 
 namespace CodigoActivo.Application.Accounts;
 
@@ -8,7 +9,7 @@ namespace CodigoActivo.Application.Accounts;
 /// <param name="UserId">Identifier of the user who presented the correct password.</param>
 /// <param name="Method">Second factor the user must present next.</param>
 /// <param name="MaskedEmail">Partially hidden address the code was sent to, for email challenges.</param>
-public sealed record LoginChallenge(Guid UserId, TwoFactorMethod Method, string? MaskedEmail)
+public sealed record LoginChallenge(UserId UserId, TwoFactorMethod Method, string? MaskedEmail)
 {
     /// <summary>
     /// Maps the challenge to the shape returned to the client, without the user identifier.

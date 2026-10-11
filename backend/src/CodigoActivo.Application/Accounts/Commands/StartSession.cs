@@ -51,7 +51,7 @@ public sealed class StartSessionCommandHandler(
         var session = UserSession.Start(command.UserId, now, options.Lifetime);
         await sessions.AddAsync(session, ct);
         return new SessionTicket(
-            session.Id.Value,
+            session.Id,
             new SessionIdentity(
                 user.Id.Value,
                 user.FirstName,

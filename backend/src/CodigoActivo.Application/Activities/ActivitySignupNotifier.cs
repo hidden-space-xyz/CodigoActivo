@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Activities;
@@ -33,8 +34,8 @@ public sealed class ActivitySignupNotifier(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task NotifyDecisionAsync(
-        Guid activityId,
-        Guid userId,
+        ActivityId activityId,
+        UserId userId,
         AssignmentStatus status,
         ActivityRole role,
         CancellationToken ct
@@ -42,15 +43,15 @@ public sealed class ActivitySignupNotifier(
     {
         try
         {
-            var activity = await GetSignupActivityAsync(activityId, ct);
+            var activity = await GetSignupActivityAsync(activityId.Value, ct);
             if (activity is null)
             {
                 return;
             }
 
-            var contacts = await GetContactsAsync([userId], ct);
+            var contacts = await GetContactsAsync([userId.Value], ct);
             if (
-                !contacts.TryGetValue(userId, out var contact)
+                !contacts.TryGetValue(userId.Value, out var contact)
                 || ResolveRecipient(contact) is not { } recipient
             )
             {

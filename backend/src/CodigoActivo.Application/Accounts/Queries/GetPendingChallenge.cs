@@ -50,7 +50,7 @@ public sealed class GetPendingChallengeQueryHandler(IReadStore readStore, IQuery
         return pending is null
             ? null
             : new PendingChallenge(
-                pending.LoginChallengeId!.Value,
+                LoginChallengeId.From(pending.LoginChallengeId!.Value),
                 CredentialStamps.For(pending.PasswordHash!)
             );
     }

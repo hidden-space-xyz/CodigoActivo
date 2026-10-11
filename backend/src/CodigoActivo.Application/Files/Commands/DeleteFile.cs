@@ -44,7 +44,7 @@ public sealed class DeleteFileCommandHandler(
             return Error.Conflict(ApplicationErrorCode.FileInUse);
         }
 
-        var storedName = FileNaming.StoredName(file.Id.Value, file.Extension);
+        var storedName = FileNaming.StoredName(file.Id, file.Extension);
 
         file.Delete();
         files.Remove(file);

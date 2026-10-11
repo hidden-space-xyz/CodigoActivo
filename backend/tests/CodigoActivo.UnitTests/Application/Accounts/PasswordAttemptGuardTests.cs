@@ -203,7 +203,7 @@ public sealed class PasswordAttemptGuardTests
     {
         var user = Account();
         Persisted.Overwrite(user, new { PasswordFailedAttempts = 1 });
-        user.StartLoginChallenge(Guid.NewGuid());
+        user.StartLoginChallenge(LoginChallengeId.New());
 
         await sut.VerifyLoginPasswordAsync(user, "wrong", TestContext.Current.CancellationToken);
         user.LoginChallengeId.Should().NotBeNull("the limit is not reached yet");

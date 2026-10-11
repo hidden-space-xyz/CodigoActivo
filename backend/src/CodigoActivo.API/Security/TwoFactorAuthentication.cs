@@ -48,14 +48,11 @@ public sealed class TwoFactorTicketValidator(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the principal, or <see langword="null"/> when no challenge is pending.</returns>
     public async Task<ClaimsPrincipal?> CreatePrincipalAsync(
-        Guid userId,
+        UserId userId,
         CancellationToken ct = default
     )
     {
-        var pending = await pendingChallenge.HandleAsync(
-            new GetPendingChallengeQuery(UserId.From(userId)),
-            ct
-        );
+        var pending = await pendingChallenge.HandleAsync(new GetPendingChallengeQuery(userId), ct);
         return pending is null
             ? null
             : BuildPrincipal(userId, pending.CredentialStamp, pending.ChallengeId);
@@ -119,15 +116,17 @@ public sealed class TwoFactorTicketValidator(
         );
     }
 
-    private static Guid? ReadChallengeId(ClaimsPrincipal? principal)
+    private static LoginChallengeId? ReadChallengeId(ClaimsPrincipal? principal)
     {
-        return Guid.TryParse(principal?.FindFirstValue(ChallengeIdClaim), out var id) ? id : null;
+        return Guid.TryParse(principal?.FindFirstValue(ChallengeIdClaim), out var id)
+            ? LoginChallengeId.From(id)
+            : null;
     }
 
     private static ClaimsPrincipal BuildPrincipal(
-        Guid userId,
+        UserId userId,
         string credentialStamp,
-        Guid challengeId
+        LoginChallengeId challengeId
     )
     {
         var claims = new List<Claim>

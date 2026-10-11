@@ -287,7 +287,7 @@ public class AuthController : ApiControllerBase
             return ToProblem(result.Error!);
         }
 
-        var principal = await sessionTickets.StartSessionAsync(userId.Value, ct);
+        var principal = await sessionTickets.StartSessionAsync(UserId.From(userId.Value), ct);
         if (principal is null)
         {
             return ToProblem(ApiError.Unauthorized(ErrorCode.InvalidCredentials));

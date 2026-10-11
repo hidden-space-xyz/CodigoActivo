@@ -100,9 +100,9 @@ public sealed class LoginCommandHandler(
             }
         }
 
-        user.StartLoginChallenge(Guid.NewGuid());
+        user.StartLoginChallenge(LoginChallengeId.New());
         return new LoginChallenge(
-            user.Id.Value,
+            user.Id,
             user.TwoFactorMethod.ToContract(),
             user.TwoFactorMethod == TwoFactorMethod.Email ? user.Email.MaskEmail() : null
         );

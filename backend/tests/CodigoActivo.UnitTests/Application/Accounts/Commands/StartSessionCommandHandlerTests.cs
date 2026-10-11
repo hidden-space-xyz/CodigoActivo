@@ -104,7 +104,7 @@ public sealed class StartSessionCommandHandlerTests
             .Value.Should()
             .Be(
                 new SessionTicket(
-                    session.Id.Value,
+                    session.Id,
                     new SessionIdentity(
                         user.Id.Value,
                         user.FirstName,

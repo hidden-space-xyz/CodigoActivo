@@ -179,7 +179,7 @@ public sealed class LoginCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result
             .Value.Should()
-            .Be(new LoginChallenge(user.Id.Value, TwoFactorMethod.Email, "a***@test.com"));
+            .Be(new LoginChallenge(user.Id, TwoFactorMethod.Email, "a***@test.com"));
         result
             .Value.ToResponse()
             .Should()
@@ -232,9 +232,7 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync();
 
         result.IsSuccess.Should().BeTrue();
-        result
-            .Value.Should()
-            .Be(new LoginChallenge(user.Id.Value, TwoFactorMethod.Authenticator, null));
+        result.Value.Should().Be(new LoginChallenge(user.Id, TwoFactorMethod.Authenticator, null));
         emailSender.Sent.Should().BeEmpty();
         user.LoginCodeHash.Should().BeNull();
     }
@@ -291,7 +289,7 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync();
 
         result.IsSuccess.Should().BeTrue();
-        user.LoginChallengeId.Should().NotBeNull().And.NotBe(Guid.Empty);
+        user.LoginChallengeId.Should().NotBeNull().And.NotBe(LoginChallengeId.From(Guid.Empty));
     }
 
     [Fact]
@@ -313,7 +311,7 @@ public sealed class LoginCommandHandlerTests
     public async Task HandleAsyncRefusedPasswordLeavesTheOpenChallengeUntouched()
     {
         var user = Returns(NewUser(passwordHash: "fake:correct"));
-        var challengeId = Guid.NewGuid();
+        var challengeId = LoginChallengeId.New();
         user.StartLoginChallenge(challengeId);
 
         var result = await LoginAsync(password: "not-the-password");

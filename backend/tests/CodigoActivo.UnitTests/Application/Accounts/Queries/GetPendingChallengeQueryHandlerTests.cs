@@ -38,7 +38,14 @@ public sealed class GetPendingChallengeQueryHandlerTests
 
         var pending = await QueryAsync(user.Id);
 
-        pending.Should().Be(new PendingChallenge(ChallengeId, CredentialStamps.For("fake:secret")));
+        pending
+            .Should()
+            .Be(
+                new PendingChallenge(
+                    LoginChallengeId.From(ChallengeId),
+                    CredentialStamps.For("fake:secret")
+                )
+            );
     }
 
     [Fact]
