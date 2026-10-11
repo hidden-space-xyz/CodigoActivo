@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Validation;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Users;
 
@@ -34,7 +35,7 @@ public sealed record ActivityDraft(
 /// <param name="DesiredCount">Number of people wanted in the role.</param>
 public sealed record RoleCapacityDraft(
     Guid ActivityRoleTypeId,
-    [property: Range(1, 10000)] int DesiredCount
+    [property: Range(RoleCapacity.MinDesiredCount, RoleCapacity.MaxDesiredCount)] int DesiredCount
 );
 
 /// <summary>

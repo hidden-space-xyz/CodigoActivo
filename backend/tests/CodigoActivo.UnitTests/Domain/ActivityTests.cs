@@ -151,6 +151,30 @@ public sealed class ActivityTests
         plan.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityRoleCapacityDuplicated);
     }
 
+    [Theory]
+    [InlineData(RoleCapacity.MinDesiredCount - 1)]
+    [InlineData(RoleCapacity.MaxDesiredCount + 1)]
+    public void CapacityPlanCreateDesiredCountOutOfRangeReturnsOutOfRange(int desiredCount)
+    {
+        var plan = RoleCapacityPlan.Create([
+            new RoleCapacity(ActivityRole.Participant, desiredCount),
+        ]);
+
+        plan.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityRoleCapacityOutOfRange);
+    }
+
+    [Theory]
+    [InlineData(RoleCapacity.MinDesiredCount)]
+    [InlineData(RoleCapacity.MaxDesiredCount)]
+    public void CapacityPlanCreateDesiredCountAtALimitKeepsIt(int desiredCount)
+    {
+        var plan = RoleCapacityPlan.Create([
+            new RoleCapacity(ActivityRole.Participant, desiredCount),
+        ]);
+
+        plan.Value.Items.Should().ContainSingle().Which.DesiredCount.Should().Be(desiredCount);
+    }
+
     [Fact]
     public void CapacityPlanCreateNoCapacitiesReturnsNone()
     {

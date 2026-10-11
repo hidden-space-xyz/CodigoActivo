@@ -16,7 +16,7 @@ namespace CodigoActivo.API.Activities.Contracts;
 /// <param name="DesiredCount">Number of desired allowed or reported.</param>
 public record ActivityRoleCapacityRequest(
     [Required] Guid ActivityRoleTypeId,
-    [Required] [Range(1, 10000)] int? DesiredCount
+    [Required] [Range(RoleCapacity.MinDesiredCount, RoleCapacity.MaxDesiredCount)] int? DesiredCount
 );
 
 /// <summary>
