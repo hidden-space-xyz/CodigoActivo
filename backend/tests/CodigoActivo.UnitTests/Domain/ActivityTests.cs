@@ -410,7 +410,7 @@ public sealed class ActivityTests
 
         var changed = activity.ChangeAssignmentRole(UserId.From(userId), ActivityRole.Leader);
 
-        changed.Should().BeTrue();
+        changed.Value.Should().BeTrue();
         var assignment = activity.Assignments.Should().ContainSingle().Which;
         assignment.UserId.Value.Should().Be(userId);
         assignment.ActivityId.Should().Be(activity.Id);
@@ -429,19 +429,22 @@ public sealed class ActivityTests
 
         var changed = activity.ChangeAssignmentRole(UserId.From(userId), ActivityRole.Volunteer);
 
-        changed.Should().BeFalse();
+        changed.Value.Should().BeFalse();
         activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(assignment);
     }
 
     [Fact]
-    public void ChangeAssignmentRolePersonNotSignedUpThrows()
+    public void ChangeAssignmentRolePersonNotSignedUpReturnsNotFound()
     {
         var activity = NewActivity();
 
-        var act = () =>
-            activity.ChangeAssignmentRole(UserId.From(Guid.NewGuid()), ActivityRole.Leader);
+        var changed = activity.ChangeAssignmentRole(
+            UserId.From(Guid.NewGuid()),
+            ActivityRole.Leader
+        );
 
-        act.Should().Throw<InvalidOperationException>();
+        changed.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
+        activity.Assignments.Should().BeEmpty();
     }
 
     [Fact]
@@ -460,22 +463,22 @@ public sealed class ActivityTests
             AssignmentStatus.Denied
         );
 
-        fromRequested.Should().Be(AssignmentStatus.Requested);
-        fromConfirmed.Should().Be(AssignmentStatus.Confirmed);
+        fromRequested.Value.Should().Be(AssignmentStatus.Requested);
+        fromConfirmed.Value.Should().Be(AssignmentStatus.Confirmed);
         activity.AssignmentOf(UserId.From(userId))!.Status.Should().Be(AssignmentStatus.Denied);
     }
 
     [Fact]
-    public void ChangeAssignmentStatusPersonNotSignedUpThrows()
+    public void ChangeAssignmentStatusPersonNotSignedUpReturnsNotFound()
     {
         var activity = NewActivity();
 
-        var act = () =>
-            activity.ChangeAssignmentStatus(
-                UserId.From(Guid.NewGuid()),
-                AssignmentStatus.Confirmed
-            );
+        var changed = activity.ChangeAssignmentStatus(
+            UserId.From(Guid.NewGuid()),
+            AssignmentStatus.Confirmed
+        );
 
-        act.Should().Throw<InvalidOperationException>();
+        changed.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
+        activity.Assignments.Should().BeEmpty();
     }
 }

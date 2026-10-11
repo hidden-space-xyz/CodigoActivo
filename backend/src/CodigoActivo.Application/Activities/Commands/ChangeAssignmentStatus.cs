@@ -42,7 +42,7 @@ public sealed class ChangeAssignmentStatusCommandHandler(IActivityRepository act
         ArgumentNullException.ThrowIfNull(command);
 
         var activity = await activities.GetByIdAsync(command.ActivityId, ct);
-        if (activity?.AssignmentOf(command.UserId) is null)
+        if (activity is null)
         {
             return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
         }
@@ -52,7 +52,6 @@ public sealed class ChangeAssignmentStatusCommandHandler(IActivityRepository act
             return Error.NotFound(ApplicationErrorCode.AssignmentStatusTypeNotFound);
         }
 
-        activity.ChangeAssignmentStatus(command.UserId, status);
-        return Result.Success();
+        return activity.ChangeAssignmentStatus(command.UserId, status);
     }
 }

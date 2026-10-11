@@ -179,12 +179,17 @@ public class Activity : AuditableEntity<ActivityId>
     /// </summary>
     /// <param name="userId">Identifier of the signed-up person.</param>
     /// <param name="role">New role.</param>
-    /// <returns><see langword="true"/> when the role changed.</returns>
-    public bool ChangeAssignmentRole(UserId userId, ActivityRole role)
+    /// <returns>
+    /// Whether the role changed, or a not found error when the person is not signed up.
+    /// </returns>
+    public Result<bool> ChangeAssignmentRole(UserId userId, ActivityRole role)
     {
-        var assignment =
-            AssignmentOf(userId)
-            ?? throw new InvalidOperationException("The person is not signed up.");
+        var assignment = AssignmentOf(userId);
+        if (assignment is null)
+        {
+            return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
+        }
+
         if (assignment.Role == role)
         {
             return false;
@@ -201,12 +206,17 @@ public class Activity : AuditableEntity<ActivityId>
     /// </summary>
     /// <param name="userId">Identifier of the signed-up person.</param>
     /// <param name="status">New status.</param>
-    /// <returns>The status the signup had before.</returns>
-    public AssignmentStatus ChangeAssignmentStatus(UserId userId, AssignmentStatus status)
+    /// <returns>
+    /// The status the signup had before, or a not found error when the person is not signed up.
+    /// </returns>
+    public Result<AssignmentStatus> ChangeAssignmentStatus(UserId userId, AssignmentStatus status)
     {
-        var assignment =
-            AssignmentOf(userId)
-            ?? throw new InvalidOperationException("The person is not signed up.");
+        var assignment = AssignmentOf(userId);
+        if (assignment is null)
+        {
+            return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
+        }
+
         var previous = assignment.Status;
         assignment.ChangeStatus(status);
         if (previous != status)
