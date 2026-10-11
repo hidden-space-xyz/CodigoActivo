@@ -69,12 +69,11 @@ aggregate roots.
   client disconnects; a failing effect is logged and neither stops the others nor fails the committed request. A
   crash between the commit and an effect loses that effect, because there is no transactional outbox for
   events (emails themselves go through the email outbox).
-- Rules that span aggregates are domain policies (`SignupRoles`, `EarlySignup`, `TermsConsent`,
-  `FeaturedSelection`, `AccountErasure`, `InitialAdministrator`, `LegalCopy`, `Household`). Handlers load and
-  call the domain; the commit and the effects that follow it belong to the decorators and the domain events; the
-  checks that need I/O are Application
-  collaborators (`SignupGate`, `TermsGate`, `ActivityValidator`, `EventCategoryChecker`,
-  `DisposableEmailChecker`).
+- Rules that span aggregates are domain policies (`SignupEligibility`, `SignupRoles`, `EarlySignup`,
+  `TermsConsent`, `FeaturedSelection`, `AccountErasure`, `InitialAdministrator`, `LegalCopy`, `Household`).
+  Handlers load and call the domain; the commit and the effects that follow it belong to the decorators and the
+  domain events; Application collaborators only load what a policy needs or run the checks that need I/O
+  (`SignupGate`, `TermsGate`, `ActivityValidator`, `EventCategoryChecker`, `DisposableEmailChecker`).
 - Aggregates reference each other by ID, never through navigations. The EF configuration keeps the foreign keys
   and cascades with `HasOne<T>().WithMany().HasForeignKey(...)`; a foreign key whose cascade would change
   another aggregate's children restricts instead, so those children change through their root.
@@ -171,8 +170,10 @@ from their input. `ActingUserPolicy` lets the signed-in user act for themselves 
 an administrator for anyone, reading the guardianship from the read side so commands and queries share it, and
 answers anything else with `ActingForAnotherUserForbidden` (403
 `AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a minor,
-updating or deleting a user and changing a password check it. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]`
-attributes still refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
+updating or deleting a user and changing a password check it. Signing up a household is the exception: it only
+takes the signed-in user and their own dependents (`Household.Includes`), administrators included, and answers
+anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]` attributes
+still refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
 
 An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); the
 signup wire contract (`AssignRequest`/`AssignHouseholdRequest`) carries a `TermsDecisions` list of

@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -8,9 +7,10 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Activities;
 
 /// <summary>
-/// Checks that the signup of the event of an activity is open for the people signing up, following
-/// <see cref="Event.SignupPhaseAt"/> and <see cref="EarlySignup"/>, and that the activity has not
-/// started yet. Administrators are not bound by it.
+/// Lets <see cref="SignupEligibility"/> decide whether the signup window of an activity is open to
+/// the people signing up or withdrawing. Administrators act outside the window, so nothing is
+/// checked for them; for anyone else it loads the event and, only while early signup alone is open,
+/// the people with their guardians.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
@@ -18,13 +18,13 @@ namespace CodigoActivo.Application.Activities;
 public sealed class SignupGate(IEventRepository events, IUserRepository users, IClock clock)
 {
     /// <summary>
-    /// Ensures the people may sign up to the activity right now.
+    /// Ensures the people may sign up to the activity, or withdraw from it, right now.
     /// </summary>
     /// <param name="activity">Activity they sign up to.</param>
     /// <param name="userIds">Identifiers of the people whose entitlement counts.</param>
     /// <param name="isAdmin">Whether an administrator acts.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>A task whose result reports success, or the rule that refuses them.</returns>
     public async Task<Result> EnsureSignupOpenAsync(
         Activity activity,
         IReadOnlyList<UserId> userIds,
@@ -39,25 +39,21 @@ public sealed class SignupGate(IEventRepository events, IUserRepository users, I
             return Result.Success();
         }
 
-        var now = clock.UtcNow;
         var ev = await events.GetByIdAsync(activity.EventId, ct);
-        var phase = ev?.SignupPhaseAt(now) ?? SignupPhase.Closed;
-        if (phase is SignupPhase.Closed)
+        if (ev is null)
         {
-            return Error.Validation(ApplicationErrorCode.ActivitySignupClosed);
+            return Error.Validation(DomainErrorCode.ActivitySignupClosed);
         }
 
-        if (activity.HasStartedBy(now))
-        {
-            return Error.Validation(ApplicationErrorCode.ActivityAlreadyStarted);
-        }
-
-        return phase is SignupPhase.Open || await AllEntitledToEarlySignupAsync(userIds, ct)
-            ? Result.Success()
-            : Error.Validation(ApplicationErrorCode.ActivitySignupEarlyOnly);
+        var now = clock.UtcNow;
+        var people =
+            ev.SignupPhaseAt(now) is SignupPhase.EarlyOnly
+                ? await CandidatesAsync(userIds, ct)
+                : [];
+        return SignupEligibility.EnsureWindowOpen(ev, activity, people, now);
     }
 
-    private async Task<bool> AllEntitledToEarlySignupAsync(
+    private async Task<IReadOnlyList<SignupCandidate>> CandidatesAsync(
         IReadOnlyList<UserId> userIds,
         CancellationToken ct
     )
@@ -72,11 +68,12 @@ public sealed class SignupGate(IEventRepository events, IUserRepository users, I
             ? []
             : (await users.ListByIdsAsync(guardianIds, ct)).ToDictionary(user => user.Id);
 
-        return people.All(person =>
-            EarlySignup.IsEntitled(
+        return
+        [
+            .. people.Select(person => new SignupCandidate(
                 person,
                 person.ParentId is { } parentId ? guardians.GetValueOrDefault(parentId) : null
-            )
-        );
+            )),
+        ];
     }
 }

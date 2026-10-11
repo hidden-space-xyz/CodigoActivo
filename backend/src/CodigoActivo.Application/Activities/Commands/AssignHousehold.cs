@@ -27,6 +27,9 @@ public sealed record AssignHouseholdCommand(
 
 /// <summary>
 /// Executes the command to sign members of the signed-in user's household up to an activity.
+/// Every member must belong to the household (<see cref="Household.Includes"/>) and may take the
+/// role asked for; members already signed up are left as they are, and the result lists those
+/// signed up now.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
@@ -81,26 +84,34 @@ public sealed class AssignHouseholdCommandHandler(
         }
 
         var items = command.Assignments.DistinctBy(a => a.UserId).ToList();
-        var userIds = items.ConvertAll(item => item.UserId);
-        var memberById = (await users.ListByIdsAsync(userIds, ct)).ToDictionary(u => u.Id);
-        var outsideHousehold = userIds.Exists(id =>
-            id != actingUserId
-            && (!memberById.TryGetValue(id, out var member) || !member.IsDependentOf(actingUserId))
-        );
-        if (outsideHousehold)
+        var memberById = (
+            await users.ListByIdsAsync(items.ConvertAll(item => item.UserId), ct)
+        ).ToDictionary(u => u.Id);
+        if (
+            items.Exists(item =>
+                !memberById.TryGetValue(item.UserId, out var member)
+                || !Household.Includes(actingUserId, member)
+            )
+        )
         {
             return Error.Forbidden(ApplicationErrorCode.ActivityHouseholdMemberNotAllowed);
         }
 
-        if (
-            items.Exists(item =>
-                !memberById.TryGetValue(item.UserId, out var member)
-                || !CatalogIds.ActivityRoles.TryGetValue(item.ActivityRoleTypeId, out var role)
-                || !SignupRoles.Allows(member.UserType, role)
-            )
-        )
+        var signups = new List<(UserId UserId, ActivityRole Role)>(items.Count);
+        foreach (var item in items)
         {
-            return Error.Validation(ApplicationErrorCode.ActivityRoleNotAllowed);
+            if (!CatalogIds.ActivityRoles.TryGetValue(item.ActivityRoleTypeId, out var role))
+            {
+                return Error.Validation(DomainErrorCode.ActivityRoleNotAllowed);
+            }
+
+            var allowedRole = SignupEligibility.EnsureRoleAllowed(memberById[item.UserId], role);
+            if (allowedRole.IsFailure)
+            {
+                return allowedRole.Error!;
+            }
+
+            signups.Add((item.UserId, role));
         }
 
         var terms = await termsGate.EnsureDecidedAsync(
@@ -114,18 +125,21 @@ public sealed class AssignHouseholdCommandHandler(
             return terms.Error!;
         }
 
-        var created = items
-            .Where(item =>
-                activity
-                    .RequestAssignment(
-                        item.UserId,
-                        CatalogIds.ActivityRoles.ValueOf(item.ActivityRoleTypeId),
-                        clock.UtcNow
-                    )
-                    .IsSuccess
+        var created = new List<UserId>(signups.Count);
+        foreach (
+            var (userId, role) in signups.Where(signup =>
+                activity.EnsureMaySignUp(signup.UserId).IsSuccess
             )
-            .Select(item => item.UserId)
-            .ToList();
+        )
+        {
+            var assigned = activity.RequestAssignment(userId, role, clock.UtcNow);
+            if (assigned.IsFailure)
+            {
+                return assigned.Error!;
+            }
+
+            created.Add(userId);
+        }
 
         try
         {

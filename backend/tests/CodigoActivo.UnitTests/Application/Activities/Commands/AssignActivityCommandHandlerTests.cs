@@ -100,7 +100,7 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivitySignupClosed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -251,7 +251,7 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityRoleNotAllowed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -274,7 +274,7 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityRoleNotAllowed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -297,7 +297,7 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityRoleNotAllowed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -377,7 +377,7 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityAlreadyStarted);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityAlreadyStarted);
         activity.Assignments.Should().BeEmpty();
     }
 
@@ -505,7 +505,7 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivitySignupEarlyOnly);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupEarlyOnly);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -553,7 +553,7 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivitySignupEarlyOnly);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupEarlyOnly);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -578,7 +578,7 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivitySignupClosed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -603,7 +603,7 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivitySignupClosed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }

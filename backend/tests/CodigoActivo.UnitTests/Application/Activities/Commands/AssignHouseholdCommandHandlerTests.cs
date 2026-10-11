@@ -109,7 +109,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivitySignupClosed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -132,6 +132,30 @@ public sealed class AssignHouseholdCommandHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
         result.Error.Code.Should().Be(ApplicationErrorCode.ActivityHouseholdMemberNotAllowed);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncDependentOfSomeoneElseReturnsMemberNotAllowed()
+    {
+        var activityId = Guid.NewGuid();
+        var actingUserId = Guid.NewGuid();
+        var otherChildId = Guid.NewGuid();
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        users.HouseholdUsers(ParticipantChild(otherChildId, Guid.NewGuid()));
+
+        var result = await AssignHouseholdAsync(
+            activityId,
+            actingUserId,
+            new AssignHouseholdRequest([new(otherChildId, KnownIds.ActivityRoleTypes.Participant)]),
+            isAdmin: false
+        );
+
+        result.ShouldFail(
+            ErrorKind.Forbidden,
+            ApplicationErrorCode.ActivityHouseholdMemberNotAllowed
+        );
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -162,7 +186,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityRoleNotAllowed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -184,7 +208,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var result = await AssignHouseholdAsync(activityId, actingUserId, request, isAdmin: false);
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityRoleNotAllowed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
         activity.Assignments.Should().BeEmpty();
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -323,7 +347,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var result = await AssignHouseholdAsync(activityId, actingUserId, request, isAdmin: false);
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivitySignupEarlyOnly);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupEarlyOnly);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }

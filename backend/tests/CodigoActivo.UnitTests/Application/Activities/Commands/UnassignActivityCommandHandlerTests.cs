@@ -95,7 +95,7 @@ public sealed class UnassignActivityCommandHandlerTests
         var result = await UnassignAsync(activityId, assignment.UserId.Value, isAdmin: false);
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivitySignupClosed);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
         activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(assignment);
     }
 
@@ -110,7 +110,7 @@ public sealed class UnassignActivityCommandHandlerTests
         var result = await UnassignAsync(activityId, assignment.UserId.Value, isAdmin: false);
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityAlreadyStarted);
+        result.Error.Code.Should().Be(DomainErrorCode.ActivityAlreadyStarted);
         activity.Assignments.Should().Contain(assignment);
     }
 

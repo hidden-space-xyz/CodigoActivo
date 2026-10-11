@@ -19,6 +19,20 @@ public static class Household
     public const int MaxMembers = MaxDependents + 1;
 
     /// <summary>
+    /// Tells whether a person belongs to the household of a guardian: the guardian or one of their
+    /// dependents.
+    /// </summary>
+    /// <param name="guardianId">Identifier of the guardian.</param>
+    /// <param name="person">Person to check.</param>
+    /// <returns><see langword="true"/> when the person is the guardian or in their care.</returns>
+    public static bool Includes(UserId guardianId, User person)
+    {
+        ArgumentNullException.ThrowIfNull(person);
+
+        return person.Id == guardianId || person.IsDependentOf(guardianId);
+    }
+
+    /// <summary>
     /// Checks that a guardian may add another dependent.
     /// </summary>
     /// <param name="dependents">Dependents the guardian has now.</param>

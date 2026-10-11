@@ -25,4 +25,19 @@ public sealed class HouseholdTests
             .EnsureMayAddDependent(dependents)
             .ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserChildLimitReached);
     }
+
+    [Fact]
+    public void IncludesGuardianAndDependentsLeavesOthersOut()
+    {
+        var guardianId = UserId.New();
+        var guardian = Persisted.As<User>(new { Id = guardianId.Value });
+        var dependent = Persisted.As<User>(
+            new { Id = Guid.NewGuid(), ParentId = guardianId.Value }
+        );
+        var stranger = Persisted.As<User>(new { Id = Guid.NewGuid(), ParentId = Guid.NewGuid() });
+
+        Household.Includes(guardianId, guardian).Should().BeTrue();
+        Household.Includes(guardianId, dependent).Should().BeTrue();
+        Household.Includes(guardianId, stranger).Should().BeFalse();
+    }
 }

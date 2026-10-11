@@ -36,6 +36,26 @@ public enum DomainErrorCode
     ActivityRoleCapacityDuplicated,
 
     /// <summary>
+    /// The signup window of the event is closed.
+    /// </summary>
+    ActivitySignupClosed,
+
+    /// <summary>
+    /// Only early signup is open and someone signing up is not entitled to it.
+    /// </summary>
+    ActivitySignupEarlyOnly,
+
+    /// <summary>
+    /// The activity has already started, so nobody can sign up for it or withdraw from it.
+    /// </summary>
+    ActivityAlreadyStarted,
+
+    /// <summary>
+    /// The type of the person does not allow the role asked for.
+    /// </summary>
+    ActivityRoleNotAllowed,
+
+    /// <summary>
     /// Selects the event categories required option.
     /// </summary>
     EventCategoriesRequired,
