@@ -13,7 +13,10 @@ public interface IDomainEventListener<in TEvent>
     /// Runs the effect of the event.
     /// </summary>
     /// <param name="domainEvent">Committed event.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="ct">
+    /// Token of the publisher, which never cancels it: the change is already committed, so the
+    /// effect runs to its end even when the request that made it is aborted.
+    /// </param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task HandleAsync(TEvent domainEvent, CancellationToken ct);
 }

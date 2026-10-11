@@ -26,7 +26,7 @@ authentication are not supported.
 - Every authenticated request revalidates account status, password lock, password fingerprint, administrator
   flag and the `sid` row in one query, and rejects the ticket when any of them is missing or expired.
   Blocking or demoting a user takes effect on existing sessions; changing or resetting the password
-  invalidates them and deletes that user's session rows. When the API answers `AuthenticationRequired` or
+  invalidates them through the fingerprint, and the change then deletes that user's session rows. When the API answers `AuthenticationRequired` or
   `CurrentUserNotFound` to a signed-in SPA, or right after the user changes their password, the SPA drops its
   cached session and data and sends protected pages back to login.
 - `POST /api/auth/logout` deletes the row of the presented session before clearing the cookies, so a copy of

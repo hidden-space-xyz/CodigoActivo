@@ -15,7 +15,7 @@ public static class TestUnitOfWork
 
     private sealed class NoListeners : IDomainEventPublisher
     {
-        public Task PublishAsync(IReadOnlyList<IDomainEvent> domainEvents, CancellationToken ct)
+        public Task PublishAsync(IReadOnlyList<IDomainEvent> domainEvents)
         {
             return Task.CompletedTask;
         }
