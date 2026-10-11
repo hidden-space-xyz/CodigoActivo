@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -12,16 +11,15 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 public sealed class EndLoginChallengeCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly EndLoginChallengeCommandHandler sut;
 
     public EndLoginChallengeCommandHandlerTests()
     {
-        sut = new EndLoginChallengeCommandHandler(users, uow);
+        sut = new EndLoginChallengeCommandHandler(users);
     }
 
     [Fact]
-    public async Task HandleAsyncUserMissingSucceedsWithoutSaving()
+    public async Task HandleAsyncUserMissingSucceeds()
     {
         users.Finds(null);
 
@@ -31,12 +29,10 @@ public sealed class EndLoginChallengeCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncAnotherChallengeKeepsTheOpenOneWithoutSaving()
+    public async Task HandleAsyncAnotherChallengeKeepsTheOpenOne()
     {
         var openChallenge = Guid.NewGuid();
         var user = users.FindReturns(NewUser());
@@ -49,12 +45,10 @@ public sealed class EndLoginChallengeCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.LoginChallengeId.Should().Be(openChallenge);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncOpenChallengeClosesItAndSaves()
+    public async Task HandleAsyncOpenChallengeClosesIt()
     {
         var openChallenge = Guid.NewGuid();
         var user = users.FindReturns(NewUser());
@@ -67,6 +61,5 @@ public sealed class EndLoginChallengeCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.LoginChallengeId.Should().BeNull();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

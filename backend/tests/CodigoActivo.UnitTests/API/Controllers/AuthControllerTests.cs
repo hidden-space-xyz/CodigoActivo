@@ -2,7 +2,6 @@ using System.Security.Claims;
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Queries;
@@ -32,7 +31,6 @@ public sealed class AuthControllerTests
             new StartSessionCommandHandler(
                 Substitute.For<IUserRepository>(),
                 sessions,
-                Substitute.For<IUnitOfWork>(),
                 new TestClock(),
                 new SessionLifetimeOptions()
             ),
@@ -46,10 +44,7 @@ public sealed class AuthControllerTests
 
         var challengeTickets = new TwoFactorTicketValidator(
             new GetPendingChallengeQueryHandler(new FakeReadStore(), new FakeQueryExecutor()),
-            new EndLoginChallengeCommandHandler(
-                Substitute.For<IUserRepository>(),
-                Substitute.For<IUnitOfWork>()
-            )
+            new EndLoginChallengeCommandHandler(Substitute.For<IUserRepository>())
         );
         var authenticationService = Substitute.For<IAuthenticationService>();
         var services = new ServiceCollection();

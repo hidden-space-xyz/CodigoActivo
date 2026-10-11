@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -16,8 +15,7 @@ public sealed record EndLoginChallengeCommand(UserId UserId, Guid ChallengeId) :
 /// Closes the pending second-factor challenge of an account, when it is still the one presented.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-public sealed class EndLoginChallengeCommandHandler(IUserRepository users, IUnitOfWork uow)
+public sealed class EndLoginChallengeCommandHandler(IUserRepository users)
     : ICommandHandler<EndLoginChallengeCommand, Result>
 {
     /// <summary>
@@ -39,7 +37,6 @@ public sealed class EndLoginChallengeCommandHandler(IUserRepository users, IUnit
         }
 
         pending.ClearLoginChallenge();
-        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

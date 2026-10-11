@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Errors;
@@ -15,7 +14,6 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 public sealed class VerifyUserCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly VerifyUserCommandHandler sut;
 
@@ -23,16 +21,9 @@ public sealed class VerifyUserCommandHandlerTests
     {
         sut = new VerifyUserCommandHandler(
             users,
-            uow,
             clock,
             new OtpValidator(new FakeOneTimeCodeHasher())
         );
-    }
-
-    private Task<int> AssertNotSavedAsync()
-    {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -46,7 +37,6 @@ public sealed class VerifyUserCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -66,7 +56,6 @@ public sealed class VerifyUserCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
-        await AssertNotSavedAsync();
     }
 
     public static TheoryData<string, bool, int?> InvalidOtpCases()
@@ -104,11 +93,10 @@ public sealed class VerifyUserCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
-        await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncWrongCodeReturnsBadRequestWithoutPersisting()
+    public async Task HandleAsyncWrongCodeReturnsBadRequestAndKeepsTheAccountPending()
     {
         var user = users.FindReturns(NewPendingWithOtp(clock, code: "the-real-code"));
 
@@ -119,7 +107,6 @@ public sealed class VerifyUserCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
         user.Status.Should().Be(UserStatus.Pending);
-        await AssertNotSavedAsync();
     }
 
     [Fact]
@@ -136,6 +123,5 @@ public sealed class VerifyUserCommandHandlerTests
         user.Status.Should().Be(UserStatus.Active);
         user.OtpCodeHash.Should().BeNull();
         user.OtpExpiresAt.Should().BeNull();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

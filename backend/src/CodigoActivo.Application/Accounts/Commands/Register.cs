@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Diagnostics;
@@ -44,7 +43,6 @@ public sealed record RegisterCommand(
 /// Executes the command to register.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="hasher">The hasher value.</param>
 /// <param name="codeHasher">Hasher used so the verification code is never stored in plaintext.</param>
@@ -55,7 +53,6 @@ public sealed record RegisterCommand(
 /// <param name="emailClaims">Committer that replaces an unverified account holding the email.</param>
 public sealed class RegisterCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
     IClock clock,
     IPasswordHasher hasher,
     IOneTimeCodeHasher codeHasher,
@@ -203,7 +200,6 @@ public sealed class RegisterCommandHandler(
             logger.EmailSendFailed(EmailKind.AccountVerification, ex);
 
             user.ForgetOtpDelivery();
-            await uow.SaveChangesAsync(ct);
         }
     }
 

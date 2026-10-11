@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Errors;
@@ -27,14 +26,13 @@ public sealed class StartSessionCommandHandlerTests
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly SessionLifetimeOptions options = new() { Lifetime = TimeSpan.FromHours(8) };
     private readonly StartSessionCommandHandler sut;
 
     public StartSessionCommandHandlerTests()
     {
-        sut = new StartSessionCommandHandler(users, sessions, uow, clock, options);
+        sut = new StartSessionCommandHandler(users, sessions, clock, options);
     }
 
     private Task<Result<SessionTicket>> StartAsync(Guid userId)
@@ -53,8 +51,6 @@ public sealed class StartSessionCommandHandlerTests
         await sessions
             .DidNotReceiveWithAnyArgs()
             .RemoveExpiredAsync(default, default, TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -123,7 +119,6 @@ public sealed class StartSessionCommandHandlerTests
         {
             _ = sessions.RemoveExpiredAsync(clock.UtcNow, user.Id, Arg.Any<CancellationToken>());
             _ = sessions.AddAsync(session, Arg.Any<CancellationToken>());
-            _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
         });
     }
 }

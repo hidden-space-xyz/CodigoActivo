@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Diagnostics;
@@ -24,7 +23,6 @@ public sealed record ForgotPasswordCommand(
 /// Executes the command to forgot password.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="codeHasher">Hasher used so the reset code is never stored in plaintext.</param>
 /// <param name="passwordReset">The password reset value.</param>
@@ -32,7 +30,6 @@ public sealed record ForgotPasswordCommand(
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ForgotPasswordCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
     IClock clock,
     IOneTimeCodeHasher codeHasher,
     PasswordResetOptions passwordReset,
@@ -86,8 +83,6 @@ public sealed class ForgotPasswordCommandHandler(
         }
 
         user.IssuePasswordResetCode(codeHasher.Hash(code), now, passwordReset.CodeLifetime);
-        await uow.SaveChangesAsync(ct);
-
         return Result.Success();
     }
 }

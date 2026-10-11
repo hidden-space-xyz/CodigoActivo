@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
@@ -17,13 +16,11 @@ public sealed record ResendTwoFactorCodeCommand(UserId UserId) : ICommand<Result
 /// Executes the command to email a new login code, replacing the previous one.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="options">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed login codes.</param>
 public sealed class ResendTwoFactorCodeCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
     IClock clock,
     TwoFactorOptions options,
     LoginCodeIssuer loginCodes
@@ -62,13 +59,6 @@ public sealed class ResendTwoFactorCodeCommandHandler(
             return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
         }
 
-        var issued = await loginCodes.IssueAsync(user, now, ct);
-        if (issued.IsFailure)
-        {
-            return issued;
-        }
-
-        await uow.SaveChangesAsync(ct);
-        return Result.Success();
+        return await loginCodes.IssueAsync(user, now, ct);
     }
 }

@@ -40,7 +40,6 @@ public sealed class RegisterCommandHandlerTests
     {
         sut = new RegisterCommandHandler(
             users,
-            uow,
             clock,
             hasher,
             new FakeOneTimeCodeHasher(),
@@ -408,7 +407,7 @@ public sealed class RegisterCommandHandlerTests
         added[0]
             .OtpCodeHash.Should()
             .NotBeNull("the code is still issued so a resend can replace it");
-        await uow.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

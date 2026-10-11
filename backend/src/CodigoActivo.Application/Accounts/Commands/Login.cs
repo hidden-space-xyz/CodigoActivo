@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Mapping;
@@ -30,14 +29,12 @@ public sealed record LoginCommand(
 /// stores a fresh challenge identifier, so the challenge cookie of an earlier attempt stops working.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="twoFactor">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed login codes.</param>
 public sealed class LoginCommandHandler(
     IUserRepository users,
-    IUnitOfWork uow,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
     TwoFactorOptions twoFactor,
@@ -104,8 +101,6 @@ public sealed class LoginCommandHandler(
         }
 
         user.StartLoginChallenge(Guid.NewGuid());
-        await uow.SaveChangesAsync(ct);
-
         return new LoginChallenge(
             user.Id.Value,
             user.TwoFactorMethod.ToContract(),
