@@ -43,15 +43,11 @@ public sealed class ResendTwoFactorCodeCommandHandler(
             return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (user.TwoFactorMethod != TwoFactorMethod.Email)
-        {
-            return Error.Conflict(ApplicationErrorCode.TwoFactorResendNotAllowed);
-        }
-
         var now = clock.UtcNow;
-        if (user.IsTwoFactorLocked(now))
+        var allowed = user.MayReceiveLoginCode(now);
+        if (allowed.IsFailure)
         {
-            return Error.Forbidden(ApplicationErrorCode.TwoFactorLocked);
+            return allowed;
         }
 
         if (user.IsLoginCodeResendCoolingDown(now, options.ResendCooldown))

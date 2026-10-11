@@ -73,6 +73,15 @@ public sealed class WireErrorCodesTests
     }
 
     [Fact]
+    public void ToWireAccountNoLongerPendingIsReportedAsAnInvalidCode()
+    {
+        WireErrorCodes
+            .ToWire(DomainErrorCode.UserNotPendingVerification)
+            .Should()
+            .Be(ErrorCode.OtpInvalidOrExpired);
+    }
+
+    [Fact]
     public void ToWireCodeOfAnotherEnumThrows()
     {
         var act = () => WireErrorCodes.ToWire(ErrorKind.Conflict);

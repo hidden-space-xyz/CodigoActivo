@@ -54,7 +54,7 @@ public sealed class ConfirmAuthenticatorCommandHandler(
         var now = clock.UtcNow;
         if (!user.HasPendingAuthenticator(now))
         {
-            return Error.Validation(ApplicationErrorCode.AuthenticatorSetupExpired);
+            return Error.Validation(DomainErrorCode.AuthenticatorSetupExpired);
         }
 
         var step = authenticatorCodes.Match(user.PendingAuthenticatorKey, command.Code);
@@ -63,12 +63,6 @@ public sealed class ConfirmAuthenticatorCommandHandler(
             return Error.Validation(ApplicationErrorCode.TwoFactorCodeInvalid);
         }
 
-        var enabled = user.EnableAuthenticator(step.Value, now);
-        if (enabled.IsFailure)
-        {
-            return enabled;
-        }
-
-        return Result.Success();
+        return user.EnableAuthenticator(step.Value, now);
     }
 }

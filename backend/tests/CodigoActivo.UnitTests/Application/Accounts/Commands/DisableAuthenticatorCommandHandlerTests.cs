@@ -129,7 +129,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
 
         var result = await DisableAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         await AssertNotSavedAsync();
     }
 

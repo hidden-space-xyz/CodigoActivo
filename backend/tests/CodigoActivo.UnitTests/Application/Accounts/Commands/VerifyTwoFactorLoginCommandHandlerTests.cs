@@ -77,7 +77,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
 
         var result = await VerifyAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         user.TwoFactorFailedAttempts.Should().Be(0);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -254,7 +254,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
 
         var result = await VerifyAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         user.LastLoginAt.Should().BeNull();
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);

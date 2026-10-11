@@ -92,6 +92,19 @@ public sealed class UserTests
     }
 
     [Fact]
+    public void VerifyActiveUserIsRefusedAndKeepsItsState()
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(user, new { Status = UserStatus.Active });
+
+        var verified = user.Verify(Now);
+
+        verified.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserNotPendingVerification);
+        user.OtpCodeHash.Should().Be("ABCDEF");
+        user.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
     public void IssueOtpHashAndLifetimeStoresHashAndTimestamps()
     {
         var user = NewPendingUser();
@@ -159,6 +172,43 @@ public sealed class UserTests
         user.HasRecentLoginCode(Now.AddSeconds(30), TimeSpan.FromSeconds(60)).Should().BeTrue();
         user.HasRecentLoginCode(Now.AddSeconds(61), TimeSpan.FromSeconds(60)).Should().BeFalse();
         user.HasRecentLoginCode(Now.AddMinutes(11), TimeSpan.FromMinutes(20)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IssueLoginCodeAccountWithoutEmailIsRefused()
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(user, new { Email = default(string) });
+
+        var issued = user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+
+        issued.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserContactInfoRequired);
+        user.LoginCodeHash.Should().BeNull();
+    }
+
+    [Fact]
+    public void IssueLoginCodeAuthenticatorAccountIsRefused()
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(user, new { TwoFactorMethod = TwoFactorMethod.Authenticator });
+
+        var issued = user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+
+        issued.ShouldFail(ErrorKind.Conflict, DomainErrorCode.TwoFactorResendNotAllowed);
+        user.LoginCodeHash.Should().BeNull();
+    }
+
+    [Fact]
+    public void IssueLoginCodeLockedSecondFactorIsRefused()
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(user, new { TwoFactorLockedUntil = Now.AddMinutes(5) });
+
+        var issued = user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+
+        issued.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
+        user.LoginCodeHash.Should().BeNull();
+        user.MayReceiveLoginCode(Now.AddMinutes(5)).IsSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -336,6 +386,24 @@ public sealed class UserTests
         user.AuthenticatorLastUsedStep.Should().Be(42);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EnableAuthenticatorNoWaitingEnrollmentIsRefused(bool begunAndExpired)
+    {
+        var user = NewPendingUser();
+        if (begunAndExpired)
+        {
+            user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
+        }
+
+        var enabled = user.EnableAuthenticator(42, Now.AddMinutes(15));
+
+        enabled.ShouldFail(ErrorKind.Validation, DomainErrorCode.AuthenticatorSetupExpired);
+        user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
+        user.AuthenticatorKey.Should().BeNull();
+    }
+
     [Fact]
     public void UseEmailTwoFactorForgetsActiveAndPendingAuthenticators()
     {
@@ -408,10 +476,14 @@ public sealed class UserTests
         var user = NewPendingUser();
         user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
         user.EnableAuthenticator(42, Now);
-        user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
         Persisted.Overwrite(
             user,
-            new { TwoFactorFailedAttempts = 4, TwoFactorLockedUntil = Now.AddMinutes(10) }
+            new
+            {
+                LoginCodeHash = "HASH",
+                TwoFactorFailedAttempts = 4,
+                TwoFactorLockedUntil = Now.AddMinutes(10),
+            }
         );
 
         var leftAuthenticator = user.ResetTwoFactor(Now);
@@ -591,7 +663,7 @@ public sealed class UserTests
         var user = NewPendingUser();
         Persisted.Overwrite(user, new { IsAdmin = !isAdmin });
 
-        user.SetAdministrator(isAdmin, Now).Should().BeTrue();
+        user.SetAdministrator(isAdmin, Now).Value.Should().BeTrue();
 
         user.IsAdmin.Should().Be(isAdmin);
         user.UpdatedAt.Should().Be(Now);
@@ -605,10 +677,26 @@ public sealed class UserTests
         var user = NewPendingUser();
         Persisted.Overwrite(user, new { IsAdmin = isAdmin });
 
-        user.SetAdministrator(isAdmin, Now).Should().BeFalse();
+        user.SetAdministrator(isAdmin, Now).Value.Should().BeFalse();
 
         user.IsAdmin.Should().Be(isAdmin);
         user.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void SetAdministratorRevokingTheInitialAdministratorIsRefused()
+    {
+        var administrator = User.CreateInitialAdministrator(
+            EmailAddress.FromStored("admin@test.local"),
+            "hash",
+            Seeded
+        );
+
+        var revoked = administrator.SetAdministrator(false, Now);
+
+        revoked.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.UserCannotRemoveInitialAdmin);
+        administrator.IsAdmin.Should().BeTrue();
+        administrator.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]

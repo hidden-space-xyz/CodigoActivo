@@ -176,4 +176,24 @@ public enum DomainErrorCode
     /// The new birth date of a dependent lies in the future.
     /// </summary>
     UserChildBirthDateInFuture,
+
+    /// <summary>
+    /// The account no longer waits for its email to be verified.
+    /// </summary>
+    UserNotPendingVerification,
+
+    /// <summary>
+    /// Too many wrong second-factor codes locked the second factor for a while.
+    /// </summary>
+    TwoFactorLocked,
+
+    /// <summary>
+    /// The account does not use email as its second factor, so no code can be emailed to it.
+    /// </summary>
+    TwoFactorResendNotAllowed,
+
+    /// <summary>
+    /// No authenticator enrollment waits for confirmation, or the one that did has expired.
+    /// </summary>
+    AuthenticatorSetupExpired,
 }

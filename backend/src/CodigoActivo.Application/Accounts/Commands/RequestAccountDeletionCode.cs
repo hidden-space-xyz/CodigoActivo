@@ -70,15 +70,11 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
             return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        if (user.TwoFactorMethod != TwoFactorMethod.Email)
-        {
-            return Error.Conflict(ApplicationErrorCode.TwoFactorResendNotAllowed);
-        }
-
         var now = clock.UtcNow;
-        if (user.IsTwoFactorLocked(now))
+        var allowed = user.MayReceiveLoginCode(now);
+        if (allowed.IsFailure)
         {
-            return Error.Forbidden(ApplicationErrorCode.TwoFactorLocked);
+            return allowed;
         }
 
         if (user.IsLoginCodeResendCoolingDown(now, options.ResendCooldown))
@@ -86,12 +82,6 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
             return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
         }
 
-        var issued = await loginCodes.IssueAccountDeletionAsync(user, now, ct);
-        if (issued.IsFailure)
-        {
-            return issued;
-        }
-
-        return Result.Success();
+        return await loginCodes.IssueAccountDeletionAsync(user, now, ct);
     }
 }

@@ -343,7 +343,7 @@ public sealed class LoginCommandHandlerTests
 
         var result = await LoginAsync();
 
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }

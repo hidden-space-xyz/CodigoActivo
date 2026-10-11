@@ -213,7 +213,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
 
         var result = await DeleteAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         AssertNothingRemoved();
         await AssertNotSavedAsync();
     }
@@ -235,7 +235,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
 
         var result = await DeleteAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         AssertNothingRemoved();
         await AssertNotSavedAsync();
     }

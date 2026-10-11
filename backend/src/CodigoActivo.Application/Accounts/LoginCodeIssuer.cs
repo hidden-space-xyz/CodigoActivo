@@ -64,9 +64,10 @@ public sealed class LoginCodeIssuer(
         CancellationToken ct
     )
     {
-        if (user.Email is null)
+        var allowed = user.MayReceiveLoginCode(now);
+        if (allowed.IsFailure)
         {
-            return Error.Conflict(DomainErrorCode.UserContactInfoRequired);
+            return allowed;
         }
 
         var code = GenerateCode();
@@ -84,8 +85,7 @@ public sealed class LoginCodeIssuer(
             return Error.Conflict(ApplicationErrorCode.EmailSendFailed);
         }
 
-        user.IssueLoginCode(codeHasher.Hash(code), now, options.ChallengeLifetime);
-        return Result.Success();
+        return user.IssueLoginCode(codeHasher.Hash(code), now, options.ChallengeLifetime);
     }
 
     private static string GenerateCode()

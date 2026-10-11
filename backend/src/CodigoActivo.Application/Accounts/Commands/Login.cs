@@ -85,7 +85,7 @@ public sealed class LoginCommandHandler(
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            return Error.Forbidden(ApplicationErrorCode.TwoFactorLocked);
+            return Error.Forbidden(DomainErrorCode.TwoFactorLocked);
         }
 
         if (

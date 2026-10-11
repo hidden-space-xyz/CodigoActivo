@@ -55,7 +55,8 @@ public sealed class VerifyUserCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserNotPendingVerification);
+        user.Status.Should().Be(UserStatus.Active);
     }
 
     public static TheoryData<string, bool, int?> InvalidOtpCases()
