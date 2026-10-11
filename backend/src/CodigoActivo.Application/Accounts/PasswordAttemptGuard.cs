@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +18,7 @@ namespace CodigoActivo.Application.Accounts;
 /// cannot be told apart from a wrong one.
 /// </summary>
 /// <param name="users">Repository that counts the failures and locks the account atomically.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
@@ -27,6 +29,7 @@ namespace CodigoActivo.Application.Accounts;
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class PasswordAttemptGuard(
     IUserRepository users,
+    ICurrentUser currentUser,
     IUserSessionRepository sessions,
     IUnitOfWork uow,
     IClock clock,
@@ -107,6 +110,24 @@ public sealed class PasswordAttemptGuard(
 
         await ForgetFailuresAsync(actingUser, ct);
         return true;
+    }
+
+    /// <summary>
+    /// Verifies the password the signed-in caller re-enters to authorize a change, loading the
+    /// caller's own account first.
+    /// </summary>
+    /// <param name="password">Plain-text password presented by the client.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="true"/> when the caller proved the password.</returns>
+    public async Task<bool> VerifyActingUserAsync(string? password, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(password))
+        {
+            return false;
+        }
+
+        var actingUser = await users.GetByIdAsync(currentUser.RequiredId(), ct);
+        return await VerifyReauthenticationAsync(actingUser, password, ct);
     }
 
     private async Task ForgetFailuresAsync(User user, CancellationToken ct)

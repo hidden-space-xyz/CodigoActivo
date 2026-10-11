@@ -23,11 +23,13 @@ public static class PasswordGuards
         IEmailSender? emailSender = null,
         PasswordLockoutOptions? options = null,
         ILogger<PasswordAttemptGuard>? logger = null,
-        IUserRepository? users = null
+        IUserRepository? users = null,
+        ICurrentUser? currentUser = null
     )
     {
         return new PasswordAttemptGuard(
             LockingPasswordState(users ?? Substitute.For<IUserRepository>()),
+            currentUser ?? new TestCurrentUser(),
             sessions ?? Substitute.For<IUserSessionRepository>(),
             uow.RunsTransactions(),
             clock,

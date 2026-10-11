@@ -116,16 +116,16 @@ public sealed class UpdateUserCommandHandler(
             return Error.Validation(ApplicationErrorCode.DisposableEmailNotAllowed);
         }
 
-        var actingUserId = currentUser.RequiredId();
         if (
             change.ReplacesContact
-            && !await VerifyActingPasswordAsync(actingUserId, command.CurrentPassword, ct)
+            && !await passwordAttempts.VerifyActingUserAsync(command.CurrentPassword, ct)
         )
         {
             return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        var ownEmailChange = change.NewEmail is not null && command.UserId == actingUserId;
+        var ownEmailChange =
+            change.NewEmail is not null && command.UserId == currentUser.RequiredId();
         if (
             !ownEmailChange
             && change.Email is { } email
@@ -142,20 +142,5 @@ public sealed class UpdateUserCommandHandler(
 
         user.ApplyProfileChange(change, clock.UtcNow);
         return Result.Success();
-    }
-
-    private async Task<bool> VerifyActingPasswordAsync(
-        UserId actingUserId,
-        string? password,
-        CancellationToken ct
-    )
-    {
-        if (string.IsNullOrEmpty(password))
-        {
-            return false;
-        }
-
-        var acting = await users.GetByIdAsync(actingUserId, ct);
-        return await passwordAttempts.VerifyReauthenticationAsync(acting, password, ct);
     }
 }

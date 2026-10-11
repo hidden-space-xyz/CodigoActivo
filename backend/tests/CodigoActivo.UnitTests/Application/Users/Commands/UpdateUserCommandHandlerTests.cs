@@ -59,7 +59,7 @@ public sealed class UpdateUserCommandHandlerTests
             users,
             ActingUsers.Policy(currentUser),
             currentUser,
-            PasswordGuards.Create(hasher, uow, clock),
+            PasswordGuards.Create(hasher, uow, clock, users: users, currentUser: currentUser),
             clock,
             new DisposableEmailChecker(disposableDomains),
             new EmailChangeLinkIssuer(

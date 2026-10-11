@@ -1,8 +1,10 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Composition;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Composition;
@@ -26,6 +28,7 @@ public sealed class PasswordLockoutConfigurationTests : IDisposable
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
         var provider = new ServiceCollection()
             .AddLogging()
+            .AddSingleton(Substitute.For<ICurrentUser>())
             .AddCodigoActivo(configuration)
             .BuildServiceProvider();
         providers.Add(provider);

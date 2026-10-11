@@ -1,11 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -30,12 +28,10 @@ public sealed record SetAdminCommand(
 /// administrator never loses them.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class SetAdminCommandHandler(
     IUserRepository users,
-    ICurrentUser currentUser,
     PasswordAttemptGuard passwordAttempts,
     IClock clock
 ) : ICommandHandler<SetAdminCommand, Result>
@@ -50,7 +46,10 @@ public sealed class SetAdminCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (command.IsAdmin && !await IsActingPasswordValidAsync(command.CurrentPassword, ct))
+        if (
+            command.IsAdmin
+            && !await passwordAttempts.VerifyActingUserAsync(command.CurrentPassword, ct)
+        )
         {
             return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
@@ -62,16 +61,5 @@ public sealed class SetAdminCommandHandler(
         }
 
         return user.SetAdministrator(command.IsAdmin, clock.UtcNow);
-    }
-
-    private async Task<bool> IsActingPasswordValidAsync(string? password, CancellationToken ct)
-    {
-        if (string.IsNullOrEmpty(password))
-        {
-            return false;
-        }
-
-        var actingUser = await users.GetByIdAsync(currentUser.RequiredId(), ct);
-        return await passwordAttempts.VerifyReauthenticationAsync(actingUser, password, ct);
     }
 }

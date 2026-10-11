@@ -100,8 +100,9 @@ aggregate roots.
   to resolve a deadlock, runs it again (three attempts in total) from the state the failed attempt started
   from: entities tracked since are dropped, the others get back their values and state, and the domain events
   raised during the attempt are discarded. `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`),
-  so parallel attempts lose no increment and only one of them sees the account lock. Second-factor checks and
-  adding a dependent lock and reload the account the same way (`IUserRepository.LockAsync`). Deleting an event
+  so parallel attempts lose no increment and only one of them sees the account lock. Second-factor checks
+  (the handler locks and reloads the account before `SecondFactorGuard` counts the code) and adding a
+  dependent lock and reload the account the same way (`IUserRepository.LockAsync`). Deleting an event
   category locks the category (`FOR UPDATE`, which also holds back tagging an event with it) and then the events
   tagged with it in identifier order, and `UpdateEvent` locks its event before loading it (`FOR NO KEY UPDATE`,
   which leaves signups, ratings and activities referencing the event free), so no event loses its last category.

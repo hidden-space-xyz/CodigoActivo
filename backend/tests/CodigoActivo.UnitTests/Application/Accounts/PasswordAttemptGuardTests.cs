@@ -23,6 +23,7 @@ public sealed class PasswordAttemptGuardTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly RecordingLogger<PasswordAttemptGuard> logger = new();
     private readonly PasswordLockoutOptions options = new() { MaxFailedAttempts = 3 };
+    private readonly TestCurrentUser currentUser = new();
     private readonly PasswordAttemptGuard sut;
 
     public PasswordAttemptGuardTests()
@@ -35,7 +36,8 @@ public sealed class PasswordAttemptGuardTests
             emailSender,
             options,
             logger,
-            users
+            users,
+            currentUser
         );
     }
 
@@ -383,6 +385,56 @@ public sealed class PasswordAttemptGuardTests
         await AssertFailuresCountedAsync(0);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task VerifyActingUserAsyncCallerPasswordAcceptsTheSignedInCaller()
+    {
+        var caller = users.FindReturns(Account());
+        currentUser.Id = caller.Id;
+
+        var accepted = await sut.VerifyActingUserAsync(
+            Correct,
+            TestContext.Current.CancellationToken
+        );
+
+        accepted.Should().BeTrue();
+        await users.Received(1).GetByIdAsync(caller.Id, Arg.Any<CancellationToken>());
+        await AssertFailuresCountedAsync(0);
+    }
+
+    [Fact]
+    public async Task VerifyActingUserAsyncWrongPasswordCountsTheCallersFailure()
+    {
+        var caller = users.FindReturns(Account());
+        currentUser.Id = caller.Id;
+
+        var accepted = await sut.VerifyActingUserAsync(
+            "wrong",
+            TestContext.Current.CancellationToken
+        );
+
+        accepted.Should().BeFalse();
+        await users.Received(1).GetByIdAsync(caller.Id, Arg.Any<CancellationToken>());
+        await AssertFailuresCountedAsync(1);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task VerifyActingUserAsyncMissingPasswordIsRefusedWithoutLoadingTheCaller(
+        string? password
+    )
+    {
+        var accepted = await sut.VerifyActingUserAsync(
+            password,
+            TestContext.Current.CancellationToken
+        );
+
+        accepted.Should().BeFalse();
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .GetByIdAsync(default, TestContext.Current.CancellationToken);
     }
 
     [Fact]

@@ -27,7 +27,7 @@ public sealed class CompleteLoginCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly TwoFactorOptions options = new() { MaxFailedAttempts = 3 };
-    private readonly RecordingLogger<CompleteLoginCommandHandler> logger = new();
+    private readonly RecordingLogger<SecondFactorGuard> logger = new();
     private readonly CompleteLoginCommandHandler sut;
 
     public CompleteLoginCommandHandlerTests()
@@ -38,11 +38,9 @@ public sealed class CompleteLoginCommandHandlerTests
             sessions,
             uow.RunsTransactionsOf<Result<UserSessionId>>(),
             clock,
-            new OtpValidator(new FakeOneTimeCodeHasher()),
-            new AuthenticatorCodeVerifier(totp, new FakeSecretProtector(), clock),
+            SecondFactorGuards.Create(uow, clock, totp, options, logger),
             options,
-            new SessionLifetimeOptions { Lifetime = TimeSpan.FromHours(8) },
-            logger
+            new SessionLifetimeOptions { Lifetime = TimeSpan.FromHours(8) }
         );
     }
 

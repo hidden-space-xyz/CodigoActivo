@@ -42,6 +42,7 @@ internal static class AccountsRegistration
         services.AddScoped<AccountEmails>();
         services.AddScoped<AccountSecurityNotifier>();
         services.AddScoped<PasswordAttemptGuard>();
+        services.AddScoped<SecondFactorGuard>();
         services.AddScoped<OtpValidator>();
         services.AddScoped<LoginCodeIssuer>();
         services.AddScoped<EmailChangeLinkIssuer>();

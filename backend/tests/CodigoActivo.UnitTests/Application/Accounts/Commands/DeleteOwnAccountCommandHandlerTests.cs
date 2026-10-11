@@ -10,7 +10,6 @@ using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -45,10 +44,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
             uow,
             clock,
             PasswordGuards.Create(hasher, uow, clock),
-            new OtpValidator(new FakeOneTimeCodeHasher()),
-            new AuthenticatorCodeVerifier(totp, new FakeSecretProtector(), clock),
-            options,
-            NullLogger<DeleteOwnAccountCommandHandler>.Instance
+            SecondFactorGuards.Create(uow, clock, totp, options)
         );
     }
 
