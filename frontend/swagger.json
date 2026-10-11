@@ -5348,34 +5348,6 @@
         },
         "additionalProperties": false
       },
-      "EventAttendeeGuardianResponse": {
-        "required": [
-          "firstName",
-          "lastName"
-        ],
-        "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "phone": {
-            "type": "string",
-            "nullable": true
-          },
-          "secondaryPhone": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "EventAttendeeResponse": {
         "required": [
           "assignments",
@@ -5425,7 +5397,7 @@
             "type": "string"
           },
           "guardian": {
-            "$ref": "#/components/schemas/EventAttendeeGuardianResponse"
+            "$ref": "#/components/schemas/EventGuardianContactResponse"
           },
           "assignments": {
             "type": "array",
@@ -5690,6 +5662,34 @@
           "eventEndsAt": {
             "type": "string",
             "format": "date"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventGuardianContactResponse": {
+        "required": [
+          "firstName",
+          "lastName"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -6118,34 +6118,6 @@
         },
         "additionalProperties": false
       },
-      "EventRosterGuardianResponse": {
-        "required": [
-          "firstName",
-          "lastName"
-        ],
-        "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "phone": {
-            "type": "string",
-            "nullable": true
-          },
-          "secondaryPhone": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "EventRosterParticipantResponse": {
         "required": [
           "firstName",
@@ -6186,7 +6158,7 @@
             "type": "string"
           },
           "guardian": {
-            "$ref": "#/components/schemas/EventRosterGuardianResponse"
+            "$ref": "#/components/schemas/EventGuardianContactResponse"
           }
         },
         "additionalProperties": false

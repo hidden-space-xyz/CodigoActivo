@@ -61,14 +61,13 @@ public sealed class ListEventsQueryHandler(
     {
         var now = clock.UtcNow;
         var today = clock.Today;
-        var source = readStore.Events.Select(EventProjections.EventListItem);
-
-        source = query.Scope switch
+        var events = query.Scope switch
         {
-            EventScope.Upcoming => source.Where(e => e.EventEndsAt >= today),
-            EventScope.Past => source.Where(e => e.EventEndsAt < today),
-            _ => source,
+            EventScope.Upcoming => readStore.Events.Where(EventProjections.NotEndedBy(today)),
+            EventScope.Past => readStore.Events.Where(EventProjections.EndedBy(today)),
+            _ => readStore.Events,
         };
+        var source = events.Select(EventProjections.EventListItem);
 
         if (query.Year is { } year)
         {

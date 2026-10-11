@@ -73,7 +73,7 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
                 u.UserType.Color,
                 u.Parent == null
                     ? null
-                    : new EventAttendeeGuardianResponse(
+                    : new EventGuardianContactResponse(
                         u.Parent.FirstName,
                         u.Parent.LastName,
                         u.Parent.Email,
@@ -159,7 +159,7 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
         Gender Gender,
         string UserTypeName,
         string UserTypeColor,
-        EventAttendeeGuardianResponse? Guardian,
+        EventGuardianContactResponse? Guardian,
         List<EventAttendeeAssignmentResponse> Assignments,
         List<AssignmentWindow> Windows
     );

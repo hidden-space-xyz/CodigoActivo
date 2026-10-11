@@ -1,10 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
-using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 
@@ -44,11 +43,8 @@ public sealed class GetEventBadgesQueryHandler(IReadStore readStore, IQueryExecu
 
         var rows = await executor.ToListAsync(
             readStore
-                .Assignments.Where(a =>
-                    a.Activity.EventId == eventId
-                    && a.AssignmentStatusId
-                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
-                )
+                .Assignments.Where(ActivityProjections.ConfirmedSignup)
+                .Where(a => a.Activity.EventId == eventId)
                 .Select(a => new
                 {
                     a.UserId,

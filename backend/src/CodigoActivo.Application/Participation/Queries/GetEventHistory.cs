@@ -1,9 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Participation.Contracts;
-using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -85,12 +84,7 @@ public sealed class GetEventHistoryQueryHandler(
         {
             var isPast = group.First().EventEndsAt < today;
             var visible = isPast
-                ? group
-                    .Where(row =>
-                        row.StatusId
-                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
-                    )
-                    .ToList()
+                ? group.Where(row => row.StatusId == ActivityProjections.ConfirmedStatusId).ToList()
                 : [.. group];
 
             if (visible.Count is 0)

@@ -5,7 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface EventRosterGuardianResponse {
+export interface EventGuardianContactResponse {
   firstName: string;
   lastName: string;
   /** @nullable */

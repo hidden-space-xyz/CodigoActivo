@@ -5,7 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { EventAttendeeAssignmentResponse } from './eventAttendeeAssignmentResponse';
-import type { EventAttendeeGuardianResponse } from './eventAttendeeGuardianResponse';
+import type { EventGuardianContactResponse } from './eventGuardianContactResponse';
 import type { Gender } from './gender';
 
 export interface EventAttendeeResponse {
@@ -25,6 +25,6 @@ export interface EventAttendeeResponse {
   gender: Gender;
   userTypeName: string;
   userTypeColor: string;
-  guardian?: EventAttendeeGuardianResponse;
+  guardian?: EventGuardianContactResponse;
   assignments: EventAttendeeAssignmentResponse[];
 }

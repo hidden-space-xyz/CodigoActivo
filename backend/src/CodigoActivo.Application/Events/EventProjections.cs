@@ -5,7 +5,8 @@ using CodigoActivo.Application.Events.Contracts;
 namespace CodigoActivo.Application.Events;
 
 /// <summary>
-/// Database projections from the read models to the response shapes of this feature.
+/// Database projections from the read models to the response shapes of this feature, and the read-side
+/// conditions the queries share.
 /// </summary>
 public static class EventProjections
 {
@@ -75,4 +76,25 @@ public static class EventProjections
                 })
                 .ToList(),
         };
+
+    /// <summary>
+    /// Builds the condition of an event whose last day has passed, the read-side copy of
+    /// <see cref="Domain.Events.Event.HasEndedBy(DateOnly)"/>.
+    /// </summary>
+    /// <param name="today">Current day in the configured time zone.</param>
+    /// <returns>The condition.</returns>
+    public static Expression<Func<EventRow, bool>> EndedBy(DateOnly today)
+    {
+        return @event => @event.EventEndsAt < today;
+    }
+
+    /// <summary>
+    /// Builds the condition of an event that is still running or yet to come.
+    /// </summary>
+    /// <param name="today">Current day in the configured time zone.</param>
+    /// <returns>The condition.</returns>
+    public static Expression<Func<EventRow, bool>> NotEndedBy(DateOnly today)
+    {
+        return @event => @event.EventEndsAt >= today;
+    }
 }

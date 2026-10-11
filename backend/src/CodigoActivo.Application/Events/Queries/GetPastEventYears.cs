@@ -40,7 +40,7 @@ public sealed class GetPastEventYearsQueryHandler(
         var today = clock.Today;
         return executor.ToListAsync(
             readStore
-                .Events.Where(e => e.EventEndsAt < today)
+                .Events.Where(EventProjections.EndedBy(today))
                 .Select(e => e.EventStartsAt.Year)
                 .Distinct()
                 .OrderByDescending(year => year),

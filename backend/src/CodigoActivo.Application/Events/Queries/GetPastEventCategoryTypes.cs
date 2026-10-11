@@ -43,7 +43,11 @@ public sealed class GetPastEventCategoryTypesQueryHandler(
         var today = clock.Today;
         return executor.ToListAsync(
             readStore
-                .EventCategoryTypes.Where(c => c.Events.Any(ec => ec.Event.EventEndsAt < today))
+                .EventCategoryTypes.Where(c =>
+                    c.Events.Select(ec => ec.Event)
+                        .AsQueryable()
+                        .Any(EventProjections.EndedBy(today))
+                )
                 .OrderBy(c => c.Name)
                 .ThenBy(c => c.Id)
                 .Select(EventCategoryProjections.EventCategoryType),

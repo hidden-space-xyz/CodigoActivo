@@ -8,10 +8,25 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Application.Activities;
 
 /// <summary>
-/// Database projections from the read models to the response shapes of this feature.
+/// Database projections from the read models to the response shapes of this feature, and the read-side
+/// conditions the queries share.
 /// </summary>
 public static class ActivityProjections
 {
+    /// <summary>
+    /// Stores the status catalog identifier of a confirmed signup.
+    /// </summary>
+    public static readonly Guid ConfirmedStatusId = CatalogIds.AssignmentStatuses.IdOf(
+        AssignmentStatus.Confirmed
+    );
+
+    /// <summary>
+    /// Stores the condition of a signup an administrator confirmed, whose status is
+    /// <see cref="AssignmentStatus.Confirmed"/>.
+    /// </summary>
+    public static readonly Expression<Func<AssignmentRow, bool>> ConfirmedSignup = signup =>
+        signup.AssignmentStatusId == ConfirmedStatusId;
+
     /// <summary>
     /// Stores the shared activity value.
     /// </summary>
