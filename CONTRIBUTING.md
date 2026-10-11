@@ -9,7 +9,7 @@ configuration belongs in [DEPLOYMENT.md](DEPLOYMENT.md).
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Node.js 26.x](https://nodejs.org/) and npm
 - [Docker](https://www.docker.com/), for the local PostgreSQL service and backend integration tests
-- `dotnet-ef` when creating migrations: `dotnet tool install --global dotnet-ef`
+- `dotnet-ef` when creating migrations: `dotnet tool restore` in `backend/` installs the pinned version
 
 A separate PostgreSQL installation is optional.
 
@@ -75,7 +75,7 @@ dotnet test tests/CodigoActivo.UnitTests
 dotnet test tests/CodigoActivo.IntegrationTests
 dotnet test tests/CodigoActivo.UnitTests --filter "FullyQualifiedName~ClassName.MethodName"
 
-dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.API
+dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.Infrastructure
 ```
 
 Integration tests require Docker unless `CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty, disposable

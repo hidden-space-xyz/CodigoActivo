@@ -102,35 +102,21 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
 
     public CodigoActivoDbContext CreateContext()
     {
-        return new CodigoActivoDbContext(
-            new DbContextOptionsBuilder<CodigoActivoDbContext>()
-                .UseNpgsql(ConnectionString)
-                .UseSnakeCaseNamingConvention()
-                .Options
-        );
+        var options = new DbContextOptionsBuilder<CodigoActivoDbContext>();
+        options.UseWriteDatabase(ConnectionString);
+        return new CodigoActivoDbContext(options.Options);
     }
 
     public CodigoActivoReadDbContext CreateReadContext()
     {
-        return new CodigoActivoReadDbContext(
-            new DbContextOptionsBuilder<CodigoActivoReadDbContext>()
-                .UseNpgsql(ConnectionString)
-                .UseSnakeCaseNamingConvention()
-                .Options
-        );
+        var options = new DbContextOptionsBuilder<CodigoActivoReadDbContext>();
+        options.UseReadDatabase(ConnectionString);
+        return new CodigoActivoReadDbContext(options.Options);
     }
 
     private async Task MigrateSchemaOnceAsync()
     {
-        var options = new DbContextOptionsBuilder<CodigoActivoDbContext>()
-            .UseNpgsql(
-                ConnectionString,
-                npgsql => npgsql.MigrationsAssembly(typeof(CodigoActivoDbContext).Assembly.FullName)
-            )
-            .UseSnakeCaseNamingConvention()
-            .Options;
-
-        await using var db = new CodigoActivoDbContext(options);
+        await using var db = CreateContext();
         await db.Database.MigrateAsync(TestCancellation.Ct);
     }
 
