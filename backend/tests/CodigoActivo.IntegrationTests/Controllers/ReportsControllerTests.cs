@@ -106,6 +106,40 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         });
     }
 
+    [Fact]
+    public async Task DashboardAnalyticsAsyncSeededEventAggregatesEverySectionInTheDatabase()
+    {
+        await SeedEventGraphAsync();
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.GetAsync(
+            TestUri.Rel("/api/reports/dashboard/analytics?from=2026-04-20&to=2026-05-10"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.ReadJsonAsync<DashboardAnalyticsResponse>(Ct);
+        body!.Granularity.Should().Be("day");
+        var mayFirst = body.Inscriptions.Buckets.ToList().IndexOf(new DateOnly(2026, 5, 1));
+        body.Inscriptions.Series.Should()
+            .ContainSingle(s => s.Key == "confirmed")
+            .Which.Values[mayFirst]
+            .Should()
+            .Be(2);
+        body.Inscriptions.Series.Single(s => s.Key == "requested").Values[mayFirst].Should().Be(1);
+        body.Kpis.Single(k => k.Key == "inscriptions").InRange.Should().Be(4);
+        body.Kpis.Single(k => k.Key == "activities").InRange.Should().Be(2);
+        body.TopEvents.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be(new DashboardTopEventResponse(EventId, "Feria de Voluntariado", 2));
+        var may = body.EventsCalendar.Buckets.ToList().IndexOf(new DateOnly(2026, 5, 1));
+        body.EventsCalendar.Series.Single(s => s.Key == "past").Values[may].Should().Be(1);
+        body.UsersByType.Sum(slice => slice.Count)
+            .Should()
+            .Be(body.Kpis.Single(k => k.Key == "users").Total);
+    }
+
     private static Activity BuildActivity(
         Guid id,
         string title,

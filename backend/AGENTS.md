@@ -50,9 +50,10 @@ Domain + Application + Infrastructure <- Composition <- API
   by the validation decorator), never HTTP request records. HTTP requests live in `API/<Feature>/Contracts/` with
   standard attributes only, plus the catalog membership check through `CatalogIdentifiers`, and map themselves to
   the command.
-- Queries read only through `IReadStore` rows and `IQueryExecutor`, never through repositories or domain
-  entities. They never mutate, commit, invalidate caches or send email; a cacheable query implements
-  `ICachedQuery` and never touches `HybridCache` itself.
+- Queries read only through `IReadStore` rows and `IQueryExecutor` (the dashboard port
+  `IDashboardCountsReader` is the one exception), never through repositories or domain entities. They never
+  mutate, commit, invalidate caches or send email; a cacheable query implements `ICachedQuery` and never
+  touches `HybridCache` itself.
 - Commands use repositories and leave the commit to the unit of work decorator; they save on their own only to
   react to the outcome of the save or inside an explicit transaction. They return `Result` or `Result<TId>` and
   never call query handlers; the controller runs the query for the response. A command may read `IReadStore`

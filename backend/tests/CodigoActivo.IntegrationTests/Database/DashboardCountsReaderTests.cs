@@ -1,5 +1,7 @@
 using System.Globalization;
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Reports;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -13,6 +15,7 @@ using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.Infrastructure.Reports;
 using CodigoActivo.IntegrationTests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
@@ -71,6 +74,90 @@ public sealed class DashboardCountsReaderTests(PostgresContainerFixture postgres
         counts.News.Should().Be(4);
         counts.Partners.Should().Be(5);
         counts.Users.Should().Be(6);
+    }
+
+    [Fact]
+    public async Task CountCreatedAsyncRowsLandInTheIntervalOfTheirCreation()
+    {
+        await using var ctx = postgres.CreateContext();
+        SeedDistinctRowCounts(ctx);
+        var early = NewUser(Guid.NewGuid(), "Pionera");
+        Persisted.Overwrite(
+            early,
+            new { UserType = UserType.Sponsor, CreatedAt = Fixed.AddDays(-2) }
+        );
+        ctx.Users.Add(early);
+        await ctx.SaveChangesAsync(Ct);
+        var activity = await ctx.Activities.FirstAsync(Ct);
+        ctx.Assignments.Add(
+            Persisted.As<Assignment>(
+                new
+                {
+                    UserId = AuthorId,
+                    ActivityId = activity.Id,
+                    Role = ActivityRole.Participant,
+                    Status = AssignmentStatus.Confirmed,
+                    CreatedAt = Fixed.AddDays(3),
+                }
+            )
+        );
+        await ctx.SaveChangesAsync(Ct);
+        await using var readContext = postgres.CreateReadContext();
+        var reader = new DashboardCountsReader(readContext);
+
+        var counts = await reader.CountCreatedAsync(
+            [Fixed.AddDays(-1), Fixed.ToOffset(TimeSpan.FromHours(2)), Fixed.AddDays(1)],
+            Ct
+        );
+
+        counts
+            .Users.Should()
+            .BeEquivalentTo([
+                new KeyedIntervalCount(CatalogIds.UserTypes.IdOf(UserType.Sponsor), 0, 1),
+                new KeyedIntervalCount(CatalogIds.UserTypes.IdOf(UserType.Member), 2, 6),
+            ]);
+        counts
+            .Inscriptions.Should()
+            .Equal(
+                new KeyedIntervalCount(
+                    CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed),
+                    3,
+                    1
+                )
+            );
+        counts.Events.Should().Equal(new IntervalCount(2, 2));
+        counts.Activities.Should().Equal(new IntervalCount(2, 3));
+        counts.Resources.Should().Equal(new IntervalCount(2, 1));
+        counts.News.Should().Equal(new IntervalCount(2, 4));
+        counts.Partners.Should().Equal(new IntervalCount(2, 5));
+    }
+
+    [Fact]
+    public async Task CountCreatedAsyncEmptyDatabaseReturnsNoIntervals()
+    {
+        await using var readContext = postgres.CreateReadContext();
+        var reader = new DashboardCountsReader(readContext);
+
+        var counts = await reader.CountCreatedAsync([Fixed], Ct);
+
+        counts.Users.Should().BeEmpty();
+        counts.Inscriptions.Should().BeEmpty();
+        counts.Events.Should().BeEmpty();
+        counts.Activities.Should().BeEmpty();
+        counts.Resources.Should().BeEmpty();
+        counts.News.Should().BeEmpty();
+        counts.Partners.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CountCreatedAsyncThresholdsOutOfOrderAreRefused()
+    {
+        await using var readContext = postgres.CreateReadContext();
+        var reader = new DashboardCountsReader(readContext);
+
+        var count = () => reader.CountCreatedAsync([Fixed, Fixed], Ct);
+
+        await count.Should().ThrowAsync<ArgumentException>();
     }
 
     private static void SeedDistinctRowCounts(CodigoActivoDbContext ctx)

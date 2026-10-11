@@ -153,12 +153,15 @@ themselves to the command (`request.ToCommand(id)`). Response records and list c
 in `Application/<Feature>/Contracts/` as the read contracts of the queries; `Gender` and `TwoFactorMethod`
 there are contract enums that mirror the domain ones (`ContractEnums`).
 
-Queries read only through `IReadStore`: no-tracking `IQueryable` sources of read rows
+Queries read the database through `IReadStore`: no-tracking `IQueryable` sources of read rows
 (`Application/Abstractions/Querying/ReadModel`) that `CodigoActivoReadDbContext` maps onto the same tables,
 excluded from migrations. They project to response shapes in the database, materialize through
-`IQueryExecutor`, and never depend on repositories or domain entities. A query that may be cached implements
-`ICachedQuery` (duration, tags and key) and `CachingQueryDecorator` keeps its result in `HybridCache`; only
-immutable catalogs and expensive non-personal aggregates do. Queries never mutate, commit or invalidate caches.
+`IQueryExecutor`, and never depend on repositories or domain entities. The one exception is the dashboard
+port `IDashboardCountsReader` (`Application/Reports`, plain SQL in `Infrastructure/Reports`), which counts
+whole tables in one round trip and creation times per chart bucket with `width_bucket`. A query that may be
+cached implements `ICachedQuery` (duration, tags and key) and `CachingQueryDecorator` keeps its result in
+`HybridCache`; only immutable catalogs and expensive non-personal aggregates do. Queries never mutate, commit or
+invalidate caches.
 
 Commands load aggregates through repositories, call the domain and stage the changes; the decorator commits them
 and the committed domain events evict caches and run the effects. A handler saves on its own only when it must
