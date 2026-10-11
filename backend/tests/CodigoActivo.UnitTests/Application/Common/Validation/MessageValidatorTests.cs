@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Users;
@@ -18,9 +19,16 @@ public sealed class MessageValidatorTests
 
     [Theory]
     [MemberData(nameof(BlankCodes))]
-    public void IsValidVerifyTwoFactorLoginBlankCodeReturnsFalse(string code)
+    public void IsValidCompleteLoginBlankCodeReturnsFalse(string code)
     {
-        sut.IsValid(new VerifyTwoFactorLoginCommand(UserId.New(), code)).Should().BeFalse();
+        sut.IsValid(
+                new CompleteLoginCommand(
+                    new LoginChallengeKey(UserId.New(), LoginChallengeId.New()),
+                    code
+                )
+            )
+            .Should()
+            .BeFalse();
     }
 
     [Theory]
@@ -38,8 +46,15 @@ public sealed class MessageValidatorTests
     }
 
     [Fact]
-    public void IsValidVerifyTwoFactorLoginPresentCodeReturnsTrue()
+    public void IsValidCompleteLoginPresentCodeReturnsTrue()
     {
-        sut.IsValid(new VerifyTwoFactorLoginCommand(UserId.New(), "123456")).Should().BeTrue();
+        sut.IsValid(
+                new CompleteLoginCommand(
+                    new LoginChallengeKey(UserId.New(), LoginChallengeId.New()),
+                    "123456"
+                )
+            )
+            .Should()
+            .BeTrue();
     }
 }

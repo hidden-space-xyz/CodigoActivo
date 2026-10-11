@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -47,11 +46,9 @@ public sealed class GetSessionIdentityQueryHandler(
         var sessionId = query.SessionId.Value;
         var user = await executor.FirstOrDefaultAsync(
             readStore
-                .Users.Where(candidate =>
+                .Users.Where(SignInRows.MayHoldTicket)
+                .Where(candidate =>
                     candidate.Id == userId
-                    && candidate.UserStatusTypeId == CatalogIds.UserStatuses.IdOf(UserStatus.Active)
-                    && candidate.PasswordHash != null
-                    && candidate.PasswordLockedAt == null
                     && readStore.UserSessions.Any(row =>
                         row.Id == sessionId && row.UserId == candidate.Id && row.ExpiresAt > now
                     )

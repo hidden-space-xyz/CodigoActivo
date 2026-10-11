@@ -17,6 +17,8 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
 public sealed class ResendTwoFactorCodeCommandHandlerTests
 {
+    private static readonly LoginChallengeId Challenge = LoginChallengeId.New();
+
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
@@ -48,28 +50,83 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         );
     }
 
+    private User Prepare(User user)
+    {
+        user.StartLoginChallenge(Challenge, clock.UtcNow.AddMinutes(-1));
+        return users.FindReturns(user);
+    }
+
     private Task<Result> ResendAsync(Guid userId)
     {
         return sut.HandleAsync(
-            new ResendTwoFactorCodeCommand(UserId.From(userId)),
+            new ResendTwoFactorCodeCommand(new LoginChallengeKey(UserId.From(userId), Challenge)),
             TestContext.Current.CancellationToken
         );
     }
 
     [Fact]
-    public async Task HandleAsyncUserMissingReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsChallengeExpired()
     {
         users.FindReturns(null);
 
         var result = await ResendAsync(Guid.NewGuid());
 
-        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
+    }
+
+    [Fact]
+    public async Task HandleAsyncChallengeNotOpenReturnsChallengeExpiredWithoutEmailing()
+    {
+        var user = users.FindReturns(
+            NewUserWithLoginCode(clock, lastSentAt: clock.UtcNow.AddMinutes(-5))
+        );
+
+        var result = await ResendAsync(user.Id.Value);
+
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncChallengeOlderThanItsLifetimeReturnsChallengeExpiredWithoutEmailing()
+    {
+        var user = users.FindReturns(NewUser());
+        user.StartLoginChallenge(Challenge, clock.UtcNow - options.ChallengeLifetime);
+
+        var result = await ResendAsync(user.Id.Value);
+
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncPasswordLockedAccountReturnsChallengeExpiredWithoutEmailing()
+    {
+        var user = Prepare(NewUser());
+        Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddMinutes(-1) });
+
+        var result = await ResendAsync(user.Id.Value);
+
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncBlockedAccountReturnsChallengeExpiredWithoutEmailing()
+    {
+        var user = Prepare(NewUser());
+        Persisted.Overwrite(user, new { Status = UserStatus.Blocked });
+
+        var result = await ResendAsync(user.Id.Value);
+
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
+        emailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]
     public async Task HandleAsyncAuthenticatorUserReturnsConflict()
     {
-        var user = users.FindReturns(NewUserWithAuthenticator("SECRET"));
+        var user = Prepare(NewUserWithAuthenticator("SECRET"));
 
         var result = await ResendAsync(user.Id.Value);
 
@@ -80,7 +137,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncLockedReturnsForbidden()
     {
-        var user = users.FindReturns(NewUserWithLoginCode(clock));
+        var user = Prepare(NewUserWithLoginCode(clock));
         Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(1) });
 
         var result = await ResendAsync(user.Id.Value);
@@ -92,9 +149,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncWithinCooldownReturnsConflictWithoutEmailing()
     {
-        var user = users.FindReturns(
-            NewUserWithLoginCode(clock, lastSentAt: clock.UtcNow.AddSeconds(-30))
-        );
+        var user = Prepare(NewUserWithLoginCode(clock, lastSentAt: clock.UtcNow.AddSeconds(-30)));
 
         var result = await ResendAsync(user.Id.Value);
 
@@ -105,7 +160,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAfterCooldownEmailsAndStoresANewCode()
     {
-        var user = users.FindReturns(
+        var user = Prepare(
             NewUserWithLoginCode(clock, code: "111111", lastSentAt: clock.UtcNow.AddMinutes(-2))
         );
 
@@ -121,7 +176,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncWithoutPreviousCodeEmailsOne()
     {
-        var user = users.FindReturns(NewUser());
+        var user = Prepare(NewUser());
 
         var result = await ResendAsync(user.Id.Value);
 
@@ -134,7 +189,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     public async Task HandleAsyncQuotaDeniedReturnsConflictAndKeepsTheOldCode()
     {
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
-        var user = users.FindReturns(
+        var user = Prepare(
             NewUserWithLoginCode(clock, code: "111111", lastSentAt: clock.UtcNow.AddMinutes(-2))
         );
 

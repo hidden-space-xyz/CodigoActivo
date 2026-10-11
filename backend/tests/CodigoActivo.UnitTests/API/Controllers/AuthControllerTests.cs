@@ -28,12 +28,6 @@ public sealed class AuthControllerTests
             .EndAsync(Arg.Any<UserSessionId>(), Arg.Any<UserId>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new InvalidOperationException("db down"));
         var validator = new SessionTicketValidator(
-            new StartSessionCommandHandler(
-                Substitute.For<IUserRepository>(),
-                sessions,
-                new TestClock(),
-                new SessionLifetimeOptions()
-            ),
             new EndSessionCommandHandler(sessions),
             new GetSessionIdentityQueryHandler(
                 new FakeReadStore(),
@@ -43,7 +37,12 @@ public sealed class AuthControllerTests
         );
 
         var challengeTickets = new TwoFactorTicketValidator(
-            new GetPendingChallengeQueryHandler(new FakeReadStore(), new FakeQueryExecutor()),
+            new GetLoginChallengeTicketQueryHandler(
+                new FakeReadStore(),
+                new FakeQueryExecutor(),
+                new TestClock(),
+                new TwoFactorOptions()
+            ),
             new EndLoginChallengeCommandHandler(Substitute.For<IUserRepository>())
         );
         var authenticationService = Substitute.For<IAuthenticationService>();

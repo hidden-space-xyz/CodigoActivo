@@ -16,13 +16,11 @@ namespace CodigoActivo.API.Security;
 /// Issues, validates and revokes the session cookie. Every cookie names a stored session and carries
 /// the credential stamp of the password it was issued for, so revoking the session or changing the
 /// password invalidates it on the next request; the account data behind the claims comes from the
-/// session use cases.
+/// session use cases, and <see cref="SessionIdentity.Accepts"/> decides whether the stamp is current.
 /// </summary>
-/// <param name="startSession">Handler that opens the stored session.</param>
 /// <param name="endSession">Handler that revokes a stored session.</param>
 /// <param name="sessionIdentity">Handler that resolves the account behind a live session.</param>
 public sealed class SessionTicketValidator(
-    ICommandHandler<StartSessionCommand, Result<SessionTicket>> startSession,
     ICommandHandler<EndSessionCommand, Result> endSession,
     IQueryHandler<GetSessionIdentityQuery, SessionIdentity?> sessionIdentity
 )
@@ -31,20 +29,23 @@ public sealed class SessionTicketValidator(
     private const string SessionIdClaim = "sid";
 
     /// <summary>
-    /// Opens a session for the account and builds the principal of its cookie.
+    /// Builds the principal of the cookie of a session the login just opened.
     /// </summary>
-    /// <param name="userId">Identifier of the account that completed the second factor.</param>
+    /// <param name="userId">Identifier of the account that completed the login.</param>
+    /// <param name="sessionId">Identifier of the session the login opened.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the principal, or <see langword="null"/> when the account cannot sign in.</returns>
-    public async Task<ClaimsPrincipal?> StartSessionAsync(
+    /// <returns>A task whose result contains the principal, or <see langword="null"/> when the session is not live.</returns>
+    public async Task<ClaimsPrincipal?> CreatePrincipalAsync(
         UserId userId,
+        UserSessionId sessionId,
         CancellationToken ct = default
     )
     {
-        var started = await startSession.HandleAsync(new StartSessionCommand(userId), ct);
-        return started.IsFailure
-            ? null
-            : BuildPrincipal(started.Value.Identity, started.Value.SessionId);
+        var identity = await sessionIdentity.HandleAsync(
+            new GetSessionIdentityQuery(userId, sessionId),
+            ct
+        );
+        return identity is null ? null : BuildPrincipal(identity, sessionId);
     }
 
     /// <summary>
@@ -87,10 +88,7 @@ public sealed class SessionTicketValidator(
             new GetSessionIdentityQuery(UserId.From(userId.Value), sessionId.Value),
             context.HttpContext.RequestAborted
         );
-        if (
-            identity is null
-            || !CredentialStamps.Matches(presentedFingerprint, identity.CredentialStamp)
-        )
+        if (identity is null || !identity.Accepts(presentedFingerprint))
         {
             await RejectAsync(context);
             return;

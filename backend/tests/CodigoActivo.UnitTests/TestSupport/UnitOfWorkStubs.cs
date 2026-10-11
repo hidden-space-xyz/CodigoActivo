@@ -12,7 +12,7 @@ public static class UnitOfWorkStubs
         return uow.RunsTransactionsOf<bool>().RunsTransactionsOf<Result>();
     }
 
-    private static IUnitOfWork RunsTransactionsOf<T>(this IUnitOfWork uow)
+    public static IUnitOfWork RunsTransactionsOf<T>(this IUnitOfWork uow)
     {
         uow.Configure()
             .ExecuteInTransactionAsync(

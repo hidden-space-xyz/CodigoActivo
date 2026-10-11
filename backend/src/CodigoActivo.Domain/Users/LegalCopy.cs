@@ -50,6 +50,7 @@ public sealed record LegalCopy(
         nameof(User.LoginCodeExpiresAt),
         nameof(User.LoginCodeLastSentAt),
         nameof(User.LoginChallengeId),
+        nameof(User.LoginChallengeStartedAt),
         nameof(User.TwoFactorFailedAttempts),
         nameof(User.TwoFactorLockedUntil),
         nameof(User.PasswordFailedAttempts),

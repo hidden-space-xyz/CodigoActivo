@@ -14,53 +14,61 @@ using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
-public sealed class VerifyTwoFactorLoginCommandHandlerTests
+public sealed class CompleteLoginCommandHandlerTests
 {
     private const string Secret = "JBSWY3DPEHPK3PXP";
 
+    private static readonly LoginChallengeId Challenge = LoginChallengeId.New();
+
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
+    private readonly List<UserSession> added = [];
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly TwoFactorOptions options = new() { MaxFailedAttempts = 3 };
-    private readonly RecordingLogger<VerifyTwoFactorLoginCommandHandler> logger = new();
-    private readonly VerifyTwoFactorLoginCommandHandler sut;
+    private readonly RecordingLogger<CompleteLoginCommandHandler> logger = new();
+    private readonly CompleteLoginCommandHandler sut;
 
-    public VerifyTwoFactorLoginCommandHandlerTests()
+    public CompleteLoginCommandHandlerTests()
     {
-        sut = new VerifyTwoFactorLoginCommandHandler(
+        sessions.AddAsync(Arg.Do<UserSession>(added.Add), Arg.Any<CancellationToken>());
+        sut = new CompleteLoginCommandHandler(
             users,
-            uow.RunsTransactions(),
+            sessions,
+            uow.RunsTransactionsOf<Result<UserSessionId>>(),
             clock,
             new OtpValidator(new FakeOneTimeCodeHasher()),
             new AuthenticatorCodeVerifier(totp, new FakeSecretProtector(), clock),
             options,
+            new SessionLifetimeOptions { Lifetime = TimeSpan.FromHours(8) },
             logger
         );
     }
 
-    private Task<Result> VerifyAsync(Guid userId, string code)
+    private Task<Result<UserSessionId>> VerifyAsync(Guid userId, string code)
     {
         return sut.HandleAsync(
-            new VerifyTwoFactorLoginCommand(UserId.From(userId), code),
+            new CompleteLoginCommand(new LoginChallengeKey(UserId.From(userId), Challenge), code),
             TestContext.Current.CancellationToken
         );
     }
 
     private User Prepare(User user)
     {
+        user.StartLoginChallenge(Challenge, clock.UtcNow.AddMinutes(-1));
         users.FindReturns(user);
         return user;
     }
 
     [Fact]
-    public async Task HandleAsyncUserMissingReturnsNotFound()
+    public async Task HandleAsyncUserMissingReturnsChallengeExpired()
     {
         users.FindReturns(null);
 
         var result = await VerifyAsync(Guid.NewGuid(), "123456");
 
-        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
     }
 
     [Fact]
@@ -104,9 +112,98 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.LoginCodeHash.Should().BeNull();
         user.LoginCodeExpiresAt.Should().BeNull();
+        user.LoginChallengeId.Should().BeNull();
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.LastLoginAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncCorrectCodeOpensASessionForItsLifetime()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+
+        var result = await VerifyAsync(user.Id.Value, "123456");
+
+        var session = added.Should().ContainSingle().Subject;
+        result.Value.Should().Be(session.Id);
+        session.UserId.Should().Be(user.Id);
+        session.CreatedAt.Should().Be(clock.UtcNow);
+        session.ExpiresAt.Should().Be(clock.UtcNow.AddHours(8));
+        Received.InOrder(() =>
+        {
+            _ = users.LockAsync(user, Arg.Any<CancellationToken>());
+            _ = sessions.RemoveExpiredAsync(clock.UtcNow, user.Id, Arg.Any<CancellationToken>());
+            _ = sessions.AddAsync(session, Arg.Any<CancellationToken>());
+            _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
+    public async Task HandleAsyncAnotherChallengeReturnsChallengeExpired()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+
+        var result = await sut.HandleAsync(
+            new CompleteLoginCommand(
+                new LoginChallengeKey(user.Id, LoginChallengeId.New()),
+                "123456"
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
+        user.LoginChallengeId.Should().Be(Challenge);
+        added.Should().BeEmpty();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncChallengeOlderThanItsLifetimeReturnsChallengeExpired()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+        Persisted.Overwrite(
+            user,
+            new { LoginChallengeStartedAt = clock.UtcNow - options.ChallengeLifetime }
+        );
+
+        var result = await VerifyAsync(user.Id.Value, "123456");
+
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
+        user.LastLoginAt.Should().BeNull();
+        added.Should().BeEmpty();
+    }
+
+    public static TheoryData<UserStatus, string?> AccountsThatCannotSignIn()
+    {
+        return new()
+        {
+            { UserStatus.Pending, "fake:secret" },
+            { UserStatus.Blocked, "fake:secret" },
+            { UserStatus.Dependent, null },
+            { UserStatus.Active, null },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(AccountsThatCannotSignIn))]
+    public async Task HandleAsyncAccountThatCannotSignInIsRefusedBeforeItsCodeIsChecked(
+        UserStatus status,
+        string? passwordHash
+    )
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
+        Persisted.Overwrite(user, new { Status = status, PasswordHash = passwordHash });
+
+        var result = await VerifyAsync(user.Id.Value, "000000");
+
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
+        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.LastLoginAt.Should().BeNull();
+        added.Should().BeEmpty();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -223,7 +320,7 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
         Received.InOrder(() =>
         {
             _ = uow.ExecuteInTransactionAsync(
-                Arg.Any<Func<CancellationToken, Task<Result>>>(),
+                Arg.Any<Func<CancellationToken, Task<Result<UserSessionId>>>>(),
                 Arg.Any<CancellationToken>()
             );
             _ = users.LockAsync(user, Arg.Any<CancellationToken>());
@@ -255,14 +352,14 @@ public sealed class VerifyTwoFactorLoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAccountGoneOnceLockedReturnsNotFound()
+    public async Task HandleAsyncAccountGoneOnceLockedReturnsChallengeExpired()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
         users.LockAsync(user, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await VerifyAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }

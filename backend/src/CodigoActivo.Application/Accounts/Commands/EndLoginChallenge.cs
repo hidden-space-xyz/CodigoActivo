@@ -7,10 +7,8 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the second-factor challenge named by a pending second-factor cookie.
 /// </summary>
-/// <param name="UserId">Identifier of the account named by the cookie.</param>
-/// <param name="ChallengeId">Identifier of the challenge named by the cookie.</param>
-public sealed record EndLoginChallengeCommand(UserId UserId, LoginChallengeId ChallengeId)
-    : ICommand<Result>;
+/// <param name="Challenge">Challenge named by the cookie.</param>
+public sealed record EndLoginChallengeCommand(LoginChallengeKey Challenge) : ICommand<Result>;
 
 /// <summary>
 /// Closes the pending second-factor challenge of an account, when it is still the one presented.
@@ -31,8 +29,8 @@ public sealed class EndLoginChallengeCommandHandler(IUserRepository users)
     )
     {
         ArgumentNullException.ThrowIfNull(command);
-        var pending = await users.GetByIdAsync(command.UserId, ct);
-        if (pending is null || !pending.HasLoginChallenge(command.ChallengeId))
+        var pending = await users.GetByIdAsync(command.Challenge.UserId, ct);
+        if (pending is null || !pending.HasLoginChallenge(command.Challenge.ChallengeId))
         {
             return Result.Success();
         }

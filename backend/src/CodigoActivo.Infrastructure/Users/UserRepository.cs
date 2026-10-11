@@ -64,7 +64,8 @@ public class UserRepository(CodigoActivoDbContext context)
             SELECT
                 password_failed_attempts AS attempts,
                 password_locked_at AS locked_at,
-                login_challenge_id AS challenge_id
+                login_challenge_id AS challenge_id,
+                login_challenge_started_at AS challenge_started_at
             FROM users
             WHERE id = {user.Id.Value}
             FOR UPDATE
@@ -84,6 +85,7 @@ public class UserRepository(CodigoActivoDbContext context)
             entry.Property(u => u.LoginChallengeId),
             persisted.ChallengeId is { } challengeId ? LoginChallengeId.From(challengeId) : null
         );
+        MarkPersisted(entry.Property(u => u.LoginChallengeStartedAt), persisted.ChallengeStartedAt);
         return true;
     }
 
@@ -112,13 +114,15 @@ public class UserRepository(CodigoActivoDbContext context)
         var attempts = user.PasswordFailedAttempts;
         var lockedAt = user.PasswordLockedAt;
         var challengeId = user.LoginChallengeId;
+        var challengeStartedAt = user.LoginChallengeStartedAt;
         await Set.Where(u => u.Id == user.Id)
             .ExecuteUpdateAsync(
                 setters =>
                     setters
                         .SetProperty(u => u.PasswordFailedAttempts, attempts)
                         .SetProperty(u => u.PasswordLockedAt, lockedAt)
-                        .SetProperty(u => u.LoginChallengeId, challengeId),
+                        .SetProperty(u => u.LoginChallengeId, challengeId)
+                        .SetProperty(u => u.LoginChallengeStartedAt, challengeStartedAt),
                 ct
             );
 
@@ -126,6 +130,7 @@ public class UserRepository(CodigoActivoDbContext context)
         MarkPersisted(entry.Property(u => u.PasswordFailedAttempts), attempts);
         MarkPersisted(entry.Property(u => u.PasswordLockedAt), lockedAt);
         MarkPersisted(entry.Property(u => u.LoginChallengeId), challengeId);
+        MarkPersisted(entry.Property(u => u.LoginChallengeStartedAt), challengeStartedAt);
     }
 
     private static void MarkPersisted<TProperty>(
@@ -148,5 +153,7 @@ public class UserRepository(CodigoActivoDbContext context)
         public DateTimeOffset? LockedAt { get; init; }
 
         public Guid? ChallengeId { get; init; }
+
+        public DateTimeOffset? ChallengeStartedAt { get; init; }
     }
 }

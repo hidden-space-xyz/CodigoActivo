@@ -46,6 +46,13 @@ public sealed class UserTests
         );
     }
 
+    private static User NewSignInUser()
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(user, new { Status = UserStatus.Active, PasswordHash = "hash" });
+        return user;
+    }
+
     private static User NewPendingUser()
     {
         return Persisted.As<User>(
@@ -244,7 +251,7 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
-        user.StartLoginChallenge(LoginChallengeId.New());
+        user.StartLoginChallenge(LoginChallengeId.New(), Now);
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 2 });
 
         user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeTrue();
@@ -264,10 +271,10 @@ public sealed class UserTests
         var first = LoginChallengeId.New();
         var second = LoginChallengeId.New();
 
-        user.StartLoginChallenge(first);
+        user.StartLoginChallenge(first, Now);
         user.LoginChallengeId.Should().Be(first);
 
-        user.StartLoginChallenge(second);
+        user.StartLoginChallenge(second, Now);
         user.LoginChallengeId.Should().Be(second);
 
         user.ClearLoginChallenge();
@@ -279,7 +286,7 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         var challengeId = LoginChallengeId.New();
-        user.StartLoginChallenge(challengeId);
+        user.StartLoginChallenge(challengeId, Now);
 
         user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeFalse();
 
@@ -290,7 +297,7 @@ public sealed class UserTests
     public void ResetPasswordClosesAnyOpenChallenge()
     {
         var user = NewPendingUser();
-        user.StartLoginChallenge(LoginChallengeId.New());
+        user.StartLoginChallenge(LoginChallengeId.New(), Now);
 
         user.ResetPassword("new-hash", Now);
 
@@ -302,7 +309,7 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
-        user.StartLoginChallenge(LoginChallengeId.New());
+        user.StartLoginChallenge(LoginChallengeId.New(), Now);
         Persisted.Overwrite(
             user,
             new { TwoFactorFailedAttempts = 2, TwoFactorLockedUntil = Now.AddMinutes(-1) }
@@ -614,7 +621,7 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         var challengeId = LoginChallengeId.New();
-        user.StartLoginChallenge(challengeId);
+        user.StartLoginChallenge(challengeId, Now);
 
         user.RecordPasswordFailure(3, Now).Should().BeFalse();
 
@@ -628,7 +635,7 @@ public sealed class UserTests
     public void RecordPasswordFailureReachingTheLimitLocksAndClosesTheChallenge()
     {
         var user = NewPendingUser();
-        user.StartLoginChallenge(LoginChallengeId.New());
+        user.StartLoginChallenge(LoginChallengeId.New(), Now);
         Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
 
         user.RecordPasswordFailure(3, Now).Should().BeTrue();
@@ -646,7 +653,7 @@ public sealed class UserTests
         var lockedAt = Now.AddDays(-1);
         var challengeId = LoginChallengeId.New();
         Persisted.Overwrite(user, new { PasswordFailedAttempts = 3, PasswordLockedAt = lockedAt });
-        user.StartLoginChallenge(challengeId);
+        user.StartLoginChallenge(challengeId, Now);
 
         user.RecordPasswordFailure(3, Now).Should().BeFalse();
 
@@ -832,6 +839,66 @@ public sealed class UserTests
         user.IsTwoFactorLocked(Now).Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData(9, true)]
+    [InlineData(10, false)]
+    public void HasOpenLoginChallengeOpenChallengeExpiresAfterItsLifetime(
+        int minutesLater,
+        bool open
+    )
+    {
+        var user = NewSignInUser();
+        var challengeId = LoginChallengeId.New();
+        user.StartLoginChallenge(challengeId, Now);
+
+        user.LoginChallengeStartedAt.Should().Be(Now);
+        user.HasOpenLoginChallenge(
+                challengeId,
+                Now.AddMinutes(minutesLater),
+                TimeSpan.FromMinutes(10)
+            )
+            .Should()
+            .Be(open);
+        user.HasOpenLoginChallenge(LoginChallengeId.New(), Now, TimeSpan.FromMinutes(10))
+            .Should()
+            .BeFalse();
+    }
+
+    [Fact]
+    public void HasOpenLoginChallengeAccountThatMayNoLongerSignInClosesIt()
+    {
+        var blocked = NewSignInUser();
+        var passwordLocked = NewSignInUser();
+        var challengeId = LoginChallengeId.New();
+        blocked.StartLoginChallenge(challengeId, Now);
+        passwordLocked.StartLoginChallenge(challengeId, Now);
+        Persisted.Overwrite(blocked, new { Status = UserStatus.Blocked });
+        Persisted.Overwrite(passwordLocked, new { PasswordLockedAt = Now });
+
+        blocked
+            .HasOpenLoginChallenge(challengeId, Now, TimeSpan.FromMinutes(10))
+            .Should()
+            .BeFalse();
+        passwordLocked
+            .HasOpenLoginChallenge(challengeId, Now, TimeSpan.FromMinutes(10))
+            .Should()
+            .BeFalse();
+    }
+
+    [Fact]
+    public void ClearLoginChallengeForgetsTheChallengeAndWhenItOpened()
+    {
+        var user = NewSignInUser();
+        var challengeId = LoginChallengeId.New();
+        user.StartLoginChallenge(challengeId, Now);
+
+        user.ClearLoginChallenge();
+
+        user.LoginChallengeId.Should().BeNull();
+        user.LoginChallengeStartedAt.Should().BeNull();
+        user.HasOpenLoginChallenge(challengeId, Now, TimeSpan.FromMinutes(10)).Should().BeFalse();
+    }
+
     [Fact]
     public void HasLoginChallengeOnlyMatchesTheOpenChallenge()
     {
@@ -840,7 +907,7 @@ public sealed class UserTests
 
         user.HasLoginChallenge(challengeId).Should().BeFalse();
 
-        user.StartLoginChallenge(challengeId);
+        user.StartLoginChallenge(challengeId, Now);
 
         user.HasLoginChallenge(challengeId).Should().BeTrue();
         user.HasLoginChallenge(LoginChallengeId.New()).Should().BeFalse();
