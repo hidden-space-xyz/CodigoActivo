@@ -27,6 +27,21 @@ public sealed class HouseholdTests
     }
 
     [Fact]
+    public void MemberIdsMixedPeopleListsGuardianThenDependents()
+    {
+        var guardianId = UserId.New();
+        var dependent = Persisted.As<User>(
+            new { Id = Guid.NewGuid(), ParentId = guardianId.Value }
+        );
+        var stranger = Persisted.As<User>(new { Id = Guid.NewGuid(), ParentId = Guid.NewGuid() });
+
+        Household
+            .MemberIds(guardianId, [stranger, dependent])
+            .Should()
+            .Equal(guardianId, dependent.Id);
+    }
+
+    [Fact]
     public void IncludesGuardianAndDependentsLeavesOthersOut()
     {
         var guardianId = UserId.New();

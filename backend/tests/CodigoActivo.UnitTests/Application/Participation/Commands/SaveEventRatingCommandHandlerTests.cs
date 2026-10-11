@@ -30,6 +30,7 @@ public sealed class SaveEventRatingCommandHandlerTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IEventRatingRepository ratings = Substitute.For<IEventRatingRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestCurrentUser currentUser = new(
         global::CodigoActivo.Domain.Users.UserId.From(UserId)
     );
@@ -38,17 +39,15 @@ public sealed class SaveEventRatingCommandHandlerTests
 
     public SaveEventRatingCommandHandlerTests()
     {
-        sut = new SaveEventRatingCommandHandler(events, ratings, activities, currentUser, clock);
-
-        // Attendance defaults to none; individual tests seed a confirmed assignment when the
-        // scenario requires one.
-        activities
-            .HasConfirmedAttendanceAsync(
-                Arg.Any<EventId>(),
-                Arg.Any<UserId>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
+        sut = new SaveEventRatingCommandHandler(
+            events,
+            ratings,
+            activities,
+            users,
+            currentUser,
+            clock
+        );
+        users.ListDependentsAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>()).Returns([]);
     }
 
     private static Event NewEvent(DateOnly endsAt)
@@ -84,15 +83,26 @@ public sealed class SaveEventRatingCommandHandlerTests
         SeedEvent(clock.Today.AddDays(-1));
     }
 
-    private void SeedConfirmedAssignment(Guid attendeeUserId, Guid? parentId = null)
+    private void SeedConfirmedAssignment(Guid attendeeUserId)
     {
+        var attendee = global::CodigoActivo.Domain.Users.UserId.From(attendeeUserId);
         activities
-            .HasConfirmedAttendanceAsync(
+            .AnyConfirmedSignupAsync(
                 global::CodigoActivo.Domain.Events.EventId.From(EventId),
-                global::CodigoActivo.Domain.Users.UserId.From(parentId ?? attendeeUserId),
+                Arg.Is<IReadOnlyCollection<UserId>>(ids => ids.Contains(attendee)),
                 Arg.Any<CancellationToken>()
             )
             .Returns(true);
+    }
+
+    private void SeedDependent(Guid childId)
+    {
+        users
+            .ListDependentsAsync(
+                global::CodigoActivo.Domain.Users.UserId.From(UserId),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns([Persisted.As<User>(new { Id = childId, ParentId = UserId })]);
     }
 
     [Fact]
@@ -142,7 +152,8 @@ public sealed class SaveEventRatingCommandHandlerTests
     public async Task HandleAsyncAttendanceViaConfirmedChildSucceeds()
     {
         SeedFinishedEvent();
-        SeedConfirmedAssignment(ChildId, parentId: UserId);
+        SeedDependent(ChildId);
+        SeedConfirmedAssignment(ChildId);
 
         var result = await sut.HandleAsync(
             ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
