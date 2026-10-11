@@ -56,7 +56,7 @@ public sealed class LoginCommandHandlerTests
         );
     }
 
-    private Task<Result<LoginChallenge>> LoginAsync(
+    private Task<Result<LoginChallengeKey>> LoginAsync(
         string identifier = "ana@test.com",
         string password = "password123"
     )
@@ -177,13 +177,8 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync("  Ana@Test.com  ");
 
         result.IsSuccess.Should().BeTrue();
-        result
-            .Value.Should()
-            .Be(new LoginChallenge(user.Id, TwoFactorMethod.Email, "a***@test.com"));
-        result
-            .Value.ToResponse()
-            .Should()
-            .Be(new LoginChallengeResponse(TwoFactorMethod.Email, "a***@test.com"));
+        result.Value.Should().Be(new LoginChallengeKey(user.Id, user.LoginChallengeId!.Value));
+        user.LoginChallengeStartedAt.Should().Be(clock.UtcNow);
 
         var code = emailSender.LastLoginCode();
         emailSender.Sent.Should().ContainSingle().Which.Kind.Should().Be(EmailKind.TwoFactorCode);
@@ -232,7 +227,7 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync();
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(new LoginChallenge(user.Id, TwoFactorMethod.Authenticator, null));
+        result.Value.Should().Be(new LoginChallengeKey(user.Id, user.LoginChallengeId!.Value));
         emailSender.Sent.Should().BeEmpty();
         user.LoginCodeHash.Should().BeNull();
     }
@@ -312,7 +307,7 @@ public sealed class LoginCommandHandlerTests
     {
         var user = Returns(NewUser(passwordHash: "fake:correct"));
         var challengeId = LoginChallengeId.New();
-        user.StartLoginChallenge(challengeId);
+        user.StartLoginChallenge(challengeId, clock.UtcNow);
 
         var result = await LoginAsync(password: "not-the-password");
 

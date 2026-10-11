@@ -101,6 +101,9 @@ public sealed class UserRow
     /// <summary>Gets the identifier of the pending second-factor challenge.</summary>
     public Guid? LoginChallengeId { get; init; }
 
+    /// <summary>Gets when the pending second-factor challenge was opened.</summary>
+    public DateTimeOffset? LoginChallengeStartedAt { get; init; }
+
     /// <summary>Gets the consecutive failed second-factor attempts.</summary>
     public int TwoFactorFailedAttempts { get; init; }
 

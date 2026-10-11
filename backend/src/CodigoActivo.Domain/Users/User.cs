@@ -196,6 +196,11 @@ public class User : AggregateRoot<UserId>
     public LoginChallengeId? LoginChallengeId { get; private set; }
 
     /// <summary>
+    /// Gets when the open second-factor challenge was opened, which bounds how long it is accepted.
+    /// </summary>
+    public DateTimeOffset? LoginChallengeStartedAt { get; private set; }
+
+    /// <summary>
     /// Gets the consecutive wrong second-factor codes since the last success or lockout.
     /// </summary>
     public int TwoFactorFailedAttempts { get; private set; }
@@ -722,9 +727,11 @@ public class User : AggregateRoot<UserId>
     /// cookie of an earlier password step stops being accepted.
     /// </summary>
     /// <param name="challengeId">Identifier the challenge cookie will carry.</param>
-    public void StartLoginChallenge(LoginChallengeId challengeId)
+    /// <param name="now">Current timestamp.</param>
+    public void StartLoginChallenge(LoginChallengeId challengeId, DateTimeOffset now)
     {
         LoginChallengeId = challengeId;
+        LoginChallengeStartedAt = now;
     }
 
     /// <summary>
@@ -733,6 +740,7 @@ public class User : AggregateRoot<UserId>
     public void ClearLoginChallenge()
     {
         LoginChallengeId = null;
+        LoginChallengeStartedAt = null;
     }
 
     /// <summary>
@@ -1087,6 +1095,27 @@ public class User : AggregateRoot<UserId>
     public bool HasLoginChallenge(LoginChallengeId challengeId)
     {
         return LoginChallengeId == challengeId;
+    }
+
+    /// <summary>
+    /// Tells whether a second-factor challenge can still be answered: it is the one the account has
+    /// open, it is young enough, and the account may still sign in and is not locked by wrong
+    /// passwords.
+    /// </summary>
+    /// <param name="challengeId">Identifier of the challenge.</param>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="lifetime">How long a challenge can be answered after it opens.</param>
+    /// <returns><see langword="true"/> when the challenge can be answered.</returns>
+    public bool HasOpenLoginChallenge(
+        LoginChallengeId challengeId,
+        DateTimeOffset now,
+        TimeSpan lifetime
+    )
+    {
+        return CanSignIn
+            && !IsPasswordLocked()
+            && HasLoginChallenge(challengeId)
+            && now < LoginChallengeStartedAt + lifetime;
     }
 
     /// <summary>

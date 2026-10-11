@@ -24,17 +24,17 @@ public static class TwoFactorAuthentication
 }
 
 /// <summary>
-/// Issues, validates and closes the short-lived tickets of pending second-factor challenges. A
-/// ticket is not self-sufficient: it names the <c>login_challenge_id</c> the password step stored on
-/// the account, so a copied challenge cookie stops working as soon as that value is replaced by a
-/// newer password step or cleared by an accepted second factor, a lockout, a password change or a
-/// sign out, instead of lasting until the cookie expires. An account locked after repeated wrong
-/// passwords has no pending challenge either, so a ticket obtained just before the lock is refused.
+/// Maps pending second-factor challenges to and from their short-lived cookies. Whether a challenge
+/// is still open, young enough and bound to the current password is decided by the Application:
+/// <see cref="GetLoginChallengeTicketQuery"/> answers only for an open challenge and
+/// <see cref="LoginChallengeTicket.Accepts"/> compares the password stamp, so a copied cookie stops
+/// working as soon as a newer password step, an accepted second factor, a lockout, a password
+/// change or a sign out replaces or clears the challenge.
 /// </summary>
-/// <param name="pendingChallenge">Handler that resolves the pending challenge of an account.</param>
+/// <param name="challengeTicket">Handler that reads the ticket of an open challenge.</param>
 /// <param name="endChallenge">Handler that closes a pending challenge.</param>
 public sealed class TwoFactorTicketValidator(
-    IQueryHandler<GetPendingChallengeQuery, PendingChallenge?> pendingChallenge,
+    IQueryHandler<GetLoginChallengeTicketQuery, LoginChallengeTicket?> challengeTicket,
     ICommandHandler<EndLoginChallengeCommand, Result> endChallenge
 )
 {
@@ -44,96 +44,89 @@ public sealed class TwoFactorTicketValidator(
     /// <summary>
     /// Builds the ticket of the challenge the password step just opened.
     /// </summary>
-    /// <param name="userId">Identifier of the account that passed the password step.</param>
+    /// <param name="challenge">Challenge the password step opened.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the principal, or <see langword="null"/> when no challenge is pending.</returns>
+    /// <returns>A task whose result contains the principal, or <see langword="null"/> when the challenge is not open.</returns>
     public async Task<ClaimsPrincipal?> CreatePrincipalAsync(
-        UserId userId,
+        LoginChallengeKey challenge,
         CancellationToken ct = default
     )
     {
-        var pending = await pendingChallenge.HandleAsync(new GetPendingChallengeQuery(userId), ct);
-        return pending is null
-            ? null
-            : BuildPrincipal(userId, pending.CredentialStamp, pending.ChallengeId);
+        ArgumentNullException.ThrowIfNull(challenge);
+        var ticket = await challengeTicket.HandleAsync(
+            new GetLoginChallengeTicketQuery(challenge),
+            ct
+        );
+        return ticket is null ? null : BuildPrincipal(challenge, ticket.CredentialStamp);
     }
 
     /// <summary>
-    /// Validates the pending second-factor cookie on every request.
+    /// Rejects a challenge cookie whose challenge is no longer open or whose password stamp is no
+    /// longer the current one, and signs it out.
     /// </summary>
-    /// <param name="context">Cookie validation context of the request.</param>
+    /// <param name="context">Cookie validation context.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task ValidateAsync(CookieValidatePrincipalContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        var userId = context.Principal?.GetUserId();
+        var challenge = ReadChallenge(context.Principal);
         var presentedFingerprint = context.Principal?.FindFirstValue(PasswordFingerprintClaim);
-        var presentedChallenge = ReadChallengeId(context.Principal);
-        if (
-            userId is null
-            || presentedChallenge is null
-            || string.IsNullOrEmpty(presentedFingerprint)
-        )
+        if (challenge is null || string.IsNullOrEmpty(presentedFingerprint))
         {
             await RejectAsync(context);
             return;
         }
 
-        var pending = await pendingChallenge.HandleAsync(
-            new GetPendingChallengeQuery(UserId.From(userId.Value)),
+        var ticket = await challengeTicket.HandleAsync(
+            new GetLoginChallengeTicketQuery(challenge),
             context.HttpContext.RequestAborted
         );
-        if (
-            pending is null
-            || pending.ChallengeId != presentedChallenge.Value
-            || !CredentialStamps.Matches(presentedFingerprint, pending.CredentialStamp)
-        )
+        if (ticket is null || !ticket.Accepts(presentedFingerprint))
         {
             await RejectAsync(context);
         }
     }
 
     /// <summary>
-    /// Closes the challenge named by the presented ticket, so a copy of that cookie is refused
-    /// immediately. Nothing happens when the ticket carries no challenge or the account already
-    /// moved on to a different one.
+    /// Closes the challenge named by a challenge cookie, if it is still the open one.
     /// </summary>
     /// <param name="principal">Principal read from the challenge cookie, if any.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task EndChallengeAsync(ClaimsPrincipal? principal, CancellationToken ct = default)
     {
-        var userId = principal?.GetUserId();
-        var challengeId = ReadChallengeId(principal);
-        if (userId is not { } user || challengeId is not { } challenge)
+        if (ReadChallenge(principal) is not { } challenge)
         {
             return;
         }
 
-        await endChallenge.HandleAsync(
-            new EndLoginChallengeCommand(UserId.From(user), challenge),
-            ct
-        );
+        await endChallenge.HandleAsync(new EndLoginChallengeCommand(challenge), ct);
     }
 
-    private static LoginChallengeId? ReadChallengeId(ClaimsPrincipal? principal)
+    /// <summary>
+    /// Reads the challenge a challenge cookie names.
+    /// </summary>
+    /// <param name="principal">Principal read from the challenge cookie, if any.</param>
+    /// <returns>The challenge, or <see langword="null"/> when the cookie names none.</returns>
+    public static LoginChallengeKey? ReadChallenge(ClaimsPrincipal? principal)
     {
-        return Guid.TryParse(principal?.FindFirstValue(ChallengeIdClaim), out var id)
-            ? LoginChallengeId.From(id)
+        return
+            principal?.GetUserId() is { } userId
+            && Guid.TryParse(principal.FindFirstValue(ChallengeIdClaim), out var challengeId)
+            ? new LoginChallengeKey(UserId.From(userId), LoginChallengeId.From(challengeId))
             : null;
     }
 
     private static ClaimsPrincipal BuildPrincipal(
-        UserId userId,
-        string credentialStamp,
-        LoginChallengeId challengeId
+        LoginChallengeKey challenge,
+        string credentialStamp
     )
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(ClaimTypes.NameIdentifier, challenge.UserId.ToString()),
             new(PasswordFingerprintClaim, credentialStamp),
-            new(ChallengeIdClaim, challengeId.ToString()),
+            new(ChallengeIdClaim, challenge.ChallengeId.ToString()),
         };
         return new ClaimsPrincipal(new ClaimsIdentity(claims, TwoFactorAuthentication.Scheme));
     }

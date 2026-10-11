@@ -222,7 +222,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task TwoFactorExpiredEmailCodeIsRejected()
+    public async Task TwoFactorChallengeOlderThanItsLifetimeIsRefusedEvenWithItsCode()
     {
         var client = await StartMemberChallengeAsync();
         var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
@@ -230,7 +230,8 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         Factory.Clock.UtcNow += TimeSpan.FromMinutes(11);
         var response = await PresentAsync(client, code);
 
-        await response.ShouldBeBadRequestAsync(ErrorCode.TwoFactorCodeInvalid);
+        await response.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.LastLoginAt.Should().BeNull();
     }
 
     [Fact]

@@ -18,12 +18,6 @@ public sealed class SessionTicketValidatorTests
     private SessionTicketValidator Build()
     {
         return new SessionTicketValidator(
-            new StartSessionCommandHandler(
-                Substitute.For<IUserRepository>(),
-                sessions,
-                new TestClock(),
-                new SessionLifetimeOptions()
-            ),
             new EndSessionCommandHandler(sessions),
             new GetSessionIdentityQueryHandler(
                 new FakeReadStore(),

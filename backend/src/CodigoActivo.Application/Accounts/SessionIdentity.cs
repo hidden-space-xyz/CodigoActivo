@@ -1,5 +1,3 @@
-using CodigoActivo.Domain.Users;
-
 namespace CodigoActivo.Application.Accounts;
 
 /// <summary>
@@ -18,18 +16,16 @@ public sealed record SessionIdentity(
     string? Email,
     bool IsAdmin,
     string CredentialStamp
-);
-
-/// <summary>
-/// Describes a session just opened for an account.
-/// </summary>
-/// <param name="SessionId">Identifier of the stored session.</param>
-/// <param name="Identity">Account the session belongs to.</param>
-public sealed record SessionTicket(UserSessionId SessionId, SessionIdentity Identity);
-
-/// <summary>
-/// Describes the second-factor challenge an account has pending after its password step.
-/// </summary>
-/// <param name="ChallengeId">Identifier of the pending challenge.</param>
-/// <param name="CredentialStamp">Stamp of the current password hash.</param>
-public sealed record PendingChallenge(LoginChallengeId ChallengeId, string CredentialStamp);
+)
+{
+    /// <summary>
+    /// Tells whether a cookie still belongs to this identity: its stamp must be the one of the
+    /// current password, so changing or resetting the password ends every session.
+    /// </summary>
+    /// <param name="presentedStamp">Credential stamp the cookie carries.</param>
+    /// <returns><see langword="true"/> when the cookie was issued for the current password.</returns>
+    public bool Accepts(string presentedStamp)
+    {
+        return CredentialStamps.Matches(presentedStamp, CredentialStamp);
+    }
+}

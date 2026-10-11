@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Mapping;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -17,11 +16,11 @@ namespace CodigoActivo.Application.Accounts.Commands;
 public sealed record LoginCommand(
     [property: Required, MaxLength(256), NotBlank] string Identifier,
     [property: Required, MaxLength(128), NotBlank] string Password
-) : ICommand<Result<LoginChallenge>>;
+) : ICommand<Result<LoginChallengeKey>>;
 
 /// <summary>
 /// Executes the password step of the login. A correct password never opens a session by itself:
-/// it opens a second-factor challenge that <see cref="VerifyTwoFactorLoginCommandHandler"/> closes.
+/// it opens a second-factor challenge that <see cref="CompleteLoginCommandHandler"/> answers.
 /// The identifier is the account email, the only value that stays unique across accounts.
 /// An identifier matching no account, and an account locked after repeated wrong passwords, still
 /// pay the same Argon2 work and answer the same error, so neither the response nor its timing
@@ -39,15 +38,15 @@ public sealed class LoginCommandHandler(
     PasswordAttemptGuard passwordAttempts,
     TwoFactorOptions twoFactor,
     LoginCodeIssuer loginCodes
-) : ICommandHandler<LoginCommand, Result<LoginChallenge>>
+) : ICommandHandler<LoginCommand, Result<LoginChallengeKey>>
 {
     /// <summary>
     /// Handles the request to login.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the pending challenge on success, or an application error on failure.</returns>
-    public async Task<Result<LoginChallenge>> HandleAsync(
+    /// <returns>A task whose result names the challenge just opened, or an application error on failure.</returns>
+    public async Task<Result<LoginChallengeKey>> HandleAsync(
         LoginCommand command,
         CancellationToken ct = default
     )
@@ -100,11 +99,8 @@ public sealed class LoginCommandHandler(
             }
         }
 
-        user.StartLoginChallenge(LoginChallengeId.New());
-        return new LoginChallenge(
-            user.Id,
-            user.TwoFactorMethod.ToContract(),
-            user.TwoFactorMethod == TwoFactorMethod.Email ? user.Email.MaskEmail() : null
-        );
+        var challengeId = LoginChallengeId.New();
+        user.StartLoginChallenge(challengeId, now);
+        return new LoginChallengeKey(user.Id, challengeId);
     }
 }

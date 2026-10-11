@@ -191,6 +191,7 @@ public class AuthController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="tickets">Builds the principal of the pending second-factor challenge.</param>
+    /// <param name="describe">Query handler that describes the challenge just opened.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the pending challenge, or an error response.</returns>
     [HttpPost("login")]
@@ -198,8 +199,10 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<LoginChallengeResponse>> LoginAsync(
         [FromBody] LoginRequest request,
-        [FromServices] ICommandHandler<LoginCommand, Result<LoginChallenge>> handler,
+        [FromServices] ICommandHandler<LoginCommand, Result<LoginChallengeKey>> handler,
         [FromServices] TwoFactorTicketValidator tickets,
+        [FromServices]
+            IQueryHandler<GetLoginChallengeQuery, Result<LoginChallengeResponse>> describe,
         CancellationToken ct
     )
     {
@@ -210,7 +213,7 @@ public class AuthController : ApiControllerBase
         }
 
         var challenge = result.Value;
-        var principal = await tickets.CreatePrincipalAsync(challenge.UserId, ct);
+        var principal = await tickets.CreatePrincipalAsync(challenge, ct);
         if (principal is null)
         {
             return ToProblem(ApiError.Unauthorized(ErrorCode.InvalidCredentials));
@@ -221,7 +224,7 @@ public class AuthController : ApiControllerBase
             principal,
             new AuthenticationProperties { IsPersistent = false, AllowRefresh = false }
         );
-        return Ok(challenge.ToResponse());
+        return ToOk(await describe.HandleAsync(new GetLoginChallengeQuery(challenge), ct));
     }
 
     /// <summary>
@@ -239,15 +242,13 @@ public class AuthController : ApiControllerBase
         CancellationToken ct
     )
     {
-        var userId = await GetPendingTwoFactorUserIdAsync();
-        if (userId is null)
+        var challenge = await GetPendingChallengeAsync();
+        if (challenge is null)
         {
             return ToProblem(ApiError.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
         }
 
-        return ToOk(
-            await handler.HandleAsync(new GetLoginChallengeQuery(UserId.From(userId.Value)), ct)
-        );
+        return ToOk(await handler.HandleAsync(new GetLoginChallengeQuery(challenge), ct));
     }
 
     /// <summary>
@@ -258,7 +259,7 @@ public class AuthController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getUser">Query handler that reads the signed-in user.</param>
-    /// <param name="sessionTickets">Opens the session and builds its principal.</param>
+    /// <param name="sessionTickets">Builds the principal of the session the login opened.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the signed-in user, or an error response.</returns>
     [HttpPost("login/two-factor")]
@@ -266,20 +267,20 @@ public class AuthController : ApiControllerBase
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<UserResponse>> VerifyTwoFactorAsync(
         [FromBody] TwoFactorLoginRequest request,
-        [FromServices] ICommandHandler<VerifyTwoFactorLoginCommand, Result> handler,
+        [FromServices] ICommandHandler<CompleteLoginCommand, Result<UserSessionId>> handler,
         [FromServices] IQueryHandler<GetCurrentUserQuery, Result<UserResponse>> getUser,
         [FromServices] SessionTicketValidator sessionTickets,
         CancellationToken ct
     )
     {
-        var userId = await GetPendingTwoFactorUserIdAsync();
-        if (userId is null)
+        var challenge = await GetPendingChallengeAsync();
+        if (challenge is null)
         {
             return ToProblem(ApiError.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
         }
 
         var result = await handler.HandleAsync(
-            new VerifyTwoFactorLoginCommand(UserId.From(userId.Value), request.Code),
+            new CompleteLoginCommand(challenge, request.Code),
             ct
         );
         if (result.IsFailure)
@@ -287,7 +288,11 @@ public class AuthController : ApiControllerBase
             return ToProblem(result.Error!);
         }
 
-        var principal = await sessionTickets.StartSessionAsync(UserId.From(userId.Value), ct);
+        var principal = await sessionTickets.CreatePrincipalAsync(
+            challenge.UserId,
+            result.Value,
+            ct
+        );
         if (principal is null)
         {
             return ToProblem(ApiError.Unauthorized(ErrorCode.InvalidCredentials));
@@ -303,9 +308,7 @@ public class AuthController : ApiControllerBase
                 AllowRefresh = false,
             }
         );
-        return ToOk(
-            await getUser.HandleAsync(new GetCurrentUserQuery(UserId.From(userId.Value)), ct)
-        );
+        return ToOk(await getUser.HandleAsync(new GetCurrentUserQuery(challenge.UserId), ct));
     }
 
     /// <summary>
@@ -322,14 +325,14 @@ public class AuthController : ApiControllerBase
         CancellationToken ct
     )
     {
-        var userId = await GetPendingTwoFactorUserIdAsync();
-        if (userId is null)
+        var challenge = await GetPendingChallengeAsync();
+        if (challenge is null)
         {
             return ToProblem(ApiError.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
         }
 
         return ToNoContent(
-            await handler.HandleAsync(new ResendTwoFactorCodeCommand(UserId.From(userId.Value)), ct)
+            await handler.HandleAsync(new ResendTwoFactorCodeCommand(challenge), ct)
         );
     }
 
@@ -455,9 +458,9 @@ public class AuthController : ApiControllerBase
         return ToOk(await handler.HandleAsync(new GetCurrentUserQuery(CurrentUserId), ct));
     }
 
-    private async Task<Guid?> GetPendingTwoFactorUserIdAsync()
+    private async Task<LoginChallengeKey?> GetPendingChallengeAsync()
     {
         var pending = await HttpContext.AuthenticateAsync(TwoFactorAuthentication.Scheme);
-        return pending.Succeeded ? pending.Principal.GetUserId() : null;
+        return pending.Succeeded ? TwoFactorTicketValidator.ReadChallenge(pending.Principal) : null;
     }
 }

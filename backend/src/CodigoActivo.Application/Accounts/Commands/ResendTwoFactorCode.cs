@@ -9,11 +9,12 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to email a new login code for an open challenge.
 /// </summary>
-/// <param name="UserId">Identifier of the user whose password was already accepted.</param>
-public sealed record ResendTwoFactorCodeCommand(UserId UserId) : ICommand<Result>;
+/// <param name="Challenge">Challenge the password step opened, named by the challenge cookie.</param>
+public sealed record ResendTwoFactorCodeCommand(LoginChallengeKey Challenge) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to email a new login code, replacing the previous one.
+/// Executes the command to email a new login code, replacing the previous one, while the challenge
+/// it answers is still open and the account may still sign in.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
@@ -37,13 +38,21 @@ public sealed class ResendTwoFactorCodeCommandHandler(
         CancellationToken ct = default
     )
     {
-        var user = await users.GetByIdAsync(command.UserId, ct);
-        if (user is null)
+        ArgumentNullException.ThrowIfNull(command);
+        var now = clock.UtcNow;
+        var user = await users.GetByIdAsync(command.Challenge.UserId, ct);
+        if (
+            user is null
+            || !user.HasOpenLoginChallenge(
+                command.Challenge.ChallengeId,
+                now,
+                options.ChallengeLifetime
+            )
+        )
         {
-            return Error.NotFound(ApplicationErrorCode.UserNotFound);
+            return Error.Unauthorized(ApplicationErrorCode.TwoFactorChallengeExpired);
         }
 
-        var now = clock.UtcNow;
         var allowed = user.MayReceiveLoginCode(now);
         if (allowed.IsFailure)
         {

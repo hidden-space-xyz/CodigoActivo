@@ -100,13 +100,17 @@ Every account logs in in two steps; there is no opt-out. `POST /api/auth/login` 
 issues a short-lived challenge cookie (`__Host-CodigoActivo.TwoFactor` in Production, 10 minutes,
 non-sliding) instead of a session; it is bound to the password fingerprint and account status, so a password
 change or block invalidates it. The ticket is not self-sufficient either: the password step stores a random
-challenge id on the account and puts it in the ticket, so a copied challenge cookie is refused as soon as
-that id changes or is cleared — a newer password step rotates it, and an accepted second factor, a
-second-factor lockout, a password lockout, a password change or reset and signing out all clear it, making
-each challenge single-use instead of valid for its whole 10 minutes. A challenge obtained just before the
-account was locked by wrong passwords is refused at both the ticket and the handler. Reading or resending the current challenge keeps
-working across reloads. The session cookie is only issued by `POST /api/auth/login/two-factor` once the
-second factor is accepted, which is also when the login timestamp is recorded.
+challenge id and the time it opened on the account and puts the id in the ticket, so a copied challenge
+cookie is refused as soon as that id changes or is cleared — a newer password step rotates it, and an
+accepted second factor, a second-factor lockout, a password lockout, a password change or reset and signing
+out all clear it, making each challenge single-use — and the account itself refuses the challenge once its
+lifetime has passed, whatever the cookie says. Answering, reading or resending a challenge needs the open
+challenge the cookie names on an account that may still sign in; the use cases check that themselves, while
+the password fingerprint is only checked through the cookie. A challenge obtained just before the account
+was locked by wrong passwords is refused at both the ticket and the handler. Reading or resending the
+current challenge keeps working across reloads. The session cookie is only issued by
+`POST /api/auth/login/two-factor`, which accepts the second factor, records the login timestamp and stores
+the session in one transaction.
 
 Each user chooses one second factor from their account:
 
