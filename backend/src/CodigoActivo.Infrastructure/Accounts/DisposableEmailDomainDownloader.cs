@@ -1,4 +1,4 @@
-namespace CodigoActivo.Infrastructure.Communication;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Downloads the disposable email domain list from the configured source and validates it through

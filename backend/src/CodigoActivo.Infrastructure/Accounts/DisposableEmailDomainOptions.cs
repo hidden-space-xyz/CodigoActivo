@@ -1,4 +1,4 @@
-namespace CodigoActivo.Infrastructure.Communication;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Defines configuration values for keeping the disposable email domain list up to date.

@@ -8,7 +8,7 @@ namespace CodigoActivo.UnitTests.Application.Accounts;
 
 public sealed class DisposableEmailCheckerTests
 {
-    private readonly FakeDisposableEmailDomainRepository domains = new();
+    private readonly FakeDisposableEmailDomainStore domains = new();
     private readonly DisposableEmailChecker sut;
 
     public DisposableEmailCheckerTests()

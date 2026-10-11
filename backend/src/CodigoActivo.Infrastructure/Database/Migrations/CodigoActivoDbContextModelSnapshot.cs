@@ -907,7 +907,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("user_sessions", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.DisposableEmailDomain", b =>
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Accounts.DisposableEmailDomain", b =>
                 {
                     b.Property<string>("Domain")
                         .HasMaxLength(253)

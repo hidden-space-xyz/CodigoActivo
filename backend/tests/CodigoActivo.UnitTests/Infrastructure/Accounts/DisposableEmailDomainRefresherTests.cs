@@ -1,27 +1,27 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Infrastructure.Communication;
+namespace CodigoActivo.UnitTests.Infrastructure.Accounts;
 
 public sealed class DisposableEmailDomainRefresherTests : IDisposable
 {
     private static readonly TimeSpan WaitBudget = TimeSpan.FromSeconds(10);
 
-    private readonly FakeDisposableEmailDomainRepository repository = new();
+    private readonly FakeDisposableEmailDomainStore store = new();
     private readonly RecordingLogger<DisposableEmailDomainRefresher> logger = new();
     private readonly List<IDisposable> owned = [];
     private IDisposableEmailDomainStore storedIn;
 
     public DisposableEmailDomainRefresherTests()
     {
-        storedIn = repository;
-        repository.Add("previous.test");
+        storedIn = store;
+        store.Add("previous.test");
     }
 
     public void Dispose()
@@ -72,8 +72,8 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         var stored = await refresher.RefreshAsync(TestContext.Current.CancellationToken);
 
         stored.Should().BeTrue();
-        repository.Domains.Should().HaveCount(DisposableEmailDomainList.MinDomains + 1);
-        repository.Domains.Should().Contain("mailinator.com").And.NotContain("previous.test");
+        store.Domains.Should().HaveCount(DisposableEmailDomainList.MinDomains + 1);
+        store.Domains.Should().Contain("mailinator.com").And.NotContain("previous.test");
         logger.Entries.Should().BeEmpty();
     }
 
@@ -89,7 +89,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         var stored = await refresher.RefreshAsync(TestContext.Current.CancellationToken);
 
         stored.Should().BeFalse();
-        repository.Domains.Should().Equal("previous.test");
+        store.Domains.Should().Equal("previous.test");
         logger
             .LevelEntries.Should()
             .ContainSingle()
@@ -113,7 +113,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         var stored = await refresher.RefreshAsync(TestContext.Current.CancellationToken);
 
         stored.Should().BeFalse();
-        repository.Domains.Should().Equal("previous.test");
+        store.Domains.Should().Equal("previous.test");
         logger
             .LevelEntries.Should()
             .ContainSingle()
@@ -141,7 +141,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         var stored = await refresher.RefreshAsync(TestContext.Current.CancellationToken);
 
         stored.Should().BeFalse();
-        repository.Domains.Should().Equal("previous.test");
+        store.Domains.Should().Equal("previous.test");
         logger.LevelEntries.Should().ContainSingle(entry => entry.Level == LogLevel.Warning);
     }
 
@@ -159,7 +159,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         var refresh = () => refresher.RefreshAsync(cancelled.Token);
 
         await refresh.Should().ThrowAsync<OperationCanceledException>();
-        repository.Domains.Should().Equal("previous.test");
+        store.Domains.Should().Equal("previous.test");
         logger.Entries.Should().BeEmpty();
     }
 
@@ -176,7 +176,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         );
 
         await refresher.StartAsync(TestContext.Current.CancellationToken);
-        await WaitUntilAsync(() => repository.Domains.Contains("retried.test"));
+        await WaitUntilAsync(() => store.Domains.Contains("retried.test"));
         await refresher.StopAsync(TestContext.Current.CancellationToken);
 
         handler.RequestedUris.Should().HaveCount(2);
@@ -197,10 +197,10 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         );
 
         await refresher.StartAsync(TestContext.Current.CancellationToken);
-        await WaitUntilAsync(() => repository.Domains.Contains("second.test"));
+        await WaitUntilAsync(() => store.Domains.Contains("second.test"));
         await refresher.StopAsync(TestContext.Current.CancellationToken);
 
-        repository.Domains.Should().NotContain("first.test");
+        store.Domains.Should().NotContain("first.test");
         logger.Entries.Should().BeEmpty();
     }
 
@@ -255,7 +255,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         refresher.ExecuteTask!.IsCompleted.Should().BeTrue();
         refresher.ExecuteTask.IsFaulted.Should().BeFalse();
         handler.RequestedUris.Should().BeEmpty();
-        repository.Domains.Should().Equal("previous.test");
+        store.Domains.Should().Equal("previous.test");
         logger.Entries.Should().BeEmpty();
     }
 

@@ -1,8 +1,7 @@
-using CodigoActivo.Infrastructure.Communication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace CodigoActivo.Infrastructure.Communication;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Defines the Entity Framework mapping for disposable email domain.

@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace CodigoActivo.Infrastructure.Communication;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Keeps the stored disposable email domain list up to date. It downloads the list shortly after
@@ -13,7 +13,7 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// stops the host, and while no list has been stored every email domain is accepted.
 /// </summary>
 /// <param name="downloader">Component that downloads and validates the list.</param>
-/// <param name="scopes">Scope factory used to resolve the scoped repository of each run.</param>
+/// <param name="scopes">Scope factory used to resolve the scoped store of each run.</param>
 /// <param name="options">Configuration values used by the component.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DisposableEmailDomainRefresher(
@@ -49,8 +49,8 @@ public sealed class DisposableEmailDomainRefresher(
         }
 
         await using var scope = scopes.CreateAsyncScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IDisposableEmailDomainStore>();
-        await repository.ReplaceAsync(list.Domains, ct);
+        var store = scope.ServiceProvider.GetRequiredService<IDisposableEmailDomainStore>();
+        await store.ReplaceAsync(list.Domains, ct);
         return true;
     }
 

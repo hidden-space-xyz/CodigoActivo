@@ -4,7 +4,7 @@ namespace CodigoActivo.Application.Accounts;
 /// Reads the stored disposable email domain list, the last one that passed validation. The list
 /// is empty until a first list is obtained.
 /// </summary>
-public interface IDisposableEmailDomainRepository
+public interface IDisposableEmailDomainLookup
 {
     /// <summary>
     /// Determines whether any of the supplied normalized domains is on the stored list.

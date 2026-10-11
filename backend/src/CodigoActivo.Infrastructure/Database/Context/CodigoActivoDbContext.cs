@@ -7,6 +7,7 @@ using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Catalogs;
 using CodigoActivo.Infrastructure.Database.Conversions;

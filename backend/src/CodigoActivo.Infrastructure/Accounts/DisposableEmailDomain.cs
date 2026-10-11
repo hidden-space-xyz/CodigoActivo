@@ -1,4 +1,4 @@
-namespace CodigoActivo.Infrastructure.Communication;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Represents one domain of the stored disposable email domain list. Addresses at the domain or at
