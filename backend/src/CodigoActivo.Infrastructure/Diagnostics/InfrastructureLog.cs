@@ -6,9 +6,10 @@ namespace CodigoActivo.Infrastructure.Diagnostics;
 
 /// <summary>
 /// Declares the operational events of the infrastructure layer: outbound email trouble, failed
-/// background runs, failed effects of committed changes, retried account erasures and disposable
-/// email domain list refreshes. Templates carry counts, enum values, handler type names and
-/// exceptions, never identifiers, addresses, names or values typed by the client.
+/// background runs, failed effects of committed changes, unreadable authenticator keys, retried
+/// account erasures and disposable email domain list refreshes. Templates carry counts, enum values,
+/// handler type names and exceptions, never identifiers, addresses, names or values typed by the
+/// client.
 /// </summary>
 public static partial class InfrastructureLog
 {
@@ -277,4 +278,16 @@ public static partial class InfrastructureLog
         string effect,
         Exception exception
     );
+
+    /// <summary>
+    /// Records that a stored authenticator key could not be decrypted, which stops every code of
+    /// that account from being accepted.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure raised while decrypting the key.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "A stored authenticator key could not be decrypted; the data protection keys may have changed"
+    )]
+    public static partial void AuthenticatorKeyUnreadable(this ILogger logger, Exception exception);
 }

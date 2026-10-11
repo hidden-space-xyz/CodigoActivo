@@ -2,7 +2,6 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -19,12 +18,7 @@ public sealed class AuthenticatorCodeVerifierTests
 
     public AuthenticatorCodeVerifierTests()
     {
-        sut = new AuthenticatorCodeVerifier(
-            totp,
-            new FakeSecretProtector(),
-            clock,
-            NullLogger<AuthenticatorCodeVerifier>.Instance
-        );
+        sut = new AuthenticatorCodeVerifier(totp, new FakeSecretProtector(), clock);
     }
 
     [Fact]

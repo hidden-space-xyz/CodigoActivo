@@ -96,7 +96,8 @@ public sealed class TwoFactorConfigurationTests : IDisposable
         provider.GetRequiredService<ITotpService>().Should().BeOfType<TotpService>();
         var protector = provider.GetRequiredService<ISecretProtector>();
         protector.Should().BeOfType<DataProtectionSecretProtector>();
-        protector.Unprotect(protector.Protect("secret")).Should().Be("secret");
+        protector.TryUnprotect(protector.Protect("secret"), out var plaintext).Should().BeTrue();
+        plaintext.Should().Be("secret");
     }
 
     [Fact]

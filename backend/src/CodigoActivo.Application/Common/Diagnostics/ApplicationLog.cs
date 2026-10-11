@@ -51,18 +51,6 @@ public static partial class ApplicationLog
     public static partial void ManualEmailOutboxFull(this ILogger logger, int count);
 
     /// <summary>
-    /// Records that a stored authenticator key could not be decrypted, which stops every code of
-    /// that account from being accepted.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure raised while decrypting the key.</param>
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "A stored authenticator key could not be decrypted; the data protection keys may have changed"
-    )]
-    public static partial void AuthenticatorKeyUnreadable(this ILogger logger, Exception exception);
-
-    /// <summary>
     /// Records that a command or query took longer than expected.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>

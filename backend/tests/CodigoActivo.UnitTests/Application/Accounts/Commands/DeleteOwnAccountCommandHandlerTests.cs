@@ -46,12 +46,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
             clock,
             PasswordGuards.Create(hasher, uow, clock),
             new OtpValidator(new FakeOneTimeCodeHasher()),
-            new AuthenticatorCodeVerifier(
-                totp,
-                new FakeSecretProtector(),
-                clock,
-                NullLogger<AuthenticatorCodeVerifier>.Instance
-            ),
+            new AuthenticatorCodeVerifier(totp, new FakeSecretProtector(), clock),
             options,
             NullLogger<DeleteOwnAccountCommandHandler>.Instance
         );

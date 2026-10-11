@@ -50,12 +50,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
             users,
             currentUser,
             clock,
-            new AuthenticatorCodeVerifier(
-                totp,
-                new FakeSecretProtector(),
-                clock,
-                NullLogger<AuthenticatorCodeVerifier>.Instance
-            )
+            new AuthenticatorCodeVerifier(totp, new FakeSecretProtector(), clock)
         );
     }
 
