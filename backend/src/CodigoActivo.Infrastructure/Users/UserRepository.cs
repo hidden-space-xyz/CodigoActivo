@@ -80,7 +80,10 @@ public class UserRepository(CodigoActivoDbContext context)
         var entry = Context.Entry(user);
         MarkPersisted(entry.Property(u => u.PasswordFailedAttempts), persisted.Attempts);
         MarkPersisted(entry.Property(u => u.PasswordLockedAt), persisted.LockedAt);
-        MarkPersisted(entry.Property(u => u.LoginChallengeId), persisted.ChallengeId);
+        MarkPersisted(
+            entry.Property(u => u.LoginChallengeId),
+            persisted.ChallengeId is { } challengeId ? LoginChallengeId.From(challengeId) : null
+        );
         return true;
     }
 

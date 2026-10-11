@@ -2,6 +2,7 @@ using System.Globalization;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Files;
 
@@ -18,7 +19,7 @@ public static class FileNaming
     /// <param name="id">Identifier of the target entity.</param>
     /// <param name="extension">The extension value.</param>
     /// <returns>The generated text.</returns>
-    public static string StoredName(Guid id, string extension)
+    public static string StoredName(StoredFileId id, string extension)
     {
         return $"{id}.{extension}";
     }

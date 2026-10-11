@@ -21,8 +21,8 @@ public sealed class AssignmentDecisionNotification(ActivitySignupNotifier notifi
         }
 
         await notifier.NotifyDecisionAsync(
-            domainEvent.ActivityId.Value,
-            domainEvent.UserId.Value,
+            domainEvent.ActivityId,
+            domainEvent.UserId,
             domainEvent.Status,
             domainEvent.Role,
             ct

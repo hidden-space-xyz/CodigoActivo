@@ -1,7 +1,8 @@
 namespace CodigoActivo.Domain.Common;
 
 /// <summary>
-/// Identifier of an entity of one type, so identifiers of different entities cannot be mixed up.
+/// Typed identifier of one kind of thing the domain names, usually an aggregate, so identifiers of
+/// different kinds cannot be mixed up.
 /// </summary>
 /// <typeparam name="TSelf">The identifier type itself.</typeparam>
 public interface IEntityId<TSelf>

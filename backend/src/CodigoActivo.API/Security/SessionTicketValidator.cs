@@ -37,14 +37,11 @@ public sealed class SessionTicketValidator(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the principal, or <see langword="null"/> when the account cannot sign in.</returns>
     public async Task<ClaimsPrincipal?> StartSessionAsync(
-        Guid userId,
+        UserId userId,
         CancellationToken ct = default
     )
     {
-        var started = await startSession.HandleAsync(
-            new StartSessionCommand(UserId.From(userId)),
-            ct
-        );
+        var started = await startSession.HandleAsync(new StartSessionCommand(userId), ct);
         return started.IsFailure
             ? null
             : BuildPrincipal(started.Value.Identity, started.Value.SessionId);
@@ -65,10 +62,7 @@ public sealed class SessionTicketValidator(
             return;
         }
 
-        await endSession.HandleAsync(
-            new EndSessionCommand(UserId.From(user), UserSessionId.From(session)),
-            ct
-        );
+        await endSession.HandleAsync(new EndSessionCommand(UserId.From(user), session), ct);
     }
 
     /// <summary>
@@ -90,10 +84,7 @@ public sealed class SessionTicketValidator(
         }
 
         var identity = await sessionIdentity.HandleAsync(
-            new GetSessionIdentityQuery(
-                UserId.From(userId.Value),
-                UserSessionId.From(sessionId.Value)
-            ),
+            new GetSessionIdentityQuery(UserId.From(userId.Value), sessionId.Value),
             context.HttpContext.RequestAborted
         );
         if (
@@ -113,12 +104,14 @@ public sealed class SessionTicketValidator(
         }
     }
 
-    private static Guid? ReadSessionId(ClaimsPrincipal? principal)
+    private static UserSessionId? ReadSessionId(ClaimsPrincipal? principal)
     {
-        return Guid.TryParse(principal?.FindFirstValue(SessionIdClaim), out var id) ? id : null;
+        return Guid.TryParse(principal?.FindFirstValue(SessionIdClaim), out var id)
+            ? UserSessionId.From(id)
+            : null;
     }
 
-    private static ClaimsPrincipal BuildPrincipal(SessionIdentity identity, Guid sessionId)
+    private static ClaimsPrincipal BuildPrincipal(SessionIdentity identity, UserSessionId sessionId)
     {
         var claims = new List<Claim>
         {

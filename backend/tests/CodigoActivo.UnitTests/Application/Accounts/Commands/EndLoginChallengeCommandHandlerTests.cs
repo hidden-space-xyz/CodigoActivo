@@ -24,7 +24,7 @@ public sealed class EndLoginChallengeCommandHandlerTests
         users.Finds(null);
 
         var result = await sut.HandleAsync(
-            new EndLoginChallengeCommand(UserId.New(), Guid.NewGuid()),
+            new EndLoginChallengeCommand(UserId.New(), LoginChallengeId.New()),
             TestContext.Current.CancellationToken
         );
 
@@ -34,12 +34,12 @@ public sealed class EndLoginChallengeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAnotherChallengeKeepsTheOpenOne()
     {
-        var openChallenge = Guid.NewGuid();
+        var openChallenge = LoginChallengeId.New();
         var user = users.FindReturns(NewUser());
         user.StartLoginChallenge(openChallenge);
 
         var result = await sut.HandleAsync(
-            new EndLoginChallengeCommand(user.Id, Guid.NewGuid()),
+            new EndLoginChallengeCommand(user.Id, LoginChallengeId.New()),
             TestContext.Current.CancellationToken
         );
 
@@ -50,7 +50,7 @@ public sealed class EndLoginChallengeCommandHandlerTests
     [Fact]
     public async Task HandleAsyncOpenChallengeClosesIt()
     {
-        var openChallenge = Guid.NewGuid();
+        var openChallenge = LoginChallengeId.New();
         var user = users.FindReturns(NewUser());
         user.StartLoginChallenge(openChallenge);
 

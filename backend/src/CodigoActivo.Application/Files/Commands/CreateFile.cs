@@ -61,7 +61,7 @@ public sealed class CreateFileCommandHandler(
             clock.UtcNow
         );
 
-        var storedName = FileNaming.StoredName(file.Id.Value, file.Extension);
+        var storedName = FileNaming.StoredName(file.Id, file.Extension);
         await storage.SaveAsync(storedName, upload.Content, ct);
 
         try

@@ -106,7 +106,7 @@ public sealed class LegalCopyTests
     )
     {
         return LegalCopy.Compose(
-            AccountId,
+            UserId.From(AccountId),
             Erasure,
             household,
             guardian,

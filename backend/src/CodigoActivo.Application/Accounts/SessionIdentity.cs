@@ -1,3 +1,5 @@
+using CodigoActivo.Domain.Users;
+
 namespace CodigoActivo.Application.Accounts;
 
 /// <summary>
@@ -23,11 +25,11 @@ public sealed record SessionIdentity(
 /// </summary>
 /// <param name="SessionId">Identifier of the stored session.</param>
 /// <param name="Identity">Account the session belongs to.</param>
-public sealed record SessionTicket(Guid SessionId, SessionIdentity Identity);
+public sealed record SessionTicket(UserSessionId SessionId, SessionIdentity Identity);
 
 /// <summary>
 /// Describes the second-factor challenge an account has pending after its password step.
 /// </summary>
 /// <param name="ChallengeId">Identifier of the pending challenge.</param>
 /// <param name="CredentialStamp">Stamp of the current password hash.</param>
-public sealed record PendingChallenge(Guid ChallengeId, string CredentialStamp);
+public sealed record PendingChallenge(LoginChallengeId ChallengeId, string CredentialStamp);

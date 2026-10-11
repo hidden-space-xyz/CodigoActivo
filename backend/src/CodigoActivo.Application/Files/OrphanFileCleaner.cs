@@ -66,7 +66,7 @@ public sealed class OrphanFileCleaner(
                 return;
             }
 
-            var storedName = FileNaming.StoredName(file.Id.Value, file.Extension);
+            var storedName = FileNaming.StoredName(file.Id, file.Extension);
 
             file.Delete();
             files.Remove(file);
@@ -122,7 +122,7 @@ public sealed class OrphanFileCleaner(
 
             foreach (var file in orphans)
             {
-                DeleteStoredContent(file.Id.Value, file.Extension);
+                DeleteStoredContent(file.Id, file.Extension);
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -131,7 +131,7 @@ public sealed class OrphanFileCleaner(
         }
     }
 
-    private void DeleteStoredContent(Guid fileId, string extension)
+    private void DeleteStoredContent(StoredFileId fileId, string extension)
     {
         try
         {

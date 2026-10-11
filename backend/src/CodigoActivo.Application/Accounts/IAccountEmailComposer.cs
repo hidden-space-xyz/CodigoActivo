@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts;
 
@@ -18,7 +19,7 @@ public interface IAccountEmailComposer
     /// <returns>The composed message.</returns>
     public EmailMessage AccountVerification(
         EmailRecipient recipient,
-        Guid userId,
+        UserId userId,
         string code,
         TimeSpan lifetime
     );
@@ -33,7 +34,7 @@ public interface IAccountEmailComposer
     /// <returns>The composed message.</returns>
     public EmailMessage EmailChangeConfirmation(
         EmailRecipient recipient,
-        Guid userId,
+        UserId userId,
         string code,
         TimeSpan lifetime
     );
@@ -56,7 +57,7 @@ public interface IAccountEmailComposer
     /// <returns>The composed message.</returns>
     public EmailMessage PasswordReset(
         EmailRecipient recipient,
-        Guid userId,
+        UserId userId,
         string code,
         TimeSpan lifetime
     );

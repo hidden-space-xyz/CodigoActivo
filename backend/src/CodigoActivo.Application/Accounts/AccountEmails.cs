@@ -30,7 +30,7 @@ public sealed class AccountEmails(
     {
         var message = composer.AccountVerification(
             Recipient(user),
-            user.Id.Value,
+            user.Id,
             otpCode,
             verification.OtpLifetime
         );
@@ -55,7 +55,7 @@ public sealed class AccountEmails(
     {
         var message = composer.EmailChangeConfirmation(
             new EmailRecipient(newEmail.Value, string.Empty),
-            user.Id.Value,
+            user.Id,
             code,
             verification.OtpLifetime
         );
@@ -86,7 +86,7 @@ public sealed class AccountEmails(
     {
         var message = composer.PasswordReset(
             Recipient(user),
-            user.Id.Value,
+            user.Id,
             code,
             passwordReset.CodeLifetime
         );
