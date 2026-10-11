@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Querying;
@@ -82,10 +83,6 @@ public sealed class GetDashboardAnalyticsQueryHandler(
     private static readonly string[] InscriptionKeys = ["requested", "confirmed", "denied"];
 
     private static readonly string[] GenderKeys = ["Male", "Female", "Other", "PreferNotToSay"];
-
-    private static readonly Guid ConfirmedId = CatalogIds.AssignmentStatuses.IdOf(
-        AssignmentStatus.Confirmed
-    );
 
     private static readonly Guid RequestedId = CatalogIds.AssignmentStatuses.IdOf(
         AssignmentStatus.Requested
@@ -275,7 +272,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
     {
         var confirmed = await executor.ToListAsync(
             readStore
-                .Assignments.Where(a => a.AssignmentStatusId == ConfirmedId)
+                .Assignments.Where(ActivityProjections.ConfirmedSignup)
                 .GroupBy(a => new { a.Activity.EventId, a.Activity.Event.Title })
                 .Select(g => new
                 {
@@ -356,7 +353,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
                             c.DesiredCount,
                             Confirmed = a.Assignments.Count(x =>
                                 x.ActivityRoleTypeId == c.ActivityRoleTypeId
-                                && x.AssignmentStatusId == ConfirmedId
+                                && x.AssignmentStatusId == ActivityProjections.ConfirmedStatusId
                             ),
                         })
                         .ToList(),
@@ -448,7 +445,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
         return id switch
         {
             _ when id == RequestedId => "requested",
-            _ when id == ConfirmedId => "confirmed",
+            _ when id == ActivityProjections.ConfirmedStatusId => "confirmed",
             _ when id == DeniedId => "denied",
             _ => "other",
         };

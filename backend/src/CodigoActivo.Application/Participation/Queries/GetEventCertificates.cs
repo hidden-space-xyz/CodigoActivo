@@ -2,10 +2,9 @@ using System.Globalization;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Participation.Contracts;
-using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -50,10 +49,9 @@ public sealed class GetEventCertificatesQueryHandler(
 
         var rows = await executor.ToListAsync(
             readStore
-                .Assignments.Where(a =>
+                .Assignments.Where(ActivityProjections.ConfirmedSignup)
+                .Where(a =>
                     (a.UserId == userId || a.User.ParentId == userId)
-                    && a.AssignmentStatusId
-                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
                     && a.Activity.Event.EventEndsAt < today
                 )
                 .Select(a => new CertificateRow

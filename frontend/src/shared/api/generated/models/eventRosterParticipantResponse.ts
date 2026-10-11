@@ -4,7 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { EventRosterGuardianResponse } from './eventRosterGuardianResponse';
+import type { EventGuardianContactResponse } from './eventGuardianContactResponse';
 
 export interface EventRosterParticipantResponse {
   userId: string;
@@ -19,5 +19,5 @@ export interface EventRosterParticipantResponse {
   /** @nullable */
   secondaryPhone?: string | null;
   roleName: string;
-  guardian?: EventRosterGuardianResponse;
+  guardian?: EventGuardianContactResponse;
 }

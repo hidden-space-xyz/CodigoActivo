@@ -53,11 +53,10 @@ public sealed class GetLeaderRosterQueryHandler(
         var userId = query.UserId.Value;
         var ledActivities = await executor.ToListAsync(
             readStore
-                .Assignments.Where(a =>
+                .Assignments.Where(ActivityProjections.ConfirmedSignup)
+                .Where(a =>
                     a.UserId == userId
                     && a.ActivityRoleTypeId == CatalogIds.ActivityRoles.IdOf(ActivityRole.Leader)
-                    && a.AssignmentStatusId
-                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
                     && a.Activity.EventId == eventId
                     && a.Activity.ActivityEndsAt > now
                 )
@@ -78,11 +77,8 @@ public sealed class GetLeaderRosterQueryHandler(
         var ledActivityIds = ledActivities.Select(a => a.ActivityId).ToList();
         var attendees = await executor.ToListAsync(
             readStore
-                .Assignments.Where(a =>
-                    ledActivityIds.Contains(a.ActivityId)
-                    && a.AssignmentStatusId
-                        == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
-                )
+                .Assignments.Where(ActivityProjections.ConfirmedSignup)
+                .Where(a => ledActivityIds.Contains(a.ActivityId))
                 .Select(a => new AttendeeRow(
                     a.ActivityId,
                     a.ActivityRoleTypeId,

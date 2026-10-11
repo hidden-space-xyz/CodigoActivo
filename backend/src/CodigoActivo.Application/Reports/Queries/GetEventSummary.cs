@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Reports.Contracts;
@@ -88,8 +89,7 @@ public sealed class GetEventSummaryQueryHandler(IReadStore readStore, IQueryExec
                     role.Name,
                     role.Assignments.Count(a =>
                         a.Activity.EventId == eventId
-                        && a.AssignmentStatusId
-                            == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
+                        && a.AssignmentStatusId == ActivityProjections.ConfirmedStatusId
                     )
                 )),
             ct

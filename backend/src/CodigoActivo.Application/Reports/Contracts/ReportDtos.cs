@@ -71,14 +71,16 @@ public record EventAttendeeAssignmentResponse(
 );
 
 /// <summary>
-/// Contains the event attendee guardian data returned by the API.
+/// Full contact details of the guardian of a dependent, the administrator's view in the attendee list
+/// and the event roster; the leader roster and the badges show less on purpose and keep their own
+/// shapes.
 /// </summary>
-/// <param name="FirstName">User's given name.</param>
-/// <param name="LastName">User's family name.</param>
-/// <param name="Email">Email address to validate or locate.</param>
-/// <param name="Phone">Phone number to validate or locate.</param>
+/// <param name="FirstName">Guardian's given name.</param>
+/// <param name="LastName">Guardian's family name.</param>
+/// <param name="Email">Guardian's email address.</param>
+/// <param name="Phone">Guardian's primary phone.</param>
 /// <param name="SecondaryPhone">Optional second contact phone of the guardian.</param>
-public record EventAttendeeGuardianResponse(
+public record EventGuardianContactResponse(
     string FirstName,
     string LastName,
     string? Email,
@@ -112,7 +114,7 @@ public record EventAttendeeResponse(
     Gender Gender,
     string UserTypeName,
     string UserTypeColor,
-    EventAttendeeGuardianResponse? Guardian,
+    EventGuardianContactResponse? Guardian,
     IReadOnlyList<EventAttendeeAssignmentResponse> Assignments
 );
 
@@ -166,22 +168,6 @@ public record EventBadgesResponse(
 );
 
 /// <summary>
-/// Contains the event roster guardian data returned by the API.
-/// </summary>
-/// <param name="FirstName">User's given name.</param>
-/// <param name="LastName">User's family name.</param>
-/// <param name="Email">Email address to validate or locate.</param>
-/// <param name="Phone">Phone number to validate or locate.</param>
-/// <param name="SecondaryPhone">Optional second contact phone of the guardian.</param>
-public record EventRosterGuardianResponse(
-    string FirstName,
-    string LastName,
-    string? Email,
-    string? Phone,
-    string? SecondaryPhone
-);
-
-/// <summary>
 /// Contains the event roster participant data returned by the API.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
@@ -202,7 +188,7 @@ public record EventRosterParticipantResponse(
     string? Phone,
     string? SecondaryPhone,
     string RoleName,
-    EventRosterGuardianResponse? Guardian
+    EventGuardianContactResponse? Guardian
 );
 
 /// <summary>
