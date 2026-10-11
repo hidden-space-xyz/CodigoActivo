@@ -69,6 +69,9 @@ aggregate roots.
   client disconnects; a failing effect is logged and neither stops the others nor fails the committed request. A
   crash between the commit and an effect loses that effect, because there is no transactional outbox for
   events (emails themselves go through the email outbox).
+- Rich text references a stored file only by its content URL `/api/files/{id}/content`, which saved documents
+  keep and the frontend builds and checks; `RichTextFileReferences` in Domain owns it, so it cannot change
+  without migrating saved documents.
 - Rules that span aggregates are domain policies (`SignupEligibility`, `SignupRoles`, `EarlySignup`,
   `TermsConsent`, `FeaturedSelection`, `AccountErasure`, `InitialAdministrator`, `LegalCopy`, `Household`).
   Handlers load and call the domain; the commit and the effects that follow it belong to the decorators and the

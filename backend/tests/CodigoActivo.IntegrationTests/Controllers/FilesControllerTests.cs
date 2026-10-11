@@ -153,13 +153,16 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetContentExistingFileReturnsStoredBytesAndContentType()
+    public async Task GetContentRichTextContentUrlReturnsStoredBytesAndContentType()
     {
         var bytes = TestSeedData.ValidPng();
         var created = await UploadAsAdminAsync(bytes, "photo.png");
         var client = CreateClient();
 
-        var response = await client.GetAsync(TestUri.Rel($"/api/files/{created.Id}/content"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel(RichTextFileReferences.ContentUrl(StoredFileId.From(created.Id))),
+            Ct
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be("image/png");

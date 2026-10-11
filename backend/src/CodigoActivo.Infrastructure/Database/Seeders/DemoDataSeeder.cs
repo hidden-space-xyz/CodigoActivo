@@ -313,9 +313,7 @@ public sealed class DemoDataSeeder(
                 new EventContent(
                     seed.Title,
                     seed.Subtitle,
-                    RichText.From(
-                        BuildRichText(seed.Description, descriptionImageId.Value, seed.Title)
-                    ),
+                    RichText.From(BuildRichText(seed.Description, descriptionImageId, seed.Title)),
                     NewFile(files, $"evento-{label}-portada.jpg", now)
                 ),
                 EventSchedule
@@ -662,7 +660,11 @@ public sealed class DemoDataSeeder(
         }
     }
 
-    private static string BuildRichText(string[] paragraphs, Guid? imageId, string? imageAlt)
+    private static string BuildRichText(
+        string[] paragraphs,
+        StoredFileId? imageId,
+        string? imageAlt
+    )
     {
         var content = new JsonArray();
         for (var i = 0; i < paragraphs.Length; i++)
@@ -685,7 +687,7 @@ public sealed class DemoDataSeeder(
                         ["type"] = "image",
                         ["attrs"] = new JsonObject
                         {
-                            ["src"] = RichTextFileReferences.ContentUrlMarker(id),
+                            ["src"] = RichTextFileReferences.ContentUrl(id),
                             ["alt"] = imageAlt,
                             ["title"] = null,
                         },

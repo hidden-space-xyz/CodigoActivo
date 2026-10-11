@@ -4,7 +4,9 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Domain.Files;
 
 /// <summary>
-/// Extracts and compares file references in rich text file content.
+/// Defines how rich text references stored files and finds those references. Saved documents keep
+/// each file's content URL and the API serves the file there, so the format cannot change without
+/// rewriting them.
 /// </summary>
 public static partial class RichTextFileReferences
 {
@@ -16,52 +18,24 @@ public static partial class RichTextFileReferences
         "/api/files/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/content";
 
     /// <summary>
-    /// Builds the marker used to locate file URLs in rich-text JSON.
+    /// Builds the content URL a document uses to show a file.
     /// </summary>
     /// <param name="fileId">Identifier of the file.</param>
-    /// <returns>The generated text.</returns>
-    public static string ContentUrlMarker(Guid fileId)
+    /// <returns>The content URL of the file.</returns>
+    public static string ContentUrl(StoredFileId fileId)
     {
-        return $"/api/files/{fileId}/content";
+        return $"/api/files/{fileId.Value}/content";
     }
 
     /// <summary>
-    /// Extracts every referenced file identifier from the rich-text document.
+    /// Tells whether a value is exactly the content URL of a file, with nothing before or after it.
     /// </summary>
-    /// <param name="richTextJson">Rich-text document encoded as JSON.</param>
-    /// <returns>The resulting guid value.</returns>
-    public static IReadOnlySet<Guid> Extract(string? richTextJson)
+    /// <param name="value">Value to check.</param>
+    /// <returns><see langword="true"/> when the value is a file content URL.</returns>
+    public static bool IsContentUrl(string value)
     {
-        var ids = new HashSet<Guid>();
-        if (string.IsNullOrEmpty(richTextJson))
-        {
-            return ids;
-        }
-
-        ids.UnionWith(
-            ContentUrl
-                .Matches(richTextJson)
-                .Select(match =>
-                    Guid.TryParse(match.Groups[1].Value, out var id) ? id : (Guid?)null
-                )
-                .Where(id => id.HasValue)
-                .Select(id => id.GetValueOrDefault())
-        );
-
-        return ids;
-    }
-
-    /// <summary>
-    /// Returns file identifiers present in the previous document but absent from the current one.
-    /// </summary>
-    /// <param name="previous">Previous rich-text document.</param>
-    /// <param name="current">Current rich-text document.</param>
-    /// <returns>The resulting guid value.</returns>
-    public static IReadOnlySet<Guid> ExtractRemoved(string? previous, string? current)
-    {
-        var removed = new HashSet<Guid>(Extract(previous));
-        removed.ExceptWith(Extract(current));
-        return removed;
+        ArgumentNullException.ThrowIfNull(value);
+        return WholeContentUrl.IsMatch(value);
     }
 
     /// <summary>
@@ -71,7 +45,15 @@ public static partial class RichTextFileReferences
     /// <returns>The identifiers of the referenced files.</returns>
     public static IReadOnlySet<StoredFileId> Extract(RichText? richText)
     {
-        return Extract(richText?.Json).Select(StoredFileId.From).ToHashSet();
+        if (richText is null)
+        {
+            return new HashSet<StoredFileId>();
+        }
+
+        return ContentUrls
+            .Matches(richText.Json)
+            .Select(match => StoredFileId.From(Guid.Parse(match.Groups[1].ValueSpan)))
+            .ToHashSet();
     }
 
     /// <summary>
@@ -82,9 +64,18 @@ public static partial class RichTextFileReferences
     /// <returns>The identifiers of the files no longer shown.</returns>
     public static IReadOnlySet<StoredFileId> ExtractRemoved(RichText? previous, RichText? current)
     {
-        return ExtractRemoved(previous?.Json, current?.Json).Select(StoredFileId.From).ToHashSet();
+        var removed = new HashSet<StoredFileId>(Extract(previous));
+        removed.ExceptWith(Extract(current));
+        return removed;
     }
 
     [GeneratedRegex(ContentUrlPattern, RegexOptions.None, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex ContentUrl { get; }
+    private static partial Regex ContentUrls { get; }
+
+    [GeneratedRegex(
+        "^" + ContentUrlPattern + @"\z",
+        RegexOptions.None,
+        matchTimeoutMilliseconds: 1000
+    )]
+    private static partial Regex WholeContentUrl { get; }
 }
