@@ -73,7 +73,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
 
         var result = await ResendAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendNotAllowed);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.TwoFactorResendNotAllowed);
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -85,7 +85,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
 
         var result = await ResendAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         emailSender.Sent.Should().BeEmpty();
     }
 

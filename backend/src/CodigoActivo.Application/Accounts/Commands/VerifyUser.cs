@@ -45,15 +45,11 @@ public sealed class VerifyUserCommandHandler(
         }
 
         var now = clock.UtcNow;
-        if (
-            !user.IsPendingVerification
-            || !otpValidator.IsCodeValid(command.Otp, user.UsableOtpCodeHash(now))
-        )
+        if (!otpValidator.IsCodeValid(command.Otp, user.UsableOtpCodeHash(now)))
         {
             return Error.Validation(ApplicationErrorCode.OtpInvalidOrExpired);
         }
 
-        user.Verify(now);
-        return Result.Success();
+        return user.Verify(now);
     }
 }

@@ -19,6 +19,7 @@ public static class WireErrorCodes
         [DomainErrorCode.UserNationalIdInvalid] = ErrorCode.RequestValidationFailed,
         [DomainErrorCode.UserEmailInvalid] = ErrorCode.RequestValidationFailed,
         [DomainErrorCode.UserChildBirthDateInFuture] = ErrorCode.RequestValidationFailed,
+        [DomainErrorCode.UserNotPendingVerification] = ErrorCode.OtpInvalidOrExpired,
         [ApplicationErrorCode.RegistrationInvalid] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.MessageInvalid] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.ActingForAnotherUserForbidden] = ErrorCode.AccessDenied,

@@ -635,14 +635,22 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Activates the account once its email is verified, and forgets the verification code.
+    /// Activates the account once its email is verified, and forgets the verification code. Only
+    /// an account that still waits for that verification can be activated this way.
     /// </summary>
     /// <param name="now">Current time.</param>
-    public void Verify(DateTimeOffset now)
+    /// <returns>A failed result when the account no longer waits for its verification.</returns>
+    public Result Verify(DateTimeOffset now)
     {
+        if (!IsPendingVerification)
+        {
+            return Error.Validation(DomainErrorCode.UserNotPendingVerification);
+        }
+
         Status = UserStatus.Active;
         ClearOtp();
         UpdatedAt = now;
+        return Result.Success();
     }
 
     /// <summary>
@@ -655,16 +663,48 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Stores a new emailed login code, replacing any previous one.
+    /// Decides whether a second-factor code may be emailed to the account now: it needs an email,
+    /// email as its second factor and a second factor that is not locked.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    /// <returns>A failed result naming the first rule the account breaks.</returns>
+    public Result MayReceiveLoginCode(DateTimeOffset now)
+    {
+        if (Email is null)
+        {
+            return Error.Conflict(DomainErrorCode.UserContactInfoRequired);
+        }
+
+        if (TwoFactorMethod is not TwoFactorMethod.Email)
+        {
+            return Error.Conflict(DomainErrorCode.TwoFactorResendNotAllowed);
+        }
+
+        return IsTwoFactorLocked(now)
+            ? Error.Forbidden(DomainErrorCode.TwoFactorLocked)
+            : Result.Success();
+    }
+
+    /// <summary>
+    /// Stores a new emailed second-factor code, replacing any previous one, when
+    /// <see cref="MayReceiveLoginCode"/> allows it.
     /// </summary>
     /// <param name="codeHash">Hash of the code that was emailed.</param>
     /// <param name="now">Current timestamp.</param>
     /// <param name="lifetime">How long the code stays valid.</param>
-    public void IssueLoginCode(string codeHash, DateTimeOffset now, TimeSpan lifetime)
+    /// <returns>A failed result when the account may not receive a code.</returns>
+    public Result IssueLoginCode(string codeHash, DateTimeOffset now, TimeSpan lifetime)
     {
+        var allowed = MayReceiveLoginCode(now);
+        if (allowed.IsFailure)
+        {
+            return allowed;
+        }
+
         LoginCodeHash = codeHash;
         LoginCodeExpiresAt = now + lifetime;
         LoginCodeLastSentAt = now;
+        return Result.Success();
     }
 
     /// <summary>
@@ -794,17 +834,25 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Promotes the pending authenticator to the active second factor. An enrollment left pending
-    /// never replaces an authenticator that is already active.
+    /// Promotes the pending authenticator to the active second factor. Only an enrollment that is
+    /// still waiting can be promoted, and it never replaces an authenticator that is already
+    /// active.
     /// </summary>
     /// <param name="usedStep">Time step of the code that confirmed the enrollment.</param>
     /// <param name="now">Current timestamp.</param>
-    /// <returns>A failed result when the account already uses an authenticator.</returns>
+    /// <returns>
+    /// A failed result when the account already uses an authenticator or no enrollment is waiting.
+    /// </returns>
     public Result EnableAuthenticator(long usedStep, DateTimeOffset now)
     {
         if (TwoFactorMethod is TwoFactorMethod.Authenticator)
         {
             return Error.Conflict(DomainErrorCode.AuthenticatorAlreadyEnabled);
+        }
+
+        if (!HasPendingAuthenticator(now))
+        {
+            return Error.Validation(DomainErrorCode.AuthenticatorSetupExpired);
         }
 
         AuthenticatorKey = PendingAuthenticatorKey;
@@ -1097,13 +1145,25 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Grants or revokes the administrator rights.
+    /// Grants or revokes the administrator rights. The initial administrator never loses them.
     /// </summary>
     /// <param name="isAdmin">Whether the account is an administrator from now on.</param>
     /// <param name="now">Current time.</param>
-    /// <returns><see langword="true"/> when the rights changed.</returns>
-    public bool SetAdministrator(bool isAdmin, DateTimeOffset now)
+    /// <returns>
+    /// Whether the rights changed, or a failed result when they would be taken from the initial
+    /// administrator.
+    /// </returns>
+    public Result<bool> SetAdministrator(bool isAdmin, DateTimeOffset now)
     {
+        if (!isAdmin)
+        {
+            var revocable = InitialAdministrator.EnsureMayLoseAdminRights(Id);
+            if (revocable.IsFailure)
+            {
+                return revocable.Error!;
+            }
+        }
+
         if (IsAdmin == isAdmin)
         {
             return false;

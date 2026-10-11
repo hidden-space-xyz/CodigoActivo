@@ -50,15 +50,6 @@ public sealed class SetAdminCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (!command.IsAdmin)
-        {
-            var revocable = InitialAdministrator.EnsureMayLoseAdminRights(command.UserId);
-            if (revocable.IsFailure)
-            {
-                return revocable.Error!;
-            }
-        }
-
         if (command.IsAdmin && !await IsActingPasswordValidAsync(command.CurrentPassword, ct))
         {
             return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
@@ -70,8 +61,7 @@ public sealed class SetAdminCommandHandler(
             return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        user.SetAdministrator(command.IsAdmin, clock.UtcNow);
-        return Result.Success();
+        return user.SetAdministrator(command.IsAdmin, clock.UtcNow);
     }
 
     private async Task<bool> IsActingPasswordValidAsync(string? password, CancellationToken ct)

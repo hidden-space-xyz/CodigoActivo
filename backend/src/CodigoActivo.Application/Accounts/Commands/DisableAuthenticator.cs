@@ -100,7 +100,7 @@ public sealed class DisableAuthenticatorCommandHandler(
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            return Error.Forbidden(ApplicationErrorCode.TwoFactorLocked);
+            return Error.Forbidden(DomainErrorCode.TwoFactorLocked);
         }
 
         var step = authenticatorCodes.Match(user.AuthenticatorKey, code);

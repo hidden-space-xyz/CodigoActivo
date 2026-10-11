@@ -195,7 +195,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
         var result = await RequestAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendNotAllowed);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.TwoFactorResendNotAllowed);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -208,7 +208,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
         var result = await RequestAsync(user.Id.Value);
 
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.TwoFactorLocked);
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -227,7 +227,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAccountWithoutEmailPropagatesTheIssuerFailure()
+    public async Task HandleAsyncAccountWithoutEmailReturnsContactInfoRequired()
     {
         var user = Signed(email: null);
 

@@ -100,7 +100,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
 
         var result = await ConfirmAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.AuthenticatorSetupExpired);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.AuthenticatorSetupExpired);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
 
         var result = await ConfirmAsync(user.Id.Value, "123456");
 
-        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.AuthenticatorSetupExpired);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.AuthenticatorSetupExpired);
     }
 
     [Fact]

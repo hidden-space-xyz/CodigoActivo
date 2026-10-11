@@ -109,7 +109,7 @@ public sealed class DeleteOwnAccountCommandHandler(
         var now = clock.UtcNow;
         if (user.IsTwoFactorLocked(now))
         {
-            return Error.Forbidden(ApplicationErrorCode.TwoFactorLocked);
+            return Error.Forbidden(DomainErrorCode.TwoFactorLocked);
         }
 
         if (IsCodeAccepted(user, code, now))

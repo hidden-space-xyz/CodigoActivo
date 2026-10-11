@@ -288,29 +288,14 @@ public enum ApplicationErrorCode
     TwoFactorCodeInvalid,
 
     /// <summary>
-    /// Selects the two factor locked option.
-    /// </summary>
-    TwoFactorLocked,
-
-    /// <summary>
     /// Selects the two factor challenge expired option.
     /// </summary>
     TwoFactorChallengeExpired,
 
     /// <summary>
-    /// Selects the two factor resend not allowed option.
-    /// </summary>
-    TwoFactorResendNotAllowed,
-
-    /// <summary>
     /// Selects the two factor resend cooldown active option.
     /// </summary>
     TwoFactorResendCooldownActive,
-
-    /// <summary>
-    /// Selects the authenticator setup expired option.
-    /// </summary>
-    AuthenticatorSetupExpired,
 
     /// <summary>
     /// Selects the authenticator not enabled option.
