@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Users;
@@ -28,7 +29,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
             .AddScoped<IUserSessionRepository>(_ => sessions)
             .AddSingleton<IClock>(clock)
             .AddScoped<
-                ICommandHandler<RemoveExpiredSessionsCommand, int>,
+                ICommandHandler<RemoveExpiredSessionsCommand, Result<int>>,
                 RemoveExpiredSessionsCommandHandler
             >()
             .BuildServiceProvider();

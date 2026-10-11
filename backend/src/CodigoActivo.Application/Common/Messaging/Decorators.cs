@@ -22,6 +22,7 @@ public sealed class ValidationCommandDecorator<TCommand, TResult>(
     MessageValidator validator
 ) : ICommandHandler<TCommand, TResult>
     where TCommand : ICommand<TResult>
+    where TResult : Result
 {
     /// <inheritdoc />
     public Task<TResult> HandleAsync(TCommand command, CancellationToken ct = default)
@@ -74,12 +75,13 @@ public sealed class UnitOfWorkCommandDecorator<TCommand, TResult>(
     IUnitOfWork uow
 ) : ICommandHandler<TCommand, TResult>
     where TCommand : ICommand<TResult>
+    where TResult : Result
 {
     /// <inheritdoc />
     public async Task<TResult> HandleAsync(TCommand command, CancellationToken ct = default)
     {
         var result = await inner.HandleAsync(command, ct);
-        if (result is Result { IsSuccess: true })
+        if (result.IsSuccess)
         {
             await uow.SaveChangesAsync(ct);
         }
@@ -100,6 +102,7 @@ public sealed class LoggingCommandDecorator<TCommand, TResult>(
     ILogger<LoggingCommandDecorator<TCommand, TResult>> logger
 ) : ICommandHandler<TCommand, TResult>
     where TCommand : ICommand<TResult>
+    where TResult : Result
 {
     /// <inheritdoc />
     public async Task<TResult> HandleAsync(TCommand command, CancellationToken ct = default)

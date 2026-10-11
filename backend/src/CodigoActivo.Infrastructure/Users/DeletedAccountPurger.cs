@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,9 +32,10 @@ public sealed class DeletedAccountPurger(
     {
         await using var scope = scopes.CreateAsyncScope();
         var purge = scope.ServiceProvider.GetRequiredService<
-            ICommandHandler<PurgeDeletedAccountsCommand, int>
+            ICommandHandler<PurgeDeletedAccountsCommand, Result<int>>
         >();
-        return await purge.HandleAsync(new PurgeDeletedAccountsCommand(), ct);
+        var purged = await purge.HandleAsync(new PurgeDeletedAccountsCommand(), ct);
+        return purged.Value;
     }
 
     /// <summary>

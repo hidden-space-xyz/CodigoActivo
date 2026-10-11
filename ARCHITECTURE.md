@@ -151,12 +151,13 @@ immutable catalogs and expensive non-personal aggregates do. Queries never mutat
 Commands load aggregates through repositories, call the domain and stage the changes; the decorator commits them
 and the committed domain events evict caches and run the effects. A handler saves on its own only when it must
 react to the outcome of the save (a unique violation answered as a conflict, file content to compensate) or
-when several saves form one transaction. Commands return `Result`, or `Result<TId>` with the typed ID of what
-they create; they return data only when it exists nowhere else after the operation, such as the authenticator
-secret of `BeginAuthenticatorSetup` or the recipient count of `SendEmail*`. The controller then runs the query
-that builds the HTTP response. Commands never call query handlers; they may read the read store only for lookups
-that change nothing: email audiences, the names the signup notifier shows and the guardianship
-`ActingUserPolicy` checks.
+when several saves form one transaction. `ICommand<TResult>` requires a `Result`, so the decorators can refuse
+and commit every command alike. Commands return `Result`, or `Result<TId>` with the typed ID of what they
+create; they return data only when it exists nowhere else after the operation, such as the authenticator secret
+of `BeginAuthenticatorSetup`, the recipient count of `SendEmail*` or the number of rows a scheduled purge
+removed. The controller then runs the query that builds the HTTP response. Commands never call query handlers; they may read
+the read store only for lookups that change nothing: email audiences, the names the signup notifier shows and
+the guardianship `ActingUserPolicy` checks.
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
 tells who is signed in; commands take the author, the acting user and the administrator flag from it, never
