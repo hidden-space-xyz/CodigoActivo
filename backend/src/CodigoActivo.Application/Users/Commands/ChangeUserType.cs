@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -12,8 +11,8 @@ namespace CodigoActivo.Application.Users.Commands;
 /// Carries the input required to change the membership type of a user.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-/// <param name="UserTypeId">Catalog identifier of the new membership type.</param>
-public sealed record ChangeUserTypeCommand(UserId UserId, Guid UserTypeId) : ICommand<Result>;
+/// <param name="UserType">New membership type.</param>
+public sealed record ChangeUserTypeCommand(UserId UserId, UserType UserType) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to change the membership type of a user.
@@ -42,14 +41,9 @@ public sealed class ChangeUserTypeCommandHandler(IUserRepository users, IClock c
             return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (!CatalogIds.UserTypes.TryGetValue(command.UserTypeId, out var userType))
+        if (user.UserType != command.UserType)
         {
-            return Error.NotFound(ApplicationErrorCode.UserTypeNotFound);
-        }
-
-        if (user.UserType != userType)
-        {
-            user.ChangeType(userType, clock.UtcNow);
+            user.ChangeType(command.UserType, clock.UtcNow);
         }
 
         return Result.Success();

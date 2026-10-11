@@ -38,32 +38,6 @@ public sealed class CreateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncResourceTypeMissingReturnsBadRequestAndDoesNotPersist()
-    {
-        readStore.TypeMissing();
-        var request = new CreateResourceRequest(
-            "Title",
-            "Subtitle",
-            SomeRichText,
-            null,
-            Guid.NewGuid(),
-            Guid.NewGuid()
-        );
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceTypeNotFound);
-        await resources
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(Arg.Any<Resource>(), TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
     public async Task HandleAsyncInternalWithUrlReturnsBadRequest()
     {
         var type = readStore.TypeExists();

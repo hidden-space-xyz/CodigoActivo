@@ -6,7 +6,6 @@ using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -54,11 +53,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
         var ct = TestContext.Current.CancellationToken;
         var activity = await activities.GetByIdAsync(ActivityId.From(activityId), ct);
         var result = await sut.HandleAsync(
-            new ChangeAssignmentStatusCommand(
-                ActivityId.From(activityId),
-                UserId.From(userId),
-                request.AssignmentStatusId
-            ),
+            request.ToCommand(ActivityId.From(activityId), UserId.From(userId)),
             ct
         );
         foreach (var changed in DomainEvents.Raised<AssignmentStatusChanged>(activity!))
@@ -89,7 +84,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
             new ChangeAssignmentStatusCommand(
                 ActivityId.New(),
                 UserId.New(),
-                KnownIds.AssignmentStatusTypes.Confirmed
+                AssignmentStatus.Confirmed
             ),
             TestContext.Current.CancellationToken
         );
@@ -111,22 +106,6 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentNotFound);
-    }
-
-    [Fact]
-    public async Task HandleAsyncStatusMissingReturnsAssignmentStatusTypeNotFound()
-    {
-        var userId = Guid.NewGuid();
-        var activity = SignedUpActivity(userId);
-
-        var result = await ChangeStatusAsync(
-            activity.Id.Value,
-            userId,
-            new ChangeAssignmentStatusRequest(Guid.NewGuid())
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.AssignmentStatusTypeNotFound);
     }
 
     [Fact]

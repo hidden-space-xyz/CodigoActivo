@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.API.Contracts;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Resources.Commands;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Resources;
@@ -21,8 +23,18 @@ public record CreateResourceRequest(
     [MaxLength(500)] string? Url,
     Guid ResourceTypeId,
     Guid ThumbnailId
-)
+) : IValidatableObject
 {
+    /// <inheritdoc />
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return CatalogIdentifiers.Check(
+            CatalogIds.ResourceTypes,
+            ResourceTypeId,
+            nameof(ResourceTypeId)
+        );
+    }
+
     /// <summary>
     /// Builds the command that creates the resource.
     /// </summary>
@@ -34,7 +46,7 @@ public record CreateResourceRequest(
             Subtitle,
             Description,
             Url,
-            ResourceTypeId,
+            CatalogIds.ResourceTypes.ValueOf(ResourceTypeId),
             StoredFileId.From(ThumbnailId)
         );
     }
@@ -56,8 +68,18 @@ public record UpdateResourceRequest(
     [MaxLength(500)] string? Url,
     Guid ResourceTypeId,
     Guid ThumbnailId
-)
+) : IValidatableObject
 {
+    /// <inheritdoc />
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return CatalogIdentifiers.Check(
+            CatalogIds.ResourceTypes,
+            ResourceTypeId,
+            nameof(ResourceTypeId)
+        );
+    }
+
     /// <summary>
     /// Builds the command that updates the resource.
     /// </summary>
@@ -71,7 +93,7 @@ public record UpdateResourceRequest(
             Subtitle,
             Description,
             Url,
-            ResourceTypeId,
+            CatalogIds.ResourceTypes.ValueOf(ResourceTypeId),
             StoredFileId.From(ThumbnailId)
         );
     }

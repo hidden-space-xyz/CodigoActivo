@@ -531,7 +531,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignUnknownRoleTypeReturnsBadRequest()
+    public async Task AssignUnknownRoleTypeIsRefusedAsAnInvalidRequest()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -543,8 +543,58 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        await response.ShouldBeBadRequestAsync(ErrorCode.ActivityRoleNotAllowed);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
         (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AssignHouseholdUnknownRoleTypeIsRefusedAsAnInvalidRequest()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        var client = await LoginAsMemberAsync();
+        var request = new AssignHouseholdRequest([
+            new(TestSeedData.Users.MemberChildId, Guid.NewGuid()),
+        ]);
+
+        var response = await client.PostJsonAsync(
+            $"/api/activities/{activityId}/assign-household",
+            request,
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId))
+            .Should()
+            .BeNull();
+    }
+
+    [Fact]
+    public async Task ChangeSignupUnknownRoleOrStatusIsRefusedAsAnInvalidRequest()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        await SeedAssignmentAsync(
+            activityId,
+            TestSeedData.Users.MemberId,
+            KnownIds.ActivityRoleTypes.Leader
+        );
+        var client = await LoginAsAdminAsync();
+        var signup = $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}";
+
+        using var roleResponse = await client.PatchJsonAsync(
+            $"{signup}/change-role",
+            new ChangeAssignmentRoleRequest(Guid.NewGuid()),
+            Ct
+        );
+        using var statusResponse = await client.PatchJsonAsync(
+            $"{signup}/change-status",
+            new ChangeAssignmentStatusRequest(Guid.NewGuid()),
+            Ct
+        );
+
+        await roleResponse.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        await statusResponse.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId);
+        stored!.Role.Should().Be(ActivityRole.Leader);
     }
 
     [Fact]

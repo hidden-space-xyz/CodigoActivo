@@ -386,11 +386,7 @@ public class ActivitiesController : ApiControllerBase
     {
         return await ToOkAfterAsync(
             await handler.HandleAsync(
-                new ChangeAssignmentStatusCommand(
-                    ActivityId.From(activityId),
-                    UserId.From(userId),
-                    request.AssignmentStatusId
-                ),
+                request.ToCommand(ActivityId.From(activityId), UserId.From(userId)),
                 ct
             ),
             () =>
@@ -424,11 +420,7 @@ public class ActivitiesController : ApiControllerBase
     {
         return await ToOkAfterAsync(
             await handler.HandleAsync(
-                new ChangeAssignmentRoleCommand(
-                    ActivityId.From(activityId),
-                    UserId.From(userId),
-                    request.ActivityRoleTypeId
-                ),
+                request.ToCommand(ActivityId.From(activityId), UserId.From(userId)),
                 ct
             ),
             () =>

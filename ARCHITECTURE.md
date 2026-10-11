@@ -85,7 +85,9 @@ aggregate roots.
   `ResourceType`). Their catalog tables stay only for the names, colors and descriptions shown to people; each
   member keeps the stable `Guid` of its row through `CatalogIds` (`Application/Common/Catalogs`), which the EF
   converters use to store the enum in the same foreign key column and the API uses to accept and return the same
-  identifiers as before.
+  identifiers as before. A request whose identifier names no member is invalid (`RequestValidationFailed`), and
+  the API maps the identifier to the enum before building the command, so commands never carry catalog
+  identifiers.
 - Repositories exist only for aggregate roots (`IRepository<T>` plus methods that name their intention), never
   expose `IQueryable` or predicates, and share the scoped `CodigoActivoDbContext`. `IUnitOfWork.SaveChangesAsync`
   commits staged changes once and turns a PostgreSQL unique violation into `UniqueConstraintViolationException`,
@@ -146,7 +148,8 @@ before any query handler whose result can report the failure (`Result`); the cri
 cannot, are checked by MVC when the request binds them. The current day
 reaches the date rules through the validation context, never through a service locator. The HTTP request
 records live in the API (`API/<Feature>/Contracts/`) with only the standard attributes the OpenAPI document
-describes, and map themselves to the command (`request.ToCommand(id)`). Response records and list criteria stay
+describes, plus the catalog membership check (`IValidatableObject` through `CatalogIdentifiers`), and map
+themselves to the command (`request.ToCommand(id)`). Response records and list criteria stay
 in `Application/<Feature>/Contracts/` as the read contracts of the queries; `Gender` and `TwoFactorMethod`
 there are contract enums that mirror the domain ones (`ContractEnums`).
 

@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
@@ -12,7 +11,7 @@ namespace CodigoActivo.Application.Activities;
 /// <summary>
 /// Validates activity input before it is processed: the rules of the schedule and the role
 /// capacities belong to the domain, and this collaborator adds the checks that need other
-/// aggregates (the event, the thumbnail and the catalogs).
+/// aggregates (the event and the thumbnail).
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
@@ -51,34 +50,15 @@ public sealed class ActivityValidator(
             return Error.Validation(ApplicationErrorCode.ActivityThumbnailNotFound);
         }
 
-        if (
-            !CatalogIds.ActivityModalities.TryGetValue(
-                draft.ActivityModalityTypeId,
-                out var modality
-            )
-        )
-        {
-            return Error.Validation(ApplicationErrorCode.ActivityModalityTypeNotFound);
-        }
-
-        var roles = new List<RoleCapacity>(draft.RoleCapacities.Count);
-        foreach (var item in draft.RoleCapacities)
-        {
-            if (!CatalogIds.ActivityRoles.TryGetValue(item.ActivityRoleTypeId, out var role))
-            {
-                return Error.Validation(ApplicationErrorCode.ActivityRoleTypeNotFound);
-            }
-
-            roles.Add(new RoleCapacity(role, item.DesiredCount));
-        }
-
-        var capacities = RoleCapacityPlan.Create(roles);
+        var capacities = RoleCapacityPlan.Create([
+            .. draft.RoleCapacities.Select(item => new RoleCapacity(item.Role, item.DesiredCount)),
+        ]);
         if (capacities.IsFailure)
         {
             return capacities.Error!;
         }
 
-        return new ValidatedActivity(schedule.Value, modality, capacities.Value);
+        return new ValidatedActivity(schedule.Value, draft.Modality, capacities.Value);
     }
 
     internal readonly record struct ValidatedActivity(

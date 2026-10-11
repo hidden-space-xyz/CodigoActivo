@@ -360,6 +360,33 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task CreateUnknownCatalogIdentifiersAreRefusedAsAnInvalidRequest()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        var client = await LoginAsAdminAsync();
+        var unknownRole = CreateRequest(
+            thumb,
+            roleCapacities: [new ActivityRoleCapacityRequest(Guid.NewGuid(), 1)]
+        );
+        var unknownModality = CreateRequest(thumb) with { ActivityModalityTypeId = Guid.NewGuid() };
+
+        using var roleResponse = await client.PostJsonAsync(
+            $"/api/activities/{eventId}",
+            unknownRole,
+            Ct
+        );
+        using var modalityResponse = await client.PostJsonAsync(
+            $"/api/activities/{eventId}",
+            unknownModality,
+            Ct
+        );
+
+        await roleResponse.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        await modalityResponse.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+    }
+
+    [Fact]
     public async Task UpdateWithRoleCapacitiesReplacesExistingSet()
     {
         var thumb = await SeedThumbnailAsync();

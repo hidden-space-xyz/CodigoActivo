@@ -29,7 +29,7 @@ public sealed class ChangeUserTypeCommandHandlerTests
         users.FindReturns(null);
 
         var result = await sut.HandleAsync(
-            new ChangeUserTypeCommand(UserId.New(), Guid.NewGuid()),
+            new ChangeUserTypeCommand(UserId.New(), UserType.Member),
             TestContext.Current.CancellationToken
         );
 
@@ -37,30 +37,15 @@ public sealed class ChangeUserTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncRoleMissingReturnsNotFound()
-    {
-        var roleId = Guid.NewGuid();
-        users.FindReturns(NewUser());
-
-        var result = await sut.HandleAsync(
-            new ChangeUserTypeCommand(UserId.New(), roleId),
-            TestContext.Current.CancellationToken
-        );
-
-        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserTypeNotFound);
-    }
-
-    [Fact]
     public async Task HandleAsyncNewTypeDiffersFromCurrentReplacesTypeSaves()
     {
         var id = Guid.NewGuid();
-        var roleId = KnownIds.UserTypes.Member;
         var user = NewUser(id: id, dob: AdultDob);
         users.FindReturns(user);
         clock.UtcNow = new DateTimeOffset(2026, 10, 5, 0, 0, 0, TimeSpan.Zero);
 
         var result = await sut.HandleAsync(
-            new ChangeUserTypeCommand(UserId.From(id), roleId),
+            new ChangeUserTypeCommand(UserId.From(id), UserType.Member),
             TestContext.Current.CancellationToken
         );
 
@@ -74,13 +59,12 @@ public sealed class ChangeUserTypeCommandHandlerTests
     public async Task HandleAsyncTypeUnchangedChangesNothing()
     {
         var id = Guid.NewGuid();
-        var roleId = KnownIds.UserTypes.Member;
         var user = NewUser(id: id, dob: AdultDob);
         Persisted.Overwrite(user, new { UserType = UserType.Member });
         users.FindReturns(user);
 
         var result = await sut.HandleAsync(
-            new ChangeUserTypeCommand(UserId.From(id), roleId),
+            new ChangeUserTypeCommand(UserId.From(id), UserType.Member),
             TestContext.Current.CancellationToken
         );
 

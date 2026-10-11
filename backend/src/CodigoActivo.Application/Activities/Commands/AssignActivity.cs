@@ -3,7 +3,6 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
@@ -18,12 +17,12 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="UserId">Identifier of the person signed up.</param>
-/// <param name="ActivityRoleTypeId">Catalog identifier of the role requested.</param>
+/// <param name="Role">Role requested.</param>
 /// <param name="TermsDecisions">Decisions on the terms documents of the event, if any were asked.</param>
 public sealed record AssignActivityCommand(
     ActivityId ActivityId,
     UserId UserId,
-    Guid ActivityRoleTypeId,
+    ActivityRole Role,
     [property: MaxLength(50)] IReadOnlyList<TermsDecision>? TermsDecisions
 ) : ICommand<Result>;
 
@@ -93,12 +92,7 @@ public sealed class AssignActivityCommandHandler(
             return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (!CatalogIds.ActivityRoles.TryGetValue(command.ActivityRoleTypeId, out var role))
-        {
-            return Error.Validation(DomainErrorCode.ActivityRoleNotAllowed);
-        }
-
-        var allowedRole = SignupEligibility.EnsureRoleAllowed(user, role);
+        var allowedRole = SignupEligibility.EnsureRoleAllowed(user, command.Role);
         if (allowedRole.IsFailure)
         {
             return allowedRole;
@@ -125,7 +119,7 @@ public sealed class AssignActivityCommandHandler(
             }
         }
 
-        var assigned = activity.RequestAssignment(command.UserId, role, clock.UtcNow);
+        var assigned = activity.RequestAssignment(command.UserId, command.Role, clock.UtcNow);
         if (assigned.IsFailure)
         {
             return assigned;

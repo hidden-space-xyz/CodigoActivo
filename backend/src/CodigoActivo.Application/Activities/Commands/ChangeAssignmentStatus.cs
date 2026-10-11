@@ -1,7 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Catalogs;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -13,11 +11,11 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="UserId">Identifier of the person.</param>
-/// <param name="AssignmentStatusId">Catalog identifier of the new status.</param>
+/// <param name="Status">New status.</param>
 public sealed record ChangeAssignmentStatusCommand(
     ActivityId ActivityId,
     UserId UserId,
-    Guid AssignmentStatusId
+    AssignmentStatus Status
 ) : ICommand<Result>;
 
 /// <summary>
@@ -47,11 +45,6 @@ public sealed class ChangeAssignmentStatusCommandHandler(IActivityRepository act
             return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
         }
 
-        if (!CatalogIds.AssignmentStatuses.TryGetValue(command.AssignmentStatusId, out var status))
-        {
-            return Error.NotFound(ApplicationErrorCode.AssignmentStatusTypeNotFound);
-        }
-
-        return activity.ChangeAssignmentStatus(command.UserId, status);
+        return activity.ChangeAssignmentStatus(command.UserId, command.Status);
     }
 }

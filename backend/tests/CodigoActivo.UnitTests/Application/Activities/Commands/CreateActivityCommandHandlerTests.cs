@@ -92,7 +92,7 @@ public sealed class CreateActivityCommandHandlerTests
             "  Taller  ",
             "{}",
             "  Sala  ",
-            Guid.NewGuid(),
+            RequestedModalityId,
             null,
             new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
             Guid.NewGuid(),
@@ -175,21 +175,6 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncModalityMissingReturnsModalityTypeNotFound()
-    {
-        var ev = EventExists();
-        files.ThumbnailExists(true);
-
-        var result = await sut.HandleAsync(
-            (CreateRequest() with { ActivityModalityTypeId = Guid.NewGuid() }).ToCommand(ev.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityModalityTypeNotFound);
-    }
-
-    [Fact]
     public async Task HandleAsyncValidRequestStagesTrimmedActivityReturnsId()
     {
         var eventId = Guid.NewGuid();
@@ -268,21 +253,5 @@ public sealed class CreateActivityCommandHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleCapacityDuplicated);
-    }
-
-    [Fact]
-    public async Task HandleAsyncUnknownRoleCapacityRoleReturnsRoleTypeNotFound()
-    {
-        var ev = EventExists();
-        files.ThumbnailExists(true);
-
-        var result = await sut.HandleAsync(
-            CreateRequest(roleCapacities: [new ActivityRoleCapacityRequest(Guid.NewGuid(), 5)])
-                .ToCommand(ev.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityRoleTypeNotFound);
     }
 }

@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.API.Contracts;
 using CodigoActivo.Application.Activities.Commands;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
@@ -17,7 +19,18 @@ namespace CodigoActivo.API.Activities.Contracts;
 public record ActivityRoleCapacityRequest(
     [Required] Guid ActivityRoleTypeId,
     [Required] [Range(RoleCapacity.MinDesiredCount, RoleCapacity.MaxDesiredCount)] int? DesiredCount
-);
+) : IValidatableObject
+{
+    /// <inheritdoc />
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return CatalogIdentifiers.Check(
+            CatalogIds.ActivityRoles,
+            ActivityRoleTypeId,
+            nameof(ActivityRoleTypeId)
+        );
+    }
+}
 
 /// <summary>
 /// Contains the client-supplied data used to create an activity.
@@ -39,8 +52,18 @@ public record CreateActivityRequest(
     [Required] DateTimeOffset? ActivityEndsAt,
     Guid ThumbnailId,
     [MaxLength(50)] IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
-)
+) : IValidatableObject
 {
+    /// <inheritdoc />
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return CatalogIdentifiers.Check(
+            CatalogIds.ActivityModalities,
+            ActivityModalityTypeId,
+            nameof(ActivityModalityTypeId)
+        );
+    }
+
     /// <summary>
     /// Builds the command that creates the activity.
     /// </summary>
@@ -84,8 +107,18 @@ public record UpdateActivityRequest(
     [Required] DateTimeOffset? ActivityEndsAt,
     Guid ThumbnailId,
     [MaxLength(50)] IReadOnlyList<ActivityRoleCapacityRequest>? RoleCapacities
-)
+) : IValidatableObject
 {
+    /// <inheritdoc />
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return CatalogIdentifiers.Check(
+            CatalogIds.ActivityModalities,
+            ActivityModalityTypeId,
+            nameof(ActivityModalityTypeId)
+        );
+    }
+
     /// <summary>
     /// Builds the command that updates the activity.
     /// </summary>
@@ -124,8 +157,18 @@ public record TermsDecisionRequest([Required] Guid TermsDocumentId, [Required] b
 public record AssignRequest(
     [Required] Guid ActivityRoleTypeId,
     [MaxLength(50)] IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
-)
+) : IValidatableObject
 {
+    /// <inheritdoc />
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return CatalogIdentifiers.Check(
+            CatalogIds.ActivityRoles,
+            ActivityRoleTypeId,
+            nameof(ActivityRoleTypeId)
+        );
+    }
+
     /// <summary>
     /// Builds the command that signs the person up.
     /// </summary>
@@ -137,7 +180,7 @@ public record AssignRequest(
         return new AssignActivityCommand(
             activityId,
             userId,
-            ActivityRoleTypeId,
+            CatalogIds.ActivityRoles.ValueOf(ActivityRoleTypeId),
             ActivityRequestMapping.Decisions(TermsDecisions)
         );
     }
@@ -169,7 +212,7 @@ public record AssignHouseholdRequest(
                     .OfType<HouseholdAssignmentRequest>()
                     .Select(assignment => new HouseholdMemberSignup(
                         UserId.From(assignment.UserId),
-                        assignment.ActivityRoleTypeId
+                        CatalogIds.ActivityRoles.ValueOf(assignment.ActivityRoleTypeId)
                     )),
             ],
             ActivityRequestMapping.Decisions(TermsDecisions)
@@ -182,22 +225,83 @@ public record AssignHouseholdRequest(
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-public record HouseholdAssignmentRequest(
-    [Required] Guid UserId,
-    [Required] Guid ActivityRoleTypeId
-);
+public record HouseholdAssignmentRequest([Required] Guid UserId, [Required] Guid ActivityRoleTypeId)
+    : IValidatableObject
+{
+    /// <inheritdoc />
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return CatalogIdentifiers.Check(
+            CatalogIds.ActivityRoles,
+            ActivityRoleTypeId,
+            nameof(ActivityRoleTypeId)
+        );
+    }
+}
 
 /// <summary>
 /// Contains the client-supplied data used to change assignment status.
 /// </summary>
 /// <param name="AssignmentStatusId">Identifier of the assignment status.</param>
-public record ChangeAssignmentStatusRequest([Required] Guid AssignmentStatusId);
+public record ChangeAssignmentStatusRequest([Required] Guid AssignmentStatusId) : IValidatableObject
+{
+    /// <inheritdoc />
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return CatalogIdentifiers.Check(
+            CatalogIds.AssignmentStatuses,
+            AssignmentStatusId,
+            nameof(AssignmentStatusId)
+        );
+    }
+
+    /// <summary>
+    /// Builds the command that changes the status of the signup.
+    /// </summary>
+    /// <param name="activityId">Identifier of the activity.</param>
+    /// <param name="userId">Identifier of the person signed up.</param>
+    /// <returns>The command.</returns>
+    public ChangeAssignmentStatusCommand ToCommand(ActivityId activityId, UserId userId)
+    {
+        return new ChangeAssignmentStatusCommand(
+            activityId,
+            userId,
+            CatalogIds.AssignmentStatuses.ValueOf(AssignmentStatusId)
+        );
+    }
+}
 
 /// <summary>
 /// Contains the client-supplied data used to change assignment role.
 /// </summary>
 /// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-public record ChangeAssignmentRoleRequest([Required] Guid ActivityRoleTypeId);
+public record ChangeAssignmentRoleRequest([Required] Guid ActivityRoleTypeId) : IValidatableObject
+{
+    /// <inheritdoc />
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        return CatalogIdentifiers.Check(
+            CatalogIds.ActivityRoles,
+            ActivityRoleTypeId,
+            nameof(ActivityRoleTypeId)
+        );
+    }
+
+    /// <summary>
+    /// Builds the command that changes the role of the signup.
+    /// </summary>
+    /// <param name="activityId">Identifier of the activity.</param>
+    /// <param name="userId">Identifier of the person signed up.</param>
+    /// <returns>The command.</returns>
+    public ChangeAssignmentRoleCommand ToCommand(ActivityId activityId, UserId userId)
+    {
+        return new ChangeAssignmentRoleCommand(
+            activityId,
+            userId,
+            CatalogIds.ActivityRoles.ValueOf(ActivityRoleTypeId)
+        );
+    }
+}
 
 internal static class ActivityRequestMapping
 {
@@ -216,7 +320,7 @@ internal static class ActivityRequestMapping
             title,
             description,
             location,
-            modalityTypeId,
+            CatalogIds.ActivityModalities.ValueOf(modalityTypeId),
             startsAt,
             endsAt,
             StoredFileId.From(thumbnailId),
@@ -224,7 +328,7 @@ internal static class ActivityRequestMapping
                 .. (roleCapacities ?? [])
                     .OfType<ActivityRoleCapacityRequest>()
                     .Select(capacity => new RoleCapacityDraft(
-                        capacity.ActivityRoleTypeId,
+                        CatalogIds.ActivityRoles.ValueOf(capacity.ActivityRoleTypeId),
                         capacity.DesiredCount.GetValueOrDefault()
                     )),
             ]

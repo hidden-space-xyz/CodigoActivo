@@ -4,7 +4,6 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Contracts;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -32,11 +31,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
     )
     {
         return sut.HandleAsync(
-            new ChangeAssignmentRoleCommand(
-                ActivityId.From(activityId),
-                UserId.From(userId),
-                request.ActivityRoleTypeId
-            ),
+            request.ToCommand(ActivityId.From(activityId), UserId.From(userId)),
             TestContext.Current.CancellationToken
         );
     }
@@ -67,25 +62,6 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentNotFound);
-    }
-
-    [Fact]
-    public async Task HandleAsyncRoleTypeMissingReturnsRoleTypeNotFound()
-    {
-        var userId = Guid.NewGuid();
-        var roleTypeId = Guid.NewGuid();
-        var activity = NewActivity();
-        activity.SignUp(userId);
-        activities.Finds(activity);
-
-        var result = await ChangeRoleAsync(
-            activity.Id.Value,
-            userId,
-            new ChangeAssignmentRoleRequest(roleTypeId)
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityRoleTypeNotFound);
     }
 
     [Fact]

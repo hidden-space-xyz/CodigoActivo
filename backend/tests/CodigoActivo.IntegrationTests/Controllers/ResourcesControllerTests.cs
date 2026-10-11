@@ -361,7 +361,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     Guid.NewGuid(),
                     thumbnailId
                 ),
-                ErrorCode.ResourceTypeNotFound
+                ErrorCode.RequestValidationFailed
             ),
         };
 
@@ -589,7 +589,7 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
                     Guid.NewGuid(),
                     thumbnailId.Value
                 ),
-                ErrorCode.ResourceTypeNotFound
+                ErrorCode.RequestValidationFailed
             ),
         };
 
