@@ -614,7 +614,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task ChangeAssignmentRoleThenSaveChangesReplacesTheRowKeepingStatusAndDate()
+    public async Task ChangeAssignmentRoleThenSaveChangesUpdatesTheRowKeepingStatusAndDate()
     {
         var user = NewUser();
         var ev = NewEvent();

@@ -19,12 +19,7 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Assignment> builder)
     {
-        builder.HasKey(x => new
-        {
-            x.UserId,
-            x.ActivityId,
-            x.Role,
-        });
+        builder.HasKey(x => new { x.UserId, x.ActivityId });
 
         builder
             .Property(x => x.Role)
@@ -34,8 +29,6 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
             .Property(x => x.Status)
             .HasConversion(new CatalogConverter<AssignmentStatus>(CatalogIds.AssignmentStatuses))
             .HasColumnName("assignment_status_id");
-
-        builder.HasIndex(x => new { x.UserId, x.ActivityId }).IsUnique();
 
         builder
             .HasOne<User>()

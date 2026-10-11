@@ -44,8 +44,9 @@ authentication are not supported.
   signup time, plus their own email and primary phone (independent accounts) or their age on the
   activity's day, computed on the server, and the guardian's names, email and primary phone (dependents):
   never ids, DNI/NIE, birth dates or secondary phones. The SPA keys the cached list by user id. A person
-  holds at most one assignment per activity, enforced by a unique index, so concurrent signups cannot
-  leave a spare leader row and an administrator's status or role change always hits the row they see.
+  holds at most one assignment per activity, enforced by the primary key (`user_id`, `activity_id`), so
+  concurrent signups cannot leave a spare leader row and an administrator's status or role change always
+  hits the row they see.
 - The email is the only login identifier and the only unique personal value. The DNI/NIE, the phone and
   the optional secondary phone are not unique, so no route checks them against other accounts and neither
   registration nor profile updates reveal whether someone else uses them; the secondary phone only has to

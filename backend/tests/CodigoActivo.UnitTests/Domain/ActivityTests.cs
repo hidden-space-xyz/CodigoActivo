@@ -431,11 +431,13 @@ public sealed class ActivityTests
         var userId = Guid.NewGuid();
         activity.RequestAssignment(UserId.From(userId), ActivityRole.Participant, Now);
         activity.ChangeAssignmentStatus(UserId.From(userId), AssignmentStatus.Confirmed);
+        var signup = activity.AssignmentOf(UserId.From(userId));
 
         var changed = activity.ChangeAssignmentRole(UserId.From(userId), ActivityRole.Leader);
 
         changed.Value.Should().BeTrue();
         var assignment = activity.Assignments.Should().ContainSingle().Which;
+        assignment.Should().BeSameAs(signup);
         assignment.UserId.Value.Should().Be(userId);
         assignment.ActivityId.Should().Be(activity.Id);
         assignment.Role.Should().Be(ActivityRole.Leader);

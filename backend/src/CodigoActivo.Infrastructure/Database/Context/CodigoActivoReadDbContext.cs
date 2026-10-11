@@ -164,12 +164,7 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
             .HasForeignKey(a => a.ActivityModalityTypeId);
 
         var assignments = Table<AssignmentRow>(modelBuilder, "assignments");
-        assignments.HasKey(a => new
-        {
-            a.UserId,
-            a.ActivityId,
-            a.ActivityRoleTypeId,
-        });
+        assignments.HasKey(a => new { a.UserId, a.ActivityId });
         assignments.HasOne(a => a.User).WithMany(u => u.Assignments).HasForeignKey(a => a.UserId);
         assignments
             .HasOne(a => a.Activity)

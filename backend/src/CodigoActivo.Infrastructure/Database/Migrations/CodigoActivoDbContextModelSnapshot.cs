@@ -136,19 +136,19 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("activity_id");
 
-                    b.Property<Guid>("Role")
-                        .HasColumnType("uuid")
-                        .HasColumnName("activity_role_type_id");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<Guid>("Role")
+                        .HasColumnType("uuid")
+                        .HasColumnName("activity_role_type_id");
 
                     b.Property<Guid>("Status")
                         .HasColumnType("uuid")
                         .HasColumnName("assignment_status_id");
 
-                    b.HasKey("UserId", "ActivityId", "Role")
+                    b.HasKey("UserId", "ActivityId")
                         .HasName("pk_assignments");
 
                     b.HasIndex("ActivityId")
@@ -159,10 +159,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_assignments_assignment_status_id");
-
-                    b.HasIndex("UserId", "ActivityId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_assignments_user_id_activity_id");
 
                     b.ToTable("assignments", (string)null);
                 });
