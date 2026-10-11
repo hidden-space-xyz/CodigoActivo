@@ -84,7 +84,9 @@ public sealed class AssignHouseholdCommandHandlerTests
         var result = await AssignHouseholdAsync(
             Guid.NewGuid(),
             Guid.NewGuid(),
-            new AssignHouseholdRequest([new(Guid.NewGuid(), Guid.NewGuid())]),
+            new AssignHouseholdRequest([
+                new(Guid.NewGuid(), KnownIds.ActivityRoleTypes.Participant),
+            ]),
             isAdmin: false
         );
 
@@ -104,7 +106,9 @@ public sealed class AssignHouseholdCommandHandlerTests
         var result = await AssignHouseholdAsync(
             activityId,
             Guid.NewGuid(),
-            new AssignHouseholdRequest([new(Guid.NewGuid(), Guid.NewGuid())]),
+            new AssignHouseholdRequest([
+                new(Guid.NewGuid(), KnownIds.ActivityRoleTypes.Participant),
+            ]),
             isAdmin: false
         );
 
@@ -126,7 +130,7 @@ public sealed class AssignHouseholdCommandHandlerTests
         var result = await AssignHouseholdAsync(
             activityId,
             actingUserId,
-            new AssignHouseholdRequest([new(strangerId, Guid.NewGuid())]),
+            new AssignHouseholdRequest([new(strangerId, KnownIds.ActivityRoleTypes.Participant)]),
             isAdmin: true
         );
 
@@ -156,37 +160,6 @@ public sealed class AssignHouseholdCommandHandlerTests
             ErrorKind.Forbidden,
             ApplicationErrorCode.ActivityHouseholdMemberNotAllowed
         );
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task HandleAsyncRoleUnknownReturnsRoleNotAllowed()
-    {
-        var activityId = Guid.NewGuid();
-        var actingUserId = Guid.NewGuid();
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
-        users.HouseholdUsers(
-            Persisted.As<User>(
-                new
-                {
-                    Id = actingUserId,
-                    FirstName = "Ada",
-                    LastName = "Parent",
-                    UserType = UserType.Member,
-                }
-            )
-        );
-
-        var result = await AssignHouseholdAsync(
-            activityId,
-            actingUserId,
-            new AssignHouseholdRequest([new(actingUserId, Guid.NewGuid())]),
-            isAdmin: true
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }

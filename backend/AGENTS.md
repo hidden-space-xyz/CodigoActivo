@@ -48,7 +48,8 @@ Domain + Application + Infrastructure <- Composition <- API
   with `[FromServices]`; there is no mediator.
 - Commands and queries carry typed identifiers and validated fields (`[property: ...]` DataAnnotations checked
   by the validation decorator), never HTTP request records. HTTP requests live in `API/<Feature>/Contracts/` with
-  standard attributes only and map themselves to the command.
+  standard attributes only, plus the catalog membership check through `CatalogIdentifiers`, and map themselves to
+  the command.
 - Queries read only through `IReadStore` rows and `IQueryExecutor`, never through repositories or domain
   entities. They never mutate, commit, invalidate caches or send email; a cacheable query implements
   `ICachedQuery` and never touches `HybridCache` itself.

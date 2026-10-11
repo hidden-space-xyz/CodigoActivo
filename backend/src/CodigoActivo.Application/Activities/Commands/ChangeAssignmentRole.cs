@@ -1,7 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Catalogs;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -13,11 +11,11 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="UserId">Identifier of the person.</param>
-/// <param name="ActivityRoleTypeId">Catalog identifier of the new role.</param>
+/// <param name="Role">New role.</param>
 public sealed record ChangeAssignmentRoleCommand(
     ActivityId ActivityId,
     UserId UserId,
-    Guid ActivityRoleTypeId
+    ActivityRole Role
 ) : ICommand<Result>;
 
 /// <summary>
@@ -46,11 +44,6 @@ public sealed class ChangeAssignmentRoleCommandHandler(IActivityRepository activ
             return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
         }
 
-        if (!CatalogIds.ActivityRoles.TryGetValue(command.ActivityRoleTypeId, out var role))
-        {
-            return Error.NotFound(ApplicationErrorCode.ActivityRoleTypeNotFound);
-        }
-
-        return activity.ChangeAssignmentRole(command.UserId, role);
+        return activity.ChangeAssignmentRole(command.UserId, command.Role);
     }
 }

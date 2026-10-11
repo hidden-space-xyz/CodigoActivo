@@ -74,7 +74,7 @@ public sealed class AssignActivityCommandHandlerTests
             Guid.NewGuid(),
             SelfId,
             SelfId,
-            new AssignRequest(Guid.NewGuid()),
+            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
             isAdmin: false
         );
 
@@ -95,7 +95,7 @@ public sealed class AssignActivityCommandHandlerTests
             activityId,
             SelfId,
             SelfId,
-            new AssignRequest(Guid.NewGuid()),
+            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
             isAdmin: false
         );
 
@@ -271,29 +271,6 @@ public sealed class AssignActivityCommandHandlerTests
             userId,
             new AssignRequest(KnownIds.ActivityRoleTypes.Leader),
             isAdmin: true
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task HandleAsyncUnknownRoleForSocioUserReturnsRoleNotAllowed()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
-        users.TargetUser(userId, KnownIds.UserTypes.Member);
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(Guid.NewGuid()),
-            isAdmin: false
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);

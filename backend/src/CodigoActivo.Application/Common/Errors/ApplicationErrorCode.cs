@@ -21,11 +21,6 @@ public enum ApplicationErrorCode
     ActivityNotFound,
 
     /// <summary>
-    /// Selects the activity modality type not found option.
-    /// </summary>
-    ActivityModalityTypeNotFound,
-
-    /// <summary>
     /// Selects the activity household assignments required option.
     /// </summary>
     ActivityHouseholdAssignmentsRequired,
@@ -34,16 +29,6 @@ public enum ApplicationErrorCode
     /// Selects the activity household member not allowed option.
     /// </summary>
     ActivityHouseholdMemberNotAllowed,
-
-    /// <summary>
-    /// Selects the assignment status type not found option.
-    /// </summary>
-    AssignmentStatusTypeNotFound,
-
-    /// <summary>
-    /// Selects the activity role type not found option.
-    /// </summary>
-    ActivityRoleTypeNotFound,
 
     /// <summary>
     /// Selects the activity thumbnail not found option.
@@ -116,11 +101,6 @@ public enum ApplicationErrorCode
     ResourceThumbnailNotFound,
 
     /// <summary>
-    /// Selects the resource type not found option.
-    /// </summary>
-    ResourceTypeNotFound,
-
-    /// <summary>
     /// Selects the partner not found option.
     /// </summary>
     PartnerNotFound,
@@ -179,11 +159,6 @@ public enum ApplicationErrorCode
     /// Selects the user self delete requires verification option.
     /// </summary>
     UserSelfDeleteRequiresVerification,
-
-    /// <summary>
-    /// Selects the user type not found option.
-    /// </summary>
-    UserTypeNotFound,
 
     /// <summary>
     /// Selects the parent user not found option.

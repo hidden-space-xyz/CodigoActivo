@@ -110,7 +110,11 @@ public sealed class InputValidationTests(CodigoActivoWebAppFactory factory)
 
         using var response = await client.PatchJsonAsync(
             $"/api/activities/{Guid.NewGuid()}/{TestSeedData.Users.MemberId}/assign",
-            new { activityRoleTypeId = Guid.NewGuid(), termsDecisions = decisions },
+            new
+            {
+                activityRoleTypeId = KnownIds.ActivityRoleTypes.Participant,
+                termsDecisions = decisions,
+            },
             Ct
         );
 
@@ -124,7 +128,11 @@ public sealed class InputValidationTests(CodigoActivoWebAppFactory factory)
 
         using var response = await client.PatchJsonAsync(
             $"/api/activities/{Guid.NewGuid()}/{TestSeedData.Users.MemberId}/assign",
-            new { activityRoleTypeId = Guid.NewGuid(), termsDecisions = new object?[] { null } },
+            new
+            {
+                activityRoleTypeId = KnownIds.ActivityRoleTypes.Participant,
+                termsDecisions = new object?[] { null },
+            },
             Ct
         );
 

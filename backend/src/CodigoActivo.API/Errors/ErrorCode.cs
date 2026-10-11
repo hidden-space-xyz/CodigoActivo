@@ -22,11 +22,6 @@ public enum ErrorCode
     ActivityNotFound,
 
     /// <summary>
-    /// Selects the activity modality type not found option.
-    /// </summary>
-    ActivityModalityTypeNotFound,
-
-    /// <summary>
     /// Selects the activity signup closed option.
     /// </summary>
     ActivitySignupClosed,
@@ -65,16 +60,6 @@ public enum ErrorCode
     /// Selects the activity assignment not found option.
     /// </summary>
     ActivityAssignmentNotFound,
-
-    /// <summary>
-    /// Selects the assignment status type not found option.
-    /// </summary>
-    AssignmentStatusTypeNotFound,
-
-    /// <summary>
-    /// Selects the activity role type not found option.
-    /// </summary>
-    ActivityRoleTypeNotFound,
 
     /// <summary>
     /// Selects the activity schedule required option.
@@ -207,11 +192,6 @@ public enum ErrorCode
     ResourceThumbnailNotFound,
 
     /// <summary>
-    /// Selects the resource type not found option.
-    /// </summary>
-    ResourceTypeNotFound,
-
-    /// <summary>
     /// Selects the resource description required option.
     /// </summary>
     ResourceDescriptionRequired,
@@ -300,11 +280,6 @@ public enum ErrorCode
     /// Selects the user cannot remove initial admin option.
     /// </summary>
     UserCannotRemoveInitialAdmin,
-
-    /// <summary>
-    /// Selects the user type not found option.
-    /// </summary>
-    UserTypeNotFound,
 
     /// <summary>
     /// Selects the parent user not found option.

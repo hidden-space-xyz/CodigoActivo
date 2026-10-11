@@ -77,9 +77,4 @@ internal static class ResourceTestData
         readStore.ResourceTypes.Add(type);
         return type;
     }
-
-    public static void TypeMissing(this FakeReadStore readStore)
-    {
-        readStore.ResourceTypes.Add(NewResourceTypeRow());
-    }
 }

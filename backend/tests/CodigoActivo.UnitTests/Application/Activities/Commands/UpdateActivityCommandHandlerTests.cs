@@ -105,7 +105,7 @@ public sealed class UpdateActivityCommandHandlerTests
             "  New  ",
             "{}",
             "  Sala  ",
-            Guid.NewGuid(),
+            RequestedModalityId,
             null,
             new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
             Guid.NewGuid(),
@@ -135,24 +135,6 @@ public sealed class UpdateActivityCommandHandlerTests
         );
 
         result.Error!.Code.Should().Be(ApplicationErrorCode.ActivityThumbnailNotFound);
-    }
-
-    [Fact]
-    public async Task HandleAsyncModalityMissingReturnsModalityTypeNotFound()
-    {
-        var activity = NewActivity();
-        activities.Finds(activity);
-        EventExistsFor(activity);
-        files.ThumbnailExists(true);
-
-        var result = await sut.HandleAsync(
-            (UpdateRequest() with { ActivityModalityTypeId = Guid.NewGuid() }).ToCommand(
-                activity.Id
-            ),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Code.Should().Be(ApplicationErrorCode.ActivityModalityTypeNotFound);
     }
 
     [Fact]

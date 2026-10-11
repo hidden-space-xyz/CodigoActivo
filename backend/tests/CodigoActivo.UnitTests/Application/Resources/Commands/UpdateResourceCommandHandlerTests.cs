@@ -40,7 +40,7 @@ public sealed class UpdateResourceCommandHandlerTests
             "Subtitle",
             SomeRichText,
             null,
-            Guid.NewGuid(),
+            KnownIds.ResourceTypes.Internal,
             Guid.NewGuid()
         );
 
@@ -54,30 +54,6 @@ public sealed class UpdateResourceCommandHandlerTests
         await files
             .DidNotReceiveWithAnyArgs()
             .ExistsAsync(Arg.Any<StoredFileId>(), TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task HandleAsyncResourceTypeMissingReturnsBadRequest()
-    {
-        var resource = NewResource();
-        resources.Finds(resource);
-        readStore.TypeMissing();
-        var request = new UpdateResourceRequest(
-            "Title",
-            "Subtitle",
-            SomeRichText,
-            null,
-            Guid.NewGuid(),
-            resource.ThumbnailId.Value
-        );
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(resource.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceTypeNotFound);
     }
 
     [Fact]

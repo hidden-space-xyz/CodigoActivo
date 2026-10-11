@@ -1075,7 +1075,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ChangeTypeMissingUserTypeReturnsNotFoundWithErrorCode()
+    public async Task ChangeTypeUnknownUserTypeIsRefusedAsAnInvalidRequest()
     {
         var client = await LoginAsAdminAsync();
 
@@ -1084,7 +1084,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             ct: Ct
         );
 
-        await response.ShouldBeNotFoundAsync(ErrorCode.UserTypeNotFound);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]

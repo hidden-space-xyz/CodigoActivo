@@ -3,7 +3,6 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
@@ -100,18 +99,16 @@ public sealed class AssignHouseholdCommandHandler(
         var signups = new List<(UserId UserId, ActivityRole Role)>(items.Count);
         foreach (var item in items)
         {
-            if (!CatalogIds.ActivityRoles.TryGetValue(item.ActivityRoleTypeId, out var role))
-            {
-                return Error.Validation(DomainErrorCode.ActivityRoleNotAllowed);
-            }
-
-            var allowedRole = SignupEligibility.EnsureRoleAllowed(memberById[item.UserId], role);
+            var allowedRole = SignupEligibility.EnsureRoleAllowed(
+                memberById[item.UserId],
+                item.Role
+            );
             if (allowedRole.IsFailure)
             {
                 return allowedRole.Error!;
             }
 
-            signups.Add((item.UserId, role));
+            signups.Add((item.UserId, item.Role));
         }
 
         var terms = await termsGate.EnsureDecidedAsync(

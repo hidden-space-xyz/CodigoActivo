@@ -1,12 +1,14 @@
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Security;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Application.Users.Queries;
@@ -257,11 +259,13 @@ public class UsersController : ApiControllerBase
         CancellationToken ct
     )
     {
+        if (!CatalogIds.UserTypes.TryGetValue(userTypeId, out var userType))
+        {
+            return ToProblem(ApiError.Validation(ErrorCode.RequestValidationFailed));
+        }
+
         return await ToOkAfterAsync(
-            await handler.HandleAsync(
-                new ChangeUserTypeCommand(UserId.From(userId), userTypeId),
-                ct
-            ),
+            await handler.HandleAsync(new ChangeUserTypeCommand(UserId.From(userId), userType), ct),
             () => getById.HandleAsync(new GetUserByIdQuery(UserId.From(userId)), ct)
         );
     }

@@ -3,7 +3,6 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Common.Validation;
@@ -20,14 +19,14 @@ namespace CodigoActivo.Application.Resources.Commands;
 /// <param name="Subtitle">Line shown below the title.</param>
 /// <param name="Description">Body as rich text JSON, for resources that carry one.</param>
 /// <param name="Url">Link, for resources that point elsewhere.</param>
-/// <param name="ResourceTypeId">Catalog identifier of the resource type.</param>
+/// <param name="Type">Kind of resource.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
 public sealed record CreateResourceCommand(
     [property: Required, MaxLength(200), NotBlank] string Title,
     [property: Required, MaxLength(300), NotBlank] string Subtitle,
     [property: RichText, MaxLength(262144)] string? Description,
     [property: HttpUrl, MaxLength(500)] string? Url,
-    Guid ResourceTypeId,
+    ResourceType Type,
     StoredFileId ThumbnailId
 ) : ICommand<Result<ResourceId>>;
 
@@ -58,13 +57,8 @@ public sealed class CreateResourceCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (!CatalogIds.ResourceTypes.TryGetValue(command.ResourceTypeId, out var type))
-        {
-            return Error.Validation(ApplicationErrorCode.ResourceTypeNotFound);
-        }
-
         var content = ResourceContent.For(
-            type,
+            command.Type,
             RichText.FromOptional(command.Description),
             command.Url
         );
