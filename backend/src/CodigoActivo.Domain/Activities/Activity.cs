@@ -208,8 +208,7 @@ public class Activity : AuditableEntity<ActivityId>
             return false;
         }
 
-        assignments.Remove(assignment);
-        assignments.Add(new Assignment(userId, Id, role, assignment.Status, assignment.CreatedAt));
+        assignment.ChangeRole(role);
         Raise(new AssignmentRoleChanged(Id, userId, role));
         return true;
     }

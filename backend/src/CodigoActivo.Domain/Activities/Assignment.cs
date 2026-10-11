@@ -35,7 +35,7 @@ public class Assignment
     public ActivityId ActivityId { get; private set; }
 
     /// <summary>
-    /// Gets the role asked for.
+    /// Gets the role of the signup.
     /// </summary>
     public ActivityRole Role { get; private set; }
 
@@ -52,5 +52,10 @@ public class Assignment
     internal void ChangeStatus(AssignmentStatus status)
     {
         Status = status;
+    }
+
+    internal void ChangeRole(ActivityRole role)
+    {
+        Role = role;
     }
 }

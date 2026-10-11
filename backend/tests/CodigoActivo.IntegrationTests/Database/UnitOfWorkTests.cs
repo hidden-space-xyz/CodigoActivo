@@ -234,36 +234,6 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task SaveChangesAsyncReplacingTheRoleOfAnAssignmentKeepsOneRow()
-    {
-        await using (var db = postgres.CreateContext())
-        {
-            var current = await db.Assignments.SingleAsync(
-                a =>
-                    a.UserId == global::CodigoActivo.Domain.Users.UserId.From(UserId)
-                    && a.ActivityId
-                        == global::CodigoActivo.Domain.Activities.ActivityId.From(ActivityId),
-                Ct
-            );
-            db.Assignments.Remove(current);
-            db.Assignments.Add(NewAssignment(ActivityId, KnownIds.ActivityRoleTypes.Volunteer));
-            var uow = TestUnitOfWork.For(db);
-
-            await uow.SaveChangesAsync(Ct);
-        }
-
-        await using var verify = postgres.CreateContext();
-        var stored = await verify
-            .Assignments.Where(a =>
-                a.UserId == global::CodigoActivo.Domain.Users.UserId.From(UserId)
-                && a.ActivityId
-                    == global::CodigoActivo.Domain.Activities.ActivityId.From(ActivityId)
-            )
-            .ToListAsync(Ct);
-        stored.Should().ContainSingle().Which.Role.Should().Be(ActivityRole.Volunteer);
-    }
-
-    [Fact]
     public async Task SaveChangesAsyncRefusedCommitKeepsItsEventsForTheNextCommit()
     {
         await using var db = postgres.CreateContext();

@@ -71,6 +71,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
         var roleId = KnownIds.ActivityRoleTypes.Leader;
         var activity = NewActivity();
         var assignment = activity.SignUp(userId);
+        var signedUpStatus = assignment.Status;
         activities.Finds(activity);
 
         var result = await ChangeRoleAsync(
@@ -80,18 +81,9 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        activity.Assignments.Should().NotContain(assignment);
-        activity
-            .Assignments.Should()
-            .ContainSingle(a =>
-                MatchesAssignment(
-                    a,
-                    userId,
-                    activity.Id.Value,
-                    ActivityRole.Leader,
-                    assignment.Status
-                )
-            );
+        activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(assignment);
+        assignment.Role.Should().Be(ActivityRole.Leader);
+        assignment.Status.Should().Be(signedUpStatus);
         activity
             .PullDomainEvents()
             .Should()

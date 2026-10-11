@@ -92,7 +92,7 @@ aggregate roots.
   expose `IQueryable` or predicates, and share the scoped `CodigoActivoDbContext`. `IUnitOfWork.SaveChangesAsync`
   commits staged changes once and turns a PostgreSQL unique violation into `UniqueConstraintViolationException`,
   naming the entity whose table rejected the commit, so a handler can answer a lost race instead of failing. A
-  person holds at most one assignment per activity (unique index on `user_id`, `activity_id`); the signup
+  person holds at most one assignment per activity (primary key on `user_id`, `activity_id`); the signup
   commands answer a concurrent duplicate with `ActivityAssignmentAlreadyExists` (409). At most one event and one
   news item are featured (unique index on `featured`, filtered to featured rows). PostgreSQL checks it row by
   row and EF Core cannot order moving the flag between rows within one save, so `SetEventFeatured` and
