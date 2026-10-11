@@ -93,17 +93,21 @@ public sealed class AssignActivityCommandHandler(
             return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (
-            !CatalogIds.ActivityRoles.TryGetValue(command.ActivityRoleTypeId, out var role)
-            || !SignupRoles.Allows(user.UserType, role)
-        )
+        if (!CatalogIds.ActivityRoles.TryGetValue(command.ActivityRoleTypeId, out var role))
         {
-            return Error.Validation(ApplicationErrorCode.ActivityRoleNotAllowed);
+            return Error.Validation(DomainErrorCode.ActivityRoleNotAllowed);
         }
 
-        if (activity.AssignmentOf(command.UserId) is not null)
+        var allowedRole = SignupEligibility.EnsureRoleAllowed(user, role);
+        if (allowedRole.IsFailure)
         {
-            return Error.Conflict(DomainErrorCode.ActivityAssignmentAlreadyExists);
+            return allowedRole;
+        }
+
+        var free = activity.EnsureMaySignUp(command.UserId);
+        if (free.IsFailure)
+        {
+            return free;
         }
 
         var actingUserId = currentUser.RequiredId();
@@ -124,7 +128,7 @@ public sealed class AssignActivityCommandHandler(
         var assigned = activity.RequestAssignment(command.UserId, role, clock.UtcNow);
         if (assigned.IsFailure)
         {
-            return assigned.Error!;
+            return assigned;
         }
 
         try

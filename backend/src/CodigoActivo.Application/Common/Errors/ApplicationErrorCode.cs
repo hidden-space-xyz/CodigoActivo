@@ -26,26 +26,6 @@ public enum ApplicationErrorCode
     ActivityModalityTypeNotFound,
 
     /// <summary>
-    /// Selects the activity signup closed option.
-    /// </summary>
-    ActivitySignupClosed,
-
-    /// <summary>
-    /// Selects the activity signup early only option.
-    /// </summary>
-    ActivitySignupEarlyOnly,
-
-    /// <summary>
-    /// Selects the activity already started option.
-    /// </summary>
-    ActivityAlreadyStarted,
-
-    /// <summary>
-    /// Selects the activity role not allowed option.
-    /// </summary>
-    ActivityRoleNotAllowed,
-
-    /// <summary>
     /// Selects the activity household assignments required option.
     /// </summary>
     ActivityHouseholdAssignmentsRequired,

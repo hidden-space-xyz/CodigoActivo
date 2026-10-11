@@ -377,6 +377,19 @@ public sealed class ActivityTests
     }
 
     [Fact]
+    public void EnsureMaySignUpOnlySomeoneNotSignedUpMay()
+    {
+        var activity = NewActivity();
+        var signedUp = UserId.New();
+        activity.RequestAssignment(signedUp, ActivityRole.Participant, Now);
+
+        activity.EnsureMaySignUp(UserId.New()).IsSuccess.Should().BeTrue();
+        activity
+            .EnsureMaySignUp(signedUp)
+            .ShouldFail(ErrorKind.Conflict, DomainErrorCode.ActivityAssignmentAlreadyExists);
+    }
+
+    [Fact]
     public void AssignmentOfPersonNotSignedUpReturnsNull()
     {
         var activity = NewActivity();

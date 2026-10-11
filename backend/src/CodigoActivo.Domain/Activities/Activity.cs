@@ -138,6 +138,18 @@ public class Activity : AuditableEntity<ActivityId>
     }
 
     /// <summary>
+    /// Tells whether a person may still sign up, which a person already signed up may not.
+    /// </summary>
+    /// <param name="userId">Identifier of the person.</param>
+    /// <returns>Success, or a conflict when the person is already signed up.</returns>
+    public Result EnsureMaySignUp(UserId userId)
+    {
+        return AssignmentOf(userId) is null
+            ? Result.Success()
+            : Error.Conflict(DomainErrorCode.ActivityAssignmentAlreadyExists);
+    }
+
+    /// <summary>
     /// Signs a person up with a role, pending a decision.
     /// </summary>
     /// <param name="userId">Identifier of the person.</param>
@@ -146,9 +158,10 @@ public class Activity : AuditableEntity<ActivityId>
     /// <returns>Success, or a conflict when the person is already signed up.</returns>
     public Result RequestAssignment(UserId userId, ActivityRole role, DateTimeOffset now)
     {
-        if (AssignmentOf(userId) is not null)
+        var allowed = EnsureMaySignUp(userId);
+        if (allowed.IsFailure)
         {
-            return Error.Conflict(DomainErrorCode.ActivityAssignmentAlreadyExists);
+            return allowed;
         }
 
         assignments.Add(new Assignment(userId, Id, role, AssignmentStatus.Requested, now));
