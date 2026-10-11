@@ -6,9 +6,9 @@ namespace CodigoActivo.Infrastructure.Diagnostics;
 
 /// <summary>
 /// Declares the operational events of the infrastructure layer: outbound email trouble, failed
-/// background runs, retried account erasures and disposable email domain list refreshes. Templates
-/// carry counts, enum values
-/// and exceptions, never identifiers, addresses, names or values typed by the client.
+/// background runs, failed effects of committed changes, retried account erasures and disposable
+/// email domain list refreshes. Templates carry counts, enum values, handler type names and
+/// exceptions, never identifiers, addresses, names or values typed by the client.
 /// </summary>
 public static partial class InfrastructureLog
 {
@@ -259,4 +259,22 @@ public static partial class InfrastructureLog
         Message = "Ignored {Count} data protection keys that the key encryption certificate does not protect"
     )]
     public static partial void DataProtectionKeysIgnored(this ILogger logger, int count);
+
+    /// <summary>
+    /// Records that an effect of a committed change failed, so that effect is lost while the
+    /// change and the other effects stand.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="effect">Type name of the handler that failed.</param>
+    /// <param name="exception">Failure raised by the handler.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "The effect {Effect} of a committed change failed; the change stays committed and the other "
+            + "effects still run"
+    )]
+    public static partial void CommittedEffectFailed(
+        this ILogger logger,
+        string effect,
+        Exception exception
+    );
 }

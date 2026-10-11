@@ -63,7 +63,8 @@ aggregate roots.
   (`CacheInvalidationOnCommit` evicts the tags `CacheTagsByEvent` maps; `ReleasedFilesCleanup` removes the files
   that events implementing `IReleasesFiles` stopped referencing, when nothing else references them) and then every
   `IDomainEventListener<T>` of each event runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`,
-  `SessionsEndOnPasswordReplaced`). Effects run in the request after the commit, as before the events existed; a
+  `SessionsEndOnPasswordReplaced`). Effects run in the request after the commit and to their end even when the
+  client disconnects; a failing effect is logged and neither stops the others nor fails the committed request. A
   crash between the commit and an effect loses that effect, because there is no transactional outbox for
   events (emails themselves go through the email outbox).
 - Rules that span aggregates are domain policies (`SignupRoles`, `EarlySignup`, `TermsConsent`,

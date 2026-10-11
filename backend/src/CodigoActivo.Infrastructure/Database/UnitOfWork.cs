@@ -60,7 +60,7 @@ public sealed class UnitOfWork(
         staged.Clear();
         if (context.Database.CurrentTransaction is null)
         {
-            await publisher.PublishAsync(raised, ct);
+            await publisher.PublishAsync(raised);
         }
         else
         {
@@ -116,7 +116,7 @@ public sealed class UnitOfWork(
 
             var committed = uncommitted.ToList();
             uncommitted.Clear();
-            await publisher.PublishAsync(committed, ct);
+            await publisher.PublishAsync(committed);
             return result;
         }
     }

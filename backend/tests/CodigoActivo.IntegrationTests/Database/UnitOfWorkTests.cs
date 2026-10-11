@@ -381,7 +381,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     {
         public List<IDomainEvent> Published { get; } = [];
 
-        public Task PublishAsync(IReadOnlyList<IDomainEvent> domainEvents, CancellationToken ct)
+        public Task PublishAsync(IReadOnlyList<IDomainEvent> domainEvents)
         {
             Published.AddRange(domainEvents);
             return Task.CompletedTask;

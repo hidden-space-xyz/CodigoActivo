@@ -23,6 +23,7 @@ public sealed partial class LoggingConventionTests
         "ConfiguredMode",
         "Count",
         "Drain",
+        "Effect",
         "IsAdmin",
         "Kind",
         "Limit",
