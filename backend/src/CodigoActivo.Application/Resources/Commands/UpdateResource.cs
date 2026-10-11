@@ -87,7 +87,7 @@ public sealed class UpdateResourceCommandHandler(
         }
 
         resource.Update(
-            new ResourceDetails(command.Title, command.Subtitle, type, command.ThumbnailId),
+            new ResourceDetails(command.Title, command.Subtitle, command.ThumbnailId),
             content.Value,
             currentUser.RequiredId(),
             clock.UtcNow

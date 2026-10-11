@@ -45,8 +45,8 @@ public class Resource : AuditableEntity<ResourceId>
     /// <summary>
     /// Creates a resource.
     /// </summary>
-    /// <param name="details">Titles, type and thumbnail of the resource.</param>
-    /// <param name="content">Content that fits the type.</param>
+    /// <param name="details">Titles and thumbnail of the resource.</param>
+    /// <param name="content">Content checked against its type, which the resource takes.</param>
     /// <param name="authorId">Identifier of the user who creates it.</param>
     /// <param name="now">Current time.</param>
     /// <returns>The new resource.</returns>
@@ -70,8 +70,8 @@ public class Resource : AuditableEntity<ResourceId>
     /// <summary>
     /// Replaces the resource.
     /// </summary>
-    /// <param name="details">New titles, type and thumbnail.</param>
-    /// <param name="content">New content that fits the type.</param>
+    /// <param name="details">New titles and thumbnail.</param>
+    /// <param name="content">New content checked against its type, which the resource takes.</param>
     /// <param name="editorId">Identifier of the user who edits it.</param>
     /// <param name="now">Current time.</param>
     public void Update(
@@ -113,7 +113,7 @@ public class Resource : AuditableEntity<ResourceId>
     {
         Title = details.Title.Trim();
         Subtitle = details.Subtitle.Trim();
-        ResourceType = details.ResourceType;
+        ResourceType = content.Type;
         ThumbnailId = details.ThumbnailId;
         Description = content.Description;
         Url = content.Url;

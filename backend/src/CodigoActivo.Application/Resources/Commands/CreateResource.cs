@@ -79,7 +79,7 @@ public sealed class CreateResourceCommandHandler(
         }
 
         var resource = Resource.Create(
-            new ResourceDetails(command.Title, command.Subtitle, type, command.ThumbnailId),
+            new ResourceDetails(command.Title, command.Subtitle, command.ThumbnailId),
             content.Value,
             currentUser.RequiredId(),
             clock.UtcNow

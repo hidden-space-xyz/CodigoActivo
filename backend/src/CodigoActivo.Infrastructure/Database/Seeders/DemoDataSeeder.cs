@@ -424,7 +424,6 @@ public sealed class DemoDataSeeder(
                     new ResourceDetails(
                         seed.Title,
                         seed.Subtitle,
-                        ResourceType.Internal,
                         NewFile(files, $"recurso-{label}-portada.jpg", now)
                     ),
                     ResourceContent
@@ -448,7 +447,6 @@ public sealed class DemoDataSeeder(
                     new ResourceDetails(
                         seed.Title,
                         seed.Subtitle,
-                        ResourceType.External,
                         NewFile(files, $"recurso-{label}-portada.jpg", now)
                     ),
                     ResourceContent.For(ResourceType.External, RichText.Empty, seed.Url).Value,

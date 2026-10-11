@@ -8,11 +8,17 @@ namespace CodigoActivo.Domain.Resources;
 /// </summary>
 public sealed record ResourceContent
 {
-    private ResourceContent(RichText description, string? url)
+    private ResourceContent(ResourceType type, RichText description, string? url)
     {
+        Type = type;
         Description = description;
         Url = url;
     }
+
+    /// <summary>
+    /// Gets the type this content was checked against: written on the site or linking elsewhere.
+    /// </summary>
+    public ResourceType Type { get; }
 
     /// <summary>
     /// Gets the rich-text body, an empty document for external resources.
@@ -47,7 +53,7 @@ public sealed record ResourceContent
                 return Error.Validation(DomainErrorCode.ResourceUrlRequired);
             }
 
-            return new ResourceContent(RichText.Empty, url.Trim());
+            return new ResourceContent(type, RichText.Empty, url.Trim());
         }
 
         if (!string.IsNullOrWhiteSpace(url))
@@ -60,6 +66,6 @@ public sealed record ResourceContent
             return Error.Validation(DomainErrorCode.ResourceDescriptionRequired);
         }
 
-        return new ResourceContent(description, null);
+        return new ResourceContent(type, description, null);
     }
 }
