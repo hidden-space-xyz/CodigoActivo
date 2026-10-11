@@ -54,7 +54,7 @@ public sealed class ResourceTests
     }
 
     [Fact]
-    public void ForExternalLinkKeepsTrimmedUrlAndEmptyBody()
+    public void ForExternalLinkKeepsTypeTrimmedUrlAndEmptyBody()
     {
         var content = ResourceContent.For(
             ResourceType.External,
@@ -62,15 +62,17 @@ public sealed class ResourceTests
             "  https://a.test  "
         );
 
+        content.Value.Type.Should().Be(ResourceType.External);
         content.Value.Url.Should().Be("https://a.test");
         content.Value.Description!.Json.Should().Be("{}");
     }
 
     [Fact]
-    public void ForHostedBodyKeepsBodyAndNoUrl()
+    public void ForHostedBodyKeepsTypeBodyAndNoUrl()
     {
         var content = ResourceContent.For(ResourceType.Internal, RichText.From(Body), "  ");
 
+        content.Value.Type.Should().Be(ResourceType.Internal);
         content.Value.Description!.Json.Should().Be(Body);
         content.Value.Url.Should().BeNull();
     }
@@ -80,12 +82,7 @@ public sealed class ResourceTests
     {
         var authorId = Guid.NewGuid();
         var resource = Resource.Create(
-            new ResourceDetails(
-                " Guía ",
-                " Intro ",
-                ResourceType.Internal,
-                StoredFileId.From(Guid.NewGuid())
-            ),
+            new ResourceDetails(" Guía ", " Intro ", StoredFileId.From(Guid.NewGuid())),
             ResourceContent.For(ResourceType.Internal, RichText.From(Body), null).Value,
             UserId.From(authorId),
             Now
@@ -101,12 +98,7 @@ public sealed class ResourceTests
         var editorId = Guid.NewGuid();
         var thumbnailId = Guid.NewGuid();
         resource.Update(
-            new ResourceDetails(
-                "Enlace",
-                "Externo",
-                ResourceType.External,
-                StoredFileId.From(thumbnailId)
-            ),
+            new ResourceDetails("Enlace", "Externo", StoredFileId.From(thumbnailId)),
             ResourceContent.For(ResourceType.External, RichText.Empty, "https://b.test").Value,
             UserId.From(editorId),
             Now.AddDays(2)
