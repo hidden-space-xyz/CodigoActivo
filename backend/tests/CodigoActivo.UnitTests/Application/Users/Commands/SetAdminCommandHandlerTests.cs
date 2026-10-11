@@ -51,8 +51,7 @@ public sealed class SetAdminCommandHandlerTests
         );
         sut = new SetAdminCommandHandler(
             users,
-            currentUser,
-            PasswordGuards.Create(hasher, uow, clock),
+            PasswordGuards.Create(hasher, uow, clock, users: users, currentUser: currentUser),
             clock
         );
     }

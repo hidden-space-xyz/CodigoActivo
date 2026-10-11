@@ -126,8 +126,8 @@ Each user chooses one second factor from their account:
   an account that already uses an authenticator cannot enroll another one (`AuthenticatorAlreadyEnabled`)
   until it returns to email, so a session and the password alone cannot replace it.
 
-Wrong codes are counted per account across logins and authenticator removal: after five failures the second
-factor locks for 15 minutes (`TwoFactorLocked`). A successful code resets the counter. Every code check runs
+Wrong codes are counted per account across logins, authenticator removal and account deletion
+(`SecondFactorGuard`): after five failures the second factor locks for 15 minutes (`TwoFactorLocked`). A successful code resets the counter. Every code check runs
 with the account row locked and reloaded, so parallel attempts are counted one by one and an emailed code or
 a time step is accepted only once. Enrollment URIs and shared keys are only returned to the authenticated
 owner over HTTPS and never logged.

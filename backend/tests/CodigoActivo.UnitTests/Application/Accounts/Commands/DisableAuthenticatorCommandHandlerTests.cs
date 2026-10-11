@@ -54,9 +54,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
             uow,
             clock,
             PasswordGuards.Create(new FakePasswordHasher(), uow, clock),
-            new AuthenticatorCodeVerifier(totp, new FakeSecretProtector(), clock),
-            options,
-            NullLogger<DisableAuthenticatorCommandHandler>.Instance
+            SecondFactorGuards.Create(uow, clock, totp, options)
         );
     }
 

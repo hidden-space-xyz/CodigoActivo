@@ -51,8 +51,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
         );
         sut = new ResetTwoFactorCommandHandler(
             users,
-            currentUser,
-            PasswordGuards.Create(hasher, uow, clock),
+            PasswordGuards.Create(hasher, uow, clock, users: users, currentUser: currentUser),
             clock
         );
     }

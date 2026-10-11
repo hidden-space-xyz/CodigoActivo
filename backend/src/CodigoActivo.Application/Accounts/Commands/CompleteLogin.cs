@@ -6,7 +6,6 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Accounts.Commands;
 
@@ -24,30 +23,25 @@ public sealed record CompleteLoginCommand(
 /// Executes the second step of the login and opens the session in the same transaction, so a login
 /// is either complete with its session or not at all. The challenge must be the one the account has
 /// open and must not have expired; an account that can no longer sign in or that wrong passwords
-/// locked is refused like an expired challenge, before its code is checked. Wrong codes are counted and lock the account's second factor for a while
-/// once the limit is reached, so short codes cannot be brute forced. Each check runs with the
-/// account row locked and reloaded, so parallel attempts are counted one after another and a code
-/// or an authenticator time step is accepted only once.
+/// locked is refused like an expired challenge, before its code is checked. The code is checked by
+/// <see cref="SecondFactorGuard"/> with the account row locked and reloaded, and an accepted login
+/// clears the challenge, so a code or an authenticator time step is accepted only once.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="sessions">Repository used to store the new session.</param>
 /// <param name="uow">Unit of work that runs the attempt in one transaction.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="otpValidator">Validator of emailed codes.</param>
-/// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
+/// <param name="secondFactor">Guard that verifies, counts and locks second-factor codes.</param>
 /// <param name="options">Second-factor configuration.</param>
 /// <param name="sessionLifetime">Lifetime applied to the new session.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class CompleteLoginCommandHandler(
     IUserRepository users,
     IUserSessionRepository sessions,
     IUnitOfWork uow,
     IClock clock,
-    OtpValidator otpValidator,
-    AuthenticatorCodeVerifier authenticatorCodes,
+    SecondFactorGuard secondFactor,
     TwoFactorOptions options,
-    SessionLifetimeOptions sessionLifetime,
-    ILogger<CompleteLoginCommandHandler> logger
+    SessionLifetimeOptions sessionLifetime
 ) : ICommandHandler<CompleteLoginCommand, Result<UserSessionId>>
 {
     /// <summary>
@@ -94,41 +88,10 @@ public sealed class CompleteLoginCommandHandler(
             return Error.Unauthorized(ApplicationErrorCode.TwoFactorChallengeExpired);
         }
 
-        if (user.IsTwoFactorLocked(now))
+        var verified = await secondFactor.VerifyLockedAsync(user, command.Code, now, ct);
+        if (verified.IsFailure)
         {
-            return Error.Forbidden(DomainErrorCode.TwoFactorLocked);
-        }
-
-        long? usedStep = null;
-        var accepted = user.TwoFactorMethod switch
-        {
-            TwoFactorMethod.Authenticator => (
-                usedStep = authenticatorCodes.Match(user.AuthenticatorKey, command.Code)
-            )
-                is { } matched
-                && user.AcceptsAuthenticatorStep(matched),
-            _ => otpValidator.IsCodeValid(command.Code, user.UsableLoginCodeHash(now)),
-        };
-
-        if (!accepted)
-        {
-            var locked = user.RecordTwoFactorFailure(
-                now,
-                options.MaxFailedAttempts,
-                options.LockoutDuration
-            );
-            await uow.SaveChangesAsync(ct);
-            if (locked)
-            {
-                logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
-            }
-
-            return Error.Validation(ApplicationErrorCode.TwoFactorCodeInvalid);
-        }
-
-        if (usedStep is { } step)
-        {
-            user.RecordAuthenticatorStep(step);
+            return verified.Error!;
         }
 
         user.CompleteTwoFactorLogin(now);

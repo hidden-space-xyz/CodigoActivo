@@ -8,7 +8,6 @@ using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Accounts.Commands;
 
@@ -33,18 +32,14 @@ public sealed record DisableAuthenticatorCommand(
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
-/// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
-/// <param name="options">Second-factor configuration.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
+/// <param name="secondFactor">Guard that verifies, counts and locks second-factor codes.</param>
 public sealed class DisableAuthenticatorCommandHandler(
     IUserRepository users,
     ICurrentUser currentUser,
     IUnitOfWork uow,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
-    AuthenticatorCodeVerifier authenticatorCodes,
-    TwoFactorOptions options,
-    ILogger<DisableAuthenticatorCommandHandler> logger
+    SecondFactorGuard secondFactor
 ) : ICommandHandler<DisableAuthenticatorCommand, Result>
 {
     /// <summary>
@@ -98,26 +93,10 @@ public sealed class DisableAuthenticatorCommandHandler(
         }
 
         var now = clock.UtcNow;
-        if (user.IsTwoFactorLocked(now))
+        var verified = await secondFactor.VerifyLockedAsync(user, code, now, ct);
+        if (verified.IsFailure)
         {
-            return Error.Forbidden(DomainErrorCode.TwoFactorLocked);
-        }
-
-        var step = authenticatorCodes.Match(user.AuthenticatorKey, code);
-        if (step is not { } matched || !user.AcceptsAuthenticatorStep(matched))
-        {
-            var locked = user.RecordTwoFactorFailure(
-                now,
-                options.MaxFailedAttempts,
-                options.LockoutDuration
-            );
-            await uow.SaveChangesAsync(ct);
-            if (locked)
-            {
-                logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
-            }
-
-            return Error.Validation(ApplicationErrorCode.TwoFactorCodeInvalid);
+            return verified;
         }
 
         user.DisableAuthenticator(now);
