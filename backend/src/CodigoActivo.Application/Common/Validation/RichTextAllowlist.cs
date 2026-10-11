@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Common.Validation;
 
@@ -70,7 +71,7 @@ public static partial class RichTextAllowlist
             ["hardBreak"] = Attributes(),
             ["horizontalRule"] = Attributes(),
             ["image"] = Attributes(
-                ("src", value => IsMatch(value, FileContentUrl())),
+                ("src", IsFileContentUrl),
                 ("alt", IsOptionalLabel),
                 ("title", IsOptionalLabel),
                 ("width", value => IsNull(value) || IsInteger(value, 1, 10_000)),
@@ -325,6 +326,12 @@ public static partial class RichTextAllowlist
             && string.Equals(value.GetString(), expected, StringComparison.Ordinal);
     }
 
+    private static bool IsFileContentUrl(JsonElement value)
+    {
+        return value.ValueKind is JsonValueKind.String
+            && RichTextFileReferences.IsContentUrl(value.GetString()!);
+    }
+
     private static bool IsMatch(JsonElement value, Regex pattern)
     {
         return value.ValueKind is JsonValueKind.String && pattern.IsMatch(value.GetString()!);
@@ -357,13 +364,6 @@ public static partial class RichTextAllowlist
             ("colwidth", IsColumnWidths)
         );
     }
-
-    [GeneratedRegex(
-        @"^/api/files/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/content\z",
-        RegexOptions.None,
-        matchTimeoutMilliseconds: 1000
-    )]
-    private static partial Regex FileContentUrl();
 
     [GeneratedRegex(
         @"^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|rgba?\(\s*\d{1,3}%?\s*(,\s*\d{1,3}%?\s*){2}(,\s*(0|1|0?\.\d+)\s*)?\))\z",

@@ -43,8 +43,7 @@ public class StoredFileRepository(CodigoActivoDbContext context)
     /// <returns>A task whose result is <see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
     public async Task<bool> IsInUseAsync(StoredFileId fileId, CancellationToken ct = default)
     {
-        var marker = RichTextFileReferences.ContentUrlMarker(fileId.Value);
-        var pattern = $"%{marker}%";
+        var pattern = $"%{RichTextFileReferences.ContentUrl(fileId)}%";
         FormattableString sql = $"""
             SELECT EXISTS (
                 SELECT 1 FROM events WHERE thumbnail_id = {fileId.Value}
