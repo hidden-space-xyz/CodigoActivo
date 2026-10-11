@@ -23,7 +23,12 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
 
     public GetDashboardAnalyticsQueryHandlerTests()
     {
-        sut = new GetDashboardAnalyticsQueryHandler(store, new FakeQueryExecutor(), clock);
+        sut = new GetDashboardAnalyticsQueryHandler(
+            store,
+            new FakeQueryExecutor(),
+            new FakeDashboardCountsReader(store),
+            clock
+        );
     }
 
     private static UserRow AnalyticsUser(
@@ -47,7 +52,12 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         };
     }
 
-    private static AssignmentRow Insc(Guid eventId, Guid statusId, DateTimeOffset createdAt)
+    private static AssignmentRow Insc(
+        Guid eventId,
+        Guid statusId,
+        DateTimeOffset createdAt,
+        string eventTitle = "Evento"
+    )
     {
         return new()
         {
@@ -59,6 +69,7 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
                 Location = "Sala principal",
                 Title = "Actividad de prueba",
                 EventId = eventId,
+                Event = new EventRow { Id = eventId, Title = eventTitle },
             },
             AssignmentStatusId = statusId,
             CreatedAt = createdAt,
@@ -165,11 +176,11 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         ]);
 
         store.Assignments.AddRange([
-            Insc(e1, Confirmed, Utc(2026, 2, 10)),
-            Insc(e1, Confirmed, Utc(2026, 2, 20)),
-            Insc(e1, Requested, Utc(2026, 3, 5)),
-            Insc(e2, Denied, Utc(2026, 6, 1)),
-            Insc(e2, Confirmed, Utc(2026, 6, 15)),
+            Insc(e1, Confirmed, Utc(2026, 2, 10), "Feria"),
+            Insc(e1, Confirmed, Utc(2026, 2, 20), "Feria"),
+            Insc(e1, Requested, Utc(2026, 3, 5), "Feria"),
+            Insc(e2, Denied, Utc(2026, 6, 1), "Taller"),
+            Insc(e2, Confirmed, Utc(2026, 6, 15), "Taller"),
         ]);
 
         store.Events.AddRange([
@@ -414,6 +425,71 @@ public sealed class GetDashboardAnalyticsQueryHandlerTests
         r.ContentPublished.Buckets[1].Should().Be(new DateOnly(2026, 1, 5));
         r.ContentPublished.Buckets.Should().OnlyContain(b => b.DayOfWeek == DayOfWeek.Monday);
         r.ContentPublished.Buckets[^1].Should().Be(new DateOnly(2026, 3, 30));
+    }
+
+    [Fact]
+    public async Task HandleAsyncLocalTimeZoneCountsByLocalDayAcrossTheSummerTimeChange()
+    {
+        clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "CET-test",
+            TimeSpan.FromHours(1),
+            "CET-test",
+            "CET-test",
+            "CEST-test",
+            [
+                TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+                    new DateTime(2000, 1, 1),
+                    new DateTime(2099, 12, 31),
+                    TimeSpan.FromHours(1),
+                    TimeZoneInfo.TransitionTime.CreateFloatingDateRule(
+                        new DateTime(1, 1, 1, 2, 0, 0),
+                        3,
+                        5,
+                        DayOfWeek.Sunday
+                    ),
+                    TimeZoneInfo.TransitionTime.CreateFloatingDateRule(
+                        new DateTime(1, 1, 1, 3, 0, 0),
+                        10,
+                        5,
+                        DayOfWeek.Sunday
+                    )
+                ),
+            ]
+        );
+        store.Users.Add(
+            AnalyticsUser(
+                KnownIds.UserTypes.Member,
+                KnownIds.UserStatusTypes.Active,
+                new DateTimeOffset(2026, 3, 2, 10, 0, 0, TimeSpan.Zero)
+            )
+        );
+        store.News.Add(
+            new NewsItemRow
+            {
+                Subtitle = "Subtítulo de la noticia",
+                Title = "Pasada la medianoche local",
+                CreatedAt = new DateTimeOffset(2026, 3, 8, 23, 30, 0, TimeSpan.Zero),
+            }
+        );
+        store.Resources.Add(
+            new ResourceRow
+            {
+                Subtitle = "Subtítulo del recurso",
+                Title = "Pasada la medianoche de verano",
+                CreatedAt = new DateTimeOffset(2026, 4, 5, 22, 30, 0, TimeSpan.Zero),
+                ResourceTypeId = KnownIds.ResourceTypes.External,
+            }
+        );
+
+        var r = await Analytics(new DateOnly(2026, 3, 4), new DateOnly(2026, 4, 29));
+
+        r.Granularity.Should().Be("week");
+        r.ContentPublished.Buckets[0].Should().Be(new DateOnly(2026, 3, 2));
+        Series(r.ContentPublished, "news").Should().Equal(0, 1, 0, 0, 0, 0, 0, 0, 0);
+        Series(r.ContentPublished, "resources").Should().Equal(0, 0, 0, 0, 0, 1, 0, 0, 0);
+        Series(r.UserGrowth, "member").Should().OnlyContain(value => value == 1);
+        Kpi(r, "users").Should().Be(new DashboardKpiResponse("users", 1, 0, 1));
+        Kpi(r, "news").Should().Be(new DashboardKpiResponse("news", 1, 1, 0));
     }
 
     [Fact]

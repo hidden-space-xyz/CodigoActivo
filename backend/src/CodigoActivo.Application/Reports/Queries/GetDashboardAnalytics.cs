@@ -6,8 +6,8 @@ using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using Gender = CodigoActivo.Application.Users.Contracts.Gender;
 
 namespace CodigoActivo.Application.Reports.Queries;
 
@@ -60,22 +60,46 @@ public sealed record GetDashboardAnalyticsQuery(DashboardAnalyticsQuery Filters)
 }
 
 /// <summary>
-/// Executes the query to retrieve dashboard analytics.
+/// Executes the query to retrieve dashboard analytics. Every section reads only what it shows:
+/// creation times are counted per bucket in the database, the breakdowns are grouped there, and
+/// only the upcoming activities are loaded to compute their occupancy.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="countsReader">Read port that counts creation times per bucket.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class GetDashboardAnalyticsQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
+    IDashboardCountsReader countsReader,
     IClock clock
 ) : IQueryHandler<GetDashboardAnalyticsQuery, DashboardAnalyticsResponse>
 {
+    private const int TopEventCount = 8;
+
     private static readonly string[] UserGrowthKeys = ["member", "sponsor", "participant"];
 
     private static readonly string[] InscriptionKeys = ["requested", "confirmed", "denied"];
 
     private static readonly string[] GenderKeys = ["Male", "Female", "Other", "PreferNotToSay"];
+
+    private static readonly Guid ConfirmedId = CatalogIds.AssignmentStatuses.IdOf(
+        AssignmentStatus.Confirmed
+    );
+
+    private static readonly Guid RequestedId = CatalogIds.AssignmentStatuses.IdOf(
+        AssignmentStatus.Requested
+    );
+
+    private static readonly Guid DeniedId = CatalogIds.AssignmentStatuses.IdOf(
+        AssignmentStatus.Denied
+    );
+
+    private static readonly Guid MemberId = CatalogIds.UserTypes.IdOf(UserType.Member);
+
+    private static readonly Guid SponsorId = CatalogIds.UserTypes.IdOf(UserType.Sponsor);
+
+    private static readonly Guid ParticipantId = CatalogIds.UserTypes.IdOf(UserType.Participant);
 
     /// <summary>
     /// Handles the request to retrieve dashboard analytics.
@@ -90,318 +114,269 @@ public sealed class GetDashboardAnalyticsQueryHandler(
     {
         ArgumentNullException.ThrowIfNull(query);
         var (start, end, granularity) = query.Window(clock.Today);
-        return await BuildAnalyticsAsync(start, end, granularity, ct);
+        var timeline = DashboardTimeline.Create(start, end, granularity, clock.TimeZone);
+        var created = await countsReader.CountCreatedAsync(timeline.Thresholds, ct);
+        var people = await CountPeopleAsync(ct);
+
+        return new DashboardAnalyticsResponse(
+            start,
+            end,
+            granularity,
+            Kpis(timeline, created),
+            UserGrowth(timeline, created),
+            Inscriptions(timeline, created),
+            ContentPublished(timeline, created),
+            UsersByType(created),
+            Audience(people),
+            ParticipantsByGender(people),
+            await EventsByCategoryAsync(ct),
+            await TopEventsAsync(ct),
+            await EventsCalendarAsync(ct),
+            await OccupancyAsync(ct)
+        );
     }
 
-    private async Task<DashboardAnalyticsResponse> BuildAnalyticsAsync(
-        DateOnly start,
-        DateOnly end,
-        string granularity,
-        CancellationToken ct
+    private static List<DashboardKpiResponse> Kpis(
+        DashboardTimeline timeline,
+        DashboardCreatedCounts created
     )
     {
-        var tz = clock.TimeZone;
+        return
+        [
+            timeline.Kpi("users", Unkeyed(created.Users)),
+            timeline.Kpi("members", Unkeyed(created.Users.Where(count => count.Key == MemberId))),
+            timeline.Kpi("inscriptions", Unkeyed(created.Inscriptions)),
+            timeline.Kpi("events", created.Events),
+            timeline.Kpi("activities", created.Activities),
+            timeline.Kpi("resources", created.Resources),
+            timeline.Kpi("news", created.News),
+            timeline.Kpi("partners", created.Partners),
+        ];
+    }
+
+    private static DashboardTimeSeriesResponse UserGrowth(
+        DashboardTimeline timeline,
+        DashboardCreatedCounts created
+    )
+    {
+        var byKey = created.Users.ToLookup(count => UserTypeKey(count.Key), StringComparer.Ordinal);
+        return new DashboardTimeSeriesResponse(
+            timeline.Buckets,
+            [.. UserGrowthKeys.Select(key => timeline.Cumulative(key, Unkeyed(byKey[key])))]
+        );
+    }
+
+    private static DashboardTimeSeriesResponse Inscriptions(
+        DashboardTimeline timeline,
+        DashboardCreatedCounts created
+    )
+    {
+        var byKey = created.Inscriptions.ToLookup(
+            count => AssignmentStatusKey(count.Key),
+            StringComparer.Ordinal
+        );
+        return new DashboardTimeSeriesResponse(
+            timeline.Buckets,
+            [.. InscriptionKeys.Select(key => timeline.Flow(key, Unkeyed(byKey[key])))]
+        );
+    }
+
+    private static DashboardTimeSeriesResponse ContentPublished(
+        DashboardTimeline timeline,
+        DashboardCreatedCounts created
+    )
+    {
+        return new DashboardTimeSeriesResponse(
+            timeline.Buckets,
+            [timeline.Flow("news", created.News), timeline.Flow("resources", created.Resources)]
+        );
+    }
+
+    private async Task<IReadOnlyList<PeopleCount>> CountPeopleAsync(CancellationToken ct)
+    {
+        return await executor.ToListAsync(
+            readStore
+                .Users.GroupBy(user => new
+                {
+                    user.UserTypeId,
+                    user.Gender,
+                    IsMinor = user.ParentId != null,
+                })
+                .Select(group => new PeopleCount(
+                    group.Key.UserTypeId,
+                    group.Key.Gender,
+                    group.Key.IsMinor,
+                    group.Count()
+                )),
+            ct
+        );
+    }
+
+    private static List<DashboardSliceResponse> UsersByType(DashboardCreatedCounts created)
+    {
+        return FixedSlices(
+            UserGrowthKeys,
+            created
+                .Users.GroupBy(count => UserTypeKey(count.Key), StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.Sum(count => count.Count), StringComparer.Ordinal)
+        );
+    }
+
+    private static List<DashboardSliceResponse> Audience(IReadOnlyList<PeopleCount> people)
+    {
+        return FixedSlices(
+            ["adults", "minors"],
+            new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                ["adults"] = people.Where(group => !group.IsMinor).Sum(group => group.Count),
+                ["minors"] = people.Where(group => group.IsMinor).Sum(group => group.Count),
+            }
+        );
+    }
+
+    private static List<DashboardSliceResponse> ParticipantsByGender(
+        IReadOnlyList<PeopleCount> people
+    )
+    {
+        return FixedSlices(
+            GenderKeys,
+            people
+                .Where(group => group.UserTypeId == ParticipantId)
+                .GroupBy(group => group.Gender.ToString(), StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.Sum(group => group.Count), StringComparer.Ordinal)
+        );
+    }
+
+    private async Task<List<DashboardSliceResponse>> EventsByCategoryAsync(CancellationToken ct)
+    {
+        var categories = await executor.ToListAsync(
+            readStore
+                .EventCategoryTypes.Select(t => new
+                {
+                    t.Id,
+                    t.Name,
+                    t.Color,
+                    t.Events.Count,
+                })
+                .Where(c => c.Count > 0),
+            ct
+        );
+        return
+        [
+            .. categories
+                .OrderByDescending(c => c.Count)
+                .ThenBy(c => TextSearch.Normalize(c.Name), StringComparer.Ordinal)
+                .ThenBy(c => c.Id)
+                .Select(c => new DashboardSliceResponse(c.Id.ToString(), c.Name, c.Color, c.Count)),
+        ];
+    }
+
+    private async Task<List<DashboardTopEventResponse>> TopEventsAsync(CancellationToken ct)
+    {
+        var confirmed = await executor.ToListAsync(
+            readStore
+                .Assignments.Where(a => a.AssignmentStatusId == ConfirmedId)
+                .GroupBy(a => new { a.Activity.EventId, a.Activity.Event.Title })
+                .Select(g => new
+                {
+                    g.Key.EventId,
+                    g.Key.Title,
+                    Confirmed = g.Count(),
+                }),
+            ct
+        );
+
+        return
+        [
+            .. confirmed
+                .OrderByDescending(e => e.Confirmed)
+                .ThenBy(e => e.Title, StringComparer.Ordinal)
+                .ThenBy(e => e.EventId)
+                .Take(TopEventCount)
+                .Select(e => new DashboardTopEventResponse(e.EventId, e.Title, e.Confirmed)),
+        ];
+    }
+
+    private async Task<DashboardTimeSeriesResponse> EventsCalendarAsync(CancellationToken ct)
+    {
         var today = clock.Today;
-        var now = clock.UtcNow;
-
-        DateOnly LocalDate(DateTimeOffset value)
-        {
-            return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(value, tz).DateTime);
-        }
-
-        var buckets = BuildBuckets(start, end, granularity);
-        var bucketIndex = new Dictionary<DateOnly, int>(buckets.Count);
-        for (var i = 0; i < buckets.Count; i++)
-        {
-            bucketIndex[BucketStart(buckets[i], granularity)] = i;
-        }
-
-        var rangeLowerUtc = LocalDayRange.LowerUtc(start, tz);
-        var rangeUpperUtc = LocalDayRange.UpperExclusiveUtc(end, tz);
-        var rangeLen = end.DayNumber - start.DayNumber + 1;
-        var prevEnd = start.AddDays(-1);
-        var prevStart = prevEnd.AddDays(-(rangeLen - 1));
-        var prevLowerUtc = LocalDayRange.LowerUtc(prevStart, tz);
-        var prevUpperUtc = LocalDayRange.UpperExclusiveUtc(prevEnd, tz);
-
-        var userRows = await executor.ToListAsync(
-            readStore.Users.Select(u => new
-            {
-                u.CreatedAt,
-                u.UserTypeId,
-                u.Gender,
-                IsMinor = u.ParentId != null,
-            }),
+        var first = new DateOnly(today.Year, today.Month, 1).AddMonths(-6);
+        var months = DashboardTimeline.BucketsBetween(first, first.AddMonths(12), "month");
+        var afterLast = first.AddMonths(months.Count);
+        var counted = await executor.ToListAsync(
+            readStore
+                .Events.Where(e => e.EventStartsAt >= first && e.EventStartsAt < afterLast)
+                .GroupBy(e => new { e.EventStartsAt.Year, e.EventStartsAt.Month })
+                .Select(g => new
+                {
+                    g.Key.Year,
+                    g.Key.Month,
+                    Past = g.Count(e => e.EventStartsAt < today),
+                    All = g.Count(),
+                }),
             ct
         );
+        var byMonth = counted.ToDictionary(m => new DateOnly(m.Year, m.Month, 1));
 
-        var assignmentRows = await executor.ToListAsync(
-            readStore.Assignments.Select(a => new
-            {
-                a.CreatedAt,
-                a.AssignmentStatusId,
-                a.Activity.EventId,
-            }),
-            ct
-        );
-
-        var eventRows = await executor.ToListAsync(
-            readStore.Events.Select(e => new
-            {
-                e.Id,
-                e.Title,
-                e.CreatedAt,
-                e.EventStartsAt,
-            }),
-            ct
-        );
-
-        var categoryRows = await executor.ToListAsync(
-            readStore.EventCategoryTypes.Select(t => new
-            {
-                t.Id,
-                t.Name,
-                t.Color,
-                t.Events.Count,
-            }),
-            ct
-        );
-
-        var resourceDates = await executor.ToListAsync(
-            readStore.Resources.Select(r => r.CreatedAt),
-            ct
-        );
-
-        var newsItemDates = await executor.ToListAsync(readStore.News.Select(a => a.CreatedAt), ct);
-
-        var partnerDates = await executor.ToListAsync(
-            readStore.Partners.Select(p => p.CreatedAt),
-            ct
-        );
-
-        var activityCapacities = await executor.ToListAsync(
-            readStore.Activities.Select(a => new
-            {
-                a.Id,
-                a.Title,
-                a.CreatedAt,
-                a.ActivityStartsAt,
-                a.EventId,
-                EventTitle = a.Event.Title,
-                Roles = a
-                    .RoleCapacities.Select(c => new
-                    {
-                        c.DesiredCount,
-                        Confirmed = a.Assignments.Count(x =>
-                            x.ActivityRoleTypeId == c.ActivityRoleTypeId
-                            && x.AssignmentStatusId
-                                == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
+        return new DashboardTimeSeriesResponse(
+            months,
+            [
+                new DashboardSeriesResponse(
+                    "past",
+                    [.. months.Select(month => byMonth.TryGetValue(month, out var m) ? m.Past : 0)]
+                ),
+                new DashboardSeriesResponse(
+                    "upcoming",
+                    [
+                        .. months.Select(month =>
+                            byMonth.TryGetValue(month, out var m) ? m.All - m.Past : 0
                         ),
-                    })
-                    .ToList(),
-            }),
+                    ]
+                ),
+            ]
+        );
+    }
+
+    private async Task<DashboardOccupancyResponse> OccupancyAsync(CancellationToken ct)
+    {
+        var now = clock.UtcNow;
+        var upcoming = await executor.ToListAsync(
+            readStore
+                .Activities.Where(a => a.ActivityStartsAt >= now)
+                .Select(a => new
+                {
+                    a.Id,
+                    a.Title,
+                    a.ActivityStartsAt,
+                    a.EventId,
+                    EventTitle = a.Event.Title,
+                    Roles = a
+                        .RoleCapacities.Select(c => new
+                        {
+                            c.DesiredCount,
+                            Confirmed = a.Assignments.Count(x =>
+                                x.ActivityRoleTypeId == c.ActivityRoleTypeId
+                                && x.AssignmentStatusId == ConfirmedId
+                            ),
+                        })
+                        .ToList(),
+                }),
             ct
         );
-        var activityRows = activityCapacities
+        var withCapacity = upcoming
             .Select(a => new
             {
                 a.Id,
                 a.Title,
-                a.CreatedAt,
                 a.ActivityStartsAt,
                 a.EventId,
                 a.EventTitle,
                 Desired = a.Roles.Sum(role => role.DesiredCount),
                 Confirmed = a.Roles.Sum(role => Math.Min(role.Confirmed, role.DesiredCount)),
             })
+            .Where(a => a.Desired > 0)
             .ToList();
-
-        (int[] PerBucket, int Before) Distribute(IEnumerable<DateTimeOffset> createdAts)
-        {
-            var before = 0;
-            var perBucket = new int[buckets.Count];
-            foreach (var day in createdAts.Select(LocalDate))
-            {
-                if (day < start)
-                {
-                    before++;
-                }
-                else if (
-                    day <= end
-                    && bucketIndex.TryGetValue(BucketStart(day, granularity), out var idx)
-                )
-                {
-                    perBucket[idx]++;
-                }
-            }
-
-            return (perBucket, before);
-        }
-
-        DashboardSeriesResponse Cumulative(string key, IEnumerable<DateTimeOffset> createdAts)
-        {
-            var (perBucket, before) = Distribute(createdAts);
-
-            var values = new int[buckets.Count];
-            var running = before;
-            for (var i = 0; i < buckets.Count; i++)
-            {
-                running += perBucket[i];
-                values[i] = running;
-            }
-
-            return new DashboardSeriesResponse(key, values);
-        }
-
-        DashboardSeriesResponse Flow(string key, IEnumerable<DateTimeOffset> createdAts)
-        {
-            return new DashboardSeriesResponse(key, Distribute(createdAts).PerBucket);
-        }
-
-        static int Between(IEnumerable<DateTimeOffset> dates, DateTimeOffset lo, DateTimeOffset hi)
-        {
-            return dates.Count(d => d >= lo && d < hi);
-        }
-
-        var kpiSources = new (string Key, List<DateTimeOffset> Dates)[]
-        {
-            ("users", userRows.Select(u => u.CreatedAt).ToList()),
-            (
-                "members",
-                userRows
-                    .Where(u => u.UserTypeId == CatalogIds.UserTypes.IdOf(UserType.Member))
-                    .Select(u => u.CreatedAt)
-                    .ToList()
-            ),
-            ("inscriptions", assignmentRows.Select(a => a.CreatedAt).ToList()),
-            ("events", eventRows.Select(e => e.CreatedAt).ToList()),
-            ("activities", activityRows.Select(a => a.CreatedAt).ToList()),
-            ("resources", resourceDates.ToList()),
-            ("news", newsItemDates.ToList()),
-            ("partners", partnerDates.ToList()),
-        };
-        var kpis = kpiSources
-            .Select(s => new DashboardKpiResponse(
-                s.Key,
-                s.Dates.Count,
-                Between(s.Dates, rangeLowerUtc, rangeUpperUtc),
-                Between(s.Dates, prevLowerUtc, prevUpperUtc)
-            ))
-            .ToList();
-
-        var usersByGrowthKey = userRows.ToLookup(
-            u => UserTypeKey(u.UserTypeId),
-            u => u.CreatedAt,
-            StringComparer.Ordinal
-        );
-        var userGrowth = new DashboardTimeSeriesResponse(
-            buckets,
-            [.. UserGrowthKeys.Select(key => Cumulative(key, usersByGrowthKey[key]))]
-        );
-
-        var inscriptionsByStatus = assignmentRows.ToLookup(
-            a => AssignmentStatusKey(a.AssignmentStatusId),
-            a => a.CreatedAt,
-            StringComparer.Ordinal
-        );
-        var inscriptions = new DashboardTimeSeriesResponse(
-            buckets,
-            [.. InscriptionKeys.Select(key => Flow(key, inscriptionsByStatus[key]))]
-        );
-
-        var contentPublished = new DashboardTimeSeriesResponse(
-            buckets,
-            [Flow("news", newsItemDates), Flow("resources", resourceDates)]
-        );
-
-        var usersByType = FixedSlices(
-            UserGrowthKeys,
-            usersByGrowthKey.ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)
-        );
-
-        var audience = FixedSlices(
-            ["adults", "minors"],
-            new Dictionary<string, int>(StringComparer.Ordinal)
-            {
-                ["adults"] = userRows.Count(u => !u.IsMinor),
-                ["minors"] = userRows.Count(u => u.IsMinor),
-            }
-        );
-
-        var participantsByGender = FixedSlices(
-            GenderKeys,
-            userRows
-                .Where(u => u.UserTypeId == CatalogIds.UserTypes.IdOf(UserType.Participant))
-                .GroupBy(u => u.Gender.ToString(), StringComparer.Ordinal)
-                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal)
-        );
-
-        var eventsByCategory = categoryRows
-            .Where(c => c.Count > 0)
-            .OrderByDescending(c => c.Count)
-            .ThenBy(c => TextSearch.Normalize(c.Name), StringComparer.Ordinal)
-            .Select(c => new DashboardSliceResponse(c.Id.ToString(), c.Name, c.Color, c.Count))
-            .ToList();
-
-        var titleById = eventRows.ToDictionary(e => e.Id, e => e.Title);
-        var topEvents = assignmentRows
-            .Where(a =>
-                a.AssignmentStatusId
-                == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed)
-            )
-            .GroupBy(a => a.EventId)
-            .Select(g => new { EventId = g.Key, Confirmed = g.Count() })
-            .OrderByDescending(x => x.Confirmed)
-            .ThenBy(x => titleById.GetValueOrDefault(x.EventId, ""), StringComparer.Ordinal)
-            .ThenBy(x => x.EventId)
-            .Take(8)
-            .Select(x => new DashboardTopEventResponse(
-                x.EventId,
-                titleById.GetValueOrDefault(x.EventId, ""),
-                x.Confirmed
-            ))
-            .ToList();
-
-        var calendarStart = new DateOnly(today.Year, today.Month, 1).AddMonths(-6);
-        var calendarBuckets = BuildBuckets(calendarStart, calendarStart.AddMonths(12), "month");
-        var calendarIndex = new Dictionary<DateOnly, int>(calendarBuckets.Count);
-        for (var i = 0; i < calendarBuckets.Count; i++)
-        {
-            calendarIndex[calendarBuckets[i]] = i;
-        }
-
-        var past = new int[calendarBuckets.Count];
-        var upcoming = new int[calendarBuckets.Count];
-        foreach (var eventStartsAt in eventRows.Select(ev => ev.EventStartsAt))
-        {
-            var monthStart = new DateOnly(eventStartsAt.Year, eventStartsAt.Month, 1);
-            if (!calendarIndex.TryGetValue(monthStart, out var idx))
-            {
-                continue;
-            }
-
-            if (eventStartsAt < today)
-            {
-                past[idx]++;
-            }
-            else
-            {
-                upcoming[idx]++;
-            }
-        }
-
-        var eventsCalendar = new DashboardTimeSeriesResponse(
-            calendarBuckets,
-            [
-                new DashboardSeriesResponse("past", past),
-                new DashboardSeriesResponse("upcoming", upcoming),
-            ]
-        );
-
-        var upcomingWithCapacity = activityRows
-            .Where(a => a.ActivityStartsAt >= now && a.Desired > 0)
-            .ToList();
-        var occupancyEvents = upcomingWithCapacity
+        var events = withCapacity
             .GroupBy(a => new { a.EventId, a.EventTitle })
             .Select(g => new
             {
@@ -429,56 +404,16 @@ public sealed class GetDashboardAnalyticsQueryHandler(
                 e.Activities
             ))
             .ToList();
-        var occupancy = new DashboardOccupancyResponse(
-            upcomingWithCapacity.Sum(a => a.Confirmed),
-            upcomingWithCapacity.Sum(a => a.Desired),
-            occupancyEvents
-        );
-
-        return new DashboardAnalyticsResponse(
-            start,
-            end,
-            granularity,
-            kpis,
-            userGrowth,
-            inscriptions,
-            contentPublished,
-            usersByType,
-            audience,
-            participantsByGender,
-            eventsByCategory,
-            topEvents,
-            eventsCalendar,
-            occupancy
+        return new DashboardOccupancyResponse(
+            withCapacity.Sum(a => a.Confirmed),
+            withCapacity.Sum(a => a.Desired),
+            events
         );
     }
 
-    private static List<DateOnly> BuildBuckets(DateOnly start, DateOnly end, string granularity)
+    private static IEnumerable<IntervalCount> Unkeyed(IEnumerable<KeyedIntervalCount> counts)
     {
-        var buckets = new List<DateOnly>();
-        var cursor = BucketStart(start, granularity);
-        while (cursor <= end)
-        {
-            buckets.Add(cursor);
-            cursor = granularity switch
-            {
-                "day" => cursor.AddDays(1),
-                "week" => cursor.AddDays(7),
-                _ => cursor.AddMonths(1),
-            };
-        }
-
-        return buckets;
-    }
-
-    private static DateOnly BucketStart(DateOnly date, string granularity)
-    {
-        return granularity switch
-        {
-            "day" => date,
-            "week" => date.AddDays(-((date.DayOfWeek - DayOfWeek.Monday + 7) % 7)),
-            _ => new DateOnly(date.Year, date.Month, 1),
-        };
+        return counts.Select(count => new IntervalCount(count.Interval, count.Count));
     }
 
     private static List<DashboardSliceResponse> FixedSlices(
@@ -501,9 +436,9 @@ public sealed class GetDashboardAnalyticsQueryHandler(
     {
         return id switch
         {
-            _ when id == CatalogIds.UserTypes.IdOf(UserType.Member) => "member",
-            _ when id == CatalogIds.UserTypes.IdOf(UserType.Sponsor) => "sponsor",
-            _ when id == CatalogIds.UserTypes.IdOf(UserType.Participant) => "participant",
+            _ when id == MemberId => "member",
+            _ when id == SponsorId => "sponsor",
+            _ when id == ParticipantId => "participant",
             _ => "other",
         };
     }
@@ -512,12 +447,12 @@ public sealed class GetDashboardAnalyticsQueryHandler(
     {
         return id switch
         {
-            _ when id == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Requested) =>
-                "requested",
-            _ when id == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Confirmed) =>
-                "confirmed",
-            _ when id == CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Denied) => "denied",
+            _ when id == RequestedId => "requested",
+            _ when id == ConfirmedId => "confirmed",
+            _ when id == DeniedId => "denied",
             _ => "other",
         };
     }
+
+    private sealed record PeopleCount(Guid UserTypeId, Gender Gender, bool IsMinor, int Count);
 }

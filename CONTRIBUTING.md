@@ -131,7 +131,8 @@ The five required steps are documented once, in
 - Keep business rules in the domain: entities have private setters, factories and behavior methods, and
   handlers only load, call the domain and stage the changes; effects run in domain event listeners after the
   commit.
-- Queries read through `IReadStore` and do not mutate, commit, invalidate caches or send email. Commands load
+- Queries read through `IReadStore` (the dashboard's `IDashboardCountsReader` is the documented exception) and
+  do not mutate, commit, invalidate caches or send email. Commands load
   aggregates through repositories, return a `Result` without calling queries and leave the commit to the unit of
   work decorator unless they must react to the outcome of a save or run several saves in one transaction.
 - Never access `DateTime.Now` or `DateTime.UtcNow`; inject `IClock`.
