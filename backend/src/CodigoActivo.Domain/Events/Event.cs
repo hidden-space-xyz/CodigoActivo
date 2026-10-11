@@ -179,6 +179,29 @@ public class Event : AuditableEntity<EventId>, IFeaturable
         );
     }
 
+    /// <summary>
+    /// Stops tagging the event with a category that is being deleted. An event keeps at least one
+    /// category, so it refuses to lose its only one.
+    /// </summary>
+    /// <param name="categoryTypeId">Identifier of the category being deleted.</param>
+    /// <returns>A conflict when the category is the only one of the event.</returns>
+    public Result RemoveCategory(EventCategoryTypeId categoryTypeId)
+    {
+        var category = categories.Find(item => item.EventCategoryTypeId == categoryTypeId);
+        if (category is null)
+        {
+            return Result.Success();
+        }
+
+        if (categories.Count is 1)
+        {
+            return Error.Conflict(DomainErrorCode.EventCategoryTypeOnlyCategoryOfEvent);
+        }
+
+        categories.Remove(category);
+        return Result.Success();
+    }
+
     private void ChangeFeatured(bool featured)
     {
         if (Featured == featured)

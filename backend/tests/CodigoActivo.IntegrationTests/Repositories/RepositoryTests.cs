@@ -22,6 +22,7 @@ using CodigoActivo.Infrastructure.TermsDocuments;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Xunit;
 using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
@@ -937,5 +938,119 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var items = await repo.ListFeaturedAsync(Ct);
 
         items.Select(item => item.Id).Should().Equal(featured.Id);
+    }
+
+    [Fact]
+    public async Task GetLockedAsyncHeldEventBlocksOtherWritersButNotReferencesToIt()
+    {
+        var ev = NewEvent();
+        await using (var seed = postgres.CreateContext())
+        {
+            seed.Events.Add(ev);
+            await seed.SaveChangesAsync(Ct);
+        }
+
+        await using var ctx = postgres.CreateContext();
+        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
+        var locked = await new EventRepository(ctx).GetLockedAsync(ev.Id, Ct);
+
+        locked!.Id.Should().Be(ev.Id);
+        (await IsLockedAsync(Probe.EventWriter, ev.Id.Value)).Should().BeTrue();
+        (await IsLockedAsync(Probe.EventReference, ev.Id.Value)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LockTaggedWithAsyncLocksAndLoadsOnlyTheTaggedEvents()
+    {
+        var talleres = EventCategoryType.Create("Talleres", "#112233");
+        var charlas = EventCategoryType.Create("Charlas", "#445566");
+        var tagged = NewEvent("Tagged");
+        var untagged = NewEvent("Untagged");
+        await using (var seed = postgres.CreateContext())
+        {
+            seed.AddRange(talleres, charlas, tagged, untagged);
+            seed.AddRange(
+                Persisted.As<EventCategory>(
+                    new { EventId = tagged.Id, EventCategoryTypeId = talleres.Id }
+                ),
+                Persisted.As<EventCategory>(
+                    new { EventId = tagged.Id, EventCategoryTypeId = charlas.Id }
+                ),
+                Persisted.As<EventCategory>(
+                    new { EventId = untagged.Id, EventCategoryTypeId = charlas.Id }
+                )
+            );
+            await seed.SaveChangesAsync(Ct);
+        }
+
+        await using var ctx = postgres.CreateContext();
+        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
+        var locked = await new EventRepository(ctx).LockTaggedWithAsync(talleres.Id, Ct);
+
+        locked.Should().ContainSingle().Which.Categories.Should().HaveCount(2);
+        locked[0].Id.Should().Be(tagged.Id);
+        (await IsLockedAsync(Probe.EventWriter, tagged.Id.Value)).Should().BeTrue();
+        (await IsLockedAsync(Probe.EventWriter, untagged.Id.Value)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CategoryTypeLockAsyncHeldCategoryBlocksTaggingWithIt()
+    {
+        var talleres = EventCategoryType.Create("Talleres", "#112233");
+        await using (var seed = postgres.CreateContext())
+        {
+            seed.Add(talleres);
+            await seed.SaveChangesAsync(Ct);
+        }
+
+        await using var ctx = postgres.CreateContext();
+        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
+        var repo = new EventCategoryTypeRepository(ctx);
+        var loaded = await repo.GetByIdAsync(talleres.Id, Ct);
+
+        (await repo.LockAsync(loaded!, Ct)).Should().BeTrue();
+        (await IsLockedAsync(Probe.CategoryReference, talleres.Id.Value)).Should().BeTrue();
+    }
+
+    private enum Probe
+    {
+        EventWriter,
+        EventReference,
+        CategoryReference,
+    }
+
+    private async Task<bool> IsLockedAsync(Probe kind, Guid id)
+    {
+        await using var connection = new NpgsqlConnection(postgres.ConnectionString);
+        await connection.OpenAsync(Ct);
+        await using var transaction = await connection.BeginTransactionAsync(Ct);
+        await using var probe = kind switch
+        {
+            Probe.EventWriter => new NpgsqlCommand(
+                "SELECT 1 FROM events WHERE id = @id FOR NO KEY UPDATE NOWAIT",
+                connection,
+                transaction
+            ),
+            Probe.EventReference => new NpgsqlCommand(
+                "SELECT 1 FROM events WHERE id = @id FOR KEY SHARE NOWAIT",
+                connection,
+                transaction
+            ),
+            _ => new NpgsqlCommand(
+                "SELECT 1 FROM event_category_types WHERE id = @id FOR KEY SHARE NOWAIT",
+                connection,
+                transaction
+            ),
+        };
+        probe.Parameters.AddWithValue("id", id);
+        try
+        {
+            await probe.ExecuteNonQueryAsync(Ct);
+            return false;
+        }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.LockNotAvailable)
+        {
+            return true;
+        }
     }
 }

@@ -28,6 +28,6 @@ public sealed class EventCategoryConfiguration : IEntityTypeConfiguration<EventC
             .HasOne<EventCategoryType>()
             .WithMany()
             .HasForeignKey(x => x.EventCategoryTypeId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

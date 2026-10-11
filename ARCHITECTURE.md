@@ -76,7 +76,8 @@ aggregate roots.
   collaborators (`SignupGate`, `TermsGate`, `ActivityValidator`, `EventCategoryChecker`,
   `DisposableEmailChecker`).
 - Aggregates reference each other by ID, never through navigations. The EF configuration keeps the foreign keys
-  and cascades with `HasOne<T>().WithMany().HasForeignKey(...)`.
+  and cascades with `HasOne<T>().WithMany().HasForeignKey(...)`; a foreign key whose cascade would change
+  another aggregate's children restricts instead, so those children change through their root.
 - The closed value sets (user status and type, activity role and modality, signup status and resource type) are
   domain enums (`UserStatus`, `UserType`, `ActivityRole`, `ActivityModality`, `AssignmentStatus`,
   `ResourceType`). Their catalog tables stay only for the names, colors and descriptions shown to people; each
@@ -98,7 +99,10 @@ aggregate roots.
   from: entities tracked since are dropped, the others get back their values and state, and the domain events
   raised during the attempt are discarded. `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`),
   so parallel attempts lose no increment and only one of them sees the account lock. Second-factor checks and
-  adding a dependent lock and reload the account the same way (`IUserRepository.LockAsync`).
+  adding a dependent lock and reload the account the same way (`IUserRepository.LockAsync`). Deleting an event
+  category locks the category (`FOR UPDATE`, which also holds back tagging an event with it) and then the events
+  tagged with it in identifier order, and `UpdateEvent` locks its event before loading it (`FOR NO KEY UPDATE`,
+  which leaves signups, ratings and activities referencing the event free), so no event loses its last category.
 - Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
   which replaces an unverified account whose email a registration or a confirmed email change takes. In one
   such transaction it locks the household, stores the legal copy (composed by `LegalCopy` and serialized by

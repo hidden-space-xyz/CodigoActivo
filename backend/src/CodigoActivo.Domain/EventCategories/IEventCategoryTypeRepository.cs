@@ -19,6 +19,15 @@ public interface IEventCategoryTypeRepository : IRepository<EventCategoryType>
     );
 
     /// <summary>
+    /// Locks the stored category until the running transaction ends, so an event that is being
+    /// tagged with it waits for its deletion to finish and cannot slip in between.
+    /// </summary>
+    /// <param name="categoryType">Category loaded in the unit of work.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="false"/> when the category no longer exists.</returns>
+    public Task<bool> LockAsync(EventCategoryType categoryType, CancellationToken ct = default);
+
+    /// <summary>
     /// Tells whether another category already uses a name, ignoring letter case.
     /// </summary>
     /// <param name="name">Name to look for, already trimmed.</param>
