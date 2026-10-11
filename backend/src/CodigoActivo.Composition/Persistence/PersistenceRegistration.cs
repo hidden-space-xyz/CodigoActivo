@@ -4,7 +4,6 @@ using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -29,19 +28,10 @@ internal static class PersistenceRegistration
     {
         var connectionString = BuildConnectionString(new Settings(configuration));
         services.AddDbContext<CodigoActivoDbContext>(options =>
-            options
-                .UseNpgsql(
-                    connectionString,
-                    npgsql =>
-                        npgsql.MigrationsAssembly(typeof(CodigoActivoDbContext).Assembly.FullName)
-                )
-                .UseSnakeCaseNamingConvention()
+            options.UseWriteDatabase(connectionString)
         );
         services.AddDbContext<CodigoActivoReadDbContext>(options =>
-            options
-                .UseNpgsql(connectionString)
-                .UseSnakeCaseNamingConvention()
-                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+            options.UseReadDatabase(connectionString)
         );
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();

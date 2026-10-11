@@ -207,19 +207,10 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
         }
 
         services.AddDbContext<CodigoActivoDbContext>(options =>
-            options
-                .UseNpgsql(
-                    postgres.ConnectionString,
-                    npgsql =>
-                        npgsql.MigrationsAssembly(typeof(CodigoActivoDbContext).Assembly.FullName)
-                )
-                .UseSnakeCaseNamingConvention()
+            options.UseWriteDatabase(postgres.ConnectionString)
         );
         services.AddDbContext<CodigoActivoReadDbContext>(options =>
-            options
-                .UseNpgsql(postgres.ConnectionString)
-                .UseSnakeCaseNamingConvention()
-                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+            options.UseReadDatabase(postgres.ConnectionString)
         );
     }
 

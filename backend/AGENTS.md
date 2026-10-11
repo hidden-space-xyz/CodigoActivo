@@ -3,11 +3,13 @@
 Create migrations from `backend/` with:
 
 ```bash
-dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.API
+dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.Infrastructure
 ```
 
 `--context` is required because Infrastructure also has `CodigoActivoReadDbContext`, the read side, which
-never has migrations.
+never has migrations. Keep `Microsoft.EntityFrameworkCore.Design` out of the API: the tools build the context
+through `CodigoActivoDesignTimeDbContextFactory`, whose placeholder database never resolves, so commands that
+touch a database need `--connection`.
 
 Integration tests use PostgreSQL 18 through Testcontainers and require Docker unless
 `CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty disposable database.
