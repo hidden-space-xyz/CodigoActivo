@@ -26,12 +26,26 @@ public sealed class RoleCapacityPlan
     /// Builds the plan from the capacities supplied.
     /// </summary>
     /// <param name="items">Capacities; <see langword="null"/> means none.</param>
-    /// <returns>The plan, or a validation error when a role appears twice.</returns>
+    /// <returns>
+    /// The plan, or a validation error when a role asks for a number of people out of range or
+    /// appears twice.
+    /// </returns>
     public static Result<RoleCapacityPlan> Create(IReadOnlyList<RoleCapacity>? items)
     {
         if (items is null || items.Count is 0)
         {
             return None;
+        }
+
+        if (
+            items.Any(item =>
+                item.DesiredCount
+                    is < RoleCapacity.MinDesiredCount
+                        or > RoleCapacity.MaxDesiredCount
+            )
+        )
+        {
+            return Error.Validation(DomainErrorCode.ActivityRoleCapacityOutOfRange);
         }
 
         return items.Select(item => item.Role).Distinct().Count() != items.Count

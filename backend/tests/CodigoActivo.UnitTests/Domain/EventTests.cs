@@ -607,6 +607,56 @@ public sealed class EventTests
         result.Error.Code.Should().Be(DomainErrorCode.EventRatingEmpty);
     }
 
+    [Theory]
+    [InlineData(EventRating.MinScore - 1)]
+    [InlineData(EventRating.MaxScore + 1)]
+    public void RatingSubmitScoreOutsideTheScaleReturnsScoreOutOfRange(int score)
+    {
+        var result = EventRating.Submit(EventId.From(Guid.NewGuid()), score, "Todo", null, null);
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventRatingScoreOutOfRange);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void RatingSubmitAnswerTooLongReturnsAnswerTooLong(int answerIndex)
+    {
+        string?[] answers = [null, null, null];
+        answers[answerIndex] = new string('a', EventRating.MaxAnswerLength + 1);
+
+        var result = EventRating.Submit(
+            EventId.From(Guid.NewGuid()),
+            EventRating.MaxScore,
+            answers[0],
+            answers[1],
+            answers[2]
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventRatingAnswerTooLong);
+    }
+
+    [Theory]
+    [InlineData(EventRating.MinScore)]
+    [InlineData(EventRating.MaxScore)]
+    public void RatingSubmitScoreAtAnEndOfTheScaleIsAccepted(int score)
+    {
+        var result = EventRating.Submit(EventId.From(Guid.NewGuid()), score, null, null, null);
+
+        result.Value.Score.Should().Be(score);
+    }
+
+    [Fact]
+    public void RatingSubmitAnswerAtTheLimitAfterTrimmingIsAccepted()
+    {
+        var answer = $"  {new string('a', EventRating.MaxAnswerLength)}  ";
+
+        var result = EventRating.Submit(EventId.From(Guid.NewGuid()), null, answer, null, null);
+
+        result.Value.MostLiked.Should().HaveLength(EventRating.MaxAnswerLength);
+    }
+
     [Fact]
     public void TermsAcceptanceRecordStoresTheDecision()
     {

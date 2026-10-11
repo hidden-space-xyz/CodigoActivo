@@ -51,15 +51,16 @@ public class EventRating : AggregateRoot<EventRatingId>
     public string? Suggestions { get; private set; }
 
     /// <summary>
-    /// Records a rating of an event. Blank answers are stored as missing, and a rating without a score
-    /// or any answer is refused.
+    /// Records a rating of an event. Blank answers are stored as missing; a score outside
+    /// <see cref="MinScore"/> to <see cref="MaxScore"/>, an answer longer than
+    /// <see cref="MaxAnswerLength"/> and a rating without a score or any answer are refused.
     /// </summary>
     /// <param name="eventId">Identifier of the rated event.</param>
     /// <param name="score">Score, or <see langword="null"/> when the participant gave none.</param>
     /// <param name="mostLiked">What the participant liked most.</param>
     /// <param name="leastLiked">What the participant liked least.</param>
     /// <param name="suggestions">Suggestions.</param>
-    /// <returns>The new rating, or <see cref="DomainErrorCode.EventRatingEmpty"/> when it carries nothing.</returns>
+    /// <returns>The new rating, or a validation error naming the rule it breaks.</returns>
     public static Result<EventRating> Submit(
         EventId eventId,
         int? score,
@@ -68,6 +69,11 @@ public class EventRating : AggregateRoot<EventRatingId>
         string? suggestions
     )
     {
+        if (score is < MinScore or > MaxScore)
+        {
+            return Error.Validation(DomainErrorCode.EventRatingScoreOutOfRange);
+        }
+
         var rating = new EventRating
         {
             EventId = eventId,
@@ -76,6 +82,15 @@ public class EventRating : AggregateRoot<EventRatingId>
             LeastLiked = leastLiked.NormalizeOrNull(),
             Suggestions = suggestions.NormalizeOrNull(),
         };
+
+        if (
+            rating.MostLiked?.Length > MaxAnswerLength
+            || rating.LeastLiked?.Length > MaxAnswerLength
+            || rating.Suggestions?.Length > MaxAnswerLength
+        )
+        {
+            return Error.Validation(DomainErrorCode.EventRatingAnswerTooLong);
+        }
 
         return
             rating.Score is null

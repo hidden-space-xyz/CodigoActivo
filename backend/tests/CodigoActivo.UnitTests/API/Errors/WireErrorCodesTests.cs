@@ -63,6 +63,17 @@ public sealed class WireErrorCodesTests
         WireErrorCodes.ToWire(code).Should().Be(ErrorCode.RequestValidationFailed);
     }
 
+    [Theory]
+    [InlineData(DomainErrorCode.ActivityRoleCapacityOutOfRange)]
+    [InlineData(DomainErrorCode.EventRatingScoreOutOfRange)]
+    [InlineData(DomainErrorCode.EventRatingAnswerTooLong)]
+    public void ToWireValuesOutOfTheirLimitsAreReportedAsRequestValidationFailed(
+        DomainErrorCode code
+    )
+    {
+        WireErrorCodes.ToWire(code).Should().Be(ErrorCode.RequestValidationFailed);
+    }
+
     [Fact]
     public void ToWireInvalidRegistrationIsReportedAsRequestValidationFailed()
     {

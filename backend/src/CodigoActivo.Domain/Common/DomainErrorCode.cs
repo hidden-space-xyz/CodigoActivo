@@ -196,4 +196,19 @@ public enum DomainErrorCode
     /// No authenticator enrollment waits for confirmation, or the one that did has expired.
     /// </summary>
     AuthenticatorSetupExpired,
+
+    /// <summary>
+    /// A role of an activity asks for fewer or more people than a role can take.
+    /// </summary>
+    ActivityRoleCapacityOutOfRange,
+
+    /// <summary>
+    /// The score of a rating lies outside the allowed scale.
+    /// </summary>
+    EventRatingScoreOutOfRange,
+
+    /// <summary>
+    /// An answer of a rating is longer than allowed.
+    /// </summary>
+    EventRatingAnswerTooLong,
 }
