@@ -83,6 +83,21 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncActivityMissingReturnsAssignmentNotFound()
+    {
+        var result = await sut.HandleAsync(
+            new ChangeAssignmentStatusCommand(
+                ActivityId.New(),
+                UserId.New(),
+                KnownIds.AssignmentStatusTypes.Confirmed
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
+    }
+
+    [Fact]
     public async Task HandleAsyncAssignmentMissingReturnsNotFound()
     {
         var activity = NewActivity();
@@ -91,7 +106,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
         var result = await ChangeStatusAsync(
             activity.Id.Value,
             Guid.NewGuid(),
-            new ChangeAssignmentStatusRequest(Guid.NewGuid())
+            new ChangeAssignmentStatusRequest(KnownIds.AssignmentStatusTypes.Confirmed)
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);

@@ -625,7 +625,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var ctx = postgres.CreateContext())
         {
             var loaded = await new ActivityRepository(ctx).GetByIdAsync(activity.Id, Ct);
-            loaded!.ChangeAssignmentRole(user.Id, ActivityRole.Volunteer).Should().BeTrue();
+            loaded!.ChangeAssignmentRole(user.Id, ActivityRole.Volunteer).Value.Should().BeTrue();
             await ctx.SaveChangesAsync(Ct);
         }
 

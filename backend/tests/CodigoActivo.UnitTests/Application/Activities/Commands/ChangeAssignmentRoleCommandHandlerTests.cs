@@ -42,6 +42,18 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncActivityMissingReturnsAssignmentNotFound()
+    {
+        var result = await ChangeRoleAsync(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            new ChangeAssignmentRoleRequest(KnownIds.ActivityRoleTypes.Volunteer)
+        );
+
+        result.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
+    }
+
+    [Fact]
     public async Task HandleAsyncAssignmentMissingReturnsNotFound()
     {
         var activity = NewActivity();
@@ -50,7 +62,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
         var result = await ChangeRoleAsync(
             activity.Id.Value,
             Guid.NewGuid(),
-            new ChangeAssignmentRoleRequest(Guid.NewGuid())
+            new ChangeAssignmentRoleRequest(KnownIds.ActivityRoleTypes.Volunteer)
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);

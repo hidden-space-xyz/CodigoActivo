@@ -41,7 +41,7 @@ public sealed class ChangeAssignmentRoleCommandHandler(IActivityRepository activ
         ArgumentNullException.ThrowIfNull(command);
 
         var activity = await activities.GetByIdAsync(command.ActivityId, ct);
-        if (activity?.AssignmentOf(command.UserId) is null)
+        if (activity is null)
         {
             return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
         }
@@ -51,7 +51,6 @@ public sealed class ChangeAssignmentRoleCommandHandler(IActivityRepository activ
             return Error.NotFound(ApplicationErrorCode.ActivityRoleTypeNotFound);
         }
 
-        activity.ChangeAssignmentRole(command.UserId, role);
-        return Result.Success();
+        return activity.ChangeAssignmentRole(command.UserId, role);
     }
 }
