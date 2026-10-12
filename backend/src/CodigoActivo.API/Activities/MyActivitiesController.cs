@@ -40,7 +40,6 @@ public class MyActivitiesController : ApiControllerBase
         return Ok(
             await handler.HandleAsync(
                 new ListAssignedActivitiesQuery(
-                    CurrentUserId,
                     eventId is { } filter ? EventId.From(filter) : null
                 ),
                 ct

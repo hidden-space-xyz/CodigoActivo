@@ -1,8 +1,9 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Events;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -10,17 +11,19 @@ namespace CodigoActivo.Application.Events.Queries;
 /// Carries the criteria used to retrieve the current user's terms state for an event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-/// <param name="UserId">Identifier of the user.</param>
-public sealed record GetEventTermsStateQuery(EventId EventId, UserId UserId)
-    : IQuery<EventTermsStateResponse>;
+public sealed record GetEventTermsStateQuery(EventId EventId) : IQuery<EventTermsStateResponse>;
 
 /// <summary>
 /// Executes the query to retrieve the current user's terms state for an event.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class GetEventTermsStateQueryHandler(IReadStore readStore, IQueryExecutor executor)
-    : IQueryHandler<GetEventTermsStateQuery, EventTermsStateResponse>
+/// <param name="currentUser">Person the query runs for.</param>
+public sealed class GetEventTermsStateQueryHandler(
+    IReadStore readStore,
+    IQueryExecutor executor,
+    ICurrentUser currentUser
+) : IQueryHandler<GetEventTermsStateQuery, EventTermsStateResponse>
 {
     /// <summary>
     /// Handles the request to retrieve the current user's terms state for an event.
@@ -35,7 +38,7 @@ public sealed class GetEventTermsStateQueryHandler(IReadStore readStore, IQueryE
     {
         ArgumentNullException.ThrowIfNull(query);
         var eventId = query.EventId.Value;
-        var userId = query.UserId.Value;
+        var userId = currentUser.RequiredId().Value;
         var documents = await executor.ToListAsync(
             readStore
                 .EventTermsDocuments.Where(d => d.EventId == eventId)

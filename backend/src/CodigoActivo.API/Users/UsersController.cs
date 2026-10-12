@@ -42,7 +42,7 @@ public class UsersController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new ListUsersQuery(query, CurrentUserId, IsAdmin), ct));
+        return Ok(await handler.HandleAsync(new ListUsersQuery(query), ct));
     }
 
     /// <summary>

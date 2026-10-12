@@ -112,10 +112,7 @@ public class ActivitiesController : ApiControllerBase
     )
     {
         return Ok(
-            await handler.HandleAsync(
-                new GetHouseholdAssignmentsQuery(CurrentUserId, EventId.From(eventId)),
-                ct
-            )
+            await handler.HandleAsync(new GetHouseholdAssignmentsQuery(EventId.From(eventId)), ct)
         );
     }
 
@@ -156,7 +153,7 @@ public class ActivitiesController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new GetHouseholdSignupRolesQuery(CurrentUserId), ct));
+        return Ok(await handler.HandleAsync(new GetHouseholdSignupRolesQuery(), ct));
     }
 
     /// <summary>

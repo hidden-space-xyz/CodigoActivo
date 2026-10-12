@@ -37,7 +37,7 @@ public class MyAccountController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new GetAccountDeletionStatusQuery(CurrentUserId), ct));
+        return Ok(await handler.HandleAsync(new GetAccountDeletionStatusQuery(), ct));
     }
 
     /// <summary>

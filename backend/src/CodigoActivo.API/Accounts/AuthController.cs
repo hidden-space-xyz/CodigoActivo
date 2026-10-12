@@ -86,13 +86,13 @@ public class AuthController : ApiControllerBase
         Guid userId,
         [FromBody] VerifyRequest request,
         [FromServices] ICommandHandler<VerifyUserCommand, Result> handler,
-        [FromServices] IQueryHandler<GetCurrentUserQuery, Result<UserResponse>> getUser,
+        [FromServices] IQueryHandler<GetAccountQuery, Result<UserResponse>> getUser,
         CancellationToken ct
     )
     {
         return await ToOkAfterAsync(
             await handler.HandleAsync(new VerifyUserCommand(UserId.From(userId), request.Otp), ct),
-            () => getUser.HandleAsync(new GetCurrentUserQuery(UserId.From(userId)), ct)
+            () => getUser.HandleAsync(new GetAccountQuery(UserId.From(userId)), ct)
         );
     }
 
@@ -268,7 +268,7 @@ public class AuthController : ApiControllerBase
     public async Task<ActionResult<UserResponse>> VerifyTwoFactorAsync(
         [FromBody] TwoFactorLoginRequest request,
         [FromServices] ICommandHandler<CompleteLoginCommand, Result<UserSessionId>> handler,
-        [FromServices] IQueryHandler<GetCurrentUserQuery, Result<UserResponse>> getUser,
+        [FromServices] IQueryHandler<GetAccountQuery, Result<UserResponse>> getUser,
         [FromServices] SessionTicketValidator sessionTickets,
         CancellationToken ct
     )
@@ -308,7 +308,7 @@ public class AuthController : ApiControllerBase
                 AllowRefresh = false,
             }
         );
-        return ToOk(await getUser.HandleAsync(new GetCurrentUserQuery(challenge.UserId), ct));
+        return ToOk(await getUser.HandleAsync(new GetAccountQuery(challenge.UserId), ct));
     }
 
     /// <summary>
@@ -455,7 +455,7 @@ public class AuthController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return ToOk(await handler.HandleAsync(new GetCurrentUserQuery(CurrentUserId), ct));
+        return ToOk(await handler.HandleAsync(new GetCurrentUserQuery(), ct));
     }
 
     private async Task<LoginChallengeKey?> GetPendingChallengeAsync()

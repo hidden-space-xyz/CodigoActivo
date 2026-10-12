@@ -10,12 +10,19 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Queries;
 
 public sealed class GetAccountDeletionStatusQueryHandlerTests
 {
-    private readonly GetAccountDeletionStatusQueryHandler sut = new();
+    private readonly TestCurrentUser currentUser = new();
+    private readonly GetAccountDeletionStatusQueryHandler sut;
+
+    public GetAccountDeletionStatusQueryHandlerTests()
+    {
+        sut = new GetAccountDeletionStatusQueryHandler(currentUser);
+    }
 
     private Task<AccountDeletionStatusResponse> StatusAsync(Guid userId)
     {
+        currentUser.Id = UserId.From(userId);
         return sut.HandleAsync(
-            new GetAccountDeletionStatusQuery(UserId.From(userId)),
+            new GetAccountDeletionStatusQuery(),
             TestContext.Current.CancellationToken
         );
     }

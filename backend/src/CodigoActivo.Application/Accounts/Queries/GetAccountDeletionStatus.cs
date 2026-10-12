@@ -1,22 +1,23 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Queries;
 
 /// <summary>
-/// Carries the criteria used to tell whether the signed-in user may delete their own account.
+/// Carries the request to tell whether the signed-in user may delete their own account.
 /// </summary>
-/// <param name="UserId">Identifier of the signed-in user.</param>
-public sealed record GetAccountDeletionStatusQuery(UserId UserId)
-    : IQuery<AccountDeletionStatusResponse>;
+public sealed record GetAccountDeletionStatusQuery : IQuery<AccountDeletionStatusResponse>;
 
 /// <summary>
 /// Executes the query that tells whether the signed-in user may delete their own account. Every
 /// account may, except the initial administrator, so the application always keeps an administrator.
 /// </summary>
-public sealed class GetAccountDeletionStatusQueryHandler
+/// <param name="currentUser">Person the query runs for.</param>
+public sealed class GetAccountDeletionStatusQueryHandler(ICurrentUser currentUser)
     : IQueryHandler<GetAccountDeletionStatusQuery, AccountDeletionStatusResponse>
 {
     /// <summary>
@@ -31,7 +32,7 @@ public sealed class GetAccountDeletionStatusQueryHandler
     )
     {
         return Task.FromResult(
-            new AccountDeletionStatusResponse(query.UserId != InitialAdministrator.Id)
+            new AccountDeletionStatusResponse(currentUser.RequiredId() != InitialAdministrator.Id)
         );
     }
 }

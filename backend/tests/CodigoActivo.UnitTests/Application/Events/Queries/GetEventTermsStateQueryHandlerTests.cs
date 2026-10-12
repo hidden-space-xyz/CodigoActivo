@@ -11,11 +11,16 @@ namespace CodigoActivo.UnitTests.Application.Events.Queries;
 public sealed class GetEventTermsStateQueryHandlerTests
 {
     private readonly FakeReadStore store = new();
+    private readonly Guid userId = Guid.NewGuid();
     private readonly GetEventTermsStateQueryHandler sut;
 
     public GetEventTermsStateQueryHandlerTests()
     {
-        sut = new GetEventTermsStateQueryHandler(store, new FakeQueryExecutor());
+        sut = new GetEventTermsStateQueryHandler(
+            store,
+            new FakeQueryExecutor(),
+            new TestCurrentUser(UserId.From(userId))
+        );
     }
 
     private static EventTermsDocumentRow NewDocument(
@@ -58,7 +63,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         HasDocuments();
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId), UserId.New()),
+            new GetEventTermsStateQuery(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -80,7 +85,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         HasAcceptances();
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId), UserId.New()),
+            new GetEventTermsStateQuery(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -98,7 +103,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         HasAcceptances();
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId), UserId.New()),
+            new GetEventTermsStateQuery(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -110,7 +115,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
     public async Task HandleAsyncRequiredAcceptedWithOptionalUndecidedUnblocksSignup()
     {
         var eventId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
         var requiredId = Guid.NewGuid();
         var optionalId = Guid.NewGuid();
         var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
@@ -130,7 +134,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId), UserId.From(userId)),
+            new GetEventTermsStateQuery(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -157,7 +161,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
     public async Task HandleAsyncOptionalRejectedDoesNotBlockSignup()
     {
         var eventId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
         var requiredId = Guid.NewGuid();
         var optionalId = Guid.NewGuid();
         var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
@@ -185,7 +188,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId), UserId.From(userId)),
+            new GetEventTermsStateQuery(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -199,7 +202,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
     public async Task HandleAsyncRequiredRejectedBlocksSignup()
     {
         var eventId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
         var requiredId = Guid.NewGuid();
         var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
         HasDocuments(NewDocument(eventId, requiredId, required: true, displayOrder: 0));
@@ -215,7 +217,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         );
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId), UserId.From(userId)),
+            new GetEventTermsStateQuery(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 
@@ -238,7 +240,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         HasAcceptances();
 
         var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId), UserId.New()),
+            new GetEventTermsStateQuery(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 

@@ -11,11 +11,16 @@ namespace CodigoActivo.UnitTests.Application.Activities.Queries;
 public sealed class ListAssignedActivitiesQueryHandlerTests
 {
     private readonly FakeReadStore store = new();
+    private readonly Guid actingUserId = Guid.NewGuid();
     private readonly ListAssignedActivitiesQueryHandler sut;
 
     public ListAssignedActivitiesQueryHandlerTests()
     {
-        sut = new ListAssignedActivitiesQueryHandler(store, new FakeQueryExecutor());
+        sut = new ListAssignedActivitiesQueryHandler(
+            store,
+            new FakeQueryExecutor(),
+            new TestCurrentUser(UserId.From(actingUserId))
+        );
     }
 
     private static AssignmentRow Assignment(
@@ -57,10 +62,17 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncMultipleUsersAssignedFiltersByUserAndOrdersByStart()
     {
-        var userId = Guid.NewGuid();
         store.Assignments.AddRange([
-            Assignment(userId, "Late", new DateTimeOffset(2026, 7, 10, 14, 0, 0, TimeSpan.Zero)),
-            Assignment(userId, "Early", new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero)),
+            Assignment(
+                actingUserId,
+                "Late",
+                new DateTimeOffset(2026, 7, 10, 14, 0, 0, TimeSpan.Zero)
+            ),
+            Assignment(
+                actingUserId,
+                "Early",
+                new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero)
+            ),
             Assignment(
                 Guid.NewGuid(),
                 "Other",
@@ -69,7 +81,7 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
         ]);
 
         var result = await sut.HandleAsync(
-            new ListAssignedActivitiesQuery(UserId.From(userId), EventId: null),
+            new ListAssignedActivitiesQuery(EventId: null),
             TestContext.Current.CancellationToken
         );
 
@@ -80,24 +92,23 @@ public sealed class ListAssignedActivitiesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncEventIdFilterExcludesOtherEventAssignments()
     {
-        var userId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
         store.Assignments.AddRange([
             Assignment(
-                userId,
+                actingUserId,
                 "Mine",
                 new DateTimeOffset(2026, 7, 10, 9, 0, 0, TimeSpan.Zero),
                 eventId
             ),
             Assignment(
-                userId,
+                actingUserId,
                 "OtherEvent",
                 new DateTimeOffset(2026, 7, 10, 8, 0, 0, TimeSpan.Zero)
             ),
         ]);
 
         var result = await sut.HandleAsync(
-            new ListAssignedActivitiesQuery(UserId.From(userId), EventId.From(eventId)),
+            new ListAssignedActivitiesQuery(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
 

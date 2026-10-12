@@ -13,6 +13,7 @@ namespace CodigoActivo.UnitTests.Application.Activities.Queries;
 public sealed class GetHouseholdSignupRolesQueryHandlerTests
 {
     private readonly FakeReadStore store = new();
+    private readonly Guid actingUserId = Guid.NewGuid();
     private readonly GetHouseholdSignupRolesQueryHandler sut;
 
     public GetHouseholdSignupRolesQueryHandlerTests()
@@ -21,6 +22,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
         sut = new GetHouseholdSignupRolesQueryHandler(
             store,
             executor,
+            new TestCurrentUser(UserId.From(actingUserId)),
             new ListActivityRoleTypesQueryHandler(store, executor)
         );
     }
@@ -28,7 +30,6 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSocioParentWithParticipantChildReturnsRolesPerMember()
     {
-        var actingUserId = Guid.NewGuid();
         var childId = Guid.NewGuid();
         store.Users.AddRange([
             SocioParentRow(actingUserId),
@@ -44,7 +45,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
         store.ActivityRoleTypes.AddRange(CatalogRoleRows());
 
         var result = await sut.HandleAsync(
-            new GetHouseholdSignupRolesQuery(UserId.From(actingUserId)),
+            new GetHouseholdSignupRolesQuery(),
             TestContext.Current.CancellationToken
         );
 
@@ -69,7 +70,6 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncParticipantTypeUserWithoutChildrenReturnsParticipantAndVolunteerOnly()
     {
-        var actingUserId = Guid.NewGuid();
         store.Users.Add(
             new UserRow
             {
@@ -82,7 +82,7 @@ public sealed class GetHouseholdSignupRolesQueryHandlerTests
         store.ActivityRoleTypes.AddRange(CatalogRoleRows());
 
         var result = await sut.HandleAsync(
-            new GetHouseholdSignupRolesQuery(UserId.From(actingUserId)),
+            new GetHouseholdSignupRolesQuery(),
             TestContext.Current.CancellationToken
         );
 

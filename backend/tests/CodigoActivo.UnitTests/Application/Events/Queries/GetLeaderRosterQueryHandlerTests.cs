@@ -29,7 +29,12 @@ public sealed class GetLeaderRosterQueryHandlerTests
 
     public GetLeaderRosterQueryHandlerTests()
     {
-        sut = new GetLeaderRosterQueryHandler(store, new FakeQueryExecutor(), clock);
+        sut = new GetLeaderRosterQueryHandler(
+            store,
+            new FakeQueryExecutor(),
+            clock,
+            new TestCurrentUser(UserId.From(caller.Id))
+        );
     }
 
     private static UserRow NewUser(string firstName, UserRow? guardian = null)
@@ -125,8 +130,7 @@ public sealed class GetLeaderRosterQueryHandlerTests
     {
         return sut.HandleAsync(
             new GetLeaderRosterQuery(
-                global::CodigoActivo.Domain.Events.EventId.From(eventId ?? EventId),
-                UserId.From(caller.Id)
+                global::CodigoActivo.Domain.Events.EventId.From(eventId ?? EventId)
             ),
             TestContext.Current.CancellationToken
         );

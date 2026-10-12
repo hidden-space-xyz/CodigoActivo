@@ -1,9 +1,10 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Users.Contracts;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Queries;
 
@@ -11,18 +12,19 @@ namespace CodigoActivo.Application.Users.Queries;
 /// Carries the criteria used to list users.
 /// </summary>
 /// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
-/// <param name="CallerId">Identifier of the caller.</param>
-/// <param name="IsAdmin">Whether admin.</param>
-public sealed record ListUsersQuery(UserListQuery Filters, UserId CallerId, bool IsAdmin)
-    : IQuery<PagedResult<UserResponse>>;
+public sealed record ListUsersQuery(UserListQuery Filters) : IQuery<PagedResult<UserResponse>>;
 
 /// <summary>
 /// Executes the query to list users.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-public sealed class ListUsersQueryHandler(IReadStore readStore, IQueryExecutor executor)
-    : IQueryHandler<ListUsersQuery, PagedResult<UserResponse>>
+/// <param name="currentUser">Person the query runs for.</param>
+public sealed class ListUsersQueryHandler(
+    IReadStore readStore,
+    IQueryExecutor executor,
+    ICurrentUser currentUser
+) : IQueryHandler<ListUsersQuery, PagedResult<UserResponse>>
 {
     private static readonly SortMap<UserRow> Sort = new SortMap<UserRow>()
         .Add("firstName", u => u.FirstName)
@@ -55,9 +57,9 @@ public sealed class ListUsersQueryHandler(IReadStore readStore, IQueryExecutor e
         var filters = query.Filters;
         var source = readStore.Users;
 
-        if (!query.IsAdmin)
+        if (!currentUser.IsAdmin)
         {
-            var callerId = query.CallerId.Value;
+            var callerId = currentUser.RequiredId().Value;
             source = source.Where(u => u.Id == callerId || u.ParentId == callerId);
         }
 
@@ -65,7 +67,9 @@ public sealed class ListUsersQueryHandler(IReadStore readStore, IQueryExecutor e
 
         source = Sort.Apply(source, filters.Sort);
         return executor.ToPagedAsync(
-            source.Select(query.IsAdmin ? UserProjections.UserWithType : UserProjections.User),
+            source.Select(
+                currentUser.IsAdmin ? UserProjections.UserWithType : UserProjections.User
+            ),
             filters.Page,
             filters.PageSize,
             ct
