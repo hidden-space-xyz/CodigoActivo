@@ -1,16 +1,20 @@
 using System.Reflection;
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Accounts;
+using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Database;
@@ -251,7 +255,14 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     {
         var user = NewUser();
         context.Users.Attach(user);
-        new UserRepository(context).Remove(user);
+        new UserRepository(
+            context,
+            new UnitOfWork(
+                context,
+                Substitute.For<IDomainEventPublisher>(),
+                NullLogger<UnitOfWork>.Instance
+            )
+        ).Remove(user);
 
         var save = () => context.SaveChangesAsync(TestContext.Current.CancellationToken);
 

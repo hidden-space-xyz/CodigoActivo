@@ -1,11 +1,8 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
@@ -17,43 +14,21 @@ public sealed class PasswordAttemptGuardTests
     private const string Correct = "password123";
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly FakePasswordHasher hasher = new();
-    private readonly RecordingEmailSender emailSender = new();
-    private readonly FakeAccountEmailComposer composer = new();
-    private readonly RecordingLogger<PasswordAttemptGuard> logger = new();
     private readonly PasswordLockoutOptions options = new() { MaxFailedAttempts = 3 };
     private readonly TestCurrentUser currentUser = new();
     private readonly PasswordAttemptGuard sut;
 
     public PasswordAttemptGuardTests()
     {
-        sut = PasswordGuards.Create(
-            hasher,
-            uow,
-            clock,
-            sessions,
-            emailSender,
-            options,
-            logger,
-            users,
-            currentUser,
-            composer
-        );
+        sut = PasswordGuards.Create(hasher, uow, clock, options, users, currentUser);
     }
 
     private static User Account()
     {
         return NewUser(passwordHash: FakePasswordHasher.Prefix + Correct);
-    }
-
-    private Task AssertSessionsRevokedAsync(int times)
-    {
-        return sessions
-            .Received(times)
-            .EndAllAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>());
     }
 
     private Task AssertFailuresCountedAsync(int times)
@@ -79,7 +54,6 @@ public sealed class PasswordAttemptGuardTests
         user.PasswordFailedAttempts.Should().Be(0);
         user.IsPasswordLocked().Should().BeFalse();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await AssertSessionsRevokedAsync(0);
     }
 
     [Fact]
@@ -141,9 +115,7 @@ public sealed class PasswordAttemptGuardTests
         });
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
-        await AssertSessionsRevokedAsync(0);
-        emailSender.Sent.Should().BeEmpty();
-        logger.Entries.Should().BeEmpty();
+        user.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
@@ -163,16 +135,20 @@ public sealed class PasswordAttemptGuardTests
         user.PasswordFailedAttempts.Should().Be(2);
         user.IsPasswordLocked().Should().BeFalse();
         await AssertFailuresCountedAsync(0);
-        await AssertSessionsRevokedAsync(0);
-        emailSender.Sent.Should().BeEmpty();
-        logger.Entries.Should().BeEmpty();
+        user.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public async Task VerifyLoginPasswordAsyncReachingTheLimitLocksRevokesSessionsWarnsAndNotifies()
+    public async Task VerifyLoginPasswordAsyncReachingTheLimitHandsTheLockEventToTheSave()
     {
         var user = Account();
         Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
+        IReadOnlyList<PasswordLocked> saved = [];
+        users
+            .When(repository =>
+                repository.SavePasswordStateAsync(user, Arg.Any<CancellationToken>())
+            )
+            .Do(_ => saved = user.PullDomainEvents<PasswordLocked>());
 
         var accepted = await sut.VerifyLoginPasswordAsync(
             user,
@@ -184,32 +160,10 @@ public sealed class PasswordAttemptGuardTests
         user.IsPasswordLocked().Should().BeTrue();
         user.PasswordLockedAt.Should().Be(clock.UtcNow);
         await AssertFailuresCountedAsync(1);
-        await AssertSessionsRevokedAsync(1);
-        await sessions.Received(1).EndAllAsync(user.Id, Arg.Any<CancellationToken>());
-
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
-        entry.Level.Should().Be(LogLevel.Warning);
-        entry
-            .Message.Should()
-            .Be("An account was locked after 3 wrong passwords")
-            .And.NotContain(user.Id.ToString())
-            .And.NotContain(Correct)
-            .And.NotContain("guessed-secret")
-            .And.NotContain(user.Email!.Value);
-
-        composer
-            .Composed.Should()
-            .Equal(
-                new ComposedAccountEmail(
-                    nameof(IAccountEmailComposer.SecurityAlert),
-                    new EmailRecipient(user.Email!.Value, user.FirstName)
-                )
-                {
-                    Change = AccountSecurityChange.PasswordLocked,
-                    OccurredAt = clock.UtcNow,
-                }
-            );
-        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(user.Email!.Value);
+        saved.Should().Equal(new PasswordLocked(user.Id));
+        user.PullDomainEvents().Should().BeEmpty();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -245,8 +199,9 @@ public sealed class PasswordAttemptGuardTests
         accepted.Should().BeFalse();
         user.PasswordLockedAt.Should().Be(lockedAt);
         await AssertFailuresCountedAsync(1);
-        await AssertSessionsRevokedAsync(1);
-        emailSender.Sent.Should().ContainSingle("the owner is only warned when the lock is set");
+        user.PullDomainEvents()
+            .Should()
+            .Equal([new PasswordLocked(user.Id)], "the lock is only raised when it is set");
     }
 
     [Fact]
@@ -447,23 +402,5 @@ public sealed class PasswordAttemptGuardTests
         await users
             .DidNotReceiveWithAnyArgs()
             .GetByIdAsync(default, TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task VerifyLoginPasswordAsyncNotificationFailureStillLocksTheAccount()
-    {
-        emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
-        var user = Account();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
-
-        var accepted = await sut.VerifyLoginPasswordAsync(
-            user,
-            "wrong",
-            TestContext.Current.CancellationToken
-        );
-
-        accepted.Should().BeFalse();
-        user.IsPasswordLocked().Should().BeTrue();
-        await AssertSessionsRevokedAsync(1);
     }
 }

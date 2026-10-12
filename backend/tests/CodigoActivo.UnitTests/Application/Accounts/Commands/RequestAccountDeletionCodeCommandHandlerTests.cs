@@ -6,6 +6,7 @@ using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -31,6 +32,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     private readonly TwoFactorOptions options = new();
     private readonly PasswordLockoutOptions lockout = new();
     private readonly TestCurrentUser currentUser = new();
+    private readonly CommittedEvents events;
     private readonly RequestAccountDeletionCodeCommandHandler sut;
 
     public RequestAccountDeletionCodeCommandHandlerTests()
@@ -43,19 +45,24 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
             new PasswordResetOptions(),
             options
         );
+        events = new CommittedEvents(
+            new AccountSecurityNotifications(
+                users,
+                new AccountSecurityNotifier(
+                    emailSender,
+                    clock,
+                    composer,
+                    NullLogger<AccountSecurityNotifier>.Instance
+                ),
+                NullLogger<AccountSecurityNotifications>.Instance
+            ),
+            new SessionsEndOnPasswordReplacedOrLocked(sessions)
+        );
         sut = new RequestAccountDeletionCodeCommandHandler(
             users,
             currentUser,
             clock,
-            PasswordGuards.Create(
-                hasher,
-                uow,
-                clock,
-                sessions,
-                emailSender,
-                lockout,
-                composer: composer
-            ),
+            PasswordGuards.Create(hasher, uow, clock, lockout),
             options,
             new LoginCodeIssuer(
                 new FakeOneTimeCodeHasher(),
@@ -143,7 +150,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncRepeatedWrongPasswordsLockTheAccountRevokeSessionsAndWarnTheOwner()
+    public async Task HandleAsyncRepeatedWrongPasswordsLockTheAccountAndItsCommitWarnsTheOwner()
     {
         var user = Signed();
 
@@ -161,6 +168,13 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
         user.PasswordLockedAt.Should().Be(clock.UtcNow);
         user.LoginCodeHash.Should().BeNull();
+        await sessions
+            .DidNotReceiveWithAnyArgs()
+            .EndAllAsync(default, TestContext.Current.CancellationToken);
+        emailSender.Sent.Should().BeEmpty("the effects of the lock wait for its commit");
+
+        await events.PublishAsync(user);
+
         await sessions.Received(1).EndAllAsync(user.Id, Arg.Any<CancellationToken>());
         composer
             .Composed.Should()

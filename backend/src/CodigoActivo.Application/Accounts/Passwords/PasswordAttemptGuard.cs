@@ -1,44 +1,37 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Users;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Accounts.Passwords;
 
 /// <summary>
 /// Owns every check of an account password used for authentication: the login password step and
 /// the routes that ask the acting caller to re-enter their own password. Every wrong password is
-/// counted by one atomic database statement, so parallel attempts cannot lose each other's
-/// increments; reaching the limit locks the account, closes its pending second-factor challenge,
-/// deletes its open sessions and warns its owner exactly once, and only a completed password reset
-/// clears the lock. A correct password commits the reset of the counter here, because the calling
-/// handler may return without saving. A locked account refuses every password, so a correct one
-/// cannot be told apart from a wrong one.
+/// counted inside a transaction that holds the account row locked, so parallel attempts cannot
+/// lose each other's increments; reaching the limit locks the account and closes its pending
+/// second-factor challenge, and only a completed password reset clears the lock. The lock raises
+/// <see cref="PasswordLocked"/> exactly once, and its listeners delete the open sessions, record
+/// the lockout and warn the owner once it is committed. A correct password commits the reset of
+/// the counter here, because the calling handler may return without saving. A locked account
+/// refuses every password, so a correct one cannot be told apart from a wrong one.
 /// </summary>
 /// <param name="users">Repository that counts the failures and locks the account atomically.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="sessions">Repository used to revoke the open sessions of the user.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="hasher">Hasher used to verify a stored password.</param>
 /// <param name="credentialTiming">Verifier that pays the same work for accounts without a password.</param>
 /// <param name="options">Lockout configuration.</param>
-/// <param name="securityNotifier">Notifier that warns the owner about credential changes.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class PasswordAttemptGuard(
     IUserRepository users,
     ICurrentUser currentUser,
-    IUserSessionRepository sessions,
     IUnitOfWork uow,
     IClock clock,
     IPasswordHasher hasher,
     CredentialTimingProtector credentialTiming,
-    PasswordLockoutOptions options,
-    AccountSecurityNotifier securityNotifier,
-    ILogger<PasswordAttemptGuard> logger
+    PasswordLockoutOptions options
 )
 {
     /// <summary>
@@ -80,8 +73,8 @@ public sealed class PasswordAttemptGuard(
 
     /// <summary>
     /// Verifies the password an already signed-in caller re-enters to authorize a change. A locked
-    /// account is refused; sessions are deleted when an account locks, so this normally cannot be
-    /// reached with a lock in place.
+    /// account is refused; sessions are deleted once an account lock commits, so this normally
+    /// cannot be reached with a lock in place.
     /// </summary>
     /// <param name="actingUser">Account whose password is being proved, or <see langword="null"/>.</param>
     /// <param name="password">Plain-text password presented by the client.</param>
@@ -144,7 +137,7 @@ public sealed class PasswordAttemptGuard(
 
     private async Task RecordFailureAsync(User user, CancellationToken ct)
     {
-        var locked = await uow.ExecuteInTransactionAsync(
+        await uow.ExecuteInTransactionAsync(
             async attempt =>
             {
                 if (!await users.LockPasswordStateAsync(user, attempt))
@@ -152,19 +145,11 @@ public sealed class PasswordAttemptGuard(
                     return false;
                 }
 
-                var lockedNow = user.RecordPasswordFailure(options.MaxFailedAttempts, clock.UtcNow);
+                user.RecordPasswordFailure(options.MaxFailedAttempts, clock.UtcNow);
                 await users.SavePasswordStateAsync(user, attempt);
-                return lockedNow;
+                return true;
             },
             ct
         );
-        if (!locked)
-        {
-            return;
-        }
-
-        await sessions.EndAllAsync(user.Id, ct);
-        logger.PasswordLockoutTriggered(options.MaxFailedAttempts);
-        await securityNotifier.NotifyAsync(user, AccountSecurityChange.PasswordLocked, ct);
     }
 }

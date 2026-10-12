@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
-/// Tells the holder of an account, once the change is committed, that its credentials, its second
-/// factor, its administrator rights or the identifiers it is reached at changed.
+/// Tells the holder of an account, once the change is committed, that its credentials, its password
+/// lock, its second factor, its administrator rights or the identifiers it is reached at changed.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="notifier">Sender of the account security notifications.</param>
@@ -18,6 +18,7 @@ public sealed class AccountSecurityNotifications(
 )
     : IDomainEventListener<PasswordChanged>,
         IDomainEventListener<PasswordReset>,
+        IDomainEventListener<PasswordLocked>,
         IDomainEventListener<AuthenticatorEnabled>,
         IDomainEventListener<AuthenticatorDisabled>,
         IDomainEventListener<TwoFactorReset>,
@@ -36,6 +37,13 @@ public sealed class AccountSecurityNotifications(
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
         return NotifyAsync(domainEvent.UserId, AccountSecurityChange.PasswordReset, ct);
+    }
+
+    /// <inheritdoc />
+    public Task HandleAsync(PasswordLocked domainEvent, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(domainEvent);
+        return NotifyAsync(domainEvent.UserId, AccountSecurityChange.PasswordLocked, ct);
     }
 
     /// <inheritdoc />

@@ -51,6 +51,18 @@ public sealed record PasswordChanged(UserId UserId) : IDomainEvent;
 public sealed record PasswordReset(UserId UserId) : IDomainEvent;
 
 /// <summary>
+/// Too many wrong passwords locked an account until its password is reset.
+/// </summary>
+/// <param name="UserId">Identifier of the account.</param>
+public sealed record PasswordLocked(UserId UserId) : IDomainEvent;
+
+/// <summary>
+/// Too many wrong second-factor codes locked the second factor of an account for a while.
+/// </summary>
+/// <param name="UserId">Identifier of the account.</param>
+public sealed record TwoFactorLocked(UserId UserId) : IDomainEvent;
+
+/// <summary>
 /// An authenticator application became the second factor of an account.
 /// </summary>
 /// <param name="UserId">Identifier of the account.</param>

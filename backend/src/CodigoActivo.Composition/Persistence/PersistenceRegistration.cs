@@ -34,7 +34,8 @@ internal static class PersistenceRegistration
             options.UseReadDatabase(connectionString)
         );
 
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<UnitOfWork>();
+        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<UnitOfWork>());
         services.AddScoped<IReadStore>(sp => sp.GetRequiredService<CodigoActivoReadDbContext>());
         services.AddSingleton<IQueryExecutor, QueryExecutor>();
         services.AddScoped<DatabaseSeeder>();

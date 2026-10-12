@@ -238,23 +238,24 @@ public sealed class UserTests
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
 
-        user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeFalse();
+        user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15));
 
         user.TwoFactorFailedAttempts.Should().Be(1);
         user.TwoFactorLockedUntil.Should().BeNull();
         user.IsTwoFactorLocked(Now).Should().BeFalse();
         user.LoginCodeHash.Should().Be("HASH");
+        user.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public void RecordTwoFactorFailureAtTheLimitLocksResetsCounterAndDiscardsTheCode()
+    public void RecordTwoFactorFailureAtTheLimitLocksResetsCounterDiscardsTheCodeAndRaisesTheLock()
     {
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
         user.StartLoginChallenge(LoginChallengeId.New(), Now);
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 2 });
 
-        user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeTrue();
+        user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15));
 
         user.TwoFactorFailedAttempts.Should().Be(0);
         user.TwoFactorLockedUntil.Should().Be(Now.AddMinutes(15));
@@ -262,6 +263,7 @@ public sealed class UserTests
         user.IsTwoFactorLocked(Now.AddMinutes(15)).Should().BeFalse();
         user.LoginCodeHash.Should().BeNull();
         user.LoginChallengeId.Should().BeNull();
+        user.PullDomainEvents().Should().Equal(new TwoFactorLocked(user.Id));
     }
 
     [Fact]
@@ -288,7 +290,7 @@ public sealed class UserTests
         var challengeId = LoginChallengeId.New();
         user.StartLoginChallenge(challengeId, Now);
 
-        user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15)).Should().BeFalse();
+        user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15));
 
         user.LoginChallengeId.Should().Be(challengeId);
     }
@@ -623,27 +625,29 @@ public sealed class UserTests
         var challengeId = LoginChallengeId.New();
         user.StartLoginChallenge(challengeId, Now);
 
-        user.RecordPasswordFailure(3, Now).Should().BeFalse();
+        user.RecordPasswordFailure(3, Now);
 
         user.PasswordFailedAttempts.Should().Be(1);
         user.PasswordLockedAt.Should().BeNull();
         user.IsPasswordLocked().Should().BeFalse();
         user.LoginChallengeId.Should().Be(challengeId);
+        user.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public void RecordPasswordFailureReachingTheLimitLocksAndClosesTheChallenge()
+    public void RecordPasswordFailureReachingTheLimitLocksClosesTheChallengeAndRaisesTheLock()
     {
         var user = NewPendingUser();
         user.StartLoginChallenge(LoginChallengeId.New(), Now);
         Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
 
-        user.RecordPasswordFailure(3, Now).Should().BeTrue();
+        user.RecordPasswordFailure(3, Now);
 
         user.PasswordFailedAttempts.Should().Be(3);
         user.PasswordLockedAt.Should().Be(Now);
         user.IsPasswordLocked().Should().BeTrue();
         user.LoginChallengeId.Should().BeNull();
+        user.PullDomainEvents().Should().Equal(new PasswordLocked(user.Id));
     }
 
     [Fact]
@@ -655,11 +659,29 @@ public sealed class UserTests
         Persisted.Overwrite(user, new { PasswordFailedAttempts = 3, PasswordLockedAt = lockedAt });
         user.StartLoginChallenge(challengeId, Now);
 
-        user.RecordPasswordFailure(3, Now).Should().BeFalse();
+        user.RecordPasswordFailure(3, Now);
 
         user.PasswordFailedAttempts.Should().Be(3);
         user.PasswordLockedAt.Should().Be(lockedAt);
         user.LoginChallengeId.Should().Be(challengeId);
+        user.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void PullDomainEventsOfOneTypeKeepsTheOtherEventsForTheNextPull()
+    {
+        var user = NewPendingUser();
+        user.ChangeType(UserType.Sponsor, Now);
+        user.RecordPasswordFailure(1, Now);
+        user.ChangeType(UserType.Member, Now);
+
+        var locks = user.PullDomainEvents<PasswordLocked>();
+
+        locks.Should().Equal(new PasswordLocked(user.Id));
+        user.PullDomainEvents<PasswordLocked>().Should().BeEmpty();
+        user.PullDomainEvents()
+            .Should()
+            .Equal(new UserTypeChanged(user.Id), new UserTypeChanged(user.Id));
     }
 
     [Theory]

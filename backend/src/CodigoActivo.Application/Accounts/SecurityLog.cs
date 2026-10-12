@@ -12,8 +12,8 @@ namespace CodigoActivo.Application.Accounts;
 public static partial class SecurityLog
 {
     /// <summary>
-    /// Records that the wrong passwords reached the limit and locked an account, revoking every open
-    /// session. Only a completed password reset lifts the lock.
+    /// Records that the wrong passwords reached the limit and locked an account. Only a completed
+    /// password reset lifts the lock.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="maxFailedAttempts">Failures allowed before locking.</param>

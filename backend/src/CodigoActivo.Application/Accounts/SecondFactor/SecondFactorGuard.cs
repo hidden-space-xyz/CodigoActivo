@@ -2,7 +2,6 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Accounts.SecondFactor;
 
@@ -12,20 +11,20 @@ namespace CodigoActivo.Application.Accounts.SecondFactor;
 /// reloaded, so parallel attempts are counted one after another. A locked second factor refuses
 /// every code; a wrong code is counted and saved here, inside the caller's transaction and together
 /// with any other staged change, because the calling handler then fails, and it locks the second
-/// factor for a while once the limit is reached, so short codes cannot be brute forced. An accepted
-/// authenticator code records its time step on the account for the caller to save with its change.
+/// factor for a while once the limit is reached, so short codes cannot be brute forced. The lock
+/// raises <see cref="TwoFactorLocked"/>, recorded in the security log once it is committed. An
+/// accepted authenticator code records its time step on the account for the caller to save with
+/// its change.
 /// </summary>
 /// <param name="uow">Unit of work used to commit the counted failure.</param>
 /// <param name="otpValidator">Validator of emailed codes.</param>
 /// <param name="authenticatorCodes">Verifier of authenticator codes.</param>
 /// <param name="options">Second-factor configuration.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class SecondFactorGuard(
     IUnitOfWork uow,
     OtpValidator otpValidator,
     AuthenticatorCodeVerifier authenticatorCodes,
-    TwoFactorOptions options,
-    ILogger<SecondFactorGuard> logger
+    TwoFactorOptions options
 )
 {
     /// <summary>
@@ -63,17 +62,8 @@ public sealed class SecondFactorGuard(
 
         if (!accepted)
         {
-            var locked = user.RecordTwoFactorFailure(
-                now,
-                options.MaxFailedAttempts,
-                options.LockoutDuration
-            );
+            user.RecordTwoFactorFailure(now, options.MaxFailedAttempts, options.LockoutDuration);
             await uow.SaveChangesAsync(ct);
-            if (locked)
-            {
-                logger.TwoFactorLockoutTriggered(options.MaxFailedAttempts);
-            }
-
             return Error.Validation(ApplicationErrorCode.TwoFactorCodeInvalid);
         }
 

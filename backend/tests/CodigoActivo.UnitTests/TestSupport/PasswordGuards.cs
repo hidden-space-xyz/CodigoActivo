@@ -1,12 +1,8 @@
-using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Domain.Users;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.Extensions;
 
@@ -18,31 +14,19 @@ public static class PasswordGuards
         IPasswordHasher hasher,
         IUnitOfWork uow,
         IClock clock,
-        IUserSessionRepository? sessions = null,
-        IEmailSender? emailSender = null,
         PasswordLockoutOptions? options = null,
-        ILogger<PasswordAttemptGuard>? logger = null,
         IUserRepository? users = null,
-        ICurrentUser? currentUser = null,
-        IAccountEmailComposer? composer = null
+        ICurrentUser? currentUser = null
     )
     {
         return new PasswordAttemptGuard(
             LockingPasswordState(users ?? Substitute.For<IUserRepository>()),
             currentUser ?? new TestCurrentUser(),
-            sessions ?? Substitute.For<IUserSessionRepository>(),
             uow.RunsTransactions(),
             clock,
             hasher,
             new CredentialTimingProtector(hasher),
-            options ?? new PasswordLockoutOptions(),
-            new AccountSecurityNotifier(
-                emailSender ?? new RecordingEmailSender(),
-                clock,
-                composer ?? new FakeAccountEmailComposer(),
-                NullLogger<AccountSecurityNotifier>.Instance
-            ),
-            logger ?? NullLogger<PasswordAttemptGuard>.Instance
+            options ?? new PasswordLockoutOptions()
         );
     }
 

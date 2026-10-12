@@ -284,7 +284,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(Ct);
         ctx.ChangeTracker.Clear();
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
 
         var result = await repo.GetByIdAsync(user.Id, Ct);
 
@@ -297,7 +297,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task GetByIdAsyncUserMissingReturnsNull()
     {
         await using var ctx = postgres.CreateContext();
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
 
         (await repo.GetByIdAsync(UserId.From(Guid.NewGuid()), Ct)).Should().BeNull();
     }
@@ -309,7 +309,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
 
         var result = await repo.GetByEmailAsync(EmailAddress.FromStored("user@x.test"), Ct);
 
@@ -322,7 +322,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await using var ctx = postgres.CreateContext();
         ctx.Users.Add(NewUser("Match", "Me", email: "user@x.test"));
         await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
 
         var result = await repo.GetByEmailAsync(EmailAddress.FromStored("nobody@x.test"), Ct);
 
@@ -364,7 +364,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var user = NewUser(email: "dup@x.test");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
 
         (await repo.EmailExistsAsync(EmailAddress.FromStored(email), ct: Ct)).Should().Be(expected);
     }
@@ -376,7 +376,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var user = NewUser(email: "dup@x.test");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
 
         (
             await repo.EmailExistsAsync(
@@ -396,7 +396,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var user = NewUser(email: "dup@x.test");
         ctx.Users.Add(user);
         await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
 
         (
             await repo.EmailExistsAsync(
@@ -419,7 +419,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         ctx.AddRange(ada, bob, stranger);
         await ctx.SaveChangesAsync(Ct);
         ctx.ChangeTracker.Clear();
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
 
         var users = await repo.ListByIdsAsync([ada.Id, bob.Id, UserId.From(Guid.NewGuid())], Ct);
 
@@ -435,13 +435,13 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         await using (var other = postgres.CreateContext())
         {
-            var otherRepo = new UserRepository(other);
+            var otherRepo = new UserRepository(other, TestUnitOfWork.For(other));
             var copy = await otherRepo.GetByIdAsync(user.Id, Ct);
             copy!.RecordPasswordFailure(5, Fixed);
             await otherRepo.SavePasswordStateAsync(copy, Ct);
         }
 
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
         await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
 
         (await repo.LockPasswordStateAsync(user, Ct)).Should().BeTrue();
@@ -455,7 +455,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var ctx = postgres.CreateContext();
         var user = NewUser("Ada", "A");
-        var repo = new UserRepository(ctx);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
         await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
 
         (await repo.LockPasswordStateAsync(user, Ct)).Should().BeFalse();
@@ -735,8 +735,9 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var otherChild = NewUser("Otro", parentId: AuthorId);
         ctx.AddRange(guardian, child, otherChild);
         await ctx.SaveChangesAsync(Ct);
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
 
-        var dependents = await new UserRepository(ctx).ListDependentsAsync(guardian.Id, Ct);
+        var dependents = await repo.ListDependentsAsync(guardian.Id, Ct);
 
         dependents.Select(user => user.Id).Should().Equal(child.Id);
     }

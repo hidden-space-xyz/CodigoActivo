@@ -15,6 +15,7 @@ namespace CodigoActivo.Infrastructure.Database;
 /// publishes the domain events of the committed aggregates afterwards: right after a save, or
 /// when the explicit transaction the save ran in commits. The events of a change stay with it
 /// until a commit includes it, so a failed save or transaction neither publishes nor loses them.
+/// Repositories that write a change on their own hand its events over the same way.
 /// </summary>
 /// <param name="context">Database context shared by the repositories of the scope.</param>
 /// <param name="publisher">Publisher of the committed domain events.</param>
@@ -58,16 +59,26 @@ public sealed class UnitOfWork(
             .. sources.SelectMany(source => source.PullDomainEvents()),
         ];
         staged.Clear();
+        await PublishAfterCommitAsync(raised);
+        return saved;
+    }
+
+    /// <summary>
+    /// Publishes the events of a change already written to the database: right away when no
+    /// transaction is open, or when the open unit-of-work transaction commits. A transaction that
+    /// rolls back discards them, so a retried attempt publishes only the events it raises again.
+    /// </summary>
+    /// <param name="domainEvents">Events of the written change, in the order they were raised.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    internal async Task PublishAfterCommitAsync(IReadOnlyList<IDomainEvent> domainEvents)
+    {
         if (context.Database.CurrentTransaction is null)
         {
-            await publisher.PublishAsync(raised);
-        }
-        else
-        {
-            uncommitted.AddRange(raised);
+            await publisher.PublishAsync(domainEvents);
+            return;
         }
 
-        return saved;
+        uncommitted.AddRange(domainEvents);
     }
 
     /// <inheritdoc />

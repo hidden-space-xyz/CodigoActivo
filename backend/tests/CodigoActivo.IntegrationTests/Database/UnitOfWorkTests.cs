@@ -30,10 +30,11 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     private static readonly Guid ActivityId = new("cccccccc-0000-0000-0000-000000000004");
     private const string UserEmail = "unit-of-work@codigoactivo.test";
 
-    private static readonly global::CodigoActivo.Domain.Users.UserId SeededUserId =
-        global::CodigoActivo.Domain.Users.UserId.From(UserId);
     private static readonly global::CodigoActivo.Domain.Events.EventId SeededEventId =
         global::CodigoActivo.Domain.Events.EventId.From(EventId);
+
+    private static readonly global::CodigoActivo.Domain.Users.UserId SeededUserId =
+        global::CodigoActivo.Domain.Users.UserId.From(UserId);
 
     public async ValueTask InitializeAsync()
     {
@@ -289,7 +290,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var db = postgres.CreateContext();
         var uow = TestUnitOfWork.For(db);
-        var users = new UserRepository(db);
+        var users = new UserRepository(db, uow);
         var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
         user.ChangeType(UserType.Sponsor, Fixed);
 
@@ -394,6 +395,195 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         (await verify.Events.Where(e => e.Featured).Select(e => e.Id).ToListAsync(Ct))
             .Should()
             .Equal(SeededEventId);
+    }
+
+    [Fact]
+    public async Task ExecuteInTransactionAsyncPasswordLockIsPublishedOnceTheTransactionCommits()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var publisher = new RecordingPublisher();
+            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var users = new UserRepository(db, uow);
+            var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+
+            await uow.ExecuteInTransactionAsync(
+                async attempt =>
+                {
+                    await LockPasswordAsync(users, user, attempt);
+                    publisher.Published.Should().BeEmpty();
+                    return true;
+                },
+                Ct
+            );
+
+            publisher.Published.Should().Equal(new PasswordLocked(SeededUserId));
+            (await uow.SaveChangesAsync(Ct)).Should().Be(0);
+            publisher.Published.Should().ContainSingle();
+        }
+
+        await using var verify = postgres.CreateContext();
+        (await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct))
+            .PasswordLockedAt.Should()
+            .Be(Fixed);
+    }
+
+    [Fact]
+    public async Task ExecuteInTransactionAsyncRolledBackPasswordLockIsNeverPublishedNorKept()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var publisher = new RecordingPublisher();
+            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var users = new UserRepository(db, uow);
+            var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+            user.ChangeType(UserType.Sponsor, Fixed);
+
+            var refused = () =>
+                uow.ExecuteInTransactionAsync<bool>(
+                    async attempt =>
+                    {
+                        await LockPasswordAsync(users, user, attempt);
+                        throw new InvalidOperationException("refused");
+                    },
+                    Ct
+                );
+
+            await refused.Should().ThrowAsync<InvalidOperationException>();
+            user.IsPasswordLocked().Should().BeFalse();
+            user.PasswordFailedAttempts.Should().Be(0);
+            user.UserType.Should().Be(UserType.Sponsor);
+            publisher.Published.Should().BeEmpty();
+
+            await uow.SaveChangesAsync(Ct);
+
+            publisher.Published.Should().Equal(new UserTypeChanged(SeededUserId));
+        }
+
+        await using var verify = postgres.CreateContext();
+        var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        stored.IsPasswordLocked().Should().BeFalse();
+        stored.PasswordFailedAttempts.Should().Be(0);
+        stored.UserType.Should().Be(UserType.Sponsor);
+    }
+
+    [Fact]
+    public async Task ExecuteInTransactionAsyncDeadlockedPasswordLockIsPublishedOnceForTheRetry()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var publisher = new RecordingPublisher();
+            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var users = new UserRepository(db, uow);
+            var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+            user.ChangeType(UserType.Sponsor, Fixed);
+            var attempts = 0;
+
+            await uow.ExecuteInTransactionAsync(
+                async attempt =>
+                {
+                    attempts++;
+                    await LockPasswordAsync(users, user, attempt);
+                    return attempts > 1 ? true : throw Deadlock();
+                },
+                Ct
+            );
+
+            attempts.Should().Be(2);
+            publisher.Published.Should().Equal(new PasswordLocked(SeededUserId));
+
+            await uow.SaveChangesAsync(Ct);
+
+            publisher
+                .Published.Should()
+                .Equal(new PasswordLocked(SeededUserId), new UserTypeChanged(SeededUserId));
+        }
+
+        await using var verify = postgres.CreateContext();
+        var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        stored.PasswordFailedAttempts.Should().Be(1);
+        stored.PasswordLockedAt.Should().Be(Fixed);
+        stored.UserType.Should().Be(UserType.Sponsor);
+    }
+
+    [Fact]
+    public async Task ExecuteInTransactionAsyncPasswordLockLeavesTheOtherChangesOfTheAccountStaged()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var publisher = new RecordingPublisher();
+            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var users = new UserRepository(db, uow);
+            var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+            user.ChangeType(UserType.Sponsor, Fixed);
+
+            await uow.ExecuteInTransactionAsync(
+                async attempt =>
+                {
+                    user.SetAdministrator(true, Fixed);
+                    return await LockPasswordAsync(users, user, attempt);
+                },
+                Ct
+            );
+
+            publisher.Published.Should().Equal(new PasswordLocked(SeededUserId));
+            await using (var meanwhile = postgres.CreateContext())
+            {
+                var committed = await meanwhile.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+                committed.IsPasswordLocked().Should().BeTrue();
+                committed.UserType.Should().Be(UserType.Member);
+                committed.IsAdmin.Should().BeFalse();
+            }
+
+            await uow.SaveChangesAsync(Ct);
+
+            publisher
+                .Published.Should()
+                .Equal(
+                    new PasswordLocked(SeededUserId),
+                    new UserTypeChanged(SeededUserId),
+                    new AdministratorRightsChanged(SeededUserId, true)
+                );
+        }
+
+        await using var verify = postgres.CreateContext();
+        var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        stored.IsPasswordLocked().Should().BeTrue();
+        stored.UserType.Should().Be(UserType.Sponsor);
+        stored.IsAdmin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SavePasswordStateAsyncLockOutsideATransactionIsPublishedRightAway()
+    {
+        await using var db = postgres.CreateContext();
+        var publisher = new RecordingPublisher();
+        var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+        var users = new UserRepository(db, uow);
+        var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+        user.ChangeType(UserType.Sponsor, Fixed);
+        user.RecordPasswordFailure(1, Fixed);
+
+        await users.SavePasswordStateAsync(user, Ct);
+
+        publisher.Published.Should().Equal(new PasswordLocked(SeededUserId));
+        user.PullDomainEvents().Should().Equal(new UserTypeChanged(SeededUserId));
+        await using var verify = postgres.CreateContext();
+        var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        stored.PasswordLockedAt.Should().Be(Fixed);
+        stored.UserType.Should().Be(UserType.Member);
+    }
+
+    private static async Task<bool> LockPasswordAsync(
+        UserRepository users,
+        User user,
+        CancellationToken attempt
+    )
+    {
+        await users.LockPasswordStateAsync(user, attempt);
+        user.RecordPasswordFailure(1, Fixed);
+        await users.SavePasswordStateAsync(user, attempt);
+        return true;
     }
 
     private static PostgresException Deadlock()

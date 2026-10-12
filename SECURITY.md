@@ -191,8 +191,9 @@ derives that key with HKDF-SHA256 from the Data Protection certificate's private
 and links.
 
 Five consecutive wrong passwords for the same account — counted together by `PasswordAttemptGuard` across the
-login password step and every route that asks the caller to re-enter their own password — lock the account,
-delete its `user_sessions` rows and email its owner; one correct password before the limit clears the count.
+login password step and every route that asks the caller to re-enter their own password — lock the account.
+Once the lock commits, the `PasswordLocked` listeners delete its `user_sessions` rows and email its owner, even
+if the client has gone; one correct password before the limit clears the count.
 A locked account answers every password, right or wrong, with the same `InvalidCredentials` after the same
 Argon2 work, and only a completed password reset lifts it: `forgot-password` keeps working, while an
 administrator's second-factor reset does not unlock. The accepted trade-off is that anyone who knows an
@@ -350,7 +351,8 @@ endpoint's route template, and exception type/message/stack traces.
   the requested path. EF Core sensitive-data logging stays disabled; `SmtpEmailSender` strips the recipient
   and server reply out of SMTP exceptions before they are logged.
 - **Security events**: only four events exist, all `Warning` and free of any user id —
-  `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked),
+  `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked;
+  written once the lock commits),
   `AdministratorFlagChanged` (the administrator flag changed) and `SecurityNotificationRateLimited` (a
   security-change email was dropped by the limiter). Logins, logouts and password changes are not recorded.
 - **API log output**: the flat `LOG_DIRECTORY` variable selects the sink. With a value, every event goes to

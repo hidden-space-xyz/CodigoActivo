@@ -375,11 +375,12 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 .Options
         );
         var user = await db.Users.SingleAsync(u => u.Id == UserId.From(userId), Ct);
+        var uow = TestUnitOfWork.For(db);
         var eraser = new AccountEraser(
-            new UserRepository(db),
+            new UserRepository(db, uow),
             new DeletedAccountRepository(db),
             new AccountErasureStore(db),
-            TestUnitOfWork.For(db)
+            uow
         );
         return await eraser.EraseAsync(
             user,
