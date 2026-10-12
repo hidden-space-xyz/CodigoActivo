@@ -1,7 +1,7 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
-using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;

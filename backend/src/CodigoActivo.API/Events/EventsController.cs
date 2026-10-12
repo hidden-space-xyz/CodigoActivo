@@ -3,6 +3,8 @@ using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Events.Contracts;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Application.Events.Commands;
