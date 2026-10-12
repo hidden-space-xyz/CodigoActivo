@@ -13,8 +13,8 @@ Do not copy the same explanation into every file. Documentation must stay short 
 document with every change: update the fact that changed, remove what it replaces, and add sections only for
 new operational facts.
 
-Backend and frontend conventions and commands live in [backend/CLAUDE.md](backend/CLAUDE.md) and
-[frontend/CLAUDE.md](frontend/CLAUDE.md).
+Backend and frontend conventions and commands live in [backend/AGENTS.md](backend/AGENTS.md) and
+[frontend/AGENTS.md](frontend/AGENTS.md).
 
 ## Non-negotiable rules
 
