@@ -115,6 +115,6 @@ public sealed class EnumBindingTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().NotBe(HttpStatusCode.BadRequest);
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 }

@@ -518,6 +518,19 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task HouseholdAssignmentsUnknownEventReturnsNotFound()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/activities/household-assignments/{Guid.NewGuid()}"),
+            Ct
+        );
+
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
+    }
+
+    [Fact]
     public async Task HouseholdAssignmentsAnonymousReturnsUnauthorized()
     {
         var client = CreateClient();

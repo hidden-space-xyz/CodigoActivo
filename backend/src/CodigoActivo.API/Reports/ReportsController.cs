@@ -52,11 +52,14 @@ public class ReportsController : ApiControllerBase
         Guid eventId,
         [FromQuery] EventAttendeeListQuery query,
         [FromServices]
-            IQueryHandler<ListEventAttendeesQuery, PagedResult<EventAttendeeResponse>> handler,
+            IQueryHandler<
+            ListEventAttendeesQuery,
+            Result<PagedResult<EventAttendeeResponse>>
+        > handler,
         CancellationToken ct
     )
     {
-        return Ok(
+        return ToOk(
             await handler.HandleAsync(new ListEventAttendeesQuery(EventId.From(eventId), query), ct)
         );
     }

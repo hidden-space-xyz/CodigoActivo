@@ -571,7 +571,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsyncMissingEventReturnsEmptyPage()
+    public async Task EventAttendeesAsyncMissingEventReturnsNotFound()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -581,10 +581,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventAttendeeResponse>>(Ct);
-        page!.Total.Should().Be(0);
-        page.Items.Should().BeEmpty();
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]

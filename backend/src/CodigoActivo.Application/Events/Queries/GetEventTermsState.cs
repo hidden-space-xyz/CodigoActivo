@@ -1,8 +1,10 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Events.Queries;
@@ -11,7 +13,8 @@ namespace CodigoActivo.Application.Events.Queries;
 /// Carries the criteria used to retrieve the current user's terms state for an event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record GetEventTermsStateQuery(EventId EventId) : IQuery<EventTermsStateResponse>;
+public sealed record GetEventTermsStateQuery(EventId EventId)
+    : IQuery<Result<EventTermsStateResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve the current user's terms state for an event.
@@ -23,15 +26,15 @@ public sealed class GetEventTermsStateQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
     ICurrentUser currentUser
-) : IQueryHandler<GetEventTermsStateQuery, EventTermsStateResponse>
+) : IQueryHandler<GetEventTermsStateQuery, Result<EventTermsStateResponse>>
 {
     /// <summary>
     /// Handles the request to retrieve the current user's terms state for an event.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the event's terms state for the current user.</returns>
-    public async Task<EventTermsStateResponse> HandleAsync(
+    /// <returns>A task whose result contains the event's terms state for the current user on success, or an application error on failure.</returns>
+    public async Task<Result<EventTermsStateResponse>> HandleAsync(
         GetEventTermsStateQuery query,
         CancellationToken ct = default
     )
@@ -39,6 +42,11 @@ public sealed class GetEventTermsStateQueryHandler(
         ArgumentNullException.ThrowIfNull(query);
         var eventId = query.EventId.Value;
         var userId = currentUser.RequiredId().Value;
+        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == eventId), ct))
+        {
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
+        }
+
         var documents = await executor.ToListAsync(
             readStore
                 .EventTermsDocuments.Where(d => d.EventId == eventId)

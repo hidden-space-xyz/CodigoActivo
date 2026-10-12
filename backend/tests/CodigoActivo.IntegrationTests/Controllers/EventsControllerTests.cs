@@ -1022,6 +1022,19 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task TermsStateUnknownEventReturnsNotFound()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/events/{Guid.NewGuid()}/terms"),
+            Ct
+        );
+
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
+    }
+
+    [Fact]
     public async Task TermsDocumentWithAnImageIsRefusedOnCreateAndUpdate()
     {
         const string ImageDocument =

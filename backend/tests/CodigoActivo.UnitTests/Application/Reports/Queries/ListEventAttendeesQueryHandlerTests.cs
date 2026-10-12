@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Domain.Common;
@@ -21,6 +22,7 @@ public sealed class ListEventAttendeesQueryHandlerTests
 
     public ListEventAttendeesQueryHandlerTests()
     {
+        store.Events.Add(new EventRow { Id = QueriedEventId });
         sut = new ListEventAttendeesQueryHandler(store, new FakeQueryExecutor());
     }
 
@@ -81,15 +83,17 @@ public sealed class ListEventAttendeesQueryHandlerTests
         store.Users.AddRange(attendees);
     }
 
-    private Task<PagedResult<EventAttendeeResponse>> ListAsync(
+    private async Task<PagedResult<EventAttendeeResponse>> ListAsync(
         Guid eventId,
         EventAttendeeListQuery filters
     )
     {
-        return sut.HandleAsync(
+        var result = await sut.HandleAsync(
             new ListEventAttendeesQuery(EventId.From(eventId), filters),
             TestContext.Current.CancellationToken
         );
+        result.IsSuccess.Should().BeTrue();
+        return result.Value;
     }
 
     [Fact]
@@ -306,15 +310,18 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEventMissingReturnsEmptyPage()
+    public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         var ana = NewUserRow("Ana");
         HasConfirmedAttendees(ana);
 
-        var page = await ListAsync(Guid.NewGuid(), new EventAttendeeListQuery());
+        var result = await sut.HandleAsync(
+            new ListEventAttendeesQuery(EventId.From(Guid.NewGuid()), new EventAttendeeListQuery()),
+            TestContext.Current.CancellationToken
+        );
 
-        page.Total.Should().Be(0);
-        page.Items.Should().BeEmpty();
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
+        store.ReadsOf<UserRow>().Should().Be(0);
     }
 
     [Fact]

@@ -1,6 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -13,10 +16,12 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
 {
     private readonly FakeReadStore store = new();
     private readonly Guid actingUserId = Guid.NewGuid();
+    private readonly Guid eventId = Guid.NewGuid();
     private readonly GetHouseholdAssignmentsQueryHandler sut;
 
     public GetHouseholdAssignmentsQueryHandlerTests()
     {
+        store.Events.Add(new EventRow { Id = eventId });
         sut = new GetHouseholdAssignmentsQueryHandler(
             store,
             new FakeQueryExecutor(),
@@ -72,10 +77,35 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
         };
     }
 
+    private async Task<IReadOnlyList<HouseholdMemberAssignmentResponse>> AssignmentsAsync()
+    {
+        var result = await sut.HandleAsync(
+            new GetHouseholdAssignmentsQuery(EventId.From(eventId)),
+            TestContext.Current.CancellationToken
+        );
+        result.IsSuccess.Should().BeTrue();
+        return result.Value;
+    }
+
+    [Fact]
+    public async Task HandleAsyncEventMissingReturnsNotFound()
+    {
+        var unknownEventId = Guid.NewGuid();
+        var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
+        store.Assignments.Add(HouseholdAssignment(parent, unknownEventId));
+
+        var result = await sut.HandleAsync(
+            new GetHouseholdAssignmentsQuery(EventId.From(unknownEventId)),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
+        store.ReadsOf<AssignmentRow>().Should().Be(0);
+    }
+
     [Fact]
     public async Task HandleAsyncParentAndChildAssignedOrdersByFirstNameAndIncludesChild()
     {
-        var eventId = Guid.NewGuid();
         var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
         var child = HouseholdUser(Guid.NewGuid(), "Ana", "Kid", actingUserId);
         store.Assignments.AddRange([
@@ -83,10 +113,7 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
             HouseholdAssignment(child, eventId),
         ]);
 
-        var result = await sut.HandleAsync(
-            new GetHouseholdAssignmentsQuery(EventId.From(eventId)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await AssignmentsAsync();
 
         result.Should().HaveCount(2);
         result[0].UserId.Should().Be(child.Id);
@@ -103,16 +130,12 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSameUserMultipleActivitiesOrdersByActivityStart()
     {
-        var eventId = Guid.NewGuid();
         var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
         var late = HouseholdAssignment(parent, eventId, startHour: 15);
         var early = HouseholdAssignment(parent, eventId, startHour: 9);
         store.Assignments.AddRange([late, early]);
 
-        var result = await sut.HandleAsync(
-            new GetHouseholdAssignmentsQuery(EventId.From(eventId)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await AssignmentsAsync();
 
         result.Select(a => a.ActivityId).Should().Equal(early.ActivityId, late.ActivityId);
     }
@@ -120,7 +143,6 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
     [Fact]
     public async Task HandleAsyncStrangerOrOtherEventAssignmentsAreExcluded()
     {
-        var eventId = Guid.NewGuid();
         var parent = HouseholdUser(actingUserId, "Zoe", "Parent");
         var stranger = HouseholdUser(Guid.NewGuid(), "Bob", "Stranger");
         var mine = HouseholdAssignment(parent, eventId);
@@ -130,10 +152,7 @@ public sealed class GetHouseholdAssignmentsQueryHandlerTests
             HouseholdAssignment(stranger, eventId),
         ]);
 
-        var result = await sut.HandleAsync(
-            new GetHouseholdAssignmentsQuery(EventId.From(eventId)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await AssignmentsAsync();
 
         result.Should().ContainSingle();
         result[0].UserId.Should().Be(actingUserId);

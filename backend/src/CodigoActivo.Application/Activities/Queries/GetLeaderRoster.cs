@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
@@ -18,13 +19,14 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 public sealed record GetLeaderRosterQuery(EventId EventId)
-    : IQuery<IReadOnlyList<LeaderRosterActivityResponse>>;
+    : IQuery<Result<IReadOnlyList<LeaderRosterActivityResponse>>>;
 
 /// <summary>
 /// Executes the query to retrieve the leader roster of an event. It returns only the activities of
 /// the event that have not ended and in which the requesting user holds a confirmed leader
 /// assignment of their own, each with its currently confirmed attendees; everyone else, including
-/// administrators and the guardians of a leading minor, receives an empty list.
+/// administrators and the guardians of a leading minor, receives an empty list. An unknown event
+/// answers that the event was not found.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -35,15 +37,15 @@ public sealed class GetLeaderRosterQueryHandler(
     IQueryExecutor executor,
     IClock clock,
     ICurrentUser currentUser
-) : IQueryHandler<GetLeaderRosterQuery, IReadOnlyList<LeaderRosterActivityResponse>>
+) : IQueryHandler<GetLeaderRosterQuery, Result<IReadOnlyList<LeaderRosterActivityResponse>>>
 {
     /// <summary>
     /// Handles the request to retrieve the leader roster of an event.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the led activities in chronological order.</returns>
-    public async Task<IReadOnlyList<LeaderRosterActivityResponse>> HandleAsync(
+    /// <returns>A task whose result contains the led activities in chronological order on success, or an application error on failure.</returns>
+    public async Task<Result<IReadOnlyList<LeaderRosterActivityResponse>>> HandleAsync(
         GetLeaderRosterQuery query,
         CancellationToken ct = default
     )
@@ -52,6 +54,11 @@ public sealed class GetLeaderRosterQueryHandler(
         var now = clock.UtcNow;
         var eventId = query.EventId.Value;
         var userId = currentUser.RequiredId().Value;
+        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == eventId), ct))
+        {
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
+        }
+
         var ledActivities = await executor.ToListAsync(
             readStore
                 .Assignments.Where(ActivityProjections.ConfirmedSignup)
@@ -72,7 +79,7 @@ public sealed class GetLeaderRosterQueryHandler(
         );
         if (ledActivities.Count == 0)
         {
-            return [];
+            return Result.Success<IReadOnlyList<LeaderRosterActivityResponse>>([]);
         }
 
         var ledActivityIds = ledActivities.Select(a => a.ActivityId).ToList();
@@ -104,8 +111,7 @@ public sealed class GetLeaderRosterQueryHandler(
         );
 
         var attendeesByActivity = attendees.ToLookup(a => a.ActivityId);
-        return
-        [
+        return Result.Success<IReadOnlyList<LeaderRosterActivityResponse>>([
             .. ledActivities
                 .OrderBy(a => a.ActivityStartsAt)
                 .ThenBy(a => a.Title, StringComparer.Ordinal)
@@ -118,7 +124,7 @@ public sealed class GetLeaderRosterQueryHandler(
                     a.ActivityEndsAt,
                     ToRoles(attendeesByActivity[a.ActivityId], LocalDay(a.ActivityStartsAt))
                 )),
-        ];
+        ]);
     }
 
     private DateOnly LocalDay(DateTimeOffset instant)

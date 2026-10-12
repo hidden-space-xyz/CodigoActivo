@@ -114,11 +114,12 @@ public class EventsController : ApiControllerBase
     [Authorize]
     public async Task<ActionResult<EventTermsStateResponse>> TermsStateAsync(
         Guid eventId,
-        [FromServices] IQueryHandler<GetEventTermsStateQuery, EventTermsStateResponse> handler,
+        [FromServices]
+            IQueryHandler<GetEventTermsStateQuery, Result<EventTermsStateResponse>> handler,
         CancellationToken ct
     )
     {
-        return Ok(
+        return ToOk(
             await handler.HandleAsync(new GetEventTermsStateQuery(EventId.From(eventId)), ct)
         );
     }
@@ -131,7 +132,7 @@ public class EventsController : ApiControllerBase
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the led activities with their attendees.</returns>
+    /// <returns>An HTTP response containing the led activities with their attendees, or an error response.</returns>
     [HttpGet("{eventId:guid}/leader-roster")]
     [Authorize]
     public async Task<ActionResult<IReadOnlyList<LeaderRosterActivityResponse>>> LeaderRosterAsync(
@@ -139,12 +140,12 @@ public class EventsController : ApiControllerBase
         [FromServices]
             IQueryHandler<
             GetLeaderRosterQuery,
-            IReadOnlyList<LeaderRosterActivityResponse>
+            Result<IReadOnlyList<LeaderRosterActivityResponse>>
         > handler,
         CancellationToken ct
     )
     {
-        return Ok(await handler.HandleAsync(new GetLeaderRosterQuery(EventId.From(eventId)), ct));
+        return ToOk(await handler.HandleAsync(new GetLeaderRosterQuery(EventId.From(eventId)), ct));
     }
 
     /// <summary>
