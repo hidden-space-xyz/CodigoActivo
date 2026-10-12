@@ -1,6 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using Xunit;

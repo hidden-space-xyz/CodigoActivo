@@ -1,6 +1,6 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Domain.Users;
 

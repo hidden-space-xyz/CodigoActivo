@@ -1,7 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;

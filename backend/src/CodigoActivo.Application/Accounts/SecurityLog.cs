@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Accounts.Notifications;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Accounts;

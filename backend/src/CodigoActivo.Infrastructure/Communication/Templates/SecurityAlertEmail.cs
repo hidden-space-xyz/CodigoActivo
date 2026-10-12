@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Common.Localization;
 
 namespace CodigoActivo.Infrastructure.Communication.Templates;

@@ -1,6 +1,7 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;

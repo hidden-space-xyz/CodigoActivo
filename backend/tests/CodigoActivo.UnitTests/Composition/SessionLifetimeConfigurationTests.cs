@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Composition;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,6 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Composition;
 using CodigoActivo.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;

@@ -1,5 +1,5 @@
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.UnitTests.TestSupport;

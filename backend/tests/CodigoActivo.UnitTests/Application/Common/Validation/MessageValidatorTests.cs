@@ -1,6 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;

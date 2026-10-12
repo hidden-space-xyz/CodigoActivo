@@ -1,4 +1,4 @@
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
