@@ -1,14 +1,19 @@
+using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Diagnostics;
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
+using CodigoActivo.Application.Abstractions.Persistence;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Routing.Patterns;
 
 namespace CodigoActivo.API.Middlewares;
 
 /// <summary>
-/// Logs unexpected failures and returns a safe problem response. The entry names the endpoint by its
-/// route pattern, never by the requested path, which carries the identifiers of the users it is
-/// about.
+/// Logs unexpected failures and returns a safe problem response. A commit refused because another
+/// transaction changed the same data first is answered as a conflict the client can send again,
+/// <see cref="ErrorCode.ConcurrentUpdate"/>, instead of an unexpected error. The entry names the
+/// endpoint by its route pattern, never by the requested path, which carries the identifiers of
+/// the users it is about.
 /// </summary>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
@@ -31,13 +36,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
     {
         ArgumentNullException.ThrowIfNull(httpContext);
 
-        logger.UnhandledRequestException(
-            httpContext.Request.Method,
-            RouteTemplate(httpContext),
-            exception
-        );
-
-        var (statusCode, body) = ApiErrorResponseExtensions.CreateInternalError(httpContext);
+        var (statusCode, body) = Answer(httpContext, exception);
         httpContext.Response.StatusCode = statusCode;
         await httpContext.Response.WriteAsJsonAsync(
             body,
@@ -46,6 +45,26 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         );
 
         return true;
+    }
+
+    private (int StatusCode, ApiErrorResponse Body) Answer(
+        HttpContext httpContext,
+        Exception exception
+    )
+    {
+        var method = httpContext.Request.Method;
+        var route = RouteTemplate(httpContext);
+        if (exception is ConcurrentUpdateException)
+        {
+            logger.ConcurrentUpdateRefused(method, route);
+            return ApiErrorResponseExtensions.Create(
+                ApiError.Conflict(ErrorCode.ConcurrentUpdate),
+                httpContext
+            );
+        }
+
+        logger.UnhandledRequestException(method, route, exception);
+        return ApiErrorResponseExtensions.CreateInternalError(httpContext);
     }
 
     /// <summary>

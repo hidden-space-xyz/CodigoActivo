@@ -4,8 +4,10 @@ using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
@@ -43,7 +45,8 @@ public sealed class GlobalExceptionHandlerTests
     }
 
     private static async Task<RecordingLogger<GlobalExceptionHandler>> HandleAsync(
-        Action<DefaultHttpContext> arrange
+        Action<DefaultHttpContext> arrange,
+        Exception? exception = null
     )
     {
         var logger = new RecordingLogger<GlobalExceptionHandler>();
@@ -55,7 +58,7 @@ public sealed class GlobalExceptionHandlerTests
 
         await new GlobalExceptionHandler(logger).TryHandleAsync(
             context,
-            new InvalidOperationException("boom"),
+            exception ?? new InvalidOperationException("boom"),
             TestContext.Current.CancellationToken
         );
 
@@ -117,6 +120,40 @@ public sealed class GlobalExceptionHandlerTests
         body.Status.Should().Be(StatusCodes.Status500InternalServerError);
         body.Title.Should().Be("Internal Server Error");
         body.TraceId.Should().Be("abc-999");
+    }
+
+    [Fact]
+    public async Task TryHandleAsyncConcurrentUpdateWritesConflictBodyWithTraceId()
+    {
+        var context = NewContext("abc-409");
+
+        await Sut.TryHandleAsync(
+            context,
+            new ConcurrentUpdateException(typeof(User), new InvalidOperationException()),
+            TestContext.Current.CancellationToken
+        );
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+        var body = await ReadBodyAsync(context);
+        body.Code.Should().Be(ErrorCode.ConcurrentUpdate);
+        body.Status.Should().Be(StatusCodes.Status409Conflict);
+        body.Title.Should().Be("Conflict");
+        body.TraceId.Should().Be("abc-409");
+    }
+
+    [Fact]
+    public async Task TryHandleAsyncConcurrentUpdateLogsAWarningWithTheRouteTemplate()
+    {
+        var logger = await HandleAsync(
+            context => context.SetEndpoint(UserEndpoint()),
+            new ConcurrentUpdateException()
+        );
+
+        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        entry.Level.Should().Be(LogLevel.Warning);
+        entry
+            .Message.Should()
+            .Be($"Concurrent update refused while processing DELETE {RouteTemplate}");
     }
 
     [Fact]

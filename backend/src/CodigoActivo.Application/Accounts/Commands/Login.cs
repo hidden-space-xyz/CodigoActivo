@@ -28,14 +28,20 @@ public sealed record LoginCommand(
 /// pay the same Argon2 work and answer the same error, so neither the response nor its timing
 /// discloses which identifiers exist or which accounts are locked. Every accepted password step
 /// stores a fresh challenge identifier, so the challenge cookie of an earlier attempt stops working.
+/// The password is verified without holding the account locked; only an accepted one locks and
+/// reloads the account to open the challenge, and a password replaced or an account locked since
+/// the check is answered like a wrong password, without counting it, because the password was
+/// right when it was checked. So no challenge is ever opened for a replaced password.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="accountLock">Opens the challenge with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="twoFactor">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed login codes.</param>
 public sealed class LoginCommandHandler(
     IUserRepository users,
+    AccountLock accountLock,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
     TwoFactorOptions twoFactor,
@@ -55,17 +61,38 @@ public sealed class LoginCommandHandler(
     {
         var email = EmailAddress.Create(command.Identifier);
         var user = email.IsSuccess ? await users.GetByEmailAsync(email.Value, ct) : null;
-
         var accepted = await passwordAttempts.VerifyLoginPasswordAsync(user, command.Password, ct);
-
-        if (user is null)
+        if (user is null || !accepted)
         {
-            return Error.Unauthorized(ApplicationErrorCode.InvalidCredentials);
+            return InvalidCredentials();
         }
 
-        if (!accepted)
+        var verifiedHash = user.PasswordHash;
+        return await accountLock.RunAsync(
+            user,
+            attempt => OpenChallengeLockedAsync(user, verifiedHash, attempt),
+            InvalidCredentials(),
+            ct
+        );
+    }
+
+    private static Result<LoginChallengeKey> InvalidCredentials()
+    {
+        return Error.Unauthorized(ApplicationErrorCode.InvalidCredentials);
+    }
+
+    private async Task<Result<LoginChallengeKey>> OpenChallengeLockedAsync(
+        User user,
+        string? verifiedHash,
+        CancellationToken ct
+    )
+    {
+        if (
+            !string.Equals(user.PasswordHash, verifiedHash, StringComparison.Ordinal)
+            || user.PasswordLockout.IsLocked
+        )
         {
-            return Error.Unauthorized(ApplicationErrorCode.InvalidCredentials);
+            return InvalidCredentials();
         }
 
         if (user.IsBlocked)

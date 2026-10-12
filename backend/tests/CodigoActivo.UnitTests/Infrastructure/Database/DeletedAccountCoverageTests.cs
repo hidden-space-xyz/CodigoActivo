@@ -36,6 +36,8 @@ public sealed class DeletedAccountCoverageTests : IDisposable
 
     private static readonly string[] TechnicalReferences = ["UserSession.UserId"];
 
+    private static readonly string[] TechnicalUserProperties = [UserConfiguration.RowVersion];
+
     private static readonly string[] HandedOverReferences =
     [
         "Activity.CreatedBy",
@@ -142,7 +144,11 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         PropertiesOf<User>()
             .Should()
             .BeEquivalentTo(
-                [.. CopiedUserProperties(), .. LegalCopy.ExcludedUserProperties],
+                [
+                    .. CopiedUserProperties(),
+                    .. LegalCopy.ExcludedUserProperties,
+                    .. TechnicalUserProperties,
+                ],
                 Decide
             );
         CopiedUserProperties().Intersect(LegalCopy.ExcludedUserProperties).Should().BeEmpty();

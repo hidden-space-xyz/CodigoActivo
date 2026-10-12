@@ -24,6 +24,7 @@ public sealed class EmailClaimsTests
     public EmailClaimsTests()
     {
         sut = new EmailClaims(
+            users.LocksEveryAccount(),
             AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
             uow
         );
@@ -46,6 +47,62 @@ public sealed class EmailClaimsTests
         users.DidNotReceiveWithAnyArgs().Remove(default!);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task TryCommitAsyncHolderVerifiedMeanwhileRefusesTheClaimAndDiscardsIt()
+    {
+        var holder = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
+        users.ReloadsAs(holder, new { Status = UserStatus.Active });
+
+        var committed = await sut.TryCommitAsync(
+            NewUser(),
+            holder,
+            clock.UtcNow,
+            TestContext.Current.CancellationToken
+        );
+
+        committed.Should().BeFalse();
+        users.DidNotReceiveWithAnyArgs().Remove(default!);
+        uow.Received(1).DiscardChanges();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task TryCommitAsyncHolderMovedToAnotherAddressMeanwhileCommitsOnlyTheClaimant()
+    {
+        var holder = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
+        users.ReloadsAs(holder, new { Email = EmailAddress.FromStored("otra@test.com") });
+
+        var committed = await sut.TryCommitAsync(
+            NewUser(),
+            holder,
+            clock.UtcNow,
+            TestContext.Current.CancellationToken
+        );
+
+        committed.Should().BeTrue();
+        users.DidNotReceiveWithAnyArgs().Remove(default!);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task TryCommitAsyncHolderStillUnverifiedIsErasedWithTheClaim()
+    {
+        var holder = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
+
+        var committed = await sut.TryCommitAsync(
+            NewUser(),
+            holder,
+            clock.UtcNow,
+            TestContext.Current.CancellationToken
+        );
+
+        committed.Should().BeTrue();
+        await users.Received(1).LockAsync(holder, Arg.Any<CancellationToken>());
+        users.Received(1).Remove(holder);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

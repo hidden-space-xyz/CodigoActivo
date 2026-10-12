@@ -13,9 +13,13 @@ namespace CodigoActivo.Application.Accounts.Passwords;
 /// lose each other's increments; reaching the limit locks the account and closes its pending
 /// second-factor challenge, and only a completed password reset clears the lock. The lock raises
 /// <see cref="PasswordLocked"/> exactly once, and its listeners delete the open sessions, record
-/// the lockout and warn the owner once it is committed. A correct password commits the reset of
-/// the counter here, because the calling handler may return without saving. A locked account
-/// refuses every password, so a correct one cannot be told apart from a wrong one.
+/// the lockout and warn the owner once it is committed. A correct password re-reads the lockout
+/// state with the row locked the same way, so a lock committed after the account was loaded still
+/// refuses it, and commits the reset of the counter there, because the calling handler may return
+/// without saving. The guard never holds the row locked while it verifies a password, and callers
+/// must not call it with the row locked, so the slow hashing never holds back other requests for
+/// the account. A locked account refuses every password, so a correct one cannot be told apart from
+/// a wrong one.
 /// </summary>
 /// <param name="users">Repository that counts the failures and locks the account atomically.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
@@ -71,8 +75,7 @@ public sealed class PasswordAttemptGuard(
             return false;
         }
 
-        await ForgetFailuresAsync(user, ct);
-        return true;
+        return await ForgetFailuresAsync(user, ct);
     }
 
     /// <summary>
@@ -106,8 +109,7 @@ public sealed class PasswordAttemptGuard(
             return false;
         }
 
-        await ForgetFailuresAsync(actingUser, ct);
-        return true;
+        return await ForgetFailuresAsync(actingUser, ct);
     }
 
     /// <summary>
@@ -128,15 +130,29 @@ public sealed class PasswordAttemptGuard(
         return await VerifyReauthenticationAsync(actingUser, password, ct);
     }
 
-    private async Task ForgetFailuresAsync(User user, CancellationToken ct)
+    private async Task<bool> ForgetFailuresAsync(User user, CancellationToken ct)
     {
-        if (user.PasswordLockout.FailedAttempts == 0)
-        {
-            return;
-        }
+        return await uow.ExecuteInTransactionAsync(
+            async attempt =>
+            {
+                if (
+                    !await users.LockPasswordStateAsync(user, attempt)
+                    || user.PasswordLockout.IsLocked
+                )
+                {
+                    return false;
+                }
 
-        user.ClearPasswordFailures();
-        await uow.SaveChangesAsync(ct);
+                if (user.PasswordLockout.FailedAttempts > 0)
+                {
+                    user.ClearPasswordFailures();
+                    await users.SavePasswordStateAsync(user, attempt);
+                }
+
+                return true;
+            },
+            ct
+        );
     }
 
     private async Task RecordFailureAsync(User user, CancellationToken ct)
@@ -144,7 +160,10 @@ public sealed class PasswordAttemptGuard(
         await uow.ExecuteInTransactionAsync(
             async attempt =>
             {
-                if (!await users.LockPasswordStateAsync(user, attempt))
+                if (
+                    !await users.LockPasswordStateAsync(user, attempt)
+                    || user.PasswordLockout.IsLocked
+                )
                 {
                     return false;
                 }

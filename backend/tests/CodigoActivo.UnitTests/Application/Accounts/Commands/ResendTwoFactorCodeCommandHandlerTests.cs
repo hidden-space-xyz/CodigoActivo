@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.SecondFactor;
@@ -36,6 +37,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         );
         sut = new ResendTwoFactorCodeCommandHandler(
             users,
+            AccountLocks.Create(users, Substitute.For<IUnitOfWork>()),
             clock,
             options,
             new LoginCodeIssuer(
@@ -153,6 +155,18 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     public async Task HandleAsyncWithinCooldownReturnsConflictWithoutEmailing()
     {
         var user = Prepare(NewUserWithLoginCode(clock, lastSentAt: clock.UtcNow.AddSeconds(-30)));
+
+        var result = await ResendAsync(user.Id.Value);
+
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncCodeSentByAParallelResendBeforeTheLockReturnsConflict()
+    {
+        var user = Prepare(NewUserWithLoginCode(clock, lastSentAt: clock.UtcNow.AddMinutes(-2)));
+        users.ReloadsAs(user, new { LoginCode = new { LastSentAt = clock.UtcNow.AddSeconds(-1) } });
 
         var result = await ResendAsync(user.Id.Value);
 

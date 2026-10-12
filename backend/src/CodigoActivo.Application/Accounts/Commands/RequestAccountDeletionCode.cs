@@ -27,9 +27,11 @@ public sealed record RequestAccountDeletionCodeCommand(
 /// towards the same account lock as logins. The code reuses the storage, lifetime, cooldown and
 /// lockout of the emailed login code. Users whose second factor is an authenticator application
 /// read their code from it and never reach this command, and the initial administrator, which can
-/// never be deleted, is refused before its password is checked.
+/// never be deleted, is refused before its password is checked. The code is issued with the account
+/// locked, so parallel requests run one after another and the later ones find the resend cooldown.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="accountLock">Runs the issue of the code with the account locked.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
@@ -37,6 +39,7 @@ public sealed record RequestAccountDeletionCodeCommand(
 /// <param name="loginCodes">Issuer of emailed one-time codes.</param>
 public sealed class RequestAccountDeletionCodeCommandHandler(
     IUserRepository users,
+    AccountLock accountLock,
     ICurrentUser currentUser,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
@@ -69,9 +72,26 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
 
         if (!await passwordAttempts.VerifyReauthenticationAsync(user, command.CurrentPassword, ct))
         {
-            return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
+            return CurrentPasswordIncorrect();
         }
 
+        var verifiedHash = user.PasswordHash;
+        return RefusalOf(user)
+            ?? await accountLock.RunAsync(
+                user,
+                attempt => IssueLockedAsync(user, verifiedHash, attempt),
+                Error.NotFound(ApplicationErrorCode.UserNotFound),
+                ct
+            );
+    }
+
+    private static Result CurrentPasswordIncorrect()
+    {
+        return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
+    }
+
+    private Result? RefusalOf(User user)
+    {
         var now = clock.UtcNow;
         var allowed = user.MayReceiveLoginCode(now);
         if (allowed.IsFailure)
@@ -84,6 +104,24 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
             return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
         }
 
-        return await loginCodes.IssueAccountDeletionAsync(user, now, ct);
+        return null;
+    }
+
+    private async Task<Result> IssueLockedAsync(
+        User user,
+        string? verifiedHash,
+        CancellationToken ct
+    )
+    {
+        if (
+            !string.Equals(user.PasswordHash, verifiedHash, StringComparison.Ordinal)
+            || user.PasswordLockout.IsLocked
+        )
+        {
+            return CurrentPasswordIncorrect();
+        }
+
+        return RefusalOf(user)
+            ?? await loginCodes.IssueAccountDeletionAsync(user, clock.UtcNow, ct);
     }
 }

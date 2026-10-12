@@ -60,6 +60,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         );
         sut = new RequestAccountDeletionCodeCommandHandler(
             users,
+            AccountLocks.Create(users, uow),
             currentUser,
             clock,
             PasswordGuards.Create(hasher, uow, clock, lockout),
@@ -311,6 +312,19 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCode.ExpiresAt.Should().Be(clock.UtcNow + options.ChallengeLifetime);
         user.LoginCode.LastSentAt.Should().Be(clock.UtcNow);
+    }
+
+    [Fact]
+    public async Task HandleAsyncPasswordReplacedBeforeTheLockReturnsBadRequestWithoutEmailing()
+    {
+        var user = Signed();
+        users.ReloadsAs(user, new { PasswordHash = FakePasswordHasher.Prefix + "replaced" });
+
+        var result = await RequestAsync(user.Id.Value);
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
+        emailSender.Sent.Should().BeEmpty();
+        user.LoginCode.Hash.Should().BeNull();
     }
 
     [Fact]

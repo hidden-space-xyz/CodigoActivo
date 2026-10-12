@@ -54,6 +54,7 @@ public sealed class LoginCommandHandlerTests
         );
         sut = new LoginCommandHandler(
             users,
+            AccountLocks.Create(users, uow.RunsTransactionsOf<Result<LoginChallengeKey>>()),
             clock,
             PasswordGuards.Create(hasher, uow, clock),
             twoFactor,
@@ -81,6 +82,13 @@ public sealed class LoginCommandHandlerTests
     {
         users.GetByEmailAsync(Arg.Any<EmailAddress>(), Arg.Any<CancellationToken>()).Returns(user);
         return user;
+    }
+
+    private Task<bool> AssertAccountRowNeverLockedAsync()
+    {
+        return users
+            .DidNotReceiveWithAnyArgs()
+            .LockAsync(default!, TestContext.Current.CancellationToken);
     }
 
     private Task<int> AssertNotSavedAsync()
@@ -149,6 +157,36 @@ public sealed class LoginCommandHandlerTests
             .Be(1, "the guard counts the failure on its own");
         user.PasswordLockout.LockedAt.Should().BeNull();
         await AssertNotSavedAsync();
+        await AssertAccountRowNeverLockedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncPasswordReplacedBeforeTheLockIsRefusedWithoutAChallenge()
+    {
+        var user = Returns(NewUser());
+        users.ReloadsAs(user, new { PasswordHash = "fake:replaced-meanwhile" });
+
+        var result = await LoginAsync();
+
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
+        user.LoginChallenge.Id.Should().BeNull();
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
+        emailSender.Sent.Should().BeEmpty();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncValidCredentialsSaveTheChallengeWhileTheAccountIsLocked()
+    {
+        var user = Returns(NewUser());
+
+        await LoginAsync();
+
+        Received.InOrder(() =>
+        {
+            _ = users.LockAsync(user, Arg.Any<CancellationToken>());
+            _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
+        });
     }
 
     [Theory]
@@ -279,6 +317,10 @@ public sealed class LoginCommandHandlerTests
         correct.Error.Should().BeEquivalentTo(wrong.Error);
         user.PasswordLockout.FailedAttempts.Should().Be(0);
         await AssertNotSavedAsync();
+        await AssertAccountRowNeverLockedAsync();
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .LockPasswordStateAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]

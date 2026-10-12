@@ -15,19 +15,26 @@ public sealed record ResendTwoFactorCodeCommand(LoginChallengeKey Challenge) : I
 
 /// <summary>
 /// Executes the command to email a new login code, replacing the previous one, while the challenge
-/// it answers is still open and the account may still sign in.
+/// it answers is still open and the account may still sign in. The code is issued with the account
+/// locked, so parallel requests run one after another and the later ones find the resend cooldown.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="accountLock">Runs the issue of the code with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="options">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed login codes.</param>
 public sealed class ResendTwoFactorCodeCommandHandler(
     IUserRepository users,
+    AccountLock accountLock,
     IClock clock,
     TwoFactorOptions options,
     LoginCodeIssuer loginCodes
 ) : ICommandHandler<ResendTwoFactorCodeCommand, Result>
 {
+    private static readonly Result Expired = Error.Unauthorized(
+        ApplicationErrorCode.TwoFactorChallengeExpired
+    );
+
     /// <summary>
     /// Handles the request to resend the login code.
     /// </summary>
@@ -40,18 +47,27 @@ public sealed class ResendTwoFactorCodeCommandHandler(
     )
     {
         ArgumentNullException.ThrowIfNull(command);
-        var now = clock.UtcNow;
         var user = await users.GetByIdAsync(command.Challenge.UserId, ct);
-        if (
-            user is null
-            || !user.HasOpenLoginChallenge(
-                command.Challenge.ChallengeId,
-                now,
-                options.ChallengeLifetime
-            )
-        )
+        if (user is null)
         {
-            return Error.Unauthorized(ApplicationErrorCode.TwoFactorChallengeExpired);
+            return Expired;
+        }
+
+        return RefusalOf(user, command.Challenge.ChallengeId)
+            ?? await accountLock.RunAsync(
+                user,
+                attempt => ResendLockedAsync(user, command.Challenge.ChallengeId, attempt),
+                Expired,
+                ct
+            );
+    }
+
+    private Result? RefusalOf(User user, LoginChallengeId challengeId)
+    {
+        var now = clock.UtcNow;
+        if (!user.HasOpenLoginChallenge(challengeId, now, options.ChallengeLifetime))
+        {
+            return Expired;
         }
 
         var allowed = user.MayReceiveLoginCode(now);
@@ -65,6 +81,15 @@ public sealed class ResendTwoFactorCodeCommandHandler(
             return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
         }
 
-        return await loginCodes.IssueAsync(user, now, ct);
+        return null;
+    }
+
+    private async Task<Result> ResendLockedAsync(
+        User user,
+        LoginChallengeId challengeId,
+        CancellationToken ct
+    )
+    {
+        return RefusalOf(user, challengeId) ?? await loginCodes.IssueAsync(user, clock.UtcNow, ct);
     }
 }

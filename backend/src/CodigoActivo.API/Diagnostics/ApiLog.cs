@@ -26,6 +26,23 @@ internal static partial class ApiLog
     );
 
     /// <summary>
+    /// Records a request whose changes were refused because another transaction wrote the same
+    /// data first; it was answered with a conflict, and frequent entries show contention.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="method">HTTP method of the request.</param>
+    /// <param name="routeTemplate">Route pattern of the matched endpoint, never the requested path.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Concurrent update refused while processing {Method} {RouteTemplate}"
+    )]
+    internal static partial void ConcurrentUpdateRefused(
+        this ILogger logger,
+        string method,
+        string routeTemplate
+    );
+
+    /// <summary>
     /// Records a rejected antiforgery token, which is also how a broken cookie or proxy setup shows.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>

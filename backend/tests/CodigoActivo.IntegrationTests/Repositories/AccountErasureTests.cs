@@ -716,6 +716,47 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task EraseAsyncAccountChangedSinceItWasLoadedIsRefusedAndKeepsTheAccount()
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
+        var stale = await db.Users.SingleAsync(
+            u => u.Id == UserId.From(TestSeedData.Users.PendingId),
+            Ct
+        );
+        await Factory.SeedAsync(async other =>
+            (
+                await other.Users.SingleAsync(
+                    u => u.Id == UserId.From(TestSeedData.Users.PendingId),
+                    Ct
+                )
+            )
+                .Verify(Factory.Clock.UtcNow)
+                .IsSuccess.Should()
+                .BeTrue()
+        );
+
+        var erase = () =>
+            scope
+                .ServiceProvider.GetRequiredService<AccountEraser>()
+                .EraseAsync(
+                    stale,
+                    AccountErasure.ForClaimedEmail(
+                        UserId.From(TestSeedData.Users.MemberId),
+                        Factory.Clock.UtcNow
+                    ),
+                    Ct
+                );
+
+        var thrown = await erase.Should().ThrowAsync<ConcurrentUpdateException>();
+        thrown.Which.EntityType.Should().Be<User>();
+        (await FindAsync<User>(TestSeedData.Users.PendingId))!
+            .Status.Should()
+            .Be(UserStatus.Active);
+        (await CopiesAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task EraseAsyncRefusedByTheDatabaseKeepsTheUserAndRollsBackTheHandover()
     {
         await SeedHouseholdAsync();

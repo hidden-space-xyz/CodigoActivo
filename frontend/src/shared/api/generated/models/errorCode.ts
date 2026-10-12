@@ -109,5 +109,6 @@ export const ErrorCode = {
   AccessDenied: 'AccessDenied',
   InvalidCsrfToken: 'InvalidCsrfToken',
   RequestValidationFailed: 'RequestValidationFailed',
+  ConcurrentUpdate: 'ConcurrentUpdate',
   UnexpectedError: 'UnexpectedError',
 } as const;

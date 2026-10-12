@@ -13,12 +13,21 @@ namespace CodigoActivo.Infrastructure.Users;
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
     /// <summary>
+    /// Name of the shadow property that maps the PostgreSQL <c>xmin</c> system column, which
+    /// changes with every write of the row. It is the concurrency token of a user: saving or
+    /// deleting a user whose row another transaction wrote since it was read affects no row and
+    /// fails instead of mixing both writes. It adds no column to the table.
+    /// </summary>
+    public const string RowVersion = nameof(RowVersion);
+
+    /// <summary>
     /// Configures the database mapping for user.
     /// </summary>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.HasKey(u => u.Id);
+        builder.Property<uint>(RowVersion).IsRowVersion().HasColumnName("xmin");
 
         builder.Property(u => u.FirstName).IsRequired();
         builder.Property(u => u.LastName).IsRequired();

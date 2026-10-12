@@ -45,6 +45,13 @@ public sealed class UnitOfWork(
         {
             saved = await context.SaveChangesAsync(ct);
         }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrentUpdateException(
+                ex.Entries is [var changed, ..] ? changed.Metadata.ClrType : null,
+                ex
+            );
+        }
         catch (DbUpdateException ex)
             when (ex.InnerException
                     is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } violation

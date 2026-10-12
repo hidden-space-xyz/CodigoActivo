@@ -8,11 +8,15 @@ namespace CodigoActivo.Application.Accounts.EmailAddresses;
 /// Commits an account that takes an email: a new registration, or an account whose holder confirmed
 /// the address as their new email. An account nobody verified that held the address is erased in
 /// the same transaction, keeping its legal copy; one that <see cref="User.OwnsEmail"/> is never
-/// erased, so callers turn such claims away first.
+/// erased, so callers turn such claims away first. The holder is locked and reloaded before it is
+/// erased, so a holder verified or moved to another address meanwhile is seen as it is now: one
+/// that verified the address keeps it and the claim is refused, and one that no longer holds it is
+/// left alone.
 /// </summary>
+/// <param name="users">Repository that locks and reloads the holder.</param>
 /// <param name="eraser">Eraser of the account that loses the email.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-public sealed class EmailClaims(AccountEraser eraser, IUnitOfWork uow)
+public sealed class EmailClaims(IUserRepository users, AccountEraser eraser, IUnitOfWork uow)
 {
     /// <summary>
     /// Commits every staged change, <paramref name="claimant"/> taking the email among them.
@@ -42,26 +46,58 @@ public sealed class EmailClaims(AccountEraser eraser, IUnitOfWork uow)
             );
         }
 
+        bool claimed;
         try
         {
-            var erased =
-                unverifiedHolder is not null
-                && await eraser.EraseAsync(
-                    unverifiedHolder,
-                    AccountErasure.ForClaimedEmail(claimant.Id, now),
-                    ct
-                );
-            if (!erased)
-            {
-                await uow.SaveChangesAsync(ct);
-            }
-
-            return true;
+            claimed = await uow.ExecuteInTransactionAsync(
+                attempt => ClaimAsync(claimant, unverifiedHolder, now, attempt),
+                ct
+            );
         }
         catch (UniqueConstraintViolationException ex) when (ex.EntityType == typeof(User))
         {
-            uow.DiscardChanges();
-            return false;
+            claimed = false;
         }
+
+        if (!claimed)
+        {
+            uow.DiscardChanges();
+        }
+
+        return claimed;
+    }
+
+    private async Task<bool> ClaimAsync(
+        User claimant,
+        User? holder,
+        DateTimeOffset now,
+        CancellationToken ct
+    )
+    {
+        if (
+            holder is not null
+            && await users.LockAsync(holder, ct)
+            && holder.Email == claimant.Email
+        )
+        {
+            if (holder.OwnsEmail)
+            {
+                return false;
+            }
+
+            if (
+                await eraser.EraseAsync(
+                    holder,
+                    AccountErasure.ForClaimedEmail(claimant.Id, now),
+                    ct
+                )
+            )
+            {
+                return true;
+            }
+        }
+
+        await uow.SaveChangesAsync(ct);
+        return true;
     }
 }

@@ -47,6 +47,7 @@ public sealed class ChangePasswordCommandHandlerTests
         );
         sut = new ChangePasswordCommandHandler(
             users,
+            AccountLocks.Create(users, uow),
             ActingUsers.Policy(currentUser),
             hasher,
             clock,
@@ -125,6 +126,26 @@ public sealed class ChangePasswordCommandHandlerTests
         user.PasswordHash.Should().Be(hasher.Hash("correct"));
         user.PasswordLockout.FailedAttempts.Should()
             .Be(1, "the guard counts the failure on its own");
+    }
+
+    [Fact]
+    public async Task HandleAsyncPasswordReplacedBeforeTheLockReturnsCurrentPasswordIncorrect()
+    {
+        var user = NewUser();
+        Persisted.Overwrite(user, new { PasswordHash = hasher.Hash("correct") });
+        users.FindReturns(user);
+        users.ReloadsAs(user, new { PasswordHash = hasher.Hash("reset-meanwhile") });
+        var request = new ChangePasswordRequest("correct", "brandnew");
+
+        var result = await sut.HandleAsync(
+            request.ToCommand(UserId.New()),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
+        user.PasswordHash.Should().Be(hasher.Hash("reset-meanwhile"));
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common.Errors;
@@ -21,6 +22,7 @@ public sealed class VerifyUserCommandHandlerTests
     {
         sut = new VerifyUserCommandHandler(
             users,
+            AccountLocks.Create(users, Substitute.For<IUnitOfWork>()),
             clock,
             new OtpValidator(new FakeOneTimeCodeHasher())
         );
@@ -108,6 +110,23 @@ public sealed class VerifyUserCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
         user.Status.Should().Be(UserStatus.Pending);
+    }
+
+    [Fact]
+    public async Task HandleAsyncVerifiedByAParallelRequestBeforeTheLockReturnsBadRequest()
+    {
+        var user = users.FindReturns(NewPendingWithOtp(clock, code: "the-real-code"));
+        users.ReloadsAs(
+            user,
+            new { Status = UserStatus.Active, VerificationCode = new OneTimeCode(null, null, null) }
+        );
+
+        var result = await sut.HandleAsync(
+            new VerifyUserCommand(user.Id, "the-real-code"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.OtpInvalidOrExpired);
     }
 
     [Fact]

@@ -114,22 +114,32 @@ aggregate roots.
   stage changes; the few methods that write immediately, without waiting for the unit of work, say so by their
   verb (`Save…`, `End…`, `Purge…`). `IUnitOfWork.SaveChangesAsync` commits staged changes once and turns a
   PostgreSQL unique violation into `UniqueConstraintViolationException`, naming the entity whose table rejected
-  the commit, so a handler can answer a lost race instead of failing. A person holds at most one signup
-  per activity (primary key on `user_id`, `activity_id`); the signup commands answer a concurrent duplicate with
-  `ActivityAssignmentAlreadyExists` (409). At most one event and one news item are featured (unique index on
-  `featured`, filtered to featured rows). PostgreSQL checks it row by row and EF Core cannot order moving the
-  flag between rows within one save, so `SetEventFeatured` and `SetNewsItemFeatured` save the unfeaturing of
-  the current item before featuring the chosen one, in one transaction; a concurrent featuring that loses the
-  race fails instead of leaving two items featured.
+  the commit, so a handler can answer a lost race instead of failing. A save that finds a row it updates or
+  deletes changed or removed meanwhile, for any entity, throws `ConcurrentUpdateException` instead, which the
+  API answers with 409 `ConcurrentUpdate`. Users carry a concurrency token mapped onto the `xmin` system column
+  (no column of their own), so a save or deletion of a user that another transaction wrote since it was read
+  is refused instead of mixing both writes. The credential, code and challenge flows of an account
+  (`AccountLock`) and the claim of an unverified holder's email decide on the account as loaded and, only when
+  they will act, lock and reload it and check again before they write, never hashing a password with the row
+  locked, so concurrent requests for it run one after another and the token only backs them up. A
+  person holds at most one signup per activity (primary key on `user_id`, `activity_id`); the signup commands
+  answer a concurrent duplicate with `ActivityAssignmentAlreadyExists` (409). At most one event and one news
+  item are featured (unique index on `featured`, filtered to featured rows). PostgreSQL checks it row by row and
+  EF Core cannot order moving the flag between rows within one save, so `SetEventFeatured` and
+  `SetNewsItemFeatured` save the unfeaturing of the current item before featuring the chosen one, in one
+  transaction; a concurrent featuring that loses the race fails instead of leaving two items featured.
 - `IUnitOfWork.ExecuteInTransactionAsync` runs work in one explicit transaction and, when PostgreSQL aborts it
   to resolve a deadlock, runs it again (three attempts in total) from the state the failed attempt started
   from: entities tracked since are dropped, the others get back their values and state, and the domain events
-  raised during the attempt are discarded. `PasswordAttemptGuard` counts a wrong password inside it with the
-  account row locked (`FOR UPDATE`), so parallel attempts lose no increment and only one of them sees the account
-  lock. `SavePasswordStateAsync` writes only the lockout columns, so it hands just the `PasswordLocked` event to
-  the unit of work, which publishes it when that transaction commits; the account's other changes and events wait
-  for their own commit. Second-factor checks (the handler locks and reloads the account before `SecondFactorGuard`
-  counts the code) and adding a dependent lock and reload the account the same way (`IUserRepository.LockAsync`).
+  raised during the attempt are discarded. A `ConcurrentUpdateException` is not retried: that state still holds
+  the values read before the concurrent write, and the checks made before the transaction would not run again.
+  `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`), so
+  parallel attempts lose no increment and only one of them sees the account lock. `SavePasswordStateAsync` writes
+  only the lockout columns, so it hands just the `PasswordLocked` event to the unit of work, which publishes it
+  when that transaction commits; the account's other changes and events wait for their own commit, and it
+  advances the account's token only when no other transaction wrote the row since it was loaded. Second-factor
+  checks (the handler locks and reloads the account, token included, before `SecondFactorGuard` counts the code)
+  and adding a dependent lock and reload the account the same way (`IUserRepository.LockAsync`).
   Deleting an event category locks the category (`FOR UPDATE`, which also holds back tagging an event with it) and
   then the events tagged with it in identifier order, and `UpdateEvent` locks its event before loading it
   (`FOR NO KEY UPDATE`, which leaves signups, ratings and activities referencing the event free), so no event loses

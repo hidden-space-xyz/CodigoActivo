@@ -51,6 +51,16 @@ public sealed record ApiError(ErrorKind Kind, ErrorCode Code)
     }
 
     /// <summary>
+    /// Creates a failure of a request that conflicts with the current state of the data.
+    /// </summary>
+    /// <param name="code">Code sent to the client.</param>
+    /// <returns>The failure.</returns>
+    public static ApiError Conflict(ErrorCode code)
+    {
+        return new ApiError(ErrorKind.Conflict, code);
+    }
+
+    /// <summary>
     /// Creates a failure of a request without a valid identity.
     /// </summary>
     /// <param name="code">Code sent to the client.</param>

@@ -108,10 +108,16 @@ out all clear it, making each challenge single-use — and the account itself re
 lifetime has passed, whatever the cookie says. Answering, reading or resending a challenge needs the open
 challenge the cookie names on an account that may still sign in; the use cases check that themselves, while
 the password fingerprint is only checked through the cookie. A challenge obtained just before the account
-was locked by wrong passwords is refused at both the ticket and the handler. Reading or resending the
-current challenge keeps working across reloads. The session cookie is only issued by
-`POST /api/auth/login/two-factor`, which accepts the second factor, records the login timestamp and stores
-the session in one transaction.
+was locked by wrong passwords is refused at both the ticket and the handler. The password step, password
+reset and change, email verification, code requests and resends, closing a challenge and a registration that
+replaces an unverified holder decide on the account as loaded and, only when they will act, lock and reload it
+and check again before they write; passwords are never hashed with the row locked. Parallel requests that act
+therefore run one after another and each answers as it would alone: a repeated request finds the cooldown and
+emails nothing, and a correct password whose account was reset or locked since it was checked is answered like
+a wrong one (not counted) and opens no challenge. Requests that act on nothing lock nothing, so the lock adds
+no delay that would tell an existing address from an unknown one. Reading or resending the current challenge
+keeps working across reloads. The session cookie is only issued by `POST /api/auth/login/two-factor`, which
+accepts the second factor, records the login timestamp and stores the session in one transaction.
 
 Each user chooses one second factor from their account:
 

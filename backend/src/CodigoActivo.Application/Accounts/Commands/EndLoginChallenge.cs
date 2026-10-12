@@ -13,9 +13,12 @@ public sealed record EndLoginChallengeCommand(LoginChallengeKey Challenge) : ICo
 
 /// <summary>
 /// Closes the pending second-factor challenge of an account, when it is still the one presented.
+/// The challenge is compared with the account locked and reloaded, so a newer password step that
+/// runs alongside keeps the challenge it opened.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-public sealed class EndLoginChallengeCommandHandler(IUserRepository users)
+/// <param name="accountLock">Runs the closing with the account locked.</param>
+public sealed class EndLoginChallengeCommandHandler(IUserRepository users, AccountLock accountLock)
     : ICommandHandler<EndLoginChallengeCommand, Result>
 {
     /// <summary>
@@ -31,12 +34,23 @@ public sealed class EndLoginChallengeCommandHandler(IUserRepository users)
     {
         ArgumentNullException.ThrowIfNull(command);
         var pending = await users.GetByIdAsync(command.Challenge.UserId, ct);
-        if (pending is null || !pending.LoginChallenge.Matches(command.Challenge.ChallengeId))
+        return pending is null || !pending.LoginChallenge.Matches(command.Challenge.ChallengeId)
+            ? Result.Success()
+            : await accountLock.RunAsync(
+                pending,
+                _ => Task.FromResult(EndLocked(pending, command.Challenge.ChallengeId)),
+                Result.Success(),
+                ct
+            );
+    }
+
+    private static Result EndLocked(User pending, LoginChallengeId challengeId)
+    {
+        if (pending.LoginChallenge.Matches(challengeId))
         {
-            return Result.Success();
+            pending.ClearLoginChallenge();
         }
 
-        pending.ClearLoginChallenge();
         return Result.Success();
     }
 }

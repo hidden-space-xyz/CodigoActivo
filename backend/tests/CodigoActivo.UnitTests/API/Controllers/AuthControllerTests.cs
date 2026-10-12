@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Application.Accounts.SecondFactor;
@@ -20,6 +21,15 @@ namespace CodigoActivo.UnitTests.API.Controllers;
 
 public sealed class AuthControllerTests
 {
+    private static EndLoginChallengeCommandHandler EndLoginChallengeHandler()
+    {
+        var users = Substitute.For<IUserRepository>();
+        return new EndLoginChallengeCommandHandler(
+            users,
+            AccountLocks.Create(users, Substitute.For<IUnitOfWork>())
+        );
+    }
+
     [Fact]
     public async Task LogoutAsyncSessionRowDeletionThrowsStillClearsBothCookiesAndReturnsNoContent()
     {
@@ -43,7 +53,7 @@ public sealed class AuthControllerTests
                 new TestClock(),
                 new TwoFactorOptions()
             ),
-            new EndLoginChallengeCommandHandler(Substitute.For<IUserRepository>())
+            EndLoginChallengeHandler()
         );
         var authenticationService = Substitute.For<IAuthenticationService>();
         var services = new ServiceCollection();

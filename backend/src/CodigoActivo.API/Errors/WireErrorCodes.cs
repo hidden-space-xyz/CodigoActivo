@@ -41,6 +41,7 @@ public static class WireErrorCodes
             ErrorCode.AccessDenied,
             ErrorCode.InvalidCsrfToken,
             ErrorCode.RequestValidationFailed,
+            ErrorCode.ConcurrentUpdate,
             ErrorCode.UnexpectedError,
         }.ToFrozenSet();
 
