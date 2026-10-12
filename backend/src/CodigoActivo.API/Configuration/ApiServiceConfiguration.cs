@@ -77,6 +77,7 @@ internal static class ApiServiceConfiguration
             })
             .ConfigureApiBehaviorOptions(options =>
             {
+                options.DisableImplicitFromServicesParameters = true;
                 options.InvalidModelStateResponseFactory = context =>
                 {
                     var (statusCode, body) = ApiErrorResponseExtensions.Create(

@@ -2,6 +2,9 @@ using System.Net;
 using AwesomeAssertions;
 using CodigoActivo.API.Errors;
 using CodigoActivo.IntegrationTests.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -137,5 +140,13 @@ public sealed class InputValidationTests(CodigoActivoWebAppFactory factory)
         );
 
         await response.ShouldBeNotFoundAsync(ErrorCode.ActivityNotFound);
+    }
+
+    [Fact]
+    public void ActionParametersNeverBindServicesImplicitly()
+    {
+        var options = Factory.Services.GetRequiredService<IOptions<ApiBehaviorOptions>>().Value;
+
+        options.DisableImplicitFromServicesParameters.Should().BeTrue();
     }
 }

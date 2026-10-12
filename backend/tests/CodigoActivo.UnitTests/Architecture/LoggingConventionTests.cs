@@ -1,12 +1,7 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts;
-using CodigoActivo.Composition;
-using CodigoActivo.Domain.Common;
-using CodigoActivo.Infrastructure.Communication;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -90,25 +85,12 @@ public sealed partial class LoggingConventionTests
     [GeneratedRegex(@"\{(@|\$)?(?<name>[A-Za-z0-9_]+)(:[^}]*)?\}")]
     private static partial Regex PlaceholderPattern();
 
-    private static IReadOnlyList<Assembly> ProductionAssemblies()
-    {
-        return
-        [
-            typeof(Result).Assembly,
-            typeof(IQuery<>).Assembly,
-            typeof(SmtpEmailSender).Assembly,
-            typeof(DependencyInjection).Assembly,
-            typeof(ApiErrorResponseExtensions).Assembly,
-        ];
-    }
-
     private static IReadOnlyList<(MethodInfo Method, LoggerMessageAttribute Attribute)> Events()
     {
         return
         [
-            .. ProductionAssemblies()
-                .SelectMany(assembly => assembly.GetTypes())
-                .SelectMany(type =>
+            .. ProductionAssemblies
+                .AllTypes.SelectMany(type =>
                     type.GetMethods(
                         BindingFlags.Public
                             | BindingFlags.NonPublic

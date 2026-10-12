@@ -75,6 +75,27 @@ public sealed class RepositoryConventionTests
     }
 
     [Fact]
+    public void RepositoriesNeverAreDeclaredOutsideDomain()
+    {
+        var offenders = ProductionAssemblies
+            .Types(
+                ProductionAssemblies.Application,
+                ProductionAssemblies.Infrastructure,
+                ProductionAssemblies.Composition,
+                ProductionAssemblies.Api
+            )
+            .Where(type =>
+                type.IsInterface
+                && type.Name.Split('`')[0].EndsWith("Repository", StringComparison.Ordinal)
+            )
+            .Select(type => type.FullName)
+            .ToList();
+
+        DomainRepositories().Should().NotBeEmpty();
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
     public void RepositoriesNeverDeclareAnotherRemove()
     {
         var offenders = DomainRepositories()

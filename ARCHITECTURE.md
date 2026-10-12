@@ -162,7 +162,8 @@ Each use case is a message and a sealed handler in `CodigoActivo.Application/<Fe
 runs through `LoggingCommandDecorator` (warns about slow use cases), `ValidationCommandDecorator` and
 `UnitOfWorkCommandDecorator` (commits once the handler succeeds); a query through `LoggingQueryDecorator`,
 `ValidationQueryDecorator` and `CachingQueryDecorator`. Controllers inject the handler contract
-(`ICommandHandler<TCommand, TResult>`) with `[FromServices]`; there is no MediatR dispatcher.
+(`ICommandHandler<TCommand, TResult>`) with `[FromServices]`, the only way an action receives a service
+(implicit service binding is disabled); there is no MediatR dispatcher.
 
 Commands and queries are application messages, not HTTP contracts: they carry typed identifiers and domain
 values, and their fields carry the DataAnnotations of their rules (`[property: Required, MaxLength(200),
@@ -221,8 +222,8 @@ every linked document with the caller's current decision.
 
 - Every anonymous GET/HEAD declares a named output-cache policy or an explicit `no-store`; authenticated or
   user-specific responses are never output cached.
-- `HybridCache` is limited to immutable catalogs and non-personal dashboard aggregates, and only
-  `CachingQueryDecorator` uses it.
+- `HybridCache` is limited to immutable catalogs and non-personal dashboard aggregates; only
+  `CachingQueryDecorator` reads and writes it, and only `HttpCacheInvalidator` evicts its tags.
 - Both in-memory cache layers are capped at 64 MiB and skip payloads larger than 1 MiB.
 - Committed domain events invalidate the tags `CacheTagsByEvent` maps them to, evicting both application and
   HTTP output entries; commands never invalidate caches themselves.
