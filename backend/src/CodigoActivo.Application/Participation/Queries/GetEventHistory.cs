@@ -1,19 +1,18 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
 /// <summary>
 /// Carries the criteria used to retrieve event history.
 /// </summary>
-/// <param name="UserId">Identifier of the user.</param>
-public sealed record GetEventHistoryQuery(UserId UserId)
-    : IQuery<IReadOnlyList<EventHistoryResponse>>;
+public sealed record GetEventHistoryQuery : IQuery<IReadOnlyList<EventHistoryResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve event history.
@@ -21,10 +20,12 @@ public sealed record GetEventHistoryQuery(UserId UserId)
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="currentUser">Person the query runs for.</param>
 public sealed class GetEventHistoryQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
-    IClock clock
+    IClock clock,
+    ICurrentUser currentUser
 ) : IQueryHandler<GetEventHistoryQuery, IReadOnlyList<EventHistoryResponse>>
 {
     /// <summary>
@@ -38,7 +39,7 @@ public sealed class GetEventHistoryQueryHandler(
         CancellationToken ct = default
     )
     {
-        var userId = query.UserId.Value;
+        var userId = currentUser.RequiredId().Value;
 
         var rows = await executor.ToListAsync(
             readStore

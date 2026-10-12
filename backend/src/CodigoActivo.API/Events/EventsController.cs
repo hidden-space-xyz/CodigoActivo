@@ -117,10 +117,7 @@ public class EventsController : ApiControllerBase
     )
     {
         return Ok(
-            await handler.HandleAsync(
-                new GetEventTermsStateQuery(EventId.From(eventId), CurrentUserId),
-                ct
-            )
+            await handler.HandleAsync(new GetEventTermsStateQuery(EventId.From(eventId)), ct)
         );
     }
 
@@ -145,12 +142,7 @@ public class EventsController : ApiControllerBase
         CancellationToken ct
     )
     {
-        return Ok(
-            await handler.HandleAsync(
-                new GetLeaderRosterQuery(EventId.From(eventId), CurrentUserId),
-                ct
-            )
-        );
+        return Ok(await handler.HandleAsync(new GetLeaderRosterQuery(EventId.From(eventId)), ct));
     }
 
     /// <summary>

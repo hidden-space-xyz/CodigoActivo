@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication;
 using Xunit;
 
@@ -226,6 +227,40 @@ public sealed class HandlerConventionTests
 
         queryHandlers.Should().NotBeEmpty();
         offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void QueriesNamingAPersonAlwaysAreTheReviewedOnes()
+    {
+        var namingAPerson = HandlerImplementations()
+            .Where(entry => !IsCommandContract(entry.Contract))
+            .Select(entry => MessageOf(entry.Contract))
+            .Where(query =>
+                query
+                    .GetProperties()
+                    .Any(property =>
+                        property.Name == "IsAdmin" || MentionsUserId(property.PropertyType)
+                    )
+            )
+            .Select(query => query.Name)
+            .ToList();
+
+        namingAPerson
+            .Should()
+            .BeEquivalentTo(
+                "GetAccountQuery",
+                "GetAssignmentQuery",
+                "GetAssignmentsQuery",
+                "GetSessionIdentityQuery",
+                "GetUserByIdQuery",
+                "VerifyTimeOverlapsQuery"
+            );
+    }
+
+    private static bool MentionsUserId(Type type)
+    {
+        return type == typeof(UserId)
+            || (type.IsGenericType && type.GetGenericArguments().Any(MentionsUserId));
     }
 
     [Fact]

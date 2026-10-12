@@ -12,27 +12,25 @@ namespace CodigoActivo.UnitTests.Application.Users.Queries;
 public sealed class ListUsersQueryHandlerTests
 {
     private readonly FakeReadStore store = new();
+    private readonly TestCurrentUser currentUser = new();
     private readonly ListUsersQueryHandler sut;
 
     public ListUsersQueryHandlerTests()
     {
-        sut = new ListUsersQueryHandler(store, new FakeQueryExecutor());
+        sut = new ListUsersQueryHandler(store, new FakeQueryExecutor(), currentUser);
     }
 
     private Task<PagedResult<UserResponse>> ListAsAdminAsync(UserListQuery query)
     {
-        return sut.HandleAsync(
-            new ListUsersQuery(query, UserId.New(), IsAdmin: true),
-            TestContext.Current.CancellationToken
-        );
+        currentUser.IsAdmin = true;
+        return sut.HandleAsync(new ListUsersQuery(query), TestContext.Current.CancellationToken);
     }
 
     private Task<PagedResult<UserResponse>> ListAsCallerAsync(UserListQuery query, Guid callerId)
     {
-        return sut.HandleAsync(
-            new ListUsersQuery(query, UserId.From(callerId), IsAdmin: false),
-            TestContext.Current.CancellationToken
-        );
+        currentUser.Id = UserId.From(callerId);
+        currentUser.IsAdmin = false;
+        return sut.HandleAsync(new ListUsersQuery(query), TestContext.Current.CancellationToken);
     }
 
     [Fact]

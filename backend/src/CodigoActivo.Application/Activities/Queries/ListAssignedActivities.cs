@@ -1,17 +1,17 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Events;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
 /// Carries the criteria used to list assigned activities.
 /// </summary>
-/// <param name="UserId">Identifier of the user.</param>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record ListAssignedActivitiesQuery(UserId UserId, EventId? EventId)
+public sealed record ListAssignedActivitiesQuery(EventId? EventId)
     : IQuery<IReadOnlyList<AssignedActivityResponse>>;
 
 /// <summary>
@@ -19,9 +19,11 @@ public sealed record ListAssignedActivitiesQuery(UserId UserId, EventId? EventId
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="currentUser">Person the query runs for.</param>
 public sealed class ListAssignedActivitiesQueryHandler(
     IReadStore readStore,
-    IQueryExecutor executor
+    IQueryExecutor executor,
+    ICurrentUser currentUser
 ) : IQueryHandler<ListAssignedActivitiesQuery, IReadOnlyList<AssignedActivityResponse>>
 {
     /// <summary>
@@ -36,7 +38,7 @@ public sealed class ListAssignedActivitiesQueryHandler(
     )
     {
         ArgumentNullException.ThrowIfNull(query);
-        var userId = query.UserId.Value;
+        var userId = currentUser.RequiredId().Value;
         var source = readStore
             .Assignments.Where(assignment => assignment.UserId == userId)
             .Select(ActivityProjections.AssignedActivity);

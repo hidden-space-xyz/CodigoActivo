@@ -1,21 +1,20 @@
 using System.Globalization;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Participation.Queries;
 
 /// <summary>
 /// Carries the criteria used to retrieve event certificates.
 /// </summary>
-/// <param name="UserId">Identifier of the user.</param>
-public sealed record GetEventCertificatesQuery(UserId UserId)
-    : IQuery<IReadOnlyList<EventCertificateResponse>>;
+public sealed record GetEventCertificatesQuery : IQuery<IReadOnlyList<EventCertificateResponse>>;
 
 /// <summary>
 /// Executes the query to retrieve event certificates.
@@ -23,10 +22,12 @@ public sealed record GetEventCertificatesQuery(UserId UserId)
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="currentUser">Person the query runs for.</param>
 public sealed class GetEventCertificatesQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
-    IClock clock
+    IClock clock,
+    ICurrentUser currentUser
 ) : IQueryHandler<GetEventCertificatesQuery, IReadOnlyList<EventCertificateResponse>>
 {
     private const string CertificateCodePrefix = "CA";
@@ -44,7 +45,7 @@ public sealed class GetEventCertificatesQueryHandler(
         CancellationToken ct = default
     )
     {
-        var userId = query.UserId.Value;
+        var userId = currentUser.RequiredId().Value;
         var today = clock.Today;
 
         var rows = await executor.ToListAsync(

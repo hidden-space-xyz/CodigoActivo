@@ -175,9 +175,10 @@ the read store only for lookups that change nothing: email audiences, the names 
 the guardianship `ActingUserPolicy` checks.
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
-tells who is signed in; commands take the author, the acting user and the administrator flag from it, never
-from their input. `ActingUserPolicy` lets the signed-in user act for themselves or one of their dependents, and
-an administrator for anyone, reading the guardianship from the read side so commands and queries share it, and
+tells who is signed in; commands and queries take the author, the acting user and the administrator flag from
+it, never from their input. `GetAccountQuery` is the one query that reads the caller's own account by its id:
+email verification and two-factor login completion answer before the session exists. `ActingUserPolicy` lets
+the signed-in user act for themselves or one of their dependents, and an administrator for anyone, reading the guardianship from the read side so commands and queries share it, and
 answers anything else with `ActingForAnotherUserForbidden` (403
 `AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a minor,
 updating or deleting a user and changing a password check it. Signing up a household is the exception: it only

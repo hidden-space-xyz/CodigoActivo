@@ -1,14 +1,15 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Querying;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Events.Queries;
 
@@ -17,8 +18,7 @@ namespace CodigoActivo.Application.Events.Queries;
 /// user leads in an event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-/// <param name="UserId">Identifier of the requesting user.</param>
-public sealed record GetLeaderRosterQuery(EventId EventId, UserId UserId)
+public sealed record GetLeaderRosterQuery(EventId EventId)
     : IQuery<IReadOnlyList<LeaderRosterActivityResponse>>;
 
 /// <summary>
@@ -30,10 +30,12 @@ public sealed record GetLeaderRosterQuery(EventId EventId, UserId UserId)
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="clock">Clock used to exclude ended activities and to find each activity's local day.</param>
+/// <param name="currentUser">Person the query runs for.</param>
 public sealed class GetLeaderRosterQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
-    IClock clock
+    IClock clock,
+    ICurrentUser currentUser
 ) : IQueryHandler<GetLeaderRosterQuery, IReadOnlyList<LeaderRosterActivityResponse>>
 {
     /// <summary>
@@ -50,7 +52,7 @@ public sealed class GetLeaderRosterQueryHandler(
         ArgumentNullException.ThrowIfNull(query);
         var now = clock.UtcNow;
         var eventId = query.EventId.Value;
-        var userId = query.UserId.Value;
+        var userId = currentUser.RequiredId().Value;
         var ledActivities = await executor.ToListAsync(
             readStore
                 .Assignments.Where(ActivityProjections.ConfirmedSignup)

@@ -61,8 +61,8 @@ Domain + Application + Infrastructure <- Composition <- API
   never call query handlers; the controller runs the query for the response. A command may read `IReadStore`
   only for lookups that change nothing (email audiences, display names). Handlers never access `DbContext`
   directly.
-- Take the signed-in user from `ICurrentUser`, never from the command, and check `ActingUserPolicy` in every use
-  case that acts on behalf of another person; HTTP attributes are only a first gate.
+- Take the signed-in user from `ICurrentUser`, never from the command or query, and check `ActingUserPolicy` in
+  every use case that acts on behalf of another person; HTTP attributes are only a first gate.
 - Delete users only through `AccountEraser`. A new `User` property or table referencing users must be copied
   into `LegalCopy` (and loaded in `DeletedAccountSnapshot`) or listed in `LegalCopy.ExcludedUserProperties`, and
   a new author column must be handed over to the initial administrator in `AccountErasureStore`;

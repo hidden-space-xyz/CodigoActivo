@@ -1,17 +1,17 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Events;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
 /// Carries the criteria used to retrieve household assignments.
 /// </summary>
-/// <param name="ActingUserId">Identifier of the acting user.</param>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record GetHouseholdAssignmentsQuery(UserId ActingUserId, EventId EventId)
+public sealed record GetHouseholdAssignmentsQuery(EventId EventId)
     : IQuery<IReadOnlyList<HouseholdMemberAssignmentResponse>>;
 
 /// <summary>
@@ -19,9 +19,11 @@ public sealed record GetHouseholdAssignmentsQuery(UserId ActingUserId, EventId E
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="currentUser">Person the query runs for.</param>
 public sealed class GetHouseholdAssignmentsQueryHandler(
     IReadStore readStore,
-    IQueryExecutor executor
+    IQueryExecutor executor,
+    ICurrentUser currentUser
 ) : IQueryHandler<GetHouseholdAssignmentsQuery, IReadOnlyList<HouseholdMemberAssignmentResponse>>
 {
     /// <summary>
@@ -37,7 +39,7 @@ public sealed class GetHouseholdAssignmentsQueryHandler(
     {
         ArgumentNullException.ThrowIfNull(query);
         var eventId = query.EventId.Value;
-        var actingUserId = query.ActingUserId.Value;
+        var actingUserId = currentUser.RequiredId().Value;
         return await executor.ToListAsync(
             readStore
                 .Assignments.Where(x =>

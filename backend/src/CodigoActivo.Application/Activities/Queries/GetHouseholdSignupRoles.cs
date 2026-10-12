@@ -1,17 +1,17 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
 /// Carries the criteria used to retrieve household signup roles.
 /// </summary>
-/// <param name="ActingUserId">Identifier of the acting user.</param>
-public sealed record GetHouseholdSignupRolesQuery(UserId ActingUserId)
+public sealed record GetHouseholdSignupRolesQuery
     : IQuery<IReadOnlyList<HouseholdSignupRolesResponse>>;
 
 /// <summary>
@@ -19,10 +19,12 @@ public sealed record GetHouseholdSignupRolesQuery(UserId ActingUserId)
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="currentUser">Person the query runs for.</param>
 /// <param name="roleTypesQuery">Handler used to list activity role types.</param>
 public sealed class GetHouseholdSignupRolesQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
+    ICurrentUser currentUser,
     IQueryHandler<
         ListActivityRoleTypesQuery,
         IReadOnlyList<ActivityRoleTypeResponse>
@@ -41,7 +43,7 @@ public sealed class GetHouseholdSignupRolesQueryHandler(
     )
     {
         ArgumentNullException.ThrowIfNull(query);
-        var actingUserId = query.ActingUserId.Value;
+        var actingUserId = currentUser.RequiredId().Value;
         var members = await executor.ToListAsync(
             readStore
                 .Users.Where(u => u.Id == actingUserId || u.ParentId == actingUserId)
