@@ -79,18 +79,22 @@ public sealed class CachingConventionTests
     }
 
     [Fact]
-    public void HybridCacheIsOnlyUsedByTheCachingDecorator()
+    public void HybridCacheIsOnlyUsedByTheCachingDecoratorAndTheInvalidator()
     {
-        var consumers = new[] { typeof(ICachedQuery).Assembly, typeof(CachePolicies).Assembly }
-            .SelectMany(assembly => assembly.GetTypes())
-            .Where(type =>
-                type.GetConstructors()
-                    .SelectMany(constructor => constructor.GetParameters())
-                    .Any(parameter => parameter.ParameterType == typeof(HybridCache))
+        var consumers = ProductionAssemblies
+            .AllTypes.Where(type =>
+                IlReferences
+                    .TypesUsedBy(type)
+                    .SelectMany(IlReferences.Expand)
+                    .Contains(typeof(HybridCache))
             )
+            .Select(IlReferences.OwnerOf)
+            .Distinct()
             .ToList();
 
-        consumers.Should().Equal(typeof(CachingQueryDecorator<,>));
+        consumers
+            .Should()
+            .BeEquivalentTo([typeof(CachingQueryDecorator<,>), typeof(HttpCacheInvalidator)]);
     }
 
     private static IEnumerable<MethodInfo> ControllerActions()

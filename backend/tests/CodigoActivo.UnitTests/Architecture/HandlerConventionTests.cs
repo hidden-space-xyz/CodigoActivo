@@ -1,11 +1,25 @@
+using System.Reflection;
 using AwesomeAssertions;
+using CodigoActivo.API.Accounts;
+using CodigoActivo.API.Security;
 using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Emails.Commands;
+using CodigoActivo.Application.Reports;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Caching;
 using CodigoActivo.Infrastructure.Communication;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Architecture;
@@ -19,6 +33,13 @@ public sealed class HandlerConventionTests
         typeof(IEmailSender),
         typeof(IEmailOutbox),
         typeof(IEmailTransport),
+    ];
+
+    private static readonly Type[] ReadSidePorts =
+    [
+        typeof(IReadStore),
+        typeof(IQueryExecutor),
+        typeof(IDashboardCountsReader),
     ];
 
     private static List<(Type Handler, Type Contract)> HandlerImplementations()
@@ -50,6 +71,20 @@ public sealed class HandlerConventionTests
     private static bool IsCommandContract(Type contract)
     {
         return contract.GetGenericTypeDefinition() == typeof(ICommandHandler<,>);
+    }
+
+    private static bool IsQueryHandler(Type type)
+    {
+        return type.GetInterfaces()
+            .Prepend(type)
+            .Any(candidate => IsHandlerContract(candidate) && !IsCommandContract(candidate));
+    }
+
+    private static IEnumerable<Type> ConstructorParameterTypes(Type type)
+    {
+        return type.GetConstructors()
+            .SelectMany(constructor => constructor.GetParameters())
+            .Select(parameter => parameter.ParameterType);
     }
 
     private static Type MessageOf(Type contract)
@@ -168,10 +203,7 @@ public sealed class HandlerConventionTests
         var offenders = HandlerImplementations()
             .Where(entry =>
                 !IsCommandContract(entry.Contract)
-                && entry
-                    .Handler.GetConstructors()
-                    .SelectMany(constructor => constructor.GetParameters())
-                    .Any(parameter => WriteAndEmailPorts.Contains(parameter.ParameterType))
+                && ConstructorParameterTypes(entry.Handler).Any(WriteAndEmailPorts.Contains)
             )
             .Select(entry => entry.Handler.Name)
             .ToList();
@@ -187,17 +219,12 @@ public sealed class HandlerConventionTests
         var offenders = HandlerImplementations()
             .Where(entry => !IsCommandContract(entry.Contract))
             .SelectMany(entry =>
-                entry
-                    .Handler.GetConstructors()
-                    .SelectMany(constructor => constructor.GetParameters())
-                    .Where(parameter =>
-                        parameter.ParameterType.Assembly == domain
-                        || parameter.ParameterType.Name.EndsWith(
-                            "Repository",
-                            StringComparison.Ordinal
-                        )
+                ConstructorParameterTypes(entry.Handler)
+                    .Where(dependency =>
+                        dependency.Assembly == domain
+                        || dependency.Name.EndsWith("Repository", StringComparison.Ordinal)
                     )
-                    .Select(parameter => $"{entry.Handler.Name}({parameter.ParameterType.Name})")
+                    .Select(dependency => $"{entry.Handler.Name}({dependency.Name})")
             )
             .ToList();
 
@@ -207,26 +234,101 @@ public sealed class HandlerConventionTests
     [Fact]
     public void QueryHandlersAlwaysAreOnlyInjectedIntoOtherQueryHandlers()
     {
-        var queryHandlers = HandlerImplementations()
-            .Where(entry => !IsCommandContract(entry.Contract))
-            .Select(entry => entry.Handler)
-            .ToHashSet();
-
-        var offenders = typeof(IQuery<>)
-            .Assembly.GetTypes()
-            .Where(type =>
-                type is { IsClass: true, IsAbstract: false } && !queryHandlers.Contains(type)
-            )
-            .Where(type =>
-                type.GetConstructors()
-                    .SelectMany(constructor => constructor.GetParameters())
-                    .Any(parameter => queryHandlers.Contains(parameter.ParameterType))
-            )
-            .Select(type => type.Name)
+        var candidates = ProductionAssemblies
+            .Application.GetTypes()
+            .Where(type => !IsQueryHandler(type))
             .ToList();
 
-        queryHandlers.Should().NotBeEmpty();
+        var offenders = candidates
+            .SelectMany(type =>
+                ConstructorParameterTypes(type)
+                    .Where(IsQueryHandler)
+                    .Select(dependency => $"{type.Name}({dependency.Name})")
+            )
+            .ToList();
+
+        candidates.Should().Contain(type => type.GetInterfaces().Any(IsHandlerContract));
         offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void QueryHandlersOutsideApplicationAlwaysAreInjectedIntoTheReviewedTypes()
+    {
+        var consumers = ProductionAssemblies
+            .Types(
+                ProductionAssemblies.Infrastructure,
+                ProductionAssemblies.Composition,
+                ProductionAssemblies.Api
+            )
+            .Where(type => ConstructorParameterTypes(type).Any(IsQueryHandler))
+            .ToList();
+
+        consumers
+            .Should()
+            .BeEquivalentTo([
+                typeof(CachingQueryDecorator<,>),
+                typeof(SessionTicketValidator),
+                typeof(TwoFactorTicketValidator),
+            ]);
+    }
+
+    [Fact]
+    public void ControllerServicesAlwaysAreHandlersOrTheReviewedOnes()
+    {
+        var controllers = ProductionAssemblies
+            .Api.GetTypes()
+            .Where(type => typeof(ControllerBase).IsAssignableFrom(type))
+            .ToList();
+        var actionServices = controllers
+            .SelectMany(type =>
+                type.GetMethods(
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly
+                )
+            )
+            .SelectMany(action => action.GetParameters())
+            .Where(parameter =>
+                parameter.IsDefined(typeof(FromServicesAttribute), inherit: true)
+                || parameter.IsDefined(typeof(FromKeyedServicesAttribute), inherit: true)
+            )
+            .Select(parameter => parameter.ParameterType);
+
+        var services = controllers
+            .SelectMany(ConstructorParameterTypes)
+            .Concat(actionServices)
+            .ToList();
+        var reviewed = services.Where(service => !IsHandlerContract(service)).Distinct().ToList();
+
+        services.Should().Contain(service => IsHandlerContract(service));
+        reviewed
+            .Should()
+            .BeEquivalentTo([
+                typeof(IAntiforgery),
+                typeof(ILogger<AuthController>),
+                typeof(SessionTicketValidator),
+                typeof(TwoFactorTicketValidator),
+                typeof(ApplicationOptions),
+            ]);
+    }
+
+    [Fact]
+    public void ReadSideConsumersOutsideQueryHandlersAlwaysAreTheReviewedOnes()
+    {
+        var consumers = ProductionAssemblies
+            .Application.GetTypes()
+            .Where(type =>
+                !IsQueryHandler(type) && ConstructorParameterTypes(type).Any(ReadSidePorts.Contains)
+            )
+            .ToList();
+
+        consumers
+            .Should()
+            .BeEquivalentTo([
+                typeof(SendEmailToEventAttendeesCommandHandler),
+                typeof(SendEmailToUserCommandHandler),
+                typeof(SendEmailToUsersCommandHandler),
+                typeof(ActingUserPolicy),
+                typeof(ActivitySignupNotifier),
+            ]);
     }
 
     [Fact]

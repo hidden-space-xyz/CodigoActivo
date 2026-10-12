@@ -78,7 +78,7 @@ Domain + Application + Infrastructure <- Composition <- API
 - Put `*Request` records in `API/<Feature>/Contracts/` and `*Response` records in
   `Application/<Feature>/Contracts/`; shared binding primitives live in `Application/Common/Querying`.
 - Use handwritten mapping. Do not introduce AutoMapper without an explicit architecture change.
-- Use `IClock`; never call `DateTime.Now` or `DateTime.UtcNow`.
+- Use `IClock`; never call `DateTime.Now` or `DateTime.UtcNow`. `ClockConventionTests` reads the IL.
 - PostgreSQL identifiers are snake_case; remember this in raw SQL.
 - User-facing backend text belongs in `Application/Common/Localization/AppStrings.resx` through
   `AppStrings`. Diagnostics, log templates and seeded content are not UI strings.

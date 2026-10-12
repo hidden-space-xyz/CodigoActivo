@@ -646,11 +646,7 @@ public sealed class DemoDataSeeder(
                 }
                 catch (Exception) when (!ct.IsCancellationRequested && attempt < 3)
                 {
-                    await Task.Delay(
-                        TimeSpan.FromMilliseconds(400 * attempt),
-                        TimeProvider.System,
-                        ct
-                    );
+                    await Task.Delay(TimeSpan.FromMilliseconds(400 * attempt), ct);
                 }
             }
         }
