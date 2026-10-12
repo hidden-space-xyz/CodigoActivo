@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
@@ -14,6 +15,7 @@ public sealed class SendEmailToUserCommandHandlerTests
 {
     private readonly FakeReadStore store = new();
     private readonly RecordingEmailOutbox outbox = new();
+    private readonly FakeManualEmailComposer composer = new();
     private readonly ManualEmailOptions options = new();
     private readonly SendEmailToUserCommandHandler sut;
 
@@ -22,7 +24,7 @@ public sealed class SendEmailToUserCommandHandlerTests
         sut = new SendEmailToUserCommandHandler(
             store,
             new FakeQueryExecutor(),
-            NewDispatcher(outbox, options)
+            NewDispatcher(outbox, options, composer)
         );
     }
 
@@ -72,9 +74,12 @@ public sealed class SendEmailToUserCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Queued.Should().Be(1);
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Subject.Should().Be("Asunto");
+        email.Body.Should().Be("Nos vemos el sábado");
+        email.Recipients.Should().Equal(new EmailRecipient("ana@test.local", "Ana"));
         var message = outbox.Messages.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be("ana@test.local");
         message.ToName.Should().Be("Ana");
-        message.TextBody.Should().Contain("Nos vemos el sábado");
     }
 }

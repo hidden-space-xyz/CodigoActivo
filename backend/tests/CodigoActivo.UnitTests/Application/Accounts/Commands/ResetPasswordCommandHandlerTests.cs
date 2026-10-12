@@ -5,11 +5,9 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -25,6 +23,7 @@ public sealed class ResetPasswordCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly CommittedEvents events;
     private readonly ResetPasswordCommandHandler sut;
 
@@ -36,7 +35,7 @@ public sealed class ResetPasswordCommandHandlerTests
                 new AccountSecurityNotifier(
                     emailSender,
                     clock,
-                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    composer,
                     NullLogger<AccountSecurityNotifier>.Instance
                 ),
                 NullLogger<AccountSecurityNotifications>.Instance
@@ -159,10 +158,19 @@ public sealed class ResetPasswordCommandHandlerTests
         await events.PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email!.Value);
-        message.TextBody.Should().NotContain("newPassword123").And.NotContain("the-reset-code");
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.SecurityAlert),
+                    new EmailRecipient(user.Email!.Value, user.FirstName)
+                )
+                {
+                    Change = AccountSecurityChange.PasswordReset,
+                    OccurredAt = clock.UtcNow,
+                }
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(user.Email!.Value);
     }
 
     [Fact]

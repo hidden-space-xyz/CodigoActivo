@@ -6,11 +6,9 @@ using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -28,6 +26,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly TestCurrentUser currentUser = new();
     private readonly CommittedEvents events;
     private readonly ConfirmAuthenticatorCommandHandler sut;
@@ -40,7 +39,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
                 new AccountSecurityNotifier(
                     emailSender,
                     clock,
-                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    composer,
                     NullLogger<AccountSecurityNotifier>.Instance
                 ),
                 NullLogger<AccountSecurityNotifications>.Instance
@@ -160,9 +159,18 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
         user.PendingAuthenticatorExpiresAt.Should().BeNull();
         user.LoginCodeHash.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email!.Value);
-        message.TextBody.Should().NotContain(Secret).And.NotContain("123456");
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.SecurityAlert),
+                    new EmailRecipient(user.Email!.Value, user.FirstName)
+                )
+                {
+                    Change = AccountSecurityChange.AuthenticatorEnabled,
+                    OccurredAt = clock.UtcNow,
+                }
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(user.Email!.Value);
     }
 }

@@ -5,11 +5,9 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -28,6 +26,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly TwoFactorOptions options = new();
     private readonly PasswordLockoutOptions lockout = new();
     private readonly TestCurrentUser currentUser = new();
@@ -38,10 +37,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var hasher = new FakePasswordHasher();
         var accountEmails = new AccountEmails(
             emailSender,
-            new AccountEmailComposer(
-                new ApplicationOptions { BaseUrl = "https://app.test" },
-                new TestClock()
-            ),
+            composer,
             new AccountVerificationOptions(),
             new PasswordResetOptions(),
             options
@@ -50,7 +46,15 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
             users,
             currentUser,
             clock,
-            PasswordGuards.Create(hasher, uow, clock, sessions, emailSender, lockout),
+            PasswordGuards.Create(
+                hasher,
+                uow,
+                clock,
+                sessions,
+                emailSender,
+                lockout,
+                composer: composer
+            ),
             options,
             new LoginCodeIssuer(
                 new FakeOneTimeCodeHasher(),
@@ -157,9 +161,19 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         user.PasswordLockedAt.Should().Be(clock.UtcNow);
         user.LoginCodeHash.Should().BeNull();
         await sessions.Received(1).EndAllAsync(user.Id, Arg.Any<CancellationToken>());
-        var alert = emailSender.Sent.Should().ContainSingle().Subject;
-        alert.Kind.Should().Be(EmailKind.SecurityAlert);
-        alert.ToAddress.Should().Be("ana@test.com");
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.SecurityAlert),
+                    new EmailRecipient("ana@test.com", user.FirstName)
+                )
+                {
+                    Change = AccountSecurityChange.PasswordLocked,
+                    OccurredAt = clock.UtcNow,
+                }
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
     }
 
     [Fact]
@@ -260,12 +274,13 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var result = await RequestAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.Kind.Should().Be(EmailKind.TwoFactorCode);
-        message.ToAddress.Should().Be("ana@test.com");
-        message.Subject.Should().Contain("eliminación");
-        var code = emailSender.LastLoginCode();
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.AccountDeletionCode));
+        email.Recipient.Should().Be(new EmailRecipient("ana@test.com", user.FirstName));
+        email.Lifetime.Should().Be(options.ChallengeLifetime);
+        var code = email.Code;
         code.Should().MatchRegex("^[0-9]{6}$");
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
         user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + options.ChallengeLifetime);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);

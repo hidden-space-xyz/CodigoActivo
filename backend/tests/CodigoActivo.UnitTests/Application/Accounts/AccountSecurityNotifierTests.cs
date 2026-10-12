@@ -1,12 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Catalogs;
-using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -17,17 +14,13 @@ public sealed class AccountSecurityNotifierTests
 {
     private readonly RecordingEmailSender emailSender = new();
     private readonly TestClock clock = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly RecordingLogger<AccountSecurityNotifier> logger = new();
     private readonly AccountSecurityNotifier sut;
 
     public AccountSecurityNotifierTests()
     {
-        sut = new AccountSecurityNotifier(
-            emailSender,
-            clock,
-            new AccountEmailComposer(new ApplicationOptions(), clock),
-            logger
-        );
+        sut = new AccountSecurityNotifier(emailSender, clock, composer, logger);
     }
 
     private static User NewUser(string? email = "owner@test.com", Guid? statusId = null)
@@ -47,6 +40,24 @@ public sealed class AccountSecurityNotifierTests
         );
     }
 
+    private ComposedAccountEmail Alert(
+        string address,
+        string name,
+        AccountSecurityChange change,
+        string? maskedNewEmail = null
+    )
+    {
+        return new ComposedAccountEmail(
+            nameof(IAccountEmailComposer.SecurityAlert),
+            new EmailRecipient(address, name)
+        )
+        {
+            Change = change,
+            OccurredAt = clock.UtcNow,
+            MaskedNewEmail = maskedNewEmail,
+        };
+    }
+
     [Fact]
     public async Task NotifyAsyncGreetsAVerifiedOwnerByName()
     {
@@ -54,9 +65,10 @@ public sealed class AccountSecurityNotifierTests
 
         await sut.NotifyAsync(user, AccountSecurityChange.PasswordLocked, CancellationToken.None);
 
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.ToName.Should().Be("Owner");
-        message.TextBody.Should().Contain("Owner");
+        composer
+            .Composed.Should()
+            .Equal(Alert("owner@test.com", "Owner", AccountSecurityChange.PasswordLocked));
+        emailSender.Sent.Should().ContainSingle().Which.ToName.Should().Be("Owner");
     }
 
     [Fact]
@@ -66,10 +78,10 @@ public sealed class AccountSecurityNotifierTests
 
         await sut.NotifyAsync(user, AccountSecurityChange.PasswordLocked, CancellationToken.None);
 
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.ToName.Should().BeEmpty();
-        message.TextBody.Should().NotContain("Owner");
-        message.HtmlBody.Should().NotContain("Owner");
+        composer
+            .Composed.Should()
+            .Equal(Alert("owner@test.com", string.Empty, AccountSecurityChange.PasswordLocked));
+        emailSender.Sent.Should().ContainSingle().Which.ToName.Should().BeEmpty();
     }
 
     [Fact]
@@ -79,6 +91,7 @@ public sealed class AccountSecurityNotifierTests
 
         await sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
 
+        composer.Composed.Should().BeEmpty();
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -89,8 +102,11 @@ public sealed class AccountSecurityNotifierTests
 
         await sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
 
+        composer
+            .Composed.Should()
+            .Equal(Alert("owner@test.com", "Owner", AccountSecurityChange.PasswordChanged));
         var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.Kind.Should().Be(EmailKind.SecurityAlert);
+        message.Subject.Should().Be(nameof(IAccountEmailComposer.SecurityAlert));
         message.ToAddress.Should().Be("owner@test.com");
     }
 
@@ -105,10 +121,14 @@ public sealed class AccountSecurityNotifierTests
             CancellationToken.None
         );
 
+        composer
+            .Composed.Should()
+            .Equal(
+                Alert("old@test.com", "Owner", AccountSecurityChange.EmailChanged, "b***@test.com")
+            );
         var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.Subject.Should().Be(nameof(IAccountEmailComposer.SecurityAlert));
         message.ToAddress.Should().Be("old@test.com");
-        message.TextBody.Should().Contain("b***@test.com").And.NotContain("brandnew@test.com");
-        message.TextBody.Should().Contain(AppStrings.EmailsSecurityAlertEmailChanged);
     }
 
     [Fact]
@@ -122,10 +142,10 @@ public sealed class AccountSecurityNotifierTests
             CancellationToken.None
         );
 
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.ToAddress.Should().Be("owner@test.com");
-        message.TextBody.Should().Contain(AppStrings.EmailsSecurityAlertPhoneChanged);
-        message.TextBody.Should().NotContain(AppStrings.EmailsSecurityAlertEmailChanged);
+        composer
+            .Composed.Should()
+            .Equal(Alert("owner@test.com", "Owner", AccountSecurityChange.PhoneChanged));
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("owner@test.com");
     }
 
     [Fact]
@@ -139,8 +159,17 @@ public sealed class AccountSecurityNotifierTests
             CancellationToken.None
         );
 
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.TextBody.Should().Contain(AppStrings.EmailsSecurityAlertEmailAndPhoneChanged);
+        composer
+            .Composed.Should()
+            .Equal(
+                Alert(
+                    "old@test.com",
+                    "Owner",
+                    AccountSecurityChange.EmailAndPhoneChanged,
+                    "b***@test.com"
+                )
+            );
+        emailSender.Sent.Should().ContainSingle();
     }
 
     [Fact]

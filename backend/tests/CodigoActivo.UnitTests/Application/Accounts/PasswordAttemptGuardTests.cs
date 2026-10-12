@@ -21,6 +21,7 @@ public sealed class PasswordAttemptGuardTests
     private readonly TestClock clock = new();
     private readonly FakePasswordHasher hasher = new();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly RecordingLogger<PasswordAttemptGuard> logger = new();
     private readonly PasswordLockoutOptions options = new() { MaxFailedAttempts = 3 };
     private readonly TestCurrentUser currentUser = new();
@@ -37,7 +38,8 @@ public sealed class PasswordAttemptGuardTests
             options,
             logger,
             users,
-            currentUser
+            currentUser,
+            composer
         );
     }
 
@@ -194,10 +196,19 @@ public sealed class PasswordAttemptGuardTests
             .And.NotContain("guessed-secret")
             .And.NotContain(user.Email!.Value);
 
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email!.Value);
-        message.TextBody.Should().NotContain(Correct).And.NotContain("#userId=");
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.SecurityAlert),
+                    new EmailRecipient(user.Email!.Value, user.FirstName)
+                )
+                {
+                    Change = AccountSecurityChange.PasswordLocked,
+                    OccurredAt = clock.UtcNow,
+                }
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(user.Email!.Value);
     }
 
     [Fact]

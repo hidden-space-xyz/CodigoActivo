@@ -4,10 +4,8 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -23,8 +21,8 @@ public sealed class ResendVerificationCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly AccountVerificationOptions verification = new();
-    private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
     private readonly RecordingLogger<ResendVerificationCommandHandler> logger = new();
     private readonly ResendVerificationCommandHandler sut;
 
@@ -37,7 +35,7 @@ public sealed class ResendVerificationCommandHandlerTests
             verification,
             new AccountEmails(
                 emailSender,
-                new AccountEmailComposer(application, new TestClock()),
+                composer,
                 verification,
                 new PasswordResetOptions(),
                 new TwoFactorOptions()
@@ -97,7 +95,11 @@ public sealed class ResendVerificationCommandHandlerTests
         var result = await HandleAsync();
 
         result.IsSuccess.Should().BeTrue();
-        user.OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + emailSender.LastCode());
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.AccountVerification));
+        email.Recipient.Should().Be(new EmailRecipient(Email, string.Empty));
+        email.UserId.Should().Be(user.Id);
+        user.OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + email.Code);
         user.OtpLastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
     }
@@ -123,7 +125,10 @@ public sealed class ResendVerificationCommandHandlerTests
         var result = await HandleAsync();
 
         result.IsSuccess.Should().BeTrue();
-        var newCode = emailSender.LastCode();
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.AccountVerification));
+        email.Lifetime.Should().Be(verification.OtpLifetime);
+        var newCode = email.Code;
         newCode
             .Should()
             .MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");

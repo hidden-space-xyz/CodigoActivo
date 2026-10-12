@@ -6,11 +6,9 @@ using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -26,6 +24,7 @@ public sealed class LoginCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly TwoFactorOptions twoFactor = new();
     private readonly CountingPasswordHasher hasher = new();
     private readonly LoginCommandHandler sut;
@@ -34,10 +33,7 @@ public sealed class LoginCommandHandlerTests
     {
         var accountEmails = new AccountEmails(
             emailSender,
-            new AccountEmailComposer(
-                new ApplicationOptions { BaseUrl = "https://app.test" },
-                new TestClock()
-            ),
+            composer,
             new AccountVerificationOptions(),
             new PasswordResetOptions(),
             twoFactor
@@ -45,7 +41,7 @@ public sealed class LoginCommandHandlerTests
         sut = new LoginCommandHandler(
             users,
             clock,
-            PasswordGuards.Create(hasher, uow, clock, emailSender: emailSender),
+            PasswordGuards.Create(hasher, uow, clock, emailSender: emailSender, composer: composer),
             twoFactor,
             new LoginCodeIssuer(
                 new FakeOneTimeCodeHasher(),
@@ -180,9 +176,12 @@ public sealed class LoginCommandHandlerTests
         result.Value.Should().Be(new LoginChallengeKey(user.Id, user.LoginChallengeId!.Value));
         user.LoginChallengeStartedAt.Should().Be(clock.UtcNow);
 
-        var code = emailSender.LastLoginCode();
-        emailSender.Sent.Should().ContainSingle().Which.Kind.Should().Be(EmailKind.TwoFactorCode);
-        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.LoginCode));
+        email.Recipient.Should().Be(new EmailRecipient("ana@test.com", "Ana"));
+        email.Lifetime.Should().Be(twoFactor.ChallengeLifetime);
+        emailSender.Sent.Should().ContainSingle();
+        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + email.Code);
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + twoFactor.ChallengeLifetime);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
         user.LastLoginAt.Should().BeNull("the login only completes after the second factor");
@@ -273,7 +272,19 @@ public sealed class LoginCommandHandlerTests
 
         user.IsPasswordLocked().Should().BeTrue();
         user.PasswordLockedAt.Should().Be(clock.UtcNow);
-        emailSender.Sent.Should().ContainSingle().Which.Kind.Should().Be(EmailKind.SecurityAlert);
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.SecurityAlert),
+                    new EmailRecipient("ana@test.com", "Ana")
+                )
+                {
+                    Change = AccountSecurityChange.PasswordLocked,
+                    OccurredAt = clock.UtcNow,
+                }
+            );
+        emailSender.Sent.Should().ContainSingle();
     }
 
     [Fact]

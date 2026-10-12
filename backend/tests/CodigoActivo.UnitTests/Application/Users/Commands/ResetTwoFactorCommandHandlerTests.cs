@@ -3,13 +3,11 @@ using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -27,6 +25,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly User actingAdmin;
     private readonly TestCurrentUser currentUser = new(isAdmin: true);
     private readonly CommittedEvents events;
@@ -43,7 +42,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
                 new AccountSecurityNotifier(
                     emailSender,
                     clock,
-                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    composer,
                     NullLogger<AccountSecurityNotifier>.Instance
                 ),
                 NullLogger<AccountSecurityNotifications>.Instance
@@ -145,10 +144,19 @@ public sealed class ResetTwoFactorCommandHandlerTests
         user.TwoFactorLockedUntil.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await events.PublishAsync(user);
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email!.Value);
-        message.TextBody.Should().NotContain("protected:secret").And.NotContain(ActingPassword);
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.SecurityAlert),
+                    new EmailRecipient(user.Email!.Value, user.FirstName)
+                )
+                {
+                    Change = AccountSecurityChange.TwoFactorReset,
+                    OccurredAt = clock.UtcNow,
+                }
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(user.Email!.Value);
     }
 
     [Fact]

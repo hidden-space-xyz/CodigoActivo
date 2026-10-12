@@ -3,9 +3,7 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -24,7 +22,8 @@ public static class PasswordGuards
         PasswordLockoutOptions? options = null,
         ILogger<PasswordAttemptGuard>? logger = null,
         IUserRepository? users = null,
-        ICurrentUser? currentUser = null
+        ICurrentUser? currentUser = null,
+        IAccountEmailComposer? composer = null
     )
     {
         return new PasswordAttemptGuard(
@@ -39,7 +38,7 @@ public static class PasswordGuards
             new AccountSecurityNotifier(
                 emailSender ?? new RecordingEmailSender(),
                 clock,
-                new AccountEmailComposer(new ApplicationOptions(), clock),
+                composer ?? new FakeAccountEmailComposer(),
                 NullLogger<AccountSecurityNotifier>.Instance
             ),
             logger ?? NullLogger<PasswordAttemptGuard>.Instance

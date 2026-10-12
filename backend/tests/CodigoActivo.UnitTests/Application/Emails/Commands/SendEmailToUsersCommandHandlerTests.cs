@@ -16,6 +16,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     private readonly List<MemoryStream> attachmentStreams = [];
     private readonly FakeReadStore store = new();
     private readonly RecordingEmailOutbox outbox = new();
+    private readonly FakeManualEmailComposer composer = new();
     private readonly ManualEmailOptions options = new();
     private readonly SendEmailToUsersCommandHandler sut;
 
@@ -25,7 +26,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             store,
             new FakeQueryExecutor(),
             options,
-            NewDispatcher(outbox, options)
+            NewDispatcher(outbox, options, composer)
         );
     }
 
@@ -65,7 +66,9 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             .Which.Recipients.Select(r => r.Address)
             .Should()
             .BeEquivalentTo("ana@test.local", "berto@test.local");
-        outbox.Messages.Should().OnlyContain(m => m.Subject == "Asunto");
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Subject.Should().Be("Asunto");
+        email.Body.Should().Be("Cuerpo");
     }
 
     [Fact]

@@ -2,11 +2,9 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -22,6 +20,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly TwoFactorOptions options = new();
     private readonly ResendTwoFactorCodeCommandHandler sut;
 
@@ -29,10 +28,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     {
         var accountEmails = new AccountEmails(
             emailSender,
-            new AccountEmailComposer(
-                new ApplicationOptions { BaseUrl = "https://app.test" },
-                new TestClock()
-            ),
+            composer,
             new AccountVerificationOptions(),
             new PasswordResetOptions(),
             options
@@ -167,7 +163,11 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         var result = await ResendAsync(user.Id.Value);
 
         result.IsSuccess.Should().BeTrue();
-        var code = emailSender.LastLoginCode();
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.LoginCode));
+        email.Recipient.Should().Be(new EmailRecipient(user.Email!.Value, user.FirstName));
+        emailSender.Sent.Should().ContainSingle();
+        var code = email.Code;
         code.Should().NotBe("111111");
         user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
