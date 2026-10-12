@@ -57,8 +57,11 @@ public sealed class DeleteOwnAccountCommandHandlerTests
             user,
             new
             {
-                LoginCodeHash = FakeOneTimeCodeHasher.Prefix + EmailCode,
-                LoginCodeExpiresAt = clock.UtcNow.AddMinutes(5),
+                LoginCode = new
+                {
+                    Hash = FakeOneTimeCodeHasher.Prefix + EmailCode,
+                    ExpiresAt = clock.UtcNow.AddMinutes(5),
+                },
             }
         );
         users.Finds(user);
@@ -73,8 +76,11 @@ public sealed class DeleteOwnAccountCommandHandlerTests
             new
             {
                 TwoFactorMethod = TwoFactorMethod.Authenticator,
-                AuthenticatorKey = FakeSecretProtector.Prefix + Secret,
-                AuthenticatorLastUsedStep = lastUsedStep,
+                Authenticator = new
+                {
+                    Key = FakeSecretProtector.Prefix + Secret,
+                    LastUsedStep = lastUsedStep,
+                },
             }
         );
         users.Finds(user);
@@ -177,8 +183,8 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var result = await DeleteAsync(user.Id.Value, password: "WrongPassword!");
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
-        user.TwoFactorFailedAttempts.Should().Be(0);
-        user.PasswordFailedAttempts.Should().Be(1);
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        user.PasswordLockout.FailedAttempts.Should().Be(1);
         AssertNothingRemoved();
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -199,7 +205,10 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     public async Task HandleAsyncLockedReturnsForbiddenEvenWithTheRightCode()
     {
         var user = Signed();
-        Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(1) });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { LockedUntil = clock.UtcNow.AddMinutes(1) } }
+        );
 
         var result = await DeleteAsync(user.Id.Value);
 
@@ -218,7 +227,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
             {
                 Persisted.Overwrite(
                     user,
-                    new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(15) }
+                    new { TwoFactorLockout = new { LockedUntil = clock.UtcNow.AddMinutes(15) } }
                 );
                 return true;
             });
@@ -238,7 +247,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var result = await DeleteAsync(user.Id.Value, code: "000000");
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
-        user.TwoFactorFailedAttempts.Should().Be(1);
+        user.TwoFactorLockout.FailedAttempts.Should().Be(1);
         AssertNothingRemoved();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -247,7 +256,10 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     public async Task HandleAsyncExpiredEmailCodeIsRejected()
     {
         var user = Signed();
-        Persisted.Overwrite(user, new { LoginCodeExpiresAt = clock.UtcNow.AddMinutes(-1) });
+        Persisted.Overwrite(
+            user,
+            new { LoginCode = new { ExpiresAt = clock.UtcNow.AddMinutes(-1) } }
+        );
 
         var result = await DeleteAsync(user.Id.Value);
 
@@ -259,12 +271,12 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     public async Task HandleAsyncRepeatedWrongCodesLockTheSecondFactor()
     {
         var user = Signed();
-        Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 1 });
+        Persisted.Overwrite(user, new { TwoFactorLockout = new { FailedAttempts = 1 } });
 
         await DeleteAsync(user.Id.Value, code: "000000");
 
-        user.TwoFactorLockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
-        user.LoginCodeHash.Should().BeNull("locking discards the challenged code");
+        user.TwoFactorLockout.LockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
+        user.LoginCode.Hash.Should().BeNull("locking discards the challenged code");
     }
 
     [Fact]
@@ -276,7 +288,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         var result = await DeleteAsync(user.Id.Value, code: "000000");
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
-        user.TwoFactorFailedAttempts.Should().Be(1);
+        user.TwoFactorLockout.FailedAttempts.Should().Be(1);
         AssertNothingRemoved();
     }
 

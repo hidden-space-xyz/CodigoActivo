@@ -160,7 +160,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                 new
                 {
                     TwoFactorMethod = TwoFactorMethod.Authenticator,
-                    AuthenticatorKey = FakeSecretProtector.Prefix + Secret,
+                    Authenticator = new { Key = FakeSecretProtector.Prefix + Secret },
                 }
             );
         });
@@ -278,7 +278,9 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
         (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().NotBeNull();
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.TwoFactorFailedAttempts.Should().Be(0, "a wrong password is not a wrong code");
+        stored!
+            .TwoFactorLockout.FailedAttempts.Should()
+            .Be(0, "a wrong password is not a wrong code");
     }
 
     [Fact]
@@ -290,8 +292,8 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
 
         await wrong.ShouldBeBadRequestAsync(ErrorCode.TwoFactorCodeInvalid);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.TwoFactorFailedAttempts.Should().Be(1);
-        stored.LoginCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
+        stored!.TwoFactorLockout.FailedAttempts.Should().Be(1);
+        stored.LoginCode.Hash.Should().NotBeNull("a wrong guess must not consume the code");
 
         using var right = await DeleteAsync(client, code);
         right.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -313,7 +315,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
 
         await locked.ShouldBeForbiddenAsync(ErrorCode.TwoFactorLocked);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.TwoFactorLockedUntil.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
+        stored!.TwoFactorLockout.LockedUntil.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
 
         using var lockedCode = await RequestCodeAsync(client);
         await lockedCode.ShouldBeForbiddenAsync(ErrorCode.TwoFactorLocked);

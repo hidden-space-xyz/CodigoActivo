@@ -30,20 +30,10 @@ public class User : AggregateRoot<UserId>
     public EmailAddress? Email { get; private set; }
 
     /// <summary>
-    /// Gets the email the holder asked to move the account to. It replaces <see cref="Email"/> only
-    /// once the code emailed to it is confirmed.
+    /// Gets the move to the email the holder asked for. It replaces <see cref="Email"/> only once
+    /// the code emailed to the new address is confirmed.
     /// </summary>
-    public EmailAddress? PendingEmail { get; private set; }
-
-    /// <summary>
-    /// Gets the hash of the emailed code that confirms the pending email.
-    /// </summary>
-    public string? EmailChangeCodeHash { get; private set; }
-
-    /// <summary>
-    /// Gets when the code that confirms the pending email expires.
-    /// </summary>
-    public DateTimeOffset? EmailChangeExpiresAt { get; private set; }
+    public EmailChange EmailChange { get; private set; }
 
     /// <summary>
     /// Gets the phone value.
@@ -120,34 +110,14 @@ public class User : AggregateRoot<UserId>
     public bool IsAdmin { get; private set; }
 
     /// <summary>
-    /// Gets the otp code hash value.
+    /// Gets the emailed code that verifies the email of a new account.
     /// </summary>
-    public string? OtpCodeHash { get; private set; }
+    public OneTimeCode VerificationCode { get; private set; }
 
     /// <summary>
-    /// Gets the otp expires at value.
+    /// Gets the emailed code that lets the holder choose a new password.
     /// </summary>
-    public DateTimeOffset? OtpExpiresAt { get; private set; }
-
-    /// <summary>
-    /// Gets the otp last sent at value.
-    /// </summary>
-    public DateTimeOffset? OtpLastSentAt { get; private set; }
-
-    /// <summary>
-    /// Gets the password reset code hash value.
-    /// </summary>
-    public string? PasswordResetCodeHash { get; private set; }
-
-    /// <summary>
-    /// Gets the password reset expires at value.
-    /// </summary>
-    public DateTimeOffset? PasswordResetExpiresAt { get; private set; }
-
-    /// <summary>
-    /// Gets the password reset last sent at value.
-    /// </summary>
-    public DateTimeOffset? PasswordResetLastSentAt { get; private set; }
+    public OneTimeCode PasswordResetCode { get; private set; }
 
     /// <summary>
     /// Gets the second factor required after the password. Every account has one.
@@ -155,71 +125,29 @@ public class User : AggregateRoot<UserId>
     public TwoFactorMethod TwoFactorMethod { get; private set; } = TwoFactorMethod.Email;
 
     /// <summary>
-    /// Gets the protected shared secret of the active authenticator application.
+    /// Gets the authenticator application, active or waiting for its first code.
     /// </summary>
-    public string? AuthenticatorKey { get; private set; }
+    public Authenticator Authenticator { get; private set; }
 
     /// <summary>
-    /// Gets the last authenticator time step accepted, so a code cannot be replayed.
+    /// Gets the emailed login code of the open two-factor challenge.
     /// </summary>
-    public long? AuthenticatorLastUsedStep { get; private set; }
+    public OneTimeCode LoginCode { get; private set; }
 
     /// <summary>
-    /// Gets the protected shared secret of an authenticator being enrolled.
+    /// Gets the open second-factor challenge.
     /// </summary>
-    public string? PendingAuthenticatorKey { get; private set; }
+    public LoginChallenge LoginChallenge { get; private set; }
 
     /// <summary>
-    /// Gets when the pending authenticator enrollment stops being confirmable.
+    /// Gets the wrong second-factor codes counted and the temporary lock they lead to.
     /// </summary>
-    public DateTimeOffset? PendingAuthenticatorExpiresAt { get; private set; }
+    public TwoFactorLockout TwoFactorLockout { get; private set; }
 
     /// <summary>
-    /// Gets the hash of the emailed login code of the open two-factor challenge.
+    /// Gets the wrong passwords counted and the lock they lead to.
     /// </summary>
-    public string? LoginCodeHash { get; private set; }
-
-    /// <summary>
-    /// Gets when the emailed login code expires.
-    /// </summary>
-    public DateTimeOffset? LoginCodeExpiresAt { get; private set; }
-
-    /// <summary>
-    /// Gets when the emailed login code was last sent.
-    /// </summary>
-    public DateTimeOffset? LoginCodeLastSentAt { get; private set; }
-
-    /// <summary>
-    /// Gets the identifier of the open second-factor challenge. The challenge cookie
-    /// carries it, so a copied cookie stops working as soon as this value changes or is cleared.
-    /// </summary>
-    public LoginChallengeId? LoginChallengeId { get; private set; }
-
-    /// <summary>
-    /// Gets when the open second-factor challenge was opened, which bounds how long it is accepted.
-    /// </summary>
-    public DateTimeOffset? LoginChallengeStartedAt { get; private set; }
-
-    /// <summary>
-    /// Gets the consecutive wrong second-factor codes since the last success or lockout.
-    /// </summary>
-    public int TwoFactorFailedAttempts { get; private set; }
-
-    /// <summary>
-    /// Gets until when second-factor codes are rejected after too many failures.
-    /// </summary>
-    public DateTimeOffset? TwoFactorLockedUntil { get; private set; }
-
-    /// <summary>
-    /// Gets the consecutive wrong account passwords since the last accepted one.
-    /// </summary>
-    public int PasswordFailedAttempts { get; private set; }
-
-    /// <summary>
-    /// Gets when the account was locked after too many wrong passwords. The lock does not
-    /// expire: only a completed password reset clears it.
-    /// </summary>
-    public DateTimeOffset? PasswordLockedAt { get; private set; }
+    public PasswordLockout PasswordLockout { get; private set; }
 
     /// <summary>
     /// Creates an independent account, pending email verification and as a participant. It needs
@@ -386,11 +314,10 @@ public class User : AggregateRoot<UserId>
     {
         EnsurePlannedHere(change);
         ArgumentException.ThrowIfNullOrWhiteSpace(codeHash);
-        PendingEmail =
+        var newEmail =
             change.NewEmail
             ?? throw new ArgumentException("The profile change keeps the email.", nameof(change));
-        EmailChangeCodeHash = codeHash;
-        EmailChangeExpiresAt = now + lifetime;
+        EmailChange = EmailChange.Request(newEmail, codeHash, now, lifetime);
         ApplyKeepingEmail(change);
         UpdatedAt = now;
         Raise(new ProfileChanged(Id));
@@ -417,7 +344,7 @@ public class User : AggregateRoot<UserId>
     {
         var previousEmail = Email;
         Email =
-            PendingEmail
+            EmailChange.NewEmail
             ?? throw new InvalidOperationException("No email change is waiting for confirmation.");
         ClearEmailChange();
         UpdatedAt = now;
@@ -441,9 +368,7 @@ public class User : AggregateRoot<UserId>
 
     private void ClearEmailChange()
     {
-        PendingEmail = null;
-        EmailChangeCodeHash = null;
-        EmailChangeExpiresAt = null;
+        EmailChange = default;
     }
 
     private Result<ProfileChange> PlanIndependentChange(PersonDetails details, UserId? guardianId)
@@ -539,9 +464,7 @@ public class User : AggregateRoot<UserId>
     /// <param name="lifetime">The lifetime value.</param>
     public void IssueOtp(string codeHash, DateTimeOffset now, TimeSpan lifetime)
     {
-        OtpCodeHash = codeHash;
-        OtpExpiresAt = now + lifetime;
-        OtpLastSentAt = now;
+        VerificationCode = OneTimeCode.Issue(codeHash, now, lifetime);
     }
 
     /// <summary>
@@ -549,9 +472,7 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     public void ClearOtp()
     {
-        OtpCodeHash = null;
-        OtpExpiresAt = null;
-        OtpLastSentAt = null;
+        VerificationCode = default;
     }
 
     /// <summary>
@@ -562,9 +483,7 @@ public class User : AggregateRoot<UserId>
     /// <param name="lifetime">The lifetime value.</param>
     public void IssuePasswordResetCode(string codeHash, DateTimeOffset now, TimeSpan lifetime)
     {
-        PasswordResetCodeHash = codeHash;
-        PasswordResetExpiresAt = now + lifetime;
-        PasswordResetLastSentAt = now;
+        PasswordResetCode = OneTimeCode.Issue(codeHash, now, lifetime);
     }
 
     /// <summary>
@@ -572,9 +491,7 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     public void ClearPasswordResetCode()
     {
-        PasswordResetCodeHash = null;
-        PasswordResetExpiresAt = null;
-        PasswordResetLastSentAt = null;
+        PasswordResetCode = default;
     }
 
     /// <summary>
@@ -603,9 +520,8 @@ public class User : AggregateRoot<UserId>
     {
         PasswordHash = passwordHash;
         ClearPasswordResetCode();
-        ClearPasswordFailures();
+        PasswordLockout = default;
         ClearLoginChallenge();
-        PasswordLockedAt = null;
         UpdatedAt = now;
     }
 
@@ -620,23 +536,13 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Determines whether the account is locked after too many wrong passwords. A locked account
-    /// refuses every password, correct or not, until its password is reset through recovery.
-    /// </summary>
-    /// <returns><see langword="true"/> when passwords must be rejected regardless of their value.</returns>
-    public bool IsPasswordLocked()
-    {
-        return PasswordLockedAt is not null;
-    }
-
-    /// <summary>
     /// Forgets the consecutive wrong passwords counted so far. Wrong passwords are counted by
     /// <see cref="RecordPasswordFailure"/> while the account row is locked, so parallel attempts
     /// cannot lose each other's increments.
     /// </summary>
     public void ClearPasswordFailures()
     {
-        PasswordFailedAttempts = 0;
+        PasswordLockout = PasswordLockout.WithoutFailures();
     }
 
     /// <summary>
@@ -685,7 +591,7 @@ public class User : AggregateRoot<UserId>
             return Error.Conflict(DomainErrorCode.TwoFactorResendNotAllowed);
         }
 
-        return IsTwoFactorLocked(now)
+        return TwoFactorLockout.IsLocked(now)
             ? Error.Forbidden(DomainErrorCode.TwoFactorLocked)
             : Result.Success();
     }
@@ -706,9 +612,7 @@ public class User : AggregateRoot<UserId>
             return allowed;
         }
 
-        LoginCodeHash = codeHash;
-        LoginCodeExpiresAt = now + lifetime;
-        LoginCodeLastSentAt = now;
+        LoginCode = OneTimeCode.Issue(codeHash, now, lifetime);
         return Result.Success();
     }
 
@@ -717,9 +621,7 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     public void ClearLoginCode()
     {
-        LoginCodeHash = null;
-        LoginCodeExpiresAt = null;
-        LoginCodeLastSentAt = null;
+        LoginCode = default;
     }
 
     /// <summary>
@@ -730,8 +632,7 @@ public class User : AggregateRoot<UserId>
     /// <param name="now">Current timestamp.</param>
     public void StartLoginChallenge(LoginChallengeId challengeId, DateTimeOffset now)
     {
-        LoginChallengeId = challengeId;
-        LoginChallengeStartedAt = now;
+        LoginChallenge = LoginChallenge.Start(challengeId, now);
     }
 
     /// <summary>
@@ -739,32 +640,7 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     public void ClearLoginChallenge()
     {
-        LoginChallengeId = null;
-        LoginChallengeStartedAt = null;
-    }
-
-    /// <summary>
-    /// Determines whether an emailed login code exists that is still valid and was sent recently
-    /// enough that a new one should not be issued yet.
-    /// </summary>
-    /// <param name="now">Current timestamp.</param>
-    /// <param name="resendCooldown">Minimum time between two emailed codes.</param>
-    /// <returns><see langword="true"/> when the existing code can still be used.</returns>
-    public bool HasRecentLoginCode(DateTimeOffset now, TimeSpan resendCooldown)
-    {
-        return LoginCodeHash is not null
-            && LoginCodeExpiresAt > now
-            && LoginCodeLastSentAt + resendCooldown > now;
-    }
-
-    /// <summary>
-    /// Determines whether second-factor verification is temporarily locked.
-    /// </summary>
-    /// <param name="now">Current timestamp.</param>
-    /// <returns><see langword="true"/> when codes must be rejected regardless of their value.</returns>
-    public bool IsTwoFactorLocked(DateTimeOffset now)
-    {
-        return TwoFactorLockedUntil > now;
+        LoginChallenge = default;
     }
 
     /// <summary>
@@ -780,14 +656,13 @@ public class User : AggregateRoot<UserId>
         TimeSpan lockoutDuration
     )
     {
-        TwoFactorFailedAttempts++;
-        if (TwoFactorFailedAttempts < maxFailedAttempts)
+        var locks = TwoFactorLockout.LocksOnNextFailure(maxFailedAttempts);
+        TwoFactorLockout = TwoFactorLockout.AfterFailure(now, maxFailedAttempts, lockoutDuration);
+        if (!locks)
         {
             return;
         }
 
-        TwoFactorFailedAttempts = 0;
-        TwoFactorLockedUntil = now + lockoutDuration;
         ClearLoginCode();
         ClearLoginChallenge();
         Raise(new TwoFactorLocked(Id));
@@ -801,8 +676,7 @@ public class User : AggregateRoot<UserId>
     {
         ClearLoginCode();
         ClearLoginChallenge();
-        TwoFactorFailedAttempts = 0;
-        TwoFactorLockedUntil = null;
+        TwoFactorLockout = default;
         RegisterLogin(now);
     }
 
@@ -826,19 +700,8 @@ public class User : AggregateRoot<UserId>
             return Error.Conflict(DomainErrorCode.AuthenticatorAlreadyEnabled);
         }
 
-        PendingAuthenticatorKey = protectedKey;
-        PendingAuthenticatorExpiresAt = now + lifetime;
+        Authenticator = Authenticator.BeginEnrollment(protectedKey, now, lifetime);
         return Result.Success();
-    }
-
-    /// <summary>
-    /// Determines whether an authenticator enrollment is waiting for confirmation.
-    /// </summary>
-    /// <param name="now">Current timestamp.</param>
-    /// <returns><see langword="true"/> when a pending key exists and has not expired.</returns>
-    public bool HasPendingAuthenticator(DateTimeOffset now)
-    {
-        return PendingAuthenticatorKey is not null && PendingAuthenticatorExpiresAt > now;
     }
 
     /// <summary>
@@ -858,15 +721,12 @@ public class User : AggregateRoot<UserId>
             return Error.Conflict(DomainErrorCode.AuthenticatorAlreadyEnabled);
         }
 
-        if (!HasPendingAuthenticator(now))
+        if (!Authenticator.HasPendingEnrollment(now))
         {
             return Error.Validation(DomainErrorCode.AuthenticatorSetupExpired);
         }
 
-        AuthenticatorKey = PendingAuthenticatorKey;
-        AuthenticatorLastUsedStep = usedStep;
-        PendingAuthenticatorKey = null;
-        PendingAuthenticatorExpiresAt = null;
+        Authenticator = Authenticator.Activate(usedStep);
         TwoFactorMethod = TwoFactorMethod.Authenticator;
         ClearLoginCode();
         UpdatedAt = now;
@@ -893,10 +753,7 @@ public class User : AggregateRoot<UserId>
     public void UseEmailTwoFactor(DateTimeOffset now)
     {
         TwoFactorMethod = TwoFactorMethod.Email;
-        AuthenticatorKey = null;
-        AuthenticatorLastUsedStep = null;
-        PendingAuthenticatorKey = null;
-        PendingAuthenticatorExpiresAt = null;
+        Authenticator = default;
         UpdatedAt = now;
     }
 
@@ -912,8 +769,7 @@ public class User : AggregateRoot<UserId>
         var leftAuthenticator = TwoFactorMethod is not TwoFactorMethod.Email;
         UseEmailTwoFactor(now);
         ClearLoginCode();
-        TwoFactorFailedAttempts = 0;
-        TwoFactorLockedUntil = null;
+        TwoFactorLockout = default;
         if (leftAuthenticator)
         {
             Raise(new TwoFactorReset(Id));
@@ -984,57 +840,6 @@ public class User : AggregateRoot<UserId>
     public bool OwnsEmail => !IsPendingVerification;
 
     /// <summary>
-    /// Gets the hash of the verification code while the code can still be used.
-    /// </summary>
-    /// <param name="now">Current time.</param>
-    /// <returns>The hash, or <see langword="null"/> when there is no code or it expired.</returns>
-    public string? UsableOtpCodeHash(DateTimeOffset now)
-    {
-        return OtpExpiresAt >= now ? OtpCodeHash : null;
-    }
-
-    /// <summary>
-    /// Gets the hash of the emailed login code while the code can still be used.
-    /// </summary>
-    /// <param name="now">Current time.</param>
-    /// <returns>The hash, or <see langword="null"/> when there is no code or it expired.</returns>
-    public string? UsableLoginCodeHash(DateTimeOffset now)
-    {
-        return LoginCodeExpiresAt >= now ? LoginCodeHash : null;
-    }
-
-    /// <summary>
-    /// Gets the hash of the password reset code while the code can still be used.
-    /// </summary>
-    /// <param name="now">Current time.</param>
-    /// <returns>The hash, or <see langword="null"/> when there is no code or it expired.</returns>
-    public string? UsablePasswordResetCodeHash(DateTimeOffset now)
-    {
-        return PasswordResetExpiresAt >= now ? PasswordResetCodeHash : null;
-    }
-
-    /// <summary>
-    /// Gets the hash of the code that confirms the pending email while the code can still be used.
-    /// </summary>
-    /// <param name="now">Current time.</param>
-    /// <returns>The hash, or <see langword="null"/> when no change waits or its code expired.</returns>
-    public string? UsableEmailChangeCodeHash(DateTimeOffset now)
-    {
-        return EmailChangeExpiresAt >= now ? EmailChangeCodeHash : null;
-    }
-
-    /// <summary>
-    /// Tells whether a code of the authenticator may be accepted. A code of the time step already
-    /// accepted, or of an earlier one, is refused, so a code cannot be used twice.
-    /// </summary>
-    /// <param name="step">Time step of the code.</param>
-    /// <returns><see langword="true"/> when the step is newer than the last one accepted.</returns>
-    public bool AcceptsAuthenticatorStep(long step)
-    {
-        return AuthenticatorLastUsedStep is not { } lastUsed || step > lastUsed;
-    }
-
-    /// <summary>
     /// Sets the password of a new account.
     /// </summary>
     /// <param name="passwordHash">Hash of the password.</param>
@@ -1051,50 +856,7 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     public void ForgetOtpDelivery()
     {
-        OtpLastSentAt = null;
-    }
-
-    /// <summary>
-    /// Tells whether a new verification code must wait for the resend cooldown.
-    /// </summary>
-    /// <param name="now">Current time.</param>
-    /// <param name="cooldown">Minimum time between two codes.</param>
-    /// <returns><see langword="true"/> while the last code is too recent.</returns>
-    public bool IsOtpResendCoolingDown(DateTimeOffset now, TimeSpan cooldown)
-    {
-        return now < OtpLastSentAt + cooldown;
-    }
-
-    /// <summary>
-    /// Tells whether a new password reset code must wait for the resend cooldown.
-    /// </summary>
-    /// <param name="now">Current time.</param>
-    /// <param name="cooldown">Minimum time between two codes.</param>
-    /// <returns><see langword="true"/> while the last code is too recent.</returns>
-    public bool IsPasswordResetResendCoolingDown(DateTimeOffset now, TimeSpan cooldown)
-    {
-        return now < PasswordResetLastSentAt + cooldown;
-    }
-
-    /// <summary>
-    /// Tells whether a new login code must wait for the resend cooldown.
-    /// </summary>
-    /// <param name="now">Current time.</param>
-    /// <param name="cooldown">Minimum time between two codes.</param>
-    /// <returns><see langword="true"/> while the last code is too recent.</returns>
-    public bool IsLoginCodeResendCoolingDown(DateTimeOffset now, TimeSpan cooldown)
-    {
-        return now < LoginCodeLastSentAt + cooldown;
-    }
-
-    /// <summary>
-    /// Tells whether a second-factor challenge is the one the account has open.
-    /// </summary>
-    /// <param name="challengeId">Identifier of the challenge.</param>
-    /// <returns><see langword="true"/> when it is the open challenge.</returns>
-    public bool HasLoginChallenge(LoginChallengeId challengeId)
-    {
-        return LoginChallengeId == challengeId;
+        VerificationCode = VerificationCode.WithoutDelivery();
     }
 
     /// <summary>
@@ -1113,9 +875,8 @@ public class User : AggregateRoot<UserId>
     )
     {
         return CanSignIn
-            && !IsPasswordLocked()
-            && HasLoginChallenge(challengeId)
-            && now < LoginChallengeStartedAt + lifetime;
+            && !PasswordLockout.IsLocked
+            && LoginChallenge.IsOpen(challengeId, now, lifetime);
     }
 
     /// <summary>
@@ -1124,7 +885,7 @@ public class User : AggregateRoot<UserId>
     /// <param name="step">Time step of the accepted code.</param>
     public void RecordAuthenticatorStep(long step)
     {
-        AuthenticatorLastUsedStep = step;
+        Authenticator = Authenticator.WithUsedStep(step);
     }
 
     /// <summary>
@@ -1132,7 +893,7 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     public void ClearTwoFactorFailures()
     {
-        TwoFactorFailedAttempts = 0;
+        TwoFactorLockout = TwoFactorLockout.WithoutFailures();
     }
 
     /// <summary>
@@ -1144,18 +905,13 @@ public class User : AggregateRoot<UserId>
     /// <param name="now">Current time.</param>
     public void RecordPasswordFailure(int maxFailedAttempts, DateTimeOffset now)
     {
-        if (PasswordLockedAt is not null)
+        var locks = PasswordLockout.LocksOnNextFailure(maxFailedAttempts);
+        PasswordLockout = PasswordLockout.AfterFailure(maxFailedAttempts, now);
+        if (!locks)
         {
             return;
         }
 
-        PasswordFailedAttempts++;
-        if (PasswordFailedAttempts < maxFailedAttempts)
-        {
-            return;
-        }
-
-        PasswordLockedAt = now;
         ClearLoginChallenge();
         Raise(new PasswordLocked(Id));
     }

@@ -108,7 +108,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         totp.DidNotReceiveWithAnyArgs().MatchStep(default!, default!, default);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
-        user.PasswordFailedAttempts.Should().Be(1);
+        user.PasswordLockout.FailedAttempts.Should().Be(1);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -117,7 +117,10 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     public async Task HandleAsyncLockedReturnsForbidden()
     {
         var user = users.FindReturns(NewUserWithAuthenticator(Secret));
-        Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(1) });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { LockedUntil = clock.UtcNow.AddMinutes(1) } }
+        );
 
         var result = await DisableAsync(user.Id.Value);
 
@@ -135,8 +138,8 @@ public sealed class DisableAuthenticatorCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
-        user.AuthenticatorKey.Should().NotBeNull();
-        user.TwoFactorFailedAttempts.Should().Be(1);
+        user.Authenticator.Key.Should().NotBeNull();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(1);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -144,12 +147,12 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     public async Task HandleAsyncRepeatedWrongCodesLockTheSecondFactor()
     {
         var user = users.FindReturns(NewUserWithAuthenticator(Secret));
-        Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 1 });
+        Persisted.Overwrite(user, new { TwoFactorLockout = new { FailedAttempts = 1 } });
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(default(long?));
 
         await DisableAsync(user.Id.Value);
 
-        user.TwoFactorLockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
+        user.TwoFactorLockout.LockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
     }
 
     [Fact]
@@ -161,7 +164,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
             .LockAsync(user, Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
-                Persisted.Overwrite(user, new { AuthenticatorLastUsedStep = 51L });
+                Persisted.Overwrite(user, new { Authenticator = new { LastUsedStep = 51L } });
                 return true;
             });
 
@@ -208,7 +211,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
     public async Task HandleAsyncPasswordAndCodeCorrectReturnsToEmailAndForgetsTheKey()
     {
         var user = users.FindReturns(NewUserWithAuthenticator(Secret, lastUsedStep: 50));
-        Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 1 });
+        Persisted.Overwrite(user, new { TwoFactorLockout = new { FailedAttempts = 1 } });
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(51);
 
         var result = await DisableAsync(user.Id.Value);
@@ -216,9 +219,9 @@ public sealed class DisableAuthenticatorCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
-        user.AuthenticatorKey.Should().BeNull();
-        user.AuthenticatorLastUsedStep.Should().BeNull();
-        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.Authenticator.Key.Should().BeNull();
+        user.Authenticator.LastUsedStep.Should().BeNull();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         composer

@@ -88,7 +88,19 @@ public sealed class DeletedAccountCoverageTests : IDisposable
 
     private IEnumerable<string> PropertiesOf<T>()
     {
-        return Entity<T>().GetProperties().Select(property => property.Name);
+        return MemberPaths(Entity<T>(), prefix: string.Empty);
+    }
+
+    private static IEnumerable<string> MemberPaths(IReadOnlyTypeBase type, string prefix)
+    {
+        return type.GetProperties()
+            .Select(property => prefix + property.Name)
+            .Concat(
+                type.GetComplexProperties()
+                    .SelectMany(complex =>
+                        MemberPaths(complex.ComplexType, $"{prefix}{complex.Name}.")
+                    )
+            );
     }
 
     private static readonly Dictionary<string, string> UserPropertyOfCatalogId = new(

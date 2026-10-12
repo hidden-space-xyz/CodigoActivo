@@ -54,8 +54,8 @@ public sealed class ForgotPasswordCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        user.PasswordResetCodeHash.Should().BeNull();
-        user.PasswordResetLastSentAt.Should().BeNull();
+        user.PasswordResetCode.Hash.Should().BeNull();
+        user.PasswordResetCode.LastSentAt.Should().BeNull();
     }
 
     [Fact]
@@ -110,7 +110,10 @@ public sealed class ForgotPasswordCommandHandlerTests
     public async Task HandleAsyncWithinCooldownReturnsSuccessWithoutSending()
     {
         var user = users.FindReturns(NewUser());
-        Persisted.Overwrite(user, new { PasswordResetLastSentAt = clock.UtcNow.AddSeconds(-10) });
+        Persisted.Overwrite(
+            user,
+            new { PasswordResetCode = new { LastSentAt = clock.UtcNow.AddSeconds(-10) } }
+        );
 
         var result = await sut.HandleAsync(
             new ForgotPasswordCommand("ana@test.com"),
@@ -140,9 +143,9 @@ public sealed class ForgotPasswordCommandHandlerTests
         var code = email.Code;
         code.Should()
             .MatchRegex("^[0-9a-f]{64}$", "the reset code is 256 random bits in lowercase hex");
-        user.PasswordResetCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
-        user.PasswordResetExpiresAt.Should().Be(clock.UtcNow + passwordReset.CodeLifetime);
-        user.PasswordResetLastSentAt.Should().Be(clock.UtcNow);
+        user.PasswordResetCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
+        user.PasswordResetCode.ExpiresAt.Should().Be(clock.UtcNow + passwordReset.CodeLifetime);
+        user.PasswordResetCode.LastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(user.Email!.Value);
     }
 
@@ -161,7 +164,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         var newCode = composer.Composed.Should().ContainSingle().Which.Code;
         newCode.Should().NotBe("old-code");
-        user.PasswordResetCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + newCode);
+        user.PasswordResetCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + newCode);
     }
 
     [Fact]
@@ -176,6 +179,6 @@ public sealed class ForgotPasswordCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        user.PasswordResetCodeHash.Should().BeNull();
+        user.PasswordResetCode.Hash.Should().BeNull();
     }
 }

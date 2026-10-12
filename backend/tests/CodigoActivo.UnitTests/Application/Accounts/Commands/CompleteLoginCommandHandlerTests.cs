@@ -72,12 +72,15 @@ public sealed class CompleteLoginCommandHandlerTests
     public async Task HandleAsyncLockedReturnsForbiddenWithoutCountingTheAttempt()
     {
         var user = Prepare(NewUserWithLoginCode(clock));
-        Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(5) });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { LockedUntil = clock.UtcNow.AddMinutes(5) } }
+        );
 
         var result = await VerifyAsync(user.Id.Value, "123456");
 
         result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
-        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -86,13 +89,16 @@ public sealed class CompleteLoginCommandHandlerTests
     public async Task HandleAsyncPasswordLockedAccountIsRefusedLikeAnExpiredChallenge()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
-        Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddMinutes(-1) });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-1) } }
+        );
 
         var result = await VerifyAsync(user.Id.Value, "123456");
 
         result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
         user.LastLoginAt.Should().BeNull();
-        user.LoginCodeHash.Should().NotBeNull();
+        user.LoginCode.Hash.Should().NotBeNull();
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
         DomainEvents.Raised<TwoFactorLocked>(user).Should().BeEmpty();
@@ -102,15 +108,15 @@ public sealed class CompleteLoginCommandHandlerTests
     public async Task HandleAsyncCorrectEmailCodeCompletesLoginAndClearsTheCode()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
-        Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 2 });
+        Persisted.Overwrite(user, new { TwoFactorLockout = new { FailedAttempts = 2 } });
 
         var result = await VerifyAsync(user.Id.Value, " 123456 ");
 
         result.IsSuccess.Should().BeTrue();
-        user.LoginCodeHash.Should().BeNull();
-        user.LoginCodeExpiresAt.Should().BeNull();
-        user.LoginChallengeId.Should().BeNull();
-        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.LoginCode.Hash.Should().BeNull();
+        user.LoginCode.ExpiresAt.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
         user.LastLoginAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -150,7 +156,7 @@ public sealed class CompleteLoginCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
-        user.LoginChallengeId.Should().Be(Challenge);
+        user.LoginChallenge.Id.Should().Be(Challenge);
         added.Should().BeEmpty();
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -162,7 +168,7 @@ public sealed class CompleteLoginCommandHandlerTests
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
         Persisted.Overwrite(
             user,
-            new { LoginChallengeStartedAt = clock.UtcNow - options.ChallengeLifetime }
+            new { LoginChallenge = new { StartedAt = clock.UtcNow - options.ChallengeLifetime } }
         );
 
         var result = await VerifyAsync(user.Id.Value, "123456");
@@ -196,7 +202,7 @@ public sealed class CompleteLoginCommandHandlerTests
         var result = await VerifyAsync(user.Id.Value, "000000");
 
         result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
-        user.TwoFactorFailedAttempts.Should().Be(0);
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
         user.LastLoginAt.Should().BeNull();
         added.Should().BeEmpty();
         await uow.DidNotReceiveWithAnyArgs()
@@ -211,8 +217,8 @@ public sealed class CompleteLoginCommandHandlerTests
         var result = await VerifyAsync(user.Id.Value, "000000");
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
-        user.TwoFactorFailedAttempts.Should().Be(1);
-        user.LoginCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
+        user.TwoFactorLockout.FailedAttempts.Should().Be(1);
+        user.LoginCode.Hash.Should().NotBeNull("a wrong guess must not consume the code");
         user.LastLoginAt.Should().BeNull();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -233,14 +239,17 @@ public sealed class CompleteLoginCommandHandlerTests
     public async Task HandleAsyncFailureLimitReachedLocksAndDiscardsTheCode()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
-        Persisted.Overwrite(user, new { TwoFactorFailedAttempts = options.MaxFailedAttempts - 1 });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { FailedAttempts = options.MaxFailedAttempts - 1 } }
+        );
 
         var result = await VerifyAsync(user.Id.Value, "000000");
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
-        user.TwoFactorLockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
-        user.TwoFactorFailedAttempts.Should().Be(0);
-        user.LoginCodeHash.Should().BeNull();
+        user.TwoFactorLockout.LockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        user.LoginCode.Hash.Should().BeNull();
     }
 
     [Fact]
@@ -252,7 +261,7 @@ public sealed class CompleteLoginCommandHandlerTests
         var result = await VerifyAsync(user.Id.Value, "222333");
 
         result.IsSuccess.Should().BeTrue();
-        user.AuthenticatorLastUsedStep.Should().Be(42);
+        user.Authenticator.LastUsedStep.Should().Be(42);
         user.LastLoginAt.Should().Be(clock.UtcNow);
     }
 
@@ -265,7 +274,7 @@ public sealed class CompleteLoginCommandHandlerTests
         var result = await VerifyAsync(user.Id.Value, "222333");
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
-        user.TwoFactorFailedAttempts.Should().Be(1);
+        user.TwoFactorLockout.FailedAttempts.Should().Be(1);
         user.LastLoginAt.Should().BeNull();
     }
 
@@ -293,7 +302,10 @@ public sealed class CompleteLoginCommandHandlerTests
     public async Task HandleAsyncFailureLimitReachedRaisesTheLockBeforeItsSave()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
-        Persisted.Overwrite(user, new { TwoFactorFailedAttempts = options.MaxFailedAttempts - 1 });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { FailedAttempts = options.MaxFailedAttempts - 1 } }
+        );
         IReadOnlyList<TwoFactorLocked> saved = [];
         uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
             .Do(_ => saved = DomainEvents.Raised<TwoFactorLocked>(user));
@@ -301,7 +313,7 @@ public sealed class CompleteLoginCommandHandlerTests
         await VerifyAsync(user.Id.Value, "000000");
 
         saved.Should().Equal(new TwoFactorLocked(user.Id));
-        user.IsTwoFactorLocked(clock.UtcNow).Should().BeTrue();
+        user.TwoFactorLockout.IsLocked(clock.UtcNow).Should().BeTrue();
     }
 
     [Fact]
@@ -332,7 +344,7 @@ public sealed class CompleteLoginCommandHandlerTests
             {
                 Persisted.Overwrite(
                     user,
-                    new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(15) }
+                    new { TwoFactorLockout = new { LockedUntil = clock.UtcNow.AddMinutes(15) } }
                 );
                 return true;
             });
@@ -366,8 +378,11 @@ public sealed class CompleteLoginCommandHandlerTests
             user,
             new
             {
-                LoginCodeHash = FakeOneTimeCodeHasher.Prefix + "123456",
-                LoginCodeExpiresAt = clock.UtcNow.AddMinutes(5),
+                LoginCode = new
+                {
+                    Hash = FakeOneTimeCodeHasher.Prefix + "123456",
+                    ExpiresAt = clock.UtcNow.AddMinutes(5),
+                },
             }
         );
         totp.MatchStep(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTimeOffset>())

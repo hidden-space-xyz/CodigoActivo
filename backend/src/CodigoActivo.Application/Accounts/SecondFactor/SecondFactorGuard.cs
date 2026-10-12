@@ -44,7 +44,7 @@ public sealed class SecondFactorGuard(
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        if (user.IsTwoFactorLocked(now))
+        if (user.TwoFactorLockout.IsLocked(now))
         {
             return Error.Forbidden(DomainErrorCode.TwoFactorLocked);
         }
@@ -53,11 +53,11 @@ public sealed class SecondFactorGuard(
         var accepted = user.TwoFactorMethod switch
         {
             TwoFactorMethod.Authenticator => (
-                usedStep = authenticatorCodes.Match(user.AuthenticatorKey, code)
+                usedStep = authenticatorCodes.Match(user.Authenticator.Key, code)
             )
                 is { } matched
-                && user.AcceptsAuthenticatorStep(matched),
-            _ => otpValidator.IsCodeValid(code, user.UsableLoginCodeHash(now)),
+                && user.Authenticator.Accepts(matched),
+            _ => otpValidator.IsCodeValid(code, user.LoginCode.UsableHash(now)),
         };
 
         if (!accepted)

@@ -37,7 +37,8 @@ Domain + Application + Infrastructure <- Composition <- API
   policy, never to a handler. Child entities change only through their root.
 - Every aggregate has a typed identifier (`readonly record struct XId(Guid Value) : IEntityId<XId>`); never pass
   a raw `Guid` across the domain or a command. Values with rules are value objects. Both map onto the existing
-  columns through the EF conventions, so they never change the schema.
+  columns through the EF conventions or, like the security state of `User`, as complex properties with
+  `HasColumnName`, so they never change the schema.
 - Closed value sets are domain enums; their catalog tables only hold names and colors, and `CatalogIds` keeps
   the stable `Guid` of each member. There is no `SeedIds`.
 - Aggregates reference each other by ID, without navigations; keep foreign keys and cascades with
@@ -65,10 +66,10 @@ Domain + Application + Infrastructure <- Composition <- API
 - Take the signed-in user from `ICurrentUser`, never from the command or query, and check `ActingUserPolicy` in
   every use case that acts on behalf of another person; HTTP attributes are only a first gate.
 - Delete users only through `AccountEraser`. A new `User` property or table referencing users must be copied
-  into `LegalCopy` (and loaded in `DeletedAccountSnapshot`) or listed in `LegalCopy.ExcludedUserProperties`, and
-  a new author column must be handed over to the initial administrator in `AccountErasureStore`;
-  `DeletedAccountCoverageTests` only checks that the decision was recorded, not that the data is copied or
-  handed over.
+  into `LegalCopy` (and loaded in `DeletedAccountSnapshot`) or listed in `LegalCopy.ExcludedUserProperties`
+  (a value object member as `Property.Member`), and a new author column must be handed over to the initial
+  administrator in `AccountErasureStore`; `DeletedAccountCoverageTests` only checks that the decision was
+  recorded, not that the data is copied or handed over.
 - A new `StoredFileId` or `RichText` column must be checked by `StoredFileRepository.GetInUseAsync`, and a
   `StoredFileId` column needs a foreign key to `StoredFile` with `DeleteBehavior.Restrict`;
   `FileReferenceCoverageTests` lists them.

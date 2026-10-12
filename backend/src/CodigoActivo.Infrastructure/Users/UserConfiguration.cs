@@ -32,6 +32,80 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(16)
             .IsRequired();
 
+        builder.ComplexProperty(
+            u => u.EmailChange,
+            change =>
+            {
+                change.Property(c => c.NewEmail).HasColumnName("pending_email");
+                change.Property(c => c.CodeHash).HasColumnName("email_change_code_hash");
+                change.Property(c => c.ExpiresAt).HasColumnName("email_change_expires_at");
+            }
+        );
+        builder.ComplexProperty(
+            u => u.VerificationCode,
+            code => MapOneTimeCode(code, "otp_code_hash", "otp_expires_at", "otp_last_sent_at")
+        );
+        builder.ComplexProperty(
+            u => u.PasswordResetCode,
+            code =>
+                MapOneTimeCode(
+                    code,
+                    "password_reset_code_hash",
+                    "password_reset_expires_at",
+                    "password_reset_last_sent_at"
+                )
+        );
+        builder.ComplexProperty(
+            u => u.LoginCode,
+            code =>
+                MapOneTimeCode(
+                    code,
+                    "login_code_hash",
+                    "login_code_expires_at",
+                    "login_code_last_sent_at"
+                )
+        );
+        builder.ComplexProperty(
+            u => u.Authenticator,
+            authenticator =>
+            {
+                authenticator.Property(a => a.Key).HasColumnName("authenticator_key");
+                authenticator
+                    .Property(a => a.LastUsedStep)
+                    .HasColumnName("authenticator_last_used_step");
+                authenticator
+                    .Property(a => a.PendingKey)
+                    .HasColumnName("pending_authenticator_key");
+                authenticator
+                    .Property(a => a.PendingExpiresAt)
+                    .HasColumnName("pending_authenticator_expires_at");
+            }
+        );
+        builder.ComplexProperty(
+            u => u.LoginChallenge,
+            challenge =>
+            {
+                challenge.Property(c => c.Id).HasColumnName("login_challenge_id");
+                challenge.Property(c => c.StartedAt).HasColumnName("login_challenge_started_at");
+            }
+        );
+        builder.ComplexProperty(
+            u => u.TwoFactorLockout,
+            lockout =>
+            {
+                lockout.Property(l => l.FailedAttempts).HasColumnName("two_factor_failed_attempts");
+                lockout.Property(l => l.LockedUntil).HasColumnName("two_factor_locked_until");
+            }
+        );
+        builder.ComplexProperty(
+            u => u.PasswordLockout,
+            lockout =>
+            {
+                lockout.Property(l => l.FailedAttempts).HasColumnName("password_failed_attempts");
+                lockout.Property(l => l.LockedAt).HasColumnName("password_locked_at");
+            }
+        );
+
         builder
             .Property(u => u.Status)
             .HasConversion(new CatalogConverter<UserStatus>(CatalogIds.UserStatuses))
@@ -61,5 +135,17 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .WithMany()
             .HasForeignKey(u => u.ParentId)
             .OnDelete(DeleteBehavior.Cascade);
+    }
+
+    private static void MapOneTimeCode(
+        ComplexPropertyBuilder<OneTimeCode> code,
+        string hashColumn,
+        string expiresAtColumn,
+        string lastSentAtColumn
+    )
+    {
+        code.Property(c => c.Hash).HasColumnName(hashColumn);
+        code.Property(c => c.ExpiresAt).HasColumnName(expiresAtColumn);
+        code.Property(c => c.LastSentAt).HasColumnName(lastSentAtColumn);
     }
 }

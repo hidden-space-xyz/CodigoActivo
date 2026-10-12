@@ -69,9 +69,12 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
             user,
             new
             {
-                PendingAuthenticatorKey = FakeSecretProtector.Prefix + Secret,
-                PendingAuthenticatorExpiresAt = expiresAt ?? clock.UtcNow.AddMinutes(10),
-                LoginCodeHash = "stale",
+                Authenticator = new
+                {
+                    PendingKey = FakeSecretProtector.Prefix + Secret,
+                    PendingExpiresAt = expiresAt ?? clock.UtcNow.AddMinutes(10),
+                },
+                LoginCode = new { Hash = "stale" },
             }
         );
         return users.FindReturns(user);
@@ -116,7 +119,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
         var result = await ConfirmAsync(user.Id.Value, "000000");
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
-        user.PendingAuthenticatorKey.Should().NotBeNull();
+        user.Authenticator.PendingKey.Should().NotBeNull();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
     }
 
@@ -129,7 +132,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
             new
             {
                 TwoFactorMethod = TwoFactorMethod.Authenticator,
-                AuthenticatorKey = FakeSecretProtector.Prefix + "ACTIVEKEY",
+                Authenticator = new { Key = FakeSecretProtector.Prefix + "ACTIVEKEY" },
             }
         );
         totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(99);
@@ -138,7 +141,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
         await events.PublishAsync(user);
 
         result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
-        user.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + "ACTIVEKEY");
+        user.Authenticator.Key.Should().Be(FakeSecretProtector.Prefix + "ACTIVEKEY");
         emailSender.Sent.Should().BeEmpty();
     }
 
@@ -153,11 +156,11 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
-        user.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + Secret);
-        user.AuthenticatorLastUsedStep.Should().Be(99);
-        user.PendingAuthenticatorKey.Should().BeNull();
-        user.PendingAuthenticatorExpiresAt.Should().BeNull();
-        user.LoginCodeHash.Should().BeNull();
+        user.Authenticator.Key.Should().Be(FakeSecretProtector.Prefix + Secret);
+        user.Authenticator.LastUsedStep.Should().Be(99);
+        user.Authenticator.PendingKey.Should().BeNull();
+        user.Authenticator.PendingExpiresAt.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         composer
             .Composed.Should()

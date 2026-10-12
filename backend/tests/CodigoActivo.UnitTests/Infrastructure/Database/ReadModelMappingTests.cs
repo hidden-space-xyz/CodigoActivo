@@ -72,7 +72,7 @@ public sealed class ReadModelMappingTests : IDisposable
             {
                 var table = StoreObjectIdentifier.Table(entityType.GetTableName()!);
                 return entityType
-                    .GetProperties()
+                    .GetFlattenedProperties()
                     .Select(property =>
                         (
                             Key: $"{table.Name}.{property.GetColumnName(table)}",

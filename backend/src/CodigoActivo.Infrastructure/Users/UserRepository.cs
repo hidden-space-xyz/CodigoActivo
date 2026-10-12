@@ -90,13 +90,19 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
         }
 
         var entry = Context.Entry(user);
-        MarkPersisted(entry.Property(u => u.PasswordFailedAttempts), persisted.Attempts);
-        MarkPersisted(entry.Property(u => u.PasswordLockedAt), persisted.LockedAt);
         MarkPersisted(
-            entry.Property(u => u.LoginChallengeId),
-            persisted.ChallengeId is { } challengeId ? LoginChallengeId.From(challengeId) : null
+            entry.ComplexProperty(u => u.PasswordLockout),
+            new PasswordLockout(persisted.Attempts, persisted.LockedAt)
         );
-        MarkPersisted(entry.Property(u => u.LoginChallengeStartedAt), persisted.ChallengeStartedAt);
+        MarkPersisted(
+            entry.ComplexProperty(u => u.LoginChallenge),
+            new LoginChallenge(
+                persisted.ChallengeId is { } challengeId
+                    ? LoginChallengeId.From(challengeId)
+                    : null,
+                persisted.ChallengeStartedAt
+            )
+        );
         return true;
     }
 
@@ -122,39 +128,36 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        var attempts = user.PasswordFailedAttempts;
-        var lockedAt = user.PasswordLockedAt;
-        var challengeId = user.LoginChallengeId;
-        var challengeStartedAt = user.LoginChallengeStartedAt;
+        var lockout = user.PasswordLockout;
+        var challenge = user.LoginChallenge;
         await Set.Where(u => u.Id == user.Id)
             .ExecuteUpdateAsync(
                 setters =>
                     setters
-                        .SetProperty(u => u.PasswordFailedAttempts, attempts)
-                        .SetProperty(u => u.PasswordLockedAt, lockedAt)
-                        .SetProperty(u => u.LoginChallengeId, challengeId)
-                        .SetProperty(u => u.LoginChallengeStartedAt, challengeStartedAt),
+                        .SetProperty(u => u.PasswordLockout, lockout)
+                        .SetProperty(u => u.LoginChallenge, challenge),
                 ct
             );
 
         var entry = Context.Entry(user);
-        MarkPersisted(entry.Property(u => u.PasswordFailedAttempts), attempts);
-        MarkPersisted(entry.Property(u => u.PasswordLockedAt), lockedAt);
-        MarkPersisted(entry.Property(u => u.LoginChallengeId), challengeId);
-        MarkPersisted(entry.Property(u => u.LoginChallengeStartedAt), challengeStartedAt);
+        MarkPersisted(entry.ComplexProperty(u => u.PasswordLockout), lockout);
+        MarkPersisted(entry.ComplexProperty(u => u.LoginChallenge), challenge);
         await unitOfWork.PublishAfterCommitAsync(user.PullDomainEvents<PasswordLocked>());
     }
 
-    private static void MarkPersisted<TProperty>(
-        PropertyEntry<User, TProperty> property,
-        TProperty value
+    private static void MarkPersisted<TComplex>(
+        ComplexPropertyEntry<User, TComplex> complexProperty,
+        TComplex value
     )
     {
-        property.CurrentValue = value;
-        if (property.EntityEntry.State is EntityState.Unchanged or EntityState.Modified)
+        complexProperty.CurrentValue = value;
+        if (complexProperty.EntityEntry.State is EntityState.Unchanged or EntityState.Modified)
         {
-            property.OriginalValue = value;
-            property.IsModified = false;
+            foreach (var property in complexProperty.Properties)
+            {
+                property.OriginalValue = property.CurrentValue;
+                property.IsModified = false;
+            }
         }
     }
 

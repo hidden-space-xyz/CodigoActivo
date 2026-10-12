@@ -57,7 +57,7 @@ public sealed class ResendVerificationCommandHandler(
         var now = clock.UtcNow;
         if (
             user is not { IsPendingVerification: true }
-            || user.IsOtpResendCoolingDown(now, verification.ResendCooldown)
+            || user.VerificationCode.IsResendCoolingDown(now, verification.ResendCooldown)
         )
         {
             return Result.Success();

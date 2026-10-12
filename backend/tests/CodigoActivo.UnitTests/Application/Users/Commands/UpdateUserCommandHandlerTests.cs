@@ -426,7 +426,7 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.Email!.Value.Should().Be("ana@test.com");
-        actingUser.PasswordFailedAttempts.Should().Be(countedFailures);
+        actingUser.PasswordLockout.FailedAttempts.Should().Be(countedFailures);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -461,7 +461,7 @@ public sealed class UpdateUserCommandHandlerTests
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.SecondaryPhoneSameAsPrimary);
         user.Phone!.Value.Should().Be("555-0100");
         user.SecondaryPhone.Should().BeNull();
-        actingUser.PasswordFailedAttempts.Should().Be(0);
+        actingUser.PasswordLockout.FailedAttempts.Should().Be(0);
         await AssertNotSavedAsync();
     }
 
@@ -493,7 +493,7 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.DisposableEmailNotAllowed);
         user.Email!.Value.Should().Be("ana@test.com");
-        actingUser.PasswordFailedAttempts.Should().Be(0);
+        actingUser.PasswordLockout.FailedAttempts.Should().Be(0);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -639,15 +639,15 @@ public sealed class UpdateUserCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         actingUser.FirstName.Should().Be("Anabel");
         actingUser.Email!.Value.Should().Be("acting@test.com");
-        actingUser.PendingEmail!.Value.Should().Be("new@test.com");
-        actingUser.EmailChangeExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);
+        actingUser.EmailChange.NewEmail!.Value.Should().Be("new@test.com");
+        actingUser.EmailChange.ExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);
         var link = composer.Composed.Should().ContainSingle().Subject;
         link.Name.Should().Be(nameof(IAccountEmailComposer.EmailChangeConfirmation));
         link.Recipient.Should().Be(new EmailRecipient("new@test.com", string.Empty));
         link.UserId.Should().Be(actingUser.Id);
         link.Lifetime.Should().Be(verification.OtpLifetime);
         emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("new@test.com");
-        actingUser.EmailChangeCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + link.Code);
+        actingUser.EmailChange.CodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + link.Code);
     }
 
     [Fact]
@@ -663,7 +663,7 @@ public sealed class UpdateUserCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         actingUser.FirstName.Should().Be("Anabel");
         actingUser.Email!.Value.Should().Be("acting@test.com");
-        actingUser.UsableEmailChangeCodeHash(clock.UtcNow).Should().NotBeNull();
+        actingUser.EmailChange.UsableCodeHash(clock.UtcNow).Should().NotBeNull();
         composer
             .Composed.Should()
             .Equal(
@@ -734,7 +734,7 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.OtpResendCooldownActive);
         actingUser.FirstName.Should().Be("Ana");
-        actingUser.PendingEmail.Should().BeNull();
+        actingUser.EmailChange.NewEmail.Should().BeNull();
         await AssertNotSavedAsync();
     }
 
@@ -747,7 +747,7 @@ public sealed class UpdateUserCommandHandlerTests
         var result = await HandleAsync(actingUser.Id.Value, ContactChange("new@test.com"));
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.EmailSendFailed);
-        actingUser.PendingEmail.Should().BeNull();
+        actingUser.EmailChange.NewEmail.Should().BeNull();
         var entry = issuerLogger.LevelEntries.Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Error);
         entry.Message.Should().StartWith("Sending a AccountVerification email failed");

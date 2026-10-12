@@ -42,7 +42,7 @@ public sealed class PasswordAttemptGuardTests
     public async Task VerifyLoginPasswordAsyncCorrectPasswordAcceptsAndForgetsEarlierFailures()
     {
         var user = Account();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
+        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
 
         var accepted = await sut.VerifyLoginPasswordAsync(
             user,
@@ -51,8 +51,8 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeTrue();
-        user.PasswordFailedAttempts.Should().Be(0);
-        user.IsPasswordLocked().Should().BeFalse();
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
+        user.PasswordLockout.IsLocked.Should().BeFalse();
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -76,7 +76,7 @@ public sealed class PasswordAttemptGuardTests
     public async Task VerifyReauthenticationAsyncCorrectPasswordCommitsTheClearedCounter()
     {
         var user = Account();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
+        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
 
         var accepted = await sut.VerifyReauthenticationAsync(
             user,
@@ -85,7 +85,7 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeTrue();
-        user.PasswordFailedAttempts.Should().Be(0);
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -101,8 +101,8 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.PasswordFailedAttempts.Should().Be(1);
-        user.IsPasswordLocked().Should().BeFalse();
+        user.PasswordLockout.FailedAttempts.Should().Be(1);
+        user.PasswordLockout.IsLocked.Should().BeFalse();
         await AssertFailuresCountedAsync(1);
         Received.InOrder(() =>
         {
@@ -122,7 +122,7 @@ public sealed class PasswordAttemptGuardTests
     public async Task VerifyLoginPasswordAsyncRowLockNotObtainedCountsNothing()
     {
         var user = Account();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
+        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
         users.LockPasswordStateAsync(user, Arg.Any<CancellationToken>()).Returns(false);
 
         var accepted = await sut.VerifyLoginPasswordAsync(
@@ -132,8 +132,8 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.PasswordFailedAttempts.Should().Be(2);
-        user.IsPasswordLocked().Should().BeFalse();
+        user.PasswordLockout.FailedAttempts.Should().Be(2);
+        user.PasswordLockout.IsLocked.Should().BeFalse();
         await AssertFailuresCountedAsync(0);
         user.PullDomainEvents().Should().BeEmpty();
     }
@@ -142,7 +142,7 @@ public sealed class PasswordAttemptGuardTests
     public async Task VerifyLoginPasswordAsyncReachingTheLimitHandsTheLockEventToTheSave()
     {
         var user = Account();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
+        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
         IReadOnlyList<PasswordLocked> saved = [];
         users
             .When(repository =>
@@ -157,8 +157,8 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.IsPasswordLocked().Should().BeTrue();
-        user.PasswordLockedAt.Should().Be(clock.UtcNow);
+        user.PasswordLockout.IsLocked.Should().BeTrue();
+        user.PasswordLockout.LockedAt.Should().Be(clock.UtcNow);
         await AssertFailuresCountedAsync(1);
         saved.Should().Equal(new PasswordLocked(user.Id));
         user.PullDomainEvents().Should().BeEmpty();
@@ -170,25 +170,25 @@ public sealed class PasswordAttemptGuardTests
     public async Task VerifyLoginPasswordAsyncReachingTheLimitClosesThePendingChallenge()
     {
         var user = Account();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 1 });
+        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 1 } });
         user.StartLoginChallenge(LoginChallengeId.New(), clock.UtcNow);
 
         await sut.VerifyLoginPasswordAsync(user, "wrong", TestContext.Current.CancellationToken);
-        user.LoginChallengeId.Should().NotBeNull("the limit is not reached yet");
+        user.LoginChallenge.Id.Should().NotBeNull("the limit is not reached yet");
 
         await sut.VerifyLoginPasswordAsync(user, "wrong", TestContext.Current.CancellationToken);
 
-        user.IsPasswordLocked().Should().BeTrue();
-        user.LoginChallengeId.Should().BeNull();
+        user.PasswordLockout.IsLocked.Should().BeTrue();
+        user.LoginChallenge.Id.Should().BeNull();
     }
 
     [Fact]
     public async Task VerifyLoginPasswordAsyncLockedAccountRefusesTheCorrectPasswordToo()
     {
         var user = Account();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
+        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
         await sut.VerifyLoginPasswordAsync(user, "wrong", TestContext.Current.CancellationToken);
-        var lockedAt = user.PasswordLockedAt;
+        var lockedAt = user.PasswordLockout.LockedAt;
 
         var accepted = await sut.VerifyLoginPasswordAsync(
             user,
@@ -197,7 +197,7 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.PasswordLockedAt.Should().Be(lockedAt);
+        user.PasswordLockout.LockedAt.Should().Be(lockedAt);
         await AssertFailuresCountedAsync(1);
         user.PullDomainEvents()
             .Should()
@@ -208,7 +208,10 @@ public sealed class PasswordAttemptGuardTests
     public async Task VerifyLoginPasswordAsyncLockedAccountTreatsRightAndWrongPasswordsAlike()
     {
         var user = Account();
-        Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddDays(-1) });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddDays(-1) } }
+        );
 
         var withCorrect = await sut.VerifyLoginPasswordAsync(
             user,
@@ -222,7 +225,7 @@ public sealed class PasswordAttemptGuardTests
         );
 
         withCorrect.Should().Be(withWrong).And.BeFalse();
-        user.PasswordFailedAttempts.Should().Be(0);
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
         await AssertFailuresCountedAsync(0);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -259,8 +262,8 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.PasswordFailedAttempts.Should().Be(0);
-        user.IsPasswordLocked().Should().BeFalse();
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
+        user.PasswordLockout.IsLocked.Should().BeFalse();
         await AssertFailuresCountedAsync(0);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -270,7 +273,7 @@ public sealed class PasswordAttemptGuardTests
     public async Task VerifyReauthenticationAsyncCorrectPasswordAcceptsAndForgetsEarlierFailures()
     {
         var user = Account();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
+        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
 
         var accepted = await sut.VerifyReauthenticationAsync(
             user,
@@ -279,7 +282,7 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeTrue();
-        user.PasswordFailedAttempts.Should().Be(0);
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
     }
 
     [Fact]
@@ -295,7 +298,7 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.PasswordFailedAttempts.Should().Be(2);
+        user.PasswordLockout.FailedAttempts.Should().Be(2);
         await AssertFailuresCountedAsync(2);
     }
 
@@ -303,7 +306,10 @@ public sealed class PasswordAttemptGuardTests
     public async Task VerifyReauthenticationAsyncLockedAccountRefusesTheCorrectPassword()
     {
         var user = Account();
-        Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddMinutes(-5) });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-5) } }
+        );
 
         var accepted = await sut.VerifyReauthenticationAsync(
             user,
@@ -333,7 +339,7 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.PasswordFailedAttempts.Should().Be(0);
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
         await AssertFailuresCountedAsync(0);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);

@@ -100,8 +100,8 @@ public sealed class ResendVerificationCommandHandlerTests
         email.Name.Should().Be(nameof(IAccountEmailComposer.AccountVerification));
         email.Recipient.Should().Be(new EmailRecipient(Email, string.Empty));
         email.UserId.Should().Be(user.Id);
-        user.OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + email.Code);
-        user.OtpLastSentAt.Should().Be(clock.UtcNow);
+        user.VerificationCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + email.Code);
+        user.VerificationCode.LastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
     }
 
@@ -134,9 +134,9 @@ public sealed class ResendVerificationCommandHandlerTests
             .Should()
             .MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
         newCode.Should().NotBe("old-code");
-        user.OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + newCode);
-        user.OtpExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);
-        user.OtpLastSentAt.Should().Be(clock.UtcNow);
+        user.VerificationCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + newCode);
+        user.VerificationCode.ExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);
+        user.VerificationCode.LastSentAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().HaveCount(1);
     }
 
@@ -147,12 +147,12 @@ public sealed class ResendVerificationCommandHandlerTests
         var user = HolderOfTheAddress(
             NewPendingWithOtp(clock, otpLastSentAt: clock.UtcNow.AddMinutes(-5))
         );
-        var previousHash = user.OtpCodeHash;
+        var previousHash = user.VerificationCode.Hash;
 
         var result = await HandleAsync();
 
         result.IsSuccess.Should().BeTrue();
-        user.OtpCodeHash.Should().Be(previousHash);
+        user.VerificationCode.Hash.Should().Be(previousHash);
         logger
             .LevelEntries.Should()
             .ContainSingle(entry => entry.Level == LogLevel.Error)
@@ -169,13 +169,13 @@ public sealed class ResendVerificationCommandHandlerTests
         var user = HolderOfTheAddress(
             NewPendingWithOtp(clock, code: "old-code", otpLastSentAt: clock.UtcNow.AddMinutes(-5))
         );
-        var previousHash = user.OtpCodeHash;
-        var previousSentAt = user.OtpLastSentAt;
+        var previousHash = user.VerificationCode.Hash;
+        var previousSentAt = user.VerificationCode.LastSentAt;
 
         var result = await HandleAsync();
 
         result.IsSuccess.Should().BeTrue();
-        user.OtpCodeHash.Should().Be(previousHash);
-        user.OtpLastSentAt.Should().Be(previousSentAt);
+        user.VerificationCode.Hash.Should().Be(previousHash);
+        user.VerificationCode.LastSentAt.Should().Be(previousSentAt);
     }
 }

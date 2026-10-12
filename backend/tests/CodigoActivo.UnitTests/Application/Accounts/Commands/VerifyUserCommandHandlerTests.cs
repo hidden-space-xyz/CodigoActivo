@@ -122,7 +122,7 @@ public sealed class VerifyUserCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.Status.Should().Be(UserStatus.Active);
-        user.OtpCodeHash.Should().BeNull();
-        user.OtpExpiresAt.Should().BeNull();
+        user.VerificationCode.Hash.Should().BeNull();
+        user.VerificationCode.ExpiresAt.Should().BeNull();
     }
 }

@@ -85,8 +85,11 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
                 new
                 {
                     TwoFactorMethod = TwoFactorMethod.Authenticator,
-                    AuthenticatorKey = FakeSecretProtector.Prefix + secret,
-                    AuthenticatorLastUsedStep = lastUsedStep,
+                    Authenticator = new
+                    {
+                        Key = FakeSecretProtector.Prefix + secret,
+                        LastUsedStep = lastUsedStep,
+                    },
                 }
             );
         });
@@ -114,7 +117,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.LastLoginAt.Should().Be(Factory.Clock.UtcNow);
-        stored.LoginCodeHash.Should().BeNull();
+        stored.LoginCode.Hash.Should().BeNull();
 
         using var replay = await PresentAsync(client, code);
         await replay.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
@@ -204,8 +207,8 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         await wrong.ShouldBeBadRequestAsync(ErrorCode.TwoFactorCodeInvalid);
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.TwoFactorFailedAttempts.Should().Be(1);
-        stored.LoginCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
+        stored!.TwoFactorLockout.FailedAttempts.Should().Be(1);
+        stored.LoginCode.Hash.Should().NotBeNull("a wrong guess must not consume the code");
 
         var right = await PresentAsync(client, code);
         right.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -257,9 +260,9 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         await lockedLogin.ShouldBeForbiddenAsync(ErrorCode.TwoFactorLocked);
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.TwoFactorLockedUntil.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
-        stored.LoginCodeHash.Should().BeNull("locking discards the challenged code");
-        stored.LoginChallengeId.Should().BeNull("locking closes the open challenge");
+        stored!.TwoFactorLockout.LockedUntil.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
+        stored.LoginCode.Hash.Should().BeNull("locking discards the challenged code");
+        stored.LoginChallenge.Id.Should().BeNull("locking closes the open challenge");
 
         Factory.Clock.UtcNow += TimeSpan.FromMinutes(16);
         var signedIn = await LoginAsMemberAsync();
@@ -290,7 +293,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
 
         wrongCodes.Should().Be(Threshold, "no wrong code may be checked once the lock is stored");
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.TwoFactorLockedUntil.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
+        stored!.TwoFactorLockout.LockedUntil.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
     }
 
     [Fact]
@@ -454,7 +457,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         var body = await CompleteTwoFactorAsync(client, CurrentCode());
         body.TwoFactorMethod.Should().Be(ContractTwoFactorMethod.Authenticator);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.AuthenticatorLastUsedStep.Should().Be(TotpService.StepOf(Factory.Clock.UtcNow));
+        stored!.Authenticator.LastUsedStep.Should().Be(TotpService.StepOf(Factory.Clock.UtcNow));
     }
 
     [Fact]
@@ -512,7 +515,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
             .And.Contain($"secret={secret}");
 
         var pending = await FindAsync<User>(TestSeedData.Users.MemberId);
-        pending!.PendingAuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + secret);
+        pending!.Authenticator.PendingKey.Should().Be(FakeSecretProtector.Prefix + secret);
         pending
             .TwoFactorMethod.Should()
             .Be(TwoFactorMethod.Email, "the enrollment is not confirmed yet");
@@ -533,8 +536,8 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
 
         var enabled = await FindAsync<User>(TestSeedData.Users.MemberId);
         enabled!.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
-        enabled.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + secret);
-        enabled.PendingAuthenticatorKey.Should().BeNull();
+        enabled.Authenticator.Key.Should().Be(FakeSecretProtector.Prefix + secret);
+        enabled.Authenticator.PendingKey.Should().BeNull();
 
         using var me = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
         (await me.ReadJsonAsync<UserResponse>(Ct))!
@@ -607,8 +610,8 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
 
         await setup.ShouldBeConflictAsync(ErrorCode.AuthenticatorAlreadyEnabled);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.PendingAuthenticatorKey.Should().BeNull();
-        stored.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + Secret);
+        stored!.Authenticator.PendingKey.Should().BeNull();
+        stored.Authenticator.Key.Should().Be(FakeSecretProtector.Prefix + Secret);
     }
 
     [Fact]
@@ -655,7 +658,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
-        stored.AuthenticatorKey.Should().BeNull();
+        stored.Authenticator.Key.Should().BeNull();
 
         using var repeated = await client.PostJsonAsync(
             EmailMethodUrl,
@@ -693,7 +696,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
 
         var challenge = await client.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
         await challenge.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallengeId.Should().BeNull();
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallenge.Id.Should().BeNull();
     }
 
     [Fact]
@@ -701,7 +704,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     {
         var client = await StartMemberChallengeAsync();
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.LoginChallengeId.Should().NotBeNull();
+        stored!.LoginChallenge.Id.Should().NotBeNull();
 
         for (var reload = 0; reload < 3; reload++)
         {
@@ -713,8 +716,8 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         using var resend = await client.PostJsonAsync(ResendUrl, body: null, Ct);
         resend.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .LoginChallengeId.Should()
-            .Be(stored.LoginChallengeId, "a resend answers the same challenge");
+            .LoginChallenge.Id.Should()
+            .Be(stored.LoginChallenge.Id, "a resend answers the same challenge");
 
         await CompleteTwoFactorAsync(
             client,
@@ -722,7 +725,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         );
 
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .LoginChallengeId.Should()
+            .LoginChallenge.Id.Should()
             .BeNull("an accepted second factor consumes the challenge");
     }
 
@@ -754,13 +757,15 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     public async Task TwoFactorANewerPasswordStepInvalidatesTheEarlierChallengeCookie()
     {
         var first = await StartMemberChallengeAsync();
-        var firstChallenge = (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallengeId;
+        var firstChallenge = (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .LoginChallenge
+            .Id;
 
         Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
         var second = await StartMemberChallengeAsync();
-        var secondChallenge = (
-            await FindAsync<User>(TestSeedData.Users.MemberId)
-        )!.LoginChallengeId;
+        var secondChallenge = (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .LoginChallenge
+            .Id;
         firstChallenge.Should().NotBeNull();
         secondChallenge.Should().NotBeNull();
         secondChallenge.Should().NotBe(firstChallenge!.Value);
@@ -794,7 +799,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         );
         reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallengeId.Should().BeNull();
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.LoginChallenge.Id.Should().BeNull();
         using var stale = await client.GetAsync(TestUri.Rel(TwoFactorUrl), Ct);
         await stale.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
     }

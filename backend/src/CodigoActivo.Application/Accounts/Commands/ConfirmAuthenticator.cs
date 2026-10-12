@@ -53,12 +53,12 @@ public sealed class ConfirmAuthenticatorCommandHandler(
         }
 
         var now = clock.UtcNow;
-        if (!user.HasPendingAuthenticator(now))
+        if (!user.Authenticator.HasPendingEnrollment(now))
         {
             return Error.Validation(DomainErrorCode.AuthenticatorSetupExpired);
         }
 
-        var step = authenticatorCodes.Match(user.PendingAuthenticatorKey, command.Code);
+        var step = authenticatorCodes.Match(user.Authenticator.PendingKey, command.Code);
         if (step is null)
         {
             return Error.Validation(ApplicationErrorCode.TwoFactorCodeInvalid);

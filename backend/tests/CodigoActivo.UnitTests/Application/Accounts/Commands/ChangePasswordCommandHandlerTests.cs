@@ -103,7 +103,7 @@ public sealed class ChangePasswordCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserNewPasswordSameAsCurrent);
-        user.PasswordFailedAttempts.Should().Be(0);
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
         await events.PublishAsync(user);
         emailSender.Sent.Should().BeEmpty();
     }
@@ -123,7 +123,8 @@ public sealed class ChangePasswordCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.PasswordHash.Should().Be(hasher.Hash("correct"));
-        user.PasswordFailedAttempts.Should().Be(1, "the guard counts the failure on its own");
+        user.PasswordLockout.FailedAttempts.Should()
+            .Be(1, "the guard counts the failure on its own");
     }
 
     [Fact]
@@ -232,8 +233,8 @@ public sealed class ChangePasswordCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        user.PasswordResetCodeHash.Should().BeNull();
-        user.PasswordResetExpiresAt.Should().BeNull();
-        user.PasswordResetLastSentAt.Should().BeNull();
+        user.PasswordResetCode.Hash.Should().BeNull();
+        user.PasswordResetCode.ExpiresAt.Should().BeNull();
+        user.PasswordResetCode.LastSentAt.Should().BeNull();
     }
 }

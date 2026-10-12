@@ -58,9 +58,9 @@ public sealed class LoginCodeIssuerTests
         var code = email.Code;
         code.Should().MatchRegex("^[0-9]{6}$");
         emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
-        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
-        user.LoginCodeExpiresAt.Should().Be(clock.UtcNow.AddMinutes(7));
-        user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
+        user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
+        user.LoginCode.ExpiresAt.Should().Be(clock.UtcNow.AddMinutes(7));
+        user.LoginCode.LastSentAt.Should().Be(clock.UtcNow);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class LoginCodeIssuerTests
 
         result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserContactInfoRequired);
         emailSender.Sent.Should().BeEmpty();
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class LoginCodeIssuerTests
         );
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.EmailSendFailed);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
     }
 
     [Fact]
@@ -129,9 +129,9 @@ public sealed class LoginCodeIssuerTests
         var code = email.Code;
         code.Should().MatchRegex("^[0-9]{6}$");
         emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
-        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
-        user.LoginCodeExpiresAt.Should().Be(clock.UtcNow.AddMinutes(7));
-        user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
+        user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
+        user.LoginCode.ExpiresAt.Should().Be(clock.UtcNow.AddMinutes(7));
+        user.LoginCode.LastSentAt.Should().Be(clock.UtcNow);
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public sealed class LoginCodeIssuerTests
 
         result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserContactInfoRequired);
         emailSender.Sent.Should().BeEmpty();
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public sealed class LoginCodeIssuerTests
         );
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
     }
 
     [Fact]
@@ -179,6 +179,6 @@ public sealed class LoginCodeIssuerTests
         );
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.EmailSendFailed);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
     }
 }

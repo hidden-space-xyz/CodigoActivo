@@ -70,12 +70,18 @@ public sealed class ResetTwoFactorCommandHandlerTests
             new
             {
                 TwoFactorMethod = TwoFactorMethod.Authenticator,
-                AuthenticatorKey = "protected:secret",
-                AuthenticatorLastUsedStep = (long?)12,
-                PendingAuthenticatorKey = "protected:pending",
-                LoginCodeHash = "code",
-                TwoFactorFailedAttempts = 3,
-                TwoFactorLockedUntil = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                Authenticator = new
+                {
+                    Key = "protected:secret",
+                    LastUsedStep = (long?)12,
+                    PendingKey = "protected:pending",
+                },
+                LoginCode = new { Hash = "code" },
+                TwoFactorLockout = new
+                {
+                    FailedAttempts = 3,
+                    LockedUntil = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                },
             }
         );
         return user;
@@ -97,7 +103,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
-        actingAdmin.PasswordFailedAttempts.Should().Be(1);
+        actingAdmin.PasswordLockout.FailedAttempts.Should().Be(1);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -135,12 +141,12 @@ public sealed class ResetTwoFactorCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
-        user.AuthenticatorKey.Should().BeNull();
-        user.AuthenticatorLastUsedStep.Should().BeNull();
-        user.PendingAuthenticatorKey.Should().BeNull();
-        user.LoginCodeHash.Should().BeNull();
-        user.TwoFactorFailedAttempts.Should().Be(0);
-        user.TwoFactorLockedUntil.Should().BeNull();
+        user.Authenticator.Key.Should().BeNull();
+        user.Authenticator.LastUsedStep.Should().BeNull();
+        user.Authenticator.PendingKey.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        user.TwoFactorLockout.LockedUntil.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await events.PublishAsync(user);
         composer
@@ -164,15 +170,22 @@ public sealed class ResetTwoFactorCommandHandlerTests
         var user = NewUser();
         Persisted.Overwrite(
             user,
-            new { TwoFactorFailedAttempts = 5, TwoFactorLockedUntil = clock.UtcNow.AddMinutes(10) }
+            new
+            {
+                TwoFactorLockout = new
+                {
+                    FailedAttempts = 5,
+                    LockedUntil = clock.UtcNow.AddMinutes(10),
+                },
+            }
         );
         users.FindReturns(actingAdmin, user);
 
         var result = await HandleAsync(user.Id.Value, ActingPassword);
 
         result.IsSuccess.Should().BeTrue();
-        user.TwoFactorFailedAttempts.Should().Be(0);
-        user.TwoFactorLockedUntil.Should().BeNull();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        user.TwoFactorLockout.LockedUntil.Should().BeNull();
         await events.PublishAsync(user);
         emailSender.Sent.Should().BeEmpty();
     }

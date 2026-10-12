@@ -123,10 +123,12 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         stored.IsAdmin.Should().BeFalse();
         stored.Gender.Should().Be(Gender.Female);
         stored.UserType.Should().Be(UserType.Participant);
-        stored.OtpCodeHash.Should().NotBeNullOrEmpty();
-        stored.OtpCodeHash.Should().NotBe(otp, "the OTP must be stored hashed, not in plaintext");
-        stored.OtpExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
-        stored.OtpLastSentAt.Should().Be(Factory.Clock.UtcNow);
+        stored.VerificationCode.Hash.Should().NotBeNullOrEmpty();
+        stored
+            .VerificationCode.Hash.Should()
+            .NotBe(otp, "the OTP must be stored hashed, not in plaintext");
+        stored.VerificationCode.ExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
+        stored.VerificationCode.LastSentAt.Should().Be(Factory.Clock.UtcNow);
     }
 
     [Fact]
@@ -522,7 +524,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var stored = await FindAsync<User>(userId);
         stored!.Status.Should().Be(UserStatus.Active);
-        stored.OtpCodeHash.Should().BeNull();
+        stored.VerificationCode.Hash.Should().BeNull();
     }
 
     [Fact]
@@ -567,7 +569,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var stored = await FindAsync<User>(userId);
         stored!.Status.Should().Be(UserStatus.Pending);
-        stored.OtpCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
+        stored.VerificationCode.Hash.Should().NotBeNull("a wrong guess must not consume the code");
     }
 
     [Fact]
@@ -744,8 +746,11 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var stored = await FindAsync<User>(TestSeedData.Users.AdminId);
         stored!.LastLoginAt.Should().BeNull("the login is not complete until the second factor");
-        stored.LoginCodeHash.Should().NotBeNullOrEmpty().And.NotBe(code, "codes are stored hashed");
-        stored.LoginCodeExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(10));
+        stored
+            .LoginCode.Hash.Should()
+            .NotBeNullOrEmpty()
+            .And.NotBe(code, "codes are stored hashed");
+        stored.LoginCode.ExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(10));
 
         using var me = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
         me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -970,12 +975,12 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             .Contain($"/reset-password#userId={TestSeedData.Users.MemberId}");
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.PasswordResetCodeHash.Should().NotBeNullOrEmpty();
+        stored!.PasswordResetCode.Hash.Should().NotBeNullOrEmpty();
         stored
-            .PasswordResetCodeHash.Should()
+            .PasswordResetCode.Hash.Should()
             .NotBe(code, "the reset code must be stored hashed, not in plaintext");
-        stored.PasswordResetExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
-        stored.PasswordResetLastSentAt.Should().Be(Factory.Clock.UtcNow);
+        stored.PasswordResetCode.ExpiresAt.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
+        stored.PasswordResetCode.LastSentAt.Should().Be(Factory.Clock.UtcNow);
     }
 
     [Fact]
@@ -1096,8 +1101,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         body.Id.Should().Be(TestSeedData.Users.MemberId);
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.PasswordResetCodeHash.Should().BeNull();
-        stored.PasswordResetExpiresAt.Should().BeNull();
+        stored!.PasswordResetCode.Hash.Should().BeNull();
+        stored.PasswordResetCode.ExpiresAt.Should().BeNull();
     }
 
     [Fact]

@@ -379,7 +379,7 @@ public sealed class DemoDataSeederTests
             {
                 adult.Status.Should().Be(UserStatus.Active);
                 adult.CanSignIn.Should().BeTrue();
-                adult.OtpCodeHash.Should().BeNull();
+                adult.VerificationCode.Hash.Should().BeNull();
                 adult.LastLoginAt.Should().NotBeNull().And.BeOnOrBefore(clock.UtcNow);
             });
         adults

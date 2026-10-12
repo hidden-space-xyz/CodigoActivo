@@ -111,7 +111,7 @@ public sealed class ResetPasswordCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.PasswordResetInvalidOrExpired);
         user.PasswordHash.Should().Be(previousPasswordHash);
-        user.PasswordResetCodeHash.Should().NotBeNull("a wrong guess must not consume the code");
+        user.PasswordResetCode.Hash.Should().NotBeNull("a wrong guess must not consume the code");
     }
 
     [Fact]
@@ -141,9 +141,9 @@ public sealed class ResetPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "newPassword123");
-        user.PasswordResetCodeHash.Should().BeNull();
-        user.PasswordResetExpiresAt.Should().BeNull();
-        user.PasswordResetLastSentAt.Should().BeNull();
+        user.PasswordResetCode.Hash.Should().BeNull();
+        user.PasswordResetCode.ExpiresAt.Should().BeNull();
+        user.PasswordResetCode.LastSentAt.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await AssertSessionsRevokedAsync(user);
     }

@@ -57,8 +57,8 @@ public sealed class ConfirmEmailChangeCommandHandler(
 
         var now = clock.UtcNow;
         if (
-            user.PendingEmail is not { } newEmail
-            || !otpValidator.IsCodeValid(command.Code, user.UsableEmailChangeCodeHash(now))
+            user.EmailChange.NewEmail is not { } newEmail
+            || !otpValidator.IsCodeValid(command.Code, user.EmailChange.UsableCodeHash(now))
         )
         {
             return Error.Validation(ApplicationErrorCode.OtpInvalidOrExpired);

@@ -102,9 +102,9 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         }
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.IsPasswordLocked().Should().BeTrue();
+        stored!.PasswordLockout.IsLocked.Should().BeTrue();
         stored
-            .PasswordFailedAttempts.Should()
+            .PasswordLockout.FailedAttempts.Should()
             .BeGreaterThanOrEqualTo(Threshold, "no attempt may be lost");
         Factory
             .EmailSender.Sent.Should()
@@ -122,12 +122,12 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
             await response.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
 
             var progress = await FindAsync<User>(TestSeedData.Users.MemberId);
-            progress!.PasswordFailedAttempts.Should().Be(attempt);
-            progress.IsPasswordLocked().Should().Be(attempt >= Threshold);
+            progress!.PasswordLockout.FailedAttempts.Should().Be(attempt);
+            progress.PasswordLockout.IsLocked.Should().Be(attempt >= Threshold);
         }
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.PasswordLockedAt.Should().Be(Factory.Clock.UtcNow);
+        stored!.PasswordLockout.LockedAt.Should().Be(Factory.Clock.UtcNow);
     }
 
     [Fact]
@@ -201,7 +201,7 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
             );
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.LoginChallengeId.Should().BeNull("locking closes the open challenge");
+        stored!.LoginChallenge.Id.Should().BeNull("locking closes the open challenge");
         stored.LastLoginAt.Should().BeNull();
         (
             await Factory.QueryAsync(db =>
@@ -232,8 +232,8 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         accepted.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.PasswordFailedAttempts.Should().Be(0);
-        stored.IsPasswordLocked().Should().BeFalse();
+        stored!.PasswordLockout.FailedAttempts.Should().Be(0);
+        stored.PasswordLockout.IsLocked.Should().BeFalse();
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         }
 
         (await FindAsync<User>(TestSeedData.Users.BlockedId))!
-            .PasswordFailedAttempts.Should()
+            .PasswordLockout.FailedAttempts.Should()
             .Be(Threshold - 1);
 
         using var refused = await client.PostJsonAsync(
@@ -262,8 +262,8 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         await refused.ShouldBeForbiddenAsync(ErrorCode.UserAccountBlocked);
 
         var stored = await FindAsync<User>(TestSeedData.Users.BlockedId);
-        stored!.PasswordFailedAttempts.Should().Be(0);
-        stored.IsPasswordLocked().Should().BeFalse();
+        stored!.PasswordLockout.FailedAttempts.Should().Be(0);
+        stored.PasswordLockout.IsLocked.Should().BeFalse();
     }
 
     [Fact]
@@ -281,8 +281,8 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.IsPasswordLocked().Should().BeFalse();
-        stored.PasswordFailedAttempts.Should().Be(0);
+        stored!.PasswordLockout.IsLocked.Should().BeFalse();
+        stored.PasswordLockout.FailedAttempts.Should().Be(0);
 
         using var signedIn = await AttemptAsync(client, NewPassword);
         signedIn.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -301,7 +301,9 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         );
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!.IsPasswordLocked().Should().BeTrue();
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .PasswordLockout.IsLocked.Should()
+            .BeTrue();
         using var login = await AttemptAsync(CreateClient(), TestSeedData.Password);
         await login.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
     }
@@ -321,8 +323,8 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
             await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
 
             var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-            stored!.PasswordFailedAttempts.Should().Be(attempt);
-            stored.IsPasswordLocked().Should().Be(attempt >= Threshold);
+            stored!.PasswordLockout.FailedAttempts.Should().Be(attempt);
+            stored.PasswordLockout.IsLocked.Should().Be(attempt >= Threshold);
         }
 
         using var revoked = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
@@ -347,8 +349,8 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
             await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
 
             var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-            stored!.PasswordFailedAttempts.Should().Be(attempt);
-            stored.IsPasswordLocked().Should().Be(attempt >= Threshold);
+            stored!.PasswordLockout.FailedAttempts.Should().Be(attempt);
+            stored.PasswordLockout.IsLocked.Should().Be(attempt >= Threshold);
         }
 
         using var revoked = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
