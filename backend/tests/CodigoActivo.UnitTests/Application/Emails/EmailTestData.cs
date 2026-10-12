@@ -1,10 +1,8 @@
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using Gender = CodigoActivo.Application.Users.Contracts.Gender;
@@ -46,13 +44,14 @@ internal static class EmailTestData
 
     public static ManualEmailDispatcher NewDispatcher(
         RecordingEmailOutbox outbox,
-        ManualEmailOptions options
+        ManualEmailOptions options,
+        FakeManualEmailComposer? composer = null
     )
     {
         return new ManualEmailDispatcher(
             outbox,
             options,
-            new ManualEmailComposer(new ApplicationOptions()),
+            composer ?? new FakeManualEmailComposer(),
             NullLogger<ManualEmailDispatcher>.Instance
         );
     }

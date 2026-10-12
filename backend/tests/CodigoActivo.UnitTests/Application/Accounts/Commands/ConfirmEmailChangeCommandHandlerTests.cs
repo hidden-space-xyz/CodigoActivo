@@ -4,13 +4,11 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -30,6 +28,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly CommittedEvents events;
     private readonly ConfirmEmailChangeCommandHandler sut;
 
@@ -41,7 +40,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
                 new AccountSecurityNotifier(
                     emailSender,
                     clock,
-                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    composer,
                     NullLogger<AccountSecurityNotifier>.Instance
                 ),
                 NullLogger<AccountSecurityNotifications>.Instance
@@ -168,10 +167,22 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
         user.EmailChangeCodeHash.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.SecurityAlert),
+                    new EmailRecipient("old@test.com", user.FirstName)
+                )
+                {
+                    Change = AccountSecurityChange.EmailChanged,
+                    OccurredAt = clock.UtcNow,
+                    MaskedNewEmail = "n***@test.com",
+                }
+            );
         var alert = emailSender.Sent.Should().ContainSingle().Subject;
-        alert.Kind.Should().Be(EmailKind.SecurityAlert);
+        alert.Subject.Should().Be(nameof(IAccountEmailComposer.SecurityAlert));
         alert.ToAddress.Should().Be("old@test.com");
-        alert.TextBody.Should().Contain("n***@test.com").And.NotContain("new@test.com");
     }
 
     [Fact]

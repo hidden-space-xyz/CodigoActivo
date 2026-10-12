@@ -4,10 +4,8 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -21,9 +19,9 @@ public sealed class ForgotPasswordCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly PasswordResetOptions passwordReset = new();
-    private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
     private readonly ForgotPasswordCommandHandler sut;
 
     public ForgotPasswordCommandHandlerTests()
@@ -35,7 +33,7 @@ public sealed class ForgotPasswordCommandHandlerTests
             passwordReset,
             new AccountEmails(
                 emailSender,
-                new AccountEmailComposer(application, new TestClock()),
+                composer,
                 verification,
                 passwordReset,
                 new TwoFactorOptions()
@@ -134,15 +132,18 @@ public sealed class ForgotPasswordCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        var code = emailSender.LastCode();
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.PasswordReset));
+        email.Recipient.Should().Be(new EmailRecipient(user.Email!.Value, user.FirstName));
+        email.UserId.Should().Be(user.Id);
+        email.Lifetime.Should().Be(passwordReset.CodeLifetime);
+        var code = email.Code;
         code.Should()
             .MatchRegex("^[0-9a-f]{64}$", "the reset code is 256 random bits in lowercase hex");
         user.PasswordResetCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.PasswordResetExpiresAt.Should().Be(clock.UtcNow + passwordReset.CodeLifetime);
         user.PasswordResetLastSentAt.Should().Be(clock.UtcNow);
-        emailSender.Sent.Should().HaveCount(1);
-        emailSender.Sent[0].ToAddress.Should().Be(user.Email!.Value);
-        emailSender.Sent[0].TextBody.Should().Contain("/reset-password#userId=");
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(user.Email!.Value);
     }
 
     [Fact]
@@ -158,7 +159,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        var newCode = emailSender.LastCode();
+        var newCode = composer.Composed.Should().ContainSingle().Which.Code;
         newCode.Should().NotBe("old-code");
         user.PasswordResetCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + newCode);
     }

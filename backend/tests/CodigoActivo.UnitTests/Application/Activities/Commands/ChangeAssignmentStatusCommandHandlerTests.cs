@@ -1,15 +1,14 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Activities.Contracts;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Contracts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -22,8 +21,8 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
 {
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly FakeReadStore readStore = new();
-    private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeSignupEmailComposer composer = new();
     private readonly ChangeAssignmentStatusCommandHandler sut;
     private readonly AssignmentDecisionNotification notification;
 
@@ -35,12 +34,22 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
                 readStore,
                 new FakeQueryExecutor(),
                 emailSender,
-                new SignupEmailComposer(
-                    new ApplicationOptions { BaseUrl = "https://app.test" },
-                    clock
-                ),
+                composer,
                 NullLogger<ActivitySignupNotifier>.Instance
             )
+        );
+    }
+
+    private SignupActivity ExpectedActivity()
+    {
+        var row = readStore.Activities.Should().ContainSingle().Subject;
+        return new SignupActivity(
+            row.Title,
+            row.Event.Title,
+            row.EventId,
+            row.Location,
+            row.ActivityStartsAt,
+            row.ActivityEndsAt
         );
     }
 
@@ -130,7 +139,6 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     public async Task HandleAsyncConfirmedSendsDecisionEmailToTheUser()
     {
         var userId = Guid.NewGuid();
-        clock.UtcNow = Now;
         var activity = SignedUpActivity(
             userId,
             role: ActivityRole.Volunteer,
@@ -145,21 +153,24 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
             new ChangeAssignmentStatusRequest(KnownIds.AssignmentStatusTypes.Confirmed)
         );
 
-        var message = emailSender.Sent.Should().ContainSingle().Which;
-        message.ToAddress.Should().Be("test@user.test");
-        message.Subject.Should().Be("Inscripción confirmada: Taller de robótica");
-        message
-            .TextBody.Should()
-            .Contain("tu inscripción")
-            .And.Contain("aprobado")
-            .And.Contain("Voluntario");
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedSignupEmail(
+                    nameof(ISignupEmailComposer.Confirmed),
+                    new EmailRecipient("test@user.test", "Test"),
+                    null,
+                    "Voluntario",
+                    ExpectedActivity()
+                )
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("test@user.test");
     }
 
     [Fact]
     public async Task HandleAsyncDeniedSendsDecisionEmailNamingTheDependentMinor()
     {
         var childId = Guid.NewGuid();
-        clock.UtcNow = Now;
         var activity = SignedUpActivity(
             childId,
             role: ActivityRole.Participant,
@@ -174,17 +185,24 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
             new ChangeAssignmentStatusRequest(KnownIds.AssignmentStatusTypes.Denied)
         );
 
-        var message = emailSender.Sent.Should().ContainSingle().Which;
-        message.ToAddress.Should().Be("ada@parent.test");
-        message.Subject.Should().Be("Inscripción rechazada: Taller de robótica");
-        message.TextBody.Should().Contain("la inscripción de Kid One").And.Contain("rechazado");
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedSignupEmail(
+                    nameof(ISignupEmailComposer.Denied),
+                    new EmailRecipient("ada@parent.test", "Ada"),
+                    "Kid One",
+                    null,
+                    ExpectedActivity()
+                )
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ada@parent.test");
     }
 
     [Fact]
     public async Task HandleAsyncEmailDeliveryFailsStillStagesTheStatusChange()
     {
         var userId = Guid.NewGuid();
-        clock.UtcNow = Now;
         var activity = SignedUpActivity(
             userId,
             role: ActivityRole.Volunteer,
@@ -209,7 +227,6 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     public async Task HandleAsyncSameStatusReappliedDoesNotSendEmail()
     {
         var userId = Guid.NewGuid();
-        clock.UtcNow = Now;
         var activity = SignedUpActivity(userId, status: AssignmentStatus.Confirmed);
         readStore.TargetUser(userId, KnownIds.UserTypes.Participant);
         readStore.CatalogRoles();
@@ -227,7 +244,6 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
     public async Task HandleAsyncMovedBackToRequestedDoesNotSendEmail()
     {
         var userId = Guid.NewGuid();
-        clock.UtcNow = Now;
         var activity = SignedUpActivity(userId, status: AssignmentStatus.Confirmed);
         readStore.TargetUser(userId, KnownIds.UserTypes.Participant);
         readStore.CatalogRoles();

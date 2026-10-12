@@ -5,13 +5,10 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -31,8 +28,8 @@ public sealed class RegisterCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly FakePasswordHasher hasher = new();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly AccountVerificationOptions verification = new();
-    private readonly ApplicationOptions application = new() { BaseUrl = "https://app.test" };
     private readonly FakeDisposableEmailDomainStore disposableDomains = new();
     private readonly RegisterCommandHandler sut;
 
@@ -46,7 +43,7 @@ public sealed class RegisterCommandHandlerTests
             verification,
             new AccountEmails(
                 emailSender,
-                new AccountEmailComposer(application, new TestClock()),
+                composer,
                 verification,
                 new PasswordResetOptions(),
                 new TwoFactorOptions()
@@ -72,6 +69,7 @@ public sealed class RegisterCommandHandlerTests
     private User HolderOfTheAddress(Guid statusId)
     {
         var holder = NewUser(email: "ana@test.com", statusId: statusId);
+        Persisted.Overwrite(holder, new { FirstName = "Berta" });
         users
             .GetByEmailAsync(EmailAddress.FromStored("ana@test.com"), Arg.Any<CancellationToken>())
             .Returns(holder);
@@ -202,11 +200,15 @@ public sealed class RegisterCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         hasher.Hashes.Should().Be(1, "every outcome hashes the password");
-        var notice = emailSender.Sent.Should().ContainSingle().Subject;
-        notice.Kind.Should().Be(EmailKind.AccountVerification);
-        notice.ToAddress.Should().Be(holder.Email!.Value);
-        notice.Subject.Should().Be(AppStrings.EmailsEmailInUseSubject);
-        notice.TextBody.Should().NotContain("verify-account");
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.EmailInUse),
+                    new EmailRecipient(holder.Email!.Value, "Berta")
+                )
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(holder.Email!.Value);
         await users
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
@@ -260,11 +262,10 @@ public sealed class RegisterCommandHandlerTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        emailSender
-            .Sent.Should()
-            .ContainSingle()
-            .Which.TextBody.Should()
-            .Contain($"verify-account#userId={adult.Id}&code=");
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.AccountVerification));
+        email.UserId.Should().Be(adult.Id);
+        emailSender.Sent.Should().ContainSingle();
     }
 
     [Fact]
@@ -373,23 +374,20 @@ public sealed class RegisterCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         hasher.Hashes.Should().Be(1);
-        emailSender.Sent.Should().HaveCount(1);
-        var code = emailSender.LastCode();
-        code.Should().MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
-
-        var email = emailSender.Sent[0];
-        email.ToAddress.Should().Be("ana@test.com");
-        email
-            .ToName.Should()
-            .BeEmpty("an unverified address may belong to someone else than the registrant");
-        email.TextBody.Should().NotContain("Ana");
-        email.HtmlBody.Should().NotContain("Ana");
-        email.TextBody.Should().Contain(code);
-        email.Subject.Should().NotContain(code);
-        email.TextBody.Should().Contain("https://app.test/verify-account#userId=");
-        email.HtmlBody.Should().Contain("/verify-account#userId=");
-
         added.Should().ContainSingle();
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.AccountVerification));
+        email
+            .Recipient.Should()
+            .Be(
+                new EmailRecipient("ana@test.com", string.Empty),
+                "an unverified address may belong to someone else than the registrant"
+            );
+        email.UserId.Should().Be(added[0].Id);
+        email.Lifetime.Should().Be(verification.OtpLifetime);
+        var code = email.Code;
+        code.Should().MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
         added[0].OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
     }
 

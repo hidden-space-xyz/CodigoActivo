@@ -5,11 +5,9 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -26,6 +24,7 @@ public sealed class ChangePasswordCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly TestCurrentUser currentUser = new(isAdmin: true);
     private readonly CommittedEvents events;
     private readonly ChangePasswordCommandHandler sut;
@@ -38,7 +37,7 @@ public sealed class ChangePasswordCommandHandlerTests
                 new AccountSecurityNotifier(
                     emailSender,
                     clock,
-                    new AccountEmailComposer(new ApplicationOptions(), clock),
+                    composer,
                     NullLogger<AccountSecurityNotifier>.Instance
                 ),
                 NullLogger<AccountSecurityNotifications>.Instance
@@ -161,14 +160,19 @@ public sealed class ChangePasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         await events.PublishAsync(user);
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.ToAddress.Should().Be(user.Email!.Value);
-        message
-            .TextBody.Should()
-            .NotContain("brandnew")
-            .And.NotContain(user.PasswordHash)
-            .And.NotContain("#userId=");
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.SecurityAlert),
+                    new EmailRecipient(user.Email!.Value, user.FirstName)
+                )
+                {
+                    Change = AccountSecurityChange.PasswordChanged,
+                    OccurredAt = clock.UtcNow,
+                }
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(user.Email!.Value);
     }
 
     [Fact]

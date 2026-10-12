@@ -1,10 +1,8 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -15,6 +13,7 @@ namespace CodigoActivo.UnitTests.Application.Accounts;
 public sealed class LoginCodeIssuerTests
 {
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly TestClock clock = new();
     private readonly TwoFactorOptions options = new()
     {
@@ -26,10 +25,7 @@ public sealed class LoginCodeIssuerTests
     {
         var accountEmails = new AccountEmails(
             emailSender,
-            new AccountEmailComposer(
-                new ApplicationOptions { BaseUrl = "https://app.test" },
-                new TestClock()
-            ),
+            composer,
             new AccountVerificationOptions(),
             new PasswordResetOptions(),
             options
@@ -54,12 +50,13 @@ public sealed class LoginCodeIssuerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.ToAddress.Should().Be("ana@test.com");
-        var code = emailSender.LastLoginCode();
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.LoginCode));
+        email.Recipient.Should().Be(new EmailRecipient("ana@test.com", "Ana"));
+        email.Lifetime.Should().Be(TimeSpan.FromMinutes(7));
+        var code = email.Code;
         code.Should().MatchRegex("^[0-9]{6}$");
-        message.Subject.Should().NotContain(code, "the code must not leak into the subject line");
-        message.TextBody.Should().Contain("7 minutos");
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
         user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow.AddMinutes(7));
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
@@ -74,7 +71,7 @@ public sealed class LoginCodeIssuerTests
         for (var i = 0; i < 5; i++)
         {
             await sut.IssueAsync(user, clock.UtcNow, TestContext.Current.CancellationToken);
-            codes.Add(emailSender.LastLoginCode());
+            codes.Add(composer.Composed[^1].Code!);
         }
 
         codes.Count.Should().BeGreaterThan(1);
@@ -124,14 +121,13 @@ public sealed class LoginCodeIssuerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.Kind.Should().Be(EmailKind.TwoFactorCode);
-        message.ToAddress.Should().Be("ana@test.com");
-        message.Subject.Should().Contain("eliminación");
-        var code = emailSender.LastLoginCode();
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.AccountDeletionCode));
+        email.Recipient.Should().Be(new EmailRecipient("ana@test.com", "Ana"));
+        email.Lifetime.Should().Be(TimeSpan.FromMinutes(7));
+        var code = email.Code;
         code.Should().MatchRegex("^[0-9]{6}$");
-        message.Subject.Should().NotContain(code, "the code must not leak into the subject line");
-        message.TextBody.Should().Contain("7 minutos");
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
         user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
         user.LoginCodeExpiresAt.Should().Be(clock.UtcNow.AddMinutes(7));
         user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);

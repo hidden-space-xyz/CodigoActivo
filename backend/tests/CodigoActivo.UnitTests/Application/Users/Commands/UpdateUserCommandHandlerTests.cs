@@ -4,15 +4,12 @@ using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
-using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,6 +29,7 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly RecordingEmailSender emailSender = new();
+    private readonly FakeAccountEmailComposer composer = new();
     private readonly RecordingLogger<AccountSecurityNotifier> notifierLogger = new();
     private readonly RecordingLogger<EmailChangeLinkIssuer> issuerLogger = new();
     private readonly FakeDisposableEmailDomainStore disposableDomains = new();
@@ -45,10 +43,6 @@ public sealed class UpdateUserCommandHandlerTests
     {
         actingUser = NewUser(email: "acting@test.com");
         Persisted.Overwrite(actingUser, new { PasswordHash = hasher.Hash(ActingPassword) });
-        var composer = new AccountEmailComposer(
-            new ApplicationOptions { BaseUrl = "https://app.test" },
-            clock
-        );
         currentUser.Id = actingUser.Id;
         notifications = new AccountSecurityNotifications(
             users,
@@ -126,6 +120,24 @@ public sealed class UpdateUserCommandHandlerTests
     {
         return uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private ComposedAccountEmail Alert(
+        string address,
+        string name,
+        AccountSecurityChange change,
+        string? maskedNewEmail = null
+    )
+    {
+        return new ComposedAccountEmail(
+            nameof(IAccountEmailComposer.SecurityAlert),
+            new EmailRecipient(address, name)
+        )
+        {
+            Change = change,
+            OccurredAt = clock.UtcNow,
+            MaskedNewEmail = maskedNewEmail,
+        };
     }
 
     private Task<User?> AssertActingUserNotLoadedAsync()
@@ -229,7 +241,7 @@ public sealed class UpdateUserCommandHandlerTests
     public async Task HandleAsyncChangedIdentifiersWarnsThePreviousAddressWithTheNewOneMasked()
     {
         var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "old@test.com");
+        var user = NewUser(first: "Berta", id: id, email: "old@test.com");
         users.FindReturns(user, actingUser);
         users
             .EmailExistsAsync(
@@ -239,7 +251,7 @@ public sealed class UpdateUserCommandHandlerTests
             )
             .Returns(false);
         var request = new UpdateUserRequest(
-            "Ana",
+            "Berta",
             "Lopez",
             "brandnew@test.com",
             "555-0100",
@@ -255,19 +267,24 @@ public sealed class UpdateUserCommandHandlerTests
         await PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
+        composer
+            .Composed.Should()
+            .Equal(
+                Alert("old@test.com", "Berta", AccountSecurityChange.EmailChanged, "b***@test.com")
+            );
         var message = emailSender.Sent.Should().ContainSingle().Subject;
+        message.Subject.Should().Be(nameof(IAccountEmailComposer.SecurityAlert));
         message.ToAddress.Should().Be("old@test.com");
-        message.TextBody.Should().Contain("b***@test.com").And.NotContain("brandnew@test.com");
     }
 
     [Fact]
     public async Task HandleAsyncOnlyThePhoneChangedWarnsWithoutQuotingTheUnchangedEmail()
     {
         var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        var user = NewUser(first: "Berta", id: id, email: "ana@test.com", phone: "555-0100");
         users.FindReturns(user, actingUser);
         var request = new UpdateUserRequest(
-            "Ana",
+            "Berta",
             "Lopez",
             "ana@test.com",
             "555-0199",
@@ -283,9 +300,10 @@ public sealed class UpdateUserCommandHandlerTests
         await PublishAsync(user);
 
         result.IsSuccess.Should().BeTrue();
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.ToAddress.Should().Be("ana@test.com");
-        message.TextBody.Should().NotContain("a***@test.com");
+        composer
+            .Composed.Should()
+            .Equal(Alert("ana@test.com", "Berta", AccountSecurityChange.PhoneChanged));
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
     }
 
     [Fact]
@@ -622,21 +640,19 @@ public sealed class UpdateUserCommandHandlerTests
         actingUser.Email!.Value.Should().Be("acting@test.com");
         actingUser.PendingEmail!.Value.Should().Be("new@test.com");
         actingUser.EmailChangeExpiresAt.Should().Be(clock.UtcNow + verification.OtpLifetime);
-        var link = emailSender.Sent.Should().ContainSingle().Subject;
-        link.Kind.Should().Be(EmailKind.AccountVerification);
-        link.ToAddress.Should().Be("new@test.com");
-        link.ToName.Should().BeEmpty();
-        link.TextBody.Should()
-            .Contain($"https://app.test/confirm-email#userId={actingUser.Id}&code=");
-        actingUser
-            .EmailChangeCodeHash.Should()
-            .Be(FakeOneTimeCodeHasher.Prefix + emailSender.LastCode());
+        var link = composer.Composed.Should().ContainSingle().Subject;
+        link.Name.Should().Be(nameof(IAccountEmailComposer.EmailChangeConfirmation));
+        link.Recipient.Should().Be(new EmailRecipient("new@test.com", string.Empty));
+        link.UserId.Should().Be(actingUser.Id);
+        link.Lifetime.Should().Be(verification.OtpLifetime);
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("new@test.com");
+        actingUser.EmailChangeCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + link.Code);
     }
 
     [Fact]
     public async Task HandleAsyncOwnNewEmailOwnedByAnotherAccountNotifiesItsHolderInstead()
     {
-        EditOwnAccount(NewUser(email: "taken@test.com"));
+        EditOwnAccount(NewUser(first: "Berta", email: "taken@test.com"));
 
         var result = await HandleAsync(
             actingUser.Id.Value,
@@ -647,10 +663,15 @@ public sealed class UpdateUserCommandHandlerTests
         actingUser.FirstName.Should().Be("Anabel");
         actingUser.Email!.Value.Should().Be("acting@test.com");
         actingUser.UsableEmailChangeCodeHash(clock.UtcNow).Should().NotBeNull();
-        var notice = emailSender.Sent.Should().ContainSingle().Subject;
-        notice.ToAddress.Should().Be("taken@test.com");
-        notice.Subject.Should().Be(AppStrings.EmailsEmailInUseSubject);
-        notice.TextBody.Should().NotContain("confirm-email");
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.EmailInUse),
+                    new EmailRecipient("taken@test.com", "Berta")
+                )
+            );
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("taken@test.com");
         await users
             .DidNotReceiveWithAnyArgs()
             .EmailExistsAsync(default!, default, TestContext.Current.CancellationToken);
@@ -666,11 +687,11 @@ public sealed class UpdateUserCommandHandlerTests
         var result = await HandleAsync(actingUser.Id.Value, ContactChange("taken@test.com"));
 
         result.IsSuccess.Should().BeTrue();
-        emailSender
-            .Sent.Should()
-            .ContainSingle()
-            .Which.TextBody.Should()
-            .Contain($"confirm-email#userId={actingUser.Id}&code=");
+        var link = composer.Composed.Should().ContainSingle().Subject;
+        link.Name.Should().Be(nameof(IAccountEmailComposer.EmailChangeConfirmation));
+        link.Recipient.Should().Be(new EmailRecipient("taken@test.com", string.Empty));
+        link.UserId.Should().Be(actingUser.Id);
+        emailSender.Sent.Should().ContainSingle();
     }
 
     [Fact]
@@ -691,9 +712,12 @@ public sealed class UpdateUserCommandHandlerTests
             .Sent.Select(message => message.ToAddress)
             .Should()
             .Equal("new@test.com", "acting@test.com");
-        var alert = emailSender.Sent[1];
-        alert.Kind.Should().Be(EmailKind.SecurityAlert);
-        alert.TextBody.Should().NotContain("n***@test.com");
+        var composed = composer.Composed;
+        composed.Should().HaveCount(2);
+        composed[0].Name.Should().Be(nameof(IAccountEmailComposer.EmailChangeConfirmation));
+        composed[1]
+            .Should()
+            .Be(Alert("acting@test.com", "Ana", AccountSecurityChange.PhoneChanged));
     }
 
     [Fact]
