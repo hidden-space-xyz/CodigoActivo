@@ -25,15 +25,20 @@ public sealed record ChangePasswordCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to change password.
+/// Executes the command to change password. The new password is hashed before the account is
+/// locked and reloaded; the change then applies only while the stored password is still the one
+/// the current password was checked against, so a concurrent password step or code request waits
+/// for it instead of making it fail.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="accountLock">Runs the change with the account locked.</param>
 /// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
 /// <param name="hasher">The hasher value.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 public sealed class ChangePasswordCommandHandler(
     IUserRepository users,
+    AccountLock accountLock,
     ActingUserPolicy actingUser,
     IPasswordHasher hasher,
     IClock clock,
@@ -77,10 +82,35 @@ public sealed class ChangePasswordCommandHandler(
 
         if (!await passwordAttempts.VerifyReauthenticationAsync(user, command.CurrentPassword, ct))
         {
-            return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
+            return CurrentPasswordIncorrect();
         }
 
-        user.ChangePassword(hasher.Hash(command.NewPassword), clock.UtcNow);
+        var verifiedHash = user.PasswordHash;
+        var newHash = hasher.Hash(command.NewPassword);
+        return await accountLock.RunAsync(
+            user,
+            _ => Task.FromResult(ChangeLocked(user, verifiedHash, newHash)),
+            Error.NotFound(ApplicationErrorCode.UserNotFound),
+            ct
+        );
+    }
+
+    private static Result CurrentPasswordIncorrect()
+    {
+        return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
+    }
+
+    private Result ChangeLocked(User user, string verifiedHash, string newHash)
+    {
+        if (
+            !string.Equals(user.PasswordHash, verifiedHash, StringComparison.Ordinal)
+            || user.PasswordLockout.IsLocked
+        )
+        {
+            return CurrentPasswordIncorrect();
+        }
+
+        user.ChangePassword(newHash, clock.UtcNow);
         return Result.Success();
     }
 }

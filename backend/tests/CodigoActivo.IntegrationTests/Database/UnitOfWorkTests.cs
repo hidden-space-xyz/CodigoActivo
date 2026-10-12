@@ -226,6 +226,143 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
+    public async Task SaveChangesAsyncChallengeOpenedWhileThePasswordChangedIsRefusedAndStoresNothingOfIt()
+    {
+        await using var login = postgres.CreateContext();
+        var uow = TestUnitOfWork.For(login);
+        var user = await login.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        await using (var reset = postgres.CreateContext())
+        {
+            (await reset.Users.SingleAsync(u => u.Id == SeededUserId, Ct)).ResetPassword(
+                "new-hash",
+                Fixed
+            );
+            await reset.SaveChangesAsync(Ct);
+        }
+
+        user.IssueLoginCode("code-hash", Fixed, TimeSpan.FromMinutes(10))
+            .IsSuccess.Should()
+            .BeTrue();
+        user.StartLoginChallenge(LoginChallengeId.New(), Fixed);
+
+        var save = () => uow.SaveChangesAsync(Ct);
+
+        var thrown = await save.Should().ThrowAsync<ConcurrentUpdateException>();
+        thrown.Which.EntityType.Should().Be<User>();
+        thrown.Which.InnerException.Should().BeOfType<DbUpdateConcurrencyException>();
+        await using var verify = postgres.CreateContext();
+        var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        stored.PasswordHash.Should().Be("new-hash");
+        stored.LoginChallenge.Id.Should().BeNull();
+        stored.LoginCode.Hash.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SaveChangesAsyncAfterACountedPasswordFailureCommitsTheOtherChangesOfTheAccount()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var uow = TestUnitOfWork.For(db);
+            var users = new UserRepository(db, uow);
+            var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+            await uow.ExecuteInTransactionAsync(
+                async attempt =>
+                {
+                    await users.LockPasswordStateAsync(user, attempt);
+                    user.RecordPasswordFailure(5, Fixed);
+                    await users.SavePasswordStateAsync(user, attempt);
+                    return true;
+                },
+                Ct
+            );
+            user.ClearPasswordFailures();
+            user.ChangeType(UserType.Sponsor, Fixed);
+
+            await uow.SaveChangesAsync(Ct);
+        }
+
+        await using var verify = postgres.CreateContext();
+        var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        stored.PasswordLockout.FailedAttempts.Should().Be(0);
+        stored.UserType.Should().Be(UserType.Sponsor);
+    }
+
+    [Fact]
+    public async Task SavePasswordStateAsyncAccountChangedMeanwhileStoresTheFailureAndKeepsTheConflict()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var uow = TestUnitOfWork.For(db);
+            var users = new UserRepository(db, uow);
+            var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+            await using (var concurrent = postgres.CreateContext())
+            {
+                (await concurrent.Users.SingleAsync(u => u.Id == SeededUserId, Ct)).ChangeType(
+                    UserType.Sponsor,
+                    Fixed
+                );
+                await concurrent.SaveChangesAsync(Ct);
+            }
+
+            await uow.ExecuteInTransactionAsync(
+                async attempt =>
+                {
+                    await users.LockPasswordStateAsync(user, attempt);
+                    user.RecordPasswordFailure(5, Fixed);
+                    await users.SavePasswordStateAsync(user, attempt);
+                    return true;
+                },
+                Ct
+            );
+            user.SetAdministrator(true, Fixed);
+
+            var save = () => uow.SaveChangesAsync(Ct);
+
+            await save.Should().ThrowAsync<ConcurrentUpdateException>();
+        }
+
+        await using var verify = postgres.CreateContext();
+        var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        stored.PasswordLockout.FailedAttempts.Should().Be(1);
+        stored.UserType.Should().Be(UserType.Sponsor);
+        stored.IsAdmin.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LockAsyncAccountChangedMeanwhileReloadsItsVersionSoTheLockedSaveCommits()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var uow = TestUnitOfWork.For(db);
+            var users = new UserRepository(db, uow);
+            var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+            await using (var concurrent = postgres.CreateContext())
+            {
+                (await concurrent.Users.SingleAsync(u => u.Id == SeededUserId, Ct)).ChangeType(
+                    UserType.Sponsor,
+                    Fixed
+                );
+                await concurrent.SaveChangesAsync(Ct);
+            }
+
+            await uow.ExecuteInTransactionAsync(
+                async attempt =>
+                {
+                    await users.LockAsync(user, attempt);
+                    user.SetAdministrator(true, Fixed);
+                    return await uow.SaveChangesAsync(attempt);
+                },
+                Ct
+            );
+        }
+
+        await using var verify = postgres.CreateContext();
+        var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        stored.UserType.Should().Be(UserType.Sponsor);
+        stored.IsAdmin.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task SaveChangesAsyncOtherDatabaseErrorsAreNotTranslated()
     {
         await using var db = postgres.CreateContext();
@@ -333,6 +470,9 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
                     Ct
                 );
             await refused.Should().ThrowAsync<InvalidOperationException>();
+            var entry = db.Entry(user);
+            entry.ComplexProperty(u => u.PasswordLockout).IsModified.Should().BeFalse();
+            entry.Property(u => u.UserType).IsModified.Should().BeTrue();
             await using (var concurrent = postgres.CreateContext())
             {
                 await concurrent
@@ -347,12 +487,14 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
                     );
             }
 
-            await uow.SaveChangesAsync(Ct);
+            var save = () => uow.SaveChangesAsync(Ct);
+
+            await save.Should().ThrowAsync<ConcurrentUpdateException>();
         }
 
         await using var verify = postgres.CreateContext();
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
-        stored.UserType.Should().Be(UserType.Sponsor);
+        stored.UserType.Should().Be(UserType.Member);
         stored.PasswordLockout.FailedAttempts.Should().Be(3);
     }
 

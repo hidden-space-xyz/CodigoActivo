@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Notifications;
@@ -31,6 +32,7 @@ public sealed class ResendVerificationCommandHandlerTests
     {
         sut = new ResendVerificationCommandHandler(
             users,
+            AccountLocks.Create(users, Substitute.For<IUnitOfWork>()),
             clock,
             new FakeOneTimeCodeHasher(),
             verification,
@@ -61,6 +63,13 @@ public sealed class ResendVerificationCommandHandlerTests
         return user;
     }
 
+    private Task<bool> AssertNeverLockedAsync()
+    {
+        return users
+            .DidNotReceiveWithAnyArgs()
+            .LockAsync(default!, TestContext.Current.CancellationToken);
+    }
+
     [Fact]
     public async Task HandleAsyncAddressWithoutAccountSucceedsWithoutSending()
     {
@@ -79,6 +88,7 @@ public sealed class ResendVerificationCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
+        await AssertNeverLockedAsync();
     }
 
     [Fact]
@@ -109,6 +119,24 @@ public sealed class ResendVerificationCommandHandlerTests
     public async Task HandleAsyncWithinCooldownSendsNothing()
     {
         HolderOfTheAddress(NewPendingWithOtp(clock, otpLastSentAt: clock.UtcNow.AddSeconds(-10)));
+
+        var result = await HandleAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+        await AssertNeverLockedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncLinkSentByAParallelRequestBeforeTheLockSendsNothing()
+    {
+        var user = HolderOfTheAddress(
+            NewPendingWithOtp(clock, otpLastSentAt: clock.UtcNow.AddMinutes(-5))
+        );
+        users.ReloadsAs(
+            user,
+            new { VerificationCode = new { LastSentAt = clock.UtcNow.AddSeconds(-1) } }
+        );
 
         var result = await HandleAsync();
 

@@ -52,7 +52,11 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
             users,
             clock,
             new OtpValidator(new FakeOneTimeCodeHasher()),
-            new EmailClaims(AccountErasers.Create(users, deletedAccounts, erasureStore, uow), uow)
+            new EmailClaims(
+                users.LocksEveryAccount(),
+                AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
+                uow
+            )
         );
     }
 

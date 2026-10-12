@@ -24,6 +24,7 @@ public sealed record ResendVerificationCommand(
 /// Executes the command to resend verification.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="accountLock">Runs the issue of the link with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="codeHasher">Hasher used so the verification code is never stored in plaintext.</param>
 /// <param name="verification">The verification value.</param>
@@ -31,6 +32,7 @@ public sealed record ResendVerificationCommand(
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ResendVerificationCommandHandler(
     IUserRepository users,
+    AccountLock accountLock,
     IClock clock,
     IOneTimeCodeHasher codeHasher,
     AccountVerificationOptions verification,
@@ -42,7 +44,10 @@ public sealed class ResendVerificationCommandHandler(
     /// Handles the request to resend verification. A new link reaches the address only when it
     /// belongs to an account waiting for verification whose last link is older than the resend
     /// cooldown; every request succeeds alike, so the answer never tells whether the address has
-    /// an account.
+    /// an account. Only an account that will get a link is locked, so an address that gets nothing
+    /// costs the same as one without an account; the link is issued with the account locked and
+    /// its eligibility checked again, so parallel requests run one after another and the later ones
+    /// find the resend cooldown.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -54,14 +59,33 @@ public sealed class ResendVerificationCommandHandler(
     {
         var email = EmailAddress.Create(command.Email);
         var user = email.IsSuccess ? await users.GetByEmailAsync(email.Value, ct) : null;
-        var now = clock.UtcNow;
-        if (
-            user is not { IsPendingVerification: true }
-            || user.VerificationCode.IsResendCoolingDown(now, verification.ResendCooldown)
-        )
+        return user is not null && MayResend(user)
+            ? await accountLock.RunAsync(
+                user,
+                attempt => IssueLockedAsync(user, attempt),
+                Result.Success(),
+                ct
+            )
+            : Result.Success();
+    }
+
+    private bool MayResend(User user)
+    {
+        return user.IsPendingVerification
+            && !user.VerificationCode.IsResendCoolingDown(
+                clock.UtcNow,
+                verification.ResendCooldown
+            );
+    }
+
+    private async Task<Result> IssueLockedAsync(User user, CancellationToken ct)
+    {
+        if (!MayResend(user))
         {
             return Result.Success();
         }
+
+        var now = clock.UtcNow;
 
         var otpCode = AccountTokens.Create();
         try

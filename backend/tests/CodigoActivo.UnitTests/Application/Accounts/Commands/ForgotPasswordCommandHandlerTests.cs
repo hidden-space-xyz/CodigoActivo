@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Notifications;
@@ -28,6 +29,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     {
         sut = new ForgotPasswordCommandHandler(
             users,
+            AccountLocks.Create(users, Substitute.For<IUnitOfWork>()),
             clock,
             new FakeOneTimeCodeHasher(),
             passwordReset,
@@ -40,6 +42,13 @@ public sealed class ForgotPasswordCommandHandlerTests
             ),
             NullLogger<ForgotPasswordCommandHandler>.Instance
         );
+    }
+
+    private Task<bool> AssertNeverLockedAsync()
+    {
+        return users
+            .DidNotReceiveWithAnyArgs()
+            .LockAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -84,6 +93,7 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
+        await AssertNeverLockedAsync();
     }
 
     public static TheoryData<Guid> IneligibleResetStatuses()
@@ -104,6 +114,7 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
+        await AssertNeverLockedAsync();
     }
 
     [Fact]
@@ -114,6 +125,40 @@ public sealed class ForgotPasswordCommandHandlerTests
             user,
             new { PasswordResetCode = new { LastSentAt = clock.UtcNow.AddSeconds(-10) } }
         );
+
+        var result = await sut.HandleAsync(
+            new ForgotPasswordCommand("ana@test.com"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+        await AssertNeverLockedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncCodeSentByAParallelRequestBeforeTheLockSendsNothing()
+    {
+        var user = users.FindReturns(NewUser());
+        users.ReloadsAs(
+            user,
+            new { PasswordResetCode = new { LastSentAt = clock.UtcNow.AddSeconds(-1) } }
+        );
+
+        var result = await sut.HandleAsync(
+            new ForgotPasswordCommand("ana@test.com"),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAccountErasedBeforeTheLockReturnsSuccessWithoutSending()
+    {
+        var user = users.FindReturns(NewUser());
+        users.LockAsync(user, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await sut.HandleAsync(
             new ForgotPasswordCommand("ana@test.com"),

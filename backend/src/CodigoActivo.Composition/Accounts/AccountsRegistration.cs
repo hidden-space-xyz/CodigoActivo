@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.EmailAddresses;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Accounts.Notifications;
@@ -47,6 +48,7 @@ internal static class AccountsRegistration
         services.AddSingleton<CredentialTimingProtector>();
         services.AddScoped<AccountEmails>();
         services.AddScoped<AccountSecurityNotifier>();
+        services.AddScoped<AccountLock>();
         services.AddScoped<PasswordAttemptGuard>();
         services.AddScoped<SecondFactorGuard>();
         services.AddScoped<OtpValidator>();

@@ -20,17 +20,23 @@ public sealed record VerifyUserCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to verify user.
+/// Executes the command to verify user. The code is checked with the account locked and reloaded,
+/// so a verification that runs alongside a new link or a registration claiming the address sees
+/// what the other one stored.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="accountLock">Runs the verification with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="otpValidator">The otp validator value.</param>
 public sealed class VerifyUserCommandHandler(
     IUserRepository users,
+    AccountLock accountLock,
     IClock clock,
     OtpValidator otpValidator
 ) : ICommandHandler<VerifyUserCommand, Result>
 {
+    private static readonly Result NotFound = Error.NotFound(ApplicationErrorCode.UserNotFound);
+
     /// <summary>
     /// Handles the request to verify user.
     /// </summary>
@@ -42,15 +48,30 @@ public sealed class VerifyUserCommandHandler(
         var user = await users.GetByIdAsync(command.UserId, ct);
         if (user is null)
         {
-            return Error.NotFound(ApplicationErrorCode.UserNotFound);
+            return NotFound;
         }
 
-        var now = clock.UtcNow;
-        if (!otpValidator.IsCodeValid(command.Otp, user.VerificationCode.UsableHash(now)))
+        return RefusalOf(user, command.Otp)
+            ?? await accountLock.RunAsync(
+                user,
+                _ => Task.FromResult(VerifyLocked(user, command.Otp)),
+                NotFound,
+                ct
+            );
+    }
+
+    private Result? RefusalOf(User user, string code)
+    {
+        if (!otpValidator.IsCodeValid(code, user.VerificationCode.UsableHash(clock.UtcNow)))
         {
             return Error.Validation(ApplicationErrorCode.OtpInvalidOrExpired);
         }
 
-        return user.Verify(now);
+        return null;
+    }
+
+    private Result VerifyLocked(User user, string code)
+    {
+        return RefusalOf(user, code) ?? user.Verify(clock.UtcNow);
     }
 }

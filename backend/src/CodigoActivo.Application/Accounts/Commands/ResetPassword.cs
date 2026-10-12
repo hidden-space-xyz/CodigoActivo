@@ -25,14 +25,18 @@ public sealed record ResetPasswordCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to reset password.
+/// Executes the command to reset password. The new password is hashed before the account is
+/// locked and reloaded, and the code is checked again on the reloaded account, so a concurrent
+/// password step or code request waits for the reset instead of making it fail.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="accountLock">Runs the reset with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="hasher">The hasher value.</param>
 /// <param name="otpValidator">The otp validator value.</param>
 public sealed class ResetPasswordCommandHandler(
     IUserRepository users,
+    AccountLock accountLock,
     IClock clock,
     IPasswordHasher hasher,
     OtpValidator otpValidator
@@ -55,20 +59,40 @@ public sealed class ResetPasswordCommandHandler(
             return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (
-            user.IsBlocked
-            || user.IsDependent
-            || !otpValidator.IsCodeValid(
-                command.Otp,
-                user.PasswordResetCode.UsableHash(clock.UtcNow)
-            )
-        )
+        if (!MayReset(user, command.Otp))
         {
-            return Error.Validation(ApplicationErrorCode.PasswordResetInvalidOrExpired);
+            return Invalid();
         }
 
-        user.ResetPassword(hasher.Hash(command.NewPassword), clock.UtcNow);
+        var newHash = hasher.Hash(command.NewPassword);
+        return await accountLock.RunAsync(
+            user,
+            _ => Task.FromResult(ResetLocked(user, command.Otp, newHash)),
+            Error.NotFound(ApplicationErrorCode.UserNotFound),
+            ct
+        );
+    }
 
+    private static Result Invalid()
+    {
+        return Error.Validation(ApplicationErrorCode.PasswordResetInvalidOrExpired);
+    }
+
+    private bool MayReset(User user, string code)
+    {
+        return !user.IsBlocked
+            && !user.IsDependent
+            && otpValidator.IsCodeValid(code, user.PasswordResetCode.UsableHash(clock.UtcNow));
+    }
+
+    private Result ResetLocked(User user, string code, string newHash)
+    {
+        if (!MayReset(user, code))
+        {
+            return Invalid();
+        }
+
+        user.ResetPassword(newHash, clock.UtcNow);
         return Result.Success();
     }
 }

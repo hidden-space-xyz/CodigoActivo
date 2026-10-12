@@ -46,6 +46,7 @@ public sealed class ResetPasswordCommandHandlerTests
         );
         sut = new ResetPasswordCommandHandler(
             users,
+            AccountLocks.Create(users, Substitute.For<IUnitOfWork>()),
             clock,
             new FakePasswordHasher(),
             new OtpValidator(new FakeOneTimeCodeHasher())
@@ -126,6 +127,28 @@ public sealed class ResetPasswordCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.PasswordResetInvalidOrExpired);
+    }
+
+    [Fact]
+    public async Task HandleAsyncCodeUsedByAParallelResetBeforeTheLockReturnsBadRequest()
+    {
+        var user = users.FindReturns(NewUserWithResetCode(clock, code: "the-reset-code"));
+        users.ReloadsAs(
+            user,
+            new
+            {
+                PasswordHash = FakePasswordHasher.Prefix + "parallelReset1",
+                PasswordResetCode = new OneTimeCode(null, null, null),
+            }
+        );
+
+        var result = await sut.HandleAsync(
+            new ResetPasswordRequest("the-reset-code", "newPassword123").ToCommand(user.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.PasswordResetInvalidOrExpired);
+        user.PasswordHash.Should().Be(FakePasswordHasher.Prefix + "parallelReset1");
     }
 
     [Fact]

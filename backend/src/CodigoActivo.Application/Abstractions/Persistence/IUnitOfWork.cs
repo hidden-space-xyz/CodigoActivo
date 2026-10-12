@@ -12,6 +12,7 @@ public interface IUnitOfWork
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the number of rows written.</returns>
     /// <exception cref="UniqueConstraintViolationException">A unique rule of the database rejected the commit.</exception>
+    /// <exception cref="ConcurrentUpdateException">A concurrent transaction wrote or removed a row of the commit after it was read.</exception>
     public Task<int> SaveChangesAsync(CancellationToken ct = default);
 
     /// <summary>
@@ -25,8 +26,10 @@ public interface IUnitOfWork
     /// fails, the unit of work returns to the state it had before the attempt: the entities tracked
     /// since are dropped, the others get back the values and state they had, and the domain events
     /// raised during the attempt are discarded while those raised before are kept. When the database
-    /// aborted the transaction because of a deadlock, the work then runs again from that state.
-    /// Inside a transaction already open the work just runs.
+    /// aborted the transaction because of a deadlock, the work then runs again from that state;
+    /// a <see cref="ConcurrentUpdateException"/> is not retried, because that state still holds
+    /// the values read before the concurrent write. Inside a transaction already open the work
+    /// just runs.
     /// </summary>
     /// <typeparam name="T">Type of the result of the work.</typeparam>
     /// <param name="work">Work to run; it receives the cancellation token.</param>

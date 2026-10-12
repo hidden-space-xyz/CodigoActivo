@@ -24,6 +24,7 @@ public sealed record ForgotPasswordCommand(
 /// Executes the command to forgot password.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="accountLock">Runs the issue of the code with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="codeHasher">Hasher used so the reset code is never stored in plaintext.</param>
 /// <param name="passwordReset">The password reset value.</param>
@@ -31,6 +32,7 @@ public sealed record ForgotPasswordCommand(
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ForgotPasswordCommandHandler(
     IUserRepository users,
+    AccountLock accountLock,
     IClock clock,
     IOneTimeCodeHasher codeHasher,
     PasswordResetOptions passwordReset,
@@ -40,7 +42,10 @@ public sealed class ForgotPasswordCommandHandler(
 {
     /// <summary>
     /// Handles the request to forgot password. Every request succeeds alike, so the answer never
-    /// tells whether the address has an account.
+    /// tells whether the address has an account. Only an account that will get a code is locked,
+    /// so an address that gets nothing costs the same as one without an account; the code is
+    /// issued with the account locked and its eligibility checked again, so parallel requests run
+    /// one after another and the later ones find the resend cooldown.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -52,21 +57,35 @@ public sealed class ForgotPasswordCommandHandler(
     {
         var email = EmailAddress.Create(command.Email);
         var user = email.IsSuccess ? await users.GetByEmailAsync(email.Value, ct) : null;
-        if (
-            user is null
-            || string.IsNullOrEmpty(user.PasswordHash)
-            || user.IsBlocked
-            || user.IsDependent
-        )
+        return user is not null && MayIssue(user)
+            ? await accountLock.RunAsync(
+                user,
+                attempt => IssueLockedAsync(user, attempt),
+                Result.Success(),
+                ct
+            )
+            : Result.Success();
+    }
+
+    private bool MayIssue(User user)
+    {
+        return !string.IsNullOrEmpty(user.PasswordHash)
+            && !user.IsBlocked
+            && !user.IsDependent
+            && !user.PasswordResetCode.IsResendCoolingDown(
+                clock.UtcNow,
+                passwordReset.ResendCooldown
+            );
+    }
+
+    private async Task<Result> IssueLockedAsync(User user, CancellationToken ct)
+    {
+        if (!MayIssue(user))
         {
             return Result.Success();
         }
 
         var now = clock.UtcNow;
-        if (user.PasswordResetCode.IsResendCoolingDown(now, passwordReset.ResendCooldown))
-        {
-            return Result.Success();
-        }
 
         var code = AccountTokens.Create();
         try
