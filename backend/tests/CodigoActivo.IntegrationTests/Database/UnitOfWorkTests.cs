@@ -10,6 +10,7 @@ using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Seeders;
+using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,6 +30,8 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     private static readonly Guid ActivityId = new("cccccccc-0000-0000-0000-000000000004");
     private const string UserEmail = "unit-of-work@codigoactivo.test";
 
+    private static readonly global::CodigoActivo.Domain.Users.UserId SeededUserId =
+        global::CodigoActivo.Domain.Users.UserId.From(UserId);
     private static readonly global::CodigoActivo.Domain.Events.EventId SeededEventId =
         global::CodigoActivo.Domain.Events.EventId.From(EventId);
 
@@ -279,6 +282,32 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
 
         await using var verify = postgres.CreateContext();
         (await verify.Files.AnyAsync(f => f.Id == fileId, Ct)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ExecuteInTransactionAsyncRefusedAttemptGivesBackTheValuesStagedBeforeIt()
+    {
+        await using var db = postgres.CreateContext();
+        var uow = TestUnitOfWork.For(db);
+        var users = new UserRepository(db);
+        var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+        user.ChangeType(UserType.Sponsor, Fixed);
+
+        var refused = () =>
+            uow.ExecuteInTransactionAsync<bool>(
+                async attempt =>
+                {
+                    await users.LockPasswordStateAsync(user, attempt);
+                    user.RecordPasswordFailure(5, Fixed);
+                    await users.SavePasswordStateAsync(user, attempt);
+                    throw new InvalidOperationException("refused");
+                },
+                Ct
+            );
+
+        await refused.Should().ThrowAsync<InvalidOperationException>();
+        user.UserType.Should().Be(UserType.Sponsor);
+        user.PasswordFailedAttempts.Should().Be(0);
     }
 
     [Fact]

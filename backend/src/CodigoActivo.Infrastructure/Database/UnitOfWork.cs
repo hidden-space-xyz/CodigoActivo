@@ -225,17 +225,15 @@ public sealed class UnitOfWork(
 
             entry.State = EntityState.Unchanged;
             entry.CurrentValues.SetValues(CurrentValues);
-            entry.State = EntityState.Unchanged;
             entry.OriginalValues.SetValues(OriginalValues);
             foreach (var property in entry.Properties)
             {
-                if (
-                    !property
-                        .Metadata.GetValueComparer()
-                        .Equals(property.CurrentValue, property.OriginalValue)
-                )
+                var modified = !property
+                    .Metadata.GetValueComparer()
+                    .Equals(property.CurrentValue, property.OriginalValue);
+                if (property.IsModified != modified)
                 {
-                    property.IsModified = true;
+                    property.IsModified = modified;
                 }
             }
 
