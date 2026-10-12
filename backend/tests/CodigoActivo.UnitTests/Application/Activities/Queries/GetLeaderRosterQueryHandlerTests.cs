@@ -1,14 +1,14 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Events.Contracts;
-using CodigoActivo.Application.Events.Queries;
+using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Application.Events.Queries;
+namespace CodigoActivo.UnitTests.Application.Activities.Queries;
 
 public sealed class GetLeaderRosterQueryHandlerTests
 {

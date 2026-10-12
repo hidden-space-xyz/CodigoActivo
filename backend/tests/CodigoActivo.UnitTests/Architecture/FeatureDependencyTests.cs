@@ -277,7 +277,7 @@ public sealed class FeatureDependencyTests
         var dependencies = SliceDependencies();
 
         dependencies["Users"].Should().Contain("Accounts");
-        dependencies["Events"].Should().Contain("Activities");
+        dependencies["Participation"].Should().Contain("Activities");
     }
 
     [Fact]

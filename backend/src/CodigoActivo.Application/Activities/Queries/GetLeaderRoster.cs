@@ -2,16 +2,15 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Common.Security;
-using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 
-namespace CodigoActivo.Application.Events.Queries;
+namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
 /// Carries the criteria used to retrieve the attendee lists of the activities that the requesting
