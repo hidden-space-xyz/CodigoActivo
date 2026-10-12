@@ -28,6 +28,7 @@ public sealed class LoginCommandHandlerTests
     private readonly FakeAccountEmailComposer composer = new();
     private readonly TwoFactorOptions twoFactor = new();
     private readonly CountingPasswordHasher hasher = new();
+    private readonly CommittedEvents events;
     private readonly LoginCommandHandler sut;
 
     public LoginCommandHandlerTests()
@@ -39,10 +40,22 @@ public sealed class LoginCommandHandlerTests
             new PasswordResetOptions(),
             twoFactor
         );
+        events = new CommittedEvents(
+            new AccountSecurityNotifications(
+                users,
+                new AccountSecurityNotifier(
+                    emailSender,
+                    clock,
+                    composer,
+                    NullLogger<AccountSecurityNotifier>.Instance
+                ),
+                NullLogger<AccountSecurityNotifications>.Instance
+            )
+        );
         sut = new LoginCommandHandler(
             users,
             clock,
-            PasswordGuards.Create(hasher, uow, clock, emailSender: emailSender, composer: composer),
+            PasswordGuards.Create(hasher, uow, clock),
             twoFactor,
             new LoginCodeIssuer(
                 new FakeOneTimeCodeHasher(),
@@ -262,9 +275,9 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncFifthWrongPasswordLocksTheAccountAndEmailsItsOwner()
+    public async Task HandleAsyncFifthWrongPasswordLocksTheAccountAndEmailsItsOwnerOnceCommitted()
     {
-        var user = Returns(NewUser(passwordHash: "fake:password123"));
+        var user = users.FindReturns(NewUser(passwordHash: "fake:password123"));
 
         for (var attempt = 0; attempt < PasswordLockoutOptions.DefaultMaxFailedAttempts; attempt++)
         {
@@ -273,6 +286,10 @@ public sealed class LoginCommandHandlerTests
 
         user.IsPasswordLocked().Should().BeTrue();
         user.PasswordLockedAt.Should().Be(clock.UtcNow);
+        emailSender.Sent.Should().BeEmpty("the owner is warned once the lock is committed");
+
+        await events.PublishAsync(user);
+
         composer
             .Composed.Should()
             .Equal(

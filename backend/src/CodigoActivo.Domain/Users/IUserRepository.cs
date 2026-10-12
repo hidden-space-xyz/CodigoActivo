@@ -90,7 +90,9 @@ public interface IUserRepository : IRepository<User>
 
     /// <summary>
     /// Stores the password lockout state of an account immediately, without waiting for the unit of
-    /// work or the rest of its staged changes.
+    /// work or the rest of its staged changes. The <see cref="PasswordLocked"/> event of a lock it
+    /// stores is published once the write commits, with the transaction it runs in; the other
+    /// events of the account wait for the commit of its other changes.
     /// </summary>
     /// <param name="user">Account whose lockout state changed.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

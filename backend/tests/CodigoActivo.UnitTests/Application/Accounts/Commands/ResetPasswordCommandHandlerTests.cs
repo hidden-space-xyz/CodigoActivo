@@ -42,7 +42,7 @@ public sealed class ResetPasswordCommandHandlerTests
                 ),
                 NullLogger<AccountSecurityNotifications>.Instance
             ),
-            new SessionsEndOnPasswordReplaced(sessions)
+            new SessionsEndOnPasswordReplacedOrLocked(sessions)
         );
         sut = new ResetPasswordCommandHandler(
             users,

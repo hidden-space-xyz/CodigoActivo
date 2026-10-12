@@ -84,10 +84,10 @@ aggregate roots.
   (`CacheInvalidationOnCommit` evicts the tags `CacheTagsByEvent` maps; `ReleasedFilesCleanup` removes the files
   that events implementing `IReleasesFiles` stopped referencing, when nothing else references them) and then every
   `IDomainEventListener<T>` of each event runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`,
-  `SessionsEndOnPasswordReplaced`). Effects run in the request after the commit and to their end even when the
-  client disconnects; a failing effect is logged and neither stops the others nor fails the committed request. A
-  crash between the commit and an effect loses that effect, because there is no transactional outbox for
-  events (emails themselves go through the email outbox).
+  `SessionsEndOnPasswordReplacedOrLocked`). Effects run in the request after the commit and to their end even
+  when the client disconnects; a failing effect is logged and neither stops the others nor fails the committed
+  request. A crash between the commit and an effect loses that effect, because there is no transactional outbox
+  for events (emails themselves go through the email outbox).
 - Rich text references a stored file only by its content URL `/api/files/{id}/content`, which saved documents
   keep and the frontend builds and checks; `RichTextFileReferences` in Domain owns it, so it cannot change
   without migrating saved documents.
@@ -122,13 +122,16 @@ aggregate roots.
 - `IUnitOfWork.ExecuteInTransactionAsync` runs work in one explicit transaction and, when PostgreSQL aborts it
   to resolve a deadlock, runs it again (three attempts in total) from the state the failed attempt started
   from: entities tracked since are dropped, the others get back their values and state, and the domain events
-  raised during the attempt are discarded. `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`),
-  so parallel attempts lose no increment and only one of them sees the account lock. Second-factor checks
-  (the handler locks and reloads the account before `SecondFactorGuard` counts the code) and adding a
-  dependent lock and reload the account the same way (`IUserRepository.LockAsync`). Deleting an event
-  category locks the category (`FOR UPDATE`, which also holds back tagging an event with it) and then the events
-  tagged with it in identifier order, and `UpdateEvent` locks its event before loading it (`FOR NO KEY UPDATE`,
-  which leaves signups, ratings and activities referencing the event free), so no event loses its last category.
+  raised during the attempt are discarded. `PasswordAttemptGuard` counts a wrong password inside it with the
+  account row locked (`FOR UPDATE`), so parallel attempts lose no increment and only one of them sees the account
+  lock. `SavePasswordStateAsync` writes only the lockout columns, so it hands just the `PasswordLocked` event to
+  the unit of work, which publishes it when that transaction commits; the account's other changes and events wait
+  for their own commit. Second-factor checks (the handler locks and reloads the account before `SecondFactorGuard`
+  counts the code) and adding a dependent lock and reload the account the same way (`IUserRepository.LockAsync`).
+  Deleting an event category locks the category (`FOR UPDATE`, which also holds back tagging an event with it) and
+  then the events tagged with it in identifier order, and `UpdateEvent` locks its event before loading it
+  (`FOR NO KEY UPDATE`, which leaves signups, ratings and activities referencing the event free), so no event loses
+  its last category.
 - Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
   which replaces an unverified account whose email a registration or a confirmed email change takes. In one
   such transaction it locks the household, stores the legal copy (composed by `LegalCopy` and serialized by

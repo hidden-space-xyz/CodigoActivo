@@ -8,7 +8,6 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
@@ -28,7 +27,6 @@ public sealed class CompleteLoginCommandHandlerTests
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
     private readonly TwoFactorOptions options = new() { MaxFailedAttempts = 3 };
-    private readonly RecordingLogger<SecondFactorGuard> logger = new();
     private readonly CompleteLoginCommandHandler sut;
 
     public CompleteLoginCommandHandlerTests()
@@ -39,7 +37,7 @@ public sealed class CompleteLoginCommandHandlerTests
             sessions,
             uow.RunsTransactionsOf<Result<UserSessionId>>(),
             clock,
-            SecondFactorGuards.Create(uow, clock, totp, options, logger),
+            SecondFactorGuards.Create(uow, clock, totp, options),
             options,
             new SessionLifetimeOptions { Lifetime = TimeSpan.FromHours(8) }
         );
@@ -97,7 +95,7 @@ public sealed class CompleteLoginCommandHandlerTests
         user.LoginCodeHash.Should().NotBeNull();
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
-        logger.Entries.Should().BeEmpty();
+        DomainEvents.Raised<TwoFactorLocked>(user).Should().BeEmpty();
     }
 
     [Fact]
@@ -272,41 +270,38 @@ public sealed class CompleteLoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAcceptedCodeLogsNothing()
+    public async Task HandleAsyncAcceptedCodeRaisesNoLock()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
 
         await VerifyAsync(user.Id.Value, "123456");
 
-        logger.Entries.Should().BeEmpty();
+        DomainEvents.Raised<TwoFactorLocked>(user).Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncRejectedCodeLogsNothingUntilTheLockout()
+    public async Task HandleAsyncRejectedCodeRaisesNoLockUntilTheLimit()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
 
         await VerifyAsync(user.Id.Value, "000000");
 
-        logger.Entries.Should().BeEmpty();
+        DomainEvents.Raised<TwoFactorLocked>(user).Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncFailureLimitReachedLogsTheLockoutWithoutTheUserId()
+    public async Task HandleAsyncFailureLimitReachedRaisesTheLockBeforeItsSave()
     {
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
         Persisted.Overwrite(user, new { TwoFactorFailedAttempts = options.MaxFailedAttempts - 1 });
+        IReadOnlyList<TwoFactorLocked> saved = [];
+        uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
+            .Do(_ => saved = DomainEvents.Raised<TwoFactorLocked>(user));
 
         await VerifyAsync(user.Id.Value, "000000");
 
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
-        entry.Level.Should().Be(LogLevel.Warning);
-        entry
-            .Message.Should()
-            .Be(
-                $"The second factor of an account was locked after {options.MaxFailedAttempts} wrong codes"
-            )
-            .And.NotContain(user.Id.ToString());
+        saved.Should().Equal(new TwoFactorLocked(user.Id));
+        user.IsTwoFactorLocked(clock.UtcNow).Should().BeTrue();
     }
 
     [Fact]

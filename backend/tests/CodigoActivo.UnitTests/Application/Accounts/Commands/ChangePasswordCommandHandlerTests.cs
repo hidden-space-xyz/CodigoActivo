@@ -43,7 +43,7 @@ public sealed class ChangePasswordCommandHandlerTests
                 ),
                 NullLogger<AccountSecurityNotifications>.Instance
             ),
-            new SessionsEndOnPasswordReplaced(sessions)
+            new SessionsEndOnPasswordReplacedOrLocked(sessions)
         );
         sut = new ChangePasswordCommandHandler(
             users,

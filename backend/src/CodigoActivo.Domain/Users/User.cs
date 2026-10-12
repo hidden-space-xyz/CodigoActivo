@@ -768,13 +768,13 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Counts a wrong second-factor code and locks verification once the limit is reached.
+    /// Counts a wrong second-factor code and locks verification once the limit is reached,
+    /// raising <see cref="TwoFactorLocked"/>.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
     /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
     /// <param name="lockoutDuration">How long the lock lasts.</param>
-    /// <returns><see langword="true"/> when this failure triggered the lock.</returns>
-    public bool RecordTwoFactorFailure(
+    public void RecordTwoFactorFailure(
         DateTimeOffset now,
         int maxFailedAttempts,
         TimeSpan lockoutDuration
@@ -783,14 +783,14 @@ public class User : AggregateRoot<UserId>
         TwoFactorFailedAttempts++;
         if (TwoFactorFailedAttempts < maxFailedAttempts)
         {
-            return false;
+            return;
         }
 
         TwoFactorFailedAttempts = 0;
         TwoFactorLockedUntil = now + lockoutDuration;
         ClearLoginCode();
         ClearLoginChallenge();
-        return true;
+        Raise(new TwoFactorLocked(Id));
     }
 
     /// <summary>
@@ -1136,29 +1136,28 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Counts a wrong password and locks the account once it reaches the maximum; a locked
-    /// account counts nothing more until its password is reset. Locking also closes the open
-    /// second-factor challenge.
+    /// Counts a wrong password and locks the account once it reaches the maximum, raising
+    /// <see cref="PasswordLocked"/>; a locked account counts nothing more until its password is
+    /// reset. Locking also closes the open second-factor challenge.
     /// </summary>
     /// <param name="maxFailedAttempts">Wrong passwords that lock the account.</param>
     /// <param name="now">Current time.</param>
-    /// <returns><see langword="true"/> when this failure locked the account.</returns>
-    public bool RecordPasswordFailure(int maxFailedAttempts, DateTimeOffset now)
+    public void RecordPasswordFailure(int maxFailedAttempts, DateTimeOffset now)
     {
         if (PasswordLockedAt is not null)
         {
-            return false;
+            return;
         }
 
         PasswordFailedAttempts++;
         if (PasswordFailedAttempts < maxFailedAttempts)
         {
-            return false;
+            return;
         }
 
         PasswordLockedAt = now;
         ClearLoginChallenge();
-        return true;
+        Raise(new PasswordLocked(Id));
     }
 
     /// <summary>

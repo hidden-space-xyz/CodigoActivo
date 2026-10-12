@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,8 @@ namespace CodigoActivo.Infrastructure.Users;
 /// the legal copy.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
-public class UserRepository(CodigoActivoDbContext context)
+/// <param name="unitOfWork">Unit of work that publishes the events of the lockouts stored here.</param>
+public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork)
     : AggregateRepository<User>(context),
         IUserRepository
 {
@@ -140,6 +142,7 @@ public class UserRepository(CodigoActivoDbContext context)
         MarkPersisted(entry.Property(u => u.PasswordLockedAt), lockedAt);
         MarkPersisted(entry.Property(u => u.LoginChallengeId), challengeId);
         MarkPersisted(entry.Property(u => u.LoginChallengeStartedAt), challengeStartedAt);
+        await unitOfWork.PublishAfterCommitAsync(user.PullDomainEvents<PasswordLocked>());
     }
 
     private static void MarkPersisted<TProperty>(

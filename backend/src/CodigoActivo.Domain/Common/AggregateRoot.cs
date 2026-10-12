@@ -19,6 +19,20 @@ public abstract class AggregateRoot<TId> : Entity<TId>, IAggregateRoot, IHasDoma
     }
 
     /// <summary>
+    /// Returns the recorded events of one type and forgets only those, keeping the others for a
+    /// later pull. It serves the changes stored on their own, outside the commit of the rest.
+    /// </summary>
+    /// <typeparam name="TEvent">Type of the events to take.</typeparam>
+    /// <returns>The recorded events of that type, in the order they were raised.</returns>
+    public IReadOnlyList<TEvent> PullDomainEvents<TEvent>()
+        where TEvent : IDomainEvent
+    {
+        var pulled = domainEvents.OfType<TEvent>().ToList();
+        domainEvents.RemoveAll(domainEvent => domainEvent is TEvent);
+        return pulled;
+    }
+
+    /// <summary>
     /// Records a domain event to publish after the commit.
     /// </summary>
     /// <param name="domainEvent">Event raised by the aggregate.</param>
