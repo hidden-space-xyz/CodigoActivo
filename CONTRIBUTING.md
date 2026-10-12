@@ -145,7 +145,7 @@ The five required steps are documented once, in
   `backend/src/CodigoActivo.Application/Common/Localization/AppStrings.resx`. Log messages, diagnostic
   exceptions and seeded content are not UI text.
 - Declare every log event with `[LoggerMessage]` in the layer's `*Log` class (`SecurityLog`, `ApplicationLog`,
-  `InfrastructureLog`, `ApiLog`); `CA1848` is an error. Use only the placeholder types the
+  `InfrastructureLog`, `CompositionLog`, `ApiLog`); `CA1848` is an error. Use only the placeholder types the
   `LoggingConventionTests`/`LoggingCallSiteTests` allow-list accepts, and never a user id, personal data, a
   value typed by the client, a credential, a code, a token or a third-party reply that may quote them.
   Exception messages you throw follow the same rule because they are logged. See

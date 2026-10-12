@@ -1,6 +1,7 @@
 using CodigoActivo.API.Configuration;
 using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Startup;
+using CodigoActivo.Composition.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 using var logging = ApiLogging.Start(builder.Configuration);

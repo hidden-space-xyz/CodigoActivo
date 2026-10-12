@@ -338,7 +338,7 @@ one-time codes. Logged: counters, enum/kind values, error/SMTP/HTTP codes, the H
 endpoint's route template, and exception type/message/stack traces.
 
 - **API**: every event is declared with `[LoggerMessage]` in a `*Log` class per layer — `SecurityLog`,
-  `ApplicationLog`, `InfrastructureLog`, `ApiLog`. `CA1848` is an error (`backend/.editorconfig`), and the
+  `ApplicationLog`, `InfrastructureLog`, `CompositionLog`, `ApiLog`. `CA1848` is an error (`backend/.editorconfig`), and the
   architecture tests `LoggingConventionTests`/`LoggingCallSiteTests` enforce an allowed-placeholder list and
   that `Information` is used only for process lifecycle. `Logging:LogLevel` in `appsettings.json` is the level
   policy for both the console and the file sink: `Default` is `Warning`; `Information` is enabled only for
@@ -378,8 +378,9 @@ endpoint's route template, and exception type/message/stack traces.
 ### Production configuration and secrets
 
 Production startup fails when `POSTGRES_PASSWORD` is under 16 characters, `DATA_PROTECTION_CERTIFICATE_PASSWORD`
-is under 32, `APP_BASE_URL` is not a clean public HTTPS origin, SMTP host/port/sender is invalid, SMTP
-transport encryption is `None` or `Auto`, or only one of `SMTP_USERNAME`/`SMTP_PASSWORD` is set. An empty
+is under 32, `APP_BASE_URL` is not a clean public HTTPS origin, the SMTP host or sender is invalid, SMTP
+transport encryption is `None` or `Auto`, or only one of `SMTP_USERNAME`/`SMTP_PASSWORD` is set
+(`ProductionConfiguration` in Composition); an SMTP port outside 1-65535 stops every environment. An empty
 `SMTP_SECURITY` always encrypts: TLS on connect on port 465, mandatory STARTTLS on any other.
 
 `POSTGRES_PASSWORD`, `DATA_PROTECTION_CERTIFICATE_PASSWORD` and `SMTP_PASSWORD` are Compose file secrets in

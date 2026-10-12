@@ -1,3 +1,4 @@
+using System.Net;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Composition.Configuration;
@@ -81,6 +82,12 @@ internal static class EmailsRegistration
                 + "Login codes are delivered by email, so every deployment needs an SMTP server; "
                 + "for local work point it at a mail catcher such as Mailpit."
         );
+        services
+            .AddOptions<SmtpOptions>()
+            .Validate(
+                options => options.Port <= IPEndPoint.MaxPort,
+                $"SMTP_PORT must be between 1 and {IPEndPoint.MaxPort}."
+            );
     }
 
     private static void AddQueue(IServiceCollection services, Settings settings)

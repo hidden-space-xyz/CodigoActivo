@@ -1,7 +1,10 @@
 using System.Text;
-using CodigoActivo.API.Diagnostics;
+using CodigoActivo.Composition.Diagnostics;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-namespace CodigoActivo.API.Security;
+namespace CodigoActivo.Composition.Platform;
 
 /// <summary>
 /// Freezes deployment mode settings after startup validation. The choice is always persisted, in
@@ -9,7 +12,7 @@ namespace CodigoActivo.API.Security;
 /// process outside a container: a developer running the API directly validates the configured value
 /// and keeps no state on their own filesystem.
 /// </summary>
-public sealed class DeploymentModeLock
+internal sealed class DeploymentModeLock
 {
     private const string PersistentFilePath = "/app/state/deployment-mode";
     private const string ContainerKey = "DOTNET_RUNNING_IN_CONTAINER";
@@ -104,7 +107,6 @@ public sealed class DeploymentModeLock
         }
         catch (IOException) when (File.Exists(filePath))
         {
-            // A concurrent process created the immutable lock first. The caller validates it next.
             return;
         }
     }

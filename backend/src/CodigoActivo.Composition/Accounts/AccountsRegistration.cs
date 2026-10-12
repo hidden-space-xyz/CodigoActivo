@@ -143,5 +143,8 @@ internal static class AccountsRegistration
                 DisposableEmailDomainOptions.DefaultSourceUrl
             )
         );
+        services.AddValidatedOptions<InitialAdministratorOptions>(options =>
+            options.Email = settings.Text("BOOTSTRAP_ADMIN_EMAIL", string.Empty)
+        );
     }
 }

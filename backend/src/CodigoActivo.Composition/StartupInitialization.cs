@@ -1,16 +1,47 @@
+using CodigoActivo.Composition.Accounts;
+using CodigoActivo.Composition.Platform;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace CodigoActivo.Composition;
 
 /// <summary>
-/// Runs the database start-up steps from a service scope: schema migrations, catalog seeding, the
-/// initial administrator and the optional demo data.
+/// Runs the start-up steps from a service scope: the configuration check, the deployment mode
+/// lock, schema migrations, catalog seeding, the initial administrator and the optional demo data.
 /// </summary>
-public static class DatabaseInitialization
+public static class StartupInitialization
 {
+    /// <summary>
+    /// Checks every setting validated at start, so an unusable value stops the start before any
+    /// other step changes state.
+    /// </summary>
+    /// <param name="services">Service provider.</param>
+    public static void ValidateConfiguration(this IServiceProvider services)
+    {
+        services.GetRequiredService<IStartupValidator>().Validate();
+    }
+
+    /// <summary>
+    /// Checks the configured deployment mode against the one this deployment started with and
+    /// keeps it for the next starts.
+    /// </summary>
+    /// <param name="services">Service provider.</param>
+    /// <returns><see langword="true"/> when the deployment runs in demo mode.</returns>
+    public static bool LockDeploymentMode(this IServiceProvider services)
+    {
+        return services
+            .GetRequiredService<DeploymentModeLock>()
+            .Lock(
+                services.GetRequiredService<IConfiguration>(),
+                services.GetRequiredService<IHostEnvironment>()
+            );
+    }
+
     /// <summary>
     /// Applies every pending schema migration.
     /// </summary>
@@ -37,16 +68,16 @@ public static class DatabaseInitialization
     /// Creates the initial administrator when the user table is empty, or checks it exists.
     /// </summary>
     /// <param name="services">Scoped service provider.</param>
-    /// <param name="email">Configured bootstrap administrator email.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public static Task SeedInitialAdministratorAsync(
         this IServiceProvider services,
-        string? email,
         CancellationToken ct
     )
     {
-        return services.GetRequiredService<InitialAdministratorSeeder>().SeedAsync(email, ct);
+        return services
+            .GetRequiredService<InitialAdministratorSeeder>()
+            .SeedAsync(services.GetRequiredService<InitialAdministratorOptions>().Email, ct);
     }
 
     /// <summary>

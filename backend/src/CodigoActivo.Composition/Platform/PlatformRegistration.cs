@@ -51,13 +51,14 @@ internal static class PlatformRegistration
             options.MaximumPayloadBytes = CacheLimits.MaximumPayloadBytes
         );
 
-        AddDataProtection(services, configuration, production);
+        services.AddSingleton<DeploymentModeLock>();
+        AddDataProtection(services, settings, production);
         return services;
     }
 
     private static void AddDataProtection(
         IServiceCollection services,
-        IConfiguration configuration,
+        Settings settings,
         bool production
     )
     {
@@ -70,7 +71,7 @@ internal static class PlatformRegistration
                 .ProtectKeysWithEd25519Certificate(
                     services,
                     new DirectoryInfo(KeysDirectory),
-                    configuration["DATA_PROTECTION_CERTIFICATE_PASSWORD"]!,
+                    settings.Verbatim("DATA_PROTECTION_CERTIFICATE_PASSWORD"),
                     new SystemClock(TimeZoneInfo.Utc)
                 )
                 .DeriveKey(HmacOneTimeCodeHasher.KeyPurpose, HmacOneTimeCodeHasher.KeySize)

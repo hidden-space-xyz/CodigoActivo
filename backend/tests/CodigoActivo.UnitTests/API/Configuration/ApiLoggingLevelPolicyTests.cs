@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.API.Configuration;
 using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Middlewares;
+using CodigoActivo.Composition.Diagnostics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;

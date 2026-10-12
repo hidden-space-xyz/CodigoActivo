@@ -1,5 +1,3 @@
-using CodigoActivo.API.Security;
-
 namespace CodigoActivo.API.Configuration;
 
 internal static class ApiHostConfiguration
@@ -11,7 +9,6 @@ internal static class ApiHostConfiguration
         builder.Configuration.AddKeyPerFile(SecretsDirectory, optional: true);
         logging.Configure(builder.Logging);
         ConfigureAllowedHosts(builder);
-        ValidateProductionConfiguration(builder.Environment, builder.Configuration);
         ConfigureKestrel(builder);
     }
 
@@ -27,17 +24,6 @@ internal static class ApiHostConfiguration
         )
         {
             builder.Configuration["AllowedHosts"] = $"{baseUri.IdnHost};localhost;127.0.0.1;api";
-        }
-    }
-
-    private static void ValidateProductionConfiguration(
-        IHostEnvironment environment,
-        IConfiguration configuration
-    )
-    {
-        if (environment.IsProduction())
-        {
-            ProductionConfigurationValidator.Validate(configuration);
         }
     }
 

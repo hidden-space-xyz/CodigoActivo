@@ -5,6 +5,7 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Composition.Platform;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database;
