@@ -101,7 +101,7 @@ To run the applications directly with hot reload instead of full containers, see
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, checks, migrations and contribution rules |
 | [DEPLOYMENT.md](DEPLOYMENT.md)     | Production topology, configuration, releases and backups     |
 | [SECURITY.md](SECURITY.md)         | Vulnerability reporting and the security model               |
-| [CLAUDE.md](CLAUDE.md)             | Concise repository guidance for coding agents                |
+| [AGENTS.md](AGENTS.md)             | Concise repository guidance for coding agents                |
 
 ## License
 
