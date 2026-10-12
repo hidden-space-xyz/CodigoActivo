@@ -13,6 +13,25 @@ cross-origin access is not part of the design.
 Runtime and environment details belong in [DEPLOYMENT.md](DEPLOYMENT.md). Authentication and trust boundaries
 belong in [SECURITY.md](SECURITY.md).
 
+## Domain language
+
+Documentation, the UI and new code use these terms. Names fixed by the schema or the wire contract keep the older
+words (`Assignment*`, `ParentId`, the `assign` and `children` routes, the `ActivityAssignment*` and `UserChild*`
+codes), and so does existing code until it is renamed (`AssignActivity`, `AddChild`). A participant role is not
+the participant user type.
+
+| Term      | Meaning                                                                                | In code                                        | In the UI       |
+| --------- | -------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------- |
+| Event     | A dated gathering with categories, terms documents and activities                      | `Event`                                        | evento          |
+| Activity  | A scheduled session of an event with a desired number of people per role               | `Activity`                                     | actividad       |
+| Role      | What a person does in an activity: leader, volunteer or participant                    | `ActivityRole`                                 | rol             |
+| Signup    | A person's place in an activity with a role and a status: requested, confirmed, denied | `Assignment`                                   | inscripción     |
+| Attendee  | A person with a signup in an event; lists filter by status                             | `EventAttendee*` (read side)                   | asistente       |
+| Guardian  | An independent account that cares for dependents                                       | `User`                                         | tutor           |
+| Dependent | A person created as a minor and cared for by a guardian, who never signs in            | `User` with `ParentId`, `UserStatus.Dependent` | menor           |
+| Household | A guardian and their dependents                                                        | `Household`                                    | unidad familiar |
+| Account   | The credentials, second factor and sessions of a person who signs in                   | `Accounts` feature                             | cuenta          |
+
 ## Backend
 
 The backend follows Clean Architecture with a DDD domain model and a CQRS split, organized by feature in every
@@ -93,7 +112,7 @@ aggregate roots.
   stage changes; the few methods that write immediately, without waiting for the unit of work, say so by their
   verb (`Save…`, `End…`, `Purge…`). `IUnitOfWork.SaveChangesAsync` commits staged changes once and turns a
   PostgreSQL unique violation into `UniqueConstraintViolationException`, naming the entity whose table rejected
-  the commit, so a handler can answer a lost race instead of failing. A person holds at most one assignment
+  the commit, so a handler can answer a lost race instead of failing. A person holds at most one signup
   per activity (primary key on `user_id`, `activity_id`); the signup commands answer a concurrent duplicate with
   `ActivityAssignmentAlreadyExists` (409). At most one event and one news item are featured (unique index on
   `featured`, filtered to featured rows). PostgreSQL checks it row by row and EF Core cannot order moving the
@@ -185,7 +204,7 @@ it, never from their input. `GetAccountQuery` is the one query that reads the ca
 email verification and two-factor login completion answer before the session exists. `ActingUserPolicy` lets
 the signed-in user act for themselves or one of their dependents, and an administrator for anyone, reading the guardianship from the read side so commands and queries share it, and
 answers anything else with `ActingForAnotherUserForbidden` (403
-`AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a minor,
+`AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a dependent,
 updating or deleting a user and changing a password check it. Signing up a household is the exception: it only
 takes the signed-in user and their own dependents (`Household.Includes`), administrators included, and answers
 anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]` attributes
@@ -308,7 +327,7 @@ badges, roster and dashboard analytics) live in that page's `api` segment.
 Person field rules mirror the backend `User` rules in one place, `entities/user`: `usePersonForm` (and the
 `parseIndependentPerson`/`parseDependentPerson` functions behind it) validates and normalizes an independent
 account or a dependent and decides when a change needs the caller's password; the registration, profile,
-minors and admin user forms only bind fields and show its messages.
+dependents and admin user forms only bind fields and show its messages.
 
 ### Views, forms, routing and session
 

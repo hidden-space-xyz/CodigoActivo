@@ -3,7 +3,7 @@
 `<Codigoactivo/>` is a same-origin web application: a .NET 10 API in `backend/` and a Vue 3/TypeScript SPA in
 `frontend/`. Read the document that owns the area you are changing:
 
-- [ARCHITECTURE.md](ARCHITECTURE.md): boundaries, data flow and API contract.
+- [ARCHITECTURE.md](ARCHITECTURE.md): domain language, boundaries, data flow and API contract.
 - [CONTRIBUTING.md](CONTRIBUTING.md): local setup, commands and coding conventions.
 - [DEPLOYMENT.md](DEPLOYMENT.md): Compose, environment variables, releases and backups.
 - [SECURITY.md](SECURITY.md): authentication, trust boundaries and abuse controls.
