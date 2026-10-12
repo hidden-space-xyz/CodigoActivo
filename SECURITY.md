@@ -37,14 +37,14 @@ authentication are not supported.
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
   administration endpoints; `[AllowOnlySelf]` accepts the target user or that user's guardian. Catalog values
   such as `UserType` are not authorization roles. Activity leadership grants one read, decided on every
-  request from the session user's own assignments: `GET /api/events/{eventId}/leader-roster` returns only
-  the event's activities that have not ended and in which the caller holds a confirmed leader assignment,
-  each with its confirmed attendees by role. Anyone else, administrators and guardians of a leading minor
+  request from the session user's own signups: `GET /api/events/{eventId}/leader-roster` returns only
+  the event's activities that have not ended and in which the caller holds a confirmed leader signup,
+  each with its confirmed attendees by role. Anyone else, administrators and guardians of a leading dependent
   included, gets an empty list; the client sends no activity id. Each attendee carries only names and
   signup time, plus their own email and primary phone (independent accounts) or their age on the
   activity's day, computed on the server, and the guardian's names, email and primary phone (dependents):
   never ids, DNI/NIE, birth dates or secondary phones. The SPA keys the cached list by user id. A person
-  holds at most one assignment per activity, enforced by the primary key (`user_id`, `activity_id`), so
+  holds at most one signup per activity, enforced by the primary key (`user_id`, `activity_id`), so
   concurrent signups cannot leave a spare leader row and an administrator's status or role change always
   hits the row they see.
 - The email is the only login identifier and the only unique personal value. The DNI/NIE, the phone and
@@ -133,28 +133,29 @@ with the account row locked and reloaded, so parallel attempts are counted one b
 a time step is accepted only once. Enrollment URIs and shared keys are only returned to the authenticated
 owner over HTTPS and never logged.
 
-**Account deletion**: erasing one's own account requires the current password **and** the second factor on
-`POST /api/me/deletion` (email code via `POST /api/me/deletion/code`, sharing storage/lifetime/cooldown with
-the login code, or the authenticator code). Deletion signs the caller out, cascades to remove the user, their
-minors and all participation rows (past ratings stay, see [Event rating anonymity](#event-rating-anonymity)),
-and is refused only to the initial administrator (`UserDeleteInitialAdminForbidden`), before the password is
-checked. `GET /api/me/deletion` tells the caller whether they may delete their account, so the SPA hides the
-action from the initial administrator. `DELETE /api/users/{id}` refuses the initial administrator and the
-caller's own id (`UserSelfDeleteRequiresVerification`); an administrator can delete any other administrator
-without re-entering a password, as with any other user. Every deletion credits the initial administrator
-instead of the household as author, last editor or uploader of events, activities, news, partners, resources
-and files, in the same transaction; the original credit is not kept anywhere.
+**Account deletion**: erasing one's own account requires the current password **and** the second factor on `POST
+/api/me/deletion` (email code via `POST /api/me/deletion/code`, sharing storage/lifetime/cooldown with the login
+code, or the authenticator code). Deletion signs the caller out, cascades to remove the user, their dependents
+and their signups and terms decisions (past ratings stay, see [Event rating
+anonymity](#event-rating-anonymity)), and is refused only to the initial administrator
+(`UserDeleteInitialAdminForbidden`), before the password is checked. `GET /api/me/deletion` tells the caller
+whether they may delete their account, so the SPA hides the action from the initial administrator. `DELETE
+/api/users/{id}` refuses the initial administrator and the caller's own id
+(`UserSelfDeleteRequiresVerification`); an administrator can delete any other administrator without re-entering
+a password, as with any other user. Every deletion credits the initial administrator instead of the household as
+author, last editor or uploader of events, activities, news, partners, resources and files, in the same
+transaction; the original credit is not kept anywhere.
 
 **Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's,
 a guardian's, or that of an unverified account whose email another account claims — first stores one JSON
 copy in `deleted_accounts` (`id` is the former user id with no foreign key, `deleted_at`, `data` as
 `jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
-their minors and the household's assignments and terms decisions, and then deletes them; a failed deletion
+their dependents and the household's signups and terms decisions, and then deletes them; a failed deletion
 keeps no copy, a concurrent signup, status change or cancellation cannot slip in between, and an erasure that
 PostgreSQL aborts to resolve a deadlock is retried up to three times. The copy holds the personal data of the
-account and each minor, the guardian's identification when
-a minor is deleted alone, every assignment of the household with activity, event, role, status and signup
-time, every terms decision (accepted or rejected) of the household — or the guardian's for the minor's
+account and each dependent, the guardian's identification when
+a dependent is deleted alone, every signup of the household with activity, event, role, status and signup
+time, every terms decision (accepted or rejected) of the household — or the guardian's for the dependent's
 events — with each document's text as it stood at deletion (documents are not versioned), and who asked
 for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
 secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
@@ -163,7 +164,7 @@ data is plain JSON protected only by database access. The `DeletedAccountPurger`
 each copy two years after `deleted_at`, 30 seconds after startup and then hourly. Users are deleted only
 through `AccountEraser`, and `DeletedAccountGuard` refuses any commit that deletes the initial administrator,
 deletes a user without its copy or changes a stored copy.
-The SPA only tells users that they and their minors lose access and cannot recover the account; the privacy
+The SPA only tells users that they and their dependents lose access and cannot recover the account; the privacy
 policy must state the two-year retention.
 
 **Recovery**: an administrator can reset a user's second factor to email
@@ -295,11 +296,11 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
   requests to external sites, and `X-DNS-Prefetch-Control: off` stops browsers from pre-resolving link
   destinations. API responses whose body is `application/json` or `application/problem+json` also carry
   `X-Robots-Tag: noindex, nofollow`, so search engines do not index API payloads.
-- Terms-document consent is recorded for the acting user, not the enrolled person: enrolling a household
-  minor stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
-  for that event covers later minor signups without a new prompt (`TermsGate`). An acceptance is immutable
+- Terms-document consent is recorded for the acting user, not the person signed up: signing up a household
+  dependent stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
+  for that event covers later dependent signups without a new prompt (`TermsGate`). An acceptance is immutable
   and never re-asked; a rejection is revisable and overwrites the stored row; a required document's
-  rejection is never persisted. `AssignActivity` skips this consent step when an administrator enrolls
+  rejection is never persisted. `AssignActivity` skips this consent step when an administrator signs up
   someone else; `AssignHousehold` always runs it. The acceptance row cascades away when the acting user's
   account is deleted, once the blocked copy of that account holds it.
 - Verification, email-change and password-reset links put the user id and a 256-bit code from a
@@ -435,7 +436,7 @@ password-reset codes expire after 15 minutes with a 60-second resend cooldown; a
 lasts 15 minutes, and each new one needs the password again. Login and account-deletion codes share storage
 and expire after 10 minutes with the same cooldown. SMTP must be configured everywhere or the API refuses to start. Activity signup sends no message;
 confirming or rejecting one queues an outcome email after commit, always to the guardian address for a
-dependent minor. Delivery errors never roll back registration, recovery, activity decisions or security
+dependent. Delivery errors never roll back registration, recovery, activity decisions or security
 changes.
 
 Registration and email changes (`PUT /api/users/{id}`) refuse addresses of disposable (temporary) mailbox
@@ -480,7 +481,7 @@ discarded on their next delivery attempt.
 
 Only administrators may use `/api/emails/...` endpoints; recipients are resolved on the server from the same
 filters as user/attendee lists, never client-supplied addresses. Each recipient gets a separate message,
-minors without their own address are skipped, and attachments remain transient. This mail bypasses the
+dependents without their own address are skipped, and attachments remain transient. This mail bypasses the
 automatic-message limiter; the endpoint reports how many messages were queued and how many recipients were
 skipped, not what SMTP later did with them. Single-recipient messages allow 30 requests/minute
 per administrator (10 executing, 10 waiting); bulk messages allow 5 requests/minute (2 active, no waiting
