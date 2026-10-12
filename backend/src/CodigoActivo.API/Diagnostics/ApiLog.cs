@@ -74,22 +74,6 @@ internal static partial class ApiLog
     internal static partial void DatabaseSeedApplied(this ILogger logger);
 
     /// <summary>
-    /// Records that the deployment mode was validated but not persisted, which only happens in a
-    /// Development process running outside a container.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="configuredMode">Deployment mode the configuration selected.</param>
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Deployment mode lock skipped: this is a Development process outside a container, "
-            + "so the selected {ConfiguredMode} mode is not persisted"
-    )]
-    internal static partial void DeploymentModeLockSkipped(
-        this ILogger logger,
-        string configuredMode
-    );
-
-    /// <summary>
     /// Records that an expired log file could not be listed or removed, so it stays in the log
     /// directory until the next sweep. The path is left to the attached exception, which the
     /// formatter strips of identifiers before writing it.

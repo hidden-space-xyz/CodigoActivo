@@ -15,4 +15,8 @@
     <ProjectReference Include="..\CodigoActivo.Application\CodigoActivo.Application.csproj" />
     <ProjectReference Include="..\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="CodigoActivo.IntegrationTests" />
+    <InternalsVisibleTo Include="CodigoActivo.UnitTests" />
+  </ItemGroup>
 </Project>

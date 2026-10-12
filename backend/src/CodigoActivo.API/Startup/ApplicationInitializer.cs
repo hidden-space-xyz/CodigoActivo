@@ -1,6 +1,6 @@
 using CodigoActivo.API.Diagnostics;
-using CodigoActivo.API.Security;
 using CodigoActivo.Composition;
+using CodigoActivo.Composition.Diagnostics;
 
 namespace CodigoActivo.API.Startup;
 
@@ -24,16 +24,12 @@ internal static class ApplicationInitializer
         var logger = services
             .GetRequiredService<ILoggerFactory>()
             .CreateLogger(LogCategories.Lifecycle);
-        var demoMode = services
-            .GetRequiredService<DeploymentModeLock>()
-            .Lock(app.Configuration, app.Environment);
+        services.ValidateConfiguration();
+        var demoMode = services.LockDeploymentMode();
 
         await MigrateDatabaseAsync(services, logger, cancellationToken);
         await SeedDatabaseAsync(services, logger, cancellationToken);
-        await services.SeedInitialAdministratorAsync(
-            app.Configuration["BOOTSTRAP_ADMIN_EMAIL"],
-            cancellationToken
-        );
+        await services.SeedInitialAdministratorAsync(cancellationToken);
         await SyncDemoDataAsync(services, demoMode);
     }
 

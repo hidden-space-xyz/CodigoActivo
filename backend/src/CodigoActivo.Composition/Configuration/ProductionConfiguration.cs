@@ -1,12 +1,15 @@
 using System.Net;
 using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
 
-namespace CodigoActivo.API.Security;
+namespace CodigoActivo.Composition.Configuration;
 
 /// <summary>
-/// Validates production configuration input before it is processed.
+/// Refuses to start a production process whose secrets are weak or whose public address and mail
+/// delivery are not safe for the internet. The rules that hold in every environment belong to the
+/// validated options instead.
 /// </summary>
-public static class ProductionConfigurationValidator
+internal static class ProductionConfiguration
 {
     /// <summary>
     /// Validates the production configuration state and rejects unsafe configuration.
@@ -65,15 +68,6 @@ public static class ProductionConfigurationValidator
         )
         {
             errors.Add("SMTP_HOST must be a valid host name or IP address");
-        }
-
-        var smtpPort = config["SMTP_PORT"];
-        if (
-            !string.IsNullOrWhiteSpace(smtpPort)
-            && (!int.TryParse(smtpPort, out var port) || port is < 1 or > 65_535)
-        )
-        {
-            errors.Add("SMTP_PORT must be empty or between 1 and 65535");
         }
 
         var smtpFromAddress = config["SMTP_FROM_ADDRESS"]?.Trim();

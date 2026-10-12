@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-using CodigoActivo.API.Security;
+using CodigoActivo.Composition.Platform;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.API.Security;
+namespace CodigoActivo.UnitTests.Composition;
 
 public sealed class DeploymentModeLockTests : IDisposable
 {

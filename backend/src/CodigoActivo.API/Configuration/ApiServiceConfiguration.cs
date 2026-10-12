@@ -32,7 +32,6 @@ internal static class ApiServiceConfiguration
         builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
         builder.Services.AddScoped<SessionTicketValidator>();
         builder.Services.AddScoped<TwoFactorTicketValidator>();
-        builder.Services.AddSingleton<DeploymentModeLock>();
         LogFileRetentionCleaner.AddLogFileRetention(builder.Services, builder.Configuration);
 
         AddForwardedHeaders(builder.Services);

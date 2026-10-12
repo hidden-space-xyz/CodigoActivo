@@ -1,16 +1,18 @@
 using AwesomeAssertions;
-using CodigoActivo.API.Security;
+using CodigoActivo.Composition;
+using CodigoActivo.Composition.Configuration;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.API.Security;
+namespace CodigoActivo.UnitTests.Composition;
 
-public sealed class ProductionConfigurationValidatorTests
+public sealed class ProductionConfigurationTests
 {
     [Fact]
     public void ValidateSafeConfigurationDoesNotThrow()
     {
-        var act = () => ProductionConfigurationValidator.Validate(BuildConfiguration());
+        var act = () => ProductionConfiguration.Validate(BuildConfiguration());
 
         act.Should().NotThrow();
     }
@@ -20,14 +22,12 @@ public sealed class ProductionConfigurationValidatorTests
     {
         var config = BuildConfiguration(new KeyValuePair<string, string?>("DEMO_MODE", "true"));
 
-        var act = () => ProductionConfigurationValidator.Validate(config);
+        var act = () => ProductionConfiguration.Validate(config);
 
         act.Should().NotThrow();
     }
 
     [Theory]
-    [InlineData("SMTP_PORT", null)]
-    [InlineData("SMTP_PORT", "")]
     [InlineData("SMTP_SECURITY", null)]
     [InlineData("SMTP_SECURITY", " ")]
     [InlineData("SMTP_SECURITY", "SslOnConnect")]
@@ -35,7 +35,7 @@ public sealed class ProductionConfigurationValidatorTests
     {
         var config = BuildConfiguration(new KeyValuePair<string, string?>(key, value));
 
-        var act = () => ProductionConfigurationValidator.Validate(config);
+        var act = () => ProductionConfiguration.Validate(config);
 
         act.Should().NotThrow();
     }
@@ -54,17 +54,27 @@ public sealed class ProductionConfigurationValidatorTests
     [InlineData("SMTP_SECURITY", "None", "SMTP_SECURITY")]
     [InlineData("SMTP_SECURITY", "Auto", "SMTP_SECURITY")]
     [InlineData("SMTP_HOST", "bad host", "SMTP_HOST")]
-    [InlineData("SMTP_PORT", "70000", "SMTP_PORT")]
-    [InlineData("SMTP_PORT", "smtp", "SMTP_PORT")]
     [InlineData("SMTP_FROM_ADDRESS", "Sender <sender@app.test>", "SMTP_FROM_ADDRESS")]
     [InlineData("SMTP_USERNAME", "mailer", "SMTP_USERNAME")]
     public void ValidateUnsafeConfigurationThrows(string key, string value, string expectedMessage)
     {
         var config = BuildConfiguration(new KeyValuePair<string, string?>(key, value));
 
-        var act = () => ProductionConfigurationValidator.Validate(config);
+        var act = () => ProductionConfiguration.Validate(config);
 
         act.Should().Throw<InvalidOperationException>().WithMessage($"*{expectedMessage}*");
+    }
+
+    [Fact]
+    public void AddCodigoActivoProductionUnsafeConfigurationStopsTheRegistration()
+    {
+        var config = BuildConfiguration(
+            new KeyValuePair<string, string?>("POSTGRES_PASSWORD", "short")
+        );
+
+        var act = () => new ServiceCollection().AddCodigoActivo(config, production: true);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*POSTGRES_PASSWORD*");
     }
 
     private static IConfiguration BuildConfiguration(
@@ -79,7 +89,6 @@ public sealed class ProductionConfigurationValidatorTests
             ["APP_BASE_URL"] = "https://codigoactivo.es",
             ["SMTP_SECURITY"] = "StartTls",
             ["SMTP_HOST"] = "smtp.app.test",
-            ["SMTP_PORT"] = "587",
             ["SMTP_FROM_ADDRESS"] = "sender@app.test",
             ["SMTP_USERNAME"] = string.Empty,
             ["SMTP_PASSWORD"] = string.Empty,

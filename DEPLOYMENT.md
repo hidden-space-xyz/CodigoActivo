@@ -79,9 +79,10 @@ With `logging: driver: none`, an `api` container that keeps restarting without a
 still reaches the file whenever the directory is writable.
 
 Every login is completed with a one-time code, emailed unless the user enrolled an authenticator app, so
-startup fails everywhere when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing. Production also rejects an
-unencrypted SMTP mode (`None` or `Auto`) and invalid host/port/sender values. `APP_BASE_URL` must use a public
-DNS name; IP addresses, localhost and reserved example/test domains are rejected.
+startup fails everywhere when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing or `SMTP_PORT` is outside 1-65535.
+Production also rejects an unencrypted SMTP mode (`None` or `Auto`) and invalid host/sender values. `APP_BASE_URL`
+must use a public DNS name; IP addresses, localhost and reserved example/test domains are rejected. Every setting
+is checked before the deployment mode is locked or the database migrated, so a rejected start changes nothing.
 
 ### TLS and proxy boundary
 
