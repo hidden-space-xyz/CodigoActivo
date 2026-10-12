@@ -23,7 +23,7 @@ public sealed class PurgeDeletedAccountsCommandHandlerTests
     public async Task HandleAsyncRemovesCopiesDeletedUpToThePurgeCutoffAndReportsHowMany()
     {
         deletedAccounts
-            .RemoveDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .PurgeDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(5);
 
         var purged = await sut.HandleAsync(
@@ -34,7 +34,7 @@ public sealed class PurgeDeletedAccountsCommandHandlerTests
         purged.Value.Should().Be(5);
         await deletedAccounts
             .Received(1)
-            .RemoveDeletedUpToAsync(
+            .PurgeDeletedUpToAsync(
                 DeletedAccount.PurgeCutoff(clock.UtcNow),
                 TestContext.Current.CancellationToken
             );

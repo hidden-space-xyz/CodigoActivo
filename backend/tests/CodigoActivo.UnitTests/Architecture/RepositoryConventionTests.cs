@@ -75,6 +75,25 @@ public sealed class RepositoryConventionTests
     }
 
     [Fact]
+    public void RepositoriesNeverDeclareAnotherRemove()
+    {
+        var offenders = DomainRepositories()
+            .SelectMany(MethodsOf)
+            .Where(method =>
+                method.Name.StartsWith("Remove", StringComparison.Ordinal)
+                && !(
+                    method.DeclaringType is { IsGenericType: true } contract
+                    && contract.GetGenericTypeDefinition() == typeof(IRepository<>)
+                )
+            )
+            .Select(method => $"{method.DeclaringType!.Name}.{method.Name}")
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
     public void RepositoriesNeverExposeQueryablesOrExpressions()
     {
         var methods = DomainRepositories()

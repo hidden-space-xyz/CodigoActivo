@@ -22,7 +22,7 @@ public sealed class RemoveExpiredSessionsCommandHandlerTests
     public async Task HandleAsyncRemovesEveryUsersSessionsExpiredByNowAndReportsHowMany()
     {
         sessions
-            .RemoveExpiredAsync(
+            .PurgeExpiredAsync(
                 Arg.Any<DateTimeOffset>(),
                 Arg.Any<UserId?>(),
                 Arg.Any<CancellationToken>()
@@ -37,6 +37,6 @@ public sealed class RemoveExpiredSessionsCommandHandlerTests
         removed.Value.Should().Be(3);
         await sessions
             .Received(1)
-            .RemoveExpiredAsync(clock.UtcNow, null, TestContext.Current.CancellationToken);
+            .PurgeExpiredAsync(clock.UtcNow, null, TestContext.Current.CancellationToken);
     }
 }

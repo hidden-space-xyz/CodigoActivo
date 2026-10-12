@@ -131,7 +131,7 @@ public sealed class CompleteLoginCommandHandlerTests
         Received.InOrder(() =>
         {
             _ = users.LockAsync(user, Arg.Any<CancellationToken>());
-            _ = sessions.RemoveExpiredAsync(clock.UtcNow, user.Id, Arg.Any<CancellationToken>());
+            _ = sessions.PurgeExpiredAsync(clock.UtcNow, user.Id, Arg.Any<CancellationToken>());
             _ = sessions.AddAsync(session, Arg.Any<CancellationToken>());
             _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
         });

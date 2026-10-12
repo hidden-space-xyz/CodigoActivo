@@ -14,7 +14,7 @@ public sealed class DeletedAccountRepository(CodigoActivoDbContext context)
         IDeletedAccountRepository
 {
     /// <inheritdoc />
-    public Task<int> RemoveDeletedUpToAsync(
+    public Task<int> PurgeDeletedUpToAsync(
         DateTimeOffset deletedUpTo,
         CancellationToken ct = default
     )

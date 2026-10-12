@@ -27,7 +27,7 @@ public class UserSessionRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public Task<int> RemoveExpiredAsync(
+    public Task<int> PurgeExpiredAsync(
         DateTimeOffset now,
         UserId? userId = null,
         CancellationToken ct = default

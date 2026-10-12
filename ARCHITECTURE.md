@@ -89,15 +89,17 @@ aggregate roots.
   the API maps the identifier to the enum before building the command, so commands never carry catalog
   identifiers.
 - Repositories exist only for aggregate roots (`IRepository<T>` plus methods that name their intention), never
-  expose `IQueryable` or predicates, and share the scoped `CodigoActivoDbContext`. `IUnitOfWork.SaveChangesAsync`
-  commits staged changes once and turns a PostgreSQL unique violation into `UniqueConstraintViolationException`,
-  naming the entity whose table rejected the commit, so a handler can answer a lost race instead of failing. A
-  person holds at most one assignment per activity (primary key on `user_id`, `activity_id`); the signup
-  commands answer a concurrent duplicate with `ActivityAssignmentAlreadyExists` (409). At most one event and one
-  news item are featured (unique index on `featured`, filtered to featured rows). PostgreSQL checks it row by
-  row and EF Core cannot order moving the flag between rows within one save, so `SetEventFeatured` and
-  `SetNewsItemFeatured` save the unfeaturing of the current item before featuring the chosen one, in one
-  transaction; a concurrent featuring that loses the race fails instead of leaving two items featured.
+  expose `IQueryable` or predicates, and share the scoped `CodigoActivoDbContext`. `AddAsync` and `Remove` only
+  stage changes; the few methods that write immediately, without waiting for the unit of work, say so by their
+  verb (`Save…`, `End…`, `Purge…`). `IUnitOfWork.SaveChangesAsync` commits staged changes once and turns a
+  PostgreSQL unique violation into `UniqueConstraintViolationException`, naming the entity whose table rejected
+  the commit, so a handler can answer a lost race instead of failing. A person holds at most one assignment
+  per activity (primary key on `user_id`, `activity_id`); the signup commands answer a concurrent duplicate with
+  `ActivityAssignmentAlreadyExists` (409). At most one event and one news item are featured (unique index on
+  `featured`, filtered to featured rows). PostgreSQL checks it row by row and EF Core cannot order moving the
+  flag between rows within one save, so `SetEventFeatured` and `SetNewsItemFeatured` save the unfeaturing of
+  the current item before featuring the chosen one, in one transaction; a concurrent featuring that loses the
+  race fails instead of leaving two items featured.
 - `IUnitOfWork.ExecuteInTransactionAsync` runs work in one explicit transaction and, when PostgreSQL aborts it
   to resolve a deadlock, runs it again (three attempts in total) from the state the failed attempt started
   from: entities tracked since are dropped, the others get back their values and state, and the domain events
