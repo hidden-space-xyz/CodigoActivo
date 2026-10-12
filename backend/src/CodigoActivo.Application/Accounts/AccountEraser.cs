@@ -1,7 +1,7 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Users;
 
-namespace CodigoActivo.Application.Users;
+namespace CodigoActivo.Application.Accounts;
 
 /// <summary>
 /// Erases an account and its dependents in one transaction: it keeps the legal copy the law

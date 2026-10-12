@@ -1,4 +1,4 @@
-namespace CodigoActivo.Application.Users.Contracts;
+namespace CodigoActivo.Application.Abstractions.Querying.ReadModel;
 
 /// <summary>
 /// Gender a person gives, as clients send and receive it.

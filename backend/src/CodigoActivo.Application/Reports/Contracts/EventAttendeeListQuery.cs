@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Common.Validation;
-using CodigoActivo.Application.Users.Contracts;
 
 namespace CodigoActivo.Application.Reports.Contracts;
 

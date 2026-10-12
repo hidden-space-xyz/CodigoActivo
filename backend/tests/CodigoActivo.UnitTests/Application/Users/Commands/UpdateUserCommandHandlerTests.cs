@@ -7,7 +7,6 @@ using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Commands;
-using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -16,7 +15,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
-using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 
 namespace CodigoActivo.UnitTests.Application.Users.Commands;
 

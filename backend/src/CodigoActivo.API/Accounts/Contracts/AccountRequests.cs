@@ -1,10 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Mapping;
-using CodigoActivo.Application.Users.Commands;
-using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Users;
-using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 
 namespace CodigoActivo.API.Accounts.Contracts;
 

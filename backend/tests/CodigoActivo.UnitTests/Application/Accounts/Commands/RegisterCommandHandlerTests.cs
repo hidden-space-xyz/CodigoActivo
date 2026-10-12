@@ -4,9 +4,7 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
-using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -14,7 +12,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
-using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 

@@ -7,8 +7,8 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Reports.ReportTestData;
-using Gender = CodigoActivo.Application.Users.Contracts.Gender;
-using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
+using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Reports.Queries;
 

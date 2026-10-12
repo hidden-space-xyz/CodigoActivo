@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Common.Security;
-using CodigoActivo.Application.Users;
 using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
@@ -10,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace CodigoActivo.Composition.Users;
 
 /// <summary>
-/// Registers users: households, who may act for whom and the erasure of accounts.
+/// Registers users: households, who may act for whom and the legal copies of erased accounts.
 /// </summary>
 internal static class UsersRegistration
 {
@@ -23,9 +22,7 @@ internal static class UsersRegistration
     {
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IDeletedAccountRepository, DeletedAccountRepository>();
-        services.AddScoped<IAccountErasureStore, AccountErasureStore>();
         services.AddScoped<ActingUserPolicy>();
-        services.AddScoped<AccountEraser>();
         services.AddValidatedOptions<DeletedAccountPurgeOptions>(_ => { });
         services.AddHostedService<DeletedAccountPurger>();
         return services;

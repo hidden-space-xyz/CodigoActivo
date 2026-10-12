@@ -8,7 +8,7 @@ using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Users;
-using Gender = CodigoActivo.Application.Users.Contracts.Gender;
+using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 
 namespace CodigoActivo.Application.Reports.Queries;
 

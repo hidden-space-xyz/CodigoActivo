@@ -3,8 +3,8 @@ using CodigoActivo.Application.Common.Mapping;
 using Xunit;
 using DomainGender = CodigoActivo.Domain.Users.Gender;
 using DomainTwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
-using Gender = CodigoActivo.Application.Users.Contracts.Gender;
-using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
+using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using TwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Common;
 

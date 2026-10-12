@@ -1,13 +1,13 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Users;
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
 
-namespace CodigoActivo.UnitTests.Application.Users;
+namespace CodigoActivo.UnitTests.Application.Accounts;
 
 public sealed class AccountEraserTests
 {

@@ -5,7 +5,6 @@ using CodigoActivo.API.Errors;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
@@ -14,7 +13,7 @@ using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using ContractGender = CodigoActivo.Application.Users.Contracts.Gender;
+using ContractGender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 using Gender = CodigoActivo.Domain.Users.Gender;
 
 namespace CodigoActivo.IntegrationTests.Controllers;

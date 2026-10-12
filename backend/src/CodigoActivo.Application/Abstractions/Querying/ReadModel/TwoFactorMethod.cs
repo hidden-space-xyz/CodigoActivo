@@ -1,4 +1,4 @@
-namespace CodigoActivo.Application.Accounts.Contracts;
+namespace CodigoActivo.Application.Abstractions.Querying.ReadModel;
 
 /// <summary>
 /// Second factor a user presents after the password, as clients receive it.

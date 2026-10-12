@@ -1,12 +1,11 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
-namespace CodigoActivo.Application.Accounts.Queries;
+namespace CodigoActivo.Application.Users.Queries;
 
 /// <summary>
 /// Carries the account a request has just verified or signed in, before the caller's session

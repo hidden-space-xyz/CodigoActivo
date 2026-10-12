@@ -11,6 +11,7 @@ using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Application.Users.Contracts;
+using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Antiforgery;
