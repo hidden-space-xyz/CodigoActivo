@@ -1,6 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;

@@ -2,7 +2,7 @@ using System.Data.Common;
 using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;

@@ -1,7 +1,8 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.Notifications;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;

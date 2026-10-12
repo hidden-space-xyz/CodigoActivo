@@ -3,6 +3,8 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts.EmailAddresses;
+using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Validation;

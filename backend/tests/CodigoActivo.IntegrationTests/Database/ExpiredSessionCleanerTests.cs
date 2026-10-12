@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Users;

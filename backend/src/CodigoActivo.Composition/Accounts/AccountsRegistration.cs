@@ -1,5 +1,10 @@
 using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.EmailAddresses;
+using CodigoActivo.Application.Accounts.Erasure;
+using CodigoActivo.Application.Accounts.Notifications;
+using CodigoActivo.Application.Accounts.Passwords;
+using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Accounts;

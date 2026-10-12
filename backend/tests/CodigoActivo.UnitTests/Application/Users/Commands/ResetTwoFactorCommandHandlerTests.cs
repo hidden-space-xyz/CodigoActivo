@@ -2,7 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;

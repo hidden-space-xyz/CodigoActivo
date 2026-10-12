@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 

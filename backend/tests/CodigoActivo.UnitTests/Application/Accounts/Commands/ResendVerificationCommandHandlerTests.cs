@@ -1,9 +1,10 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Accounts.Notifications;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;

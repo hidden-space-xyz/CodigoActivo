@@ -1,4 +1,4 @@
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.EmailAddresses;
 
 namespace CodigoActivo.Infrastructure.Accounts;
 

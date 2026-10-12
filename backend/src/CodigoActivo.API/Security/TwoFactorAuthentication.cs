@@ -1,9 +1,9 @@
 using System.Security.Claims;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Queries;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authentication;

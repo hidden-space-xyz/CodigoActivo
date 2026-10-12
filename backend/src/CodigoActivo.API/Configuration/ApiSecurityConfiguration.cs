@@ -1,7 +1,8 @@
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;

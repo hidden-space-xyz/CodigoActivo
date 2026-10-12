@@ -1,6 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;

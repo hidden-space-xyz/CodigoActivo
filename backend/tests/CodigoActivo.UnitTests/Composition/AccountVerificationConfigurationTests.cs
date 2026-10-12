@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Composition;
 using CodigoActivo.Infrastructure.Communication;
 using Microsoft.Extensions.Configuration;

@@ -1,8 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
