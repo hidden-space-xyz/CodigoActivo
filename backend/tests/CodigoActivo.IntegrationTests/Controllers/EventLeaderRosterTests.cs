@@ -1,5 +1,6 @@
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
@@ -562,7 +563,6 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
 
         var requestedEvent = await GetRosterAsync(client, EventId);
         var ledEvent = await GetRosterAsync(client, OtherEventId);
-        var unknownEvent = await GetRosterAsync(client, Guid.NewGuid());
 
         requestedEvent.Should().BeEmpty();
         var activity = ledEvent.Should().ContainSingle().Subject;
@@ -572,6 +572,19 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
             .Select(u => u.FirstName)
             .Should()
             .BeEquivalentTo("Marta", "Olga");
-        unknownEvent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LeaderRosterUnknownEventReturnsNotFound()
+    {
+        await SeedEventsAsync(MemberLeadsTheActivity());
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.GetAsync(
+            TestUri.Rel($"/api/events/{Guid.NewGuid()}/leader-roster"),
+            Ct
+        );
+
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 }

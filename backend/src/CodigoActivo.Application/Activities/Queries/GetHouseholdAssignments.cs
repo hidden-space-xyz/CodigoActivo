@@ -2,7 +2,9 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Activities.Queries;
@@ -12,7 +14,7 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 public sealed record GetHouseholdAssignmentsQuery(EventId EventId)
-    : IQuery<IReadOnlyList<HouseholdMemberAssignmentResponse>>;
+    : IQuery<Result<IReadOnlyList<HouseholdMemberAssignmentResponse>>>;
 
 /// <summary>
 /// Executes the query to retrieve household assignments.
@@ -24,15 +26,19 @@ public sealed class GetHouseholdAssignmentsQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
     ICurrentUser currentUser
-) : IQueryHandler<GetHouseholdAssignmentsQuery, IReadOnlyList<HouseholdMemberAssignmentResponse>>
+)
+    : IQueryHandler<
+        GetHouseholdAssignmentsQuery,
+        Result<IReadOnlyList<HouseholdMemberAssignmentResponse>>
+    >
 {
     /// <summary>
     /// Handles the request to retrieve household assignments.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching household member assignment items.</returns>
-    public async Task<IReadOnlyList<HouseholdMemberAssignmentResponse>> HandleAsync(
+    /// <returns>A task whose result contains the matching household member assignment items on success, or an application error on failure.</returns>
+    public async Task<Result<IReadOnlyList<HouseholdMemberAssignmentResponse>>> HandleAsync(
         GetHouseholdAssignmentsQuery query,
         CancellationToken ct = default
     )
@@ -40,7 +46,12 @@ public sealed class GetHouseholdAssignmentsQueryHandler(
         ArgumentNullException.ThrowIfNull(query);
         var eventId = query.EventId.Value;
         var actingUserId = currentUser.RequiredId().Value;
-        return await executor.ToListAsync(
+        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == eventId), ct))
+        {
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
+        }
+
+        var assignments = await executor.ToListAsync(
             readStore
                 .Assignments.Where(x =>
                     x.Activity.EventId == eventId
@@ -62,5 +73,6 @@ public sealed class GetHouseholdAssignmentsQueryHandler(
                 )),
             ct
         );
+        return Result.Success<IReadOnlyList<HouseholdMemberAssignmentResponse>>(assignments);
     }
 }

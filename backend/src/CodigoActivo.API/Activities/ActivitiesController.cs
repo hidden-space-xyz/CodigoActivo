@@ -106,12 +106,12 @@ public class ActivitiesController : ApiControllerBase
         [FromServices]
             IQueryHandler<
             GetHouseholdAssignmentsQuery,
-            IReadOnlyList<HouseholdMemberAssignmentResponse>
+            Result<IReadOnlyList<HouseholdMemberAssignmentResponse>>
         > handler,
         CancellationToken ct
     )
     {
-        return Ok(
+        return ToOk(
             await handler.HandleAsync(new GetHouseholdAssignmentsQuery(EventId.From(eventId)), ct)
         );
     }

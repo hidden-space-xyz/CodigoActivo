@@ -3,6 +3,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Activities.Queries;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -29,6 +30,7 @@ public sealed class GetLeaderRosterQueryHandlerTests
 
     public GetLeaderRosterQueryHandlerTests()
     {
+        store.Events.Add(new EventRow { Id = EventId });
         sut = new GetLeaderRosterQueryHandler(
             store,
             new FakeQueryExecutor(),
@@ -126,14 +128,19 @@ public sealed class GetLeaderRosterQueryHandlerTests
         store.Assignments.AddRange(assignments);
     }
 
-    private Task<IReadOnlyList<LeaderRosterActivityResponse>> HandleAsync(Guid? eventId = null)
+    private Task<Result<IReadOnlyList<LeaderRosterActivityResponse>>> HandleAsync(Guid eventId)
     {
         return sut.HandleAsync(
-            new GetLeaderRosterQuery(
-                global::CodigoActivo.Domain.Events.EventId.From(eventId ?? EventId)
-            ),
+            new GetLeaderRosterQuery(global::CodigoActivo.Domain.Events.EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
+    }
+
+    private async Task<IReadOnlyList<LeaderRosterActivityResponse>> HandleAsync()
+    {
+        var result = await HandleAsync(EventId);
+        result.IsSuccess.Should().BeTrue();
+        return result.Value;
     }
 
     public static TheoryData<string, string> NonLeadingAssignments =>
@@ -144,6 +151,20 @@ public sealed class GetLeaderRosterQueryHandlerTests
             { "Volunteer", "Confirmed" },
             { "Participant", "Confirmed" },
         };
+
+    [Fact]
+    public async Task HandleAsyncEventMissingReturnsNotFound()
+    {
+        var unknownEventId = Guid.NewGuid();
+        HasAssignments(
+            Asg(caller, NewActivity("Taller", eventId: unknownEventId), Leader, Confirmed)
+        );
+
+        var result = await HandleAsync(unknownEventId);
+
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
+        store.ReadsOf<AssignmentRow>().Should().Be(0);
+    }
 
     [Theory]
     [MemberData(nameof(NonLeadingAssignments))]

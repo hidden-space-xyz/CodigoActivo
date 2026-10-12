@@ -1,6 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Events.Queries;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -12,10 +15,12 @@ public sealed class GetEventTermsStateQueryHandlerTests
 {
     private readonly FakeReadStore store = new();
     private readonly Guid userId = Guid.NewGuid();
+    private readonly Guid eventId = Guid.NewGuid();
     private readonly GetEventTermsStateQueryHandler sut;
 
     public GetEventTermsStateQueryHandlerTests()
     {
+        store.Events.Add(new EventRow { Id = eventId });
         sut = new GetEventTermsStateQueryHandler(
             store,
             new FakeQueryExecutor(),
@@ -56,16 +61,37 @@ public sealed class GetEventTermsStateQueryHandlerTests
         store.EventTermsAcceptances.AddRange(acceptances);
     }
 
-    [Fact]
-    public async Task HandleAsyncEventWithoutDocumentsReturnsEmptyListAndSignupOpen()
+    private async Task<EventTermsStateResponse> StateAsync()
     {
-        var eventId = Guid.NewGuid();
-        HasDocuments();
-
         var result = await sut.HandleAsync(
             new GetEventTermsStateQuery(EventId.From(eventId)),
             TestContext.Current.CancellationToken
         );
+        result.IsSuccess.Should().BeTrue();
+        return result.Value;
+    }
+
+    [Fact]
+    public async Task HandleAsyncEventMissingReturnsNotFound()
+    {
+        var unknownEventId = Guid.NewGuid();
+        HasDocuments(NewDocument(unknownEventId, Guid.NewGuid(), required: true, displayOrder: 0));
+
+        var result = await sut.HandleAsync(
+            new GetEventTermsStateQuery(EventId.From(unknownEventId)),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
+        store.ReadsOf<EventTermsDocumentRow>().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task HandleAsyncEventWithoutDocumentsReturnsEmptyListAndSignupOpen()
+    {
+        HasDocuments();
+
+        var result = await StateAsync();
 
         result.Documents.Should().BeEmpty();
         result.SignupBlocked.Should().BeFalse();
@@ -75,7 +101,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
     [Fact]
     public async Task HandleAsyncRequiredAndOptionalUndecidedBlocksSignupForMissingRequired()
     {
-        var eventId = Guid.NewGuid();
         var requiredId = Guid.NewGuid();
         var optionalId = Guid.NewGuid();
         HasDocuments(
@@ -84,10 +109,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         );
         HasAcceptances();
 
-        var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await StateAsync();
 
         result.Documents.Should().HaveCount(2);
         result.Documents.Should().OnlyContain(d => d.Accepted == null && d.DecidedAt == null);
@@ -97,15 +119,11 @@ public sealed class GetEventTermsStateQueryHandlerTests
     [Fact]
     public async Task HandleAsyncOnlyOptionalUndecidedDoesNotBlockSignup()
     {
-        var eventId = Guid.NewGuid();
         var optionalId = Guid.NewGuid();
         HasDocuments(NewDocument(eventId, optionalId, required: false, displayOrder: 0));
         HasAcceptances();
 
-        var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await StateAsync();
 
         result.Documents.Should().ContainSingle(d => d.Accepted == null);
         result.SignupBlocked.Should().BeFalse();
@@ -114,7 +132,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
     [Fact]
     public async Task HandleAsyncRequiredAcceptedWithOptionalUndecidedUnblocksSignup()
     {
-        var eventId = Guid.NewGuid();
         var requiredId = Guid.NewGuid();
         var optionalId = Guid.NewGuid();
         var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
@@ -133,10 +150,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
             }
         );
 
-        var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await StateAsync();
 
         var required = result
             .Documents.Should()
@@ -160,7 +174,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
     [Fact]
     public async Task HandleAsyncOptionalRejectedDoesNotBlockSignup()
     {
-        var eventId = Guid.NewGuid();
         var requiredId = Guid.NewGuid();
         var optionalId = Guid.NewGuid();
         var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
@@ -187,10 +200,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
             }
         );
 
-        var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await StateAsync();
 
         result
             .Documents.Should()
@@ -201,7 +211,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
     [Fact]
     public async Task HandleAsyncRequiredRejectedBlocksSignup()
     {
-        var eventId = Guid.NewGuid();
         var requiredId = Guid.NewGuid();
         var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
         HasDocuments(NewDocument(eventId, requiredId, required: true, displayOrder: 0));
@@ -216,10 +225,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
             }
         );
 
-        var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await StateAsync();
 
         result.Documents.Should().ContainSingle(d => d.Accepted == false);
         result.SignupBlocked.Should().BeTrue();
@@ -228,7 +234,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
     [Fact]
     public async Task HandleAsyncDocumentsOrderedByDisplayOrderRegardlessOfInputOrder()
     {
-        var eventId = Guid.NewGuid();
         var firstId = Guid.NewGuid();
         var secondId = Guid.NewGuid();
         var thirdId = Guid.NewGuid();
@@ -239,10 +244,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
         );
         HasAcceptances();
 
-        var result = await sut.HandleAsync(
-            new GetEventTermsStateQuery(EventId.From(eventId)),
-            TestContext.Current.CancellationToken
-        );
+        var result = await StateAsync();
 
         result.Documents.Select(d => d.TermsDocumentId).Should().Equal(firstId, secondId, thirdId);
     }

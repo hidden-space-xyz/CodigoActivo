@@ -222,12 +222,14 @@ every linked document with the caller's current decision.
 
 ### Results, validation and HTTP errors
 
-Expected failures are values, not exceptions: command and single-item query handlers return `Result` or
+Expected failures are values, not exceptions: command and route-addressed query handlers return `Result` or
 `Result<T>` with an `Error` whose code is a `DomainErrorCode` (rules of the model) or an `ApplicationErrorCode`
-(use case outcomes such as `UserNotFound`); neither knows HTTP. The API owns the wire `ErrorCode`
-(`API/Errors`): `WireErrorCodes` translates each code to the wire member of the same name or to an explicit
-rename (malformed input becomes `RequestValidationFailed`, acting for another user `AccessDenied`), and
-`WireErrorCodesTests` fails when a code has no translation or a wire code is reached by none. Controllers
+(use case outcomes such as `UserNotFound`); neither knows HTTP. A query addressed to a resource by route, lists
+of its children included, answers that resource's `NotFound` when it does not exist; a filter such as
+`?eventId=` only narrows a list. The API owns the wire `ErrorCode` (`API/Errors`): `WireErrorCodes` translates
+each code to the wire member of the same name or to an explicit rename (malformed input becomes
+`RequestValidationFailed`, acting for another user `AccessDenied`), and `WireErrorCodesTests` fails when a code
+has no translation or a wire code is reached by none. Controllers
 translate failures through `ApiControllerBase`. All client-visible
 failures use `ApiErrorResponse(Title, Status, Code, TraceId)`, including model validation, authorization,
 CSRF and unhandled exceptions. HTTP mappings: 400 validation, 401 unauthenticated, 403 forbidden, 404 not

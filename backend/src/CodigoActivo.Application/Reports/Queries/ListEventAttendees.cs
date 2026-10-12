@@ -2,6 +2,7 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
@@ -16,7 +17,7 @@ namespace CodigoActivo.Application.Reports.Queries;
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 public sealed record ListEventAttendeesQuery(EventId EventId, EventAttendeeListQuery Filters)
-    : IQuery<PagedResult<EventAttendeeResponse>>;
+    : IQuery<Result<PagedResult<EventAttendeeResponse>>>;
 
 /// <summary>
 /// Executes the query to list event attendees.
@@ -24,7 +25,7 @@ public sealed record ListEventAttendeesQuery(EventId EventId, EventAttendeeListQ
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryExecutor executor)
-    : IQueryHandler<ListEventAttendeesQuery, PagedResult<EventAttendeeResponse>>
+    : IQueryHandler<ListEventAttendeesQuery, Result<PagedResult<EventAttendeeResponse>>>
 {
     private static readonly SortMap<UserRow> AttendeeSort = new SortMap<UserRow>()
         .Add("firstName", u => u.FirstName)
@@ -42,13 +43,19 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged event attendee.</returns>
-    public async Task<PagedResult<EventAttendeeResponse>> HandleAsync(
+    /// <returns>A task whose result contains a paged event attendee on success, or an application error on failure.</returns>
+    public async Task<Result<PagedResult<EventAttendeeResponse>>> HandleAsync(
         ListEventAttendeesQuery query,
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(query);
         var eventId = query.EventId.Value;
+        if (!await executor.AnyAsync(readStore.Events.Where(e => e.Id == eventId), ct))
+        {
+            return Error.NotFound(ApplicationErrorCode.EventNotFound);
+        }
+
         var filters = query.Filters;
         var activityId = filters.ActivityId;
         var roleTypeId = filters.RoleTypeId;
