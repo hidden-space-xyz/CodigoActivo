@@ -145,8 +145,9 @@ public sealed class LoginCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         emailSender.Sent.Should().BeEmpty();
-        user.PasswordFailedAttempts.Should().Be(1, "the guard counts the failure on its own");
-        user.PasswordLockedAt.Should().BeNull();
+        user.PasswordLockout.FailedAttempts.Should()
+            .Be(1, "the guard counts the failure on its own");
+        user.PasswordLockout.LockedAt.Should().BeNull();
         await AssertNotSavedAsync();
     }
 
@@ -187,17 +188,17 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync("  Ana@Test.com  ");
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(new LoginChallengeKey(user.Id, user.LoginChallengeId!.Value));
-        user.LoginChallengeStartedAt.Should().Be(clock.UtcNow);
+        result.Value.Should().Be(new LoginChallengeKey(user.Id, user.LoginChallenge.Id!.Value));
+        user.LoginChallenge.StartedAt.Should().Be(clock.UtcNow);
 
         var email = composer.Composed.Should().ContainSingle().Subject;
         email.Name.Should().Be(nameof(IAccountEmailComposer.LoginCode));
         email.Recipient.Should().Be(new EmailRecipient("ana@test.com", "Ana"));
         email.Lifetime.Should().Be(twoFactor.ChallengeLifetime);
         emailSender.Sent.Should().ContainSingle();
-        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + email.Code);
-        user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + twoFactor.ChallengeLifetime);
-        user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
+        user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + email.Code);
+        user.LoginCode.ExpiresAt.Should().Be(clock.UtcNow + twoFactor.ChallengeLifetime);
+        user.LoginCode.LastSentAt.Should().Be(clock.UtcNow);
         user.LastLoginAt.Should().BeNull("the login only completes after the second factor");
         await users
             .Received(1)
@@ -215,7 +216,7 @@ public sealed class LoginCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + "654321");
+        user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + "654321");
     }
 
     [Fact]
@@ -229,7 +230,7 @@ public sealed class LoginCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().ContainSingle();
-        user.LoginCodeHash.Should().NotBe(FakeOneTimeCodeHasher.Prefix + "654321");
+        user.LoginCode.Hash.Should().NotBe(FakeOneTimeCodeHasher.Prefix + "654321");
     }
 
     [Fact]
@@ -240,16 +241,19 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync();
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(new LoginChallengeKey(user.Id, user.LoginChallengeId!.Value));
+        result.Value.Should().Be(new LoginChallengeKey(user.Id, user.LoginChallenge.Id!.Value));
         emailSender.Sent.Should().BeEmpty();
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
     }
 
     [Fact]
     public async Task HandleAsyncLockedAccountAnswersLikeAWrongPasswordAndStillHashes()
     {
         var user = Returns(NewUser(passwordHash: "fake:password123"));
-        Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddMinutes(-5) });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-5) } }
+        );
         var before = hasher.VerifyCalls;
 
         var result = await LoginAsync();
@@ -264,13 +268,16 @@ public sealed class LoginCommandHandlerTests
     public async Task HandleAsyncLockedAccountWithAWrongPasswordAnswersTheSameWay()
     {
         var user = Returns(NewUser(passwordHash: "fake:password123"));
-        Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddMinutes(-5) });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-5) } }
+        );
 
         var correct = await LoginAsync();
         var wrong = await LoginAsync(password: "not-the-password");
 
         correct.Error.Should().BeEquivalentTo(wrong.Error);
-        user.PasswordFailedAttempts.Should().Be(0);
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
         await AssertNotSavedAsync();
     }
 
@@ -284,8 +291,8 @@ public sealed class LoginCommandHandlerTests
             await LoginAsync(password: "not-the-password");
         }
 
-        user.IsPasswordLocked().Should().BeTrue();
-        user.PasswordLockedAt.Should().Be(clock.UtcNow);
+        user.PasswordLockout.IsLocked.Should().BeTrue();
+        user.PasswordLockout.LockedAt.Should().Be(clock.UtcNow);
         emailSender.Sent.Should().BeEmpty("the owner is warned once the lock is committed");
 
         await events.PublishAsync(user);
@@ -313,7 +320,7 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync();
 
         result.IsSuccess.Should().BeTrue();
-        user.LoginChallengeId.Should().NotBeNull().And.NotBe(LoginChallengeId.From(Guid.Empty));
+        user.LoginChallenge.Id.Should().NotBeNull().And.NotBe(LoginChallengeId.From(Guid.Empty));
     }
 
     [Fact]
@@ -321,14 +328,14 @@ public sealed class LoginCommandHandlerTests
     {
         var user = Returns(NewUser());
         await LoginAsync();
-        var first = user.LoginChallengeId;
+        var first = user.LoginChallenge.Id;
 
         clock.UtcNow = clock.UtcNow.AddMinutes(2);
         await LoginAsync();
 
         first.Should().NotBeNull();
-        user.LoginChallengeId.Should().NotBeNull();
-        user.LoginChallengeId.Should().NotBe(first!.Value);
+        user.LoginChallenge.Id.Should().NotBeNull();
+        user.LoginChallenge.Id.Should().NotBe(first!.Value);
     }
 
     [Fact]
@@ -341,27 +348,30 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync(password: "not-the-password");
 
         result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
-        user.LoginChallengeId.Should().Be(challengeId);
+        user.LoginChallenge.Id.Should().Be(challengeId);
     }
 
     [Fact]
     public async Task HandleAsyncCorrectPasswordForgetsEarlierWrongAttempts()
     {
         var user = Returns(NewUser());
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 3 });
+        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 3 } });
 
         var result = await LoginAsync();
 
         result.IsSuccess.Should().BeTrue();
-        user.PasswordFailedAttempts.Should().Be(0);
-        user.IsPasswordLocked().Should().BeFalse();
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
+        user.PasswordLockout.IsLocked.Should().BeFalse();
     }
 
     [Fact]
     public async Task HandleAsyncSecondFactorLockedReturnsForbiddenWithoutEmailing()
     {
         var user = Returns(NewUser());
-        Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(5) });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { LockedUntil = clock.UtcNow.AddMinutes(5) } }
+        );
 
         var result = await LoginAsync();
 
@@ -374,7 +384,10 @@ public sealed class LoginCommandHandlerTests
     public async Task HandleAsyncLockExpiredOpensChallengeAgain()
     {
         var user = Returns(NewUser());
-        Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(-1) });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { LockedUntil = clock.UtcNow.AddMinutes(-1) } }
+        );
 
         var result = await LoginAsync();
 
@@ -391,7 +404,7 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync();
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
         await AssertNotSavedAsync();
     }
 
@@ -404,7 +417,7 @@ public sealed class LoginCommandHandlerTests
         var result = await LoginAsync();
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.EmailSendFailed);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
         await AssertNotSavedAsync();
     }
 

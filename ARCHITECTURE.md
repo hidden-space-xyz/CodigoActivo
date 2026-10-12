@@ -63,10 +63,12 @@ aggregate roots.
 - Every aggregate has a typed identifier (`UserId`, `EventId`, `ActivityId`, `PartnerId`, `StoredFileId`...), a
   `readonly record struct` over a `Guid` with no implicit conversion, so an identifier of one aggregate can never
   be passed for another. Values with rules are value objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`,
-  `RichText`, `DateRange` (the event calendar), `SignupWindow` and `ActivitySchedule`. EF Core maps them onto the
-  existing columns through conventions and converters (`Infrastructure/Database/Conversions`), so the schema does
-  not change; the read model keeps plain `Guid` and primitive columns. `DateRange.InstantsIn` gives the UTC bounds
-  of the event days that both `DateRange.Covers` (a new activity schedule) and
+  `RichText`, `DateRange` (the event calendar), `SignupWindow` and `ActivitySchedule`, and the security state of
+  `User`: `OneTimeCode` (verification, password reset and login codes), `EmailChange`, `Authenticator`,
+  `LoginChallenge`, `PasswordLockout` and `TwoFactorLockout`. EF Core maps them onto the existing columns through
+  conventions and converters (`Infrastructure/Database/Conversions`), the `User` ones as complex properties, so the
+  schema does not change; the read model keeps plain `Guid` and primitive columns. `DateRange.InstantsIn` gives the
+  UTC bounds of the event days that both `DateRange.Covers` (a new activity schedule) and
   `IActivityRepository.AnyOutsideRangeAsync` (a shortened event) compare activities against.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
   `DeletedAccount`, `Event` (with its categories and terms links), `Activity` (with its role capacities and

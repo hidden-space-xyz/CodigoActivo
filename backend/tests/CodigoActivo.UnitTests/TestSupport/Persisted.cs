@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -60,14 +61,20 @@ public static class Persisted
             var property = type.GetProperty(name, Members | BindingFlags.DeclaredOnly);
             if (property?.SetMethod is { } setter)
             {
-                setter.Invoke(entity, [AsStored(property.PropertyType, value)]);
+                setter.Invoke(
+                    entity,
+                    [AsStored(property.PropertyType, value, property.GetValue(entity))]
+                );
                 return;
             }
 
             var backing = type.GetField($"<{name}>k__BackingField", Members);
             if (backing is not null)
             {
-                backing.SetValue(entity, AsStored(backing.FieldType, value));
+                backing.SetValue(
+                    entity,
+                    AsStored(backing.FieldType, value, backing.GetValue(entity))
+                );
                 return;
             }
         }
@@ -75,13 +82,14 @@ public static class Persisted
         throw new InvalidOperationException($"{entity.GetType().Name} has no state named {name}.");
     }
 
-    private static object? AsStored(Type target, object? value)
+    private static object? AsStored(Type target, object? value, object? current)
     {
         var type = Nullable.GetUnderlyingType(target) ?? target;
         return value switch
         {
             null => null,
             _ when type.IsInstanceOfType(value) => value,
+            _ when type.IsValueType && IsAnonymous(value.GetType()) => Merged(type, current, value),
             Guid id when IsEntityId(type) => Activator.CreateInstance(type, id),
             string text when type == typeof(EmailAddress) => EmailAddress.FromStored(text),
             string text when type == typeof(PhoneNumber) => PhoneNumber.FromStored(text),
@@ -91,6 +99,19 @@ public static class Persisted
             string text when type == typeof(RichText) => RichText.From(text),
             _ => value,
         };
+    }
+
+    private static object Merged(Type type, object? current, object state)
+    {
+        var merged = current ?? Activator.CreateInstance(type)!;
+        Overwrite(merged, state);
+        return merged;
+    }
+
+    private static bool IsAnonymous(Type type)
+    {
+        return type.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)
+            && type.Name.Contains("AnonymousType", StringComparison.Ordinal);
     }
 
     private static bool IsEntityId(Type type)

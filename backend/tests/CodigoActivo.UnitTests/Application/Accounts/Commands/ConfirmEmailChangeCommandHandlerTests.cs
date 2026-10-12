@@ -75,9 +75,12 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
             user,
             new
             {
-                PendingEmail = pendingEmail,
-                EmailChangeCodeHash = FakeOneTimeCodeHasher.Prefix + Code,
-                EmailChangeExpiresAt = clock.UtcNow.AddMinutes(expiresIn),
+                EmailChange = new
+                {
+                    NewEmail = pendingEmail,
+                    CodeHash = FakeOneTimeCodeHasher.Prefix + Code,
+                    ExpiresAt = clock.UtcNow.AddMinutes(expiresIn),
+                },
             }
         );
         users
@@ -165,8 +168,8 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.Email!.Value.Should().Be("new@test.com");
-        user.PendingEmail.Should().BeNull();
-        user.EmailChangeCodeHash.Should().BeNull();
+        user.EmailChange.NewEmail.Should().BeNull();
+        user.EmailChange.CodeHash.Should().BeNull();
         user.UpdatedAt.Should().Be(clock.UtcNow);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         composer

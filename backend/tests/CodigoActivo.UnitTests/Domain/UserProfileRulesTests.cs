@@ -441,17 +441,17 @@ public sealed class UserProfileRulesTests
 
         account.Email!.Value.Should().Be("ana@test.com");
         account.Phone!.Value.Should().Be("600999999");
-        account.PendingEmail!.Value.Should().Be("new@test.com");
-        account.UsableEmailChangeCodeHash(Now.AddMinutes(15)).Should().Be("hash");
-        account.UsableEmailChangeCodeHash(Now.AddMinutes(16)).Should().BeNull();
+        account.EmailChange.NewEmail!.Value.Should().Be("new@test.com");
+        account.EmailChange.UsableCodeHash(Now.AddMinutes(15)).Should().Be("hash");
+        account.EmailChange.UsableCodeHash(Now.AddMinutes(16)).Should().BeNull();
         account.UpdatedAt.Should().Be(Now);
 
         account.ConfirmEmailChange(Now.AddMinutes(1));
 
         account.Email!.Value.Should().Be("new@test.com");
-        account.PendingEmail.Should().BeNull();
-        account.EmailChangeCodeHash.Should().BeNull();
-        account.EmailChangeExpiresAt.Should().BeNull();
+        account.EmailChange.NewEmail.Should().BeNull();
+        account.EmailChange.CodeHash.Should().BeNull();
+        account.EmailChange.ExpiresAt.Should().BeNull();
         account.UpdatedAt.Should().Be(Now.AddMinutes(1));
     }
 
@@ -471,7 +471,7 @@ public sealed class UserProfileRulesTests
 
         act.Should().Throw<ArgumentException>();
         account.Phone!.Value.Should().Be("600111222");
-        account.PendingEmail.Should().BeNull();
+        account.EmailChange.NewEmail.Should().BeNull();
         account.UpdatedAt.Should().BeNull();
     }
 
@@ -483,8 +483,8 @@ public sealed class UserProfileRulesTests
         account.ApplyProfileChange(NewEmailChange(account, "set-directly@test.com"), Now);
 
         account.Email!.Value.Should().Be("set-directly@test.com");
-        account.PendingEmail.Should().BeNull();
-        account.UsableEmailChangeCodeHash(Now).Should().BeNull();
+        account.EmailChange.NewEmail.Should().BeNull();
+        account.EmailChange.UsableCodeHash(Now).Should().BeNull();
     }
 
     [Fact]
@@ -498,8 +498,8 @@ public sealed class UserProfileRulesTests
         );
 
         account.Email!.Value.Should().Be("ana@test.com");
-        account.PendingEmail!.Value.Should().Be("new@test.com");
-        account.UsableEmailChangeCodeHash(Now).Should().Be("hash");
+        account.EmailChange.NewEmail!.Value.Should().Be("new@test.com");
+        account.EmailChange.UsableCodeHash(Now).Should().Be("hash");
     }
 
     [Fact]

@@ -79,8 +79,8 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
         var result = await SetupAsync(user.Id.Value, password);
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
-        user.PendingAuthenticatorKey.Should().BeNull();
-        user.PasswordFailedAttempts.Should().Be(countedFailures);
+        user.Authenticator.PendingKey.Should().BeNull();
+        user.PasswordLockout.FailedAttempts.Should().Be(countedFailures);
         await AssertNotSavedAsync();
     }
 
@@ -108,9 +108,9 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
             .Be(
                 $"otpauth://totp/C%C3%B3digo%20Activo:ana%40test.com?secret={Secret}&issuer=C%C3%B3digo%20Activo&algorithm=SHA1&digits=6&period=30"
             );
-        user.PendingAuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + Secret);
-        user.PendingAuthenticatorExpiresAt.Should().Be(clock.UtcNow + options.SetupLifetime);
-        user.AuthenticatorKey.Should().BeNull("the key only activates after confirmation");
+        user.Authenticator.PendingKey.Should().Be(FakeSecretProtector.Prefix + Secret);
+        user.Authenticator.PendingExpiresAt.Should().Be(clock.UtcNow + options.SetupLifetime);
+        user.Authenticator.Key.Should().BeNull("the key only activates after confirmation");
         user.TwoFactorMethod.Should().Be(CodigoActivo.Domain.Users.TwoFactorMethod.Email);
     }
 
@@ -122,8 +122,8 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
         var result = await SetupAsync(user.Id.Value, "password123");
 
         result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
-        user.PendingAuthenticatorKey.Should().BeNull();
-        user.AuthenticatorKey.Should().Be(FakeSecretProtector.Prefix + Secret);
+        user.Authenticator.PendingKey.Should().BeNull();
+        user.Authenticator.Key.Should().Be(FakeSecretProtector.Prefix + Secret);
         await AssertNotSavedAsync();
     }
 

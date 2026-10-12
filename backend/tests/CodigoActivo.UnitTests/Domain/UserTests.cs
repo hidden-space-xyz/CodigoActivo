@@ -64,9 +64,7 @@ public sealed class UserTests
                 Email = "ada@test.local",
                 BirthDate = new DateOnly(1990, 1, 1),
                 Status = UserStatus.Pending,
-                OtpCodeHash = "ABCDEF",
-                OtpExpiresAt = Seeded,
-                OtpLastSentAt = Seeded,
+                VerificationCode = new OneTimeCode("ABCDEF", Seeded, Seeded),
                 CreatedAt = Seeded,
             }
         );
@@ -81,9 +79,9 @@ public sealed class UserTests
 
         user.Status.Should().Be(UserStatus.Active);
         user.IsPendingVerification.Should().BeFalse();
-        user.OtpCodeHash.Should().BeNull();
-        user.OtpExpiresAt.Should().BeNull();
-        user.OtpLastSentAt.Should().BeNull();
+        user.VerificationCode.Hash.Should().BeNull();
+        user.VerificationCode.ExpiresAt.Should().BeNull();
+        user.VerificationCode.LastSentAt.Should().BeNull();
         user.UpdatedAt.Should().Be(Now);
     }
 
@@ -107,7 +105,7 @@ public sealed class UserTests
         var verified = user.Verify(Now);
 
         verified.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserNotPendingVerification);
-        user.OtpCodeHash.Should().Be("ABCDEF");
+        user.VerificationCode.Hash.Should().Be("ABCDEF");
         user.UpdatedAt.Should().BeNull();
     }
 
@@ -118,9 +116,9 @@ public sealed class UserTests
 
         user.IssueOtp("NEWHASH", Now, TimeSpan.FromMinutes(15));
 
-        user.OtpCodeHash.Should().Be("NEWHASH");
-        user.OtpExpiresAt.Should().Be(Now.AddMinutes(15));
-        user.OtpLastSentAt.Should().Be(Now);
+        user.VerificationCode.Hash.Should().Be("NEWHASH");
+        user.VerificationCode.ExpiresAt.Should().Be(Now.AddMinutes(15));
+        user.VerificationCode.LastSentAt.Should().Be(Now);
     }
 
     [Fact]
@@ -130,9 +128,9 @@ public sealed class UserTests
 
         user.ClearOtp();
 
-        user.OtpCodeHash.Should().BeNull();
-        user.OtpExpiresAt.Should().BeNull();
-        user.OtpLastSentAt.Should().BeNull();
+        user.VerificationCode.Hash.Should().BeNull();
+        user.VerificationCode.ExpiresAt.Should().BeNull();
+        user.VerificationCode.LastSentAt.Should().BeNull();
     }
 
     [Fact]
@@ -151,12 +149,12 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         var status = user.Status;
-        var otpHash = user.OtpCodeHash;
+        var otpHash = user.VerificationCode.Hash;
 
         user.RegisterLogin(Now);
 
         user.Status.Should().Be(status);
-        user.OtpCodeHash.Should().Be(otpHash);
+        user.VerificationCode.Hash.Should().Be(otpHash);
         user.UpdatedAt.Should().BeNull();
     }
 
@@ -173,12 +171,12 @@ public sealed class UserTests
 
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
 
-        user.LoginCodeHash.Should().Be("HASH");
-        user.LoginCodeExpiresAt.Should().Be(Now.AddMinutes(10));
-        user.LoginCodeLastSentAt.Should().Be(Now);
-        user.HasRecentLoginCode(Now.AddSeconds(30), TimeSpan.FromSeconds(60)).Should().BeTrue();
-        user.HasRecentLoginCode(Now.AddSeconds(61), TimeSpan.FromSeconds(60)).Should().BeFalse();
-        user.HasRecentLoginCode(Now.AddMinutes(11), TimeSpan.FromMinutes(20)).Should().BeFalse();
+        user.LoginCode.Hash.Should().Be("HASH");
+        user.LoginCode.ExpiresAt.Should().Be(Now.AddMinutes(10));
+        user.LoginCode.LastSentAt.Should().Be(Now);
+        user.LoginCode.IsRecent(Now.AddSeconds(30), TimeSpan.FromSeconds(60)).Should().BeTrue();
+        user.LoginCode.IsRecent(Now.AddSeconds(61), TimeSpan.FromSeconds(60)).Should().BeFalse();
+        user.LoginCode.IsRecent(Now.AddMinutes(11), TimeSpan.FromMinutes(20)).Should().BeFalse();
     }
 
     [Fact]
@@ -190,7 +188,7 @@ public sealed class UserTests
         var issued = user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
 
         issued.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserContactInfoRequired);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
     }
 
     [Fact]
@@ -202,19 +200,22 @@ public sealed class UserTests
         var issued = user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
 
         issued.ShouldFail(ErrorKind.Conflict, DomainErrorCode.TwoFactorResendNotAllowed);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
     }
 
     [Fact]
     public void IssueLoginCodeLockedSecondFactorIsRefused()
     {
         var user = NewPendingUser();
-        Persisted.Overwrite(user, new { TwoFactorLockedUntil = Now.AddMinutes(5) });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { LockedUntil = Now.AddMinutes(5) } }
+        );
 
         var issued = user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
 
         issued.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
         user.MayReceiveLoginCode(Now.AddMinutes(5)).IsSuccess.Should().BeTrue();
     }
 
@@ -226,10 +227,10 @@ public sealed class UserTests
 
         user.ClearLoginCode();
 
-        user.LoginCodeHash.Should().BeNull();
-        user.LoginCodeExpiresAt.Should().BeNull();
-        user.LoginCodeLastSentAt.Should().BeNull();
-        user.HasRecentLoginCode(Now, TimeSpan.FromMinutes(1)).Should().BeFalse();
+        user.LoginCode.Hash.Should().BeNull();
+        user.LoginCode.ExpiresAt.Should().BeNull();
+        user.LoginCode.LastSentAt.Should().BeNull();
+        user.LoginCode.IsRecent(Now, TimeSpan.FromMinutes(1)).Should().BeFalse();
     }
 
     [Fact]
@@ -240,10 +241,10 @@ public sealed class UserTests
 
         user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15));
 
-        user.TwoFactorFailedAttempts.Should().Be(1);
-        user.TwoFactorLockedUntil.Should().BeNull();
-        user.IsTwoFactorLocked(Now).Should().BeFalse();
-        user.LoginCodeHash.Should().Be("HASH");
+        user.TwoFactorLockout.FailedAttempts.Should().Be(1);
+        user.TwoFactorLockout.LockedUntil.Should().BeNull();
+        user.TwoFactorLockout.IsLocked(Now).Should().BeFalse();
+        user.LoginCode.Hash.Should().Be("HASH");
         user.PullDomainEvents().Should().BeEmpty();
     }
 
@@ -253,16 +254,16 @@ public sealed class UserTests
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
         user.StartLoginChallenge(LoginChallengeId.New(), Now);
-        Persisted.Overwrite(user, new { TwoFactorFailedAttempts = 2 });
+        Persisted.Overwrite(user, new { TwoFactorLockout = new { FailedAttempts = 2 } });
 
         user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15));
 
-        user.TwoFactorFailedAttempts.Should().Be(0);
-        user.TwoFactorLockedUntil.Should().Be(Now.AddMinutes(15));
-        user.IsTwoFactorLocked(Now.AddMinutes(14)).Should().BeTrue();
-        user.IsTwoFactorLocked(Now.AddMinutes(15)).Should().BeFalse();
-        user.LoginCodeHash.Should().BeNull();
-        user.LoginChallengeId.Should().BeNull();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        user.TwoFactorLockout.LockedUntil.Should().Be(Now.AddMinutes(15));
+        user.TwoFactorLockout.IsLocked(Now.AddMinutes(14)).Should().BeTrue();
+        user.TwoFactorLockout.IsLocked(Now.AddMinutes(15)).Should().BeFalse();
+        user.LoginCode.Hash.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
         user.PullDomainEvents().Should().Equal(new TwoFactorLocked(user.Id));
     }
 
@@ -274,13 +275,13 @@ public sealed class UserTests
         var second = LoginChallengeId.New();
 
         user.StartLoginChallenge(first, Now);
-        user.LoginChallengeId.Should().Be(first);
+        user.LoginChallenge.Id.Should().Be(first);
 
         user.StartLoginChallenge(second, Now);
-        user.LoginChallengeId.Should().Be(second);
+        user.LoginChallenge.Id.Should().Be(second);
 
         user.ClearLoginChallenge();
-        user.LoginChallengeId.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
     }
 
     [Fact]
@@ -292,7 +293,7 @@ public sealed class UserTests
 
         user.RecordTwoFactorFailure(Now, 3, TimeSpan.FromMinutes(15));
 
-        user.LoginChallengeId.Should().Be(challengeId);
+        user.LoginChallenge.Id.Should().Be(challengeId);
     }
 
     [Fact]
@@ -303,7 +304,7 @@ public sealed class UserTests
 
         user.ResetPassword("new-hash", Now);
 
-        user.LoginChallengeId.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
     }
 
     [Fact]
@@ -314,15 +315,15 @@ public sealed class UserTests
         user.StartLoginChallenge(LoginChallengeId.New(), Now);
         Persisted.Overwrite(
             user,
-            new { TwoFactorFailedAttempts = 2, TwoFactorLockedUntil = Now.AddMinutes(-1) }
+            new { TwoFactorLockout = new { FailedAttempts = 2, LockedUntil = Now.AddMinutes(-1) } }
         );
 
         user.CompleteTwoFactorLogin(Now);
 
-        user.LoginCodeHash.Should().BeNull();
-        user.LoginChallengeId.Should().BeNull();
-        user.TwoFactorFailedAttempts.Should().Be(0);
-        user.TwoFactorLockedUntil.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        user.TwoFactorLockout.LockedUntil.Should().BeNull();
         user.LastLoginAt.Should().Be(Now);
     }
 
@@ -333,10 +334,10 @@ public sealed class UserTests
 
         user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
 
-        user.PendingAuthenticatorKey.Should().Be("PENDING");
-        user.PendingAuthenticatorExpiresAt.Should().Be(Now.AddMinutes(15));
-        user.HasPendingAuthenticator(Now.AddMinutes(14)).Should().BeTrue();
-        user.HasPendingAuthenticator(Now.AddMinutes(15)).Should().BeFalse();
+        user.Authenticator.PendingKey.Should().Be("PENDING");
+        user.Authenticator.PendingExpiresAt.Should().Be(Now.AddMinutes(15));
+        user.Authenticator.HasPendingEnrollment(Now.AddMinutes(14)).Should().BeTrue();
+        user.Authenticator.HasPendingEnrollment(Now.AddMinutes(15)).Should().BeFalse();
         user.TwoFactorMethod.Should()
             .Be(TwoFactorMethod.Email, "setup does not change the factor yet");
     }
@@ -351,11 +352,11 @@ public sealed class UserTests
         user.EnableAuthenticator(42, Now);
 
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
-        user.AuthenticatorKey.Should().Be("PENDING");
-        user.AuthenticatorLastUsedStep.Should().Be(42);
-        user.PendingAuthenticatorKey.Should().BeNull();
-        user.PendingAuthenticatorExpiresAt.Should().BeNull();
-        user.LoginCodeHash.Should().BeNull();
+        user.Authenticator.Key.Should().Be("PENDING");
+        user.Authenticator.LastUsedStep.Should().Be(42);
+        user.Authenticator.PendingKey.Should().BeNull();
+        user.Authenticator.PendingExpiresAt.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
         user.UpdatedAt.Should().Be(Now);
     }
 
@@ -369,8 +370,8 @@ public sealed class UserTests
         var begun = user.BeginAuthenticatorSetup("ANOTHER", Now, TimeSpan.FromMinutes(15));
 
         begun.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
-        user.PendingAuthenticatorKey.Should().BeNull();
-        user.AuthenticatorKey.Should().Be("PENDING");
+        user.Authenticator.PendingKey.Should().BeNull();
+        user.Authenticator.Key.Should().Be("PENDING");
     }
 
     [Fact]
@@ -383,16 +384,19 @@ public sealed class UserTests
             user,
             new
             {
-                PendingAuthenticatorKey = "ANOTHER",
-                PendingAuthenticatorExpiresAt = Now.AddMinutes(15),
+                Authenticator = new
+                {
+                    PendingKey = "ANOTHER",
+                    PendingExpiresAt = Now.AddMinutes(15),
+                },
             }
         );
 
         var enabled = user.EnableAuthenticator(43, Now.AddMinutes(1));
 
         enabled.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
-        user.AuthenticatorKey.Should().Be("PENDING");
-        user.AuthenticatorLastUsedStep.Should().Be(42);
+        user.Authenticator.Key.Should().Be("PENDING");
+        user.Authenticator.LastUsedStep.Should().Be(42);
     }
 
     [Theory]
@@ -410,7 +414,7 @@ public sealed class UserTests
 
         enabled.ShouldFail(ErrorKind.Validation, DomainErrorCode.AuthenticatorSetupExpired);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
-        user.AuthenticatorKey.Should().BeNull();
+        user.Authenticator.Key.Should().BeNull();
     }
 
     [Fact]
@@ -423,18 +427,21 @@ public sealed class UserTests
             user,
             new
             {
-                PendingAuthenticatorKey = "ANOTHER",
-                PendingAuthenticatorExpiresAt = Now.AddMinutes(15),
+                Authenticator = new
+                {
+                    PendingKey = "ANOTHER",
+                    PendingExpiresAt = Now.AddMinutes(15),
+                },
             }
         );
 
         user.UseEmailTwoFactor(Now.AddHours(1));
 
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
-        user.AuthenticatorKey.Should().BeNull();
-        user.AuthenticatorLastUsedStep.Should().BeNull();
-        user.PendingAuthenticatorKey.Should().BeNull();
-        user.PendingAuthenticatorExpiresAt.Should().BeNull();
+        user.Authenticator.Key.Should().BeNull();
+        user.Authenticator.LastUsedStep.Should().BeNull();
+        user.Authenticator.PendingKey.Should().BeNull();
+        user.Authenticator.PendingExpiresAt.Should().BeNull();
         user.UpdatedAt.Should().Be(Now.AddHours(1));
     }
 
@@ -442,28 +449,34 @@ public sealed class UserTests
     public void ClearPasswordFailuresForgetsTheCountWithoutLiftingAnExistingLock()
     {
         var user = NewPendingUser();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 5, PasswordLockedAt = Now });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { FailedAttempts = 5, LockedAt = Now } }
+        );
 
         user.ClearPasswordFailures();
 
-        user.PasswordFailedAttempts.Should().Be(0);
-        user.IsPasswordLocked().Should().BeTrue();
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
+        user.PasswordLockout.IsLocked.Should().BeTrue();
     }
 
     [Fact]
     public void ResetPasswordClearsTheLockAndTheFailureCount()
     {
         var user = NewPendingUser();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 5, PasswordLockedAt = Now });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { FailedAttempts = 5, LockedAt = Now } }
+        );
         user.IssuePasswordResetCode("HASH", Now, TimeSpan.FromMinutes(15));
 
         user.ResetPassword("new-hash", Now.AddMinutes(1));
 
         user.PasswordHash.Should().Be("new-hash");
-        user.PasswordFailedAttempts.Should().Be(0);
-        user.PasswordLockedAt.Should().BeNull();
-        user.IsPasswordLocked().Should().BeFalse();
-        user.PasswordResetCodeHash.Should().BeNull();
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
+        user.PasswordLockout.LockedAt.Should().BeNull();
+        user.PasswordLockout.IsLocked.Should().BeFalse();
+        user.PasswordResetCode.Hash.Should().BeNull();
         user.UpdatedAt.Should().Be(Now.AddMinutes(1));
     }
 
@@ -471,12 +484,15 @@ public sealed class UserTests
     public void ResetTwoFactorLeavesAPasswordLockInPlace()
     {
         var user = NewPendingUser();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 5, PasswordLockedAt = Now });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { FailedAttempts = 5, LockedAt = Now } }
+        );
 
         var leftAuthenticator = user.ResetTwoFactor(Now);
 
         leftAuthenticator.Should().BeFalse();
-        user.IsPasswordLocked().Should().BeTrue();
+        user.PasswordLockout.IsLocked.Should().BeTrue();
     }
 
     [Fact]
@@ -489,9 +505,8 @@ public sealed class UserTests
             user,
             new
             {
-                LoginCodeHash = "HASH",
-                TwoFactorFailedAttempts = 4,
-                TwoFactorLockedUntil = Now.AddMinutes(10),
+                LoginCode = new { Hash = "HASH" },
+                TwoFactorLockout = new { FailedAttempts = 4, LockedUntil = Now.AddMinutes(10) },
             }
         );
 
@@ -499,11 +514,11 @@ public sealed class UserTests
 
         leftAuthenticator.Should().BeTrue();
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
-        user.AuthenticatorKey.Should().BeNull();
-        user.LoginCodeHash.Should().BeNull();
-        user.TwoFactorFailedAttempts.Should().Be(0);
-        user.TwoFactorLockedUntil.Should().BeNull();
-        user.IsTwoFactorLocked(Now).Should().BeFalse();
+        user.Authenticator.Key.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        user.TwoFactorLockout.LockedUntil.Should().BeNull();
+        user.TwoFactorLockout.IsLocked(Now).Should().BeFalse();
     }
 
     [Theory]
@@ -538,31 +553,35 @@ public sealed class UserTests
     [InlineData(9, true)]
     [InlineData(10, true)]
     [InlineData(11, false)]
-    public void UsableOtpCodeHashIssuedCodeIsUsableUntilItExpires(int minutesLater, bool usable)
+    public void IssueOtpIssuedCodeIsUsableUntilItExpires(int minutesLater, bool usable)
     {
         var user = NewPendingUser();
         user.IssueOtp("OTP", Now, TimeSpan.FromMinutes(10));
 
-        user.UsableOtpCodeHash(Now.AddMinutes(minutesLater)).Should().Be(usable ? "OTP" : null);
+        user.VerificationCode.UsableHash(Now.AddMinutes(minutesLater))
+            .Should()
+            .Be(usable ? "OTP" : null);
     }
 
     [Theory]
     [InlineData(9, true)]
     [InlineData(10, true)]
     [InlineData(11, false)]
-    public void UsableLoginCodeHashIssuedCodeIsUsableUntilItExpires(int minutesLater, bool usable)
+    public void IssueLoginCodeIssuedCodeIsUsableUntilItExpires(int minutesLater, bool usable)
     {
         var user = NewPendingUser();
         user.IssueLoginCode("LOGIN", Now, TimeSpan.FromMinutes(10));
 
-        user.UsableLoginCodeHash(Now.AddMinutes(minutesLater)).Should().Be(usable ? "LOGIN" : null);
+        user.LoginCode.UsableHash(Now.AddMinutes(minutesLater))
+            .Should()
+            .Be(usable ? "LOGIN" : null);
     }
 
     [Theory]
     [InlineData(9, true)]
     [InlineData(10, true)]
     [InlineData(11, false)]
-    public void UsablePasswordResetCodeHashIssuedCodeIsUsableUntilItExpires(
+    public void IssuePasswordResetCodeIssuedCodeIsUsableUntilItExpires(
         int minutesLater,
         bool usable
     )
@@ -570,7 +589,7 @@ public sealed class UserTests
         var user = NewPendingUser();
         user.IssuePasswordResetCode("RESET", Now, TimeSpan.FromMinutes(10));
 
-        user.UsablePasswordResetCodeHash(Now.AddMinutes(minutesLater))
+        user.PasswordResetCode.UsableHash(Now.AddMinutes(minutesLater))
             .Should()
             .Be(usable ? "RESET" : null);
     }
@@ -581,9 +600,9 @@ public sealed class UserTests
         var user = NewPendingUser();
         user.ClearOtp();
 
-        user.UsableOtpCodeHash(Now).Should().BeNull();
-        user.UsableLoginCodeHash(Now).Should().BeNull();
-        user.UsablePasswordResetCodeHash(Now).Should().BeNull();
+        user.VerificationCode.UsableHash(Now).Should().BeNull();
+        user.LoginCode.UsableHash(Now).Should().BeNull();
+        user.PasswordResetCode.UsableHash(Now).Should().BeNull();
     }
 
     [Theory]
@@ -591,7 +610,7 @@ public sealed class UserTests
     [InlineData(6L, 7L, true)]
     [InlineData(7L, 7L, false)]
     [InlineData(8L, 7L, false)]
-    public void AcceptsAuthenticatorStepOnlyAStepNewerThanTheLastUsedIsAccepted(
+    public void RecordAuthenticatorStepOnlyAStepNewerThanTheLastUsedIsAccepted(
         long? lastUsedStep,
         long step,
         bool expected
@@ -603,7 +622,7 @@ public sealed class UserTests
             user.RecordAuthenticatorStep(used);
         }
 
-        user.AcceptsAuthenticatorStep(step).Should().Be(expected);
+        user.Authenticator.Accepts(step).Should().Be(expected);
     }
 
     [Fact]
@@ -613,9 +632,9 @@ public sealed class UserTests
 
         user.RecordAuthenticatorStep(42);
 
-        user.AuthenticatorLastUsedStep.Should().Be(42);
-        user.AcceptsAuthenticatorStep(42).Should().BeFalse();
-        user.AcceptsAuthenticatorStep(43).Should().BeTrue();
+        user.Authenticator.LastUsedStep.Should().Be(42);
+        user.Authenticator.Accepts(42).Should().BeFalse();
+        user.Authenticator.Accepts(43).Should().BeTrue();
     }
 
     [Fact]
@@ -627,10 +646,10 @@ public sealed class UserTests
 
         user.RecordPasswordFailure(3, Now);
 
-        user.PasswordFailedAttempts.Should().Be(1);
-        user.PasswordLockedAt.Should().BeNull();
-        user.IsPasswordLocked().Should().BeFalse();
-        user.LoginChallengeId.Should().Be(challengeId);
+        user.PasswordLockout.FailedAttempts.Should().Be(1);
+        user.PasswordLockout.LockedAt.Should().BeNull();
+        user.PasswordLockout.IsLocked.Should().BeFalse();
+        user.LoginChallenge.Id.Should().Be(challengeId);
         user.PullDomainEvents().Should().BeEmpty();
     }
 
@@ -639,14 +658,14 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         user.StartLoginChallenge(LoginChallengeId.New(), Now);
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 2 });
+        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
 
         user.RecordPasswordFailure(3, Now);
 
-        user.PasswordFailedAttempts.Should().Be(3);
-        user.PasswordLockedAt.Should().Be(Now);
-        user.IsPasswordLocked().Should().BeTrue();
-        user.LoginChallengeId.Should().BeNull();
+        user.PasswordLockout.FailedAttempts.Should().Be(3);
+        user.PasswordLockout.LockedAt.Should().Be(Now);
+        user.PasswordLockout.IsLocked.Should().BeTrue();
+        user.LoginChallenge.Id.Should().BeNull();
         user.PullDomainEvents().Should().Equal(new PasswordLocked(user.Id));
     }
 
@@ -656,14 +675,17 @@ public sealed class UserTests
         var user = NewPendingUser();
         var lockedAt = Now.AddDays(-1);
         var challengeId = LoginChallengeId.New();
-        Persisted.Overwrite(user, new { PasswordFailedAttempts = 3, PasswordLockedAt = lockedAt });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { FailedAttempts = 3, LockedAt = lockedAt } }
+        );
         user.StartLoginChallenge(challengeId, Now);
 
         user.RecordPasswordFailure(3, Now);
 
-        user.PasswordFailedAttempts.Should().Be(3);
-        user.PasswordLockedAt.Should().Be(lockedAt);
-        user.LoginChallengeId.Should().Be(challengeId);
+        user.PasswordLockout.FailedAttempts.Should().Be(3);
+        user.PasswordLockout.LockedAt.Should().Be(lockedAt);
+        user.LoginChallenge.Id.Should().Be(challengeId);
         user.PullDomainEvents().Should().BeEmpty();
     }
 
@@ -788,12 +810,12 @@ public sealed class UserTests
         user.IssuePasswordResetCode("RESET", Now, TimeSpan.FromMinutes(15));
         user.IssueLoginCode("LOGIN", Now, TimeSpan.FromMinutes(15));
 
-        user.IsOtpResendCoolingDown(Now.AddSeconds(59), cooldown).Should().BeTrue();
-        user.IsOtpResendCoolingDown(Now.AddSeconds(60), cooldown).Should().BeFalse();
-        user.IsPasswordResetResendCoolingDown(Now.AddSeconds(59), cooldown).Should().BeTrue();
-        user.IsPasswordResetResendCoolingDown(Now.AddSeconds(60), cooldown).Should().BeFalse();
-        user.IsLoginCodeResendCoolingDown(Now.AddSeconds(59), cooldown).Should().BeTrue();
-        user.IsLoginCodeResendCoolingDown(Now.AddSeconds(60), cooldown).Should().BeFalse();
+        user.VerificationCode.IsResendCoolingDown(Now.AddSeconds(59), cooldown).Should().BeTrue();
+        user.VerificationCode.IsResendCoolingDown(Now.AddSeconds(60), cooldown).Should().BeFalse();
+        user.PasswordResetCode.IsResendCoolingDown(Now.AddSeconds(59), cooldown).Should().BeTrue();
+        user.PasswordResetCode.IsResendCoolingDown(Now.AddSeconds(60), cooldown).Should().BeFalse();
+        user.LoginCode.IsResendCoolingDown(Now.AddSeconds(59), cooldown).Should().BeTrue();
+        user.LoginCode.IsResendCoolingDown(Now.AddSeconds(60), cooldown).Should().BeFalse();
     }
 
     [Fact]
@@ -803,9 +825,9 @@ public sealed class UserTests
         var cooldown = TimeSpan.FromMinutes(1);
         user.ClearOtp();
 
-        user.IsOtpResendCoolingDown(Now, cooldown).Should().BeFalse();
-        user.IsPasswordResetResendCoolingDown(Now, cooldown).Should().BeFalse();
-        user.IsLoginCodeResendCoolingDown(Now, cooldown).Should().BeFalse();
+        user.VerificationCode.IsResendCoolingDown(Now, cooldown).Should().BeFalse();
+        user.PasswordResetCode.IsResendCoolingDown(Now, cooldown).Should().BeFalse();
+        user.LoginCode.IsResendCoolingDown(Now, cooldown).Should().BeFalse();
     }
 
     [Fact]
@@ -840,10 +862,10 @@ public sealed class UserTests
 
         user.ForgetOtpDelivery();
 
-        user.OtpLastSentAt.Should().BeNull();
-        user.OtpCodeHash.Should().Be("OTP");
-        user.OtpExpiresAt.Should().Be(Now.AddMinutes(15));
-        user.IsOtpResendCoolingDown(Now, TimeSpan.FromMinutes(1)).Should().BeFalse();
+        user.VerificationCode.LastSentAt.Should().BeNull();
+        user.VerificationCode.Hash.Should().Be("OTP");
+        user.VerificationCode.ExpiresAt.Should().Be(Now.AddMinutes(15));
+        user.VerificationCode.IsResendCoolingDown(Now, TimeSpan.FromMinutes(1)).Should().BeFalse();
     }
 
     [Fact]
@@ -852,13 +874,13 @@ public sealed class UserTests
         var user = NewPendingUser();
         Persisted.Overwrite(
             user,
-            new { TwoFactorFailedAttempts = 2, TwoFactorLockedUntil = Now.AddMinutes(5) }
+            new { TwoFactorLockout = new { FailedAttempts = 2, LockedUntil = Now.AddMinutes(5) } }
         );
 
         user.ClearTwoFactorFailures();
 
-        user.TwoFactorFailedAttempts.Should().Be(0);
-        user.IsTwoFactorLocked(Now).Should().BeTrue();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        user.TwoFactorLockout.IsLocked(Now).Should().BeTrue();
     }
 
     [Theory]
@@ -873,7 +895,7 @@ public sealed class UserTests
         var challengeId = LoginChallengeId.New();
         user.StartLoginChallenge(challengeId, Now);
 
-        user.LoginChallengeStartedAt.Should().Be(Now);
+        user.LoginChallenge.StartedAt.Should().Be(Now);
         user.HasOpenLoginChallenge(
                 challengeId,
                 Now.AddMinutes(minutesLater),
@@ -895,7 +917,7 @@ public sealed class UserTests
         blocked.StartLoginChallenge(challengeId, Now);
         passwordLocked.StartLoginChallenge(challengeId, Now);
         Persisted.Overwrite(blocked, new { Status = UserStatus.Blocked });
-        Persisted.Overwrite(passwordLocked, new { PasswordLockedAt = Now });
+        Persisted.Overwrite(passwordLocked, new { PasswordLockout = new { LockedAt = Now } });
 
         blocked
             .HasOpenLoginChallenge(challengeId, Now, TimeSpan.FromMinutes(10))
@@ -916,23 +938,23 @@ public sealed class UserTests
 
         user.ClearLoginChallenge();
 
-        user.LoginChallengeId.Should().BeNull();
-        user.LoginChallengeStartedAt.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
+        user.LoginChallenge.StartedAt.Should().BeNull();
         user.HasOpenLoginChallenge(challengeId, Now, TimeSpan.FromMinutes(10)).Should().BeFalse();
     }
 
     [Fact]
-    public void HasLoginChallengeOnlyMatchesTheOpenChallenge()
+    public void StartLoginChallengeOnlyTheOpenChallengeMatches()
     {
         var user = NewPendingUser();
         var challengeId = LoginChallengeId.New();
 
-        user.HasLoginChallenge(challengeId).Should().BeFalse();
+        user.LoginChallenge.Matches(challengeId).Should().BeFalse();
 
         user.StartLoginChallenge(challengeId, Now);
 
-        user.HasLoginChallenge(challengeId).Should().BeTrue();
-        user.HasLoginChallenge(LoginChallengeId.New()).Should().BeFalse();
+        user.LoginChallenge.Matches(challengeId).Should().BeTrue();
+        user.LoginChallenge.Matches(LoginChallengeId.New()).Should().BeFalse();
     }
 
     [Fact]

@@ -446,7 +446,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
 
         (await repo.LockPasswordStateAsync(user, Ct)).Should().BeTrue();
 
-        user.PasswordFailedAttempts.Should().Be(1);
+        user.PasswordLockout.FailedAttempts.Should().Be(1);
         ctx.Entry(user).State.Should().Be(EntityState.Unchanged);
     }
 

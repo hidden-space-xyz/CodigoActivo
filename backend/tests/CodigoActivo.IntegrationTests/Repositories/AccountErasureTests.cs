@@ -159,11 +159,11 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 member,
                 new
                 {
-                    AuthenticatorKey = AuthenticatorKey,
+                    Authenticator = new { Key = AuthenticatorKey },
                     TwoFactorMethod = TwoFactorMethod.Authenticator,
-                    LoginCodeHash = LoginCodeHash,
-                    PasswordResetCodeHash = ResetCodeHash,
-                    LoginChallengeId = LoginChallengeId,
+                    LoginCode = new { Hash = LoginCodeHash },
+                    PasswordResetCode = new { Hash = ResetCodeHash },
+                    LoginChallenge = new { Id = LoginChallengeId },
                     LastLoginAt = SeededAt.AddDays(5),
                 }
             );

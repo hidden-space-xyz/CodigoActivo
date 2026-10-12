@@ -505,7 +505,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.Email.Should().Be(TestSeedData.MemberEmail);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .PendingEmail!.Value.Should()
+            .EmailChange.NewEmail!.Value.Should()
             .Be(newEmail);
 
         var confirm = await CreateClient()
@@ -518,7 +518,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         confirm.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.Email!.Value.Should().Be(newEmail);
-        stored.PendingEmail.Should().BeNull();
+        stored.EmailChange.NewEmail.Should().BeNull();
         Factory
             .EmailSender.Sent.Should()
             .ContainSingle(message => message.Kind == EmailKind.SecurityAlert)
@@ -568,7 +568,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.Email.Should().Be("marta.admin@codigoactivo.test");
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!.PendingEmail.Should().BeNull();
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .EmailChange.NewEmail.Should()
+            .BeNull();
     }
 
     [Fact]

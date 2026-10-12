@@ -79,7 +79,7 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
             return allowed;
         }
 
-        if (user.IsLoginCodeResendCoolingDown(now, options.ResendCooldown))
+        if (user.LoginCode.IsResendCoolingDown(now, options.ResendCooldown))
         {
             return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
         }

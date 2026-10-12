@@ -31,7 +31,7 @@ public sealed class EndLoginChallengeCommandHandler(IUserRepository users)
     {
         ArgumentNullException.ThrowIfNull(command);
         var pending = await users.GetByIdAsync(command.Challenge.UserId, ct);
-        if (pending is null || !pending.HasLoginChallenge(command.Challenge.ChallengeId))
+        if (pending is null || !pending.LoginChallenge.Matches(command.Challenge.ChallengeId))
         {
             return Result.Success();
         }

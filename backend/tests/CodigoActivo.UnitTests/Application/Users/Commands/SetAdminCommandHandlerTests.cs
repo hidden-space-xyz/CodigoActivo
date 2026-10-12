@@ -133,7 +133,7 @@ public sealed class SetAdminCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.IsAdmin.Should().BeFalse();
-        actingAdmin.PasswordFailedAttempts.Should().Be(1);
+        actingAdmin.PasswordLockout.FailedAttempts.Should().Be(1);
         await AssertNotSavedAsync();
     }
 

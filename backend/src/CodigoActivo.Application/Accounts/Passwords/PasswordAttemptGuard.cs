@@ -56,7 +56,11 @@ public sealed class PasswordAttemptGuard(
             string.IsNullOrEmpty(user?.PasswordHash) ? null : user.PasswordHash
         );
 
-        if (user is null || string.IsNullOrEmpty(user.PasswordHash) || user.IsPasswordLocked())
+        if (
+            user is null
+            || string.IsNullOrEmpty(user.PasswordHash)
+            || user.PasswordLockout.IsLocked
+        )
         {
             return false;
         }
@@ -90,7 +94,7 @@ public sealed class PasswordAttemptGuard(
             actingUser is null
             || string.IsNullOrEmpty(actingUser.PasswordHash)
             || string.IsNullOrEmpty(password)
-            || actingUser.IsPasswordLocked()
+            || actingUser.PasswordLockout.IsLocked
         )
         {
             return false;
@@ -126,7 +130,7 @@ public sealed class PasswordAttemptGuard(
 
     private async Task ForgetFailuresAsync(User user, CancellationToken ct)
     {
-        if (user.PasswordFailedAttempts == 0)
+        if (user.PasswordLockout.FailedAttempts == 0)
         {
             return;
         }

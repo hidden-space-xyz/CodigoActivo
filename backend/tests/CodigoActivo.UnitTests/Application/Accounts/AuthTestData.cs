@@ -36,9 +36,7 @@ internal static class AuthTestData
                 Status = CatalogIds.UserStatuses.ValueOf(
                     statusId ?? KnownIds.UserStatusTypes.Active
                 ),
-                OtpCodeHash = otpCodeHash,
-                OtpExpiresAt = otpExpiresAt,
-                OtpLastSentAt = otpLastSentAt,
+                VerificationCode = new OneTimeCode(otpCodeHash, otpExpiresAt, otpLastSentAt),
                 CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             }
         );
@@ -101,9 +99,11 @@ internal static class AuthTestData
             user,
             new
             {
-                LoginCodeHash = FakeOneTimeCodeHasher.Prefix + code,
-                LoginCodeExpiresAt = expiresAt ?? clock.UtcNow.AddMinutes(5),
-                LoginCodeLastSentAt = lastSentAt ?? clock.UtcNow.AddMinutes(-2),
+                LoginCode = new OneTimeCode(
+                    FakeOneTimeCodeHasher.Prefix + code,
+                    expiresAt ?? clock.UtcNow.AddMinutes(5),
+                    lastSentAt ?? clock.UtcNow.AddMinutes(-2)
+                ),
             }
         );
         return user;
@@ -117,8 +117,11 @@ internal static class AuthTestData
             new
             {
                 TwoFactorMethod = TwoFactorMethod.Authenticator,
-                AuthenticatorKey = FakeSecretProtector.Prefix + secret,
-                AuthenticatorLastUsedStep = lastUsedStep,
+                Authenticator = new
+                {
+                    Key = FakeSecretProtector.Prefix + secret,
+                    LastUsedStep = lastUsedStep,
+                },
             }
         );
         return user;
@@ -136,9 +139,11 @@ internal static class AuthTestData
             user,
             new
             {
-                PasswordResetCodeHash = FakeOneTimeCodeHasher.Prefix + code,
-                PasswordResetExpiresAt = expiresAt ?? clock.UtcNow.AddMinutes(5),
-                PasswordResetLastSentAt = lastSentAt ?? clock.UtcNow.AddMinutes(-10),
+                PasswordResetCode = new OneTimeCode(
+                    FakeOneTimeCodeHasher.Prefix + code,
+                    expiresAt ?? clock.UtcNow.AddMinutes(5),
+                    lastSentAt ?? clock.UtcNow.AddMinutes(-10)
+                ),
             }
         );
         return user;

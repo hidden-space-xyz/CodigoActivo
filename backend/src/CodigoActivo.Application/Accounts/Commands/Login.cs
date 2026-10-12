@@ -84,14 +84,14 @@ public sealed class LoginCommandHandler(
         }
 
         var now = clock.UtcNow;
-        if (user.IsTwoFactorLocked(now))
+        if (user.TwoFactorLockout.IsLocked(now))
         {
             return Error.Forbidden(DomainErrorCode.TwoFactorLocked);
         }
 
         if (
             user.TwoFactorMethod == TwoFactorMethod.Email
-            && !user.HasRecentLoginCode(now, twoFactor.ResendCooldown)
+            && !user.LoginCode.IsRecent(now, twoFactor.ResendCooldown)
         )
         {
             var issued = await loginCodes.IssueAsync(user, now, ct);

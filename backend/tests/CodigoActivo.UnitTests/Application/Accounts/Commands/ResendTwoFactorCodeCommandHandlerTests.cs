@@ -100,7 +100,10 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     public async Task HandleAsyncPasswordLockedAccountReturnsChallengeExpiredWithoutEmailing()
     {
         var user = Prepare(NewUser());
-        Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddMinutes(-1) });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-1) } }
+        );
 
         var result = await ResendAsync(user.Id.Value);
 
@@ -135,7 +138,10 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
     public async Task HandleAsyncLockedReturnsForbidden()
     {
         var user = Prepare(NewUserWithLoginCode(clock));
-        Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(1) });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { LockedUntil = clock.UtcNow.AddMinutes(1) } }
+        );
 
         var result = await ResendAsync(user.Id.Value);
 
@@ -170,8 +176,8 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         emailSender.Sent.Should().ContainSingle();
         var code = email.Code;
         code.Should().NotBe("111111");
-        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
-        user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
+        user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
+        user.LoginCode.LastSentAt.Should().Be(clock.UtcNow);
     }
 
     [Fact]
@@ -183,7 +189,7 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().ContainSingle();
-        user.LoginCodeHash.Should().NotBeNull();
+        user.LoginCode.Hash.Should().NotBeNull();
     }
 
     [Fact]
@@ -197,6 +203,6 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         var result = await ResendAsync(user.Id.Value);
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
-        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + "111111");
+        user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + "111111");
     }
 }

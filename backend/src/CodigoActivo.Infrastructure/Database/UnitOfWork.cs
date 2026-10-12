@@ -237,7 +237,7 @@ public sealed class UnitOfWork(
             entry.State = EntityState.Unchanged;
             entry.CurrentValues.SetValues(CurrentValues);
             entry.OriginalValues.SetValues(OriginalValues);
-            foreach (var property in entry.Properties)
+            foreach (var property in AllProperties(entry.Properties, entry.ComplexProperties))
             {
                 var modified = !property
                     .Metadata.GetValueComparer()
@@ -252,6 +252,18 @@ public sealed class UnitOfWork(
             {
                 entry.State = EntityState.Deleted;
             }
+        }
+
+        private static IEnumerable<PropertyEntry> AllProperties(
+            IEnumerable<PropertyEntry> properties,
+            IEnumerable<ComplexPropertyEntry> complexProperties
+        )
+        {
+            return properties.Concat(
+                complexProperties.SelectMany(complex =>
+                    AllProperties(complex.Properties, complex.ComplexProperties)
+                )
+            );
         }
     }
 }

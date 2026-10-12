@@ -389,7 +389,7 @@ public sealed class RegisterCommandHandlerTests
         var code = email.Code;
         code.Should().MatchRegex("^[0-9a-f]{64}$", "the OTP is 256 random bits in lowercase hex");
         emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
-        added[0].OtpCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
+        added[0].VerificationCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
     }
 
     [Fact]
@@ -402,9 +402,9 @@ public sealed class RegisterCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         added.Should().ContainSingle();
-        added[0].OtpLastSentAt.Should().BeNull();
+        added[0].VerificationCode.LastSentAt.Should().BeNull();
         added[0]
-            .OtpCodeHash.Should()
+            .VerificationCode.Hash.Should()
             .NotBeNull("the code is still issued so a resend can replace it");
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -419,7 +419,9 @@ public sealed class RegisterCommandHandlerTests
 
         await act.Should().ThrowAsync<OperationCanceledException>();
         added.Should().ContainSingle();
-        added[0].OtpLastSentAt.Should().Be(clock.UtcNow, "the swallow-and-clear catch is skipped");
+        added[0]
+            .VerificationCode.LastSentAt.Should()
+            .Be(clock.UtcNow, "the swallow-and-clear catch is skipped");
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

@@ -133,7 +133,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().ContainSingle();
-        user.LoginCodeHash.Should().NotBeNull();
+        user.LoginCode.Hash.Should().NotBeNull();
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var result = await RequestAsync(user.Id.Value, password: "WrongPassword!");
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
-        user.PasswordFailedAttempts.Should().Be(1);
+        user.PasswordLockout.FailedAttempts.Should().Be(1);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -162,12 +162,12 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
                 ErrorKind.Validation,
                 ApplicationErrorCode.UserCurrentPasswordIncorrect
             );
-            user.PasswordFailedAttempts.Should().Be(attempt);
-            user.IsPasswordLocked().Should().Be(attempt == lockout.MaxFailedAttempts);
+            user.PasswordLockout.FailedAttempts.Should().Be(attempt);
+            user.PasswordLockout.IsLocked.Should().Be(attempt == lockout.MaxFailedAttempts);
         }
 
-        user.PasswordLockedAt.Should().Be(clock.UtcNow);
-        user.LoginCodeHash.Should().BeNull();
+        user.PasswordLockout.LockedAt.Should().Be(clock.UtcNow);
+        user.LoginCode.Hash.Should().BeNull();
         await sessions
             .DidNotReceiveWithAnyArgs()
             .EndAllAsync(default, TestContext.Current.CancellationToken);
@@ -195,12 +195,15 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     public async Task HandleAsyncPasswordLockedAccountRefusesTheCorrectPasswordWithoutEmailing()
     {
         var user = Signed();
-        Persisted.Overwrite(user, new { PasswordLockedAt = clock.UtcNow.AddMinutes(-5) });
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-5) } }
+        );
 
         var result = await RequestAsync(user.Id.Value);
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
     }
@@ -233,7 +236,10 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     public async Task HandleAsyncLockedReturnsForbidden()
     {
         var user = Signed();
-        Persisted.Overwrite(user, new { TwoFactorLockedUntil = clock.UtcNow.AddMinutes(1) });
+        Persisted.Overwrite(
+            user,
+            new { TwoFactorLockout = new { LockedUntil = clock.UtcNow.AddMinutes(1) } }
+        );
 
         var result = await RequestAsync(user.Id.Value);
 
@@ -246,7 +252,10 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     public async Task HandleAsyncWithinCooldownReturnsConflictWithoutEmailing()
     {
         var user = Signed();
-        Persisted.Overwrite(user, new { LoginCodeLastSentAt = clock.UtcNow.AddSeconds(-30) });
+        Persisted.Overwrite(
+            user,
+            new { LoginCode = new { LastSentAt = clock.UtcNow.AddSeconds(-30) } }
+        );
 
         var result = await RequestAsync(user.Id.Value);
 
@@ -276,7 +285,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var result = await RequestAsync(user.Id.Value);
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TwoFactorResendCooldownActive);
-        user.LoginCodeHash.Should().BeNull();
+        user.LoginCode.Hash.Should().BeNull();
         await AssertNotSavedAsync();
     }
 
@@ -284,7 +293,10 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     public async Task HandleAsyncPasswordCorrectEmailsTheDeletionCodeAndStoresOnlyItsHash()
     {
         var user = Signed();
-        Persisted.Overwrite(user, new { LoginCodeLastSentAt = clock.UtcNow.AddMinutes(-5) });
+        Persisted.Overwrite(
+            user,
+            new { LoginCode = new { LastSentAt = clock.UtcNow.AddMinutes(-5) } }
+        );
 
         var result = await RequestAsync(user.Id.Value);
 
@@ -296,9 +308,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var code = email.Code;
         code.Should().MatchRegex("^[0-9]{6}$");
         emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
-        user.LoginCodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
-        user.LoginCodeExpiresAt.Should().Be(clock.UtcNow + options.ChallengeLifetime);
-        user.LoginCodeLastSentAt.Should().Be(clock.UtcNow);
+        user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + code);
+        user.LoginCode.ExpiresAt.Should().Be(clock.UtcNow + options.ChallengeLifetime);
+        user.LoginCode.LastSentAt.Should().Be(clock.UtcNow);
     }
 
     [Fact]
@@ -310,6 +322,6 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().ContainSingle();
-        user.LoginCodeHash.Should().NotBeNull();
+        user.LoginCode.Hash.Should().NotBeNull();
     }
 }

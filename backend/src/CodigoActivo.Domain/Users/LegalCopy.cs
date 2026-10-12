@@ -27,34 +27,43 @@ public sealed record LegalCopy(
     /// <summary>
     /// Gets the <see cref="User"/> properties never copied: credentials, one-time codes and the
     /// unconfirmed email change one of them confirms, authenticator secrets, the open login
-    /// challenge and lockout state. Every other property is a member of
-    /// <see cref="LegalCopyPerson"/>.
+    /// challenge and lockout state. A member of a value object is named
+    /// <c>Property.Member</c>. Every other property is a member of <see cref="LegalCopyPerson"/>.
     /// </summary>
     public static IReadOnlyList<string> ExcludedUserProperties { get; } =
     [
         nameof(User.PasswordHash),
-        nameof(User.PendingEmail),
-        nameof(User.EmailChangeCodeHash),
-        nameof(User.EmailChangeExpiresAt),
-        nameof(User.OtpCodeHash),
-        nameof(User.OtpExpiresAt),
-        nameof(User.OtpLastSentAt),
-        nameof(User.PasswordResetCodeHash),
-        nameof(User.PasswordResetExpiresAt),
-        nameof(User.PasswordResetLastSentAt),
-        nameof(User.AuthenticatorKey),
-        nameof(User.AuthenticatorLastUsedStep),
-        nameof(User.PendingAuthenticatorKey),
-        nameof(User.PendingAuthenticatorExpiresAt),
-        nameof(User.LoginCodeHash),
-        nameof(User.LoginCodeExpiresAt),
-        nameof(User.LoginCodeLastSentAt),
-        nameof(User.LoginChallengeId),
-        nameof(User.LoginChallengeStartedAt),
-        nameof(User.TwoFactorFailedAttempts),
-        nameof(User.TwoFactorLockedUntil),
-        nameof(User.PasswordFailedAttempts),
-        nameof(User.PasswordLockedAt),
+        .. MembersOf(
+            nameof(User.EmailChange),
+            nameof(EmailChange.NewEmail),
+            nameof(EmailChange.CodeHash),
+            nameof(EmailChange.ExpiresAt)
+        ),
+        .. OneTimeCodeMembersOf(nameof(User.VerificationCode)),
+        .. OneTimeCodeMembersOf(nameof(User.PasswordResetCode)),
+        .. MembersOf(
+            nameof(User.Authenticator),
+            nameof(Authenticator.Key),
+            nameof(Authenticator.LastUsedStep),
+            nameof(Authenticator.PendingKey),
+            nameof(Authenticator.PendingExpiresAt)
+        ),
+        .. OneTimeCodeMembersOf(nameof(User.LoginCode)),
+        .. MembersOf(
+            nameof(User.LoginChallenge),
+            nameof(LoginChallenge.Id),
+            nameof(LoginChallenge.StartedAt)
+        ),
+        .. MembersOf(
+            nameof(User.TwoFactorLockout),
+            nameof(TwoFactorLockout.FailedAttempts),
+            nameof(TwoFactorLockout.LockedUntil)
+        ),
+        .. MembersOf(
+            nameof(User.PasswordLockout),
+            nameof(PasswordLockout.FailedAttempts),
+            nameof(PasswordLockout.LockedAt)
+        ),
     ];
 
     /// <summary>
@@ -156,5 +165,20 @@ public sealed record LegalCopy(
                     ),
             ]
         );
+    }
+
+    private static IEnumerable<string> OneTimeCodeMembersOf(string property)
+    {
+        return MembersOf(
+            property,
+            nameof(OneTimeCode.Hash),
+            nameof(OneTimeCode.ExpiresAt),
+            nameof(OneTimeCode.LastSentAt)
+        );
+    }
+
+    private static IEnumerable<string> MembersOf(string property, params string[] members)
+    {
+        return members.Select(member => $"{property}.{member}");
     }
 }

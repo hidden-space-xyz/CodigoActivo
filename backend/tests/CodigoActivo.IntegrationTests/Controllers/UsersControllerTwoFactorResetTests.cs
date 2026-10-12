@@ -27,9 +27,12 @@ public sealed class UsersControllerTwoFactorResetTests(CodigoActivoWebAppFactory
                 new
                 {
                     TwoFactorMethod = TwoFactorMethod.Authenticator,
-                    AuthenticatorKey = FakeSecretProtector.Prefix + "SECRET",
-                    TwoFactorLockedUntil = Factory.Clock.UtcNow.AddMinutes(10),
-                    TwoFactorFailedAttempts = 2,
+                    Authenticator = new { Key = FakeSecretProtector.Prefix + "SECRET" },
+                    TwoFactorLockout = new
+                    {
+                        LockedUntil = Factory.Clock.UtcNow.AddMinutes(10),
+                        FailedAttempts = 2,
+                    },
                 }
             );
         });
@@ -50,9 +53,9 @@ public sealed class UsersControllerTwoFactorResetTests(CodigoActivoWebAppFactory
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
-        stored.AuthenticatorKey.Should().BeNull();
-        stored.TwoFactorLockedUntil.Should().BeNull();
-        stored.TwoFactorFailedAttempts.Should().Be(0);
+        stored.Authenticator.Key.Should().BeNull();
+        stored.TwoFactorLockout.LockedUntil.Should().BeNull();
+        stored.TwoFactorLockout.FailedAttempts.Should().Be(0);
 
         var member = await LoginAsMemberAsync();
         using var me = await member.GetAsync(TestUri.Rel("/api/auth/me"), Ct);

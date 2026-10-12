@@ -63,7 +63,7 @@ public sealed class ForgotPasswordCommandHandler(
         }
 
         var now = clock.UtcNow;
-        if (user.IsPasswordResetResendCoolingDown(now, passwordReset.ResendCooldown))
+        if (user.PasswordResetCode.IsResendCoolingDown(now, passwordReset.ResendCooldown))
         {
             return Result.Success();
         }

@@ -46,7 +46,7 @@ public sealed class VerifyUserCommandHandler(
         }
 
         var now = clock.UtcNow;
-        if (!otpValidator.IsCodeValid(command.Otp, user.UsableOtpCodeHash(now)))
+        if (!otpValidator.IsCodeValid(command.Otp, user.VerificationCode.UsableHash(now)))
         {
             return Error.Validation(ApplicationErrorCode.OtpInvalidOrExpired);
         }

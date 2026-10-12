@@ -49,7 +49,7 @@ public sealed class EndLoginChallengeCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        user.LoginChallengeId.Should().Be(openChallenge);
+        user.LoginChallenge.Id.Should().Be(openChallenge);
     }
 
     [Fact]
@@ -65,6 +65,6 @@ public sealed class EndLoginChallengeCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        user.LoginChallengeId.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
     }
 }

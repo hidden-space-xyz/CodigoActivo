@@ -60,7 +60,7 @@ public sealed class ResetPasswordCommandHandler(
             || user.IsDependent
             || !otpValidator.IsCodeValid(
                 command.Otp,
-                user.UsablePasswordResetCodeHash(clock.UtcNow)
+                user.PasswordResetCode.UsableHash(clock.UtcNow)
             )
         )
         {
