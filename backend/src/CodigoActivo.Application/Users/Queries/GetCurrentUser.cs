@@ -4,7 +4,7 @@ using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 
-namespace CodigoActivo.Application.Accounts.Queries;
+namespace CodigoActivo.Application.Users.Queries;
 
 /// <summary>
 /// Carries the request for the account of the signed-in user.

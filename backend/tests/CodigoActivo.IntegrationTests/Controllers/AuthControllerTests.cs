@@ -12,8 +12,8 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
-using ContractGender = CodigoActivo.Application.Users.Contracts.Gender;
-using ContractTwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
+using ContractGender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using ContractTwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 using Gender = CodigoActivo.Domain.Users.Gender;
 using TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 

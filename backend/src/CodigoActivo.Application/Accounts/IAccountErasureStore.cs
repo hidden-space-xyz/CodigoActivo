@@ -1,6 +1,6 @@
 using CodigoActivo.Domain.Users;
 
-namespace CodigoActivo.Application.Users;
+namespace CodigoActivo.Application.Accounts;
 
 /// <summary>
 /// Storage steps of an account erasure that work on the whole household at once. They run inside

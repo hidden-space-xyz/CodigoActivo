@@ -4,6 +4,7 @@ using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Users;

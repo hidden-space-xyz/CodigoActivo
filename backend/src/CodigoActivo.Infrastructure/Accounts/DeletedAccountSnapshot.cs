@@ -8,7 +8,7 @@ using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
-namespace CodigoActivo.Infrastructure.Users;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Reads what the erasure of an account removes, lets <see cref="LegalCopy.Compose"/> decide what

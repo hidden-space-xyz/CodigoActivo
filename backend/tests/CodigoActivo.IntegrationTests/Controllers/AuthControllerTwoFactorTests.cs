@@ -13,7 +13,7 @@ using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 using Xunit;
-using ContractTwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
+using ContractTwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 using TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 
 namespace CodigoActivo.IntegrationTests.Controllers;

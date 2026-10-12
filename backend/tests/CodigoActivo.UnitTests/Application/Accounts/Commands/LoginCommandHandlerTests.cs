@@ -5,7 +5,6 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
-using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -14,7 +13,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
-using TwoFactorMethod = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
+using TwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 

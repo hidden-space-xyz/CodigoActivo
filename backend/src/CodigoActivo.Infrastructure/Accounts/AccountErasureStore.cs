@@ -1,4 +1,4 @@
-using CodigoActivo.Application.Users;
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -9,7 +9,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
-namespace CodigoActivo.Infrastructure.Users;
+namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
 /// Runs the set-based steps of an account erasure on the household: row locks, the legal copy and

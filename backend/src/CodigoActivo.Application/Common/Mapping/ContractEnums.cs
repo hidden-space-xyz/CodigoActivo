@@ -1,5 +1,5 @@
-using GenderContract = CodigoActivo.Application.Users.Contracts.Gender;
-using TwoFactorMethodContract = CodigoActivo.Application.Accounts.Contracts.TwoFactorMethod;
+using GenderContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using TwoFactorMethodContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.Application.Common.Mapping;
 

@@ -2,8 +2,8 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails.Contracts;
+using CodigoActivo.Application.Reports;
 using CodigoActivo.Application.Reports.Contracts;
-using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 
@@ -49,7 +49,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandler(
         }
 
         var audience = await ManualEmailAudience.LoadAsync(
-            UserFilters.ApplyEventAttendees(readStore.Users, eventId, query.Filters),
+            EventAttendeeFilters.Apply(readStore.Users, eventId, query.Filters),
             executor,
             ct
         );

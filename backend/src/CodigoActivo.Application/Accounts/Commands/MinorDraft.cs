@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Users;
 
-namespace CodigoActivo.Application.Users.Commands;
+namespace CodigoActivo.Application.Accounts.Commands;
 
 /// <summary>
 /// Details of a minor added to a household.

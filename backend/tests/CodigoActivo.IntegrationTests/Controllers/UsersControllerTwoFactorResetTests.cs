@@ -2,7 +2,6 @@ using System.Net;
 using AwesomeAssertions;
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Users.Contracts;
-using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;

@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;

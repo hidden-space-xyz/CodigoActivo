@@ -30,7 +30,8 @@ Domain + Application + Infrastructure <- Composition <- API
 - Domain has no project or package references. Keep configuration options, technical ports and serialization
   attributes out of Domain; it declares only the repositories of its aggregates.
 - Organize every layer by feature (Domain, Application, Infrastructure, Composition and API); only generic
-  primitives are shared.
+  primitives are shared. Application features never depend on each other in a cycle (Users depends on Accounts,
+  not the reverse), and `Abstractions` and `Common` depend on no feature; `FeatureDependencyTests` reads the IL.
 - Entities have private setters. Create them through factories (returning `Result<T>` when a rule can fail) and
   change them through behavior methods; invariants and state transitions belong to the aggregate or to a domain
   policy, never to a handler. Child entities change only through their root.

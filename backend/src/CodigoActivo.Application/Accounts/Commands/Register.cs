@@ -6,7 +6,6 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Validation;
-using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;

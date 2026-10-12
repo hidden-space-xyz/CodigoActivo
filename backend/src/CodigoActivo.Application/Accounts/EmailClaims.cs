@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts;

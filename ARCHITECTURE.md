@@ -152,8 +152,9 @@ reaches the date rules through the validation context, never through a service l
 records live in the API (`API/<Feature>/Contracts/`) with only the standard attributes the OpenAPI document
 describes, plus the catalog membership check (`IValidatableObject` through `CatalogIdentifiers`), and map
 themselves to the command (`request.ToCommand(id)`). Response records and list criteria stay
-in `Application/<Feature>/Contracts/` as the read contracts of the queries; `Gender` and `TwoFactorMethod`
-there are contract enums that mirror the domain ones (`ContractEnums`).
+in `Application/<Feature>/Contracts/` as the read contracts of the queries. `Gender` and `TwoFactorMethod` are
+contract enums that mirror the domain ones (`ContractEnums`); they live with the read rows that store them, so
+the read model depends on no feature.
 
 Queries read the database through `IReadStore`: no-tracking `IQueryable` sources of read rows
 (`Application/Abstractions/Querying/ReadModel`) that `CodigoActivoReadDbContext` maps onto the same tables,

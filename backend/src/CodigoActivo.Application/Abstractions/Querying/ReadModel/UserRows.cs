@@ -1,6 +1,3 @@
-using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Users.Contracts;
-
 namespace CodigoActivo.Application.Abstractions.Querying.ReadModel;
 
 /// <summary>

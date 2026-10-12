@@ -1,5 +1,5 @@
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Users;
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Domain.Users;
 using NSubstitute;
 

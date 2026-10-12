@@ -4,8 +4,6 @@ using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
-using CodigoActivo.Application.Users;
-using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -56,7 +54,7 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
         var roleTypeId = filters.RoleTypeId;
         var statusId = filters.StatusId;
 
-        var source = UserFilters.ApplyEventAttendees(readStore.Users, eventId, filters);
+        var source = EventAttendeeFilters.Apply(readStore.Users, eventId, filters);
 
         var projected = AttendeeSort
             .Apply(source, filters.Sort)

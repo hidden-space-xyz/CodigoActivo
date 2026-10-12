@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Errors;

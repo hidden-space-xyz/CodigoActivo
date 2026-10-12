@@ -1,14 +1,14 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Contracts;
+using CodigoActivo.Application.Users.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
 
-namespace CodigoActivo.UnitTests.Application.Accounts.Queries;
+namespace CodigoActivo.UnitTests.Application.Users.Queries;
 
 public sealed class GetAccountQueryHandlerTests
 {

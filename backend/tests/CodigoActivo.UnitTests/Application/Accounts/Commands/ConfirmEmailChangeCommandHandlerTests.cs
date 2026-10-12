@@ -6,7 +6,6 @@ using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Users;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;

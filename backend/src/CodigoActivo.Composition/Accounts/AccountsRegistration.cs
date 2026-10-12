@@ -12,7 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace CodigoActivo.Composition.Accounts;
 
 /// <summary>
-/// Registers accounts: credentials, second factor, sessions, verification and the emails they send.
+/// Registers accounts: credentials, second factor, sessions, verification, the emails they send and
+/// the erasure of accounts.
 /// </summary>
 internal static class AccountsRegistration
 {
@@ -47,6 +48,8 @@ internal static class AccountsRegistration
         services.AddScoped<LoginCodeIssuer>();
         services.AddScoped<EmailChangeLinkIssuer>();
         services.AddScoped<EmailClaims>();
+        services.AddScoped<IAccountErasureStore, AccountErasureStore>();
+        services.AddScoped<AccountEraser>();
         services.AddScoped<AuthenticatorCodeVerifier>();
         services.AddScoped<DisposableEmailChecker>();
         services.AddHostedService<ExpiredSessionCleaner>();
