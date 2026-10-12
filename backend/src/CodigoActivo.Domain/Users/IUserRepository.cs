@@ -89,8 +89,8 @@ public interface IUserRepository : IRepository<User>
     public Task<bool> LockAsync(User user, CancellationToken ct = default);
 
     /// <summary>
-    /// Stores the password lockout state of an account right away, without the rest of its staged
-    /// changes.
+    /// Stores the password lockout state of an account immediately, without waiting for the unit of
+    /// work or the rest of its staged changes.
     /// </summary>
     /// <param name="user">Account whose lockout state changed.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

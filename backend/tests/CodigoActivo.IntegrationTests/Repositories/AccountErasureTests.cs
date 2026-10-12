@@ -896,7 +896,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         });
 
         var purged = await Factory.QueryAsync(db =>
-            new DeletedAccountRepository(db).RemoveDeletedUpToAsync(cutoff, Ct)
+            new DeletedAccountRepository(db).PurgeDeletedUpToAsync(cutoff, Ct)
         );
 
         purged.Should().Be(2);

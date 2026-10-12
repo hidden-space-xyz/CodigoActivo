@@ -31,6 +31,6 @@ public sealed class RemoveExpiredSessionsCommandHandler(
         CancellationToken ct = default
     )
     {
-        return await sessions.RemoveExpiredAsync(clock.UtcNow, ct: ct);
+        return await sessions.PurgeExpiredAsync(clock.UtcNow, ct: ct);
     }
 }

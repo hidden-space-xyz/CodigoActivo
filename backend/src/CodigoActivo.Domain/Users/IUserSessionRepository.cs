@@ -3,8 +3,8 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Domain.Users;
 
 /// <summary>
-/// Stores the sessions opened by accounts. Ending sessions runs immediately, without waiting for
-/// the unit of work.
+/// Stores the sessions opened by accounts. Ending and purging sessions runs immediately, without
+/// waiting for the unit of work.
 /// </summary>
 public interface IUserSessionRepository : IRepository<UserSession>
 {
@@ -26,13 +26,13 @@ public interface IUserSessionRepository : IRepository<UserSession>
     public Task EndAllAsync(UserId userId, CancellationToken ct = default);
 
     /// <summary>
-    /// Removes the sessions that stopped being accepted by a moment.
+    /// Physically removes the sessions that stopped being accepted by a moment.
     /// </summary>
     /// <param name="now">Moment the sessions are checked against.</param>
     /// <param name="userId">Account whose sessions are removed; every account when omitted.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the number of sessions removed.</returns>
-    public Task<int> RemoveExpiredAsync(
+    public Task<int> PurgeExpiredAsync(
         DateTimeOffset now,
         UserId? userId = null,
         CancellationToken ct = default

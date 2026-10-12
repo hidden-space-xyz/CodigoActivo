@@ -52,7 +52,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
     private void RemovesAndSignals(TaskCompletionSource signal, int removed)
     {
         sessions
-            .RemoveExpiredAsync(
+            .PurgeExpiredAsync(
                 Arg.Any<DateTimeOffset>(),
                 Arg.Any<UserId?>(),
                 Arg.Any<CancellationToken>()
@@ -68,7 +68,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
     public async Task PurgeAsyncRemovesEverySessionExpiredAtTheCurrentClockTime()
     {
         sessions
-            .RemoveExpiredAsync(
+            .PurgeExpiredAsync(
                 Arg.Any<DateTimeOffset>(),
                 Arg.Any<UserId?>(),
                 Arg.Any<CancellationToken>()
@@ -80,7 +80,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         removed.Should().Be(3);
         await sessions
             .Received(1)
-            .RemoveExpiredAsync(clock.UtcNow, null, Arg.Any<CancellationToken>());
+            .PurgeExpiredAsync(clock.UtcNow, null, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
     {
         var signal = new TaskCompletionSource();
         sessions
-            .RemoveExpiredAsync(
+            .PurgeExpiredAsync(
                 Arg.Any<DateTimeOffset>(),
                 Arg.Any<UserId?>(),
                 Arg.Any<CancellationToken>()
@@ -174,7 +174,7 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         cleaner.ExecuteTask.IsFaulted.Should().BeFalse();
         await sessions
             .DidNotReceiveWithAnyArgs()
-            .RemoveExpiredAsync(default, default, TestContext.Current.CancellationToken);
+            .PurgeExpiredAsync(default, default, TestContext.Current.CancellationToken);
         logger.Entries.Should().BeEmpty();
     }
 }

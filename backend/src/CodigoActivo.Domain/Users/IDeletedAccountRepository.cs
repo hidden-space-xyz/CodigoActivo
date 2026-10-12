@@ -14,7 +14,7 @@ public interface IDeletedAccountRepository : IRepository<DeletedAccount>
     /// <param name="deletedUpTo">Latest deletion moment whose copy is removed.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the number of copies removed.</returns>
-    public Task<int> RemoveDeletedUpToAsync(
+    public Task<int> PurgeDeletedUpToAsync(
         DateTimeOffset deletedUpTo,
         CancellationToken ct = default
     );

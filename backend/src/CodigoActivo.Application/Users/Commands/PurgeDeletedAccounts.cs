@@ -32,7 +32,7 @@ public sealed class PurgeDeletedAccountsCommandHandler(
         CancellationToken ct = default
     )
     {
-        return await deletedAccounts.RemoveDeletedUpToAsync(
+        return await deletedAccounts.PurgeDeletedUpToAsync(
             DeletedAccount.PurgeCutoff(clock.UtcNow),
             ct
         );

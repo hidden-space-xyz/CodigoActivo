@@ -95,7 +95,7 @@ public sealed class CompleteLoginCommandHandler(
         }
 
         user.CompleteTwoFactorLogin(now);
-        await sessions.RemoveExpiredAsync(now, user.Id, ct);
+        await sessions.PurgeExpiredAsync(now, user.Id, ct);
         var session = UserSession.Start(user.Id, now, sessionLifetime.Lifetime);
         await sessions.AddAsync(session, ct);
         await uow.SaveChangesAsync(ct);

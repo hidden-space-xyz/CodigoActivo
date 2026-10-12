@@ -59,7 +59,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     private void PurgesAndSignals(TaskCompletionSource signal, int purged)
     {
         deletedAccounts
-            .RemoveDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .PurgeDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
                 signal.TrySetResult();
@@ -71,7 +71,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     public async Task PurgeAsyncPurgesCopiesDeletedTwoYearsBeforeTheCurrentClockTime()
     {
         deletedAccounts
-            .RemoveDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .PurgeDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(4);
 
         var purged = await Build().PurgeAsync(TestContext.Current.CancellationToken);
@@ -79,7 +79,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
         purged.Should().Be(4);
         await deletedAccounts
             .Received(1)
-            .RemoveDeletedUpToAsync(clock.UtcNow.AddYears(-2), Arg.Any<CancellationToken>());
+            .PurgeDeletedUpToAsync(clock.UtcNow.AddYears(-2), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     {
         var signal = new TaskCompletionSource();
         deletedAccounts
-            .RemoveDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .PurgeDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>
             {
                 signal.TrySetResult();
@@ -137,7 +137,7 @@ public sealed class DeletedAccountPurgerTests : IDisposable
         purger.ExecuteTask.IsFaulted.Should().BeFalse();
         await deletedAccounts
             .DidNotReceiveWithAnyArgs()
-            .RemoveDeletedUpToAsync(default, TestContext.Current.CancellationToken);
+            .PurgeDeletedUpToAsync(default, TestContext.Current.CancellationToken);
         logger.Entries.Should().BeEmpty();
     }
 }
