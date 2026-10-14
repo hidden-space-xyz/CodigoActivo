@@ -14,7 +14,7 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
         </p>
       </div>
 
-      <div class="footer__contact">
+      <div class="footer__groups">
         <div class="footer__group">
           <div class="footer__heading">{{ $t('widgets.siteFooter.contact') }}</div>
           <div class="footer__links">
@@ -70,14 +70,18 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
             </a>
           </div>
         </div>
+
+        <nav class="footer__group footer__legal" :aria-label="$t('widgets.siteFooter.legal')">
+          <div class="footer__heading">{{ $t('widgets.siteFooter.legal') }}</div>
+          <div class="footer__links">
+            <RouterLink :to="{ name: 'cookie-policy' }" class="footer__legal-link">
+              <AppIcon name="cookie" />
+              {{ $t('widgets.siteFooter.cookies') }}
+            </RouterLink>
+          </div>
+        </nav>
       </div>
     </div>
-
-    <nav class="footer__legal" :aria-label="$t('widgets.siteFooter.legal')">
-      <RouterLink :to="{ name: 'cookie-policy' }" class="footer__legal-link">
-        {{ $t('widgets.siteFooter.cookies') }}
-      </RouterLink>
-    </nav>
   </footer>
 </template>
 
@@ -139,12 +143,17 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
   color: var(--ca-text-faint-2);
 }
 
-.footer__contact {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 32px;
+.footer__groups {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
   max-width: 700px;
-  align-items: center;
+}
+
+.footer__group {
+  flex: 1 1 208px;
 }
 
 .footer__heading {
@@ -169,7 +178,8 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
 }
 
 .footer__link,
-.footer__channel-link {
+.footer__channel-link,
+.footer__legal-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -182,43 +192,17 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
 }
 
 .footer__link:hover,
-.footer__channel-link:hover {
+.footer__channel-link:hover,
+.footer__legal-link:hover {
   color: var(--ca-orange-ink);
 }
 
 .footer__link--icon .app-icon,
-.footer__channel-link .app-icon {
+.footer__channel-link .app-icon,
+.footer__legal-link .app-icon {
   font-size: 14px;
   color: var(--ca-orange-ink);
   transition: color 0.15s ease;
-}
-
-.footer__legal {
-  max-width: var(--ca-container);
-  margin: 28px auto 0;
-  padding-top: 18px;
-  border-top: 1px solid var(--ca-border);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 24px;
-}
-
-.footer__legal-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 6px 10px;
-  border-radius: 10px;
-  font-family: var(--ca-font-mono);
-  font-size: 12px;
-  color: var(--ca-text-muted);
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-
-.footer__legal-link:hover {
-  color: var(--ca-orange-ink);
 }
 
 @media (max-width: 1024px) {
@@ -227,6 +211,10 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
     gap: 24px;
     align-items: stretch;
   }
+
+  .footer__groups {
+    justify-self: center;
+  }
 }
 
 @media (max-width: 640px) {
@@ -234,17 +222,8 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
     padding-block: 28px;
   }
 
-  .footer__contact {
+  .footer__groups {
     gap: 16px;
-  }
-
-  .footer__links {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .footer__link {
-    width: 100%;
   }
 }
 

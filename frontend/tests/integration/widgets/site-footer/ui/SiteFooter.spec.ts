@@ -14,6 +14,7 @@ describe('SiteFooter', () => {
     expect(wrapper.findAll('.footer__heading').map((heading) => heading.text())).toEqual([
       t('widgets.siteFooter.contact'),
       t('widgets.siteFooter.follow'),
+      t('widgets.siteFooter.legal'),
     ])
     const contact = wrapper.findAll('.footer__link')
     expect(contact.map((link) => [link.text(), link.attributes('href')])).toEqual([
@@ -30,6 +31,7 @@ describe('SiteFooter', () => {
     const link = legal.get('a')
     expect(link.text()).toBe(t('widgets.siteFooter.cookies'))
     expect(link.attributes('href')).toBe(router.resolve({ name: 'cookie-policy' }).href)
+    expect(link.find('.app-icon').exists()).toBe(true)
   })
 
   it('opens social profiles in a new tab', async () => {
