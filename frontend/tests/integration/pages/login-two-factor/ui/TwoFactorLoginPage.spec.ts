@@ -13,30 +13,6 @@ describe('two-factor login page', () => {
   it('explains where the code went and verifies it', async () => {
     useHomeApi()
     serveChallenge()
-    server.use(
-      http.post('/api/auth/login/two-factor', () => HttpResponse.json(buildUserResponse())),
-    )
-
-    const { wrapper, router } = await renderApp('/login/verify')
-    await vi.waitFor(() => expect(wrapper.find('#two-factor-code').exists()).toBe(true))
-
-    const intro = wrapper.get('.two-factor-form__intro').text()
-    expect(intro).toContain('a***@example.test')
-    expect(intro).toContain(t('pages.loginTwoFactor.emailIntroBefore').trim())
-    expect(wrapper.text()).toContain(t('pages.loginTwoFactor.resendPrompt'))
-
-    await wrapper.find('#two-factor-code').setValue('123456')
-    await wrapper.find('form').trigger('submit')
-
-    // The home page chunk loads lazily, which can take a while on slow file systems.
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'), {
-      timeout: 10_000,
-    })
-  }, 20_000)
-
-  it('keeps the session after closing the browser only when the user ticks the box', async () => {
-    useHomeApi()
-    serveChallenge()
     const bodies: unknown[] = []
     server.use(
       http.post('/api/auth/login/two-factor', async ({ request }) => {
@@ -48,22 +24,21 @@ describe('two-factor login page', () => {
     const { wrapper, router } = await renderApp('/login/verify')
     await vi.waitFor(() => expect(wrapper.find('#two-factor-code').exists()).toBe(true))
 
-    const keep = wrapper.get('#two-factor-keep-signed-in')
-    expect((keep.element as HTMLInputElement).checked).toBe(false)
-    const label = wrapper.get('.two-factor-keep__label')
-    expect(label.attributes('for')).toBe('two-factor-keep-signed-in')
-    expect(label.text()).toBe(t('pages.loginTwoFactor.keepSignedIn'))
-    const policy = wrapper.get('.two-factor-keep__link')
-    expect(policy.text()).toBe(t('pages.loginTwoFactor.keepSignedInPolicy'))
-    expect(policy.attributes('href')).toBe(router.resolve({ name: 'cookie-policy' }).href)
-    expect(policy.attributes('target')).toBe('_blank')
+    const intro = wrapper.get('.two-factor-form__intro').text()
+    expect(intro).toContain('a***@example.test')
+    expect(intro).toContain(t('pages.loginTwoFactor.emailIntroBefore').trim())
+    expect(wrapper.text()).toContain(t('pages.loginTwoFactor.resendPrompt'))
+    expect(wrapper.find('.el-checkbox').exists()).toBe(false)
 
-    await keep.setValue(true)
     await wrapper.find('#two-factor-code').setValue('123456')
     await wrapper.find('form').trigger('submit')
 
-    await vi.waitFor(() => expect(bodies).toEqual([{ code: '123456', keepSignedIn: true }]))
-  })
+    // The home page chunk loads lazily, which can take a while on slow file systems.
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'), {
+      timeout: 10_000,
+    })
+    expect(bodies).toEqual([{ code: '123456' }])
+  }, 20_000)
 
   it('asks for the application code without a resend option for authenticator users', async () => {
     serveChallenge(() =>

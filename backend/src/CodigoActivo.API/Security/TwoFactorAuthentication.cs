@@ -40,15 +40,18 @@ public sealed class TwoFactorTicketValidator(
 {
     private const string PasswordFingerprintClaim = "codigoactivo:credential";
     private const string ChallengeIdClaim = "codigoactivo:challenge";
+    private const string KeepSignedInClaim = "codigoactivo:keep-signed-in";
 
     /// <summary>
     /// Builds the ticket of the challenge the password step just opened.
     /// </summary>
     /// <param name="challenge">Challenge the password step opened.</param>
+    /// <param name="keepSignedIn">Whether the user asked to stay signed in on this device.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the principal, or <see langword="null"/> when the challenge is not open.</returns>
     public async Task<ClaimsPrincipal?> CreatePrincipalAsync(
         LoginChallengeKey challenge,
+        bool keepSignedIn,
         CancellationToken ct = default
     )
     {
@@ -57,7 +60,9 @@ public sealed class TwoFactorTicketValidator(
             new GetLoginChallengeTicketQuery(challenge),
             ct
         );
-        return ticket is null ? null : BuildPrincipal(challenge, ticket.CredentialStamp);
+        return ticket is null
+            ? null
+            : BuildPrincipal(challenge, ticket.CredentialStamp, keepSignedIn);
     }
 
     /// <summary>
@@ -117,9 +122,21 @@ public sealed class TwoFactorTicketValidator(
             : null;
     }
 
+    /// <summary>
+    /// Reads whether the user asked, at the password step, to stay signed in on this device.
+    /// </summary>
+    /// <param name="principal">Principal read from the challenge cookie, if any.</param>
+    /// <returns><see langword="true"/> only when the challenge cookie records that request.</returns>
+    public static bool ReadKeepSignedIn(ClaimsPrincipal? principal)
+    {
+        return bool.TryParse(principal?.FindFirstValue(KeepSignedInClaim), out var keepSignedIn)
+            && keepSignedIn;
+    }
+
     private static ClaimsPrincipal BuildPrincipal(
         LoginChallengeKey challenge,
-        string credentialStamp
+        string credentialStamp,
+        bool keepSignedIn
     )
     {
         var claims = new List<Claim>
@@ -127,6 +144,7 @@ public sealed class TwoFactorTicketValidator(
             new(ClaimTypes.NameIdentifier, challenge.UserId.ToString()),
             new(PasswordFingerprintClaim, credentialStamp),
             new(ChallengeIdClaim, challenge.ChallengeId.ToString()),
+            new(KeepSignedInClaim, keepSignedIn.ToString(), ClaimValueTypes.Boolean),
         };
         return new ClaimsPrincipal(new ClaimsIdentity(claims, TwoFactorAuthentication.Scheme));
     }

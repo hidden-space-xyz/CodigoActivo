@@ -87,31 +87,6 @@ const {
             />
           </div>
 
-          <div class="two-factor-keep">
-            <div class="two-factor-keep__text">
-              <el-checkbox
-                id="two-factor-keep-signed-in"
-                v-model="form.keepSignedIn"
-                class="ca-checkbox-text two-factor-keep__label"
-              >
-                {{ $t('pages.loginTwoFactor.keepSignedIn') }}
-              </el-checkbox>
-              <i18n-t
-                keypath="pages.loginTwoFactor.keepSignedInHint"
-                tag="p"
-                class="two-factor-keep__hint"
-              >
-                <template #policy>
-                  <RouterLink v-slot="{ href }" :to="{ name: 'cookie-policy' }" custom>
-                    <a :href="href" target="_blank" rel="noopener" class="two-factor-keep__link">{{
-                      $t('pages.loginTwoFactor.keepSignedInPolicy')
-                    }}</a>
-                  </RouterLink>
-                </template>
-              </i18n-t>
-            </div>
-          </div>
-
           <p v-if="errorMessage" class="two-factor-error" role="alert">
             {{ errorMessage }}
           </p>
@@ -204,42 +179,6 @@ const {
   font-size: 22px;
   letter-spacing: 0.35em;
   text-align: center;
-}
-
-.two-factor-keep {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.two-factor-keep__text {
-  min-width: 0;
-}
-
-.two-factor-keep .two-factor-keep__label {
-  display: flex;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: var(--ca-text);
-  cursor: pointer;
-}
-
-.two-factor-keep__hint {
-  margin: 4px 0 0 24px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--ca-text-muted);
-}
-
-.two-factor-keep__link {
-  color: var(--ca-orange-ink);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.two-factor-keep__link:hover {
-  text-decoration: underline;
 }
 
 .two-factor-error {

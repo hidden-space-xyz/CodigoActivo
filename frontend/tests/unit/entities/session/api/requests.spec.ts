@@ -104,8 +104,12 @@ describe('session requests', () => {
       }),
     )
 
-    const challenge = await loginRequest({ identifier: 'grace@example.test', password: 'secret' })
-    const user = await verifyTwoFactorLoginRequest('123456', true)
+    const challenge = await loginRequest({
+      identifier: 'grace@example.test',
+      password: 'secret',
+      keepSignedIn: true,
+    })
+    const user = await verifyTwoFactorLoginRequest('123456')
     await logoutRequest()
 
     expect(challenge).toEqual({ method: 'Email', maskedEmail: 'a***@example.test' })
@@ -113,12 +117,12 @@ describe('session requests', () => {
     expect(sent).toEqual([
       {
         url: '/api/auth/login',
-        body: { identifier: 'grace@example.test', password: 'secret' },
+        body: { identifier: 'grace@example.test', password: 'secret', keepSignedIn: true },
         token: 'token-1',
       },
       {
         url: '/api/auth/login/two-factor',
-        body: { code: '123456', keepSignedIn: true },
+        body: { code: '123456' },
         token: 'token-1',
       },
       { url: '/api/auth/logout', body: null, token: 'token-2' },
@@ -134,10 +138,12 @@ describe('session requests', () => {
       http.post('/api/auth/logout', () => new HttpResponse(null, { status: 204 })),
     )
 
-    await expect(loginRequest({ identifier: 'x', password: 'y' })).rejects.toMatchObject({
+    await expect(
+      loginRequest({ identifier: 'x', password: 'y', keepSignedIn: false }),
+    ).rejects.toMatchObject({
       status: 401,
     })
-    await expect(verifyTwoFactorLoginRequest('000000', false)).rejects.toMatchObject({
+    await expect(verifyTwoFactorLoginRequest('000000')).rejects.toMatchObject({
       code: 'TwoFactorCodeInvalid',
     })
     await logoutRequest()

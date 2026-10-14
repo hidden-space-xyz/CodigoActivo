@@ -50,6 +50,25 @@ const { form, submit, isSubmitting, isError } = useLogin()
             {{ $t('pages.login.forgotLink') }}
           </RouterLink>
 
+          <div class="login-keep">
+            <el-checkbox
+              id="login-keep-signed-in"
+              v-model="form.keepSignedIn"
+              class="ca-checkbox-text login-keep__label"
+            >
+              {{ $t('pages.login.keepSignedIn') }}
+            </el-checkbox>
+            <i18n-t keypath="pages.login.keepSignedInHint" tag="p" class="login-keep__hint">
+              <template #policy>
+                <RouterLink v-slot="{ href }" :to="{ name: 'cookie-policy' }" custom>
+                  <a :href="href" target="_blank" rel="noopener" class="login-keep__link">{{
+                    $t('pages.login.keepSignedInPolicy')
+                  }}</a>
+                </RouterLink>
+              </template>
+            </i18n-t>
+          </div>
+
           <p v-if="isError" class="login-error" role="alert">
             {{ $t('pages.login.error') }}
           </p>
@@ -116,6 +135,32 @@ const { form, submit, isSubmitting, isError } = useLogin()
 }
 
 .login-forgot:hover {
+  text-decoration: underline;
+}
+
+.login-keep .login-keep__label {
+  display: flex;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ca-text);
+  cursor: pointer;
+}
+
+.login-keep__hint {
+  margin: 4px 0 0 24px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ca-text-muted);
+}
+
+.login-keep__link {
+  color: var(--ca-orange-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-keep__link:hover {
   text-decoration: underline;
 }
 

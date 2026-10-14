@@ -20,12 +20,15 @@ export async function getCurrentUserRequest(): Promise<AuthUser | null> {
 
 /**
  * Runs the password step of the login (`POST /api/auth/login`). A correct password never signs
- * the user in by itself: the API answers with the second factor it now expects.
+ * the user in by itself: the API answers with the second factor it now expects and remembers
+ * `keepSignedIn` for it. The session cookie outlives the browser session only when that flag
+ * carries the user's explicit request.
  */
 export async function loginRequest(credentials: Credentials): Promise<LoginChallenge> {
   const response = await postApiAuthLogin({
     identifier: credentials.identifier,
     password: credentials.password,
+    keepSignedIn: credentials.keepSignedIn,
   })
   return toLoginChallenge(response.data)
 }
@@ -41,14 +44,10 @@ export async function getLoginChallengeRequest(): Promise<LoginChallenge | null>
 
 /**
  * Presents the second factor (`POST /api/auth/login/two-factor`). On success the session cookie
- * is set, so the cached CSRF token is dropped for the next unsafe request. The cookie outlives the
- * browser session only when `keepSignedIn` carries the user's explicit request.
+ * is set, so the cached CSRF token is dropped for the next unsafe request.
  */
-export async function verifyTwoFactorLoginRequest(
-  code: string,
-  keepSignedIn: boolean,
-): Promise<AuthUser> {
-  const response = await postApiAuthLoginTwoFactor({ code, keepSignedIn })
+export async function verifyTwoFactorLoginRequest(code: string): Promise<AuthUser> {
+  const response = await postApiAuthLoginTwoFactor({ code })
   resetCsrfToken()
   return toAuthUser(response.data)
 }

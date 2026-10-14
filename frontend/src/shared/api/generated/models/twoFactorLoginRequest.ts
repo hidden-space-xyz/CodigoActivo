@@ -7,5 +7,4 @@
 
 export interface TwoFactorLoginRequest {
   code: string;
-  keepSignedIn: boolean;
 }
