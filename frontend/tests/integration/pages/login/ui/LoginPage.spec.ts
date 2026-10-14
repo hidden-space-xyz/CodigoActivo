@@ -35,12 +35,47 @@ describe('login page', () => {
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
 
     expect(received).toEqual({
-      body: { identifier: 'grace@example.test', password: 'secret' },
+      body: { identifier: 'grace@example.test', password: 'secret', keepSignedIn: false },
       csrf: TEST_CSRF_TOKEN,
     })
     expect(router.currentRoute.value.query).toEqual({ redirect: '/about' })
     expect(sessionOf(queryClient).isAuthenticated).toBe(false)
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.loginTwoFactor.title')))
+  })
+
+  it('keeps the session after closing the browser only when the user ticks the box', async () => {
+    const bodies: unknown[] = []
+    server.use(
+      http.post('/api/auth/login', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json(buildLoginChallenge())
+      }),
+    )
+    serveChallenge()
+
+    const { wrapper, router } = await renderApp('/login')
+
+    const keep = wrapper.get('#login-keep-signed-in')
+    expect((keep.element as HTMLInputElement).checked).toBe(false)
+    const label = wrapper.get('.login-keep__label')
+    expect(label.attributes('for')).toBe('login-keep-signed-in')
+    expect(label.text()).toBe(t('pages.login.keepSignedIn'))
+    const policy = wrapper.get('.login-keep__link')
+    expect(policy.text()).toBe(t('pages.login.keepSignedInPolicy'))
+    expect(policy.attributes('href')).toBe(router.resolve({ name: 'cookie-policy' }).href)
+    expect(policy.attributes('target')).toBe('_blank')
+
+    await wrapper.find('#login-identifier').setValue('grace@example.test')
+    await wrapper.find('#login-password').setValue('secret')
+    await keep.setValue(true)
+    await wrapper.find('form').trigger('submit')
+
+    await vi.waitFor(() =>
+      expect(bodies).toEqual([
+        { identifier: 'grace@example.test', password: 'secret', keepSignedIn: true },
+      ]),
+    )
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
   })
 
   it('shows an error when the credentials are rejected', async () => {

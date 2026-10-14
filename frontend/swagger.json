@@ -6675,6 +6675,7 @@
       "LoginRequest": {
         "required": [
           "identifier",
+          "keepSignedIn",
           "password"
         ],
         "type": "object",
@@ -6684,6 +6685,9 @@
           },
           "password": {
             "type": "string"
+          },
+          "keepSignedIn": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -7335,16 +7339,12 @@
       },
       "TwoFactorLoginRequest": {
         "required": [
-          "code",
-          "keepSignedIn"
+          "code"
         ],
         "type": "object",
         "properties": {
           "code": {
             "type": "string"
-          },
-          "keepSignedIn": {
-            "type": "boolean"
           }
         },
         "additionalProperties": false

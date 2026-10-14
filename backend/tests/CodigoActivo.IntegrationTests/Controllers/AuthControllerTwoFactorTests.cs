@@ -36,24 +36,16 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         );
     }
 
-    private async Task<HttpClient> StartMemberChallengeAsync()
+    private async Task<HttpClient> StartMemberChallengeAsync(bool keepSignedIn = false)
     {
         var client = CreateClient();
-        await PassPasswordStepAsync(client, TestSeedData.MemberCredentials);
+        await PassPasswordStepAsync(client, TestSeedData.MemberCredentials, keepSignedIn);
         return client;
     }
 
-    private static Task<HttpResponseMessage> PresentAsync(
-        HttpClient client,
-        string code,
-        bool keepSignedIn = false
-    )
+    private static Task<HttpResponseMessage> PresentAsync(HttpClient client, string code)
     {
-        return client.PostJsonAsync(
-            TwoFactorUrl,
-            new TwoFactorLoginRequest(code, keepSignedIn),
-            Ct
-        );
+        return client.PostJsonAsync(TwoFactorUrl, new TwoFactorLoginRequest(code), Ct);
     }
 
     private static async Task<HttpResponseMessage> PresentPreparedAsync(
@@ -164,12 +156,25 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task TwoFactorWithKeepSignedInIssuesPersistentSessionCookie()
+    public async Task TwoFactorAfterAPasswordStepWithKeepSignedInIssuesPersistentSessionCookie()
     {
-        var client = await StartMemberChallengeAsync();
-        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
+        var client = CreateClient();
 
-        using var response = await PresentAsync(client, code, keepSignedIn: true);
+        using var challenge = await client.PostJsonAsync(
+            "/api/auth/login",
+            new LoginRequest(TestSeedData.MemberEmail, TestSeedData.Password, KeepSignedIn: true),
+            Ct
+        );
+
+        challenge.StatusCode.Should().Be(HttpStatusCode.OK);
+        var challengeCookie = CookieNamed(challenge, "CodigoActivo.TwoFactor");
+        challengeCookie
+            .Expires.Should()
+            .BeNull("the challenge still dies with the browser session");
+        challengeCookie.MaxAge.Should().BeNull();
+
+        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
+        using var response = await PresentAsync(client, code);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var sessionCookie = CookieNamed(response, "CodigoActivo.Session");
@@ -185,6 +190,22 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
             )
         );
         stored.ExpiresAt.Should().Be(Factory.Clock.UtcNow + SessionLifetimeOptions.DefaultLifetime);
+    }
+
+    [Fact]
+    public async Task TwoFactorFollowsTheKeepSignedInChoiceOfTheLatestPasswordStep()
+    {
+        var client = await StartMemberChallengeAsync(keepSignedIn: true);
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
+        await PassPasswordStepAsync(client, TestSeedData.MemberCredentials);
+        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
+
+        using var response = await PresentAsync(client, code);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        CookieNamed(response, "CodigoActivo.Session")
+            .Expires.Should()
+            .BeNull("the newer password step left the box unticked");
     }
 
     [Fact]

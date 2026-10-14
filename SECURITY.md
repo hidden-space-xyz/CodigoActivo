@@ -16,13 +16,14 @@ authentication are not supported.
 
 - Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, non-sliding, expiring after
   30 days by default. It is a browser-session cookie unless the user ticks «Mantener la sesión iniciada en este
-  dispositivo» on the second-factor step (`keepSignedIn`), which makes it persistent; a claims refresh keeps
-  that choice. In Production it is `Secure` and uses a `__Host-` name. The ticket is not
-  self-sufficient: completing the second factor also writes a `user_sessions` row whose id travels in the
-  ticket's `sid` claim, dropping that user's already-expired rows; a background worker additionally deletes
-  every expired row on the `SessionCleanup:IntervalMinutes` schedule. The row carries the expiry that decides
-  access: refreshing the claims re-issues the cookie with a later expiry, so a cookie can outlive its row,
-  and the ticket is rejected as soon as the row is missing or expired.
+  dispositivo» on the password step (`keepSignedIn`), which makes it persistent; the challenge cookie carries
+  that choice to the second factor, and a claims refresh keeps it. In Production it is `Secure` and uses a
+  `__Host-` name. The ticket is not self-sufficient: completing the second factor also writes a
+  `user_sessions` row whose id travels in the ticket's `sid` claim, dropping that user's already-expired rows;
+  a background worker additionally deletes every expired row on the `SessionCleanup:IntervalMinutes`
+  schedule. The row carries the expiry that decides access: refreshing the claims re-issues the cookie with a
+  later expiry, so a cookie can outlive its row, and the ticket is rejected as soon as the row is missing or
+  expired.
 - Every authenticated request revalidates account status, password lock, password fingerprint, administrator
   flag and the `sid` row in one query, and rejects the ticket when any of them is missing or expired.
   Blocking or demoting a user takes effect on existing sessions; changing or resetting the password

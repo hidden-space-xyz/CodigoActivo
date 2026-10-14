@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Controllers.Abstractions;
@@ -187,7 +188,8 @@ public class AuthController : ApiControllerBase
 
     /// <summary>
     /// Executes the password step of the login. On success it stores a short-lived challenge
-    /// cookie and returns which second factor must be presented; no session exists yet.
+    /// cookie, which also remembers whether the user asked to stay signed in, and returns which
+    /// second factor must be presented; no session exists yet.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -214,7 +216,7 @@ public class AuthController : ApiControllerBase
         }
 
         var challenge = result.Value;
-        var principal = await tickets.CreatePrincipalAsync(challenge, ct);
+        var principal = await tickets.CreatePrincipalAsync(challenge, request.KeepSignedIn, ct);
         if (principal is null)
         {
             return ToProblem(ApiError.Unauthorized(ErrorCode.InvalidCredentials));
@@ -255,7 +257,8 @@ public class AuthController : ApiControllerBase
     /// <summary>
     /// Completes the login with the second factor and opens the session. The session cookie is
     /// persistent, surviving the browser until its <c>user_sessions</c> row expires, only when the
-    /// request asks to keep the user signed in; otherwise the browser drops it when it closes.
+    /// password step asked to keep the user signed in; otherwise the browser drops it when it
+    /// closes.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -274,7 +277,8 @@ public class AuthController : ApiControllerBase
         CancellationToken ct
     )
     {
-        var challenge = await GetPendingChallengeAsync();
+        var pending = await GetPendingLoginAsync();
+        var challenge = TwoFactorTicketValidator.ReadChallenge(pending);
         if (challenge is null)
         {
             return ToProblem(ApiError.Unauthorized(ErrorCode.TwoFactorChallengeExpired));
@@ -305,7 +309,7 @@ public class AuthController : ApiControllerBase
             principal,
             new AuthenticationProperties
             {
-                IsPersistent = request.KeepSignedIn,
+                IsPersistent = TwoFactorTicketValidator.ReadKeepSignedIn(pending),
                 AllowRefresh = false,
             }
         );
@@ -461,7 +465,12 @@ public class AuthController : ApiControllerBase
 
     private async Task<LoginChallengeKey?> GetPendingChallengeAsync()
     {
+        return TwoFactorTicketValidator.ReadChallenge(await GetPendingLoginAsync());
+    }
+
+    private async Task<ClaimsPrincipal?> GetPendingLoginAsync()
+    {
         var pending = await HttpContext.AuthenticateAsync(TwoFactorAuthentication.Scheme);
-        return pending.Succeeded ? TwoFactorTicketValidator.ReadChallenge(pending.Principal) : null;
+        return pending.Succeeded ? pending.Principal : null;
     }
 }

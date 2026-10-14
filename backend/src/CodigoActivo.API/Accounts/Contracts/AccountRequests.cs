@@ -11,9 +11,14 @@ namespace CodigoActivo.API.Accounts.Contracts;
 /// </summary>
 /// <param name="Identifier">Email address of the account.</param>
 /// <param name="Password">Plain-text password to hash or verify.</param>
+/// <param name="KeepSignedIn">
+/// Whether the user explicitly asked to stay signed in on this device; the pending challenge
+/// remembers it, and only then does the session cookie outlive the browser session.
+/// </param>
 public record LoginRequest(
     [Required] [MaxLength(256)] string Identifier,
-    [Required] [MaxLength(128)] string Password
+    [Required] [MaxLength(128)] string Password,
+    bool KeepSignedIn = false
 )
 {
     /// <summary>
@@ -30,14 +35,7 @@ public record LoginRequest(
 /// Contains the client-supplied data used to complete a login with the second factor.
 /// </summary>
 /// <param name="Code">Code from the email or the authenticator application.</param>
-/// <param name="KeepSignedIn">
-/// Whether the user explicitly asked to stay signed in on this device; only then does the session
-/// cookie outlive the browser session.
-/// </param>
-public record TwoFactorLoginRequest(
-    [Required] [MaxLength(16)] string Code,
-    bool KeepSignedIn = false
-);
+public record TwoFactorLoginRequest([Required] [MaxLength(16)] string Code);
 
 /// <summary>
 /// Contains the client-supplied data used to start enrolling an authenticator application.

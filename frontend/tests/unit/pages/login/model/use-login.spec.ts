@@ -23,7 +23,7 @@ describe('useLogin', () => {
   it('starts with empty credentials', async () => {
     const { result } = await mountComposable(() => useLogin(), { route: '/login' })
 
-    expect(result.form).toEqual({ identifier: '', password: '' })
+    expect(result.form).toEqual({ identifier: '', password: '', keepSignedIn: false })
     expect(result.isSubmitting.value).toBe(false)
     expect(result.isError.value).toBe(false)
   })
@@ -39,9 +39,26 @@ describe('useLogin', () => {
     result.submit()
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
 
-    expect(bodies).toEqual([{ identifier: 'grace@example.test', password: 'secret' }])
+    expect(bodies).toEqual([
+      { identifier: 'grace@example.test', password: 'secret', keepSignedIn: false },
+    ])
     expect(router.currentRoute.value.query).toEqual({})
     expect(sessionOf(queryClient).isAuthenticated).toBe(false)
+  })
+
+  it('asks for a persistent session only when the user opts in', async () => {
+    const bodies = serveLogin()
+    const { result, router } = await mountComposable(() => useLogin(), { route: '/login' })
+    result.form.identifier = 'grace@example.test'
+    result.form.password = 'secret'
+    result.form.keepSignedIn = true
+
+    result.submit()
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
+
+    expect(bodies).toEqual([
+      { identifier: 'grace@example.test', password: 'secret', keepSignedIn: true },
+    ])
   })
 
   it('carries the redirect target over to the verification page', async () => {
