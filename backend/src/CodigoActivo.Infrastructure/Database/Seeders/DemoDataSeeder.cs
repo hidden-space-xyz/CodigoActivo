@@ -42,7 +42,7 @@ public sealed class DemoDataSeeder(
 
     private const int AdultCount = 20;
     private const int MemberAdultCount = 14;
-    private const int ChildCount = 5;
+    private const int ChildCount = 7;
 
     private const int EventSpacingDays = 14;
     private const int FinishedEventCount = 15;
@@ -93,7 +93,11 @@ public sealed class DemoDataSeeder(
             return;
         }
 
-        var graph = BuildGraph(clock, passwordHasher);
+        var administrator = await context.Users.SingleAsync(
+            u => u.Id == InitialAdministrator.Id,
+            ct
+        );
+        var graph = BuildGraph(clock, passwordHasher, administrator);
         var fileIds = graph.Files.ConvertAll(f => f.Id.Value);
 
         try
@@ -137,12 +141,16 @@ public sealed class DemoDataSeeder(
         }
     }
 
-    internal static DemoGraph BuildGraph(IClock clock, IPasswordHasher passwordHasher)
+    internal static DemoGraph BuildGraph(
+        IClock clock,
+        IPasswordHasher passwordHasher,
+        User administrator
+    )
     {
         var now = clock.UtcNow;
         var passwordHash = UnusablePassword.Hash(passwordHasher);
         var files = new List<StoredFile>();
-        var users = BuildUsers(now, clock.Today, passwordHash);
+        var users = BuildUsers(now, clock.Today, passwordHash, administrator);
         var (categoryTypes, categoryIdByName) = BuildCategoryTypes();
         var termsDocuments = BuildTermsDocuments();
         var schedule = BuildSchedule(clock, now, files, categoryIdByName);
@@ -164,7 +172,12 @@ public sealed class DemoDataSeeder(
         );
     }
 
-    private static List<User> BuildUsers(DateTimeOffset now, DateOnly today, string passwordHash)
+    private static List<User> BuildUsers(
+        DateTimeOffset now,
+        DateOnly today,
+        string passwordHash,
+        User administrator
+    )
     {
         var users = new List<User>(UserSeeds.Length);
         for (var index = 0; index < UserSeeds.Length; index++)
@@ -172,9 +185,24 @@ public sealed class DemoDataSeeder(
             var seed = UserSeeds[index];
             var createdAt = SpreadCreatedAt(now, index, UserSeeds.Length, 450, 35);
             users.Add(
-                seed.ParentIndex is { } parent
-                    ? BuildChild(seed, index, users[parent], today, createdAt)
-                    : BuildAdult(seed, index, passwordHash, now, createdAt)
+                seed.Kind switch
+                {
+                    UserKind.Child => BuildChild(
+                        seed,
+                        index,
+                        users[seed.ParentIndex!.Value],
+                        today,
+                        createdAt
+                    ),
+                    UserKind.AdministratorChild => BuildChild(
+                        seed,
+                        index,
+                        administrator,
+                        today,
+                        createdAt
+                    ),
+                    _ => BuildAdult(seed, index, passwordHash, now, createdAt),
+                }
             );
         }
 
@@ -825,6 +853,11 @@ public sealed class DemoDataSeeder(
         /// Selects the child option.
         /// </summary>
         Child,
+
+        /// <summary>
+        /// Selects the child of the initial administrator option.
+        /// </summary>
+        AdministratorChild,
     }
 
     private sealed record UserSeed(
@@ -2519,6 +2552,8 @@ public sealed class DemoDataSeeder(
         new("Hugo", "Molina Ríos", UserKind.Child, Gender.Male, 14, 3),
         new("Daniela", "Delgado Soto", UserKind.Child, Gender.Female, 11, 6),
         new("Leo", "Ortega Peña", UserKind.Child, Gender.Other, 10, 4),
+        new("Alba", "Moreno Sanz", UserKind.AdministratorChild, Gender.Female, 10, null),
+        new("Bruno", "Moreno Sanz", UserKind.AdministratorChild, Gender.Male, 13, null),
     ];
 }
 
