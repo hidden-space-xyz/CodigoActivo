@@ -20,11 +20,18 @@ public sealed class DemoDataSeederTests
         new DateOnly(2026, 7, 7)
     );
 
+    private readonly User administrator;
+
     private readonly DemoGraph graph;
 
     public DemoDataSeederTests()
     {
-        graph = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher());
+        administrator = User.CreateInitialAdministrator(
+            EmailAddress.FromStored("admin@test.local"),
+            "hash",
+            clock.UtcNow
+        );
+        graph = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher(), administrator);
     }
 
     private List<Assignment> Assignments =>
@@ -50,7 +57,7 @@ public sealed class DemoDataSeederTests
             .Should()
             .HaveCount(32, "the password carries 32 bytes of entropy");
 
-        var rerun = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher());
+        var rerun = DemoDataSeeder.BuildGraph(clock, new FakePasswordHasher(), administrator);
         rerun
             .Users.First(user => user.ParentId is null)
             .PasswordHash.Should()
@@ -65,7 +72,7 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultProducesExpectedCounts()
     {
-        graph.Users.Should().HaveCount(25);
+        graph.Users.Should().HaveCount(27);
         graph.Events.Should().HaveCount(20);
         graph.Activities.Should().HaveCount(100);
         Assignments.Should().HaveCount(475, "the last event has not opened its signup yet");
@@ -398,7 +405,7 @@ public sealed class DemoDataSeederTests
         );
 
         var children = DemoDataSeeder
-            .BuildGraph(later, new FakePasswordHasher())
+            .BuildGraph(later, new FakePasswordHasher(), administrator)
             .Users.Where(u => u.ParentId is not null)
             .ToList();
 
@@ -416,7 +423,11 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultChildrenAreDependentParticipantsWithoutCredentials()
     {
-        var userIds = graph.Users.Select(u => u.Id).ToHashSet();
+        var guardianIds = graph
+            .Users.Where(u => u.ParentId is null)
+            .Select(u => u.Id)
+            .Append(administrator.Id)
+            .ToHashSet();
         var children = graph.Users.Where(u => u.ParentId is not null).ToList();
 
         children.Should().NotBeEmpty();
@@ -433,7 +444,42 @@ public sealed class DemoDataSeederTests
                 child.BirthDate!.Value.Year.Should().BeGreaterThan(2008);
                 child.NationalId.Should().BeNull();
                 child.PromotionalConsent.Should().BeFalse();
-                userIds.Should().Contain(child.ParentId!.Value);
+                guardianIds.Should().Contain(child.ParentId!.Value);
+            });
+    }
+
+    [Fact]
+    public void BuildGraphDefaultAdministratorHasTwoChildrenSignedUpForPastAndUpcomingActivities()
+    {
+        var eventByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
+        var eventsById = graph.Events.ToDictionary(e => e.Id);
+        var children = graph.Users.Where(u => u.ParentId == administrator.Id).ToList();
+
+        children.Should().HaveCount(2);
+        children
+            .Should()
+            .AllSatisfy(child =>
+            {
+                var signups = Assignments
+                    .Where(a => a.UserId == child.Id)
+                    .Select(a => (a.Status, Event: eventsById[eventByActivity[a.ActivityId]]))
+                    .ToList();
+                signups
+                    .Should()
+                    .Contain(
+                        s =>
+                            s.Status == AssignmentStatus.Confirmed
+                            && s.Event.Calendar.End < clock.Today,
+                        "the child took part in finished events"
+                    );
+                signups
+                    .Should()
+                    .Contain(
+                        s =>
+                            s.Status == AssignmentStatus.Confirmed
+                            && s.Event.Calendar.End >= clock.Today,
+                        "the child is signed up for upcoming events"
+                    );
             });
     }
 
