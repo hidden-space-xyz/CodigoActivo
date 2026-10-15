@@ -78,30 +78,23 @@ PostgreSQL on port `5432`.
 
 ### Production stack
 
-The base Compose file pulls released images from GHCR and does not depend on a repository clone:
-
-```bash
-curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
-curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/.env.example
-# Replace every required or placeholder value in .env and create secrets/ as DEPLOYMENT.md describes.
-docker compose up -d
-```
-
-Follow [DEPLOYMENT.md#first-production-start](DEPLOYMENT.md#first-production-start) before exposing the
-service.
+The base Compose file pulls released images from GHCR and does not depend on a repository clone. Follow
+[DEPLOYMENT.md](DEPLOYMENT.md#first-production-start) to start it.
 
 To run the applications directly with hot reload instead of full containers, see
 [CONTRIBUTING.md](CONTRIBUTING.md#local-setup).
 
 ## Documentation
 
-| Document                           | Purpose                                                      |
-| ---------------------------------- | ------------------------------------------------------------ |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | System structure, dependency rules and API contract          |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, checks, migrations and contribution rules |
-| [DEPLOYMENT.md](DEPLOYMENT.md)     | Production topology, configuration, releases and backups     |
-| [SECURITY.md](SECURITY.md)         | Vulnerability reporting and the security model               |
-| [AGENTS.md](AGENTS.md)             | Concise repository guidance for coding agents                |
+| Document                                 | Purpose                                                   |
+| ---------------------------------------- | --------------------------------------------------------- |
+| [ARCHITECTURE.md](ARCHITECTURE.md)       | System structure, dependency rules and API contract       |
+| [CONTRIBUTING.md](CONTRIBUTING.md)       | Development setup, commands, migrations and pull requests |
+| [DEPLOYMENT.md](DEPLOYMENT.md)           | Production topology, configuration, releases and backups  |
+| [SECURITY.md](SECURITY.md)               | Vulnerability reporting and the security model            |
+| [AGENTS.md](AGENTS.md)                   | Repository guidance for coding agents                     |
+| [backend/AGENTS.md](backend/AGENTS.md)   | Backend coding conventions and tests                      |
+| [frontend/AGENTS.md](frontend/AGENTS.md) | Frontend coding conventions and tests                     |
 
 ## License
 

@@ -4,7 +4,7 @@
 `frontend/`. Read the document that owns the area you are changing:
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): domain language, boundaries, data flow and API contract.
-- [CONTRIBUTING.md](CONTRIBUTING.md): local setup, commands and coding conventions.
+- [CONTRIBUTING.md](CONTRIBUTING.md): local setup, commands and pull requests.
 - [DEPLOYMENT.md](DEPLOYMENT.md): Compose, environment variables, releases and backups.
 - [SECURITY.md](SECURITY.md): authentication, trust boundaries and abuse controls.
 
@@ -13,7 +13,7 @@ Do not copy the same explanation into every file. Documentation must stay short 
 document with every change: update the fact that changed, remove what it replaces, and add sections only for
 new operational facts.
 
-Backend and frontend conventions and commands live in [backend/AGENTS.md](backend/AGENTS.md) and
+Backend and frontend coding conventions live in [backend/AGENTS.md](backend/AGENTS.md) and
 [frontend/AGENTS.md](frontend/AGENTS.md).
 
 ## Non-negotiable rules
@@ -40,14 +40,13 @@ from a clone, use `docker compose -f docker-compose.yml ...` so the override is 
 - New accounts always confirm their email before the first login; there is no configuration switch.
 - An empty database requires a valid `BOOTSTRAP_ADMIN_EMAIL`. That administrator gets a discarded random
   password and sets the first one through password reset; there is no bootstrap password.
-- Production nginx is published on host port `8080` on all IPv4 interfaces; IPv6 is not supported. Do not
-  describe it as loopback-only.
+- Production nginx is published on host port `8080` on all IPv4 interfaces, not only loopback; IPv6 is not
+  supported.
 - Configuration names in checked-in examples are uppercase. .NET nested overrides use `SECTION__KEY` and
   must also be forwarded explicitly by Compose.
 
 ## API changes
 
 Follow the five-step contract change flow in
-[ARCHITECTURE.md](ARCHITECTURE.md#changing-the-api-contract): change the backend, refresh
-`frontend/swagger.json`, run `npm run api:generate`, add Spanish `errors.*` messages, then run `dotnet test`
-and `npm run check`. Do not leave the committed Swagger document or generated client out of sync.
+[ARCHITECTURE.md](ARCHITECTURE.md#changing-the-api-contract). Do not leave the committed Swagger document or
+generated client out of sync.
