@@ -267,7 +267,6 @@
     "DisposableEmailNotAllowed": "Por motivos de seguridad no se permite usar direcciones de correo electrónico temporales o desechables. Utiliza una dirección de correo permanente.",
     "InvalidCredentials": "El correo electrónico o la contraseña no son correctos.",
     "UserAccountBlocked": "Tu cuenta está bloqueada. Contacta al administrador.",
-    "UserAccountIsDependent": "Esta cuenta depende de un responsable y no puede iniciar sesión directamente.",
     "UserAccountPendingVerification": "Tu cuenta aún no ha sido verificada.",
     "CurrentUserNotFound": "No se encontró el usuario de la sesión actual.",
     "OtpInvalidOrExpired": "El enlace de verificación no es válido o ha expirado.",

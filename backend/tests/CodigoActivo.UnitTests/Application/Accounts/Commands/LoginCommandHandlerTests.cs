@@ -131,6 +131,17 @@ public sealed class LoginCommandHandlerTests
         hasher.VerifyCalls.Should().Be(2);
     }
 
+    [Fact]
+    public async Task HandleAsyncDependentWithoutPasswordReturnsUnauthorized()
+    {
+        Returns(NewUser(statusId: KnownIds.UserStatusTypes.Dependent, passwordHash: null));
+
+        var result = await LoginAsync();
+
+        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
+        emailSender.Sent.Should().BeEmpty();
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData(null)]
@@ -210,7 +221,6 @@ public sealed class LoginCommandHandlerTests
         return new()
         {
             { KnownIds.UserStatusTypes.Blocked, ApplicationErrorCode.UserAccountBlocked },
-            { KnownIds.UserStatusTypes.Dependent, ApplicationErrorCode.UserAccountIsDependent },
             {
                 KnownIds.UserStatusTypes.Pending,
                 ApplicationErrorCode.UserAccountPendingVerification
