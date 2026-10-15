@@ -142,18 +142,14 @@ public sealed class GlobalExceptionHandlerTests
     }
 
     [Fact]
-    public async Task TryHandleAsyncConcurrentUpdateLogsAWarningWithTheRouteTemplate()
+    public async Task TryHandleAsyncConcurrentUpdateLogsNothing()
     {
         var logger = await HandleAsync(
             context => context.SetEndpoint(UserEndpoint()),
             new ConcurrentUpdateException()
         );
 
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
-        entry.Level.Should().Be(LogLevel.Warning);
-        entry
-            .Message.Should()
-            .Be($"Concurrent update refused while processing DELETE {RouteTemplate}");
+        logger.LevelEntries.Should().BeEmpty("a refused concurrent update is an expected outcome");
     }
 
     [Fact]

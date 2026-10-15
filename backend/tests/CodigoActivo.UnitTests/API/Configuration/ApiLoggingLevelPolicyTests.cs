@@ -1,7 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Configuration;
-using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Middlewares;
+using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Composition.Diagnostics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -18,7 +18,8 @@ public sealed class ApiLoggingLevelPolicyTests : IDisposable
 {
     private const string Email = "ana@test.com";
     private const string RouteTemplate = "/api/users/{id}";
-    private const string CsrfCategory = "CodigoActivo.API.Middlewares.CsrfValidationMiddleware";
+    private const string DecoratorCategory =
+        "CodigoActivo.Application.Common.Messaging.LoggingQueryDecorator";
     private const string HostingCategory = "Microsoft.AspNetCore.Hosting.Diagnostics";
     private const string DatabaseCommandCategory = "Microsoft.EntityFrameworkCore.Database.Command";
 
@@ -139,14 +140,19 @@ public sealed class ApiLoggingLevelPolicyTests : IDisposable
             .CreateLogger(LogCategories.Lifecycle)
             .IsEnabled(LogLevel.Information)
             .Should()
-            .BeTrue();
+            .BeFalse("a start or a stop that succeeds is normal operation");
         factory
             .CreateLogger("Microsoft.Hosting.Lifetime")
             .IsEnabled(LogLevel.Information)
             .Should()
+            .BeFalse("a start or a stop that succeeds is normal operation");
+        factory
+            .CreateLogger(LogCategories.Lifecycle)
+            .IsEnabled(LogLevel.Critical)
+            .Should()
             .BeTrue();
-        factory.CreateLogger(CsrfCategory).IsEnabled(LogLevel.Information).Should().BeFalse();
-        factory.CreateLogger(CsrfCategory).IsEnabled(LogLevel.Warning).Should().BeTrue();
+        factory.CreateLogger(DecoratorCategory).IsEnabled(LogLevel.Information).Should().BeFalse();
+        factory.CreateLogger(DecoratorCategory).IsEnabled(LogLevel.Warning).Should().BeTrue();
     }
 
     [Fact]
@@ -154,15 +160,13 @@ public sealed class ApiLoggingLevelPolicyTests : IDisposable
     {
         var lines = await LinesAfterRequestAsync(factory =>
         {
-            factory
-                .CreateLogger(CsrfCategory)
-                .CsrfValidationFailed(new InvalidOperationException("rejected"));
+            factory.CreateLogger(DecoratorCategory).SlowUseCase("GetUserQuery", 5432);
             return Results.Unauthorized();
         });
 
         lines
             .Should()
-            .Contain(line => line.Contains("CSRF validation failed", StringComparison.Ordinal));
+            .Contain(line => line.Contains("GetUserQuery took 5432 ms", StringComparison.Ordinal));
 
         var written = string.Join('\n', lines);
         written.Should().NotContain(Identifier.ToString());

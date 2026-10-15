@@ -1,4 +1,3 @@
-using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Common;
@@ -7,16 +6,13 @@ using Microsoft.AspNetCore.Antiforgery;
 namespace CodigoActivo.API.Middlewares;
 
 /// <summary>
-/// Processes HTTP requests to enforce csrf validation.
+/// Processes HTTP requests to enforce csrf validation. A rejected token is not logged: the client
+/// fetches a new token and sends the request again, which is how a token outlived by a sign-in or a
+/// sign-out in another tab recovers.
 /// </summary>
 /// <param name="next">The next value.</param>
 /// <param name="antiforgery">The antiforgery value.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
-public sealed class CsrfValidationMiddleware(
-    RequestDelegate next,
-    IAntiforgery antiforgery,
-    ILogger<CsrfValidationMiddleware> logger
-)
+public sealed class CsrfValidationMiddleware(RequestDelegate next, IAntiforgery antiforgery)
 {
     private static readonly HashSet<string> SafeMethods = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -39,10 +35,8 @@ public sealed class CsrfValidationMiddleware(
             {
                 await antiforgery.ValidateRequestAsync(context);
             }
-            catch (AntiforgeryValidationException ex)
+            catch (AntiforgeryValidationException)
             {
-                logger.CsrfValidationFailed(ex);
-
                 await context.WriteApiErrorAsync(ApiError.Validation(ErrorCode.InvalidCsrfToken));
                 return;
             }

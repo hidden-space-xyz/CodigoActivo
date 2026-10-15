@@ -346,23 +346,28 @@ The stored rating content still carries no author reference.
 
 ### Logging
 
-Logging follows GDPR data minimization: only what diagnosis needs is recorded, and no entry stored in
-Production survives more than 15 days. Never logged: user or personal-row ids, names, emails, phone numbers,
-anything typed by the client, the requested path or query, client IP, user agent, cookies, tokens and
-one-time codes. Logged: counters, enum/kind values, error/SMTP/HTTP codes, the HTTP method, the matched
-endpoint's route template, and exception type/message/stack traces.
+Logging follows GDPR data minimization: only failures and warnings an operator has to diagnose are recorded,
+so normal use writes nothing, and no entry stored in Production survives more than 30 days. Never logged:
+names, emails, phone numbers, anything typed by the client, the requested path or query, client IP, user
+agent, cookies, tokens and one-time codes. Logged: counters, enum/kind values, error/SMTP/HTTP codes, the HTTP
+method, the matched endpoint's route template, and exception type/message/stack traces. No event template
+carries an id, but an exception message may quote the pseudonymous GUID of a row or stored file it failed on,
+such as the path of a file under `/app/files`; it is written as is.
 
 - **API**: every event is declared with `[LoggerMessage]` in a `*Log` class per layer — `SecurityLog`,
-  `ApplicationLog`, `InfrastructureLog`, `CompositionLog`, `ApiLog`. `CA1848` is an error (`backend/.editorconfig`), and the
+  `ApplicationLog`, `InfrastructureLog`, `ApiLog`. `CA1848` is an error (`backend/.editorconfig`), and the
   architecture tests `LoggingConventionTests`/`LoggingCallSiteTests` enforce an allowed-placeholder list and
-  that `Information` is used only for process lifecycle. `Logging:LogLevel` in `appsettings.json` is the level
-  policy for both the console and the file sink: `Default` is `Warning`; `Information` is enabled only for
-  `CodigoActivo.Lifecycle` and `Microsoft.Hosting.Lifetime`; `Microsoft.EntityFrameworkCore.Database.Command`
-  is `None`, since the SQL of a failing command can carry literal values. An environment can override any
-  category with `Logging__LogLevel__<Category>`. There is no per-request logging middleware: unhandled
-  exceptions are recorded only by `GlobalExceptionHandler`, with the HTTP method and the route template, never
-  the requested path. EF Core sensitive-data logging stays disabled; `SmtpEmailSender` strips the recipient
-  and server reply out of SMTP exceptions before they are logged.
+  that no event is declared below `Warning`. `Logging:LogLevel` in `appsettings.json` is the level policy for
+  both the console and the file sink: `Default` is `Warning`, which also drops the framework's start and stop
+  messages; `Microsoft.EntityFrameworkCore.Database.Command` is `None`, since the SQL of a failing command can
+  carry literal values. An environment can override any category with `Logging__LogLevel__<Category>`. There
+  is no per-request logging middleware: unhandled exceptions are recorded only by `GlobalExceptionHandler`,
+  with the HTTP method and the route template, never the requested path. Expected outcomes are not logged: a
+  refused concurrent update (409 `ConcurrentUpdate`) or a rejected CSRF token, which the client refreshes and
+  sends again. A use case is logged as slow only above 5 seconds. `NormalUseLoggingTests` drives anonymous,
+  member and administrator flows and fails if any entry passes the policy. EF Core sensitive-data logging
+  stays disabled; `SmtpEmailSender` strips the recipient and server reply out of SMTP exceptions before they
+  are logged.
 - **Security events**: only four events exist, all `Warning` and free of any user id —
   `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked;
   written once the lock commits),
@@ -370,26 +375,33 @@ endpoint's route template, and exception type/message/stack traces.
   security-change email was dropped by the limiter). Logins, logouts and password changes are not recorded.
 - **API log output**: the flat `LOG_DIRECTORY` variable selects the sink. With a value, every event goes to
   daily files `api-<yyyyMMdd>.log` (Serilog file sink; the file name uses the container's local date, event
-  timestamps are UTC), one line per event with embedded line breaks folded with `" | "`, and any GUID in the
-  message or the exception (dashed or plain form) masked as `<id>`; nothing goes to the console. Without a
-  value (or empty, the local-development case) events go to the console, unmasked. The fatal startup event
-  (`CRT CodigoActivo.Lifecycle The API host terminated unexpectedly`) is always recorded regardless of the
+  timestamps are UTC) through a Serilog output template: one line with the UTC timestamp, the level, the
+  category and the message, followed by the exception, if any, on the next lines; nothing goes to the console.
+  Without a value (or empty, the local-development case) events go to the console. The fatal startup event
+  (`FTL CodigoActivo.Lifecycle The API host terminated unexpectedly`) is always recorded regardless of the
   level policy, and the process exits non-zero. If the daily file cannot be opened for writing, the API does
   not start.
 - **nginx**: `access_log off` and `error_log` writes to `/dev/stderr` at `crit`, so no request or error is
   stored; a failed API shows in `docker compose ps`, and the 5xx it returns is logged by the API itself.
-- **PostgreSQL**: `log_error_verbosity=terse` drops `DETAIL` lines; stderr output is discarded, so nothing is
-  stored. A database failure is logged as the exception it raises in the API. A known residual: PostgreSQL
-  itself still logs the attempted role name in `FATAL` authentication failures on its discarded stderr; `db`
-  is reachable only from the internal `backend` network.
+- **PostgreSQL**: its logging collector writes one file per weekday, `postgresql-<Mon..Sun>.log` (UTC), into
+  the `logs-db` volume at the default `log_min_messages=warning`, which also keeps the few `LOG` lines of each
+  start and stop. `log_error_verbosity=terse` drops the `DETAIL` lines that quote row values,
+  `log_min_error_statement=panic` keeps the failing SQL out, and checkpoint and autovacuum reports are off.
+  The first start of an empty database also leaves the `__EFMigrationsHistory does not exist` error of the
+  migrator. Messages written before the collector starts go to the discarded stderr. A known residual: a
+  `FATAL` authentication failure names the attempted role; `db` is reachable only from the internal `backend`
+  network.
 - **Retention and container logs**: every base Compose service uses `logging: driver: none` (`docker compose
-  logs` shows nothing). Only the API writes log files, into the `logs-api` volume; `LogFileRetentionCleaner`,
-  a background service registered whenever `LOG_DIRECTORY` is set, sweeps that directory at startup and every
-  hour and deletes `api-<yyyyMMdd>[_N].log` files whose last write is older than 13 days. Because a daily file
-  spans 24 hours, no stored entry survives more than 14 days plus one sweep interval, under the 15-day limit.
-  A removal failure is logged as `LogFileRemovalFailed` (`Warning`) and does not stop the sweep; no other file
-  in the directory is ever touched. Purging stops while the API is stopped, so the effective retention
-  lengthens by however long it is down. See [DEPLOYMENT.md](DEPLOYMENT.md#production-topology).
+  logs` shows nothing). `LogFileRetentionCleaner`, a background service registered whenever `LOG_DIRECTORY`
+  is set, sweeps the `logs-api` directory at startup and every hour and deletes `api-<yyyyMMdd>[_N].log` files
+  whose last write is older than 28 days. Because a daily file spans 24 hours, no stored entry survives more
+  than 29 days plus one sweep interval, under the 30-day limit. A removal failure is logged as
+  `LogFileRemovalFailed` (`Warning`) and does not stop the sweep; no other file in the directory is ever
+  touched. Purging stops while the API is stopped, so the effective retention lengthens by however long it is
+  down. PostgreSQL rotates its own files at midnight with `log_truncate_on_rotation=on`, emptying the file of
+  the new weekday, so `logs-db` holds at most 7 days while `db` runs. A day that starts while `db` is stopped
+  is appended to its old file instead, which then keeps entries from a week earlier. See
+  [DEPLOYMENT.md](DEPLOYMENT.md#production-topology).
 
 ### Production configuration and secrets
 

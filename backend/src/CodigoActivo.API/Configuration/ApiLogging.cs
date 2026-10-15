@@ -1,11 +1,12 @@
+using System.Globalization;
 using System.Text;
-using CodigoActivo.API.Diagnostics;
 using Serilog;
 using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Extensions.Logging;
 using Serilog.Formatting;
+using Serilog.Formatting.Display;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace CodigoActivo.API.Configuration;
@@ -29,6 +30,8 @@ internal sealed class ApiLogging : IDisposable
     internal const string DirectoryKey = "LOG_DIRECTORY";
 
     private const string FileNamePattern = "api-.log";
+    private const string OutputTemplate =
+        "{UtcTimestamp:yyyy-MM-ddTHH:mm:ss.fffZ} {Level:u3} {SourceContext} {Message:lj}{NewLine}{Exception}";
     private const long FileSizeLimitBytes = 64L * 1024 * 1024;
 
     private static readonly TimeSpan FlushInterval = TimeSpan.FromSeconds(1);
@@ -108,7 +111,7 @@ internal sealed class ApiLogging : IDisposable
         return WriteToDailyFile(
                 new LoggerConfiguration().MinimumLevel.Verbose().WriteTo,
                 directory,
-                new SingleLineLogFormatter(),
+                new MessageTemplateTextFormatter(OutputTemplate, CultureInfo.InvariantCulture),
                 FlushInterval
             )
             .CreateLogger();

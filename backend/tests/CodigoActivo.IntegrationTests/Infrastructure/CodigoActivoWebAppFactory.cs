@@ -24,18 +24,30 @@ using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
-    : WebApplicationFactory<Program>
+public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 {
     private static readonly DateTimeOffset ClockOrigin = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
+    private readonly PostgresContainerFixture postgres;
     private readonly string fileStorageRoot = CreateFileStorageRoot();
     private readonly string deploymentModeFile = CreateDeploymentModeFilePath();
     private readonly List<WebApplicationFactory<Program>> derived = [];
 
+    /// <summary>
+    /// Sends every request over HTTPS, as the production proxy does, so the HTTPS redirection
+    /// lets it through instead of warning that it has no port to redirect to.
+    /// </summary>
+    public CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
+    {
+        this.postgres = postgres;
+        ClientOptions.BaseAddress = new Uri("https://localhost");
+    }
+
     public TestClock Clock { get; } = new();
 
     public FakeEmailSender EmailSender { get; } = new();
+
+    public LogRecorder Logs { get; } = new();
 
     private static EmailGuardOptions UnboundedEmailGuard()
     {
@@ -116,10 +128,9 @@ public sealed class CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
             RemoveHostedService<DisposableEmailDomainRefresher>(services);
 
             services.RemoveAll<DeploymentModeLock>();
-            services.AddSingleton(sp => new DeploymentModeLock(
-                deploymentModeFile,
-                sp.GetRequiredService<ILogger<DeploymentModeLock>>()
-            ));
+            services.AddSingleton(new DeploymentModeLock(deploymentModeFile));
+
+            services.AddSingleton<ILoggerProvider>(Logs);
 
             UseTestDatabase(services);
 

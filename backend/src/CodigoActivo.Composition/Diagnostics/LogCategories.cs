@@ -6,8 +6,8 @@ namespace CodigoActivo.Composition.Diagnostics;
 public static class LogCategories
 {
     /// <summary>
-    /// Category of the process lifecycle events, the only ones allowed to log at the information
-    /// level.
+    /// Category of the event recorded when the process ends because starting or running the host
+    /// failed.
     /// </summary>
     public const string Lifecycle = "CodigoActivo.Lifecycle";
 }

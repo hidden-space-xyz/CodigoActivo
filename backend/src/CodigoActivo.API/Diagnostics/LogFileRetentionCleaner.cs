@@ -10,10 +10,10 @@ namespace CodigoActivo.API.Diagnostics;
 /// process logs to files, and it touches nothing but the files the sink writes: the daily
 /// <c>api-yyyyMMdd.log</c> and the <c>_NNN</c> files a size rollover adds.
 /// <para>
-/// A file is removed when its last write is older than 13 days. A daily file holds entries written up
+/// A file is removed when its last write is older than 28 days. A daily file holds entries written up
 /// to 24 hours before that last write, and the sweep runs every hour, so the oldest entry the
-/// directory can hold is 13 days plus 24 hours plus one sweep interval, that is 14 days and one hour,
-/// below the 15 days the deployment promises.
+/// directory can hold is 28 days plus 24 hours plus one sweep interval, that is 29 days and one hour,
+/// below the 30 days the deployment promises.
 /// </para>
 /// </summary>
 /// <param name="directory">Directory the sink writes its daily files to.</param>
@@ -29,7 +29,7 @@ internal sealed partial class LogFileRetentionCleaner(
 {
     private const string SearchPattern = "api-*.log";
 
-    private static readonly TimeSpan Retention = TimeSpan.FromDays(13);
+    private static readonly TimeSpan Retention = TimeSpan.FromDays(28);
     private static readonly TimeSpan SweepInterval = TimeSpan.FromHours(1);
 
     [GeneratedRegex(@"^api-\d{8}(_\d+)?\.log$", RegexOptions.None, matchTimeoutMilliseconds: 250)]

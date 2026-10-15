@@ -15,7 +15,6 @@ public sealed partial class LoggingConventionTests
         "UseCase",
         "Attempts",
         "Capacity",
-        "ConfiguredMode",
         "Count",
         "Drain",
         "Effect",
@@ -59,13 +58,6 @@ public sealed partial class LoggingConventionTests
         "UserTypeId",
     ];
 
-    private static readonly string[] LifecycleEvents =
-    [
-        "DatabaseMigrationsApplied",
-        "DatabaseSeedApplied",
-        "DeploymentModeLockSkipped",
-    ];
-
     private static readonly string[] SecurityEvents =
     [
         "AdministratorFlagChanged",
@@ -76,7 +68,6 @@ public sealed partial class LoggingConventionTests
 
     private static readonly LogLevel[] AllowedLevels =
     [
-        LogLevel.Information,
         LogLevel.Warning,
         LogLevel.Error,
         LogLevel.Critical,
@@ -159,19 +150,7 @@ public sealed partial class LoggingConventionTests
     }
 
     [Fact]
-    public void LogEventsAtInformationAreOnlyTheLifecycleOnes()
-    {
-        var offenders = Events()
-            .Where(entry => entry.Attribute.Level == LogLevel.Information)
-            .Select(entry => entry.Method.Name)
-            .Where(name => !LifecycleEvents.Contains(name, StringComparer.Ordinal))
-            .ToList();
-
-        offenders.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void LogEventsNeverUseALevelTheDefaultFilterDiscards()
+    public void LogEventsNeverUseALevelBelowWarning()
     {
         var offenders = Events()
             .Where(entry => !AllowedLevels.Contains(entry.Attribute.Level))

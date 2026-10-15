@@ -1,10 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Composition.Platform;
-using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -78,21 +75,13 @@ public sealed class DeploymentModeLockTests : IDisposable
     public void LockOnADevelopmentHostWritesNothingToTheFilesystem(string? containerFlag)
     {
         var path = Path.Join(directory, "deployment-mode");
-        var logger = new RecordingLogger<DeploymentModeLock>();
 
-        var result = new DeploymentModeLock(path, logger).Lock(
-            BuildConfiguration("true", containerFlag),
-            Environment("Development")
-        );
+        var result = Build(path)
+            .Lock(BuildConfiguration("true", containerFlag), Environment("Development"));
 
         result.Should().BeTrue();
         File.Exists(path).Should().BeFalse();
         Directory.Exists(directory).Should().BeFalse();
-        logger
-            .LevelEntries.Should()
-            .ContainSingle(entry =>
-                entry.Level == LogLevel.Information && entry.Message.Contains("skipped")
-            );
     }
 
     [Theory]
@@ -161,7 +150,7 @@ public sealed class DeploymentModeLockTests : IDisposable
 
     private static DeploymentModeLock Build(string path)
     {
-        return new DeploymentModeLock(path, NullLogger<DeploymentModeLock>.Instance);
+        return new DeploymentModeLock(path);
     }
 
     private static bool LockInContainer(DeploymentModeLock modeLock, string? demoMode)
