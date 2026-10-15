@@ -38,7 +38,7 @@ Equipo de Código Activo</value>
     <value>Visitar nuestra web</value>
   </data>
   <data name="emails.footer.automaticNote" xml:space="preserve">
-    <value>Este es un mensaje automático enviado desde nuestra web. Por favor, no respondas a este correo.</value>
+    <value>Correo automático: no lo respondas. Si necesitas ayuda, contacta con nosotros a través de nuestra web.</value>
   </data>
   <data name="emails.details.activityLabel" xml:space="preserve">
     <value>Actividad</value>
@@ -71,7 +71,7 @@ Equipo de Código Activo</value>
     <value>Verifica tu cuenta</value>
   </data>
   <data name="emails.verification.introText" xml:space="preserve">
-    <value>Gracias por registrarte en Código Activo. Para activar tu cuenta puedes abrir este enlace:</value>
+    <value>Gracias por registrarte en Código Activo. Para activar tu cuenta, abre este enlace:</value>
   </data>
   <data name="emails.verification.introHtml" xml:space="preserve">
     <value>Gracias por registrarte en &lt;b&gt;Código Activo&lt;/b&gt;. Para activar tu cuenta, pulsa el botón:</value>
@@ -95,10 +95,10 @@ Equipo de Código Activo</value>
     <value>Confirma tu nuevo correo</value>
   </data>
   <data name="emails.emailChange.introText" xml:space="preserve">
-    <value>Se ha pedido usar esta dirección en una cuenta de Código Activo. Para confirmarla puedes abrir este enlace:</value>
+    <value>Hemos recibido una solicitud para usar esta dirección como correo de una cuenta de Código Activo. Para confirmarla, abre este enlace:</value>
   </data>
   <data name="emails.emailChange.introHtml" xml:space="preserve">
-    <value>Se ha pedido usar esta dirección en una cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Para confirmarla, pulsa el botón:</value>
+    <value>Hemos recibido una solicitud para usar esta dirección como correo de una cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Para confirmarla, pulsa el botón:</value>
   </data>
   <data name="emails.emailChange.buttonLabel" xml:space="preserve">
     <value>Confirmar mi correo</value>
@@ -110,7 +110,7 @@ Equipo de Código Activo</value>
     <value>El enlace caduca en &lt;b&gt;{0} minutos&lt;/b&gt;. Hasta que lo abras, la cuenta sigue usando su correo anterior.</value>
   </data>
   <data name="emails.emailChange.ignoreNote" xml:space="preserve">
-    <value>Si no has pedido este cambio, puedes ignorar este mensaje: la cuenta no cambiará.</value>
+    <value>Si no has solicitado este cambio, puedes ignorar este mensaje; tu correo seguirá siendo el mismo.</value>
   </data>
   <data name="emails.emailInUse.subject" xml:space="preserve">
     <value>Ya tienes una cuenta en Código Activo</value>
@@ -119,10 +119,10 @@ Equipo de Código Activo</value>
     <value>Ya tienes una cuenta</value>
   </data>
   <data name="emails.emailInUse.introText" xml:space="preserve">
-    <value>Alguien ha intentado usar esta dirección para otra cuenta de Código Activo. Como ya tiene una, no se ha creado ni cambiado nada.</value>
+    <value>Alguien ha intentado registrarse o cambiar su correo en Código Activo con esta dirección. Como ya pertenece a tu cuenta, no se ha creado ni cambiado nada.</value>
   </data>
   <data name="emails.emailInUse.introHtml" xml:space="preserve">
-    <value>Alguien ha intentado usar esta dirección para otra cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Como ya tiene una, no se ha creado ni cambiado nada.</value>
+    <value>Alguien ha intentado registrarse o cambiar su correo en &lt;b&gt;Código Activo&lt;/b&gt; con esta dirección. Como ya pertenece a tu cuenta, no se ha creado ni cambiado nada.</value>
   </data>
   <data name="emails.emailInUse.buttonLabel" xml:space="preserve">
     <value>Iniciar sesión</value>
@@ -140,7 +140,7 @@ Equipo de Código Activo</value>
     <value>Restablece tu contraseña</value>
   </data>
   <data name="emails.passwordReset.introText" xml:space="preserve">
-    <value>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta de Código Activo. Puedes hacerlo desde este enlace:</value>
+    <value>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta de Código Activo. Para elegir una nueva contraseña, abre este enlace:</value>
   </data>
   <data name="emails.passwordReset.introHtml" xml:space="preserve">
     <value>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Para elegir una nueva contraseña, pulsa el botón:</value>
@@ -176,19 +176,19 @@ Equipo de Código Activo</value>
     <value>El código caduca en &lt;b&gt;{0} minutos&lt;/b&gt; y solo sirve una vez.</value>
   </data>
   <data name="emails.loginCode.ignoreNote" xml:space="preserve">
-    <value>Si no has intentado iniciar sesión, alguien conoce tu contraseña: cámbiala cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
+    <value>Si no has intentado iniciar sesión, alguien conoce tu contraseña: restablécela cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
   </data>
   <data name="emails.accountDeletionCode.subject" xml:space="preserve">
     <value>Confirma la eliminación de tu cuenta de Código Activo</value>
   </data>
   <data name="emails.accountDeletionCode.heading" xml:space="preserve">
-    <value>Eliminar tu cuenta</value>
+    <value>Confirma la eliminación de tu cuenta</value>
   </data>
   <data name="emails.accountDeletionCode.introText" xml:space="preserve">
-    <value>Hemos recibido una solicitud para eliminar tu cuenta de Código Activo. Tú y los menores a tu cargo perderéis el acceso para siempre y no podrás recuperar la cuenta. Introduce este código para confirmar la eliminación:</value>
+    <value>Hemos recibido una solicitud para eliminar tu cuenta de Código Activo. Perderás el acceso para siempre y no podrás recuperarla; si tienes menores a tu cargo, también perderán el suyo. Introduce este código para confirmar la eliminación:</value>
   </data>
   <data name="emails.accountDeletionCode.introHtml" xml:space="preserve">
-    <value>Hemos recibido una solicitud para eliminar tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Tú y los menores a tu cargo perderéis el acceso para siempre y no podrás recuperar la cuenta. Introduce este código para confirmar la eliminación:</value>
+    <value>Hemos recibido una solicitud para eliminar tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Perderás el acceso para siempre y no podrás recuperarla; si tienes menores a tu cargo, también perderán el suyo. Introduce este código para confirmar la eliminación:</value>
   </data>
   <data name="emails.accountDeletionCode.expiryText" xml:space="preserve">
     <value>El código caduca en {0} minutos y solo sirve una vez.</value>
@@ -197,7 +197,7 @@ Equipo de Código Activo</value>
     <value>El código caduca en &lt;b&gt;{0} minutos&lt;/b&gt; y solo sirve una vez.</value>
   </data>
   <data name="emails.accountDeletionCode.ignoreNote" xml:space="preserve">
-    <value>Si no has solicitado eliminar tu cuenta, no introduzcas este código y cambia tu contraseña cuanto antes. Nunca compartas este código con nadie.</value>
+    <value>Si no has solicitado eliminar tu cuenta, no introduzcas este código y restablece tu contraseña cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
   </data>
   <data name="emails.securityAlert.subject" xml:space="preserve">
     <value>Cambio de seguridad en tu cuenta de Código Activo</value>
@@ -205,14 +205,20 @@ Equipo de Código Activo</value>
   <data name="emails.securityAlert.heading" xml:space="preserve">
     <value>Cambio de seguridad en tu cuenta</value>
   </data>
+  <data name="emails.securityAlert.passwordLockedSubject" xml:space="preserve">
+    <value>Hemos bloqueado tu cuenta de Código Activo</value>
+  </data>
+  <data name="emails.securityAlert.passwordLockedHeading" xml:space="preserve">
+    <value>Hemos bloqueado tu cuenta</value>
+  </data>
   <data name="emails.securityAlert.introText" xml:space="preserve">
-    <value>Te informamos de un cambio en los datos de acceso de tu cuenta de Código Activo:</value>
+    <value>Te informamos de un cambio en tu cuenta de Código Activo:</value>
   </data>
   <data name="emails.securityAlert.introHtml" xml:space="preserve">
-    <value>Te informamos de un cambio en los datos de acceso de tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;:</value>
+    <value>Te informamos de un cambio en tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;:</value>
   </data>
   <data name="emails.securityAlert.when" xml:space="preserve">
-    <value>Fecha del cambio: {0} (hora local).</value>
+    <value>Fecha del cambio: {0} h.</value>
   </data>
   <data name="emails.securityAlert.newEmail" xml:space="preserve">
     <value>El nuevo correo de acceso empieza por {0}.</value>
@@ -220,23 +226,29 @@ Equipo de Código Activo</value>
   <data name="emails.securityAlert.warning" xml:space="preserve">
     <value>Si no has sido tú, restablece tu contraseña cuanto antes desde «¿Has olvidado tu contraseña?» y ponte en contacto con la asociación.</value>
   </data>
-  <data name="emails.securityAlert.noActionNote" xml:space="preserve">
-    <value>Este aviso es solo informativo: no incluye códigos ni enlaces para realizar ningún cambio.</value>
+  <data name="emails.securityAlert.emailChangedWarning" xml:space="preserve">
+    <value>Si no has sido tú, ponte en contacto con la asociación cuanto antes para recuperar tu cuenta.</value>
+  </data>
+  <data name="emails.securityAlert.unexpectedWarning" xml:space="preserve">
+    <value>Si no esperabas este cambio, ponte en contacto con la asociación.</value>
+  </data>
+  <data name="emails.securityAlert.passwordLockedWarning" xml:space="preserve">
+    <value>Si no has sido tú quien lo ha intentado, elige una contraseña nueva que no uses en ningún otro sitio.</value>
   </data>
   <data name="emails.securityAlert.passwordChanged" xml:space="preserve">
     <value>Se ha cambiado la contraseña de tu cuenta.</value>
   </data>
   <data name="emails.securityAlert.passwordReset" xml:space="preserve">
-    <value>Se ha restablecido la contraseña de tu cuenta mediante el proceso de recuperación.</value>
+    <value>Se ha restablecido la contraseña de tu cuenta desde «¿Has olvidado tu contraseña?».</value>
   </data>
   <data name="emails.securityAlert.authenticatorEnabled" xml:space="preserve">
-    <value>Tu segundo factor ha pasado a ser una aplicación de autenticación.</value>
+    <value>Se ha activado una aplicación de autenticación en tu cuenta. A partir de ahora, los códigos de la verificación en dos pasos los genera esa aplicación en lugar de llegarte por correo.</value>
   </data>
   <data name="emails.securityAlert.authenticatorDisabled" xml:space="preserve">
-    <value>Se ha desactivado la aplicación de autenticación y tu segundo factor vuelve a ser el correo electrónico.</value>
+    <value>Se ha desactivado la aplicación de autenticación de tu cuenta. A partir de ahora, los códigos de la verificación en dos pasos te llegarán por correo.</value>
   </data>
   <data name="emails.securityAlert.twoFactorReset" xml:space="preserve">
-    <value>Un administrador ha restablecido tu segundo factor al correo electrónico.</value>
+    <value>Un administrador ha restablecido la verificación en dos pasos de tu cuenta. A partir de ahora, los códigos te llegarán por correo.</value>
   </data>
   <data name="emails.securityAlert.adminGranted" xml:space="preserve">
     <value>Tu cuenta ha recibido permisos de administración.</value>
@@ -281,7 +293,7 @@ Equipo de Código Activo</value>
     <value>Un miembro de la asociación ha revisado {0} en esta actividad y la ha rechazado. Sentimos no poder confirmar la plaza en esta ocasión.</value>
   </data>
   <data name="emails.activityDecision.deniedButtonLabel" xml:space="preserve">
-    <value>Ver otras actividades</value>
+    <value>Ver otros eventos</value>
   </data>
   <data name="emails.activityDecision.signupPhraseSelf" xml:space="preserve">
     <value>tu inscripción</value>

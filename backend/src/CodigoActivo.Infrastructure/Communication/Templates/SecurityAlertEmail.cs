@@ -11,7 +11,7 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 /// </summary>
 public static class SecurityAlertEmail
 {
-    private const string TimestampFormat = "dd/MM/yyyy HH:mm";
+    private const string TimestampFormat = "dd/MM/yyyy, HH:mm";
 
     /// <summary>
     /// Creates a security change notification from the affected account data.
@@ -49,18 +49,20 @@ public static class SecurityAlertEmail
             blocks.Add(EmailBlocks.Prose(AppStrings.EmailsSecurityAlertNewEmail(maskedNewEmail)));
         }
 
-        blocks.Add(EmailBlocks.Prose(AppStrings.EmailsSecurityAlertWarning));
+        blocks.Add(EmailBlocks.Prose(Warning(change)));
         blocks.Add(
             EmailBlocks.Prose(
                 AppStrings.EmailsSharedSignoffHtml,
                 AppStrings.EmailsSharedSignoffText
             )
         );
-        blocks.Add(EmailBlocks.Note(AppStrings.EmailsSecurityAlertNoActionNote));
 
+        var locked = change is AccountSecurityChange.PasswordLocked;
         var content = EmailLayout.Render(
             new EmailDocument(
-                AppStrings.EmailsSecurityAlertHeading,
+                locked
+                    ? AppStrings.EmailsSecurityAlertPasswordLockedHeading
+                    : AppStrings.EmailsSecurityAlertHeading,
                 AppStrings.EmailsSecurityAlertIntroText,
                 toName,
                 siteUrl,
@@ -74,7 +76,9 @@ public static class SecurityAlertEmail
             EmailKind.SecurityAlert,
             toAddress,
             toName,
-            AppStrings.EmailsSecurityAlertSubject,
+            locked
+                ? AppStrings.EmailsSecurityAlertPasswordLockedSubject
+                : AppStrings.EmailsSecurityAlertSubject,
             content.Html,
             content.Text,
             InlineImages: content.InlineImages
@@ -107,6 +111,22 @@ public static class SecurityAlertEmail
                 AppStrings.EmailsSecurityAlertEmailAndPhoneChanged,
             AccountSecurityChange.PasswordLocked => AppStrings.EmailsSecurityAlertPasswordLocked,
             _ => throw new ArgumentOutOfRangeException(nameof(change), change, null),
+        };
+    }
+
+    private static string Warning(AccountSecurityChange change)
+    {
+        return change switch
+        {
+            AccountSecurityChange.EmailChanged or AccountSecurityChange.EmailAndPhoneChanged =>
+                AppStrings.EmailsSecurityAlertEmailChangedWarning,
+            AccountSecurityChange.TwoFactorReset
+            or AccountSecurityChange.AdminGranted
+            or AccountSecurityChange.AdminRevoked =>
+                AppStrings.EmailsSecurityAlertUnexpectedWarning,
+            AccountSecurityChange.PasswordLocked =>
+                AppStrings.EmailsSecurityAlertPasswordLockedWarning,
+            _ => AppStrings.EmailsSecurityAlertWarning,
         };
     }
 }

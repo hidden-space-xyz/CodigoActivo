@@ -149,7 +149,8 @@ public sealed class EmailLayoutContractTests
                 null,
                 Details,
                 TimeZoneInfo.Utc,
-                Site
+                Site,
+                $"{Site}/events"
             ),
             "manual" => ManualEmail
                 .Create(

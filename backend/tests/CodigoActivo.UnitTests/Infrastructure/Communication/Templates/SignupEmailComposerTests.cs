@@ -49,7 +49,7 @@ public sealed class SignupEmailComposerTests
     }
 
     [Fact]
-    public void DeniedGuardianRecipientNamesTheDependentAndLinksTheEvent()
+    public void DeniedGuardianRecipientNamesTheDependentAndLinksTheEventsList()
     {
         var message = sut.Denied(new EmailRecipient("ada@parent.test", "Ada"), "Kid One", Activity);
 
@@ -60,6 +60,7 @@ public sealed class SignupEmailComposerTests
             .TextBody.Should()
             .Contain("la inscripción de Kid One")
             .And.Contain("rechazado")
-            .And.Contain($"https://app.test/events/{EventId}");
+            .And.Contain("https://app.test/events\n")
+            .And.NotContain($"https://app.test/events/{EventId}");
     }
 }
