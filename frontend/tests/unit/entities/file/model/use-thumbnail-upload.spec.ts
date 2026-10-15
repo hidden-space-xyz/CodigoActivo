@@ -58,19 +58,32 @@ describe('useThumbnailUpload', () => {
     expect(fileName).toBe('poster.png')
   })
 
-  it('overwrites the existing file when one is set', async () => {
-    let replaced = false
-    server.use(
-      http.put('/api/files/file-1', () => {
-        replaced = true
-        return HttpResponse.json({ id: 'file-1' })
-      }),
-    )
+  it('uploads a picked file as a new file even when one exists', async () => {
+    server.use(http.post('/api/files', () => HttpResponse.json({ id: 'file-new' })))
     const { result } = await mountComposable(() => useThumbnailUpload(() => 'file-1'))
     result.pickedFile.value = image()
 
+    await expect(result.resolveThumbnailId()).resolves.toBe('file-new')
+  })
+
+  it('uploads the same pick once and a new pick again', async () => {
+    let uploads = 0
+    server.use(
+      http.post('/api/files', () => {
+        uploads += 1
+        return HttpResponse.json({ id: `file-${uploads}` })
+      }),
+    )
+    const { result } = await mountComposable(() => useThumbnailUpload(null))
+    result.pickedFile.value = image()
+
     await expect(result.resolveThumbnailId()).resolves.toBe('file-1')
-    expect(replaced).toBe(true)
+    await expect(result.resolveThumbnailId()).resolves.toBe('file-1')
+    expect(uploads).toBe(1)
+
+    result.pickedFile.value = image()
+    await expect(result.resolveThumbnailId()).resolves.toBe('file-2')
+    expect(uploads).toBe(2)
   })
 
   it('translates a known API error code and returns null on failure', async () => {
@@ -100,7 +113,9 @@ describe('useThumbnailUpload', () => {
     expect(result.uploadError.value).toBe('')
 
     fail = true
+    result.pickedFile.value = image()
     await result.resolveThumbnailId()
+    expect(result.uploadError.value).toBe(t('entities.file.thumbnail.uploadFailed'))
     result.reset()
     expect(result.uploadError.value).toBe('')
     expect(result.pickedFile.value).toBeNull()

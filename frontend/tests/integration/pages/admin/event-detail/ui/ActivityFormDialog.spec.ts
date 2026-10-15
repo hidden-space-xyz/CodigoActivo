@@ -218,7 +218,7 @@ describe('ActivityFormDialog', () => {
   })
 
   it('shows the upload error and does not submit when the thumbnail cannot be uploaded', async () => {
-    server.use(http.put('/api/files/:fileId', () => apiError(500)))
+    server.use(http.post('/api/files', () => apiError(500)))
     const { wrapper } = await openDialog({ activity: detail })
     pickThumbnail(new File(['png'], 'robot.png', { type: 'image/png' }))
     await flushPromises()

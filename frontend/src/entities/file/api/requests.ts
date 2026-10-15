@@ -1,23 +1,13 @@
-import {
-  getApiFilesFileId,
-  postApiFiles,
-  putApiFilesFileId,
-} from '@/shared/api/generated/endpoints/files/files'
+import { getApiFilesFileId, postApiFiles } from '@/shared/api/generated/endpoints/files/files'
 import type { FileResponse } from '@/shared/api/generated/models'
 import { unwrapOrNull } from '@/shared/api'
 
 /**
- * Uploads a thumbnail and resolves to its file id. With `existingId` the stored file content is
- * replaced in place and the same id is returned; otherwise a new file is created.
+ * Uploads a thumbnail as a new file and resolves to its id. A new image never reuses the id of the
+ * one it replaces, so its content URL changes and no open page keeps showing the previous image;
+ * the replaced file is removed once the saved content stops referencing it.
  */
-export async function uploadThumbnailRequest(
-  file: File,
-  existingId?: string | null,
-): Promise<string> {
-  if (existingId) {
-    await putApiFilesFileId(existingId, { file })
-    return existingId
-  }
+export async function uploadThumbnailRequest(file: File): Promise<string> {
   const response = await postApiFiles({ file })
   return response.data.id ?? ''
 }
