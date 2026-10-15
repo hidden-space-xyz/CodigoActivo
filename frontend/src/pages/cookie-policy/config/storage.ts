@@ -72,8 +72,5 @@ export const BROWSER_GUIDES: readonly BrowserGuide[] = [
   },
 ]
 
-/** Spanish data protection authority. */
-export const AUTHORITY_URL = 'https://www.aepd.es'
-
 /** Guide of the Spanish data protection authority on the use of cookies. */
 export const COOKIE_GUIDE_URL = 'https://www.aepd.es/guias/guia-cookies.pdf'
