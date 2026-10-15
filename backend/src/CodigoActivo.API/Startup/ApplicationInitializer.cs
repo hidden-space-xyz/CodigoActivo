@@ -1,6 +1,4 @@
-using CodigoActivo.API.Diagnostics;
 using CodigoActivo.Composition;
-using CodigoActivo.Composition.Diagnostics;
 
 namespace CodigoActivo.API.Startup;
 
@@ -21,36 +19,13 @@ internal static class ApplicationInitializer
     {
         await using var scope = app.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
-        var logger = services
-            .GetRequiredService<ILoggerFactory>()
-            .CreateLogger(LogCategories.Lifecycle);
         services.ValidateConfiguration();
         var demoMode = services.LockDeploymentMode();
 
-        await MigrateDatabaseAsync(services, logger, cancellationToken);
-        await SeedDatabaseAsync(services, logger, cancellationToken);
+        await services.MigrateDatabaseAsync(cancellationToken);
+        await services.SeedCatalogsAsync(cancellationToken);
         await services.SeedInitialAdministratorAsync(cancellationToken);
         await SyncDemoDataAsync(services, demoMode);
-    }
-
-    private static async Task MigrateDatabaseAsync(
-        IServiceProvider services,
-        ILogger logger,
-        CancellationToken cancellationToken
-    )
-    {
-        await services.MigrateDatabaseAsync(cancellationToken);
-        logger.DatabaseMigrationsApplied();
-    }
-
-    private static async Task SeedDatabaseAsync(
-        IServiceProvider services,
-        ILogger logger,
-        CancellationToken cancellationToken
-    )
-    {
-        await services.SeedCatalogsAsync(cancellationToken);
-        logger.DatabaseSeedApplied();
     }
 
     private static async Task SyncDemoDataAsync(IServiceProvider services, bool demoMode)

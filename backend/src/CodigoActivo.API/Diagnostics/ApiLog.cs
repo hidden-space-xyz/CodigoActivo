@@ -1,9 +1,9 @@
 namespace CodigoActivo.API.Diagnostics;
 
 /// <summary>
-/// Declares the events the API layer records: the process lifecycle and the failures an operator has
-/// to act on. Request templates never carry the requested path, its query, the caller address or any
-/// header, only the HTTP method and the route pattern of the matched endpoint.
+/// Declares the events the API layer records: the failures an operator has to act on, including the
+/// one that ends the process. Request templates never carry the requested path, its query, the caller
+/// address or any header, only the HTTP method and the route pattern of the matched endpoint.
 /// </summary>
 internal static partial class ApiLog
 {
@@ -24,31 +24,6 @@ internal static partial class ApiLog
         string routeTemplate,
         Exception exception
     );
-
-    /// <summary>
-    /// Records a request whose changes were refused because another transaction wrote the same
-    /// data first; it was answered with a conflict, and frequent entries show contention.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="method">HTTP method of the request.</param>
-    /// <param name="routeTemplate">Route pattern of the matched endpoint, never the requested path.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Concurrent update refused while processing {Method} {RouteTemplate}"
-    )]
-    internal static partial void ConcurrentUpdateRefused(
-        this ILogger logger,
-        string method,
-        string routeTemplate
-    );
-
-    /// <summary>
-    /// Records a rejected antiforgery token, which is also how a broken cookie or proxy setup shows.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Validation failure raised by the antiforgery service.</param>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "CSRF validation failed")]
-    internal static partial void CsrfValidationFailed(this ILogger logger, Exception exception);
 
     /// <summary>
     /// Records that signing out could not revoke the server-side session row, which leaves it
@@ -75,20 +50,6 @@ internal static partial class ApiLog
         this ILogger logger,
         Exception exception
     );
-
-    /// <summary>
-    /// Records that startup finished applying the database migrations.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    [LoggerMessage(Level = LogLevel.Information, Message = "Database migrations applied")]
-    internal static partial void DatabaseMigrationsApplied(this ILogger logger);
-
-    /// <summary>
-    /// Records that startup finished seeding the catalogs.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    [LoggerMessage(Level = LogLevel.Information, Message = "Database seeding applied")]
-    internal static partial void DatabaseSeedApplied(this ILogger logger);
 
     /// <summary>
     /// Records that an expired log file could not be listed or removed, so it stays in the log

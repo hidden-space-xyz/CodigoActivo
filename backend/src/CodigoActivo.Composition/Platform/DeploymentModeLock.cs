@@ -1,8 +1,6 @@
 using System.Text;
-using CodigoActivo.Composition.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Composition.Platform;
 
@@ -17,21 +15,17 @@ internal sealed class DeploymentModeLock
     private const string PersistentFilePath = "/app/state/deployment-mode";
     private const string ContainerKey = "DOTNET_RUNNING_IN_CONTAINER";
     private readonly string filePath;
-    private readonly ILogger logger;
 
     /// <summary>
-    /// Initializes a deployment mode lock with its required dependencies.
+    /// Initializes a deployment mode lock persisted in the <c>api-state</c> volume.
     /// </summary>
-    /// <param name="loggerFactory">Factory of the lifecycle logger.</param>
-    public DeploymentModeLock(ILoggerFactory loggerFactory)
-        : this(PersistentFilePath, CreateLogger(loggerFactory)) { }
+    public DeploymentModeLock()
+        : this(PersistentFilePath) { }
 
-    internal DeploymentModeLock(string filePath, ILogger logger)
+    internal DeploymentModeLock(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        ArgumentNullException.ThrowIfNull(logger);
         this.filePath = Path.GetFullPath(filePath);
-        this.logger = logger;
     }
 
     /// <summary>
@@ -46,12 +40,12 @@ internal sealed class DeploymentModeLock
         ArgumentNullException.ThrowIfNull(environment);
 
         var configuredMode = ReadConfiguredMode(configuration["DEMO_MODE"]);
-        var configuredValue = configuredMode ? "demo" : "normal";
         if (environment.IsDevelopment() && !RunsInContainer(configuration))
         {
-            logger.DeploymentModeLockSkipped(configuredValue);
             return configuredMode;
         }
+
+        var configuredValue = configuredMode ? "demo" : "normal";
 
         var directory = Path.GetDirectoryName(filePath);
         if (string.IsNullOrEmpty(directory))
@@ -109,13 +103,6 @@ internal sealed class DeploymentModeLock
         {
             return;
         }
-    }
-
-    private static ILogger CreateLogger(ILoggerFactory loggerFactory)
-    {
-        ArgumentNullException.ThrowIfNull(loggerFactory);
-
-        return loggerFactory.CreateLogger(LogCategories.Lifecycle);
     }
 
     private static bool RunsInContainer(IConfiguration configuration)

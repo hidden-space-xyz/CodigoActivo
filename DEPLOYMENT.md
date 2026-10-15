@@ -30,18 +30,20 @@ policy. Networks: `frontend` (shared by `web` and `api`) and internal-only `back
 | `api-dataprotection` | ASP.NET Data Protection keys and the generated Ed25519 certificate |
 | `api-state`          | The immutable demo/normal deployment-mode choice                   |
 | `logs-api`           | Daily API log files                                                |
+| `logs-db`            | PostgreSQL log files, one per weekday                              |
 
 Every base service disables container logging (`logging: driver: none`); `docker compose logs` shows nothing.
-Only the API writes log files, into `logs-api`, and purges them itself; see [SECURITY.md](SECURITY.md#logging)
-for what is logged and how retention works. Do not include `logs-api` in backups: it holds only diagnostics
-subject to that retention. Queued email is persisted in `db-data`, not held in memory; see
+The API writes its log files into `logs-api` and purges them itself; PostgreSQL writes its own into `logs-db`
+and overwrites each one a week later. See [SECURITY.md](SECURITY.md#logging) for what is logged and how
+retention works. Do not include `logs-api` or `logs-db` in backups: they hold only diagnostics subject to that
+retention. Queued email is persisted in `db-data`, not held in memory; see
 [Email delivery](#email-delivery).
 
 Both application containers run as non-root, drop Linux capabilities, use `no-new-privileges` and have
 read-only root filesystems with explicit writable mounts. `db` also uses `no-new-privileges` and keeps only
 the capabilities its entrypoint needs to fix the volume ownership and switch to the `postgres` user
-(`CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SETGID`, `SETUID`). Health checks target `/api/auth/csrf` (API) and
-`/healthz` (nginx).
+(`CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SETGID`, `SETUID`); its entrypoint also hands `logs-db` to that user.
+Health checks target `/api/auth/csrf` (API) and `/healthz` (nginx).
 
 nginx gzips text responses of 1 KiB or more on the fly, both static files and proxied API responses; the API
 itself does not compress. The `web` image build also stores a `.gz` sibling of each text asset, which nginx
@@ -67,6 +69,7 @@ touch secrets/smtp_password
 docker compose up -d
 docker compose ps
 docker compose exec api sh -c 'tail -n 100 /var/log/codigoactivo/api-*.log'
+docker compose exec db sh -c 'tail -n 100 /var/log/postgresql/postgresql-*.log'
 ```
 
 Set at least `APP_BASE_URL` (final public HTTPS origin, no path/query/fragment), `DEMO_MODE` (permanent for
@@ -277,8 +280,8 @@ docker compose exec db psql -U codigoactivo -d codigoactivo -c \
 On first start the API writes the selected `DEMO_MODE` value to `/app/state/deployment-mode` in `api-state`;
 later starts must use the same value. The file is always written except when the API runs in Development
 outside a container (the API image declares `DOTNET_RUNNING_IN_CONTAINER=true`, and `1` is accepted too), so
-a local `dotnet run` still validates `DEMO_MODE`, logs that the lock is skipped and writes nothing to the
-developer's filesystem, while the Compose development overlay still locks the mode in `api-state`.
+a local `dotnet run` still validates `DEMO_MODE` and writes nothing to the developer's filesystem, while the
+Compose development overlay still locks the mode in `api-state`.
 Demo mode seeds realistic content and invented accounts under
 `demo.codigoactivo.es` with random, discarded passwords, so they cannot log in; the demonstrator signs in with
 the bootstrap administrator, the only administrator, whose password reset and login codes arrive at
@@ -313,8 +316,8 @@ publishing SMTP on port `1025` and its inbox UI on port `8025`, exposes PostgreS
 the backend network non-internal, and disables the API read-only root filesystem in favor of
 debugger-oriented privileges. Visual Studio uses the same Compose project through
 `backend/docker-compose.dcproj`. As a development-only exception to the log policy in
-[SECURITY.md](SECURITY.md#logging), the overlay clears `LOG_DIRECTORY`, so the API logs to the console
-unmasked, kept by Docker's `json-file` driver at 5 MB per file, two files.
+[SECURITY.md](SECURITY.md#logging), the overlay clears `LOG_DIRECTORY`, so the API logs to the console,
+kept by Docker's `json-file` driver at 5 MB per file, two files.
 
 ## Releases and upgrades
 
@@ -348,8 +351,8 @@ version; rerunning a commit older than the latest release is rejected. Actions n
 repository contents, packages and security events.
 
 The production Compose file follows `latest`. Upgrade with `docker compose pull && docker compose up -d`, then
-review the daily log files in `logs-api` (see [SECURITY.md](SECURITY.md#logging)) and smoke test. The
-PostgreSQL image does not upgrade `db-data` across major versions; changing from PostgreSQL 18 requires a
+review the log files in `logs-api` and `logs-db` (see [SECURITY.md](SECURITY.md#logging)) and smoke test.
+The PostgreSQL image does not upgrade `db-data` across major versions; changing from PostgreSQL 18 requires a
 dump and restore.
 
 ## Backups and recovery

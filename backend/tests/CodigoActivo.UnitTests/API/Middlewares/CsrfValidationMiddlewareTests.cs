@@ -8,7 +8,6 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -27,8 +26,7 @@ public sealed class CsrfValidationMiddlewareTests
                 nextCalled = true;
                 return Task.CompletedTask;
             },
-            antiforgery,
-            NullLogger<CsrfValidationMiddleware>.Instance
+            antiforgery
         );
     }
 

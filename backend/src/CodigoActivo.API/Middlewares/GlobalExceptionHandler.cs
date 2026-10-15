@@ -10,10 +10,10 @@ namespace CodigoActivo.API.Middlewares;
 
 /// <summary>
 /// Logs unexpected failures and returns a safe problem response. A commit refused because another
-/// transaction changed the same data first is answered as a conflict the client can send again,
-/// <see cref="ErrorCode.ConcurrentUpdate"/>, instead of an unexpected error. The entry names the
-/// endpoint by its route pattern, never by the requested path, which carries the identifiers of
-/// the users it is about.
+/// transaction changed the same data first is an expected outcome, answered without a log entry as
+/// a conflict the client can send again, <see cref="ErrorCode.ConcurrentUpdate"/>. The entry of an
+/// unexpected failure names the endpoint by its route pattern, never by the requested path, which
+/// carries the identifiers of the users it is about.
 /// </summary>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
@@ -52,18 +52,19 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         Exception exception
     )
     {
-        var method = httpContext.Request.Method;
-        var route = RouteTemplate(httpContext);
         if (exception is ConcurrentUpdateException)
         {
-            logger.ConcurrentUpdateRefused(method, route);
             return ApiErrorResponseExtensions.Create(
                 ApiError.Conflict(ErrorCode.ConcurrentUpdate),
                 httpContext
             );
         }
 
-        logger.UnhandledRequestException(method, route, exception);
+        logger.UnhandledRequestException(
+            httpContext.Request.Method,
+            RouteTemplate(httpContext),
+            exception
+        );
         return ApiErrorResponseExtensions.CreateInternalError(httpContext);
     }
 

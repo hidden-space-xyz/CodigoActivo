@@ -145,11 +145,12 @@ The five required steps are documented once, in
   `backend/src/CodigoActivo.Application/Common/Localization/AppStrings.resx`. Log messages, diagnostic
   exceptions and seeded content are not UI text.
 - Declare every log event with `[LoggerMessage]` in the layer's `*Log` class (`SecurityLog`, `ApplicationLog`,
-  `InfrastructureLog`, `CompositionLog`, `ApiLog`); `CA1848` is an error. Use only the placeholder types the
+  `InfrastructureLog`, `ApiLog`) at `Warning` or above, only for what an operator must act on: normal use and
+  expected outcomes log nothing. `CA1848` is an error. Use only the placeholder types the
   `LoggingConventionTests`/`LoggingCallSiteTests` allow-list accepts, and never a user id, personal data, a
   value typed by the client, a credential, a code, a token or a third-party reply that may quote them.
-  Exception messages you throw follow the same rule because they are logged. See
-  [SECURITY.md](SECURITY.md#logging).
+  Exception messages you throw follow the same rule because they are logged. `NormalUseLoggingTests` fails
+  when a normal flow writes an entry. See [SECURITY.md](SECURITY.md#logging).
 - Use `camelCase` private fields without a leading underscore.
 - Keep CSharpier formatting and all SDK analyzer rules clean. Warnings are errors.
 - Document every public type and member with XML comments (`CS1591` is a warning, so the build fails without

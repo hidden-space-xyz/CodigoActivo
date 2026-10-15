@@ -143,9 +143,11 @@ public sealed class LoggingQueryDecorator<TQuery, TResult>(
 public static class UseCaseTiming
 {
     /// <summary>
-    /// Gets the duration above which a use case is logged as slow.
+    /// Gets the duration above which a use case is logged as slow. Hashing a password can take
+    /// about a second on modest hardware, so only a wait a person would take for a failure is
+    /// logged.
     /// </summary>
-    public static TimeSpan SlowThreshold { get; } = TimeSpan.FromSeconds(1);
+    public static TimeSpan SlowThreshold { get; } = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// Logs a warning when the use case started at <paramref name="started"/> was slow.

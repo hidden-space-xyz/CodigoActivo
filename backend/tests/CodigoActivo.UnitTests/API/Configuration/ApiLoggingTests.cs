@@ -12,6 +12,9 @@ namespace CodigoActivo.UnitTests.API.Configuration;
 
 public sealed class ApiLoggingTests : IDisposable
 {
+    private const string DecoratorCategory =
+        "CodigoActivo.Application.Common.Messaging.LoggingCommandDecorator";
+
     private readonly string directory = Path.Join(
         Path.GetTempPath(),
         "codigoactivo-tests",
@@ -97,7 +100,7 @@ public sealed class ApiLoggingTests : IDisposable
     {
         using (var logging = ApiLogging.Start(Configuration(directory)))
         {
-            logging.CreateLogger(LogCategories.Lifecycle).DatabaseMigrationsApplied();
+            logging.CreateLogger(DecoratorCategory).SlowUseCase("UpdateUserCommand", 5432);
         }
 
         var file = Directory.EnumerateFiles(directory).Should().ContainSingle().Subject;
@@ -107,13 +110,13 @@ public sealed class ApiLoggingTests : IDisposable
     }
 
     [Fact]
-    public void StartWithALogDirectoryWritesOneLinePerEventWithTheUtcTimestampLevelAndCategory()
+    public void StartWithALogDirectoryWritesOneLinePerMessageWithTheUtcTimestampLevelAndCategory()
     {
         using (var logging = ApiLogging.Start(Configuration(directory)))
         {
-            var logger = logging.CreateLogger(LogCategories.Lifecycle);
-            logger.DatabaseMigrationsApplied();
-            logger.DatabaseSeedApplied();
+            var logger = logging.CreateLogger(DecoratorCategory);
+            logger.SlowUseCase("UpdateUserCommand", 5432);
+            logger.SlowUseCase("DeleteUserCommand", 6543);
         }
 
         var lines = WrittenLines();
@@ -121,9 +124,9 @@ public sealed class ApiLoggingTests : IDisposable
         lines[0]
             .Should()
             .MatchRegex(
-                @"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z INF CodigoActivo\.Lifecycle Database migrations applied$"
+                @"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z WRN CodigoActivo\.Application\.Common\.Messaging\.LoggingCommandDecorator UpdateUserCommand took 5432 ms$"
             );
-        lines[1].Should().EndWith("Database seeding applied");
+        lines[1].Should().EndWith("DeleteUserCommand took 6543 ms");
     }
 
     [Fact]
@@ -147,15 +150,15 @@ public sealed class ApiLoggingTests : IDisposable
             logging.CreateLogger(LogCategories.Lifecycle).HostTerminatedUnexpectedly(failure);
         }
 
-        var line = WrittenLines().Should().ContainSingle().Subject;
-        line.Should()
-            .Contain($"CRT {LogCategories.Lifecycle}")
-            .And.Contain("The API host terminated unexpectedly")
-            .And.Contain("InvalidOperationException");
+        var lines = WrittenLines();
+        lines[0]
+            .Should()
+            .EndWith($"FTL {LogCategories.Lifecycle} The API host terminated unexpectedly");
+        lines.Should().Contain("System.InvalidOperationException: boom");
     }
 
     [Fact]
-    public void StartWithALogDirectoryFoldsTheExceptionOfAnEventIntoTheSameLine()
+    public void StartWithALogDirectoryWritesTheExceptionOfAnEventBelowItsMessage()
     {
         using (var logging = ApiLogging.Start(Configuration(directory)))
         {
@@ -164,39 +167,15 @@ public sealed class ApiLoggingTests : IDisposable
                 .UnhandledRequestException("DELETE", "api/users/{id}", Failure());
         }
 
-        var line = WrittenLines().Should().ContainSingle().Subject;
-        line.Should()
-            .Contain("ERR CodigoActivo.API.Middlewares.GlobalExceptionHandler")
-            .And.Contain("Unhandled exception while processing DELETE api/users/{id}")
-            .And.Contain("InvalidOperationException")
-            .And.Contain("boom")
-            .And.Contain("second line");
-    }
-
-    [Fact]
-    public void StartWithALogDirectoryMasksTheIdentifierQuotedByTheExceptionOfAnEvent()
-    {
-        var fileId = Guid.NewGuid();
-
-        using (var logging = ApiLogging.Start(Configuration(directory)))
-        {
-            logging
-                .CreateLogger("CodigoActivo.Application.Files.OrphanFileCleaner")
-                .OrphanFileCleanupFailed(
-                    new UnauthorizedAccessException(
-                        $"Access to the path '/app/files/{fileId}.png' is denied."
-                    )
-                );
-        }
-
-        var line = WrittenLines().Should().ContainSingle().Subject;
-        line.Should()
-            .Contain("WRN CodigoActivo.Application.Files.OrphanFileCleaner")
-            .And.Contain("Orphan file cleanup failed")
-            .And.Contain("UnauthorizedAccessException")
-            .And.Contain("Access to the path '/app/files/<id>.png' is denied.")
-            .And.NotContain(fileId.ToString())
-            .And.NotContain(fileId.ToString("N"));
+        var lines = WrittenLines();
+        lines[0]
+            .Should()
+            .EndWith(
+                "ERR CodigoActivo.API.Middlewares.GlobalExceptionHandler "
+                    + "Unhandled exception while processing DELETE api/users/{id}"
+            );
+        lines[1].Should().Be("System.InvalidOperationException: boom");
+        lines[2].Should().Be("second line");
     }
 
     private static InvalidOperationException Failure()

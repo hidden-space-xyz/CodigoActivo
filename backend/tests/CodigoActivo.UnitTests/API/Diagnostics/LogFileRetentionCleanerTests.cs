@@ -13,8 +13,8 @@ namespace CodigoActivo.UnitTests.API.Diagnostics;
 public sealed class LogFileRetentionCleanerTests : IDisposable
 {
     private static readonly TimeSpan WaitBudget = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan Expired = TimeSpan.FromDays(13) + TimeSpan.FromMinutes(1);
-    private static readonly TimeSpan Kept = TimeSpan.FromDays(12) + TimeSpan.FromHours(23);
+    private static readonly TimeSpan Expired = TimeSpan.FromDays(28) + TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan Kept = TimeSpan.FromDays(27) + TimeSpan.FromHours(23);
 
     private readonly string directory = Path.Join(
         Path.GetTempPath(),
