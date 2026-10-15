@@ -60,10 +60,7 @@ describe('login page', () => {
     const label = wrapper.get('.login-keep__label')
     expect(label.attributes('for')).toBe('login-keep-signed-in')
     expect(label.text()).toBe(t('pages.login.keepSignedIn'))
-    const policy = wrapper.get('.login-keep__link')
-    expect(policy.text()).toBe(t('pages.login.keepSignedInPolicy'))
-    expect(policy.attributes('href')).toBe(router.resolve({ name: 'cookie-policy' }).href)
-    expect(policy.attributes('target')).toBe('_blank')
+    expect(wrapper.find('.login-keep__hint').exists()).toBe(false)
 
     await wrapper.find('#login-identifier').setValue('grace@example.test')
     await wrapper.find('#login-password').setValue('secret')
