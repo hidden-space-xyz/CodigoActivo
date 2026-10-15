@@ -28,7 +28,6 @@ public static class CacheTagsByEvent
         [typeof(ResourceCreated)] = [CacheTags.Resources],
         [typeof(ResourceUpdated)] = [CacheTags.Resources],
         [typeof(ResourceDeleted)] = [CacheTags.Resources],
-        [typeof(StoredFileReplaced)] = [CacheTags.Files],
         [typeof(StoredFileDeleted)] = [CacheTags.Files],
         [typeof(EventCategoryTypeCreated)] = [CacheTags.EventCategoryTypes],
         [typeof(EventCategoryTypeRenamed)] = [CacheTags.EventCategoryTypes, CacheTags.Events],

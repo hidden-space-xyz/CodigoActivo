@@ -2391,54 +2391,6 @@
           }
         }
       },
-      "put": {
-        "tags": [
-          "Files"
-        ],
-        "parameters": [
-          {
-            "name": "fileId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              },
-              "encoding": {
-                "file": {
-                  "style": "form"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FileResponse"
-                }
-              }
-            }
-          }
-        }
-      },
       "delete": {
         "tags": [
           "Files"

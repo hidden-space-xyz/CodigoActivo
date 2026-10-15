@@ -245,8 +245,10 @@ every linked document with the caller's current decision.
 - Both stores are process-local, assuming one API replica; scaling out needs a shared store and cross-instance
   invalidation.
 - nginx does not cache API responses. It adds `Cache-Control: no-store` to every proxied response that sets
-  none, so browsers and intermediaries never store API data; file content keeps the API's own
-  `private, no-cache` and revalidates by `ETag`.
+  none, so browsers and intermediaries never store API data. File content keeps the API's own
+  `public, max-age` of a year, `immutable`: a stored file's content never changes (there is no replace
+  endpoint; a new image is uploaded as a new file and the one it replaces is removed once unreferenced), so
+  a browser that already holds a deleted file may keep showing it from its cache.
 - Static files: hashed `/assets/` are `immutable` for a year, the stable-named icons last a day, and
   `index.html` with every SPA route is `no-cache`, so a deployment is picked up on the next navigation.
   Errors and any response without an explicit policy are `no-store`. A tab left open across a deployment

@@ -248,7 +248,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetContentAfterFileUpdateServesNewBytesAndRotatedETag()
+    public async Task GetContentIsImmutableForClientsAndLeavesOutputCacheOnDelete()
     {
         var admin = await LoginAsAdminAsync();
         using var uploaded = await admin.SendUploadAsync(
@@ -258,35 +258,26 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         );
         uploaded.StatusCode.Should().Be(HttpStatusCode.Created);
         var file = await uploaded.ReadJsonAsync<FileResponse>(Ct);
+        var contentUrl = TestUri.Rel($"/api/files/{file!.Id}/content");
 
         var anonymous = CreateClient();
-        using var first = await anonymous.GetAsync(
-            TestUri.Rel($"/api/files/{file!.Id}/content"),
-            Ct
-        );
+        using var first = await anonymous.GetAsync(contentUrl, Ct);
+        using var cached = await anonymous.GetAsync(contentUrl, Ct);
+
         first.StatusCode.Should().Be(HttpStatusCode.OK);
-        var firstEtag = first.Headers.ETag!.Tag;
+        first.Headers.CacheControl!.Public.Should().BeTrue();
+        first.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(365));
+        first.Headers.CacheControl.Extensions.Select(e => e.Name).Should().Contain("immutable");
+        cached.StatusCode.Should().Be(HttpStatusCode.OK);
+        cached.Headers.Age.Should().NotBeNull();
+        cached.Headers.CacheControl!.Extensions.Select(e => e.Name).Should().Contain("immutable");
 
-        Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddMinutes(1);
-        var updatedBytes = TestSeedData
-            .ValidPng()
-            .Concat(new byte[] { 0x01, 0x02, 0x03 })
-            .ToArray();
-        using var updated = await admin.SendUploadAsync(
-            HttpMethod.Put,
-            $"/api/files/{file.Id}",
-            updatedBytes
-        );
-        updated.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var deleted = await admin.DeleteWithCsrfAsync($"/api/files/{file.Id}", Ct);
+        deleted.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        using var second = await anonymous.GetAsync(
-            TestUri.Rel($"/api/files/{file.Id}/content"),
-            Ct
-        );
-        second.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await second.Content.ReadAsByteArrayAsync(Ct)).Should().Equal(updatedBytes);
-        second.Headers.ETag!.Tag.Should().NotBe(firstEtag);
-        second.Headers.CacheControl!.NoCache.Should().BeTrue();
+        using var gone = await anonymous.GetAsync(contentUrl, Ct);
+        gone.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        gone.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
 
     [Fact]

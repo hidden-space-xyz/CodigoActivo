@@ -120,7 +120,6 @@ export * from './postApiEmailsUsersBody';
 export * from './postApiEmailsUsersParams';
 export * from './postApiEmailsUsersUserIdBody';
 export * from './postApiFilesBody';
-export * from './putApiFilesFileIdBody';
 export * from './registerMinorRequest';
 export * from './registerRequest';
 export * from './resendVerificationRequest';

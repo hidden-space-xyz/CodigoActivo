@@ -5,7 +5,7 @@ namespace CodigoActivo.Domain.Files;
 
 /// <summary>
 /// Uploaded file: its original name, the format detected from its content and who uploaded it.
-/// Replacing the content keeps the identity and the uploader.
+/// Its content never changes; a new image is uploaded as a new file.
 /// </summary>
 public class StoredFile : AggregateRoot<StoredFileId>
 {
@@ -22,7 +22,7 @@ public class StoredFile : AggregateRoot<StoredFileId>
     public string Extension { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Gets when the current content was uploaded.
+    /// Gets when the file was uploaded.
     /// </summary>
     public DateTimeOffset UploadedAt { get; private set; }
 
@@ -48,21 +48,17 @@ public class StoredFile : AggregateRoot<StoredFileId>
         StoredFileId? id = null
     )
     {
-        var file = new StoredFile { Id = id ?? StoredFileId.New(), UploadedBy = uploaderId };
-        file.Apply(name, extension, now);
-        return file;
-    }
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(extension);
 
-    /// <summary>
-    /// Records new content for the file.
-    /// </summary>
-    /// <param name="name">Original name of the new content, already sanitized.</param>
-    /// <param name="extension">Extension of the detected format.</param>
-    /// <param name="now">Current time.</param>
-    public void Replace(string name, string extension, DateTimeOffset now)
-    {
-        Apply(name, extension, now);
-        Raise(new StoredFileReplaced(Id));
+        return new StoredFile
+        {
+            Id = id ?? StoredFileId.New(),
+            Name = name,
+            Extension = extension,
+            UploadedAt = now,
+            UploadedBy = uploaderId,
+        };
     }
 
     /// <summary>
@@ -71,15 +67,5 @@ public class StoredFile : AggregateRoot<StoredFileId>
     public void Delete()
     {
         Raise(new StoredFileDeleted(Id));
-    }
-
-    private void Apply(string name, string extension, DateTimeOffset now)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        ArgumentNullException.ThrowIfNull(extension);
-
-        Name = name;
-        Extension = extension;
-        UploadedAt = now;
     }
 }
