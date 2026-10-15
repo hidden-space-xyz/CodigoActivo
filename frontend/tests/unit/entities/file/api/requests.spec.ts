@@ -50,25 +50,7 @@ describe('file requests', () => {
     it('returns an empty id when the API omits it', async () => {
       server.use(http.post('/api/files', () => HttpResponse.json({})))
 
-      await expect(uploadThumbnailRequest(image(), null)).resolves.toBe('')
-    })
-
-    it('replaces the existing file in place and keeps its id', async () => {
-      let upload: Upload | undefined
-      server.use(
-        http.put('/api/files/file-1', async ({ request }) => {
-          upload = await readUpload(request)
-          return HttpResponse.json({ id: 'file-1' })
-        }),
-      )
-
-      await expect(uploadThumbnailRequest(image('new.png'), 'file-1')).resolves.toBe('file-1')
-      expect(upload).toEqual({
-        method: 'PUT',
-        path: '/api/files/file-1',
-        file: { name: 'new.png', content: 'image-bytes' },
-        csrf: TEST_CSRF_TOKEN,
-      })
+      await expect(uploadThumbnailRequest(image())).resolves.toBe('')
     })
 
     it('rejects with the API error when the upload fails', async () => {
