@@ -39,14 +39,7 @@ public static class ManualEmail
         var paragraphs = Paragraphs(body);
 
         var content = EmailLayout.Render(
-            new EmailDocument(
-                subject,
-                Preheader(body),
-                null,
-                siteUrl,
-                EmailBranding.Brand,
-                AppStrings.EmailsManualSignature
-            ),
+            new EmailDocument(subject, Preheader(body), null, siteUrl, EmailBranding.Brand),
             [.. paragraphs.Select(paragraph => EmailBlocks.Prose(ToHtml(paragraph), paragraph))]
         );
 

@@ -37,9 +37,6 @@ Equipo de Código Activo</value>
   <data name="emails.footer.websiteLabel" xml:space="preserve">
     <value>Visitar nuestra web</value>
   </data>
-  <data name="emails.footer.automaticNote" xml:space="preserve">
-    <value>Correo automático: no lo respondas. Si necesitas ayuda, contacta con nosotros a través de nuestra web.</value>
-  </data>
   <data name="emails.details.activityLabel" xml:space="preserve">
     <value>Actividad</value>
   </data>
@@ -300,9 +297,6 @@ Equipo de Código Activo</value>
   </data>
   <data name="emails.activityDecision.signupPhraseNamed" xml:space="preserve">
     <value>la inscripción de {0}</value>
-  </data>
-  <data name="emails.manual.signature" xml:space="preserve">
-    <value>Este mensaje te lo envía el equipo de Código Activo.</value>
   </data>
   <data name="files.fallbackAttachmentName" xml:space="preserve">
     <value>adjunto</value>

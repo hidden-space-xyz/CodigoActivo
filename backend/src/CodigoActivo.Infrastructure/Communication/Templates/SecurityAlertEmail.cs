@@ -66,8 +66,7 @@ public static class SecurityAlertEmail
                 AppStrings.EmailsSecurityAlertIntroText,
                 toName,
                 siteUrl,
-                EmailBranding.Brand,
-                AppStrings.EmailsFooterAutomaticNote
+                EmailBranding.Brand
             ),
             blocks
         );

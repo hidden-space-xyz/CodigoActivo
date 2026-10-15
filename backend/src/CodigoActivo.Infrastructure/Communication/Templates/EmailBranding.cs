@@ -62,11 +62,6 @@ public static class EmailBranding
     public const string TextMuted = "#616161";
 
     /// <summary>
-    /// Identifies the text dim configuration or policy value.
-    /// </summary>
-    public const string TextDim = "#737373";
-
-    /// <summary>
     /// Identifies the primary configuration or policy value.
     /// </summary>
     public const string Primary = "#f9a320";

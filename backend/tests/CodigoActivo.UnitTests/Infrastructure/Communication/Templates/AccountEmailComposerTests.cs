@@ -18,7 +18,7 @@ public sealed class AccountEmailComposerTests
     );
     private static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(15);
     private static readonly string SiteFooter =
-        $"\nhttps://app.test\n{AppStrings.EmailsFooterAutomaticNote}";
+        $"{AppStrings.EmailsFooterTagline}\nhttps://app.test";
 
     private readonly TestClock clock = new();
     private readonly AccountEmailComposer sut;

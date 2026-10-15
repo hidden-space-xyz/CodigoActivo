@@ -96,19 +96,13 @@ public static class EmailStyles
     /// <summary>
     /// Identifies the footer link wrap configuration or policy value.
     /// </summary>
-    public const string FooterLinkWrap = Font + "margin:0 0 16px 0;font-size:13px;line-height:1.6;";
+    public const string FooterLinkWrap = Font + "margin:0;font-size:13px;line-height:1.6;";
 
     /// <summary>
     /// Identifies the footer link configuration or policy value.
     /// </summary>
     public const string FooterLink =
         $"color:{EmailBranding.PrimaryInk};font-weight:700;text-decoration:underline;";
-
-    /// <summary>
-    /// Identifies the footer note configuration or policy value.
-    /// </summary>
-    public const string FooterNote =
-        Font + $"margin:0;font-size:12px;line-height:1.6;color:{EmailBranding.TextDim};";
 
     /// <summary>
     /// Identifies the paragraph configuration or policy value.

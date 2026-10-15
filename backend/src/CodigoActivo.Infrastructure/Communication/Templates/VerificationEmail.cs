@@ -33,8 +33,7 @@ public static class VerificationEmail
                 AppStrings.EmailsVerificationIntroText,
                 toName,
                 siteUrl,
-                EmailBranding.Brand,
-                AppStrings.EmailsFooterAutomaticNote
+                EmailBranding.Brand
             ),
             [
                 EmailBlocks.Prose(

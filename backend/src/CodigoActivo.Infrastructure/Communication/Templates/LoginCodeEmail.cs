@@ -33,8 +33,7 @@ public static class LoginCodeEmail
                 AppStrings.EmailsLoginCodeIntroText,
                 toName,
                 siteUrl,
-                EmailBranding.Brand,
-                AppStrings.EmailsFooterAutomaticNote
+                EmailBranding.Brand
             ),
             [
                 EmailBlocks.Prose(

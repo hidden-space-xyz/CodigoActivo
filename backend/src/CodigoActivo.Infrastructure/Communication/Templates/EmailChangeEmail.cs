@@ -33,8 +33,7 @@ public static class EmailChangeEmail
                 AppStrings.EmailsEmailChangeIntroText,
                 toName,
                 siteUrl,
-                EmailBranding.Brand,
-                AppStrings.EmailsFooterAutomaticNote
+                EmailBranding.Brand
             ),
             [
                 EmailBlocks.Prose(
