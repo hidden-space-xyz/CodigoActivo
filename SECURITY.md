@@ -17,8 +17,8 @@ authentication are not supported.
 - Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, non-sliding, expiring after
   30 days by default. It is a browser-session cookie unless the user ticks «Mantener la sesión iniciada en este
   dispositivo» on the password step (`keepSignedIn`), which makes it persistent; the challenge cookie carries
-  that choice to the second factor, and a claims refresh keeps it. In Production it is `Secure` and uses a
-  `__Host-` name. The ticket is not self-sufficient: completing the second factor also writes a
+  that choice to the second factor, and a claims refresh keeps it. The session, challenge and CSRF cookies are
+  `Secure` in every environment except Development and use a `__Host-` name in Production. The ticket is not self-sufficient: completing the second factor also writes a
   `user_sessions` row whose id travels in the ticket's `sid` claim, dropping that user's already-expired rows;
   a background worker additionally deletes every expired row on the `SessionCleanup:IntervalMinutes`
   schedule. The row carries the expiry that decides access: refreshing the claims re-issues the cookie with a
@@ -35,8 +35,11 @@ authentication are not supported.
   valid session, only the CSRF token, and always answers 204 after clearing the session and challenge
   cookies, including when the row is already gone or its deletion fails, which is logged. Deleting an account
   removes its rows by cascade.
+- Every endpoint requires an authenticated session unless it is marked `[AllowAnonymous]` (fallback
+  authorization policy).
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
-  administration endpoints; `[AllowOnlySelf]` accepts the target user or that user's guardian. Catalog values
+  administration endpoints; `[AllowOnlySelf]` accepts the target user, that user's guardian or an
+  administrator. Catalog values
   such as `UserType` are not authorization roles. Activity leadership grants one read, decided on every
   request from the session user's own signups: `GET /api/events/{eventId}/leader-roster` returns only
   the event's activities that have not ended and in which the caller holds a confirmed leader signup,
@@ -58,8 +61,12 @@ authentication are not supported.
   an address held by an account nobody verified gets the link of a new account that replaces it, erased
   with its blocked copy, so registering someone else's email reserves nothing. The notice is budgeted as the
   verification mail it replaces. `POST /api/auth/resend-verification` (by email) and `forgot-password` also
-  answer 204 alike. Registration hashes the password before looking the address up, so every outcome costs
+  answer 204 alike. Registration refuses a disposable domain first (`DisposableEmailNotAllowed`), which depends
+  only on the domain, and then hashes the password before looking the address up, so every other outcome costs
   the same Argon2 work. Unverified accounts are never purged on a schedule.
+- Only someone who knows an account's password learns its state: after a correct password, the password step
+  answers a blocked account with `UserAccountBlocked`, an unverified one with `UserAccountPendingVerification`
+  and a locked second factor with `TwoFactorLocked`.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns
   `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password, but the body must state
@@ -90,11 +97,14 @@ authentication are not supported.
   birth date (`UserChildBirthDateRequired`) that stays a minor's only when it changes from the stored value
   (`UserChildBirthDateNotMinor`), so a dependent who already turned 18 stays editable with their stored
   birth date, and never stores a DNI/NIE or promotional consent; turning 18 changes nothing about the
-  account itself, which keeps the `Dependent` status and no password, so it still cannot log in
-  (`UserAccountIsDependent`) and `forgot-password` still ignores it. Dependents are created only through
-  `POST /api/users/{id}/children`, must be minors at creation, are at most 20 per guardian, counted with the
-  guardian's row locked (`UserChildLimitReached`), and leave their guardian only when the guardian deletes
-  them. A household signup list holds at most 21 people.
+  account itself, which keeps the `Dependent` status and no password, so a login with its email answers
+  `InvalidCredentials` and `forgot-password` ignores it. Dependents are created by a registration (its
+  `minors` list, at most 20, `RequestValidationFailed` beyond) or through `POST /api/users/{id}/children`
+  (at most 20 per guardian, counted with the guardian's row locked, `UserChildLimitReached` beyond). They must be
+  minors at creation and leave their guardian only when the guardian deletes them. A household signup list
+  holds at most 21 people.
+- `PATCH /api/users/{id}/password` always asks for the current password of the account being changed, also
+  when a guardian or an administrator changes it; a wrong one counts toward that account's password lock.
 
 ### Two-factor authentication
 
@@ -109,15 +119,12 @@ out all clear it, making each challenge single-use — and the account itself re
 lifetime has passed, whatever the cookie says. Answering, reading or resending a challenge needs the open
 challenge the cookie names on an account that may still sign in; the use cases check that themselves, while
 the password fingerprint is only checked through the cookie. A challenge obtained just before the account
-was locked by wrong passwords is refused at both the ticket and the handler. The password step, password
-reset and change, email verification, code requests and resends, closing a challenge and a registration that
-replaces an unverified holder decide on the account as loaded and, only when they will act, lock and reload it
-and check again before they write; passwords are never hashed with the row locked. Parallel requests that act
-therefore run one after another and each answers as it would alone: a repeated request finds the cooldown and
-emails nothing, and a correct password whose account was reset or locked since it was checked is answered like
-a wrong one (not counted) and opens no challenge. Requests that act on nothing lock nothing, so the lock adds
-no delay that would tell an existing address from an unknown one. Reading or resending the current challenge
-keeps working across reloads. The session cookie is only issued by `POST /api/auth/login/two-factor`, which
+was locked by wrong passwords is refused at both the ticket and the handler. The account flows serialize on
+the account row only when they will act (`AccountLock`, see
+[ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence)), so parallel requests each answer as they would
+alone: a repeated request finds the cooldown and emails nothing, and a correct password whose account was reset
+or locked since it was checked is answered like a wrong one (not counted) and opens no challenge. Reading or
+resending the current challenge keeps working across reloads. The session cookie is only issued by `POST /api/auth/login/two-factor`, which
 accepts the second factor, records the login timestamp and stores the session in one transaction.
 
 Each user chooses one second factor from their account:
@@ -135,14 +142,17 @@ Each user chooses one second factor from their account:
   until it returns to email, so a session and the password alone cannot replace it.
 
 Wrong codes are counted per account across logins, authenticator removal and account deletion
-(`SecondFactorGuard`): after five failures the second factor locks for 15 minutes (`TwoFactorLocked`). A successful code resets the counter. Every code check runs
-with the account row locked and reloaded, so parallel attempts are counted one by one and an emailed code or
-a time step is accepted only once. Enrollment URIs and shared keys are only returned to the authenticated
+(`SecondFactorGuard`): after five failures the second factor locks for 15 minutes (`TwoFactorLocked`). A
+successful code resets the counter. These checks run with the account row locked and reloaded, so parallel
+attempts are counted one by one and an emailed code or a time step is accepted only once. Confirming a new
+authenticator enrollment is not counted: it needs the session and the secret just issued to that session after
+its password. Enrollment URIs and shared keys are only returned to the authenticated
 owner over HTTPS and never logged.
 
 **Account deletion**: erasing one's own account requires the current password **and** the second factor on `POST
-/api/me/deletion` (email code via `POST /api/me/deletion/code`, sharing storage/lifetime/cooldown with the login
-code, or the authenticator code). Deletion signs the caller out, cascades to remove the user, their dependents
+/api/me/deletion` (email code via `POST /api/me/deletion/code`, or the authenticator code). The emailed deletion
+code is the login code: same stored code, lifetime and cooldown, so a code sent for either flow is accepted by
+the other, and each still needs the password. Deletion signs the caller out, cascades to remove the user, their dependents
 and their signups and terms decisions (past ratings stay, see [Event rating
 anonymity](#event-rating-anonymity)), and is refused only to the initial administrator
 (`UserDeleteInitialAdminForbidden`), before the password is checked. `GET /api/me/deletion` tells the caller
@@ -159,7 +169,7 @@ copy in `deleted_accounts` (`id` is the former user id with no foreign key, `del
 `jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
 their dependents and the household's signups and terms decisions, and then deletes them; a failed deletion
 keeps no copy, a concurrent signup, status change or cancellation cannot slip in between, and an erasure that
-PostgreSQL aborts to resolve a deadlock is retried up to three times. The copy holds the personal data of the
+PostgreSQL aborts to resolve a deadlock is attempted up to three times in total. The copy holds the personal data of the
 account and each dependent, the guardian's identification when
 a dependent is deleted alone, every signup of the household with activity, event, role, status and signup
 time, every terms decision (accepted or rejected, with its handwritten signature as base64 PNG) of the
@@ -172,8 +182,8 @@ data is plain JSON protected only by database access. The `DeletedAccountPurger`
 each copy two years after `deleted_at`, 30 seconds after startup and then hourly. Users are deleted only
 through `AccountEraser`, and `DeletedAccountGuard` refuses any commit that deletes the initial administrator,
 deletes a user without its copy or changes a stored copy.
-The SPA only tells users that they and their dependents lose access and cannot recover the account; the privacy
-policy must state the two-year retention.
+The SPA only tells users that they and their dependents lose access and cannot recover the account; the
+application has no privacy policy page, so the operator's privacy policy states the two-year retention.
 
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also clears any
@@ -182,14 +192,17 @@ need the same administrator reset.
 
 ### CSRF
 
-`CsrfValidationMiddleware` validates every unsafe HTTP method. The client obtains a token from
-`GET /api/auth/csrf` and returns it in `X-CSRF-TOKEN`; the SPA client handles this automatically.
+`CsrfValidationMiddleware` validates every unsafe HTTP method with ASP.NET antiforgery. The client obtains a
+token from `GET /api/auth/csrf`, which also sets the `HttpOnly`, `SameSite=Lax` CSRF cookie
+(`__Host-CodigoActivo.Csrf` in Production), and returns it in `X-CSRF-TOKEN`; the SPA client handles this
+automatically. A missing or invalid token answers 400 `InvalidCsrfToken` and is not logged.
 
 ### Passwords and credential endpoints
 
 Passwords require 12–128 characters and are hashed with Argon2id, never stored or logged in plaintext. Login
 performs fallback Argon2 work for unknown identifiers, and registration hashes the password before looking
-the address up, to reduce timing differences.
+the address up, to reduce timing differences. A wrong password for an existing account also writes its
+failure count, so it is not timed exactly like an unknown address.
 
 Emailed one-time codes and link tokens (login and account-deletion codes, verification, password reset and
 email-change links) are random, short-lived and stored only as HMAC-SHA256 under a server-side key
@@ -199,7 +212,7 @@ derives that key with HKDF-SHA256 from the Data Protection certificate's private
 and links.
 
 Five consecutive wrong passwords for the same account — counted together by `PasswordAttemptGuard` across the
-login password step and every route that asks the caller to re-enter their own password — lock the account.
+login password step and every route that asks for a password again — lock the account.
 Once the lock commits, the `PasswordLocked` listeners delete its `user_sessions` rows and email its owner, even
 if the client has gone; one correct password before the limit clears the count.
 A locked account answers every password, right or wrong, with the same `InvalidCredentials` after the same
@@ -218,7 +231,8 @@ updates and the two self-service account-deletion steps) have layered controls:
   `users/{id}/two-factor/reset`, `me/deletion*`) rely only on nginx's general 200 requests/second limit and
   the API controls below.
 - the API enforces 120 requests/minute per client IP in every environment on every credential route;
-- memory-hard credential work has a process-wide concurrency limit of 4 and a FIFO queue of 16.
+- the credential routes share a process-wide concurrency limit of 4 executing requests and a FIFO queue of 16,
+  which bounds the memory-hard Argon2 work.
 
 Normal API traffic uses different limits, since an IP may represent many legitimate users: nginx allows 200
 requests/second per IP, burst 500; the API applies a sliding one-minute budget of 300 requests per
@@ -267,31 +281,26 @@ file writes allow 30 requests/minute per user (12 executing, 12 waiting). Reject
 
 ### Transport and proxy trust
 
-In Production the API accepts one forwarded hop, redirects HTTP to HTTPS and emits secure cookies.
-`X-Forwarded-For`/`X-Forwarded-Proto` are honoured only from IPv4 loopback and private ranges (`127.0.0.0/8`,
-`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`); other peers are ignored. nginx applies no peer filtering of
-its own: it normalizes whatever `X-Forwarded-Proto` it receives before forwarding it to the API — only an
-exact `https` value (case-insensitive) counts; any other value, a comma-separated list such as
-`https, http`, or a missing header become `http` — so the external TLS proxy must overwrite the header
-rather than append to it. The application accepts IPv4 clients only: the base Compose file keeps `api` and
-`db` off host ports, publishes nginx as `0.0.0.0:8080:8080` on all IPv4 interfaces and disables IPv6 on both
-networks, and nginx listens on IPv4 and answers 403 to any request whose client address is IPv6. Publishing
-on IPv6 as well would let Docker relay those clients from its bridge gateway, a private address whose
-`X-Forwarded-For` nginx trusts. The
-operator must terminate TLS externally, accepting only TLS 1.3 with TLS 1.2 as the sole fallback, overwrite
-untrusted `X-Forwarded-For`/`X-Forwarded-Proto`, and prevent clients from bypassing the proxy to reach port
-`8080` directly. nginx sends HSTS (`max-age=63072000; includeSubDomains`, no `preload`) only when its
-normalized scheme is HTTPS, plus CSP, frame denial, MIME sniffing, referrer, permissions and cross-origin
-isolation headers; `includeSubDomains` requires every subdomain of the public host to work over HTTPS only.
-Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still sends
-`Server: nginx` without a version (`server_tokens off`). See
-[DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary).
+TLS ends at the operator's external proxy; its requirements (TLS versions, overwriting forwarded headers,
+redirecting plain HTTP, the `Host` header, IPv4 only, no direct access to port `8080`) are in
+[DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary). The API accepts one forwarded hop and honours
+`X-Forwarded-For`/`X-Forwarded-Proto` only from IPv4 loopback and private ranges (`127.0.0.0/8`, `10.0.0.0/8`,
+`172.16.0.0/12`, `192.168.0.0/16`). nginx applies no peer filtering of its own and counts only an exact `https`
+`X-Forwarded-Proto` as HTTPS. IPv6 stays disabled on both networks and nginx answers 403 to IPv6 clients,
+because Docker would relay IPv6 clients from its bridge gateway, a private address whose `X-Forwarded-For` nginx
+trusts.
+
+nginx sends HSTS (`max-age=63072000; includeSubDomains`, no `preload`) only when its normalized scheme is HTTPS,
+plus CSP, frame denial, MIME sniffing, referrer, permissions, `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Resource-Policy: same-origin` headers (no `Cross-Origin-Embedder-Policy`); `includeSubDomains`
+requires every subdomain of the public host to work over HTTPS only. Kestrel does not emit a `Server` header
+(`AddServerHeader=false`); nginx sends `Server: nginx` without a version (`server_tokens off`).
 
 ### Privacy and third parties
 
 - Browsers load nothing from third parties: fonts are bundled from Fontsource and served from the application
-  origin; the CSP allows scripts, styles, fonts, images and connections only from `'self'` (plus
-  `data:`/`blob:` images), sets `base-uri 'none'` and adds `upgrade-insecure-requests` only when nginx's
+  origin; the CSP allows scripts, styles, fonts, images and connections only from `'self'` (plus inline styles
+  and `data:`/`blob:` images), sets `base-uri 'none'` and adds `upgrade-insecure-requests` only when nginx's
   normalized scheme is HTTPS. Do not add CDNs, analytics or embeds without a legal basis and consent review.
 - The API downloads the public disposable email domain list once a day (see
   [Email abuse controls](#email-abuse-controls)); the request carries no user data, and addresses are only
@@ -309,11 +318,11 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
   dependent stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
   for that event covers later dependent signups without a new prompt (`TermsGate`). An acceptance is immutable
   and never re-asked; a rejection is revisable and overwrites the stored row; a required document's
-  rejection is never persisted. `AssignActivity` skips this consent step when an administrator signs up
+  rejection is never persisted, so it blocks that signup without excluding the user for good. `AssignActivity` skips this consent step when an administrator signs up
   someone else; `AssignHousehold` always runs it. The acceptance row cascades away when the acting user's
   account is deleted, once the blocked copy of that account holds it.
 - A terms document can ask for a handwritten signature (`requires_signature`): accepting it then needs a PNG
-  drawn on screen, which `HandwrittenSignature` refuses above 128 KiB or 2000×1000 pixels and which is stored
+  drawn on screen (`TermsConsent` refuses the acceptance without one), which `HandwrittenSignature` refuses above 128 KiB or 2000×1000 pixels and which is stored
   in `event_terms_acceptances.signature`, never in the public file storage. Only administrators read it
   (`GET /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/signature`, answered
   `no-store`).
@@ -354,8 +363,8 @@ method, the matched endpoint's route template, and exception type/message/stack 
 carries an id, but an exception message may quote the pseudonymous GUID of a row or stored file it failed on,
 such as the path of a file under `/app/files`; it is written as is.
 
-- **API**: every event is declared with `[LoggerMessage]` in a `*Log` class per layer — `SecurityLog`,
-  `ApplicationLog`, `InfrastructureLog`, `ApiLog`. `CA1848` is an error (`backend/.editorconfig`), and the
+- **API**: every event is declared with `[LoggerMessage]` in one of four `*Log` classes — `SecurityLog` and
+  `ApplicationLog` (Application), `InfrastructureLog` and `ApiLog`. `CA1848` is an error (`backend/.editorconfig`), and the
   architecture tests `LoggingConventionTests`/`LoggingCallSiteTests` enforce an allowed-placeholder list and
   that no event is declared below `Warning`. `Logging:LogLevel` in `appsettings.json` is the level policy for
   both the console and the file sink: `Default` is `Warning`, which also drops the framework's start and stop
@@ -374,8 +383,8 @@ such as the path of a file under `/app/files`; it is written as is.
   `AdministratorFlagChanged` (the administrator flag changed) and `SecurityNotificationRateLimited` (a
   security-change email was dropped by the limiter). Logins, logouts and password changes are not recorded.
 - **API log output**: the flat `LOG_DIRECTORY` variable selects the sink. With a value, every event goes to
-  daily files `api-<yyyyMMdd>.log` (Serilog file sink; the file name uses the container's local date, event
-  timestamps are UTC) through a Serilog output template: one line with the UTC timestamp, the level, the
+  daily files `api-<yyyyMMdd>.log`, continued in `api-<yyyyMMdd>_N.log` past 64 MiB (Serilog file sink; the
+  file name uses the container's local date, event timestamps are UTC) through a Serilog output template: one line with the UTC timestamp, the level, the
   category and the message, followed by the exception, if any, on the next lines; nothing goes to the console.
   Without a value (or empty, the local-development case) events go to the console. The fatal startup event
   (`FTL CodigoActivo.Lifecycle The API host terminated unexpectedly`) is always recorded regardless of the
@@ -405,22 +414,15 @@ such as the path of a file under `/app/files`; it is written as is.
 
 ### Production configuration and secrets
 
-Production startup fails when `POSTGRES_PASSWORD` is under 16 characters, `DATA_PROTECTION_CERTIFICATE_PASSWORD`
-is under 32, `APP_BASE_URL` is not a clean public HTTPS origin, the SMTP host or sender is invalid, SMTP
-transport encryption is `None` or `Auto`, or only one of `SMTP_USERNAME`/`SMTP_PASSWORD` is set
-(`ProductionConfiguration` in Composition); an SMTP port outside 1-65535 stops every environment. An empty
-`SMTP_SECURITY` always encrypts: TLS on connect on port 465, mandatory STARTTLS on any other.
-
-`POSTGRES_PASSWORD`, `DATA_PROTECTION_CERTIFICATE_PASSWORD` and `SMTP_PASSWORD` are Compose file secrets in
-the ignored root `secrets/` directory, mounted at `/run/secrets` and never passed as environment variables, so
-they stay out of `docker inspect`, `docker compose config` and every process environment; code running inside
-a container can still read the files mounted into it. The root `.env` holds no secret and
-`appsettings.json` contains no credentials. There is no bootstrap password: the initial administrator chooses
-one through a password reset sent to `BOOTSTRAP_ADMIN_EMAIL`. Compose fixes the database host to the `db`
-service, so the API's database connection never leaves the internal `backend` network. Restrict `secrets/` to
-the deployment account and keep it out of images and unencrypted backups. Rotating the database password must
-update both the PostgreSQL role and `secrets/postgres_password`. Keep the Data Protection certificate password
-separate from the key-volume backup.
+Production refuses to start with weak secrets, a non-public or non-HTTPS `APP_BASE_URL` or unencrypted SMTP;
+the full list of startup checks and the secret file rules are in
+[DEPLOYMENT.md](DEPLOYMENT.md#first-production-start). Secrets are Compose file secrets, never environment
+variables, so they stay out of `docker inspect`, `docker compose config` and every process environment; code
+running inside a container can still read the files mounted into it. The root `.env` and `appsettings.json`
+hold no credentials, and there is no bootstrap password. The API's database connection never leaves the
+internal `backend` network. Restrict `secrets/` to the deployment account and keep it out of images and
+unencrypted backups. Rotating the database password must update both the PostgreSQL role and
+`secrets/postgres_password`.
 
 ### Data Protection and containers
 
@@ -448,8 +450,9 @@ The development override removes parts of this boundary and must not be deployed
 
 Stored uploads are limited to 10 MiB by default and saved under `/app/files` in the `api-files` volume; nginx
 also enforces a `12m` request-body limit. Kestrel refuses any other request body above 2 MiB, which no valid
-JSON request reaches; only the multipart upload and email endpoints raise it to their own limit. Access to
-stored files goes through API authorization, not a direct static volume mount. Administrator email attachments never reach the `api-files` volume: they are read once
+JSON request reaches; only the multipart upload and email endpoints raise it, to the upload limit plus 64 KiB.
+Access to stored files goes through API authorization, not a direct static volume mount. Administrator email
+attachments never reach the `api-files` volume: they are read once
 per batch into the Data Protection-protected outbox content described above and removed once every message
 referencing them is delivered or discarded, with count, combined bytes and recipient count bounded by
 application settings.
@@ -461,7 +464,8 @@ email the same way; there is no switch. Mail to an address nobody has verified y
 registration nor an email change relays a name typed by someone else to that mailbox. Verification and
 password-reset codes expire after 15 minutes with a 60-second resend cooldown; an email-change link also
 lasts 15 minutes, and each new one needs the password again. Login and account-deletion codes share storage
-and expire after 10 minutes with the same cooldown. SMTP must be configured everywhere or the API refuses to start. Activity signup sends no message;
+and expire after 10 minutes with the same cooldown. SMTP must be configured everywhere or the API refuses to
+start. Activity signup sends no message;
 confirming or rejecting one queues an outcome email after commit, always to the guardian address for a
 dependent. Delivery errors never roll back registration, recovery, activity decisions or security
 changes.
@@ -520,17 +524,16 @@ administrator preview a send before committing to it: given the same filters as 
 `POST /api/emails/events/{eventId}/attendees`, they return `{ recipients, withoutConsent }` computed by the
 same shared selection (`ManualEmailAudience`) the send commands use, so the preview always matches what a
 send would reach — distinct addressable recipients deduplicated case-insensitively, and how many of them
-have `promotionalConsent` set to `false`. These preview endpoints carry none of the send limits above beyond
-nginx's general API limit.
+have `promotionalConsent` set to `false`. These preview endpoints carry none of the send limits above, only
+the general API limits of nginx and the API.
 
 ## Demo mode
 
 `DEMO_MODE=true` seeds invented accounts with a random, hashed and discarded 32-byte password, fictitious
-addresses, and the second factor still required. Demonstrations use the bootstrap administrator configured
-in Compose. Such deployments are disposable and must never contain private data. Seeding downloads its
-sample images once from `picsum.photos`, at most 10 MiB each, in a request that carries no user data. The
-first selected mode is persisted in `api-state`; a later conflicting value stops startup. Changing it
-requires deleting all named volumes, see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode-and-initial-administrator).
+addresses, and the second factor still required, so only the bootstrap administrator can sign in. Such
+deployments are disposable and must never contain private data. Seeding downloads its sample images from
+`picsum.photos`, at most 10 MiB each, in requests that carry no user data. The mode is locked on first start;
+see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode-and-initial-administrator).
 
 ## Operational checklist
 

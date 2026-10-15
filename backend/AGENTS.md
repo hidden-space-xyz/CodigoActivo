@@ -1,21 +1,8 @@
 # Backend guidance
 
-Create migrations from `backend/` with:
-
-```bash
-dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.Infrastructure
-```
-
-`--context` is required because Infrastructure also has `CodigoActivoReadDbContext`, the read side, which
-never has migrations. Keep `Microsoft.EntityFrameworkCore.Design` out of the API: the tools build the context
-through `CodigoActivoDesignTimeDbContextFactory`, whose placeholder database never resolves, so commands that
-touch a database need `--connection`.
-
-Integration tests use PostgreSQL 18 through Testcontainers and require Docker unless
-`CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty disposable database.
-
-CI fails when the merged unit and integration coverage (lines, branches or methods) is below 90%. Migrations are
-excluded through `tests/CodeCoverage.config`; the local reproduction steps are in CONTRIBUTING.md.
+These are the backend conventions. Commands, including migrations and coverage, are in
+[CONTRIBUTING.md](../CONTRIBUTING.md#commands); the design is in [ARCHITECTURE.md](../ARCHITECTURE.md#backend).
+The unit tests under `tests/CodigoActivo.UnitTests/Architecture/` enforce most of these rules.
 
 ## Rules
 
@@ -35,12 +22,11 @@ Domain + Application + Infrastructure <- Composition <- API
 - Entities have private setters. Create them through factories (returning `Result<T>` when a rule can fail) and
   change them through behavior methods; invariants and state transitions belong to the aggregate or to a domain
   policy, never to a handler. Child entities change only through their root.
-- Every aggregate has a typed identifier (`readonly record struct XId(Guid Value) : IEntityId<XId>`); never pass
-  a raw `Guid` across the domain or a command. Values with rules are value objects. Both map onto the existing
-  columns through the EF conventions or, like the security state of `User`, as complex properties with
-  `HasColumnName`, so they never change the schema.
-- Closed value sets are domain enums; their catalog tables only hold names and colors, and `CatalogIds` keeps
-  the stable `Guid` of each member. There is no `SeedIds`.
+- Aggregates have a typed identifier (`readonly record struct XId(Guid Value) : IEntityId<XId>`), or a key of
+  typed identifiers like `EventTermsAcceptance`; never pass a raw `Guid` across the domain or a command. Values with rules are value objects. Both map onto plain columns
+  through the EF conventions or, like the security state of `User`, as complex properties with `HasColumnName`.
+- Closed value sets are domain enums; their catalog tables only hold the name, description and color shown to
+  people, and `CatalogIds` keeps the stable `Guid` of each member.
 - Aggregates reference each other by ID, without navigations; keep foreign keys and cascades with
   `HasOne<T>().WithMany().HasForeignKey(...)`. Repositories exist only for aggregate roots, with methods that
   name their intention; no `IQueryable`, predicates or generic repository.
@@ -49,7 +35,7 @@ Domain + Application + Infrastructure <- Composition <- API
   new event that changes cached data needs an entry in `CacheTagsByEvent`.
 - Use one command/query record and sealed handler per use-case file. Handlers, listeners and decorators are
   registered by contract in `UseCaseRegistration`; controllers inject `ICommandHandler<,>`/`IQueryHandler<,>`
-  with `[FromServices]`; there is no mediator.
+  with `[FromServices]` and contain no business logic; there is no mediator.
 - Commands and queries carry typed identifiers and validated fields (`[property: ...]` DataAnnotations checked
   by the validation decorator), never HTTP request records. HTTP requests live in `API/<Feature>/Contracts/` with
   standard attributes only, plus the catalog membership check through `CatalogIdentifiers`, and map themselves to
@@ -77,15 +63,35 @@ Domain + Application + Infrastructure <- Composition <- API
   throw for business outcomes. The wire `ErrorCode` belongs to the API; a new code needs its member there (or a
   rename in `WireErrorCodes`) and a translation in the frontend.
 - Put `*Request` records in `API/<Feature>/Contracts/` and `*Response` records in
-  `Application/<Feature>/Contracts/`; shared binding primitives live in `Application/Common/Querying`.
-- Use handwritten mapping. Do not introduce AutoMapper without an explicit architecture change.
+  `Application/<Feature>/Contracts/`; shared binding primitives live in `Application/Common/Querying`. Mapping
+  is handwritten.
 - Use `IClock`; never call `DateTime.Now` or `DateTime.UtcNow`. `ClockConventionTests` reads the IL.
 - PostgreSQL identifiers are snake_case; remember this in raw SQL.
 - User-facing backend text belongs in `Application/Common/Localization/AppStrings.resx` through
-  `AppStrings`. Diagnostics, log templates and seeded content are not UI strings.
-- Private fields use `camelCase` without a leading underscore.
+  `AppStrings`. Diagnostics, log templates, exception messages and seeded content are not UI strings.
+- Declare every log event with `[LoggerMessage]` in its `*Log` class (`SecurityLog`, `ApplicationLog`,
+  `InfrastructureLog`, `ApiLog`) at `Warning` or above, only for what an operator must act on; normal use and
+  expected outcomes log nothing. `CA1848` is an error. Use only the placeholder types the
+  `LoggingConventionTests`/`LoggingCallSiteTests` allow-list accepts, and never a user id, personal data, a
+  value typed by the client, a credential, a code, a token or a third-party reply that may quote them. Exception
+  messages you throw follow the same rule because they are logged. `NormalUseLoggingTests` fails when a normal
+  flow writes an entry. See [SECURITY.md](../SECURITY.md#logging).
 - Handlers and listeners need no registration. Register other services and options in the feature's
   registration under `CodigoActivo.Composition/<Feature>/`, reading settings through `Settings` and
   `AddValidatedOptions` so an unusable value stops the start instead of falling back.
-- Test methods use three PascalCase segments without underscores. Handler unit tests start with
+- Package versions are centralized in `Directory.Packages.props`; `PackageReference` items carry no `Version`.
+- Private fields use `camelCase` without a leading underscore.
+- Keep CSharpier formatting and every SDK analyzer rule clean; warnings are errors. Document every public type
+  and member with XML comments (`CS1591` fails the build); test projects are exempt.
+
+## Tests
+
+- Unit tests use xUnit v3, AwesomeAssertions and NSubstitute. Test methods use three PascalCase segments without
+  underscores, such as `RegisterAsyncNewAdultReturnsCreatedAndSendsOtp`; handler unit tests start with
   `HandleAsync`.
+- Integration tests share one disposable PostgreSQL 18 Testcontainers instance and run without parallelism.
+  The test host lifts the email guard and request rate limits (exercise them with the factory's
+  `WithEmailGuard`/`WithRateLimits`), delivers the email outbox inline instead of running the background worker
+  (tests that queue mail indirectly or advance the clock to a scheduled retry call
+  `Factory.DrainEmailOutboxAsync()`), and never downloads the disposable email domain list, so every domain is
+  accepted unless a test seeds `disposable_email_domains`.

@@ -77,15 +77,24 @@ these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty)
 `SMTP_FROM_ADDRESS`, plus `SMTP_USERNAME` and its password in `secrets/smtp_password` when the server needs a
 login. See [Secrets](#secrets) for the file rules.
 
-With `logging: driver: none`, an `api` container that keeps restarting without a new file appearing in
-`logs-api` means `LOG_DIRECTORY` is not writable or the startup configuration is invalid; the fatal event
-still reaches the file whenever the directory is writable.
+A failed start writes its fatal event to the daily file in `logs-api`; with `logging: driver: none`, an `api`
+container that keeps restarting without a new file there means `LOG_DIRECTORY` is not writable.
 
 Every login is completed with a one-time code, emailed unless the user enrolled an authenticator app, so
 startup fails everywhere when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing or `SMTP_PORT` is outside 1-65535.
-Production also rejects an unencrypted SMTP mode (`None` or `Auto`) and invalid host/sender values. `APP_BASE_URL`
-must use a public DNS name; IP addresses, localhost and reserved example/test domains are rejected. Every setting
-is checked before the deployment mode is locked or the database migrated, so a rejected start changes nothing.
+Production startup (`ProductionConfiguration`) also fails when:
+
+- `POSTGRES_PASSWORD` has fewer than 16 characters or `DATA_PROTECTION_CERTIFICATE_PASSWORD` fewer than 32;
+- `APP_BASE_URL` is not a clean HTTPS origin on a public DNS name (IP addresses, localhost and reserved
+  example/test domains are rejected);
+- the SMTP host or sender is invalid, `SMTP_SECURITY` is `None` or `Auto`, or only one of `SMTP_USERNAME` and
+  `secrets/smtp_password` is set.
+
+These settings and every application setting are checked before anything is written to `api-state` or the
+database. `BOOTSTRAP_ADMIN_EMAIL` and demo seeding are checked later, after the mode is locked and the database
+migrated, so a start they stop leaves both in place; fix the value and start again. On a first Production start,
+the Data Protection certificate is created in `api-dataprotection` after the checks above but before the
+application settings are validated.
 
 ### TLS and proxy boundary
 
@@ -95,16 +104,17 @@ scheme as `X-Forwarded-Proto`. nginx normalizes that header itself before forwar
 exact `https` value (case-insensitive) counts, so any other value — including a comma-separated list such as
 `https, http` — or a missing header becomes `http`. Because nginx only reads the header value, not the peer,
 the external proxy must overwrite `X-Forwarded-Proto` rather than append to it; appending makes nginx see
-`http`, so it skips HSTS and forwards `http` to the API. The API accepts one forwarded hop, redirects HTTP to
-HTTPS in Production, and sets secure `__Host-` cookies; nginx emits HSTS only when its normalized scheme is
-HTTPS. The API honours
+`http`, so it skips HSTS and forwards `http` to the API. Neither nginx nor the API redirects HTTP to HTTPS (the
+container has no HTTPS port), so the external proxy must redirect or refuse plain HTTP itself. nginx emits HSTS
+only when its normalized scheme is HTTPS. The API accepts one forwarded hop and honours
 `X-Forwarded-For`/`X-Forwarded-Proto` only from IPv4 loopback and private peers (`127.0.0.0/8` and RFC 1918),
-so a proxy or container network outside those ranges makes it ignore both headers, which in Production means
-an HTTPS redirect loop and a single shared rate-limit partition for every client. IPv6 is not supported: the
-external proxy must listen on IPv4 only and the public name must have no `AAAA` record, because nginx
-answers 403 to every request whose client address, read from `X-Forwarded-For`, is IPv6. `APP_BASE_URL`
-controls links in email and the URLs generated in `/sitemap.xml` and `/robots.txt`; it must match the public
-origin.
+so a proxy or container network outside those ranges makes it ignore both headers and put every client in a
+single shared rate-limit partition. The proxy must also pass the public host name in `Host`: in Production the
+API only accepts the host of `APP_BASE_URL` (plus `localhost`, `127.0.0.1` and `api`) and answers any other
+with 400. IPv6 is not supported: the external proxy must listen on IPv4 only and the public name must have no
+`AAAA` record, because nginx answers 403 to every request whose client address, read from `X-Forwarded-For`,
+is IPv6. `APP_BASE_URL` controls links in email and the URLs generated in `/sitemap.xml` and `/robots.txt`; it
+must match the public origin.
 
 ## Environment variables
 
@@ -117,7 +127,7 @@ take the listed default when empty or missing.
 | Variable                | Meaning                                                                       | Default                                     | Template value                                 |
 | ----------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
 | `APP_BASE_URL`          | Public origin for links and SEO output                                        | Required                                    | `https://example.org` (invalid for Production) |
-| `APP_TIMEZONE`          | IANA or Windows time-zone ID used by the application clock                    | `Europe/Madrid`                             | `Europe/Madrid`                                |
+| `APP_TIMEZONE`          | IANA time-zone ID used by the application clock                               | `Europe/Madrid`                             | `Europe/Madrid`                                |
 | `DEMO_MODE`             | `true` or `false`; locked on first start                                      | Required                                    | `false`                                        |
 | `BOOTSTRAP_ADMIN_EMAIL` | Initial administrator email for an empty database                             | Required on an empty database               | Empty                                          |
 | `SMTP_HOST`             | SMTP host; always required because login codes are emailed                    | Required                                    | Empty                                          |
@@ -152,7 +162,8 @@ without Swarm bind-mounts them unchanged, and the containers read them as unpriv
 
 For a direct `dotnet run`, secrets are plain environment variables with those uppercase names. Missing
 database variables fall back to `localhost:5432` and database/user `codigoactivo` with an empty password;
-missing `APP_BASE_URL` falls back to `http://localhost:5173`. SMTP has no fallback: point `SMTP_HOST` at a
+missing `APP_BASE_URL` falls back to `http://localhost:5173` and missing `APP_TIMEZONE` to the machine's time
+zone. SMTP has no fallback: point `SMTP_HOST` at a
 mail catcher such as the development overlay's Mailpit (`localhost:1025`, security `None`), where login codes
 can also be read.
 
@@ -162,7 +173,7 @@ Defaults in `backend/src/CodigoActivo.API/appsettings.json`, overridable with st
 syntax (for example `AUTH__EXPIREHOURS`; also add the uppercase variable to the Compose API environment list).
 A missing or blank setting takes its default; a setting that is present but unusable (not a positive number,
 not an absolute HTTPS address, above its limit) stops the API at start with a message naming the key, so a
-typo never runs silently with the default:
+typo never runs silently with the default. `SessionCleanup:IntervalMinutes` accepts at most `1440`.
 
 | Setting                                       | Default             |
 | --------------------------------------------- | ------------------- |
@@ -184,10 +195,10 @@ typo never runs silently with the default:
 | `ManualEmail:MaxAttachments`                  | `10`                |
 | `ManualEmail:MaxAttachmentsBytes`             | `8388608` (8 MiB)   |
 
-The upload limit is enforced by the API and accompanied by 64 KiB of multipart overhead. nginx separately
-limits request bodies to `12m`; raising the application limit may also require changing
-`frontend/docker/default.conf`. Manual-email attachments share the API request limit and are never stored in
-`api-files`.
+Kestrel refuses request bodies above 2 MiB except on the upload and manual-email endpoints, which accept
+`FileStorage:MaxSizeBytes` plus 64 KiB of multipart overhead. nginx separately limits request bodies to `12m`;
+raising the application limit may also require changing `frontend/docker/default.conf`. Manual-email
+attachments are never stored in `api-files`.
 
 The cookie policy page states the default `Auth:ExpireHours` and `TwoFactor:ChallengeLifetimeMinutes`;
 overriding either requires updating `pages.cookiePolicy` in `frontend/src/shared/i18n/locales/es.json`.
@@ -220,7 +231,7 @@ Verification and reset mail cannot spend the last half of `GlobalCredentialReser
 second-factor codes, and second-factor codes have per-address budgets of their own.
 
 Pending mail survives a restart: rows are claimed with `FOR UPDATE SKIP LOCKED` and a lease, in priority
-order (2FA/verification/reset codes first, ordinary automatic mail next, administrator bulk mail last), by
+order (2FA/verification/reset codes first, ordinary automatic mail next, administrator-written mail last), by
 a poll loop (`EmailQueue:PollIntervalSeconds`) also woken immediately by same-process enqueues. A message is
 attempted up to 5 times, retried after 1 minute, 5 minutes, 30 minutes and 2 hours on the first four
 failures; the 5th failure discards the row and logs an error. Delivery is at-least-once: a crash between a
@@ -243,10 +254,10 @@ without also raising `EmailQueue:Workers` lengthens the lease held on a claimed 
 None of the `EmailQueue:*` settings are forwarded by the base Compose file; changing one requires both the
 uppercase environment variable and adding it to `api.environment` in `docker-compose.yml`.
 
-Monitor the `InfrastructureLog` events for recipient throttling (`RecipientEmailQuotaReached`), global-budget
-pressure (`GlobalEmailBudgetLow`, `GlobalEmailBudgetExhausted`), delivery failures and exhausted attempts
-(`EmailDeliveryAttemptFailed`, `EmailDeliveryGaveUp`), and an incomplete shutdown drain
-(`EmailOutboxDrainIncomplete`). See [SECURITY.md](SECURITY.md#logging) for where these events are written.
+Alert on every `Error` entry, among them a full outbox (`EmailOutboxFull`), an exhausted global budget
+(`GlobalEmailBudgetExhausted`) and exhausted attempts (`EmailDeliveryGaveUp`), and watch the `Warning` events
+for recipient throttling (`RecipientEmailQuotaReached`), a low global budget (`GlobalEmailBudgetLow`), delivery
+failures (`EmailDeliveryAttemptFailed`) and an incomplete shutdown drain (`EmailOutboxDrainIncomplete`). See [SECURITY.md](SECURITY.md#logging) for where these events are written.
 
 ## Disposable email domains
 
@@ -257,8 +268,7 @@ is accepted if none was ever stored. Restarting `api` forces a new download. Val
 are in [SECURITY.md](SECURITY.md#email-abuse-controls).
 
 `DisposableEmailDomains:SourceUrl` (default: the project's `disposable_email_blocklist.conf` on its `main`
-branch) can point to a mirror; only absolute HTTPS URLs are accepted, any other value uses the default. It
-is not forwarded by the base Compose file: add `DISPOSABLEEMAILDOMAINS__SOURCEURL` to `api.environment` to
+branch) can point to a mirror; it must be an absolute HTTPS URL or the API does not start. It is not forwarded by the base Compose file: add `DISPOSABLEEMAILDOMAINS__SOURCEURL` to `api.environment` to
 change it. Monitor `DisposableEmailDomainDownloadFailed` and `DisposableEmailDomainListRejected` (`Warning`,
 retried hourly) and `DisposableEmailDomainListNotStored` (`Error`); while they repeat, new disposable domains
 are not blocked.
@@ -282,10 +292,12 @@ later starts must use the same value. The file is always written except when the
 outside a container (the API image declares `DOTNET_RUNNING_IN_CONTAINER=true`, and `1` is accepted too), so
 a local `dotnet run` still validates `DEMO_MODE` and writes nothing to the developer's filesystem, while the
 Compose development overlay still locks the mode in `api-state`.
-Demo mode seeds realistic content and invented accounts under
-`demo.codigoactivo.es` with random, discarded passwords, so they cannot log in; the demonstrator signs in with
-the bootstrap administrator, the only administrator, whose password reset and login codes arrive at
-`BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server.
+Demo mode seeds realistic content and invented accounts under `demo.codigoactivo.es` with random, discarded
+passwords, so they cannot log in, and gives the bootstrap administrator invented dependents. The demonstrator
+signs in with the bootstrap administrator, the only administrator, whose password reset and login codes arrive
+at `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding downloads its sample images from
+`picsum.photos` (three attempts each, at most five minutes in total), so `api` needs outbound HTTPS there on
+the start that seeds; a failed download stops that start.
 
 Changing mode requires destroying all named volumes and therefore all application data:
 
@@ -303,16 +315,15 @@ administrator before accepting requests, with a random password that is discarde
 through the login page's password reset for that email, which also proves the mailbox and SMTP work. It is
 seeded with the fixed DNI/NIE `00000000T`; change it from the administrator's profile after first login, since
 no other account can register with that value while it is in use. Once any user exists, the bootstrap email
-is ignored. This generic account has
-a fixed id, can be neither deleted nor demoted, and receives the content of deleted accounts; startup fails on
-a database that has users but not that account, which only happens with databases created before the id was
-fixed and means the database must be recreated.
+is ignored. This generic account has a fixed id, can be neither deleted nor demoted, and receives the content
+of deleted accounts; startup refuses a database that has users but not that account.
 
 ## Development overlay
 
 Inside the repository, `docker compose up --build` merges `docker-compose.override.yml`: it builds `api` and
 `web` from the working tree, sets the API to Development and exposes port `5150`, adds a Mailpit service
-publishing SMTP on port `1025` and its inbox UI on port `8025`, exposes PostgreSQL on port `5432` and makes
+publishing SMTP on port `1025` and its inbox UI on port `8025` and points every `SMTP_*` value at it (the
+`.env` SMTP settings are ignored), exposes PostgreSQL on port `5432` and makes
 the backend network non-internal, and disables the API read-only root filesystem in favor of
 debugger-oriented privileges. Visual Studio uses the same Compose project through
 `backend/docker-compose.dcproj`. As a development-only exception to the log policy in
@@ -321,8 +332,8 @@ kept by Docker's `json-file` driver at 5 MB per file, two files.
 
 ## Releases and upgrades
 
-Only pushes to `master` start CI (including merged PRs); unmerged PRs run nothing.
-Backend build/unit/integration tests and frontend checks must pass before publishing. The Docker workflow
+Only pushes to `master` start CI, merged pull requests included; open pull requests and pushes to `develop`
+run none of it. Backend build/unit/integration tests and frontend checks must pass before publishing. The Docker workflow
 is a reusable CI stage; it does not run independently or on a schedule.
 
 Pushes to `develop` or `master` that change `backend/`, `frontend/` or the workflow itself start the CodeQL
@@ -362,7 +373,8 @@ Back up `db-data`, `api-files`, `api-dataprotection` and `api-state`, and test r
 `secrets/data_protection_certificate_password` makes
 the protected key ring unusable and invalidates sessions. That password also derives the key-wrapping key of
 every stored key element, so it cannot be rotated on its own: a new password requires recreating the volume,
-which invalidates all sessions and stored authenticator secrets (see
+which invalidates all sessions, stored authenticator secrets and pending one-time codes and links, whose
+hashing key is derived from the certificate in that volume (see
 [SECURITY.md](SECURITY.md#data-protection-and-containers)). The email outbox lives in `db-data`, so a
 `db-data` backup includes pending mail; restoring an older backup can redeliver or drop messages queued
 after it was taken, and its protected content depends on the Data Protection key ring in effect when it was

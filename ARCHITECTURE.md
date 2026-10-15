@@ -15,10 +15,10 @@ belong in [SECURITY.md](SECURITY.md).
 
 ## Domain language
 
-Documentation, the UI and new code use these terms. Names fixed by the schema or the wire contract keep the older
-words (`Assignment*`, `ParentId`, the `assign` and `children` routes, the `ActivityAssignment*` and `UserChild*`
-codes), and so does existing code until it is renamed (`AssignActivity`, `AddChild`). A participant role is not
-the participant user type.
+Documentation and the UI use these terms. The schema, the wire contract and part of the code name some of them
+differently: `Assignment*`, `ParentId`, the `assign` and `children` routes, the `ActivityAssignment*` and
+`UserChild*` codes, and use cases such as `AssignActivity` and `AddChild`. A participant role is not the
+participant user type.
 
 | Term      | Meaning                                                                                | In code                                        | In the UI       |
 | --------- | -------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------- |
@@ -45,14 +45,13 @@ outbox for events or event sourcing.
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `CodigoActivo.Domain`         | Aggregates, typed identifiers, value objects, domain events and policies, repository ports, `Result`, `Error` and `DomainErrorCode` | None                                |
 | `CodigoActivo.Application`    | Use cases with their validated messages, response contracts, the read model, the use case decorators and the ports they need       | Domain                              |
-| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, file storage, Argon2id, HMAC-SHA256 one-time code hashing, TOTP (Otp.NET), SMTP, email templates and the clock | Domain, Application                 |
+| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, file storage, Argon2id, HMAC-SHA256 one-time code hashing, TOTP (Otp.NET), the encrypted Data Protection key ring, SMTP, email templates and the clock | Domain, Application                 |
 | `CodigoActivo.Composition`    | The composition root: registrations by feature, strict configuration-to-options mapping checked on start, data protection and database initialization | Domain, Application, Infrastructure |
-| `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, output caching, OpenAPI, SEO documents and startup | Composition                         |
+| `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, rate and concurrency limits, output caching, OpenAPI, SEO documents and startup | Composition                         |
 
-The `ProjectReference` graph is the source of truth for these boundaries. Tests under
-`tests/CodigoActivo.UnitTests/Architecture/` also check the layer references (the API reaches neither
-Infrastructure nor EF Core), the handler and data-shape conventions, and that repositories exist only for
-aggregate roots.
+The `ProjectReference` graph is the source of truth for these boundaries. The tests under
+`tests/CodigoActivo.UnitTests/Architecture/` enforce the layer and feature dependencies (the API reaches neither
+Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/AGENTS.md).
 
 ### Domain and persistence
 
@@ -60,14 +59,15 @@ aggregate roots.
   `TermsDocuments/`, `News/`, `Resources/`, `Partners/`, `Files/`) with its aggregates, typed identifiers, value
   objects, domain events, policies and repository ports; `Common/` holds `Result`, `Error`, `DomainErrorCode`, the
   base classes (`Entity<TId>`, `AggregateRoot<TId>`, `AuditableEntity<TId>`) and the shared value objects.
-- Every aggregate has a typed identifier (`UserId`, `EventId`, `ActivityId`, `PartnerId`, `StoredFileId`...), a
+- Aggregates have a typed identifier (`UserId`, `EventId`, `ActivityId`, `PartnerId`, `StoredFileId`...), a
   `readonly record struct` over a `Guid` with no implicit conversion, so an identifier of one aggregate can never
-  be passed for another. Values with rules are value objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`,
+  be passed for another; `EventTermsAcceptance` is keyed by event, user and document, and `DeletedAccount` by
+  the former `UserId`. Values with rules are value objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`,
   `RichText`, `DateRange` (the event calendar), `SignupWindow`, `ActivitySchedule`, `HandwrittenSignature`, and
   the security state of `User`: `OneTimeCode` (verification, password reset and login codes), `EmailChange`,
-  `Authenticator`, `LoginChallenge`, `PasswordLockout` and `TwoFactorLockout`. EF Core maps them onto the existing
+  `Authenticator`, `LoginChallenge`, `PasswordLockout` and `TwoFactorLockout`. EF Core maps them onto plain
   columns through conventions and converters (`Infrastructure/Database/Conversions`), the `User` ones as complex
-  properties, so the schema does not change; the read model keeps plain `Guid` and primitive columns.
+  properties; the read model keeps plain `Guid` and primitive columns.
   `DateRange.InstantsIn` gives the UTC bounds of the event days that both `DateRange.Covers` (a new activity
   schedule) and `IActivityRepository.AnyOutsideRangeAsync` (a shortened event) compare activities against.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
@@ -86,7 +86,7 @@ aggregate roots.
   (`CacheInvalidationOnCommit` evicts the tags `CacheTagsByEvent` maps; `ReleasedFilesCleanup` removes the files
   that events implementing `IReleasesFiles` stopped referencing, when nothing else references them) and then every
   `IDomainEventListener<T>` of each event runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`,
-  `SessionsEndOnPasswordReplacedOrLocked`). Effects run in the request after the commit and to their end even
+  `SessionsEndOnPasswordReplacedOrLocked`, `AccountLockoutLog`). Effects run in the request after the commit and to their end even
   when the client disconnects; a failing effect is logged and neither stops the others nor fails the committed
   request. A crash between the commit and an effect loses that effect, because there is no transactional outbox
   for events (emails themselves go through the email outbox).
@@ -94,7 +94,9 @@ aggregate roots.
   keep and the frontend builds and checks; `RichTextFileReferences` in Domain owns it, so it cannot change
   without migrating saved documents.
 - Rules that span aggregates are domain policies (`SignupEligibility`, `SignupRoles`, `EarlySignup`,
-  `TermsConsent`, `FeaturedSelection`, `AccountErasure`, `InitialAdministrator`, `LegalCopy`, `Household`).
+  `EventTimeline`, `AssignmentDecisions`, `TermsConsent`, `FeaturedSelection`, `AccountErasure`,
+  `InitialAdministrator`, `LegalCopy`, `Household`); `EventTimeline` also decides the stage the read side
+  shows, so it always agrees with signup.
   Handlers load and call the domain; the commit and the effects that follow it belong to the decorators and the
   domain events; Application collaborators only load what a policy needs or run the checks that need I/O
   (`SignupGate`, `TermsGate`, `ActivityValidator`, `EventCategoryChecker`, `DisposableEmailChecker`).
@@ -105,8 +107,8 @@ aggregate roots.
   domain enums (`UserStatus`, `UserType`, `ActivityRole`, `ActivityModality`, `AssignmentStatus`,
   `ResourceType`). Their catalog tables stay only for the names, colors and descriptions shown to people; each
   member keeps the stable `Guid` of its row through `CatalogIds` (`Application/Common/Catalogs`), which the EF
-  converters use to store the enum in the same foreign key column and the API uses to accept and return the same
-  identifiers as before. A request whose identifier names no member is invalid (`RequestValidationFailed`), and
+  converters use to store the enum in the foreign key column and the API uses to accept and return catalog
+  identifiers. A request whose identifier names no member is invalid (`RequestValidationFailed`), and
   the API maps the identifier to the enum before building the command, so commands never carry catalog
   identifiers.
 - Repositories exist only for aggregate roots (`IRepository<T>` plus methods that name their intention), never
@@ -135,7 +137,7 @@ aggregate roots.
   the values read before the concurrent write, and the checks made before the transaction would not run again.
   `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`), so
   parallel attempts lose no increment and only one of them sees the account lock. `SavePasswordStateAsync` writes
-  only the lockout columns, so it hands just the `PasswordLocked` event to the unit of work, which publishes it
+  only the lockout and login challenge columns (a lock closes the challenge), so it hands just the `PasswordLocked` event to the unit of work, which publishes it
   when that transaction commits; the account's other changes and events wait for their own commit, and it
   advances the account's token only when no other transaction wrote the row since it was loaded. Second-factor
   checks (the handler locks and reloads the account, token included, before `SecondFactorGuard` counts the code)
@@ -150,7 +152,8 @@ aggregate roots.
   Infrastructure as JSON with `SchemaVersion` 1), hands the content credited to the household over to the
   initial administrator and removes the account; any other change staged in the unit of work commits with it.
   `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, is the safety
-  net that refuses any other user deletion and any deletion of the initial administrator. The
+  net that refuses any other user deletion, any deletion of the initial administrator and any change to a
+  stored copy. The
   `PurgeDeletedAccounts` and `RemoveExpiredSessions` commands delete legal copies past their retention and
   expired sessions; hosted services in Infrastructure only run them on a schedule. What the copy holds and how
   long it is kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
@@ -163,15 +166,17 @@ aggregate roots.
   (`InitialAdministrator.Id`) when the user table is empty, refuses a database that has users but not that
   account, and adds demo data when enabled.
 - Infrastructure is organized by feature too: each feature folder (`Users/`, `Events/`, `Activities/`, `News/`,
-  `Files/`...) holds its EF configurations, repositories and background services; `Database/` keeps only the
-  contexts, conventions, catalogs, unit of work, seeders and migrations, and `Communication/` the email
-  delivery shared by every feature.
+  `Files/`...) holds its EF configurations, repositories and background services; `Database/` keeps the
+  contexts, conventions, catalogs, shared configurations and repository base, the unit of work, the query
+  executor, seeders and migrations; `Communication/` holds the email delivery shared by every feature, and
+  `Caching/`, `Messaging/`, `Security/`, `Time/` and `Diagnostics/` the other technical services.
 
 ### Commands and queries
 
 Each use case is a message and a sealed handler in `CodigoActivo.Application/<Feature>/Commands|Queries/`.
 `Accounts` groups its supporting types by concern: `Passwords/`, `SecondFactor/`, `Sessions/`, `EmailAddresses/`,
-`Notifications/` and `Erasure/`; `SecurityLog` stays at the `Accounts` root.
+`Notifications/` and `Erasure/`; `AccountLock`, `AccountLockoutLog` and `SecurityLog` sit at the `Accounts`
+root.
 `UseCaseRegistration` (Composition) registers every `ICommandHandler<,>`, `IQueryHandler<,>` and
 `IDomainEventListener<>` it finds by the contract it implements, and wraps the handlers in decorators: a command
 runs through `LoggingCommandDecorator` (warns about slow use cases), `ValidationCommandDecorator` and
@@ -224,17 +229,15 @@ answers anything else with `ActingForAnotherUserForbidden` (403
 updating or deleting a user and changing a password check it. Signing up a household is the exception: it only
 takes the signed-in user and their own dependents (`Household.Includes`), administrators included, and answers
 anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]` attributes
-still refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
+refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
 
 An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`), and a
 document may ask for a handwritten signature (`requires_signature`). The signup wire contract
 (`AssignRequest`/`AssignHouseholdRequest`) carries a `TermsDecisions` list of `{TermsDocumentId, Accepted,
-Signature}`, the signature a base64 PNG drawn in the SPA with `signature_pad`. `TermsGate` applies `TermsConsent`,
-which refuses accepting a document that asks for a signature without a valid one, and records each decision as an
-`EventTermsAcceptance` (keyed by event, user and document, with its signature) but never persists the rejection
-of a required document, so signup blocks without excluding the user permanently; `GET /api/events/{eventId}/terms`
-returns every linked document with the caller's current decision. Administrators list the decisions of an event
-under `/api/events/{eventId}/terms/decisions` and read each signature image there.
+Signature}`, the signature a base64 PNG drawn in the SPA with `signature_pad`. `TermsGate` applies `TermsConsent`
+and records each decision as an `EventTermsAcceptance`; `GET /api/events/{eventId}/terms` returns every linked
+document with the caller's current decision, and administrators list the decisions of an event under
+`/api/events/{eventId}/terms/decisions`. Consent rules are in [SECURITY.md](SECURITY.md#privacy-and-third-parties).
 
 ### Caching
 
@@ -245,8 +248,7 @@ under `/api/events/{eventId}/terms/decisions` and read each signature image ther
 - Both in-memory cache layers are capped at 64 MiB and skip payloads larger than 1 MiB.
 - Committed domain events invalidate the tags `CacheTagsByEvent` maps them to, evicting both application and
   HTTP output entries; commands never invalidate caches themselves.
-- Both stores are process-local, assuming one API replica; scaling out needs a shared store and cross-instance
-  invalidation.
+- Both stores are process-local and invalidated in process, which assumes one API replica.
 - nginx does not cache API responses. It adds `Cache-Control: no-store` to every proxied response that sets
   none, so browsers and intermediaries never store API data. File content keeps the API's own
   `public, max-age` of a year, `immutable`: a stored file's content never changes (there is no replace
@@ -257,8 +259,8 @@ under `/api/events/{eventId}/terms/decisions` and read each signature image ther
   Errors and any response without an explicit policy are `no-store`. A tab left open across a deployment
   reloads once when a lazy chunk of the previous build is gone (`stale-build-reload.ts`).
 - The SPA holds no data cache: TanStack Query refetches on every mount, focus and reconnect and drops data
-  as soon as no view observes it, so freshness is decided only by the API. Retaining query data needs every
-  consumer to handle retained values and failed refetches first.
+  as soon as no view observes it, so freshness is decided only by the API. The one exception is the session
+  query (`GET /api/auth/me`), kept until a mutation invalidates it or the session ends.
 
 ### Results, validation and HTTP errors
 
@@ -272,8 +274,9 @@ each code to the wire member of the same name or to an explicit rename (malforme
 has no translation or a wire code is reached by none. Controllers
 translate failures through `ApiControllerBase`. All client-visible
 failures use `ApiErrorResponse(Title, Status, Code, TraceId)`, including model validation, authorization,
-CSRF and unhandled exceptions. HTTP mappings: 400 validation, 401 unauthenticated, 403 forbidden, 404 not
-found, 409 conflict, 500 unexpected. A path under `/api` that matches no endpoint answers 404
+CSRF and unhandled exceptions; only rate-limit rejections (429) carry no body, just `Retry-After`. HTTP
+mappings: 400 validation, 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict, 429 too many
+requests, 500 unexpected. A path under `/api` that matches no endpoint answers 404
 `EndpointNotFound` to anyone, and every create answers 201 with the new resource and its `Location`.
 
 `ErrorCode` is serialized as a string and is part of the frontend contract; the API registers the string enum
@@ -300,9 +303,9 @@ Automatic messages (`IEmailSender`/`ThrottledEmailSender`, rate-limited per reci
 administrator-authored bulk mail (`ManualEmailDispatcher`) both store their batch through `IEmailOutbox` in
 a PostgreSQL outbox, in a unit of work of its own committed before the call returns; a background
 `EmailOutboxProcessor` hosted service claims due rows and delivers them through `IEmailTransport`
-(`SmtpEmailSender`), with retries and an attempt limit. `ManualEmailDispatcher` and the audience-preview
-queries in `Application/Emails/Queries` share recipient selection through `ManualEmailAudience`, so a
-preview always matches what the corresponding send would reach. Operational values are in
+(`SmtpEmailSender`), with retries and an attempt limit. The send commands (`SendEmailToUsers`,
+`SendEmailToEventAttendees`) and the audience-preview queries in `Application/Emails/Queries` share recipient
+selection through `ManualEmailAudience`, so a preview always matches what the corresponding send would reach. Operational values are in
 [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery); security properties are in
 [SECURITY.md](SECURITY.md#email-abuse-controls).
 
@@ -315,18 +318,20 @@ hosted service keeps that table filled from an external list, replacing it only 
 ## Frontend
 
 The frontend follows Feature-Sliced Design 2.1, pages first. Imports flow downward, slices at the same layer do
-not import one another and each slice exposes its public API through `index.ts`; `@` maps to `src`. Code starts
-in the page that uses it and moves down to a feature or entity only when a second slice needs it. Steiger
-(`npm run lint:fsd`) enforces the structure, including that no slice has a single consumer.
+not import one another (the only exception is the `@x` cross-import `entities/user/@x/account.ts`) and each
+slice exposes its public API through `index.ts`; `@` maps to `src`. Code starts in the page that uses it and
+moves down to a feature or entity only when a second slice needs it. Steiger (`npm run lint:fsd`) enforces the
+structure, including that a widget, feature or entity slice is used by at least two slices or by `app`. The
+coding rules and their ESLint enforcement are in [frontend/AGENTS.md](frontend/AGENTS.md).
 
-| Layer       | Responsibility                                                                       |
-| ----------- | ------------------------------------------------------------------------------------ |
-| `app/`      | Bootstrap, route table and guards, layouts and global styles                         |
-| `pages/`    | One slice per route: its views, view models, single-page API access and helpers      |
-| `widgets/`  | Page chrome shared by several pages (site header and footer, admin shell)            |
-| `features/` | User actions reused by several pages (logout, emailing users or attendees)           |
-| `entities/` | Business models with their API adapters, query and mutation options, rules and UI    |
-| `shared/`   | Generated client, HTTP client, UI primitives, utilities, typed routes, config, i18n  |
+| Layer       | Responsibility                                                                                |
+| ----------- | --------------------------------------------------------------------------------------------- |
+| `app/`      | Bootstrap, route table and guards, layouts and global styles                                  |
+| `pages/`    | One slice per route: its views, view models, single-page API access and helpers               |
+| `widgets/`  | Page chrome composed by the app layouts (site header and footer, admin shell)                 |
+| `features/` | User actions reused by several pages (logout, emailing users or attendees)                    |
+| `entities/` | Business models with their API adapters, query and mutation options, rules and UI             |
+| `shared/`   | Generated client, HTTP client, UI primitives, utilities, typed routes, config, i18n, branding |
 
 Segments mean the same in every slice: `ui` components, `model` state and pure rules, `api` server access,
 `lib` pure helpers and `config` static content.
@@ -352,8 +357,6 @@ dependents and admin user forms only bind fields and show its messages.
 
 ### Views, forms, routing and session
 
-- Views are humble: `.vue` files bind to `model` composables and never create mutations, touch the query cache
-  or inspect API errors. Business rules are pure functions in `model` or `lib`.
 - Forms use `useForm` (`shared/lib/form`) around a pure `read(draft)` that returns the problem of each field
   (a translation key in a `form.problems` group, or `true` for a red border only) and, without problems, the
   value to send. Admin create/edit dialogs follow the `useCrudDialog` state machine.
@@ -368,13 +371,8 @@ dependents and admin user forms only bind fields and show its messages.
   session once the second factor is accepted.
 - The HTTP client sends cookies, obtains the CSRF token when needed and turns failed responses into
   `ApiError`. `ErrorCode` values map to Spanish messages under `errors.*` in
-  `src/shared/i18n/locales/es.json`.
+  `src/shared/i18n/locales/es.json`, the only locale.
 - Light and dark themes use `--ca-*` CSS variables; Element Plus tokens map onto them.
-- User-facing frontend copy must go through Vue I18n. Spanish is currently the only locale. Only `shared` and
-  `app` use the global i18n instance; components call `useI18n` and pure helpers receive a `Translate`.
-- ESLint turns these boundaries into build failures: the generated client outside `api` segments, the global
-  i18n instance or Element Plus imperative feedback in pages, widgets, features or entities, and mutations,
-  cache access or API errors in views.
 
 ## Changing the API contract
 
@@ -385,7 +383,7 @@ An API change is complete only when both applications agree:
    `http://localhost:5150/swagger/v1/swagger.json`.
 3. From `frontend/`, run `npm run api:generate`.
 4. Add translations for new error codes in `src/shared/i18n/locales/es.json`.
-5. Run backend tests and `npm run check`.
+5. Run `dotnet test --solution CodigoActivo.slnx` from `backend/` and `npm run check` from `frontend/`.
 
 `npm run api:check` generates the client in a temporary location and fails if committed output differs from
-`swagger.json`. See [CONTRIBUTING.md](CONTRIBUTING.md#changing-the-api) for the command-level checklist.
+`swagger.json`.
