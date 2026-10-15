@@ -202,6 +202,11 @@ public static class ApiClientExtensions
         return ShouldFailAsync(response, HttpStatusCode.Conflict, code);
     }
 
+    public static Task ShouldBeTooManyRequestsAsync(this HttpResponseMessage response)
+    {
+        return ShouldFailAsync(response, HttpStatusCode.TooManyRequests, ErrorCode.TooManyRequests);
+    }
+
     private static async Task ShouldFailAsync(
         HttpResponseMessage response,
         HttpStatusCode status,

@@ -516,6 +516,12 @@ public enum ErrorCode
     InvalidCsrfToken,
 
     /// <summary>
+    /// The client sent more requests than its rate or concurrency budget allows; it may retry after
+    /// the seconds in <c>Retry-After</c>.
+    /// </summary>
+    TooManyRequests,
+
+    /// <summary>
     /// Selects the request validation failed option.
     /// </summary>
     RequestValidationFailed,

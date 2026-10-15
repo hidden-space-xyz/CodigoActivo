@@ -41,6 +41,7 @@ public static class WireErrorCodes
             ErrorCode.EndpointNotFound,
             ErrorCode.AccessDenied,
             ErrorCode.InvalidCsrfToken,
+            ErrorCode.TooManyRequests,
             ErrorCode.RequestValidationFailed,
             ErrorCode.ConcurrentUpdate,
             ErrorCode.UnexpectedError,

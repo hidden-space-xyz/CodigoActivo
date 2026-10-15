@@ -618,6 +618,14 @@ describe('nginx server hardening', () => {
       'add_header Cache-Control $codigoactivo_api_cache always;',
     )
   })
+
+  it('answers its own rate limit with the API error code', () => {
+    const rateLimited = findBlock(blocks, (block) => block.header === 'location @rate_limited')
+
+    expect(statementsOf(rateLimited.ownStatements, 'return 429')).toEqual([
+      `return 429 '{"title":"Too Many Requests","status":429,"code":"TooManyRequests"}';`,
+    ])
+  })
 })
 
 describe('nginx add_header inheritance', () => {

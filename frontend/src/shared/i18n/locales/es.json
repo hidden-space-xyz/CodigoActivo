@@ -292,6 +292,7 @@
     "EndpointNotFound": "La operación solicitada no existe.",
     "AccessDenied": "No tienes permiso para realizar esta acción.",
     "InvalidCsrfToken": "La sesión ha expirado. Recarga la página e inténtalo de nuevo.",
+    "TooManyRequests": "Has hecho demasiadas peticiones seguidas. Espera un momento y vuelve a intentarlo.",
     "RequestValidationFailed": "Los datos enviados no son válidos. Revisa el formulario e inténtalo de nuevo.",
     "ConcurrentUpdate": "Otra operación ha modificado estos datos al mismo tiempo. Inténtalo de nuevo.",
     "UnexpectedError": "Ha ocurrido un error inesperado. Inténtalo de nuevo."
