@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -9,7 +10,8 @@ namespace CodigoActivo.Infrastructure.Database.Conversions;
 
 /// <summary>
 /// Stores the identifiers and value objects of the domain in the columns their underlying values
-/// always used: a <c>uuid</c> for each <see cref="IEntityId{TSelf}"/> and text for the rest.
+/// always used: a <c>uuid</c> for each <see cref="IEntityId{TSelf}"/>, <c>bytea</c> for a
+/// <see cref="HandwrittenSignature"/> and text for the rest.
 /// </summary>
 internal static class DomainValueConventions
 {
@@ -32,6 +34,9 @@ internal static class DomainValueConventions
             .Properties<SpanishNationalId>()
             .HaveConversion<SpanishNationalIdConverter>();
         configurationBuilder.Properties<RichText>().HaveConversion<RichTextConverter>();
+        configurationBuilder
+            .Properties<HandwrittenSignature>()
+            .HaveConversion<HandwrittenSignatureConverter>();
     }
 
     private static IEnumerable<Type> EntityIdTypes()
@@ -112,4 +117,13 @@ internal static class DomainValueConventions
     /// </summary>
     public sealed class RichTextConverter()
         : ValueConverter<RichText, string>(text => text.Json, json => RichText.From(json));
+
+    /// <summary>
+    /// Stores a <see cref="HandwrittenSignature"/> as the bytes of its PNG image.
+    /// </summary>
+    public sealed class HandwrittenSignatureConverter()
+        : ValueConverter<HandwrittenSignature, byte[]>(
+            signature => signature.ToArray(),
+            png => HandwrittenSignature.FromStored(png)
+        );
 }

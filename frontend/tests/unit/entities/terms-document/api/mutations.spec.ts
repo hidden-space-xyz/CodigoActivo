@@ -7,7 +7,7 @@ import { apiError, http, HttpResponse, noContent, server } from '../../../../sup
 import { buildTermsDocument, richText } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
-const INPUT = { name: 'Cookies', description: richText('Body') }
+const INPUT = { name: 'Cookies', description: richText('Body'), requiresSignature: false }
 
 function cachedTerms() {
   const client = createTestQueryClient()

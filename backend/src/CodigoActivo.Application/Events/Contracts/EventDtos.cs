@@ -163,6 +163,7 @@ public record EventTermsDocumentResponse(
 /// <param name="Name">The name value.</param>
 /// <param name="Description">The description value.</param>
 /// <param name="Required">Whether accepting the document is mandatory to complete the signup.</param>
+/// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
 /// <param name="DisplayOrder">The position in which the document is displayed.</param>
 /// <param name="Accepted">Whether the current user accepted the document, or <see langword="null"/> when undecided.</param>
 /// <param name="DecidedAt">When the current user decided, or <see langword="null"/> when undecided.</param>
@@ -171,6 +172,7 @@ public record EventTermsDocumentStateResponse(
     string Name,
     string Description,
     bool Required,
+    bool RequiresSignature,
     int DisplayOrder,
     bool? Accepted,
     DateTimeOffset? DecidedAt
@@ -185,3 +187,44 @@ public record EventTermsStateResponse(
     IReadOnlyList<EventTermsDocumentStateResponse> Documents,
     bool SignupBlocked
 );
+
+/// <summary>
+/// Contains a decision someone took about a terms document of an event, as administrators list it.
+/// </summary>
+/// <param name="UserId">Identifier of the person who decided: the account that signed up, also for its dependents.</param>
+/// <param name="FirstName">First name of the person.</param>
+/// <param name="LastName">Last name of the person.</param>
+/// <param name="Email">Email of the person, if any.</param>
+/// <param name="TermsDocumentId">Identifier of the terms document.</param>
+/// <param name="DocumentName">Name of the terms document.</param>
+/// <param name="Accepted">Whether the document was accepted.</param>
+/// <param name="DecidedAt">When it was decided.</param>
+/// <param name="HasSignature">Whether a handwritten signature was drawn to accept it.</param>
+public record EventTermsDecisionResponse(
+    Guid UserId,
+    string FirstName,
+    string LastName,
+    string? Email,
+    Guid TermsDocumentId,
+    string DocumentName,
+    bool Accepted,
+    DateTimeOffset DecidedAt,
+    bool HasSignature
+)
+{
+    /// <summary>
+    /// Initializes an empty event terms decision response for serialization.
+    /// </summary>
+    public EventTermsDecisionResponse()
+        : this(
+            Guid.Empty,
+            string.Empty,
+            string.Empty,
+            null,
+            Guid.Empty,
+            string.Empty,
+            false,
+            default,
+            false
+        ) { }
+}

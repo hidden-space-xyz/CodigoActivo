@@ -6,6 +6,7 @@ import { isRichTextBlank, isRichTextTooLong } from '@/shared/lib/rich-text'
 export interface TermsDocumentDraft {
   name: string
   description: string
+  requiresSignature: boolean
 }
 
 /** Field of the terms document form that can be refused. */
@@ -13,7 +14,11 @@ type TermsDocumentField = 'name' | 'description'
 
 /** A blank draft, or one filled with the terms document being edited. */
 export function toTermsDocumentDraft(termsDocument: TermsDocument | null): TermsDocumentDraft {
-  return { name: termsDocument?.name ?? '', description: termsDocument?.description ?? '' }
+  return {
+    name: termsDocument?.name ?? '',
+    description: termsDocument?.description ?? '',
+    requiresSignature: termsDocument?.requiresSignature ?? false,
+  }
 }
 
 /**
@@ -32,5 +37,8 @@ export function readTermsDocumentDraft(
     problems.description = 'validation.richTextTooLong'
   }
   if (Object.keys(problems).length > 0) return { problems, value: null }
-  return { problems, value: { name, description: draft.description } }
+  return {
+    problems,
+    value: { name, description: draft.description, requiresSignature: draft.requiresSignature },
+  }
 }

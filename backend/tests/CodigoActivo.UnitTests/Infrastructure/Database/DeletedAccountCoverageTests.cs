@@ -69,6 +69,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         nameof(EventTermsAcceptance.TermsDocumentId),
         nameof(EventTermsAcceptance.Accepted),
         nameof(EventTermsAcceptance.DecidedAt),
+        nameof(EventTermsAcceptance.Signature),
     ];
 
     private readonly CodigoActivoDbContext context = new(

@@ -151,6 +151,7 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         });
         acceptances.HasOne(a => a.Event).WithMany().HasForeignKey(a => a.EventId);
         acceptances.HasOne(a => a.User).WithMany().HasForeignKey(a => a.UserId);
+        acceptances.HasOne(a => a.TermsDocument).WithMany().HasForeignKey(a => a.TermsDocumentId);
     }
 
     private static void ConfigureActivities(ModelBuilder modelBuilder)

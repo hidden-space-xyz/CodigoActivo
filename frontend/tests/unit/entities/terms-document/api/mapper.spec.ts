@@ -10,13 +10,17 @@ describe('terms document mapper', () => {
       id: 'terms-1',
       name: 'Privacy',
       description: richText('Terms body'),
+      requiresSignature: false,
     })
   })
 
-  it('sends the name and the content', () => {
-    expect(toTermsDocumentRequest({ name: 'Cookies', description: richText('Body') })).toEqual({
-      name: 'Cookies',
-      description: richText('Body'),
-    })
+  it('sends the name, the content and whether it asks for a signature', () => {
+    expect(
+      toTermsDocumentRequest({
+        name: 'Cookies',
+        description: richText('Body'),
+        requiresSignature: true,
+      }),
+    ).toEqual({ name: 'Cookies', description: richText('Body'), requiresSignature: true })
   })
 })

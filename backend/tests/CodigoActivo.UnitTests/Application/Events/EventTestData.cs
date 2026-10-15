@@ -215,7 +215,8 @@ internal static class EventTestData
 
     public static TermsDocumentRow NewTermsDocumentRow(
         string name = "Términos generales",
-        string description = "{}"
+        string description = "{}",
+        bool requiresSignature = false
     )
     {
         return new()
@@ -223,6 +224,7 @@ internal static class EventTestData
             Id = Guid.NewGuid(),
             Name = name,
             Description = description,
+            RequiresSignature = requiresSignature,
         };
     }
 

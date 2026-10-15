@@ -709,6 +709,7 @@ public sealed class EventTests
             UserId.From(userId),
             TermsDocumentId.From(termsDocumentId),
             false,
+            null,
             Now
         );
 
@@ -728,13 +729,58 @@ public sealed class EventTests
             UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(termsDocumentId),
             false,
+            null,
             Now
         );
 
-        acceptance.Accept(Now.AddHours(3));
+        acceptance.Accept(null, Now.AddHours(3));
 
         acceptance.Accepted.Should().BeTrue();
         acceptance.DecidedAt.Should().Be(Now.AddHours(3));
         acceptance.TermsDocumentId.Value.Should().Be(termsDocumentId);
+    }
+
+    [Fact]
+    public void TermsAcceptanceRecordKeepsTheSignatureOnlyWhenAccepted()
+    {
+        var signature = HandwrittenSignature.Create(SignatureImages.Png()).Value;
+
+        var accepted = EventTermsAcceptance.Record(
+            EventId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
+            TermsDocumentId.From(Guid.NewGuid()),
+            true,
+            signature,
+            Now
+        );
+        var declined = EventTermsAcceptance.Record(
+            EventId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
+            TermsDocumentId.From(Guid.NewGuid()),
+            false,
+            signature,
+            Now
+        );
+
+        accepted.Signature.Should().BeSameAs(signature);
+        declined.Signature.Should().BeNull();
+    }
+
+    [Fact]
+    public void TermsAcceptanceAcceptDeclinedDocumentKeepsTheSignatureDrawn()
+    {
+        var signature = HandwrittenSignature.Create(SignatureImages.Png()).Value;
+        var acceptance = EventTermsAcceptance.Record(
+            EventId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
+            TermsDocumentId.From(Guid.NewGuid()),
+            false,
+            null,
+            Now
+        );
+
+        acceptance.Accept(signature, Now.AddHours(1));
+
+        acceptance.Signature.Should().BeSameAs(signature);
     }
 }

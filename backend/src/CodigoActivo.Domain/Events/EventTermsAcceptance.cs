@@ -6,7 +6,8 @@ namespace CodigoActivo.Domain.Events;
 
 /// <summary>
 /// Decision a person took about one terms document of an event. A declined document can be
-/// accepted later; an accepted one stays accepted.
+/// accepted later; an accepted one stays accepted, with the signature it was accepted with when
+/// the document asked for one.
 /// </summary>
 public class EventTermsAcceptance : IAggregateRoot
 {
@@ -38,12 +39,18 @@ public class EventTermsAcceptance : IAggregateRoot
     public DateTimeOffset DecidedAt { get; private set; }
 
     /// <summary>
+    /// Gets the signature drawn to accept the document, when it asked for one.
+    /// </summary>
+    public HandwrittenSignature? Signature { get; private set; }
+
+    /// <summary>
     /// Records a decision.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="userId">Identifier of the person who decides.</param>
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
     /// <param name="accepted">Whether the document is accepted.</param>
+    /// <param name="signature">Signature drawn to accept it, if any; a declined document keeps none.</param>
     /// <param name="now">Current time.</param>
     /// <returns>The new decision.</returns>
     public static EventTermsAcceptance Record(
@@ -51,6 +58,7 @@ public class EventTermsAcceptance : IAggregateRoot
         UserId userId,
         TermsDocumentId termsDocumentId,
         bool accepted,
+        HandwrittenSignature? signature,
         DateTimeOffset now
     )
     {
@@ -60,6 +68,7 @@ public class EventTermsAcceptance : IAggregateRoot
             UserId = userId,
             TermsDocumentId = termsDocumentId,
             Accepted = accepted,
+            Signature = accepted ? signature : null,
             DecidedAt = now,
         };
     }
@@ -67,10 +76,12 @@ public class EventTermsAcceptance : IAggregateRoot
     /// <summary>
     /// Accepts a document declined before.
     /// </summary>
+    /// <param name="signature">Signature drawn to accept it, if the document asks for one.</param>
     /// <param name="now">Current time.</param>
-    public void Accept(DateTimeOffset now)
+    public void Accept(HandwrittenSignature? signature, DateTimeOffset now)
     {
         Accepted = true;
+        Signature = signature;
         DecidedAt = now;
     }
 }

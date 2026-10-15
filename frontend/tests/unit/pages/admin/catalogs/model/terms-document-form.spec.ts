@@ -9,16 +9,27 @@ import { richText } from '../../../../../support/builders'
 
 describe('toTermsDocumentDraft', () => {
   it('starts blank and fills an edited terms document', () => {
-    expect(toTermsDocumentDraft(null)).toEqual({ name: '', description: '' })
+    expect(toTermsDocumentDraft(null)).toEqual({
+      name: '',
+      description: '',
+      requiresSignature: false,
+    })
     expect(
-      toTermsDocumentDraft({ id: 'terms-1', name: 'Privacy', description: richText('Body') }),
-    ).toEqual({ name: 'Privacy', description: richText('Body') })
+      toTermsDocumentDraft({
+        id: 'terms-1',
+        name: 'Privacy',
+        description: richText('Body'),
+        requiresSignature: true,
+      }),
+    ).toEqual({ name: 'Privacy', description: richText('Body'), requiresSignature: true })
   })
 })
 
 describe('readTermsDocumentDraft', () => {
   it('refuses a blank name without a message and asks for some content', () => {
-    expect(readTermsDocumentDraft({ name: ' ', description: '' })).toEqual({
+    expect(
+      readTermsDocumentDraft({ name: ' ', description: '', requiresSignature: false }),
+    ).toEqual({
       problems: {
         name: true,
         description: 'pages.admin.catalogs.termsDocuments.form.problems.contentRequired',
@@ -29,14 +40,24 @@ describe('readTermsDocumentDraft', () => {
 
   it('refuses content longer than the API stores', () => {
     expect(
-      readTermsDocumentDraft({ name: 'Cookies', description: richText('a'.repeat(262_144)) }),
+      readTermsDocumentDraft({
+        name: 'Cookies',
+        description: richText('a'.repeat(262_144)),
+        requiresSignature: false,
+      }),
     ).toEqual({ problems: { description: 'validation.richTextTooLong' }, value: null })
   })
 
-  it('trims the name and keeps the content', () => {
-    expect(readTermsDocumentDraft({ name: ' Cookies ', description: richText('Body') })).toEqual({
+  it('trims the name and keeps the content and whether it asks for a signature', () => {
+    expect(
+      readTermsDocumentDraft({
+        name: ' Cookies ',
+        description: richText('Body'),
+        requiresSignature: true,
+      }),
+    ).toEqual({
       problems: {},
-      value: { name: 'Cookies', description: richText('Body') },
+      value: { name: 'Cookies', description: richText('Body'), requiresSignature: true },
     })
   })
 })

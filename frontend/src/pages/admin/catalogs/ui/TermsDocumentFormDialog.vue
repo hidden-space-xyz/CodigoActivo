@@ -66,6 +66,16 @@ function save(): void {
         />
         <small v-if="errors.description" class="form__error">{{ errors.description }}</small>
       </div>
+      <div class="form__field">
+        <el-switch
+          id="terms-document-requires-signature"
+          v-model="draft.requiresSignature"
+          :active-text="$t('pages.admin.catalogs.termsDocuments.form.requiresSignature')"
+        />
+        <small class="form__hint">
+          {{ $t('pages.admin.catalogs.termsDocuments.form.requiresSignatureHint') }}
+        </small>
+      </div>
     </form>
     <template #footer>
       <ActionButton :label="$t('common.cancel')" text :disabled="saving" @click="visible = false" />
@@ -99,6 +109,11 @@ function save(): void {
 
 .form__error {
   color: var(--ca-danger-ink);
+  font-size: 12.5px;
+}
+
+.form__hint {
+  color: var(--ca-text-muted);
   font-size: 12.5px;
 }
 

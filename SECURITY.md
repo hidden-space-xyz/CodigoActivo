@@ -162,8 +162,9 @@ keeps no copy, a concurrent signup, status change or cancellation cannot slip in
 PostgreSQL aborts to resolve a deadlock is retried up to three times. The copy holds the personal data of the
 account and each dependent, the guardian's identification when
 a dependent is deleted alone, every signup of the household with activity, event, role, status and signup
-time, every terms decision (accepted or rejected) of the household — or the guardian's for the dependent's
-events — with each document's text as it stood at deletion (documents are not versioned), and who asked
+time, every terms decision (accepted or rejected, with its handwritten signature as base64 PNG) of the
+household — or the guardian's for the dependent's events — with each document's text as it stood at
+deletion (documents are not versioned), and who asked
 for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
 secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
 data is plain JSON protected only by database access. The `DeletedAccountPurger` hosted service runs
@@ -311,6 +312,11 @@ Kestrel does not emit a `Server` header (`AddServerHeader=false`); nginx still s
   rejection is never persisted. `AssignActivity` skips this consent step when an administrator signs up
   someone else; `AssignHousehold` always runs it. The acceptance row cascades away when the acting user's
   account is deleted, once the blocked copy of that account holds it.
+- A terms document can ask for a handwritten signature (`requires_signature`): accepting it then needs a PNG
+  drawn on screen, which `HandwrittenSignature` refuses above 128 KiB or 2000×1000 pixels and which is stored
+  in `event_terms_acceptances.signature`, never in the public file storage. Only administrators read it
+  (`GET /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/signature`, answered
+  `no-store`).
 - Verification, email-change and password-reset links put the user id and a 256-bit code from a
   cryptographic random generator in the URL fragment (`/reset-password#userId=…&code=…`), which browsers
   never send to the server; the page reads and removes it from the address bar, so a reload needs the

@@ -53,7 +53,8 @@ public sealed class CreateTermsDocumentCommandHandlerTests
         var result = await sut.HandleAsync(
             new CreateTermsDocumentRequest(
                 "  Normas de campamento  ",
-                "{\"type\":\"doc\"}"
+                "{\"type\":\"doc\"}",
+                RequiresSignature: true
             ).ToCommand(),
             TestContext.Current.CancellationToken
         );
@@ -63,5 +64,6 @@ public sealed class CreateTermsDocumentCommandHandlerTests
         result.Value.Should().Be(created.Id);
         created.Name.Should().Be("Normas de campamento");
         created.Description!.Json.Should().Be("{\"type\":\"doc\"}");
+        created.RequiresSignature.Should().BeTrue();
     }
 }

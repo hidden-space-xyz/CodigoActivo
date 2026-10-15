@@ -43,7 +43,12 @@ public sealed class AssignActivityCommandHandlerTests
             ActingUsers.Policy(currentUser, guardianships),
             currentUser,
             new SignupGate(events, users, clock),
-            new TermsGate(events, termsAcceptances, clock),
+            new TermsGate(
+                events,
+                Substitute.For<ITermsDocumentRepository>(),
+                termsAcceptances,
+                clock
+            ),
             clock,
             uow
         );

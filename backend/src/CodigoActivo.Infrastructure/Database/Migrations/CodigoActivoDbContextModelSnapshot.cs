@@ -18,7 +18,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -361,6 +361,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("decided_at");
 
+                    b.Property<byte[]>("Signature")
+                        .HasColumnType("bytea")
+                        .HasColumnName("signature");
+
                     b.HasKey("EventId", "UserId", "TermsDocumentId")
                         .HasName("pk_event_terms_acceptances");
 
@@ -647,6 +651,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
+
+                    b.Property<bool>("RequiresSignature")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_signature");
 
                     b.HasKey("Id")
                         .HasName("pk_terms_documents");

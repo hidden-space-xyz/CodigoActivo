@@ -1,11 +1,19 @@
+import { getGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureUrl } from '@/shared/api/generated/endpoints/events/events'
 import type {
   EventAttendeeAssignmentResponse,
   EventAttendeeResponse,
   EventRatingListItemResponse,
   EventSummaryResponse,
+  EventTermsDecisionResponse,
 } from '@/shared/api/generated/models'
 
-import type { AttendeeAssignment, EventAttendee, EventRating, EventStats } from '../model/types'
+import type {
+  AttendeeAssignment,
+  EventAttendee,
+  EventRating,
+  EventStats,
+  EventTermsDecision,
+} from '../model/types'
 
 /** Maps the report summary of an event to its summary cards. */
 export function toEventStats(summary: EventSummaryResponse): EventStats {
@@ -68,5 +76,29 @@ export function toEventRating(rating: EventRatingListItemResponse): EventRating 
     mostLiked: rating.mostLiked ?? '',
     leastLiked: rating.leastLiked ?? '',
     suggestions: rating.suggestions ?? '',
+  }
+}
+
+/** Maps a terms decision of the event, pointing at its signature image when it has one. */
+export function toEventTermsDecision(
+  eventId: string,
+  decision: EventTermsDecisionResponse,
+): EventTermsDecision {
+  return {
+    userId: decision.userId,
+    firstName: decision.firstName,
+    lastName: decision.lastName,
+    email: decision.email ?? '',
+    termsDocumentId: decision.termsDocumentId,
+    documentName: decision.documentName,
+    accepted: decision.accepted,
+    decidedAt: decision.decidedAt,
+    signatureUrl: decision.hasSignature
+      ? getGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureUrl(
+          eventId,
+          decision.userId,
+          decision.termsDocumentId,
+        )
+      : '',
   }
 }

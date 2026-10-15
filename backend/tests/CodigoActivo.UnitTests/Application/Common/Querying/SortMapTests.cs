@@ -46,6 +46,17 @@ public sealed class SortMapTests
     }
 
     [Fact]
+    public void ApplySeveralTieBreakersAppliesThemInTheOrderAdded()
+    {
+        var rows = Rows(new Row(1, 2, 2, "x"), new Row(1, 1, 3, "y"), new Row(1, 1, 1, "z"));
+        var map = new SortMap<Row>().Add("a", r => r.A).Tie(r => r.B).Tie(r => r.Id);
+
+        var ordered = map.Apply(rows.AsQueryable(), "a").ToList();
+
+        ordered.Select(r => r.Name).Should().Equal("z", "y", "x");
+    }
+
+    [Fact]
     public void ApplySingleKeyOrdersAscendingThenTie()
     {
         var rows = Rows(new Row(3, 0, 1, "x"), new Row(1, 0, 2, "y"), new Row(2, 0, 3, "z"));

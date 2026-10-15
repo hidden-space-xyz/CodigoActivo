@@ -25,6 +25,7 @@ import { useEventActivitiesAdmin } from '../model/use-event-activities-admin'
 import ActivityFormDialog from './ActivityFormDialog.vue'
 import EventAttendeesTab from './EventAttendeesTab.vue'
 import EventOpinionsTab from './EventOpinionsTab.vue'
+import EventTermsTab from './EventTermsTab.vue'
 
 const props = defineProps<{
   /** Event id from the `/admin/events/:eventId` route param. */
@@ -206,6 +207,13 @@ function openRoster(): void {
       </el-tab-pane>
       <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.opinions')" name="opinions">
         <EventOpinionsTab :event-id="eventId" :active="activeTab === 'opinions'" />
+      </el-tab-pane>
+      <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.terms')" name="terms">
+        <EventTermsTab
+          :event-id="eventId"
+          :documents="event.data.value?.terms ?? []"
+          :active="activeTab === 'terms'"
+        />
       </el-tab-pane>
     </el-tabs>
 

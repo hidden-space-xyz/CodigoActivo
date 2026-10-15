@@ -5,6 +5,7 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Domain;
@@ -60,24 +61,37 @@ public sealed class TermsConsentTests
             UserId.From(userId),
             TermsDocumentId.From(termsDocumentId),
             accepted,
+            null,
             Earlier
         );
     }
 
-    private TermsConsentOutcome Apply(
+    private Result<TermsConsentOutcome> Consent(
         IReadOnlyCollection<EventTermsDocument> documents,
         IReadOnlyCollection<EventTermsAcceptance> acceptances,
-        IReadOnlyList<TermsDecision>? decisions
+        IReadOnlyList<TermsDecision>? decisions,
+        params Guid[] signed
     )
     {
         return TermsConsent.Apply(
             EventId.From(eventId),
             UserId.From(userId),
             documents,
+            [.. signed.Select(TermsDocumentId.From)],
             acceptances,
             decisions,
             Now
         );
+    }
+
+    private TermsConsentOutcome Apply(
+        IReadOnlyCollection<EventTermsDocument> documents,
+        IReadOnlyCollection<EventTermsAcceptance> acceptances,
+        IReadOnlyList<TermsDecision>? decisions,
+        params Guid[] signed
+    )
+    {
+        return Consent(documents, acceptances, decisions, signed).Value;
     }
 
     [Fact]
@@ -251,5 +265,144 @@ public sealed class TermsConsentTests
         recorded.TermsDocumentId.Value.Should().Be(optional);
         recorded.Accepted.Should().BeTrue();
         outcome.MissingRequired.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ApplyAcceptingDocumentThatAsksForSignatureKeepsTheSignature()
+    {
+        var required = Guid.NewGuid();
+        var png = SignatureImages.Png();
+
+        var outcome = Apply(
+            Documents((required, true)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(required), true, png)],
+            required
+        );
+
+        var recorded = outcome.Recorded.Should().ContainSingle().Which;
+        recorded.Accepted.Should().BeTrue();
+        recorded.Signature!.ToArray().Should().Equal(png);
+        outcome.MissingRequired.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ApplyAcceptingDocumentThatAsksForSignatureWithoutOneIsRefused()
+    {
+        var optional = Guid.NewGuid();
+
+        var result = Consent(
+            Documents((optional, false)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(optional), true)],
+            optional
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsSignatureRequired);
+    }
+
+    [Fact]
+    public void ApplyAcceptingDocumentThatAsksForSignatureWithAnInvalidOneIsRefused()
+    {
+        var required = Guid.NewGuid();
+
+        var result = Consent(
+            Documents((required, true)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(required), true, new byte[] { 1, 2, 3 })],
+            required
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsSignatureInvalid);
+    }
+
+    [Fact]
+    public void ApplyRefusedSignatureLeavesEveryDecisionUnchanged()
+    {
+        var declined = Guid.NewGuid();
+        var signed = Guid.NewGuid();
+        var stored = Stored(declined, false);
+
+        var result = Consent(
+            Documents((declined, false), (signed, true)),
+            [stored],
+            [
+                new TermsDecision(TermsDocumentId.From(declined), true),
+                new TermsDecision(TermsDocumentId.From(signed), true),
+            ],
+            signed
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsSignatureRequired);
+        stored.Accepted.Should().BeFalse();
+        stored.DecidedAt.Should().Be(Earlier);
+    }
+
+    [Fact]
+    public void ApplyDecliningDocumentThatAsksForSignatureNeedsNone()
+    {
+        var optional = Guid.NewGuid();
+
+        var outcome = Apply(
+            Documents((optional, false)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(optional), false, SignatureImages.Png())],
+            optional
+        );
+
+        var recorded = outcome.Recorded.Should().ContainSingle().Which;
+        recorded.Accepted.Should().BeFalse();
+        recorded.Signature.Should().BeNull();
+    }
+
+    [Fact]
+    public void ApplySignatureForDocumentThatAsksForNoneIsNotKept()
+    {
+        var required = Guid.NewGuid();
+
+        var outcome = Apply(
+            Documents((required, true)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(required), true, SignatureImages.Png())]
+        );
+
+        outcome.Recorded.Should().ContainSingle().Which.Signature.Should().BeNull();
+    }
+
+    [Fact]
+    public void ApplyAcceptingDeclinedDocumentThatAsksForSignatureKeepsTheSignature()
+    {
+        var optional = Guid.NewGuid();
+        var stored = Stored(optional, false);
+        var png = SignatureImages.Png();
+
+        var outcome = Apply(
+            Documents((optional, false)),
+            [stored],
+            [new TermsDecision(TermsDocumentId.From(optional), true, png)],
+            optional
+        );
+
+        outcome.Recorded.Should().BeEmpty();
+        stored.Accepted.Should().BeTrue();
+        stored.Signature!.ToArray().Should().Equal(png);
+    }
+
+    [Fact]
+    public void ApplyDocumentAcceptedBeforeNeedsNoNewSignature()
+    {
+        var required = Guid.NewGuid();
+        var stored = Stored(required, true);
+
+        var outcome = Apply(
+            Documents((required, true)),
+            [stored],
+            [new TermsDecision(TermsDocumentId.From(required), true)],
+            required
+        );
+
+        outcome.Recorded.Should().BeEmpty();
+        outcome.MissingRequired.Should().BeFalse();
+        stored.DecidedAt.Should().Be(Earlier);
     }
 }

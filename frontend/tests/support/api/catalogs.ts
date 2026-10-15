@@ -13,7 +13,9 @@ const categoryTypes: EventCategoryTypeResponse[] = [
   { id: 'cat-2', name: 'Art', color: '#445566' },
 ]
 
-const termsDocuments: TermsDocumentResponse[] = [{ id: 'terms-1', name: 'Terms', description: '' }]
+const termsDocuments: TermsDocumentResponse[] = [
+  { id: 'terms-1', name: 'Terms', description: '', requiresSignature: false },
+]
 
 /** Registers the catalog endpoints used across the admin event screens. */
 export function useCatalogHandlers(): void {

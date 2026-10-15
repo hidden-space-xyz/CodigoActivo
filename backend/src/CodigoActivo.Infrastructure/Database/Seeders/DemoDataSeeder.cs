@@ -292,6 +292,7 @@ public sealed class DemoDataSeeder(
                     TermsDocument.Create(
                         seed.Name,
                         RichText.From(BuildRichText(seed.Description, null, null)),
+                        seed.RequiresSignature,
                         DemoTermsDocument(index)
                     )
             )
@@ -893,7 +894,11 @@ public sealed class DemoDataSeeder(
 
     private sealed record ContentSeed(string Title, string Subtitle, string[] Description);
 
-    private sealed record TermsDocumentSeed(string Name, string[] Description);
+    private sealed record TermsDocumentSeed(
+        string Name,
+        string[] Description,
+        bool RequiresSignature = false
+    );
 
     private sealed record ExternalResourceSeed(string Title, string Subtitle, string Url);
 
@@ -1037,7 +1042,8 @@ public sealed class DemoDataSeeder(
                 "Puedes revocar la autorización de imagen o ejercer los derechos de acceso, rectificación y supresión escribiendo a la "
                     + "asociación desde el correo con el que estás registrado. La revocación no afectará a los materiales ya publicados "
                     + "cuya retirada resulte técnicamente desproporcionada, que dejarán de utilizarse en nuevas publicaciones.",
-            ]
+            ],
+            RequiresSignature: true
         ),
     ];
 

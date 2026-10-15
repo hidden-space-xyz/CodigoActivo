@@ -7,4 +7,9 @@ namespace CodigoActivo.Domain.Events;
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 /// <param name="Accepted">Whether the person accepts it.</param>
-public sealed record TermsDecision(TermsDocumentId TermsDocumentId, bool Accepted);
+/// <param name="Signature">PNG image of the signature drawn to accept it, for a document that asks for one; empty otherwise.</param>
+public sealed record TermsDecision(
+    TermsDocumentId TermsDocumentId,
+    bool Accepted,
+    ReadOnlyMemory<byte> Signature = default
+);

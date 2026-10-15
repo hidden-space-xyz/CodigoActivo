@@ -23,6 +23,7 @@ import {
   buildEventTermsLink,
   buildRating,
   buildSummary,
+  buildTermsDecision,
   EVENT_ID,
   THUMBNAIL_ID,
 } from '../../../../../support/builders'
@@ -401,5 +402,22 @@ describe('EventDetailPage', () => {
       expect(wrapper.text()).toContain(t('pages.admin.eventDetail.opinions.anonymous')),
     )
     expect(ratingRequests).toBe(1)
+  })
+
+  it('loads the terms decisions only when their tab is opened', async () => {
+    let decisionRequests = 0
+    server.use(
+      http.get('/api/events/:eventId/terms/decisions', () => {
+        decisionRequests += 1
+        return HttpResponse.json(paged([buildTermsDecision()]))
+      }),
+    )
+    const { wrapper } = await renderDetail()
+    expect(decisionRequests).toBe(0)
+
+    await wrapper.find('#tab-terms').trigger('click')
+
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Autorización de imagen'))
+    expect(decisionRequests).toBe(1)
   })
 })

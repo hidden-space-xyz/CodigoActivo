@@ -1,4 +1,7 @@
-import { getApiEventsEventIdRatings } from '@/shared/api/generated/endpoints/events/events'
+import {
+  getApiEventsEventIdRatings,
+  getApiEventsEventIdTermsDecisions,
+} from '@/shared/api/generated/endpoints/events/events'
 import {
   getApiReportsEventsEventIdAttendees,
   getApiReportsEventsEventIdSummary,
@@ -11,9 +14,11 @@ import type {
   EventAttendee,
   EventRating,
   EventStats,
+  EventTermsDecision,
   RatingListParams,
+  TermsDecisionListParams,
 } from '../model/types'
-import { toEventAttendee, toEventRating, toEventStats } from './mapper'
+import { toEventAttendee, toEventRating, toEventStats, toEventTermsDecision } from './mapper'
 
 /** Loads the activity, signup and rating counts of an event. */
 export async function getEventStatsRequest(eventId: string): Promise<EventStats> {
@@ -37,4 +42,13 @@ export async function getEventRatingsPageRequest({
 }: RatingListParams): Promise<ServerTablePage<EventRating>> {
   const { items, total } = toPage(await getApiEventsEventIdRatings(eventId, params))
   return { items: items.map(toEventRating), total }
+}
+
+/** Fetches one page of the terms decisions taken about an event. */
+export async function getEventTermsDecisionsPageRequest({
+  eventId,
+  ...params
+}: TermsDecisionListParams): Promise<ServerTablePage<EventTermsDecision>> {
+  const { items, total } = toPage(await getApiEventsEventIdTermsDecisions(eventId, params))
+  return { items: items.map((decision) => toEventTermsDecision(eventId, decision)), total }
 }

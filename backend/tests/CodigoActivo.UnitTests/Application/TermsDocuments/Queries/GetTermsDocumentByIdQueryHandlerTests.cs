@@ -25,7 +25,11 @@ public sealed class GetTermsDocumentByIdQueryHandlerTests
     [Fact]
     public async Task HandleAsyncTermsDocumentExistsReturnsNameAndContent()
     {
-        var termsDocument = NewTermsDocumentRow("Normas del campamento", RichText);
+        var termsDocument = NewTermsDocumentRow(
+            "Normas del campamento",
+            RichText,
+            requiresSignature: true
+        );
         store.TermsDocuments.AddRange([NewTermsDocumentRow("Otras normas"), termsDocument]);
 
         var result = await sut.HandleAsync(
@@ -36,7 +40,9 @@ public sealed class GetTermsDocumentByIdQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result
             .Value.Should()
-            .Be(new TermsDocumentResponse(termsDocument.Id, "Normas del campamento", RichText));
+            .Be(
+                new TermsDocumentResponse(termsDocument.Id, "Normas del campamento", RichText, true)
+            );
     }
 
     [Fact]

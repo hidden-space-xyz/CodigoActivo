@@ -32,6 +32,18 @@ const { visible, editing, openCreate, openEdit } = dialog
           />
         </template>
       </el-table-column>
+      <el-table-column
+        :label="$t('pages.admin.catalogs.termsDocuments.columns.signature')"
+        width="150"
+        align="center"
+      >
+        <template #default="{ row }">
+          <el-tag v-if="row.requiresSignature" type="info">
+            {{ $t('pages.admin.catalogs.termsDocuments.requiresSignature') }}
+          </el-tag>
+          <span v-else class="no-signature">—</span>
+        </template>
+      </el-table-column>
       <el-table-column :label="$t('common.actions')" width="120" align="center">
         <template #default="{ row }">
           <div class="ca-row-actions">
@@ -64,3 +76,9 @@ const { visible, editing, openCreate, openEdit } = dialog
     />
   </CatalogSection>
 </template>
+
+<style scoped>
+.no-signature {
+  color: var(--ca-text-dim);
+}
+</style>

@@ -58,6 +58,7 @@ export const TERMS_DOCUMENT = {
   name: 'Normas del campamento',
   description: richText('Respeta a los demás.'),
   required: true,
+  requiresSignature: false,
   displayOrder: 0,
 }
 
@@ -67,6 +68,7 @@ export const OPTIONAL_TERMS_DOCUMENT = {
   name: 'Boletín informativo',
   description: richText('Recibe noticias del evento por correo.'),
   required: false,
+  requiresSignature: false,
   displayOrder: 1,
 }
 

@@ -12,6 +12,8 @@ using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Events.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -122,6 +124,72 @@ public class EventsController : ApiControllerBase
         return ToOk(
             await handler.HandleAsync(new GetEventTermsStateQuery(EventId.From(eventId)), ct)
         );
+    }
+
+    /// <summary>
+    /// Lists the terms decisions taken about the event, latest first, telling which ones were
+    /// signed.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a page of terms decisions, or an error response.</returns>
+    [HttpGet("{eventId:guid}/terms/decisions")]
+    [AllowOnlyAdmin]
+    public async Task<ActionResult<PagedResult<EventTermsDecisionResponse>>> TermsDecisionsAsync(
+        Guid eventId,
+        [FromQuery] EventTermsDecisionListQuery query,
+        [FromServices]
+            IQueryHandler<
+            ListEventTermsDecisionsQuery,
+            Result<PagedResult<EventTermsDecisionResponse>>
+        > handler,
+        CancellationToken ct
+    )
+    {
+        return ToOk(
+            await handler.HandleAsync(
+                new ListEventTermsDecisionsQuery(EventId.From(eventId), query),
+                ct
+            )
+        );
+    }
+
+    /// <summary>
+    /// Gets the PNG image of the signature a person drew to accept a terms document of the event.
+    /// It sets no cache policy, so it is answered <c>no-store</c> like any other API response.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="userId">Identifier of the person who accepted the document.</param>
+    /// <param name="termsDocumentId">Identifier of the terms document.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the image, or an error response.</returns>
+    [HttpGet("{eventId:guid}/terms/decisions/{userId:guid}/{termsDocumentId:guid}/signature")]
+    [AllowOnlyAdmin]
+    public async Task<IActionResult> TermsSignatureAsync(
+        Guid eventId,
+        Guid userId,
+        Guid termsDocumentId,
+        [FromServices] IQueryHandler<GetEventTermsSignatureQuery, Result<byte[]>> handler,
+        CancellationToken ct
+    )
+    {
+        var result = await handler.HandleAsync(
+            new GetEventTermsSignatureQuery(
+                EventId.From(eventId),
+                UserId.From(userId),
+                TermsDocumentId.From(termsDocumentId)
+            ),
+            ct
+        );
+        if (result.IsFailure)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        return File(result.Value, "image/png");
     }
 
     /// <summary>

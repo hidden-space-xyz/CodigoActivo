@@ -147,7 +147,15 @@ public record UpdateActivityRequest(
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 /// <param name="Accepted">Whether the user accepted the document.</param>
-public record TermsDecisionRequest([Required] Guid TermsDocumentId, [Required] bool? Accepted);
+/// <param name="Signature">
+/// Base64 PNG image of the signature drawn to accept a document that asks for one; ignored for
+/// other documents and for declined ones.
+/// </param>
+public record TermsDecisionRequest(
+    [Required] Guid TermsDocumentId,
+    [Required] bool? Accepted,
+    byte[]? Signature = null
+);
 
 /// <summary>
 /// Contains the client-supplied data used to assign.
@@ -343,7 +351,8 @@ internal static class ActivityRequestMapping
             ?.OfType<TermsDecisionRequest>()
             .Select(decision => new TermsDecision(
                 TermsDocumentId.From(decision.TermsDocumentId),
-                decision.Accepted ?? false
+                decision.Accepted ?? false,
+                decision.Signature
             ))
             .ToList();
     }

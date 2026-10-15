@@ -162,6 +162,16 @@ public enum ErrorCode
     EventTermsAcceptanceRequired,
 
     /// <summary>
+    /// A terms document that asks for a signature was accepted without one.
+    /// </summary>
+    EventTermsSignatureRequired,
+
+    /// <summary>
+    /// The terms decision asked for does not exist or was taken without a signature.
+    /// </summary>
+    EventTermsSignatureNotFound,
+
+    /// <summary>
     /// Selects the event terms document duplicated option.
     /// </summary>
     EventTermsDocumentDuplicated,

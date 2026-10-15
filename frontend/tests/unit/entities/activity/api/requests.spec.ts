@@ -204,7 +204,7 @@ describe('activity requests', () => {
     await expect(verifyOverlapsRequest('activity-1', 'user-1')).resolves.toEqual(data)
   })
 
-  it('signs a user up without terms decisions by default and with them when given', async () => {
+  it('signs a user up without terms decisions by default and with them, signatures as base64, when given', async () => {
     const bodies: unknown[] = []
     server.use(
       http.patch('/api/activities/activity-1/user-1/assign', async ({ request }) => {
@@ -216,13 +216,21 @@ describe('activity requests', () => {
     await assignActivityRequest('activity-1', 'user-1', 'role-1')
     await assignActivityRequest('activity-1', 'user-1', 'role-1', [
       { termsDocumentId: 'terms-1', accepted: true },
+      {
+        termsDocumentId: 'terms-2',
+        accepted: true,
+        signature: 'data:image/png;base64,iVBORw0KGgo=',
+      },
     ])
 
     expect(bodies).toEqual([
       { activityRoleTypeId: 'role-1' },
       {
         activityRoleTypeId: 'role-1',
-        termsDecisions: [{ termsDocumentId: 'terms-1', accepted: true }],
+        termsDecisions: [
+          { termsDocumentId: 'terms-1', accepted: true },
+          { termsDocumentId: 'terms-2', accepted: true, signature: 'iVBORw0KGgo=' },
+        ],
       },
     ])
   })

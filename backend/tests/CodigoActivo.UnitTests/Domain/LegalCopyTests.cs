@@ -72,7 +72,7 @@ public sealed class LegalCopyTests
         Guid decidedBy
     )
     {
-        return new LegalCopyDecision(document.Id, document.Name, true, decidedAt, decidedBy);
+        return new LegalCopyDecision(document.Id, document.Name, true, decidedAt, decidedBy, null);
     }
 
     private static LegalCopyActivity Activity(

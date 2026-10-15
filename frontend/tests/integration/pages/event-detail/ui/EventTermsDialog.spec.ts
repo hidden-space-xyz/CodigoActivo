@@ -1,5 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import EventTermsDialog from '@/pages/event-detail/ui/EventTermsDialog.vue'
 import type { EventTermsDocumentState } from '@/entities/event'
@@ -7,12 +7,19 @@ import type { EventTermsDocumentState } from '@/entities/event'
 import { renderWithProviders, t } from '../../../../support/render'
 import { richText } from '../../../../support/builders'
 import { click, findButton, findDialog, textOf } from '../../../../support/dom'
+import { FAKE_SIGNATURE, fakePads, resetFakePads } from '../../../../support/signature-pad-mock'
+
+vi.mock(
+  'signature_pad',
+  async () => (await import('../../../../support/signature-pad-mock')).signaturePadModule,
+)
 
 const REQUIRED_DOC: EventTermsDocumentState = {
   id: 'terms-required',
   name: 'Normas del campamento',
   description: richText('Respeta a los demás.'),
   required: true,
+  requiresSignature: false,
   displayOrder: 0,
   accepted: null,
   decidedAt: null,
@@ -23,6 +30,7 @@ const OPTIONAL_DOC: EventTermsDocumentState = {
   name: 'Boletín informativo',
   description: richText('Recibe noticias del evento.'),
   required: false,
+  requiresSignature: false,
   displayOrder: 1,
   accepted: null,
   decidedAt: null,
@@ -178,5 +186,78 @@ describe('EventTermsDialog confirm decisions', () => {
     expect(wrapper.emitted('confirm')).toEqual([
       [[{ termsDocumentId: OPTIONAL_DOC.id, accepted: false }]],
     ])
+  })
+})
+
+describe('EventTermsDialog signatures', () => {
+  const SIGNED_DOC: EventTermsDocumentState = {
+    id: 'terms-signed',
+    name: 'Autorización de imagen',
+    description: richText('Puedes revocarla cuando quieras.'),
+    required: true,
+    requiresSignature: true,
+    displayOrder: 2,
+    accepted: null,
+    decidedAt: null,
+  }
+
+  beforeEach(() => {
+    resetFakePads()
+  })
+
+  function signatureCanvas(): HTMLCanvasElement | null {
+    return document.body.querySelector<HTMLCanvasElement>('.signature-pad__canvas')
+  }
+
+  it('tags the documents that ask for a signature and shows the pad only once checked', async () => {
+    await renderDialog([OPTIONAL_DOC, SIGNED_DOC])
+
+    const rows = [...document.body.querySelectorAll('.terms-dialog__row')]
+    expect(textOf(rows[1] ?? null)).toContain(t('pages.eventDetail.terms.signature.tag'))
+    expect(textOf(rows[0] ?? null)).not.toContain(t('pages.eventDetail.terms.signature.tag'))
+    expect(signatureCanvas()).toBeNull()
+
+    await click(termsCheckbox(document.body, SIGNED_DOC.id))
+
+    expect(signatureCanvas()?.getAttribute('aria-label')).toBe(
+      t('pages.eventDetail.terms.signature.label', { name: SIGNED_DOC.name }),
+    )
+  })
+
+  it('refuses to confirm a checked document until it is signed', async () => {
+    const { wrapper } = await renderDialog([SIGNED_DOC])
+    await click(termsCheckbox(document.body, SIGNED_DOC.id))
+
+    await click(findButton(t('pages.eventDetail.terms.confirm')))
+
+    expect(wrapper.emitted('confirm')).toBeUndefined()
+    expect(textOf(document.body.querySelector('.terms-dialog__warning'))).toBe(
+      t('pages.eventDetail.terms.signature.missing'),
+    )
+    expect(signatureCanvas()?.className).toContain('signature-pad__canvas--invalid')
+
+    fakePads[0]?.draw()
+    await flushPromises()
+    await click(findButton(t('pages.eventDetail.terms.confirm')))
+
+    expect(wrapper.emitted('confirm')).toEqual([
+      [[{ termsDocumentId: SIGNED_DOC.id, accepted: true, signature: FAKE_SIGNATURE }]],
+    ])
+  })
+
+  it('asks for a new signature after the document is unchecked and checked again', async () => {
+    const { wrapper } = await renderDialog([SIGNED_DOC])
+    await click(termsCheckbox(document.body, SIGNED_DOC.id))
+    fakePads[0]?.draw()
+    await flushPromises()
+
+    await click(termsCheckbox(document.body, SIGNED_DOC.id))
+    await click(termsCheckbox(document.body, SIGNED_DOC.id))
+    await click(findButton(t('pages.eventDetail.terms.confirm')))
+
+    expect(wrapper.emitted('confirm')).toBeUndefined()
+    expect(textOf(document.body.querySelector('.terms-dialog__warning'))).toBe(
+      t('pages.eventDetail.terms.signature.missing'),
+    )
   })
 })
