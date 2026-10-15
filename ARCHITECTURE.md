@@ -226,8 +226,8 @@ it, never from their input. `GetAccountQuery` is the one query that reads the ca
 email verification and two-factor login completion answer before the session exists. `ActingUserPolicy` lets
 the signed-in user act for themselves or one of their dependents, and an administrator for anyone, reading the guardianship from the read side so commands and queries share it, and
 answers anything else with `ActingForAnotherUserForbidden` (403
-`AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a dependent,
-updating or deleting a user and changing a password check it. Signing up a household is the exception: it only
+`AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a dependent and
+updating or deleting a user check it. Changing a password is narrower: only the holder may do it. Signing up a household is the exception: it only
 takes the signed-in user and their own dependents (`Household.Includes`), administrators included, and answers
 anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]` attributes
 refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.

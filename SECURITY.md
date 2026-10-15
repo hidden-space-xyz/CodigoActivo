@@ -103,8 +103,9 @@ authentication are not supported.
   (at most 20 per guardian, counted with the guardian's row locked, `UserChildLimitReached` beyond). They must be
   minors at creation and leave their guardian only when the guardian deletes them. A household signup list
   holds at most 21 people.
-- `PATCH /api/users/{id}/password` always asks for the current password of the account being changed, also
-  when a guardian or an administrator changes it; a wrong one counts toward that account's password lock.
+- `PATCH /api/users/{id}/password` changes only the caller's own password and asks for the current one;
+  guardians and administrators get `AccessDenied` (403) for any other account, so nobody else can spend that
+  account's password attempts.
 
 ### Two-factor authentication
 
