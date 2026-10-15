@@ -143,7 +143,6 @@ function send(): void {
       v-if="recipientsWithoutConsent > 0"
       class="consent-warning"
       type="warning"
-      show-icon
       :closable="false"
       :title="
         $t(
