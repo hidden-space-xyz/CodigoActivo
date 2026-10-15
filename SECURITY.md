@@ -239,8 +239,8 @@ Normal API traffic uses different limits, since an IP may represent many legitim
 requests/second per IP, burst 500; the API applies a sliding one-minute budget of 300 requests per
 authenticated user, or 3,000 per IP for anonymous traffic, with 128 requests executing and 256 waiting
 process-wide. Report routes add a 30-request/minute budget per user (16 executing, 32 waiting); multipart
-file writes allow 30 requests/minute per user (12 executing, 12 waiting). Rejected requests include
-`Retry-After`. These are per-instance controls; scaling API replicas multiplies aggregate capacity.
+file writes allow 30 requests/minute per user (12 executing, 12 waiting). Rejected requests, by nginx or the
+API, answer 429 `TooManyRequests` with `Retry-After`. These are per-instance controls; scaling API replicas multiplies aggregate capacity.
 
 ### Input, output and error handling
 

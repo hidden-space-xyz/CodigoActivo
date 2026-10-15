@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
+using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -26,10 +27,19 @@ internal static class ApiRateLimitConfiguration
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            options.OnRejected = (context, _) =>
+            options.OnRejected = async (context, ct) =>
             {
-                context.HttpContext.Response.Headers.RetryAfter = GetRetryAfter(context.Lease);
-                return ValueTask.CompletedTask;
+                var response = context.HttpContext.Response;
+                response.Headers.RetryAfter = GetRetryAfter(context.Lease);
+                var (status, body) = ApiErrorResponseExtensions.CreateTooManyRequests(
+                    context.HttpContext
+                );
+                response.StatusCode = status;
+                await response.WriteAsJsonAsync(
+                    body,
+                    ApiErrorResponseExtensions.SerializerOptions,
+                    ct
+                );
             };
         });
         services.AddOptions<RateLimiterOptions>().Configure<ApiRateLimitOptions>(ConfigureLimiters);

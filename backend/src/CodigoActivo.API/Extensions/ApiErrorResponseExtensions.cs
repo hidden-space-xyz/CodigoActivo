@@ -58,6 +58,25 @@ public static class ApiErrorResponseExtensions
         );
     }
 
+    /// <summary>
+    /// Creates the error of a request refused by a rate or concurrency limit.
+    /// </summary>
+    /// <param name="context">HTTP context of the refused request.</param>
+    /// <returns>The resulting (int status code, api error response body) value.</returns>
+    public static (int StatusCode, ApiErrorResponse Body) CreateTooManyRequests(HttpContext context)
+    {
+        const int Status = StatusCodes.Status429TooManyRequests;
+        return (
+            Status,
+            new ApiErrorResponse(
+                "Too Many Requests",
+                Status,
+                ErrorCode.TooManyRequests,
+                context.TraceIdentifier
+            )
+        );
+    }
+
     private static (int Status, string Title) MapKind(ErrorKind kind)
     {
         return kind switch

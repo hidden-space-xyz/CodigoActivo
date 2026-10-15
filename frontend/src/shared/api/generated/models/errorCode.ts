@@ -110,6 +110,7 @@ export const ErrorCode = {
   EndpointNotFound: 'EndpointNotFound',
   AccessDenied: 'AccessDenied',
   InvalidCsrfToken: 'InvalidCsrfToken',
+  TooManyRequests: 'TooManyRequests',
   RequestValidationFailed: 'RequestValidationFailed',
   ConcurrentUpdate: 'ConcurrentUpdate',
   UnexpectedError: 'UnexpectedError',

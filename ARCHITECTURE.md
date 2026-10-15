@@ -275,7 +275,7 @@ each code to the wire member of the same name or to an explicit rename (malforme
 has no translation or a wire code is reached by none. Controllers
 translate failures through `ApiControllerBase`. All client-visible
 failures use `ApiErrorResponse(Title, Status, Code, TraceId)`, including model validation, authorization,
-CSRF and unhandled exceptions; only rate-limit rejections (429) carry no body, just `Retry-After`. HTTP
+CSRF, rate-limit rejections (`TooManyRequests` with `Retry-After`) and unhandled exceptions. HTTP
 mappings: 400 validation, 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict, 429 too many
 requests, 500 unexpected. A path under `/api` that matches no endpoint answers 404
 `EndpointNotFound` to anyone, and every create answers 201 with the new resource and its `Location`.
