@@ -67,7 +67,7 @@ describe('SendEmailDialog', () => {
     const alert = dialog.querySelector('.el-alert')
     expect(alert?.classList).toContain('el-alert--warning')
     expect(alert?.querySelector('.el-alert__close-btn')).toBeNull()
-    expect(alert?.querySelector('.el-alert__icon')).not.toBeNull()
+    expect(alert?.querySelector('.el-alert__icon')).toBeNull()
     expect(alert?.textContent).toContain(
       tp('features.sendEmail.withoutConsentWarning', 2, { count: 2 }),
     )
