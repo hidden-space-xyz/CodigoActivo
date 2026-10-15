@@ -33,8 +33,7 @@ public static class AccountDeletionCodeEmail
                 AppStrings.EmailsAccountDeletionCodeIntroText,
                 toName,
                 siteUrl,
-                EmailBranding.Brand,
-                AppStrings.EmailsFooterAutomaticNote
+                EmailBranding.Brand
             ),
             [
                 EmailBlocks.Prose(

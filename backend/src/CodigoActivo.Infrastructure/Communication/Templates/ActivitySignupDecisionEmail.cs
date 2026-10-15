@@ -124,14 +124,7 @@ public static class ActivitySignupDecisionEmail
         );
 
         var rendered = EmailLayout.Render(
-            new EmailDocument(
-                content.Heading,
-                content.IntroText,
-                toName,
-                siteUrl,
-                content.Accent,
-                AppStrings.EmailsFooterAutomaticNote
-            ),
+            new EmailDocument(content.Heading, content.IntroText, toName, siteUrl, content.Accent),
             blocks
         );
 

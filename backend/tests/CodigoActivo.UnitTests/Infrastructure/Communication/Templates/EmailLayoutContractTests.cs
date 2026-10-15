@@ -90,15 +90,11 @@ public sealed class EmailLayoutContractTests
 
     [Theory]
     [MemberData(nameof(Templates))]
-    public void CreateEveryTemplateTellsTheReaderWhetherItCanBeAnswered(string name)
+    public void CreateEveryTemplateEndsTheTextBodyWithTheSiteAddress(string name)
     {
         var message = Build(name);
-        var expected =
-            message.Kind is EmailKind.Manual
-                ? AppStrings.EmailsManualSignature
-                : AppStrings.EmailsFooterAutomaticNote;
 
-        message.TextBody.Should().Contain(expected, $"{name} must set the right footer note");
+        message.TextBody.Should().EndWith($"\n{Site}", $"{name} must end with the footer");
     }
 
     private static EmailMessage Build(string name)

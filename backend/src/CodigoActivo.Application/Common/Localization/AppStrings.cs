@@ -172,11 +172,6 @@ public static class AppStrings
     public static string EmailsEmailInUseSubject => Get("emails.emailInUse.subject");
 
     /// <summary>
-    /// Gets the emails footer automatic note value.
-    /// </summary>
-    public static string EmailsFooterAutomaticNote => Get("emails.footer.automaticNote");
-
-    /// <summary>
     /// Gets the emails footer tagline value.
     /// </summary>
     public static string EmailsFooterTagline => Get("emails.footer.tagline");
@@ -210,11 +205,6 @@ public static class AppStrings
     /// Gets the emails login code subject value.
     /// </summary>
     public static string EmailsLoginCodeSubject => Get("emails.loginCode.subject");
-
-    /// <summary>
-    /// Gets the emails manual signature value.
-    /// </summary>
-    public static string EmailsManualSignature => Get("emails.manual.signature");
 
     /// <summary>
     /// Gets the emails password reset button label value.

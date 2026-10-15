@@ -31,14 +31,12 @@ public sealed record EmailContent(
 /// <param name="RecipientName">Name the message greets; a null or empty name greets nobody.</param>
 /// <param name="SiteUrl">The site url value.</param>
 /// <param name="Accent">The accent value.</param>
-/// <param name="FooterNote">The footer note value.</param>
 public sealed record EmailDocument(
     string Heading,
     string Preheader,
     string? RecipientName,
     string SiteUrl,
-    EmailAccent Accent,
-    string FooterNote
+    EmailAccent Accent
 );
 
 /// <summary>
@@ -85,9 +83,7 @@ public static class EmailLayout
         }
 
         sections.AddRange(blocks.Select(block => block.Text.Trim()));
-        sections.Add(
-            $"{TextRule}\n{AppStrings.EmailsFooterTagline}\n{document.SiteUrl}\n{document.FooterNote}"
-        );
+        sections.Add($"{TextRule}\n{AppStrings.EmailsFooterTagline}\n{document.SiteUrl}");
 
         return string.Join(BlockSeparator, sections);
     }
@@ -212,7 +208,6 @@ public static class EmailLayout
         var tagline = WebUtility.HtmlEncode(AppStrings.EmailsFooterTagline);
         var website = WebUtility.HtmlEncode(AppStrings.EmailsFooterWebsiteLabel);
         var siteUrl = WebUtility.HtmlEncode(document.SiteUrl);
-        var note = WebUtility.HtmlEncode(document.FooterNote);
 
         return $"""
             <p class="ca-brand" style="{EmailStyles.FooterBrand}">{brand}</p>
@@ -220,7 +215,6 @@ public static class EmailLayout
             <p style="{EmailStyles.FooterLinkWrap}">
             <a class="ca-link" href="{siteUrl}" style="{EmailStyles.FooterLink}">{website}</a>
             </p>
-            <p class="ca-muted" style="{EmailStyles.FooterNote}">{note}</p>
             """;
     }
 }
