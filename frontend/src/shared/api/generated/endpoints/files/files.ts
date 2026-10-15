@@ -31,8 +31,7 @@ import type {
 
 import type {
   FileResponse,
-  PostApiFilesBody,
-  PutApiFilesFileIdBody
+  PostApiFilesBody
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
@@ -121,99 +120,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiFilesFileIdMutationOptions(options), queryClient);
     }
-    export type putApiFilesFileIdResponse200 = {
-  data: FileResponse
-  status: 200
-}
-
-export type putApiFilesFileIdResponseSuccess = (putApiFilesFileIdResponse200) & {
-  headers: Headers;
-};
-;
-
-export type putApiFilesFileIdResponse = (putApiFilesFileIdResponseSuccess)
-
-export const getPutApiFilesFileIdUrl = (fileId: string,) => {
-
-
-
-
-  return `/api/files/${fileId}`
-}
-
-export const putApiFilesFileId = async (fileId: string,
-    putApiFilesFileIdBody?: PutApiFilesFileIdBody, options?: Parameters<typeof httpClient>[1]): Promise<putApiFilesFileIdResponse> => {
-    const formData = new FormData();
-if(putApiFilesFileIdBody?.file !== undefined) {
- formData.append(`file`, putApiFilesFileIdBody.file);
- }
-
-  return httpClient<putApiFilesFileIdResponse>(getPutApiFilesFileIdUrl(fileId),
-  {
-    ...options,
-    method: 'PUT'
-    ,
-    body: formData
-  }
-);}
-
-
-
-
-
-export const getPutApiFilesFileIdQueryKey = (fileId: MaybeRefOrGetter<string>,
-    putApiFilesFileIdBody?: MaybeRefOrGetter<PutApiFilesFileIdBody>,) => {
-    return [
-    'PUT', 'api','files',fileId, putApiFilesFileIdBody
-    ] as const;
-    }
-
-
-export const getPutApiFilesFileIdQueryOptions = <TData = Awaited<ReturnType<typeof putApiFilesFileId>>, TError = unknown>(fileId: MaybeRefOrGetter<string>,
-    putApiFilesFileIdBody?: MaybeRefOrGetter<PutApiFilesFileIdBody>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiFilesFileId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPutApiFilesFileIdQueryKey(fileId,putApiFilesFileIdBody);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiFilesFileId>>> = ({ signal }) => putApiFilesFileId(toValue(fileId),toValue(putApiFilesFileIdBody), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(fileId) !== null && toValue(fileId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiFilesFileId>>, TError, TData>
-}
-
-export type PutApiFilesFileIdQueryResult = NonNullable<Awaited<ReturnType<typeof putApiFilesFileId>>>
-export type PutApiFilesFileIdQueryError = unknown
-
-
-
-export function usePutApiFilesFileId<TData = Awaited<ReturnType<typeof putApiFilesFileId>>, TError = unknown>(
- fileId: MaybeRefOrGetter<string>,
-    putApiFilesFileIdBody?: MaybeRefOrGetter<PutApiFilesFileIdBody>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiFilesFileId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPutApiFilesFileIdQueryOptions(fileId,putApiFilesFileIdBody,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
-export type deleteApiFilesFileIdResponse200 = {
+    export type deleteApiFilesFileIdResponse200 = {
   data: void
   status: 200
 }

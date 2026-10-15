@@ -25,6 +25,8 @@ namespace CodigoActivo.API.StoredFiles;
 [Route("api/files")]
 public class FilesController : ApiControllerBase
 {
+    private const string ImmutableContentCacheControl = "public, max-age=31536000, immutable";
+
     /// <summary>
     /// Gets the requested file.
     /// </summary>
@@ -45,7 +47,8 @@ public class FilesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Gets the requested content.
+    /// Gets the requested content. Content never changes under its id (a new image is a new
+    /// file), so clients may keep it for a year without revalidating.
     /// </summary>
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -74,11 +77,7 @@ public class FilesController : ApiControllerBase
         var lastModified = content.UploadedAt;
         var ticks = lastModified.UtcTicks.ToString(CultureInfo.InvariantCulture);
         var etag = new EntityTagHeaderValue($"\"{fileId:N}-{ticks}\"");
-        Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue
-        {
-            Private = true,
-            NoCache = true,
-        };
+        Response.Headers.CacheControl = ImmutableContentCacheControl;
         return File(content.Content, content.ContentType, lastModified, etag);
     }
 
@@ -107,37 +106,6 @@ public class FilesController : ApiControllerBase
             await handler.HandleAsync(new CreateFileCommand(ToUploadRequest(file)), ct),
             id => getById.HandleAsync(new GetFileByIdQuery(id), ct),
             id => $"/api/files/{id}"
-        );
-    }
-
-    /// <summary>
-    /// Updates the selected file with the validated request.
-    /// </summary>
-    /// <param name="fileId">Identifier of the file.</param>
-    /// <param name="file">The file value.</param>
-    /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a file, or an error response.</returns>
-    [HttpPut("{fileId:guid}")]
-    [AllowOnlyAdmin]
-    [Consumes("multipart/form-data")]
-    [FileUploadSizeLimit]
-    [EnableRateLimiting(SecurityPolicies.FileUploads)]
-    public async Task<ActionResult<FileResponse>> UpdateAsync(
-        Guid fileId,
-        IFormFile? file,
-        [FromServices] ICommandHandler<UpdateFileCommand, Result> handler,
-        [FromServices] IQueryHandler<GetFileByIdQuery, Result<FileResponse>> getById,
-        CancellationToken ct
-    )
-    {
-        return await ToOkAfterAsync(
-            await handler.HandleAsync(
-                new UpdateFileCommand(StoredFileId.From(fileId), ToUploadRequest(file)),
-                ct
-            ),
-            () => getById.HandleAsync(new GetFileByIdQuery(StoredFileId.From(fileId)), ct)
         );
     }
 

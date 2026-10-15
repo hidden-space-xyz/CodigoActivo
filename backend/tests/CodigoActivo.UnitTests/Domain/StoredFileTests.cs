@@ -22,26 +22,4 @@ public sealed class StoredFileTests
         file.UploadedBy.Value.Should().Be(uploaderId);
         file.UploadedAt.Should().Be(Now);
     }
-
-    [Fact]
-    public void ReplaceKeepsIdentityAndUploader()
-    {
-        var uploaderId = Guid.NewGuid();
-        var id = Guid.NewGuid();
-        var file = StoredFile.Upload(
-            "foto.png",
-            "png",
-            UserId.From(uploaderId),
-            Now,
-            StoredFileId.From(id)
-        );
-
-        file.Replace("nueva.jpg", "jpg", Now.AddHours(1));
-
-        file.Id.Value.Should().Be(id);
-        file.UploadedBy.Value.Should().Be(uploaderId);
-        file.Name.Should().Be("nueva.jpg");
-        file.Extension.Should().Be("jpg");
-        file.UploadedAt.Should().Be(Now.AddHours(1));
-    }
 }

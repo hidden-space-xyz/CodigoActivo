@@ -228,29 +228,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateAsAdminReplacesContentAndNameKeepingId()
-    {
-        var created = await UploadAsAdminAsync(fileName: "old.png");
-        var client = await LoginAsAdminAsync();
-
-        using var response = await client.SendUploadAsync(
-            HttpMethod.Put,
-            $"/api/files/{created.Id}",
-            TestSeedData.ValidPng(),
-            "new.png"
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await response.ReadJsonAsync<FileResponse>(Ct);
-        updated!.Id.Should().Be(created.Id);
-        updated.Name.Should().Be("new.png");
-
-        var stored = await FindAsync<StoredFile>(created.Id);
-        stored!.Name.Should().Be("new.png");
-        stored.Extension.Should().Be("png");
-    }
-
-    [Fact]
     public async Task DeleteAsAdminRemovesFileAndSubsequentGetIsNotFound()
     {
         var created = await UploadAsAdminAsync();
