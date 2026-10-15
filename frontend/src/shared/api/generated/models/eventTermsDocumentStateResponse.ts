@@ -10,6 +10,7 @@ export interface EventTermsDocumentStateResponse {
   name: string;
   description: string;
   required: boolean;
+  requiresSignature: boolean;
   displayOrder: number;
   /** @nullable */
   accepted?: boolean | null;

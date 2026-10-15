@@ -60,6 +60,9 @@
 
   --ca-on-primary: #2a1400;
 
+  --ca-signature-paper: #ffffff;
+  --ca-signature-ink: #1b2a4a;
+
   --ca-glass-bg: rgba(245, 245, 245, 0.82);
   --ca-grid-line: rgba(249, 163, 32, 0.11);
   --ca-vignette: rgba(0, 0, 0, 0.04);

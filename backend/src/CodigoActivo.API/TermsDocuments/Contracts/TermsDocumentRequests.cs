@@ -9,9 +9,11 @@ namespace CodigoActivo.API.TermsDocuments.Contracts;
 /// </summary>
 /// <param name="Name">The name value.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
+/// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
 public record CreateTermsDocumentRequest(
     [Required] [MaxLength(120)] string Name,
-    [Required] [MaxLength(262144)] string Description
+    [Required] [MaxLength(262144)] string Description,
+    bool RequiresSignature = false
 )
 {
     /// <summary>
@@ -20,7 +22,7 @@ public record CreateTermsDocumentRequest(
     /// <returns>The command.</returns>
     public CreateTermsDocumentCommand ToCommand()
     {
-        return new CreateTermsDocumentCommand(Name, Description);
+        return new CreateTermsDocumentCommand(Name, Description, RequiresSignature);
     }
 }
 
@@ -29,9 +31,11 @@ public record CreateTermsDocumentRequest(
 /// </summary>
 /// <param name="Name">The name value.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
+/// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
 public record UpdateTermsDocumentRequest(
     [Required] [MaxLength(120)] string Name,
-    [Required] [MaxLength(262144)] string Description
+    [Required] [MaxLength(262144)] string Description,
+    bool RequiresSignature = false
 )
 {
     /// <summary>
@@ -41,6 +45,11 @@ public record UpdateTermsDocumentRequest(
     /// <returns>The command.</returns>
     public UpdateTermsDocumentCommand ToCommand(TermsDocumentId termsDocumentId)
     {
-        return new UpdateTermsDocumentCommand(termsDocumentId, Name, Description);
+        return new UpdateTermsDocumentCommand(
+            termsDocumentId,
+            Name,
+            Description,
+            RequiresSignature
+        );
     }
 }

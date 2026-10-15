@@ -3,6 +3,7 @@ import type {
   EventListItemResponse,
   EventRatingListItemResponse,
   EventResponse,
+  EventTermsDecisionResponse,
   EventTermsDocumentResponse,
   EventTermsDocumentStateResponse,
   LeaderRosterActivityResponse,
@@ -83,6 +84,24 @@ export function buildRating(
   }
 }
 
+/** Signed acceptance of the default terms document by the default member, as admins list it. */
+export function buildTermsDecision(
+  overrides: Partial<EventTermsDecisionResponse> = {},
+): EventTermsDecisionResponse {
+  return {
+    userId: 'user-1',
+    firstName: 'Ada',
+    lastName: 'Lovelace',
+    email: 'ada@example.com',
+    termsDocumentId: 'terms-1',
+    documentName: 'Autorización de imagen',
+    accepted: true,
+    decidedAt: '2026-09-01T10:00:00Z',
+    hasSignature: true,
+    ...overrides,
+  }
+}
+
 /** Required terms document served by `/api/events/:eventId/terms`, still undecided. */
 export function buildTermsDocumentState(
   overrides: Partial<EventTermsDocumentStateResponse> = {},
@@ -92,6 +111,7 @@ export function buildTermsDocumentState(
     name: 'Normas del campamento',
     description: richText('Respeta a los demás.'),
     required: true,
+    requiresSignature: false,
     displayOrder: 0,
     accepted: null,
     decidedAt: null,

@@ -22,32 +22,42 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
     public RichText Description { get; private set; } = RichText.Empty;
 
     /// <summary>
+    /// Gets a value indicating whether accepting the document also asks for a handwritten
+    /// signature.
+    /// </summary>
+    public bool RequiresSignature { get; private set; }
+
+    /// <summary>
     /// Creates a terms document.
     /// </summary>
     /// <param name="name">Name; surrounding spaces are removed.</param>
     /// <param name="description">Rich-text content.</param>
+    /// <param name="requiresSignature">Whether accepting it asks for a handwritten signature.</param>
     /// <param name="id">Stable identifier for seeded documents; a new one otherwise.</param>
     /// <returns>The new terms document.</returns>
     public static TermsDocument Create(
         string name,
         RichText description,
+        bool requiresSignature,
         TermsDocumentId? id = null
     )
     {
         var termsDocument = new TermsDocument { Id = id ?? TermsDocumentId.New() };
-        termsDocument.Apply(name, description);
+        termsDocument.Apply(name, description, requiresSignature);
         return termsDocument;
     }
 
     /// <summary>
-    /// Replaces the name and content of the document.
+    /// Replaces the name and content of the document and whether accepting it asks for a
+    /// signature. Decisions already taken stay as they were.
     /// </summary>
     /// <param name="name">New name; surrounding spaces are removed.</param>
     /// <param name="description">New rich-text content.</param>
-    public void Rewrite(string name, RichText description)
+    /// <param name="requiresSignature">Whether accepting it asks for a handwritten signature.</param>
+    public void Rewrite(string name, RichText description, bool requiresSignature)
     {
         var previousDescription = Description;
-        Apply(name, description);
+        Apply(name, description, requiresSignature);
         Raise(
             new TermsDocumentRewritten(
                 Id,
@@ -64,12 +74,13 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
         Raise(new TermsDocumentDeleted(Id, RichTextFileReferences.Extract(Description)));
     }
 
-    private void Apply(string name, RichText description)
+    private void Apply(string name, RichText description, bool requiresSignature)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(description);
 
         Name = name.Trim();
         Description = description;
+        RequiresSignature = requiresSignature;
     }
 }

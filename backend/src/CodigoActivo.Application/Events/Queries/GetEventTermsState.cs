@@ -57,6 +57,7 @@ public sealed class GetEventTermsStateQueryHandler(
                     d.TermsDocument.Name,
                     d.TermsDocument.Description,
                     d.IsRequired,
+                    d.TermsDocument.RequiresSignature,
                     d.DisplayOrder,
                 }),
             ct
@@ -88,6 +89,7 @@ public sealed class GetEventTermsStateQueryHandler(
                     d.Name,
                     d.Description,
                     d.IsRequired,
+                    d.RequiresSignature,
                     d.DisplayOrder,
                     decision?.Accepted,
                     decision?.DecidedAt

@@ -104,12 +104,17 @@ export async function verifyOverlapsRequest(
   return toOverlapCheck(data)
 }
 
+function toBase64Png(dataUrl: string): string {
+  return dataUrl.slice(dataUrl.indexOf(',') + 1)
+}
+
 function toTermsDecisions(termsDecisions?: readonly TermsDecisionInput[]) {
   return termsDecisions
     ? {
         termsDecisions: termsDecisions.map((decision) => ({
           termsDocumentId: decision.termsDocumentId,
           accepted: decision.accepted,
+          ...(decision.signature ? { signature: toBase64Png(decision.signature) } : {}),
         })),
       }
     : {}

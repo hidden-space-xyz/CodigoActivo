@@ -170,11 +170,17 @@ public sealed class EventTermsAcceptanceRow
     /// <summary>Gets the identifier of the terms document.</summary>
     public Guid TermsDocumentId { get; init; }
 
+    /// <summary>Gets the terms document.</summary>
+    public TermsDocumentRow TermsDocument { get; init; } = null!;
+
     /// <summary>Gets a value indicating whether the document was accepted.</summary>
     public bool Accepted { get; init; }
 
     /// <summary>Gets when the decision was taken.</summary>
     public DateTimeOffset DecidedAt { get; init; }
+
+    /// <summary>Gets the PNG image of the signature drawn to accept the document, if any.</summary>
+    public byte[]? Signature { get; init; }
 }
 
 /// <summary>
@@ -190,4 +196,7 @@ public sealed class TermsDocumentRow
 
     /// <summary>Gets the rich-text content.</summary>
     public string Description { get; init; } = "{}";
+
+    /// <summary>Gets a value indicating whether accepting the document asks for a signature.</summary>
+    public bool RequiresSignature { get; init; }
 }

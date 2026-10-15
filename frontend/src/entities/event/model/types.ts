@@ -45,6 +45,8 @@ export interface EventTermsDocumentState {
   readonly name: string
   readonly description: string
   readonly required: boolean
+  /** Accepting it asks for a signature drawn on screen. */
+  readonly requiresSignature: boolean
   readonly displayOrder: number
   readonly accepted: boolean | null
   readonly decidedAt: string | null

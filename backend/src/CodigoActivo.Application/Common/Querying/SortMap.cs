@@ -12,7 +12,7 @@ public sealed class SortMap<T>
         StringComparer.OrdinalIgnoreCase
     );
     private IReadOnlyList<SortTerm> defaults = [];
-    private LambdaExpression? tieBreaker;
+    private readonly List<LambdaExpression> tieBreakers = [];
 
     /// <summary>
     /// Adds a sort map to the current unit of work.
@@ -39,14 +39,14 @@ public sealed class SortMap<T>
     }
 
     /// <summary>
-    /// Adds a deterministic tie-breaker to the sort order.
+    /// Adds a deterministic tie-breaker to the sort order, after the ones added before.
     /// </summary>
     /// <typeparam name="TKey">Type used for key.</typeparam>
     /// <param name="selector">The selector value.</param>
     /// <returns>The resulting t value.</returns>
     public SortMap<T> Tie<TKey>(Expression<Func<T, TKey>> selector)
     {
-        tieBreaker = selector;
+        tieBreakers.Add(selector);
         return this;
     }
 
@@ -80,7 +80,7 @@ public sealed class SortMap<T>
             );
         }
 
-        if (tieBreaker is not null)
+        foreach (var tieBreaker in tieBreakers)
         {
             ordered = ApplyOrder(ordered ?? source, tieBreaker, descending: false, ordered is null);
         }

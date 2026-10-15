@@ -9,4 +9,5 @@ export interface TermsDocumentResponse {
   id: string;
   name: string;
   description: string;
+  requiresSignature: boolean;
 }

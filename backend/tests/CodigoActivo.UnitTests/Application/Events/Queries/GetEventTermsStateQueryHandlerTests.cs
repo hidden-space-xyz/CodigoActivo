@@ -33,7 +33,8 @@ public sealed class GetEventTermsStateQueryHandlerTests
         Guid termsDocumentId,
         bool required,
         int displayOrder,
-        string name = "Documento"
+        string name = "Documento",
+        bool requiresSignature = false
     )
     {
         return new EventTermsDocumentRow
@@ -47,6 +48,7 @@ public sealed class GetEventTermsStateQueryHandlerTests
                 Id = termsDocumentId,
                 Name = name,
                 Description = "{}",
+                RequiresSignature = requiresSignature,
             },
         };
     }
@@ -247,5 +249,29 @@ public sealed class GetEventTermsStateQueryHandlerTests
         var result = await StateAsync();
 
         result.Documents.Select(d => d.TermsDocumentId).Should().Equal(firstId, secondId, thirdId);
+    }
+
+    [Fact]
+    public async Task HandleAsyncDocumentThatAsksForSignatureTellsSo()
+    {
+        var signedId = Guid.NewGuid();
+        var plainId = Guid.NewGuid();
+        HasDocuments(
+            NewDocument(
+                eventId,
+                signedId,
+                required: true,
+                displayOrder: 0,
+                requiresSignature: true
+            ),
+            NewDocument(eventId, plainId, required: true, displayOrder: 1)
+        );
+
+        var result = await StateAsync();
+
+        result
+            .Documents.Select(d => (d.TermsDocumentId, d.RequiresSignature))
+            .Should()
+            .Equal((signedId, true), (plainId, false));
     }
 }

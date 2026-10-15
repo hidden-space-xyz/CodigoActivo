@@ -777,7 +777,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         );
         var terms = TermsDocument.Create(
             "Condiciones",
-            RichText.From($"{{\"img\":\"/api/files/{termsEmbeddedFileId}/content\"}}")
+            RichText.From($"{{\"img\":\"/api/files/{termsEmbeddedFileId}/content\"}}"),
+            false
         );
         ctx.AddRange(ev, newsItem, resource, terms);
         await ctx.SaveChangesAsync(Ct);
@@ -815,7 +816,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         );
         var terms = TermsDocument.Create(
             "Condiciones",
-            RichText.From($"{{\"img\":\"/api/files/{embeddedInTermsId}/content\"}}")
+            RichText.From($"{{\"img\":\"/api/files/{embeddedInTermsId}/content\"}}"),
+            false
         );
         ctx.AddRange(ev, newsItem, resource, terms);
         await ctx.SaveChangesAsync(Ct);
@@ -934,8 +936,8 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task LinksTermsDocumentAsyncEventLinksDocumentReportsIt()
     {
         await using var ctx = postgres.CreateContext();
-        var linked = TermsDocument.Create("Vinculado", RichText.From("{}"));
-        var unlinked = TermsDocument.Create("Suelto", RichText.From("{}"));
+        var linked = TermsDocument.Create("Vinculado", RichText.From("{}"), false);
+        var unlinked = TermsDocument.Create("Suelto", RichText.From("{}"), false);
         var ev = NewEvent();
         Persisted.Add(
             ev.TermsDocuments,
@@ -960,16 +962,16 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task ListAsyncTermsAcceptancesReturnsOnlyTheDecisionsOfTheUserForTheEvent()
     {
         await using var ctx = postgres.CreateContext();
-        var document = TermsDocument.Create("Normas del listado", RichText.From("{}"));
+        var document = TermsDocument.Create("Normas del listado", RichText.From("{}"), false);
         var user = NewUser("Ada", "A");
         var other = NewUser("Bob", "B");
         var ev = NewEvent();
         var otherEvent = NewEvent("Otro evento");
         ctx.AddRange(document, user, other, ev, otherEvent);
         ctx.AddRange(
-            EventTermsAcceptance.Record(ev.Id, user.Id, document.Id, true, Fixed),
-            EventTermsAcceptance.Record(ev.Id, other.Id, document.Id, false, Fixed),
-            EventTermsAcceptance.Record(otherEvent.Id, user.Id, document.Id, false, Fixed)
+            EventTermsAcceptance.Record(ev.Id, user.Id, document.Id, true, null, Fixed),
+            EventTermsAcceptance.Record(ev.Id, other.Id, document.Id, false, null, Fixed),
+            EventTermsAcceptance.Record(otherEvent.Id, user.Id, document.Id, false, null, Fixed)
         );
         await ctx.SaveChangesAsync(Ct);
         ctx.ChangeTracker.Clear();
@@ -984,12 +986,16 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task AnyForDocumentAsyncDecisionOnTheDocumentReportsIt()
     {
         await using var ctx = postgres.CreateContext();
-        var decided = TermsDocument.Create("Documento decidido", RichText.From("{}"));
-        var undecided = TermsDocument.Create("Documento sin decisiones", RichText.From("{}"));
+        var decided = TermsDocument.Create("Documento decidido", RichText.From("{}"), false);
+        var undecided = TermsDocument.Create(
+            "Documento sin decisiones",
+            RichText.From("{}"),
+            false
+        );
         var user = NewUser("Ada", "A");
         var ev = NewEvent();
         ctx.AddRange(decided, undecided, user, ev);
-        ctx.Add(EventTermsAcceptance.Record(ev.Id, user.Id, decided.Id, false, Fixed));
+        ctx.Add(EventTermsAcceptance.Record(ev.Id, user.Id, decided.Id, false, null, Fixed));
         await ctx.SaveChangesAsync(Ct);
         var repo = new EventTermsAcceptanceRepository(ctx);
 
@@ -1001,7 +1007,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async Task CountExistingAsyncTermsDocumentsCountsOnlyStoredOnes()
     {
         await using var ctx = postgres.CreateContext();
-        var stored = TermsDocument.Create("Documento contado", RichText.From("{}"));
+        var stored = TermsDocument.Create("Documento contado", RichText.From("{}"), false);
         ctx.TermsDocuments.Add(stored);
         await ctx.SaveChangesAsync(Ct);
         var repo = new TermsDocumentRepository(ctx);
@@ -1009,6 +1015,49 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         (await repo.CountExistingAsync([stored.Id, TermsDocumentId.From(Guid.NewGuid())], Ct))
             .Should()
             .Be(1);
+    }
+
+    [Fact]
+    public async Task ListRequiringSignatureAsyncTermsDocumentsReturnsOnlyTheAskedOnesThatAskForIt()
+    {
+        await using var ctx = postgres.CreateContext();
+        var signed = TermsDocument.Create("Documento firmado", RichText.From("{}"), true);
+        var otherSigned = TermsDocument.Create("Otro documento firmado", RichText.From("{}"), true);
+        var plain = TermsDocument.Create("Documento sin firma", RichText.From("{}"), false);
+        ctx.TermsDocuments.AddRange(signed, otherSigned, plain);
+        await ctx.SaveChangesAsync(Ct);
+        var repo = new TermsDocumentRepository(ctx);
+
+        var ids = await repo.ListRequiringSignatureAsync([signed.Id, plain.Id], Ct);
+
+        ids.Should().Equal(signed.Id);
+    }
+
+    [Fact]
+    public async Task SaveChangesAsyncTermsAcceptanceWithSignatureStoresTheImage()
+    {
+        await using var ctx = postgres.CreateContext();
+        var document = TermsDocument.Create("Documento con firma", RichText.From("{}"), true);
+        var user = NewUser("Ada", "A");
+        var ev = NewEvent();
+        var png = TestSeedData.ValidPng();
+        ctx.AddRange(document, user, ev);
+        ctx.Add(
+            EventTermsAcceptance.Record(
+                ev.Id,
+                user.Id,
+                document.Id,
+                true,
+                HandwrittenSignature.Create(png).Value,
+                Fixed
+            )
+        );
+        await ctx.SaveChangesAsync(Ct);
+        ctx.ChangeTracker.Clear();
+
+        var stored = await new EventTermsAcceptanceRepository(ctx).ListAsync(ev.Id, user.Id, Ct);
+
+        stored.Should().ContainSingle().Which.Signature!.ToArray().Should().Equal(png);
     }
 
     [Fact]

@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
-import { toEventAttendee, toEventRating, toEventStats } from '@/pages/admin/event-detail/api/mapper'
+import {
+  toEventAttendee,
+  toEventRating,
+  toEventStats,
+  toEventTermsDecision,
+} from '@/pages/admin/event-detail/api/mapper'
 
 import {
   buildAttendee,
   buildAttendeeAssignment,
   buildRating,
   buildSummary,
+  buildTermsDecision,
 } from '../../../../../support/builders'
 
 describe('event detail mapper', () => {
@@ -102,5 +108,25 @@ describe('event detail mapper', () => {
 
   it('maps a rating without a score as unscored', () => {
     expect(toEventRating(buildRating({ score: null })).score).toBeNull()
+  })
+
+  it('maps a signed terms decision pointing at its signature image', () => {
+    expect(toEventTermsDecision('e1', buildTermsDecision())).toEqual({
+      userId: 'user-1',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      email: 'ada@example.com',
+      termsDocumentId: 'terms-1',
+      documentName: 'Autorización de imagen',
+      accepted: true,
+      decidedAt: '2026-09-01T10:00:00Z',
+      signatureUrl: '/api/events/e1/terms/decisions/user-1/terms-1/signature',
+    })
+  })
+
+  it('maps a decision without signature or email to empty strings', () => {
+    expect(
+      toEventTermsDecision('e1', buildTermsDecision({ email: null, hasSignature: false })),
+    ).toMatchObject({ email: '', signatureUrl: '' })
   })
 })

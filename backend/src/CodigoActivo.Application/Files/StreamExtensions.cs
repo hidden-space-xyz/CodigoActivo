@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Files;
 
@@ -8,8 +9,6 @@ namespace CodigoActivo.Application.Files;
 public static class StreamExtensions
 {
     private const int HeaderSize = 32;
-
-    private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
     /// <summary>
     /// Detects the image format from the supplied content.
@@ -46,20 +45,7 @@ public static class StreamExtensions
 
     private static bool IsPng(ReadOnlySpan<byte> header)
     {
-        if (header.Length < 24 || !header[..8].SequenceEqual(PngSignature))
-        {
-            return false;
-        }
-
-        var ihdrLength = BinaryPrimitives.ReadUInt32BigEndian(header[8..12]);
-        if (ihdrLength != 13 || !header[12..16].SequenceEqual("IHDR"u8))
-        {
-            return false;
-        }
-
-        var width = BinaryPrimitives.ReadUInt32BigEndian(header[16..20]);
-        var height = BinaryPrimitives.ReadUInt32BigEndian(header[20..24]);
-        return width > 0 && height > 0;
+        return PngImage.TryReadSize(header, out _, out _);
     }
 
     private static bool IsGif(ReadOnlySpan<byte> header)

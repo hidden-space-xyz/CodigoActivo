@@ -8,4 +8,5 @@
 export interface UpdateTermsDocumentRequest {
   name: string;
   description: string;
+  requiresSignature: boolean;
 }

@@ -223,6 +223,8 @@
     "EventRatingEmpty": "Puntúa el evento o responde al menos a una de las preguntas antes de enviar tu valoración.",
     "EventTermsAcceptanceRequired": "Debes aceptar los términos y condiciones del evento para apuntarte.",
     "EventTermsDocumentDuplicated": "No puedes vincular el mismo documento de términos y condiciones más de una vez.",
+    "EventTermsSignatureRequired": "Firma los documentos de términos y condiciones que lo requieren para apuntarte.",
+    "EventTermsSignatureNotFound": "Esta decisión no tiene firma.",
     "TermsDocumentNotFound": "No se encontraron los términos y condiciones.",
     "TermsDocumentNameAlreadyExists": "Ya existen unos términos y condiciones con ese nombre.",
     "TermsDocumentInUse": "No se pueden eliminar estos términos y condiciones porque hay eventos que los usan o personas que ya los han aceptado.",
@@ -1001,6 +1003,8 @@
             "problems": {
               "contentRequired": "El contenido es obligatorio."
             },
+            "requiresSignature": "Requiere firma",
+            "requiresSignatureHint": "Al aceptarlo, cada persona tendrá que firmar en pantalla con el dedo o el ratón.",
             "editHeader": "Editar términos y condiciones",
             "newHeader": "Nuevos términos y condiciones"
           },
@@ -1019,6 +1023,10 @@
           },
           "newButton": "Nuevos",
           "title": "Términos y condiciones",
+          "columns": {
+            "signature": "Firma"
+          },
+          "requiresSignature": "Requiere firma",
           "search": {
             "name": "Buscar nombre"
           }
@@ -1037,7 +1045,8 @@
         "tabs": {
           "activities": "Actividades",
           "attendees": "Asistentes",
-          "opinions": "Opiniones"
+          "opinions": "Opiniones",
+          "terms": "Términos"
         },
         "summary": {
           "ratings": "Sin puntuaciones | Media de 1 puntuación | Media de {count} puntuaciones"
@@ -1048,6 +1057,25 @@
           "anonymous": "Valoración anónima",
           "noScore": "Sin puntuación",
           "noAnswers": "Sin comentarios."
+        },
+        "terms": {
+          "lead": "Decisiones que cada persona ha tomado sobre los términos y condiciones del evento. En las inscripciones de menores decide su tutor.",
+          "empty": "Nadie ha decidido todavía sobre los términos de este evento.",
+          "error": "No se pudieron cargar las decisiones.",
+          "columns": {
+            "person": "Persona",
+            "searchPerson": "Buscar nombre o correo",
+            "document": "Documento",
+            "decision": "Decisión",
+            "decidedAt": "Fecha",
+            "signature": "Firma"
+          },
+          "accepted": "Aceptado",
+          "rejected": "Rechazado",
+          "noSignature": "Sin firma",
+          "openSignature": "Ver la firma de {name}",
+          "signatureOf": "Firma de {name}",
+          "signatureAlt": "Firma de {name} para {document}"
         },
         "empty": {
           "error": "No se pudieron cargar las actividades.",
@@ -1488,7 +1516,14 @@
         "reject": "Rechazar",
         "confirm": "Confirmar inscripción",
         "missingRequired": "Debes marcar todos los documentos obligatorios para continuar.",
-        "close": "Cerrar"
+        "close": "Cerrar",
+        "signature": {
+          "tag": "Requiere firma",
+          "label": "Firma para aceptar {name}",
+          "hint": "Firma con el dedo o el ratón dentro del recuadro.",
+          "clear": "Borrar firma",
+          "missing": "Firma los documentos marcados que lo requieren para continuar."
+        }
       },
       "leaderRoster": {
         "notice": {

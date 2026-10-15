@@ -9,18 +9,20 @@ namespace CodigoActivo.UnitTests.Domain;
 public sealed class CatalogTests
 {
     [Fact]
-    public void TermsDocumentCreateThenRewriteTrimsNameAndKeepsContent()
+    public void TermsDocumentCreateThenRewriteTrimsNameAndKeepsContentAndSignature()
     {
-        var document = TermsDocument.Create("  Condiciones ", RichText.From("{\"a\":1}"));
+        var document = TermsDocument.Create("  Condiciones ", RichText.From("{\"a\":1}"), true);
 
         document.Id.Value.Should().NotBeEmpty();
         document.Name.Should().Be("Condiciones");
         document.Description!.Json.Should().Be("{\"a\":1}");
+        document.RequiresSignature.Should().BeTrue();
 
-        document.Rewrite(" Privacidad ", RichText.From("{\"b\":2}"));
+        document.Rewrite(" Privacidad ", RichText.From("{\"b\":2}"), false);
 
         document.Name.Should().Be("Privacidad");
         document.Description!.Json.Should().Be("{\"b\":2}");
+        document.RequiresSignature.Should().BeFalse();
     }
 
     [Fact]
@@ -29,7 +31,7 @@ public sealed class CatalogTests
         var id = Guid.NewGuid();
 
         TermsDocument
-            .Create("Condiciones", RichText.From("{}"), TermsDocumentId.From(id))
+            .Create("Condiciones", RichText.From("{}"), false, TermsDocumentId.From(id))
             .Id.Value.Should()
             .Be(id);
     }

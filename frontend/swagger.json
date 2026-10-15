@@ -2093,6 +2093,117 @@
         }
       }
     },
+    "/api/events/{eventId}/terms/decisions": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "termsDocumentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventTermsDecisionResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/signature": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "termsDocumentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/events/{eventId}/leader-roster": {
       "get": {
         "tags": [
@@ -4731,7 +4842,8 @@
       "CreateTermsDocumentRequest": {
         "required": [
           "description",
-          "name"
+          "name",
+          "requiresSignature"
         ],
         "type": "object",
         "properties": {
@@ -4740,6 +4852,9 @@
           },
           "description": {
             "type": "string"
+          },
+          "requiresSignature": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -5173,6 +5288,8 @@
           "EventRatingAttendanceRequired",
           "EventRatingEmpty",
           "EventTermsAcceptanceRequired",
+          "EventTermsSignatureRequired",
+          "EventTermsSignatureNotFound",
           "EventTermsDocumentDuplicated",
           "TermsDocumentNotFound",
           "TermsDocumentNameAlreadyExists",
@@ -6226,6 +6343,83 @@
         },
         "additionalProperties": false
       },
+      "EventTermsDecisionResponse": {
+        "required": [
+          "accepted",
+          "decidedAt",
+          "documentName",
+          "firstName",
+          "hasSignature",
+          "lastName",
+          "termsDocumentId",
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentName": {
+            "type": "string"
+          },
+          "accepted": {
+            "type": "boolean"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hasSignature": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventTermsDecisionResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTermsDecisionResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "EventTermsDocumentRequest": {
         "required": [
           "required",
@@ -6275,6 +6469,7 @@
           "displayOrder",
           "name",
           "required",
+          "requiresSignature",
           "termsDocumentId"
         ],
         "type": "object",
@@ -6290,6 +6485,9 @@
             "type": "string"
           },
           "required": {
+            "type": "boolean"
+          },
+          "requiresSignature": {
             "type": "boolean"
           },
           "displayOrder": {
@@ -7215,6 +7413,11 @@
           "accepted": {
             "type": "boolean",
             "nullable": true
+          },
+          "signature": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -7223,7 +7426,8 @@
         "required": [
           "description",
           "id",
-          "name"
+          "name",
+          "requiresSignature"
         ],
         "type": "object",
         "properties": {
@@ -7236,6 +7440,9 @@
           },
           "description": {
             "type": "string"
+          },
+          "requiresSignature": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -7529,7 +7736,8 @@
       "UpdateTermsDocumentRequest": {
         "required": [
           "description",
-          "name"
+          "name",
+          "requiresSignature"
         ],
         "type": "object",
         "properties": {
@@ -7538,6 +7746,9 @@
           },
           "description": {
             "type": "string"
+          },
+          "requiresSignature": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

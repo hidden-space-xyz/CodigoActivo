@@ -91,6 +91,16 @@ public enum DomainErrorCode
     EventTermsDocumentDuplicated,
 
     /// <summary>
+    /// A terms document that asks for a signature was accepted without one.
+    /// </summary>
+    EventTermsSignatureRequired,
+
+    /// <summary>
+    /// A signature is not a PNG image within the size limits.
+    /// </summary>
+    EventTermsSignatureInvalid,
+
+    /// <summary>
     /// Selects the resource description required option.
     /// </summary>
     ResourceDescriptionRequired,

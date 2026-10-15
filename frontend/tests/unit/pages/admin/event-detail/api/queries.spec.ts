@@ -5,10 +5,16 @@ import {
   eventReportKeys,
   eventReportQueries,
   ratingList,
+  termsDecisionList,
 } from '@/pages/admin/event-detail/api/queries'
 
 import { http, HttpResponse, paged, server } from '../../../../../support/server'
-import { buildAttendee, buildRating, buildSummary } from '../../../../../support/builders'
+import {
+  buildAttendee,
+  buildRating,
+  buildSummary,
+  buildTermsDecision,
+} from '../../../../../support/builders'
 import { queryOf } from '../../../../../support/dom'
 import { createTestQueryClient } from '../../../../../support/render'
 
@@ -18,6 +24,7 @@ describe('eventReportKeys', () => {
     expect(eventReportKeys.stats('e1')).toEqual(['reports', 'event-stats', 'e1'])
     expect(eventReportKeys.attendees()).toEqual(['reports', 'event-attendees'])
     expect(eventReportKeys.ratings()).toEqual(['reports', 'event-ratings'])
+    expect(eventReportKeys.termsDecisions()).toEqual(['reports', 'event-terms-decisions'])
   })
 })
 
@@ -79,5 +86,36 @@ describe('event report sources', () => {
     expect(new URL(urls[0] ?? '').pathname).toBe('/api/events/e1/ratings')
     expect(queryOf(urls[0] ?? '')).toEqual({ sort: '-score' })
     expect(ratingList.queryKey).toEqual(eventReportKeys.ratings())
+  })
+
+  it('pages the terms decisions of the event with their filters', async () => {
+    const urls: string[] = []
+    server.use(
+      http.get('/api/events/:eventId/terms/decisions', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildTermsDecision()], 3))
+      }),
+    )
+
+    const page = await termsDecisionList.fetchPage({
+      eventId: 'e1',
+      search: 'ada',
+      termsDocumentId: 'terms-1',
+      sort: '-decidedAt',
+    })
+
+    expect(page).toEqual({
+      items: [
+        expect.objectContaining({ userId: 'user-1', documentName: 'Autorización de imagen' }),
+      ],
+      total: 3,
+    })
+    expect(new URL(urls[0] ?? '').pathname).toBe('/api/events/e1/terms/decisions')
+    expect(queryOf(urls[0] ?? '')).toEqual({
+      search: 'ada',
+      termsDocumentId: 'terms-1',
+      sort: '-decidedAt',
+    })
+    expect(termsDecisionList.queryKey).toEqual(eventReportKeys.termsDecisions())
   })
 })

@@ -9,4 +9,6 @@ export interface TermsDecisionRequest {
   termsDocumentId: string;
   /** @nullable */
   accepted?: boolean | null;
+  /** @nullable */
+  signature?: string | null;
 }

@@ -21,6 +21,8 @@ export interface ActivityModality {
 export interface TermsDecisionInput {
   readonly termsDocumentId: string
   readonly accepted: boolean
+  /** PNG data URL of the signature drawn to accept a document that asks for one. */
+  readonly signature?: string
 }
 
 /** Roles one household member may sign up for, as allowed by their user type. */

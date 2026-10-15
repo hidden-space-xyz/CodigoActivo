@@ -60,20 +60,28 @@ describe('terms document requests', () => {
       http.delete('/api/events/termsDocument/terms-1', record),
     )
 
-    await createTermsDocumentRequest({ name: 'Normas', description: 'Texto' })
-    await updateTermsDocumentRequest('terms-1', { name: 'Normas', description: 'Otro' })
+    await createTermsDocumentRequest({
+      name: 'Normas',
+      description: 'Texto',
+      requiresSignature: false,
+    })
+    await updateTermsDocumentRequest('terms-1', {
+      name: 'Normas',
+      description: 'Otro',
+      requiresSignature: true,
+    })
     await deleteTermsDocumentRequest('terms-1')
 
     expect(calls).toEqual([
       {
         method: 'POST',
         path: '/api/events/termsDocument',
-        body: { name: 'Normas', description: 'Texto' },
+        body: { name: 'Normas', description: 'Texto', requiresSignature: false },
       },
       {
         method: 'PUT',
         path: '/api/events/termsDocument/terms-1',
-        body: { name: 'Normas', description: 'Otro' },
+        body: { name: 'Normas', description: 'Otro', requiresSignature: true },
       },
       { method: 'DELETE', path: '/api/events/termsDocument/terms-1', body: null },
     ])

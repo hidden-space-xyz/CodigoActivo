@@ -76,6 +76,11 @@ public enum ApplicationErrorCode
     EventTermsAcceptanceRequired,
 
     /// <summary>
+    /// The terms decision asked for does not exist or was taken without a signature.
+    /// </summary>
+    EventTermsSignatureNotFound,
+
+    /// <summary>
     /// Selects the terms document not found option.
     /// </summary>
     TermsDocumentNotFound,

@@ -68,15 +68,18 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
         termsDocuments.TermsDocumentExists(false);
 
         var result = await sut.HandleAsync(
-            new UpdateTermsDocumentRequest("  Normas nuevas  ", "{\"type\":\"doc\"}").ToCommand(
-                termsDocument.Id
-            ),
+            new UpdateTermsDocumentRequest(
+                "  Normas nuevas  ",
+                "{\"type\":\"doc\"}",
+                RequiresSignature: true
+            ).ToCommand(termsDocument.Id),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         termsDocument.Name.Should().Be("Normas nuevas");
         termsDocument.Description!.Json.Should().Be("{\"type\":\"doc\"}");
+        termsDocument.RequiresSignature.Should().BeTrue();
         DomainEvents
             .ReleasedFiles(termsDocument)
             .Should()

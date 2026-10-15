@@ -38,9 +38,11 @@ import type {
   EventListItemResponsePagedResult,
   EventRatingListItemResponsePagedResult,
   EventResponse,
+  EventTermsDecisionResponsePagedResult,
   EventTermsStateResponse,
   GetApiEventsCategoryTypeParams,
   GetApiEventsEventIdRatingsParams,
+  GetApiEventsEventIdTermsDecisionsParams,
   GetApiEventsParams,
   GetApiEventsTermsDocumentParams,
   LeaderRosterActivityResponse,
@@ -1112,6 +1114,177 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getGetApiEventsEventIdTermsMutationOptions(options), queryClient);
+    }
+    export type getApiEventsEventIdTermsDecisionsResponse200 = {
+  data: EventTermsDecisionResponsePagedResult
+  status: 200
+}
+
+export type getApiEventsEventIdTermsDecisionsResponseSuccess = (getApiEventsEventIdTermsDecisionsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiEventsEventIdTermsDecisionsResponse = (getApiEventsEventIdTermsDecisionsResponseSuccess)
+
+export const getGetApiEventsEventIdTermsDecisionsUrl = (eventId: string,
+    params?: GetApiEventsEventIdTermsDecisionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/events/${eventId}/terms/decisions?${stringifiedParams}` : `/api/events/${eventId}/terms/decisions`
+}
+
+export const getApiEventsEventIdTermsDecisions = async (eventId: string,
+    params?: GetApiEventsEventIdTermsDecisionsParams, options?: Parameters<typeof httpClient>[1]): Promise<getApiEventsEventIdTermsDecisionsResponse> => {
+
+  return httpClient<getApiEventsEventIdTermsDecisionsResponse>(getGetApiEventsEventIdTermsDecisionsUrl(eventId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiEventsEventIdTermsDecisionsMutationKey = () => ['getApiEventsEventIdTermsDecisions'] as const;
+
+export const getGetApiEventsEventIdTermsDecisionsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisions>>, TError,GetApiEventsEventIdTermsDecisionsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisions>>, TError,GetApiEventsEventIdTermsDecisionsMutationVariables, TContext> => {
+
+const mutationKey = getGetApiEventsEventIdTermsDecisionsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisions>>, GetApiEventsEventIdTermsDecisionsMutationVariables> = (props) => {
+          const {eventId,params} = props ?? {};
+
+          return  getApiEventsEventIdTermsDecisions(eventId,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiEventsEventIdTermsDecisionsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisions>>>
+
+    export type GetApiEventsEventIdTermsDecisionsMutationError = unknown
+    export type GetApiEventsEventIdTermsDecisionsMutationVariables = {eventId: string;params?: GetApiEventsEventIdTermsDecisionsParams}
+
+    export const useGetApiEventsEventIdTermsDecisions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisions>>, TError,GetApiEventsEventIdTermsDecisionsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisions>>,
+        TError,
+        GetApiEventsEventIdTermsDecisionsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetApiEventsEventIdTermsDecisionsMutationOptions(options), queryClient);
+    }
+    export type getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureResponse200 = {
+  data: void
+  status: 200
+}
+
+export type getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureResponseSuccess = (getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureResponse = (getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureResponseSuccess)
+
+export const getGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureUrl = (eventId: string,
+    userId: string,
+    termsDocumentId: string,) => {
+
+
+
+
+  return `/api/events/${eventId}/terms/decisions/${userId}/${termsDocumentId}/signature`
+}
+
+export const getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature = async (eventId: string,
+    userId: string,
+    termsDocumentId: string, options?: Parameters<typeof httpClient>[1]): Promise<getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureResponse> => {
+
+  return httpClient<getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureResponse>(getGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureUrl(eventId,userId,termsDocumentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationKey = () => ['getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature'] as const;
+
+export const getGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature>>, TError,GetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature>>, TError,GetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationVariables, TContext> => {
+
+const mutationKey = getGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature>>, GetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationVariables> = (props) => {
+          const {eventId,userId,termsDocumentId} = props ?? {};
+
+          return  getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature(eventId,userId,termsDocumentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature>>>
+
+    export type GetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationError = unknown
+    export type GetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationVariables = {eventId: string;userId: string;termsDocumentId: string}
+
+    export const useGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature>>, TError,GetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignature>>,
+        TError,
+        GetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureMutationOptions(options), queryClient);
     }
     export type getApiEventsEventIdLeaderRosterResponse200 = {
   data: LeaderRosterActivityResponse[]

@@ -63,13 +63,13 @@ aggregate roots.
 - Every aggregate has a typed identifier (`UserId`, `EventId`, `ActivityId`, `PartnerId`, `StoredFileId`...), a
   `readonly record struct` over a `Guid` with no implicit conversion, so an identifier of one aggregate can never
   be passed for another. Values with rules are value objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`,
-  `RichText`, `DateRange` (the event calendar), `SignupWindow` and `ActivitySchedule`, and the security state of
-  `User`: `OneTimeCode` (verification, password reset and login codes), `EmailChange`, `Authenticator`,
-  `LoginChallenge`, `PasswordLockout` and `TwoFactorLockout`. EF Core maps them onto the existing columns through
-  conventions and converters (`Infrastructure/Database/Conversions`), the `User` ones as complex properties, so the
-  schema does not change; the read model keeps plain `Guid` and primitive columns. `DateRange.InstantsIn` gives the
-  UTC bounds of the event days that both `DateRange.Covers` (a new activity schedule) and
-  `IActivityRepository.AnyOutsideRangeAsync` (a shortened event) compare activities against.
+  `RichText`, `DateRange` (the event calendar), `SignupWindow`, `ActivitySchedule`, `HandwrittenSignature`, and
+  the security state of `User`: `OneTimeCode` (verification, password reset and login codes), `EmailChange`,
+  `Authenticator`, `LoginChallenge`, `PasswordLockout` and `TwoFactorLockout`. EF Core maps them onto the existing
+  columns through conventions and converters (`Infrastructure/Database/Conversions`), the `User` ones as complex
+  properties, so the schema does not change; the read model keeps plain `Guid` and primitive columns.
+  `DateRange.InstantsIn` gives the UTC bounds of the event days that both `DateRange.Covers` (a new activity
+  schedule) and `IActivityRepository.AnyOutsideRangeAsync` (a shortened event) compare activities against.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
   `DeletedAccount`, `Event` (with its categories and terms links), `Activity` (with its role capacities and
   signups), `EventTermsAcceptance`, `EventRating`, `NewsItem`, `Resource`, `Partner`, `TermsDocument`,
@@ -226,12 +226,15 @@ takes the signed-in user and their own dependents (`Household.Includes`), admini
 anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]` attributes
 still refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
 
-An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); the
-signup wire contract (`AssignRequest`/`AssignHouseholdRequest`) carries a `TermsDecisions` list of
-`{TermsDocumentId, Accepted}`. `TermsGate` applies `TermsConsent` and records each decision as an
-`EventTermsAcceptance` (keyed by event, user and document) but never persists the rejection of a required
-document, so signup blocks without excluding the user permanently; `GET /api/events/{eventId}/terms` returns
-every linked document with the caller's current decision.
+An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`), and a
+document may ask for a handwritten signature (`requires_signature`). The signup wire contract
+(`AssignRequest`/`AssignHouseholdRequest`) carries a `TermsDecisions` list of `{TermsDocumentId, Accepted,
+Signature}`, the signature a base64 PNG drawn in the SPA with `signature_pad`. `TermsGate` applies `TermsConsent`,
+which refuses accepting a document that asks for a signature without a valid one, and records each decision as an
+`EventTermsAcceptance` (keyed by event, user and document, with its signature) but never persists the rejection
+of a required document, so signup blocks without excluding the user permanently; `GET /api/events/{eventId}/terms`
+returns every linked document with the caller's current decision. Administrators list the decisions of an event
+under `/api/events/{eventId}/terms/decisions` and read each signature image there.
 
 ### Caching
 

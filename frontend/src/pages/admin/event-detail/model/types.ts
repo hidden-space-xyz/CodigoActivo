@@ -92,3 +92,28 @@ export interface RatingListParams {
   readonly pageSize?: number
   readonly sort?: string
 }
+
+/** A decision someone took about a terms document of the event; `email` is empty when unknown. */
+export interface EventTermsDecision {
+  /** The account that decided; for a minor's signup, their guardian. */
+  readonly userId: string
+  readonly firstName: string
+  readonly lastName: string
+  readonly email: string
+  readonly termsDocumentId: string
+  readonly documentName: string
+  readonly accepted: boolean
+  readonly decidedAt: string
+  /** Same-origin URL of the PNG signature drawn to accept the document; empty when there is none. */
+  readonly signatureUrl: string
+}
+
+/** Event, filters, sort and page of the terms decisions list. */
+export interface TermsDecisionListParams {
+  readonly eventId: string
+  readonly search?: string
+  readonly termsDocumentId?: string
+  readonly page?: number
+  readonly pageSize?: number
+  readonly sort?: string
+}

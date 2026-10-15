@@ -132,7 +132,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         Guid userId,
         Guid documentId,
         bool accepted,
-        DateTimeOffset decidedAt
+        DateTimeOffset decidedAt,
+        HandwrittenSignature? signature = null
     )
     {
         return Persisted.As<EventTermsAcceptance>(
@@ -143,6 +144,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 TermsDocumentId = documentId,
                 Accepted = accepted,
                 DecidedAt = decidedAt,
+                Signature = signature,
             }
         );
     }
@@ -270,7 +272,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     TestSeedData.Users.MemberId,
                     ConditionsId,
                     accepted: true,
-                    ConditionsDecidedAt
+                    ConditionsDecidedAt,
+                    HandwrittenSignature.FromStored(TestSeedData.ValidPng())
                 ),
                 NewDecision(
                     CampId,
@@ -512,8 +515,14 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .GetDateTimeOffset()
             .Should()
             .Be(ConditionsDecidedAt);
+        campDecisions[0]
+            .GetProperty("signature")
+            .GetBytesFromBase64()
+            .Should()
+            .Equal(TestSeedData.ValidPng());
         campDecisions[1].GetProperty("documentName").GetString().Should().Be("Derechos de imagen");
         campDecisions[1].GetProperty("accepted").GetBoolean().Should().BeFalse();
+        campDecisions[1].GetProperty("signature").ValueKind.Should().Be(JsonValueKind.Null);
         campDecisions
             .Select(d => IdOf(d, "decidedBy"))
             .Should()
@@ -1116,7 +1125,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 conditions.Name,
                 RichText.From(
                     new string('[', ValidatedMaxDepth) + new string(']', ValidatedMaxDepth)
-                )
+                ),
+                conditions.RequiresSignature
             );
         });
 

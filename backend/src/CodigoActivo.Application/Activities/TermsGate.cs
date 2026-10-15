@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities;
@@ -12,10 +13,12 @@ namespace CodigoActivo.Application.Activities;
 /// the event end up accepted, following <see cref="TermsConsent"/>.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="termsDocuments">Repository that tells which documents ask for a signature.</param>
 /// <param name="termsAcceptances">Repository of the terms decisions people took.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class TermsGate(
     IEventRepository events,
+    ITermsDocumentRepository termsDocuments,
     IEventTermsAcceptanceRepository termsAcceptances,
     IClock clock
 )
@@ -44,20 +47,32 @@ public sealed class TermsGate(
             return Result.Success();
         }
 
+        var signedDocumentIds = decisions is { Count: > 0 }
+            ? await termsDocuments.ListRequiringSignatureAsync(
+                [.. ev.TermsDocuments.Select(document => document.TermsDocumentId)],
+                ct
+            )
+            : [];
         var outcome = TermsConsent.Apply(
             ev.Id,
             userId,
             ev.TermsDocuments,
+            signedDocumentIds,
             await termsAcceptances.ListAsync(ev.Id, userId, ct),
             decisions,
             clock.UtcNow
         );
-        foreach (var acceptance in outcome.Recorded)
+        if (outcome.IsFailure)
+        {
+            return outcome.Error!;
+        }
+
+        foreach (var acceptance in outcome.Value.Recorded)
         {
             await termsAcceptances.AddAsync(acceptance, ct);
         }
 
-        return outcome.MissingRequired
+        return outcome.Value.MissingRequired
             ? Error.Validation(ApplicationErrorCode.EventTermsAcceptanceRequired)
             : Result.Success();
     }

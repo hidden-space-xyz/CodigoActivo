@@ -54,6 +54,20 @@ describe('TermsDocumentsSection', () => {
     expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ name: 'priv' })
   })
 
+  it('tags the documents that ask for a signature', async () => {
+    serveTerms([
+      buildTermsDocument(),
+      buildTermsDocument({ id: 'terms-2', name: 'Image', requiresSignature: true }),
+    ])
+    const { wrapper } = await renderSection()
+
+    const rows = wrapper.findAll('.el-table__body tr')
+    expect(rows[0]?.text()).not.toContain(
+      t('pages.admin.catalogs.termsDocuments.requiresSignature'),
+    )
+    expect(rows[1]?.text()).toContain(t('pages.admin.catalogs.termsDocuments.requiresSignature'))
+  })
+
   it('shows empty and error states', async () => {
     serveTerms([])
     const empty = await renderSection()
@@ -97,7 +111,11 @@ describe('TermsDocumentsSection', () => {
     await click(findButton(t('common.save'), dialog))
 
     await expectNotification(t('pages.admin.catalogs.termsDocuments.toasts.created'))
-    expect(created).toEqual({ name: 'Cookies', description: richText('We use cookies') })
+    expect(created).toEqual({
+      name: 'Cookies',
+      description: richText('We use cookies'),
+      requiresSignature: false,
+    })
     await vi.waitFor(() => expect(isDialogOpen(t(NEW_TITLE))).toBe(false))
   })
 
@@ -116,12 +134,17 @@ describe('TermsDocumentsSection', () => {
     const dialog = openDialog(t(EDIT_TITLE))
     expect(inputValue('#terms-document-name')).toBe('Privacy')
     await typeInto('#terms-document-name', 'Privacy policy')
+    await click(dialog.querySelector('.el-switch') ?? dialog)
     await click(findButton(t('common.save'), dialog))
 
     await expectNotification(t('pages.admin.catalogs.termsDocuments.toasts.updated'))
     expect(updated).toEqual({
       id: 'terms-1',
-      body: { name: 'Privacy policy', description: richText('Terms body') },
+      body: {
+        name: 'Privacy policy',
+        description: richText('Terms body'),
+        requiresSignature: true,
+      },
     })
   })
 

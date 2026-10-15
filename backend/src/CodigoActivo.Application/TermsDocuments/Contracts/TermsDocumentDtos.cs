@@ -6,11 +6,17 @@ namespace CodigoActivo.Application.TermsDocuments.Contracts;
 /// <param name="Id">Identifier of the target entity.</param>
 /// <param name="Name">The name value.</param>
 /// <param name="Description">The description value.</param>
-public record TermsDocumentResponse(Guid Id, string Name, string Description)
+/// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
+public record TermsDocumentResponse(
+    Guid Id,
+    string Name,
+    string Description,
+    bool RequiresSignature
+)
 {
     /// <summary>
     /// Initializes an empty terms document response for serialization.
     /// </summary>
     public TermsDocumentResponse()
-        : this(Guid.Empty, string.Empty, string.Empty) { }
+        : this(Guid.Empty, string.Empty, string.Empty, false) { }
 }

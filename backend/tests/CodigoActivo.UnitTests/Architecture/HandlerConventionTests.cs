@@ -353,6 +353,7 @@ public sealed class HandlerConventionTests
                 "GetAccountQuery",
                 "GetAssignmentQuery",
                 "GetAssignmentsQuery",
+                "GetEventTermsSignatureQuery",
                 "GetSessionIdentityQuery",
                 "GetUserByIdQuery",
                 "VerifyTimeOverlapsQuery"

@@ -46,4 +46,15 @@ public class TermsDocumentRepository(CodigoActivoDbContext context)
     {
         return Set.CountAsync(document => ids.Contains(document.Id), ct);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyCollection<TermsDocumentId>> ListRequiringSignatureAsync(
+        IReadOnlyCollection<TermsDocumentId> ids,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Where(document => document.RequiresSignature && ids.Contains(document.Id))
+            .Select(document => document.Id)
+            .ToListAsync(ct);
+    }
 }

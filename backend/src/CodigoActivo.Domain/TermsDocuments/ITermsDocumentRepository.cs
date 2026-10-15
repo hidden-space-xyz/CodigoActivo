@@ -38,4 +38,15 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
         IReadOnlyCollection<TermsDocumentId> ids,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Lists which of the given documents ask for a handwritten signature to be accepted.
+    /// </summary>
+    /// <param name="ids">Identifiers of the documents to look at.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the identifiers of the documents that ask for one.</returns>
+    public Task<IReadOnlyCollection<TermsDocumentId>> ListRequiringSignatureAsync(
+        IReadOnlyCollection<TermsDocumentId> ids,
+        CancellationToken ct = default
+    );
 }

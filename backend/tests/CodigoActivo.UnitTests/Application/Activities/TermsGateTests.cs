@@ -28,6 +28,8 @@ namespace CodigoActivo.UnitTests.Application.Activities;
 public sealed class TermsGateTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
+    private readonly ITermsDocumentRepository termsDocuments =
+        Substitute.For<ITermsDocumentRepository>();
     private readonly IEventTermsAcceptanceRepository termsAcceptances =
         Substitute.For<IEventTermsAcceptanceRepository>();
     private readonly TestClock clock = new();
@@ -35,7 +37,7 @@ public sealed class TermsGateTests
 
     public TermsGateTests()
     {
-        sut = new TermsGate(events, termsAcceptances, clock);
+        sut = new TermsGate(events, termsDocuments, termsAcceptances, clock);
     }
 
     private Guid HasDocuments(params (Guid TermsDocumentId, bool Required)[] documents)
@@ -396,5 +398,90 @@ public sealed class TermsGateTests
                 ),
                 Arg.Any<CancellationToken>()
             );
+    }
+
+    private void AsksForSignature(params Guid[] termsDocumentIds)
+    {
+        termsDocuments
+            .ListRequiringSignatureAsync(
+                Arg.Any<IReadOnlyCollection<TermsDocumentId>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns([.. termsDocumentIds.Select(TermsDocumentId.From)]);
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncAcceptingDocumentThatAsksForSignatureRecordsTheSignature()
+    {
+        var termsDocumentId = Guid.NewGuid();
+        var eventId = HasDocuments((termsDocumentId, true));
+        HasAcceptances();
+        AsksForSignature(termsDocumentId);
+        var png = SignatureImages.Png();
+
+        var result = await sut.EnsureDecidedAsync(
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.From(termsDocumentId), true, png)],
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await termsAcceptances
+            .Received(1)
+            .AddAsync(
+                Arg.Is<EventTermsAcceptance>(a =>
+                    a != null && a.Accepted && a.Signature!.ToArray().SequenceEqual(png)
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await termsDocuments
+            .Received(1)
+            .ListRequiringSignatureAsync(
+                Arg.Is<IReadOnlyCollection<TermsDocumentId>>(ids =>
+                    ids.SequenceEqual(new[] { TermsDocumentId.From(termsDocumentId) })
+                ),
+                Arg.Any<CancellationToken>()
+            );
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncAcceptingDocumentThatAsksForSignatureWithoutOneFailsWithoutPersisting()
+    {
+        var termsDocumentId = Guid.NewGuid();
+        var eventId = HasDocuments((termsDocumentId, true));
+        HasAcceptances();
+        AsksForSignature(termsDocumentId);
+
+        var result = await sut.EnsureDecidedAsync(
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [new TermsDecision(TermsDocumentId.From(termsDocumentId), true)],
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsSignatureRequired);
+        await termsAcceptances
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncWithoutDecisionsDoesNotLookUpSignatures()
+    {
+        var eventId = HasDocuments((Guid.NewGuid(), false));
+        HasAcceptances();
+
+        var result = await sut.EnsureDecidedAsync(
+            EventId.From(eventId),
+            UserId.From(Guid.NewGuid()),
+            [],
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        await termsDocuments
+            .DidNotReceiveWithAnyArgs()
+            .ListRequiringSignatureAsync(default!, TestContext.Current.CancellationToken);
     }
 }

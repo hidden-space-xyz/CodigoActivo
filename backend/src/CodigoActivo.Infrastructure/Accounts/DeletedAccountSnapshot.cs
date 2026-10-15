@@ -179,6 +179,7 @@ internal static class DeletedAccountSnapshot
                 acceptance.Accepted,
                 acceptance.DecidedAt,
                 acceptance.UserId,
+                acceptance.Signature,
             }
         ).ToListAsync(ct);
         var decisions = decisionRows.ConvertAll(row => new EventDecision(
@@ -188,7 +189,8 @@ internal static class DeletedAccountSnapshot
                 row.DocumentName,
                 row.Accepted,
                 row.DecidedAt,
-                row.UserId.Value
+                row.UserId.Value,
+                row.Signature?.Png
             )
         ));
 

@@ -8,4 +8,5 @@
 export interface CreateTermsDocumentRequest {
   name: string;
   description: string;
+  requiresSignature: boolean;
 }

@@ -17,7 +17,13 @@ export function buildEventCategoryType(
 export function buildTermsDocument(
   overrides: Partial<TermsDocumentResponse> = {},
 ): TermsDocumentResponse {
-  return { id: 'terms-1', name: 'Privacy', description: richText('Terms body'), ...overrides }
+  return {
+    id: 'terms-1',
+    name: 'Privacy',
+    description: richText('Terms body'),
+    requiresSignature: false,
+    ...overrides,
+  }
 }
 
 /** Stored file metadata as `GET /api/files/:fileId` returns it. */

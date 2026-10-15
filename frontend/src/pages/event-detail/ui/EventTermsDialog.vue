@@ -7,6 +7,9 @@ import type { EventTermsDocumentState } from '@/entities/event'
 import { ActionButton } from '@/shared/ui/action-button'
 import { RichTextContent } from '@/shared/ui/rich-text-content'
 
+import { asksForSignature, readTermsDecisions } from '../model/terms-decisions'
+import SignaturePad from './SignaturePad.vue'
+
 const props = defineProps<{
   /** Opens the dialog; every time it opens, decisions reset to unchecked for `documents`. */
   visible: boolean
@@ -18,8 +21,9 @@ const emit = defineEmits<{
   /** Fired with `false` when the dialog is closed or dismissed without confirming. */
   'update:visible': [value: boolean]
   /**
-   * Fired with one decision per document in `documents` once every required one is checked;
-   * confirming earlier only reveals which ones are missing.
+   * Fired with one decision per document in `documents` once every required one is checked and
+   * every checked one that asks for a signature is signed; confirming earlier only reveals what is
+   * missing.
    */
   confirm: [decisions: TermsDecisionInput[]]
 }>()
@@ -27,6 +31,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const checked = reactive<Record<string, boolean>>({})
+const signatures = reactive<Record<string, string>>({})
 const attempted = ref(false)
 
 watch(
@@ -35,13 +40,25 @@ watch(
     if (!open) return
     attempted.value = false
     for (const key of Object.keys(checked)) delete checked[key]
-    for (const document of props.documents) checked[document.id] = false
+    for (const key of Object.keys(signatures)) delete signatures[key]
+    for (const document of props.documents) {
+      checked[document.id] = false
+      signatures[document.id] = ''
+    }
   },
 )
 
-const missingRequired = computed(() =>
-  props.documents.some((document) => document.required && !checked[document.id]),
-)
+watch(checked, () => {
+  for (const document of props.documents) {
+    if (!checked[document.id]) signatures[document.id] = ''
+  }
+})
+
+const reading = computed(() => readTermsDecisions(props.documents, { checked, signatures }))
+
+function showsSignature(document: EventTermsDocumentState): boolean {
+  return asksForSignature(document, { checked, signatures })
+}
 
 const preview = reactive<{ visible: boolean; document: EventTermsDocumentState | null }>({
   visible: false,
@@ -72,14 +89,8 @@ function close(): void {
 
 function confirm(): void {
   attempted.value = true
-  if (missingRequired.value) return
-  emit(
-    'confirm',
-    props.documents.map((document) => ({
-      termsDocumentId: document.id,
-      accepted: !!checked[document.id],
-    })),
-  )
+  const { decisions } = reading.value
+  if (decisions) emit('confirm', decisions)
 }
 </script>
 
@@ -94,38 +105,53 @@ function confirm(): void {
     <p class="terms-dialog__lead">{{ t('pages.eventDetail.terms.lead') }}</p>
     <ul class="terms-dialog__list">
       <li v-for="document in documents" :key="document.id" class="terms-dialog__row">
-        <el-checkbox
-          :id="`terms-${document.id}`"
-          v-model="checked[document.id]"
-          :aria-label="t('pages.eventDetail.terms.checkboxLabel', { name: document.name })"
-        />
-        <div class="terms-dialog__info">
-          <button
-            type="button"
-            class="terms-dialog__link"
-            :title="t('pages.eventDetail.terms.openDocument', { name: document.name })"
-            @click="openPreview(document)"
-          >
-            {{ document.name }}
-          </button>
-          <span
-            class="terms-dialog__tag"
-            :class="{
-              'terms-dialog__tag--required': document.required,
-              'terms-dialog__tag--optional': !document.required,
-            }"
-          >
-            {{
-              document.required
-                ? t('pages.eventDetail.terms.required')
-                : t('pages.eventDetail.terms.optional')
-            }}
-          </span>
+        <div class="terms-dialog__decision">
+          <el-checkbox
+            :id="`terms-${document.id}`"
+            v-model="checked[document.id]"
+            :aria-label="t('pages.eventDetail.terms.checkboxLabel', { name: document.name })"
+          />
+          <div class="terms-dialog__info">
+            <button
+              type="button"
+              class="terms-dialog__link"
+              :title="t('pages.eventDetail.terms.openDocument', { name: document.name })"
+              @click="openPreview(document)"
+            >
+              {{ document.name }}
+            </button>
+            <span
+              class="terms-dialog__tag"
+              :class="{
+                'terms-dialog__tag--required': document.required,
+                'terms-dialog__tag--optional': !document.required,
+              }"
+            >
+              {{
+                document.required
+                  ? t('pages.eventDetail.terms.required')
+                  : t('pages.eventDetail.terms.optional')
+              }}
+            </span>
+            <span v-if="document.requiresSignature" class="terms-dialog__tag">
+              {{ t('pages.eventDetail.terms.signature.tag') }}
+            </span>
+          </div>
         </div>
+        <SignaturePad
+          v-if="showsSignature(document)"
+          :model-value="signatures[document.id] ?? ''"
+          :label="t('pages.eventDetail.terms.signature.label', { name: document.name })"
+          :invalid="attempted && !signatures[document.id]"
+          @update:model-value="(value: string) => (signatures[document.id] = value)"
+        />
       </li>
     </ul>
-    <p v-if="attempted && missingRequired" class="terms-dialog__warning" role="alert">
+    <p v-if="attempted && reading.missingRequired" class="terms-dialog__warning" role="alert">
       {{ t('pages.eventDetail.terms.missingRequired') }}
+    </p>
+    <p v-if="attempted && reading.missingSignature" class="terms-dialog__warning" role="alert">
+      {{ t('pages.eventDetail.terms.signature.missing') }}
     </p>
     <template #footer>
       <ActionButton :label="t('common.cancel')" text @click="close" />
@@ -181,18 +207,25 @@ function confirm(): void {
 
 .terms-dialog__row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 12px;
   background: var(--ca-surface);
   border: 1px solid var(--ca-border-soft);
   border-radius: 12px;
   padding: 12px 14px;
 }
 
-.terms-dialog__info {
+.terms-dialog__decision {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.terms-dialog__info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
   min-width: 0;
 }
 

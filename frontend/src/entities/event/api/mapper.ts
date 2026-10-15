@@ -134,6 +134,7 @@ function toTermsDocumentState(document: EventTermsDocumentStateResponse): EventT
     name: document.name,
     description: document.description,
     required: document.required,
+    requiresSignature: document.requiresSignature,
     displayOrder: document.displayOrder,
     accepted: document.accepted ?? null,
     decidedAt: document.decidedAt ?? null,
