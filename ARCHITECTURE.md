@@ -162,8 +162,9 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
   that consumes them. Domain declares only the repositories of its aggregates.
 - EF Core uses Npgsql and snake-case names. IDs are client-generated `Guid` values wrapped in typed
   identifiers. Closed value sets are domain enums stored as strings or as the `Guid` of their catalog row.
-- Startup locks the selected demo mode, applies migrations, seeds catalogs, creates the initial administrator
-  (`InitialAdministrator.Id`) when the user table is empty, refuses a database that has users but not that
+- Startup validates the configuration, applies migrations, seeds catalogs, creates the initial administrator
+  (`InitialAdministrator.Id`) when the user table is empty, locks the selected demo mode only once that
+  succeeded, refuses a database that has users but not that
   account, and adds demo data when enabled.
 - Infrastructure is organized by feature too: each feature folder (`Users/`, `Events/`, `Activities/`, `News/`,
   `Files/`...) holds its EF configurations, repositories and background services; `Database/` keeps the
