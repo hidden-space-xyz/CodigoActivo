@@ -143,15 +143,16 @@ internal sealed class Settings(IConfiguration configuration)
     }
 
     /// <summary>
-    /// Reads a time zone by its IANA or Windows identifier.
+    /// Reads a time zone by its IANA identifier. Windows identifiers are refused everywhere, since the
+    /// API image runs without ICU and cannot convert them.
     /// </summary>
     /// <param name="key">Configuration key.</param>
     /// <param name="fallback">Value when the setting is missing or blank.</param>
     /// <returns>The value.</returns>
-    /// <exception cref="InvalidOperationException">The setting names no known time zone.</exception>
+    /// <exception cref="InvalidOperationException">The setting names no known IANA time zone.</exception>
     public TimeZoneInfo TimeZone(string key, TimeZoneInfo fallback)
     {
-        return Read(key, fallback, FindTimeZone, "a known IANA or Windows time zone");
+        return Read(key, fallback, FindIanaTimeZone, "a known IANA time zone");
     }
 
     private T Read<T>(string key, T fallback, Func<string, T?> parse, string expected)
@@ -209,25 +210,10 @@ internal sealed class Settings(IConfiguration configuration)
         }
     }
 
-    private static TimeZoneInfo? FindTimeZone(string id)
+    private static TimeZoneInfo? FindIanaTimeZone(string id)
     {
-        if (TimeZoneInfo.TryFindSystemTimeZoneById(id, out var direct))
-        {
-            return direct;
-        }
-
-        if (
-            TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out var windowsId)
-            && TimeZoneInfo.TryFindSystemTimeZoneById(windowsId, out var viaWindows)
-        )
-        {
-            return viaWindows;
-        }
-
-        return
-            TimeZoneInfo.TryConvertWindowsIdToIanaId(id, out var ianaId)
-            && TimeZoneInfo.TryFindSystemTimeZoneById(ianaId, out var viaIana)
-            ? viaIana
+        return TimeZoneInfo.TryFindSystemTimeZoneById(id, out var zone) && zone.HasIanaId
+            ? zone
             : null;
     }
 }
