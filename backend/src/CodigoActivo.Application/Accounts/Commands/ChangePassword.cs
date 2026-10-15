@@ -28,18 +28,19 @@ public sealed record ChangePasswordCommand(
 /// Executes the command to change password. The new password is hashed before the account is
 /// locked and reloaded; the change then applies only while the stored password is still the one
 /// the current password was checked against, so a concurrent password step or code request waits
-/// for it instead of making it fail.
+/// for it instead of making it fail. Only the holder changes their own password: it needs the
+/// current one, which nobody else should know, and a wrong guess counts toward the account's lock.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Runs the change with the account locked.</param>
-/// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="hasher">The hasher value.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 public sealed class ChangePasswordCommandHandler(
     IUserRepository users,
     AccountLock accountLock,
-    ActingUserPolicy actingUser,
+    ICurrentUser currentUser,
     IPasswordHasher hasher,
     IClock clock,
     PasswordAttemptGuard passwordAttempts
@@ -58,10 +59,9 @@ public sealed class ChangePasswordCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var allowed = await actingUser.EnsureMayActForAsync(command.UserId, ct);
-        if (allowed.IsFailure)
+        if (currentUser.RequiredId() != command.UserId)
         {
-            return allowed;
+            return Error.Forbidden(ApplicationErrorCode.ActingForAnotherUserForbidden);
         }
 
         var user = await users.GetByIdAsync(command.UserId, ct);

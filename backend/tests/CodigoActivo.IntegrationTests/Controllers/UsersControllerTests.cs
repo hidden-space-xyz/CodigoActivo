@@ -1199,6 +1199,23 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task ChangePasswordOfAnotherAccountAsAdminReturnsForbidden()
+    {
+        var client = await LoginAsAdminAsync();
+        var request = new ChangePasswordRequest(TestSeedData.Password, "NewStr0ngPass!");
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/password",
+            request,
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.PasswordHash.Should().Be(FakePasswordHasher.Prefix + TestSeedData.Password);
+    }
+
+    [Fact]
     public async Task ChangePasswordToTheSamePasswordReturnsBadRequest()
     {
         var client = await LoginAsMemberAsync();
