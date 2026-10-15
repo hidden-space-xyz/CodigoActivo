@@ -24,6 +24,11 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: |
+            backend/Directory.Packages.props
+            backend/**/*.csproj
+            backend/dotnet-tools.json
       - name: Restore dependencies and tools
         run: |
           dotnet restore CodigoActivo.slnx

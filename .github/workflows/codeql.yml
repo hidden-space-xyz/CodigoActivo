@@ -37,6 +37,10 @@ jobs:
         if: matrix.language == 'csharp'
         with:
           dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: |
+            backend/Directory.Packages.props
+            backend/**/*.csproj
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
