@@ -100,11 +100,6 @@ public sealed class LoginCommandHandler(
             return Error.Forbidden(ApplicationErrorCode.UserAccountBlocked);
         }
 
-        if (user.IsDependent)
-        {
-            return Error.Forbidden(ApplicationErrorCode.UserAccountIsDependent);
-        }
-
         if (user.IsPendingVerification)
         {
             return Error.Forbidden(ApplicationErrorCode.UserAccountPendingVerification);

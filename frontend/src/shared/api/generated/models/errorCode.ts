@@ -85,7 +85,6 @@ export const ErrorCode = {
   DisposableEmailNotAllowed: 'DisposableEmailNotAllowed',
   InvalidCredentials: 'InvalidCredentials',
   UserAccountBlocked: 'UserAccountBlocked',
-  UserAccountIsDependent: 'UserAccountIsDependent',
   UserAccountPendingVerification: 'UserAccountPendingVerification',
   CurrentUserNotFound: 'CurrentUserNotFound',
   OtpInvalidOrExpired: 'OtpInvalidOrExpired',

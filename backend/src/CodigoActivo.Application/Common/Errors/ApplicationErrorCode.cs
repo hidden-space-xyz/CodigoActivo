@@ -208,11 +208,6 @@ public enum ApplicationErrorCode
     UserAccountBlocked,
 
     /// <summary>
-    /// Selects the user account is dependent option.
-    /// </summary>
-    UserAccountIsDependent,
-
-    /// <summary>
     /// Selects the user account pending verification option.
     /// </summary>
     UserAccountPendingVerification,

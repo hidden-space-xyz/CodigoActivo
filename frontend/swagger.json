@@ -5333,7 +5333,6 @@
           "DisposableEmailNotAllowed",
           "InvalidCredentials",
           "UserAccountBlocked",
-          "UserAccountIsDependent",
           "UserAccountPendingVerification",
           "CurrentUserNotFound",
           "OtpInvalidOrExpired",
