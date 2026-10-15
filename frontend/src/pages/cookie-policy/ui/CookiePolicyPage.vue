@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { CONTACT } from '@/shared/config'
 import { PageHead } from '@/shared/ui/page-head'
 
-import { AUTHORITY_URL, BROWSER_GUIDES, COOKIE_GUIDE_URL, STORAGE_ENTRIES } from '../config/storage'
+import { BROWSER_GUIDES, COOKIE_GUIDE_URL, STORAGE_ENTRIES } from '../config/storage'
 </script>
 
 <template>
@@ -15,13 +14,6 @@ import { AUTHORITY_URL, BROWSER_GUIDES, COOKIE_GUIDE_URL, STORAGE_ENTRIES } from
     <div class="cookie-policy">
       <div class="ca-container--narrow">
         <div class="cookie-policy__body">
-          <section class="cookie-policy__section" aria-labelledby="cookie-policy-what">
-            <h2 id="cookie-policy-what" class="cookie-policy__heading">
-              {{ $t('pages.cookiePolicy.what.title') }}
-            </h2>
-            <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.what.text') }}</p>
-          </section>
-
           <section class="cookie-policy__section" aria-labelledby="cookie-policy-used">
             <h2 id="cookie-policy-used" class="cookie-policy__heading">
               {{ $t('pages.cookiePolicy.used.title') }}
@@ -69,20 +61,11 @@ import { AUTHORITY_URL, BROWSER_GUIDES, COOKIE_GUIDE_URL, STORAGE_ENTRIES } from
             <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.consent.keepSignedIn') }}</p>
           </section>
 
-          <section class="cookie-policy__section" aria-labelledby="cookie-policy-parties">
-            <h2 id="cookie-policy-parties" class="cookie-policy__heading">
-              {{ $t('pages.cookiePolicy.parties.title') }}
-            </h2>
-            <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.parties.text') }}</p>
-            <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.parties.social') }}</p>
-          </section>
-
           <section class="cookie-policy__section" aria-labelledby="cookie-policy-manage">
             <h2 id="cookie-policy-manage" class="cookie-policy__heading">
               {{ $t('pages.cookiePolicy.manage.title') }}
             </h2>
             <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.manage.text') }}</p>
-            <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.manage.browsers') }}</p>
             <ul class="cookie-policy__guides">
               <li v-for="guide in BROWSER_GUIDES" :key="guide.url">
                 <a :href="guide.url" target="_blank" rel="noopener" class="cookie-policy__link">{{
@@ -90,95 +73,6 @@ import { AUTHORITY_URL, BROWSER_GUIDES, COOKIE_GUIDE_URL, STORAGE_ENTRIES } from
                 }}</a>
               </li>
             </ul>
-          </section>
-
-          <section class="cookie-policy__section" aria-labelledby="cookie-policy-privacy">
-            <h2 id="cookie-policy-privacy" class="cookie-policy__heading">
-              {{ $t('pages.cookiePolicy.privacy.title') }}
-            </h2>
-            <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.privacy.intro') }}</p>
-            <dl class="cookie-policy__privacy">
-              <div class="cookie-policy__privacy-row">
-                <dt class="cookie-policy__fact-label">
-                  {{ $t('pages.cookiePolicy.privacy.controllerLabel') }}
-                </dt>
-                <i18n-t
-                  keypath="pages.cookiePolicy.privacy.controller"
-                  tag="dd"
-                  class="cookie-policy__fact-value"
-                >
-                  <template #email>
-                    <a :href="`mailto:${CONTACT.email}`" class="cookie-policy__link">{{
-                      CONTACT.email
-                    }}</a>
-                  </template>
-                </i18n-t>
-              </div>
-              <div class="cookie-policy__privacy-row">
-                <dt class="cookie-policy__fact-label">
-                  {{ $t('pages.cookiePolicy.privacy.purposeLabel') }}
-                </dt>
-                <dd class="cookie-policy__fact-value">
-                  {{ $t('pages.cookiePolicy.privacy.purpose') }}
-                </dd>
-              </div>
-              <div class="cookie-policy__privacy-row">
-                <dt class="cookie-policy__fact-label">
-                  {{ $t('pages.cookiePolicy.privacy.legalBasisLabel') }}
-                </dt>
-                <dd class="cookie-policy__fact-value">
-                  {{ $t('pages.cookiePolicy.privacy.legalBasis') }}
-                </dd>
-              </div>
-              <div class="cookie-policy__privacy-row">
-                <dt class="cookie-policy__fact-label">
-                  {{ $t('pages.cookiePolicy.privacy.retentionLabel') }}
-                </dt>
-                <dd class="cookie-policy__fact-value">
-                  {{ $t('pages.cookiePolicy.privacy.retention') }}
-                </dd>
-              </div>
-              <div class="cookie-policy__privacy-row">
-                <dt class="cookie-policy__fact-label">
-                  {{ $t('pages.cookiePolicy.privacy.recipientsLabel') }}
-                </dt>
-                <dd class="cookie-policy__fact-value">
-                  {{ $t('pages.cookiePolicy.privacy.recipients') }}
-                </dd>
-              </div>
-              <div class="cookie-policy__privacy-row">
-                <dt class="cookie-policy__fact-label">
-                  {{ $t('pages.cookiePolicy.privacy.rightsLabel') }}
-                </dt>
-                <i18n-t
-                  keypath="pages.cookiePolicy.privacy.rights"
-                  tag="dd"
-                  class="cookie-policy__fact-value"
-                >
-                  <template #email>
-                    <a :href="`mailto:${CONTACT.email}`" class="cookie-policy__link">{{
-                      CONTACT.email
-                    }}</a>
-                  </template>
-                  <template #authority>
-                    <a
-                      :href="AUTHORITY_URL"
-                      target="_blank"
-                      rel="noopener"
-                      class="cookie-policy__link"
-                      >{{ $t('pages.cookiePolicy.privacy.authority') }}</a
-                    >
-                  </template>
-                </i18n-t>
-              </div>
-            </dl>
-          </section>
-
-          <section class="cookie-policy__section" aria-labelledby="cookie-policy-changes">
-            <h2 id="cookie-policy-changes" class="cookie-policy__heading">
-              {{ $t('pages.cookiePolicy.changes.title') }}
-            </h2>
-            <p class="cookie-policy__text">{{ $t('pages.cookiePolicy.changes.text') }}</p>
           </section>
         </div>
       </div>
@@ -314,27 +208,8 @@ import { AUTHORITY_URL, BROWSER_GUIDES, COOKIE_GUIDE_URL, STORAGE_ENTRIES } from
   color: var(--ca-text-muted);
 }
 
-.cookie-policy__privacy {
-  margin: 20px 0 0;
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 16px;
-  background: var(--ca-bg-elevated);
-}
-
-.cookie-policy__privacy-row {
-  display: grid;
-  grid-template-columns: 130px minmax(0, 1fr);
-  gap: 16px;
-  padding: 14px 20px;
-}
-
-.cookie-policy__privacy-row + .cookie-policy__privacy-row {
-  border-top: 1px solid var(--ca-border);
-}
-
 @media (max-width: 640px) {
-  .cookie-policy__facts,
-  .cookie-policy__privacy-row {
+  .cookie-policy__facts {
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;
   }
@@ -343,8 +218,7 @@ import { AUTHORITY_URL, BROWSER_GUIDES, COOKIE_GUIDE_URL, STORAGE_ENTRIES } from
     margin-top: 10px;
   }
 
-  .cookie-policy__entry,
-  .cookie-policy__privacy-row {
+  .cookie-policy__entry {
     padding-inline: 16px;
   }
 }

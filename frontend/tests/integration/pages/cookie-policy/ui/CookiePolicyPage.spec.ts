@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { registerStaleBuildReload } from '@/app/config'
-import { CONTACT } from '@/shared/config'
 
 import { renderApp, t } from '../../../../support/render'
 import { useTheme } from '@/shared/lib/theme'
@@ -51,15 +50,13 @@ describe('cookie policy page', () => {
     expect(listed).toEqual(expect.arrayContaining(written))
   })
 
-  it('links to the contact address, the authority, its cookie guide and browser help', async () => {
+  it('links to the cookie guide of the authority and browser help', async () => {
     const { wrapper } = await renderApp('/cookies')
 
     const main = wrapper.get('main')
     const hrefs = main.findAll('a').map((link) => link.attributes('href'))
     expect(hrefs).toEqual(
       expect.arrayContaining([
-        `mailto:${CONTACT.email}`,
-        'https://www.aepd.es',
         'https://www.aepd.es/guias/guia-cookies.pdf',
         'https://support.google.com/chrome/answer/95647?hl=es',
       ]),
