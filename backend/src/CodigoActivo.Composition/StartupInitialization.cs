@@ -11,8 +11,8 @@ using Microsoft.Extensions.Options;
 namespace CodigoActivo.Composition;
 
 /// <summary>
-/// Runs the start-up steps from a service scope: the configuration check, the deployment mode
-/// lock, schema migrations, catalog seeding, the initial administrator and the optional demo data.
+/// Runs the start-up steps from a service scope: the configuration check, schema migrations,
+/// catalog seeding, the initial administrator, the deployment mode lock and the optional demo data.
 /// </summary>
 public static class StartupInitialization
 {

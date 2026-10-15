@@ -234,6 +234,12 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         await ResetCachesAsync();
     }
 
+    public async Task EmptyDatabaseAsync()
+    {
+        await using var db = postgres.CreateContext();
+        await TestDatabase.TruncateAllTablesAsync(db);
+    }
+
     private async Task SeedFreshDatabaseAsync()
     {
         await using var db = postgres.CreateContext();

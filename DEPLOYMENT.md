@@ -91,8 +91,9 @@ Production startup (`ProductionConfiguration`) also fails when:
   `secrets/smtp_password` is set.
 
 These settings and every application setting are checked before anything is written to `api-state` or the
-database. `BOOTSTRAP_ADMIN_EMAIL` and demo seeding are checked later, after the mode is locked and the database
-migrated, so a start they stop leaves both in place; fix the value and start again. On a first Production start,
+database. `BOOTSTRAP_ADMIN_EMAIL` is checked once the database is migrated and the deployment mode is locked
+only after that check, so a start it stops leaves a migrated database but no mode lock. Demo seeding runs after
+the lock; a start it stops keeps the lock and seeds again on the next start. On a first Production start,
 the Data Protection certificate is created in `api-dataprotection` after the checks above but before the
 application settings are validated.
 
