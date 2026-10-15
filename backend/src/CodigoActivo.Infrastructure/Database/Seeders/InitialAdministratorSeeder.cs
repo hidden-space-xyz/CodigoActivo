@@ -38,7 +38,7 @@ public sealed class InitialAdministratorSeeder(
             if (!await context.Users.AnyAsync(u => u.Id == InitialAdministrator.Id, ct))
             {
                 throw new InvalidOperationException(
-                    $"The database has users but not the initial administrator {InitialAdministrator.Id}; a database created before that account had a fixed identifier must be recreated."
+                    $"The database has users but not the initial administrator {InitialAdministrator.Id}; recreate the database."
                 );
             }
 
