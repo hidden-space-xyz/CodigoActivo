@@ -51,7 +51,8 @@ public sealed class SignupEmailComposer(ApplicationOptions application, IClock c
             participantName,
             Details(activity),
             clock.TimeZone,
-            SiteUrl
+            SiteUrl,
+            $"{SiteUrl}{EventPath}"
         );
     }
 

@@ -304,10 +304,23 @@ public static class AppStrings
     public static string EmailsSecurityAlertIntroText => Get("emails.securityAlert.introText");
 
     /// <summary>
-    /// Gets the emails security alert no action note value.
+    /// Gets the advice for an email change the owner did not make, which a password reset can no
+    /// longer undo because the reset link would reach the new address.
     /// </summary>
-    public static string EmailsSecurityAlertNoActionNote =>
-        Get("emails.securityAlert.noActionNote");
+    public static string EmailsSecurityAlertEmailChangedWarning =>
+        Get("emails.securityAlert.emailChangedWarning");
+
+    /// <summary>
+    /// Gets the advice for a change an administrator made on the account.
+    /// </summary>
+    public static string EmailsSecurityAlertUnexpectedWarning =>
+        Get("emails.securityAlert.unexpectedWarning");
+
+    /// <summary>
+    /// Gets the advice for a password lock caused by someone else's attempts.
+    /// </summary>
+    public static string EmailsSecurityAlertPasswordLockedWarning =>
+        Get("emails.securityAlert.passwordLockedWarning");
 
     /// <summary>
     /// Gets the emails security alert password changed value.
@@ -331,6 +344,18 @@ public static class AppStrings
     /// Gets the emails security alert subject value.
     /// </summary>
     public static string EmailsSecurityAlertSubject => Get("emails.securityAlert.subject");
+
+    /// <summary>
+    /// Gets the subject of the alert sent when failed password attempts lock the account.
+    /// </summary>
+    public static string EmailsSecurityAlertPasswordLockedSubject =>
+        Get("emails.securityAlert.passwordLockedSubject");
+
+    /// <summary>
+    /// Gets the heading of the alert sent when failed password attempts lock the account.
+    /// </summary>
+    public static string EmailsSecurityAlertPasswordLockedHeading =>
+        Get("emails.securityAlert.passwordLockedHeading");
 
     /// <summary>
     /// Gets the emails security alert two factor reset value.

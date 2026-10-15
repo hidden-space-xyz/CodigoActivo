@@ -45,6 +45,7 @@ public static class ActivitySignupDecisionEmail
                 ),
                 AppStrings.EmailsActivityDecisionConfirmedNote,
                 AppStrings.EmailsActivityDecisionConfirmedButtonLabel,
+                details.EventUrl,
                 roleName,
                 EmailBranding.Success
             )
@@ -60,6 +61,7 @@ public static class ActivitySignupDecisionEmail
     /// <param name="details">The details value.</param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
     /// <param name="siteUrl">The site url value.</param>
+    /// <param name="eventsUrl">Events list where the recipient can look for another one.</param>
     /// <returns>The resulting email message value.</returns>
     public static EmailMessage Denied(
         string toAddress,
@@ -67,7 +69,8 @@ public static class ActivitySignupDecisionEmail
         string? participantName,
         ActivityEmailDetails details,
         TimeZoneInfo timeZone,
-        string siteUrl
+        string siteUrl,
+        string eventsUrl
     )
     {
         return Create(
@@ -85,6 +88,7 @@ public static class ActivitySignupDecisionEmail
                 ),
                 null,
                 AppStrings.EmailsActivityDecisionDeniedButtonLabel,
+                eventsUrl,
                 null,
                 EmailBranding.Danger
             )
@@ -111,7 +115,7 @@ public static class ActivitySignupDecisionEmail
             blocks.Add(EmailBlocks.Callout(content.Note, content.Accent));
         }
 
-        blocks.Add(EmailBlocks.Action(content.ButtonLabel, details.EventUrl));
+        blocks.Add(EmailBlocks.Action(content.ButtonLabel, content.ButtonUrl));
         blocks.Add(
             EmailBlocks.Prose(
                 AppStrings.EmailsSharedSignoffHtml,
@@ -156,6 +160,7 @@ public static class ActivitySignupDecisionEmail
         string IntroHtml,
         string? Note,
         string ButtonLabel,
+        string ButtonUrl,
         string? RoleName,
         EmailAccent Accent
     );

@@ -41,7 +41,8 @@ public sealed class ActivitySignupDecisionEmailTests
             null,
             Details,
             TimeZoneInfo.Utc,
-            "https://app.test"
+            "https://app.test",
+            "https://app.test/events"
         );
 
         message.Subject.Should().Be("Inscripción rechazada: Taller de robótica");

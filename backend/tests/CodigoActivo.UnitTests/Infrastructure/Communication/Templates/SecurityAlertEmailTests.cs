@@ -41,6 +41,66 @@ public sealed class SecurityAlertEmailTests
         };
     }
 
+    public static TheoryData<AccountSecurityChange, string> Warnings()
+    {
+        return new()
+        {
+            { AccountSecurityChange.PasswordChanged, AppStrings.EmailsSecurityAlertWarning },
+            { AccountSecurityChange.PasswordReset, AppStrings.EmailsSecurityAlertWarning },
+            { AccountSecurityChange.AuthenticatorEnabled, AppStrings.EmailsSecurityAlertWarning },
+            { AccountSecurityChange.AuthenticatorDisabled, AppStrings.EmailsSecurityAlertWarning },
+            { AccountSecurityChange.PhoneChanged, AppStrings.EmailsSecurityAlertWarning },
+            {
+                AccountSecurityChange.TwoFactorReset,
+                AppStrings.EmailsSecurityAlertUnexpectedWarning
+            },
+            { AccountSecurityChange.AdminGranted, AppStrings.EmailsSecurityAlertUnexpectedWarning },
+            { AccountSecurityChange.AdminRevoked, AppStrings.EmailsSecurityAlertUnexpectedWarning },
+            {
+                AccountSecurityChange.EmailChanged,
+                AppStrings.EmailsSecurityAlertEmailChangedWarning
+            },
+            {
+                AccountSecurityChange.EmailAndPhoneChanged,
+                AppStrings.EmailsSecurityAlertEmailChangedWarning
+            },
+            {
+                AccountSecurityChange.PasswordLocked,
+                AppStrings.EmailsSecurityAlertPasswordLockedWarning
+            },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(Warnings))]
+    public void CreateGivesTheAdviceThatFitsEveryChange(
+        AccountSecurityChange change,
+        string expected
+    )
+    {
+        var message = SecurityAlertEmail.Create(
+            "owner@test.com",
+            "Owner",
+            change,
+            OccurredAt,
+            TimeZoneInfo.Utc,
+            "https://app.test"
+        );
+
+        message.TextBody.Should().Contain(expected);
+        var others = new[]
+        {
+            AppStrings.EmailsSecurityAlertWarning,
+            AppStrings.EmailsSecurityAlertUnexpectedWarning,
+            AppStrings.EmailsSecurityAlertEmailChangedWarning,
+            AppStrings.EmailsSecurityAlertPasswordLockedWarning,
+        }.Where(warning => warning != expected);
+        foreach (var other in others)
+        {
+            message.TextBody.Should().NotContain(other);
+        }
+    }
+
     [Theory]
     [MemberData(nameof(Sentences))]
     public void CreateRendersTheSentenceForEveryChange(
@@ -58,9 +118,42 @@ public sealed class SecurityAlertEmailTests
         );
 
         message.Kind.Should().Be(EmailKind.SecurityAlert);
-        message.Subject.Should().Be(AppStrings.EmailsSecurityAlertSubject);
         message.TextBody.Should().Contain(expected);
         message.HtmlBody.Should().NotBeNullOrEmpty();
+    }
+
+    [Theory]
+    [MemberData(nameof(Sentences))]
+    public void CreateTitlesAPasswordLockApartFromTheOtherChanges(
+        AccountSecurityChange change,
+        string sentence
+    )
+    {
+        var message = SecurityAlertEmail.Create(
+            "owner@test.com",
+            "Owner",
+            change,
+            OccurredAt,
+            TimeZoneInfo.Utc,
+            "https://app.test"
+        );
+
+        var locked = change is AccountSecurityChange.PasswordLocked;
+        message
+            .Subject.Should()
+            .Be(
+                locked
+                    ? AppStrings.EmailsSecurityAlertPasswordLockedSubject
+                    : AppStrings.EmailsSecurityAlertSubject,
+                sentence
+            );
+        message
+            .TextBody.Should()
+            .Contain(
+                locked
+                    ? AppStrings.EmailsSecurityAlertPasswordLockedHeading
+                    : AppStrings.EmailsSecurityAlertHeading
+            );
     }
 
     [Fact]
