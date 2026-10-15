@@ -186,9 +186,8 @@ limits request bodies to `12m`; raising the application limit may also require c
 `frontend/docker/default.conf`. Manual-email attachments share the API request limit and are never stored in
 `api-files`.
 
-The cookie policy page and the keep-signed-in hint of the login state the default `Auth:ExpireHours` and
-`TwoFactor:ChallengeLifetimeMinutes`; overriding either requires updating `pages.cookiePolicy` and
-`pages.login.keepSignedInHint` in `frontend/src/shared/i18n/locales/es.json`.
+The cookie policy page states the default `Auth:ExpireHours` and `TwoFactor:ChallengeLifetimeMinutes`;
+overriding either requires updating `pages.cookiePolicy` in `frontend/src/shared/i18n/locales/es.json`.
 
 ## Email delivery
 

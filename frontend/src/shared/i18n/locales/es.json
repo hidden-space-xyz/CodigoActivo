@@ -1285,8 +1285,6 @@
       "identifierLabel": "Correo electrónico",
       "forgotLink": "¿Has olvidado tu contraseña?",
       "keepSignedIn": "Mantener la sesión iniciada en este dispositivo",
-      "keepSignedInHint": "Guarda una cookie durante 30 días para que no tengas que volver a identificarte al abrir el navegador. No lo marques en dispositivos compartidos. Más información en la {policy}.",
-      "keepSignedInPolicy": "política de cookies",
       "error": "No hemos podido iniciar sesión. Revisa tus datos e inténtalo de nuevo. Tras varios intentos fallidos seguidos bloqueamos la cuenta por seguridad; si te ha pasado, tendrás que restablecer la contraseña desde el enlace de arriba.",
       "noAccount": "¿Aún no tienes cuenta?"
     },
