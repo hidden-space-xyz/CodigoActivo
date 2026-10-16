@@ -68,6 +68,7 @@ export const ErrorCode = {
   UserSelfTypeChangeForbidden: 'UserSelfTypeChangeForbidden',
   UserDeleteInitialAdminForbidden: 'UserDeleteInitialAdminForbidden',
   UserCannotRemoveInitialAdmin: 'UserCannotRemoveInitialAdmin',
+  UserDependentCannotBeAdmin: 'UserDependentCannotBeAdmin',
   ParentUserNotFound: 'ParentUserNotFound',
   UserParentIsMinor: 'UserParentIsMinor',
   UserChildBirthDateNotMinor: 'UserChildBirthDateNotMinor',

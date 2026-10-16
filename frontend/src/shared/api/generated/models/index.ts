@@ -152,6 +152,7 @@ export * from './updateTermsDocumentRequest';
 export * from './updateUserRequest';
 export * from './userResponse';
 export * from './userResponsePagedResult';
+export * from './userScope';
 export * from './userStatusResponse';
 export * from './userStatusTypeResponse';
 export * from './userTypeResponse';

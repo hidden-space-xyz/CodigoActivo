@@ -131,6 +131,11 @@ public enum DomainErrorCode
     UserCannotRemoveInitialAdmin,
 
     /// <summary>
+    /// Selects the option for administrator rights given to a dependent.
+    /// </summary>
+    UserDependentCannotBeAdmin,
+
+    /// <summary>
     /// Selects the option for a parent that is itself a dependent.
     /// </summary>
     UserParentIsMinor,

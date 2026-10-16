@@ -31,6 +31,9 @@ const {
   table,
   types,
   statuses,
+  scope,
+  setScope,
+  showsField,
   relationChips,
   showGuardianOf,
   showDependentsOf,
@@ -70,6 +73,18 @@ const grantedUser = grantDialog.editing
 const resetVisible = resetDialog.visible
 const resetUser = resetDialog.editing
 
+const scopeOptions = computed(() => [
+  { label: t('pages.admin.users.scope.independent'), value: 'independent' },
+  { label: t('pages.admin.users.scope.dependent'), value: 'dependent' },
+  { label: t('pages.admin.users.scope.all'), value: 'all' },
+])
+
+const emptyText = computed(() => {
+  if (scope.value === 'independent') return t('pages.admin.users.empty.noIndependent')
+  if (scope.value === 'dependent') return t('pages.admin.users.empty.noDependent')
+  return t('pages.admin.users.empty.none')
+})
+
 const statusOptions = computed(() => toSelectOptions(statuses.data.value))
 const typeOptions = computed(() => toSelectOptions(types.data.value))
 const yesNoOptions: { label: string; value: boolean }[] = [
@@ -87,7 +102,7 @@ function hasFamily(user: User): boolean {
 }
 
 function dependentsLabel(count: number): string {
-  return t('pages.admin.users.dependentsLabel', { count }, count)
+  return t('pages.admin.users.dependentsLabel', { count })
 }
 
 const exportHeaders = [
@@ -201,8 +216,8 @@ function userActions(user: User): RowAction[] {
       },
     )
   }
-  actions.push(
-    {
+  if (!user.parentId) {
+    actions.push({
       key: 'admin',
       label: user.isAdmin
         ? t('pages.admin.users.actions.revokeAdmin')
@@ -212,19 +227,19 @@ function userActions(user: User): RowAction[] {
       run: () => {
         toggleAdmin(user, !user.isAdmin)
       },
+    })
+  }
+  actions.push({
+    key: 'delete',
+    label: t('common.delete'),
+    icon: 'trash',
+    danger: true,
+    divided: true,
+    ...blockedBy(deleteBlockReason(user)),
+    run: () => {
+      confirmRemove(user)
     },
-    {
-      key: 'delete',
-      label: t('common.delete'),
-      icon: 'trash',
-      danger: true,
-      divided: true,
-      ...blockedBy(deleteBlockReason(user)),
-      run: () => {
-        confirmRemove(user)
-      },
-    },
-  )
+  })
   return actions
 }
 </script>
@@ -238,13 +253,21 @@ function userActions(user: User): RowAction[] {
 
     <DataTable
       :table="table"
-      :empty-text="$t('pages.admin.users.empty.none')"
+      :empty-text="emptyText"
       :error-text="$t('pages.admin.users.empty.error')"
       :search="{ key: 'name', label: $t('pages.admin.users.search.name') }"
       :extra-filters="relationChips"
     >
       <template #filters>
+        <el-segmented
+          size="small"
+          :aria-label="$t('pages.admin.users.scope.label')"
+          :options="scopeOptions"
+          :model-value="scope"
+          @change="setScope"
+        />
         <ColumnFilterSelect
+          v-if="showsField('isAdmin')"
           v-model="table.columnFilter('isAdmin').value"
           variant="toolbar"
           :label="$t('pages.admin.users.columns.admin')"
@@ -252,6 +275,7 @@ function userActions(user: User): RowAction[] {
           @apply="table.onFilter"
         />
         <ColumnFilterSelect
+          v-if="showsField('promotionalConsent')"
           v-model="table.columnFilter('promotionalConsent').value"
           variant="toolbar"
           :label="$t('pages.admin.users.columns.promotionalConsent')"
@@ -259,6 +283,7 @@ function userActions(user: User): RowAction[] {
           @apply="table.onFilter"
         />
         <ColumnFilterDate
+          v-if="showsField('birthDate')"
           v-model="table.columnFilter('birthDate').value"
           variant="toolbar"
           :label="$t('pages.admin.users.columns.birth')"
@@ -336,6 +361,7 @@ function userActions(user: User): RowAction[] {
         </template>
       </el-table-column>
       <el-table-column
+        v-if="showsField('email')"
         prop="email"
         :label="$t('common.email')"
         sortable="custom"
@@ -352,7 +378,13 @@ function userActions(user: User): RowAction[] {
         </template>
         <template #default="{ row }">{{ row.email || '—' }}</template>
       </el-table-column>
-      <el-table-column prop="phone" :label="$t('common.phone')" sortable="custom" width="128">
+      <el-table-column
+        v-if="showsField('phone')"
+        prop="phone"
+        :label="$t('common.phone')"
+        sortable="custom"
+        width="128"
+      >
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('phone').value"
@@ -371,6 +403,7 @@ function userActions(user: User): RowAction[] {
         </template>
       </el-table-column>
       <el-table-column
+        v-if="showsField('nationalId')"
         prop="nationalId"
         :label="$t('pages.admin.users.columns.nationalId')"
         sortable="custom"
@@ -386,7 +419,13 @@ function userActions(user: User): RowAction[] {
         </template>
         <template #default="{ row }">{{ row.nationalId || '—' }}</template>
       </el-table-column>
-      <el-table-column prop="status" :label="$t('common.status')" sortable="custom" width="124">
+      <el-table-column
+        v-if="showsField('status')"
+        prop="status"
+        :label="$t('common.status')"
+        sortable="custom"
+        width="124"
+      >
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('status').value"

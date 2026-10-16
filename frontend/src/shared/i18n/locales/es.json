@@ -261,6 +261,7 @@
     "UserSelfTypeChangeForbidden": "No puedes cambiar tu propio tipo de usuario: debe hacerlo otro administrador.",
     "UserDeleteInitialAdminForbidden": "La cuenta genérica de administración no se puede eliminar.",
     "UserCannotRemoveInitialAdmin": "No se puede quitar el rango de administrador a la cuenta genérica de administración.",
+    "UserDependentCannotBeAdmin": "Un dependiente no puede ser administrador.",
     "ParentUserNotFound": "No se encontró el usuario responsable.",
     "UserParentIsMinor": "Una persona a cargo de un responsable no puede tener a su vez menores a su cargo.",
     "UserChildBirthDateNotMinor": "La fecha de nacimiento indicada no corresponde a un menor de edad.",
@@ -738,7 +739,15 @@
         },
         "empty": {
           "error": "No se pudieron cargar los usuarios.",
-          "none": "No hay usuarios."
+          "none": "No hay usuarios.",
+          "noIndependent": "No hay usuarios independientes.",
+          "noDependent": "No hay usuarios dependientes."
+        },
+        "scope": {
+          "label": "Mostrar usuarios",
+          "independent": "Independientes",
+          "dependent": "Dependientes",
+          "all": "Todos"
         },
         "columns": {
           "birth": "Nacimiento",
@@ -801,7 +810,7 @@
           "targetOne": "{fullName}",
           "targetFiltered": "el usuario que coincide con los filtros actuales | los {n} usuarios que coinciden con los filtros actuales"
         },
-        "dependentsLabel": "1 dependiente | {count} dependientes",
+        "dependentsLabel": "Dependientes: {count}",
         "toasts": {
           "updated": "Usuario actualizado.",
           "emailChangeSent": "Usuario actualizado. Te hemos enviado un correo a {email}: tu correo no cambiará hasta que lo confirmes desde ese mensaje.",

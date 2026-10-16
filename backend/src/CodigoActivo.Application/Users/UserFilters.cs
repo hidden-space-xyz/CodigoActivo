@@ -28,6 +28,13 @@ public static class UserFilters
             source = source.Where(u => u.ParentId == parentId);
         }
 
+        source = query.Scope switch
+        {
+            UserScope.Independent => source.Where(u => u.ParentId == null),
+            UserScope.Dependent => source.Where(u => u.ParentId != null),
+            _ => source,
+        };
+
         if (query.UserTypeId is { } userTypeId)
         {
             source = source.Where(u => u.UserTypeId == userTypeId);

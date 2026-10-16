@@ -302,6 +302,11 @@ public enum ErrorCode
     UserCannotRemoveInitialAdmin,
 
     /// <summary>
+    /// Selects the option for administrator rights given to a dependent.
+    /// </summary>
+    UserDependentCannotBeAdmin,
+
+    /// <summary>
     /// Selects the parent user not found option.
     /// </summary>
     ParentUserNotFound,

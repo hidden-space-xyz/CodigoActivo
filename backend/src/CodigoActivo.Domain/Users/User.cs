@@ -929,16 +929,22 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Grants or revokes the administrator rights. The initial administrator never loses them.
+    /// Grants or revokes the administrator rights. A dependent, who never signs in, never gets them,
+    /// and the initial administrator never loses them.
     /// </summary>
     /// <param name="isAdmin">Whether the account is an administrator from now on.</param>
     /// <param name="now">Current time.</param>
     /// <returns>
-    /// Whether the rights changed, or a failed result when they would be taken from the initial
-    /// administrator.
+    /// Whether the rights changed, or a failed result when they would be given to a dependent or
+    /// taken from the initial administrator.
     /// </returns>
     public Result<bool> SetAdministrator(bool isAdmin, DateTimeOffset now)
     {
+        if (isAdmin && IsDependent)
+        {
+            return Error.Validation(DomainErrorCode.UserDependentCannotBeAdmin);
+        }
+
         if (!isAdmin)
         {
             var revocable = InitialAdministrator.EnsureMayLoseAdminRights(Id);

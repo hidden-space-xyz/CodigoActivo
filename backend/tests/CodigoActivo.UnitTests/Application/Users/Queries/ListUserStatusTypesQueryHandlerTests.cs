@@ -34,4 +34,20 @@ public sealed class ListUserStatusTypesQueryHandlerTests
         result.Select(s => s.Name).Should().ContainInOrder("Active", "Blocked", "Pending");
         result.Should().AllBeOfType<UserStatusTypeResponse>();
     }
+
+    [Fact]
+    public async Task HandleAsyncDependentStatusIsLeftOutForTheUserScope()
+    {
+        store.UserStatusTypes.AddRange([
+            NewStatusTypeRow("Active"),
+            NewStatusTypeRow("Dependent", KnownIds.UserStatusTypes.Dependent),
+        ]);
+
+        var result = await sut.HandleAsync(
+            new ListUserStatusTypesQuery(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Should().ContainSingle().Which.Name.Should().Be("Active");
+    }
 }

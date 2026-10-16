@@ -5,6 +5,22 @@ using CodigoActivo.Application.Common.Validation;
 namespace CodigoActivo.Application.Users.Contracts;
 
 /// <summary>
+/// Identifies the supported user scope values.
+/// </summary>
+public enum UserScope
+{
+    /// <summary>
+    /// Selects the independent accounts.
+    /// </summary>
+    Independent,
+
+    /// <summary>
+    /// Selects the dependents.
+    /// </summary>
+    Dependent,
+}
+
+/// <summary>
 /// Carries the criteria used to user list.
 /// </summary>
 public sealed class UserListQuery : PageQuery
@@ -66,6 +82,12 @@ public sealed class UserListQuery : PageQuery
     /// Gets or sets the identifier of the associated parent.
     /// </summary>
     public Guid? ParentId { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether only independent accounts or only dependents are listed.
+    /// </summary>
+    [EnumDataType(typeof(UserScope))]
+    public UserScope? Scope { get; set; }
 
     /// <summary>
     /// Gets or sets the birth date from value.

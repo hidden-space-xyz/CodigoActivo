@@ -1,12 +1,15 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Users.Contracts;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Users.Queries;
 
 /// <summary>
-/// Carries the criteria used to list user status types.
+/// Carries the criteria used to list the status types of independent accounts. Dependents are
+/// told apart through <see cref="UserScope"/> instead.
 /// </summary>
 public sealed record ListUserStatusTypesQuery
     : IQuery<IReadOnlyList<UserStatusTypeResponse>>,
@@ -44,9 +47,11 @@ public sealed class ListUserStatusTypesQueryHandler(IReadStore readStore, IQuery
         CancellationToken ct = default
     )
     {
+        var dependent = CatalogIds.UserStatuses.IdOf(UserStatus.Dependent);
         return executor.ToListAsync(
             readStore
-                .UserStatusTypes.OrderBy(type => type.Name)
+                .UserStatusTypes.Where(type => type.Id != dependent)
+                .OrderBy(type => type.Name)
                 .Select(UserProjections.UserStatusType),
             ct
         );

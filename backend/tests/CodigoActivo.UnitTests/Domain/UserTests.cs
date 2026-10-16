@@ -751,6 +751,19 @@ public sealed class UserTests
     }
 
     [Fact]
+    public void SetAdministratorGrantingADependentIsRefused()
+    {
+        var dependent = UserWithStatus(KnownIds.UserStatusTypes.Dependent, passwordHash: null);
+
+        var granted = dependent.SetAdministrator(true, Now);
+
+        granted.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserDependentCannotBeAdmin);
+        dependent.IsAdmin.Should().BeFalse();
+        dependent.UpdatedAt.Should().BeNull();
+        dependent.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Fact]
     public void ChangeTypeStoresTheTypeAndStampsTheUpdate()
     {
         var user = NewPendingUser();
