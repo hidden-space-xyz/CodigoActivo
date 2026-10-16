@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest'
 import EventTermsTab from '@/pages/admin/event-detail/ui/EventTermsTab.vue'
 import type { EventTermsDecisionResponse } from '@/shared/api/generated/models'
 import { formatDateTime } from '@/shared/lib/date'
+import { ColumnFilterSelect } from '@/shared/ui/column-filter'
+import { SearchInput } from '@/shared/ui/search-input'
 
 import { click, findDialog, textOf } from '../../../../../support/dom'
 import { renderWithProviders, t } from '../../../../../support/render'
@@ -52,8 +54,10 @@ describe('EventTermsTab', () => {
 
     await vi.waitFor(() => expect(wrapper.findAll('.el-table__body tr')).toHaveLength(2))
     const [signed, declined] = wrapper.findAll('.el-table__body tr')
-    expect(signed?.text()).toContain('Ada Lovelace')
-    expect(signed?.text()).toContain('ada@example.com')
+    expect(signed?.find('.table-primary-cell__title').text()).toBe('Ada Lovelace')
+    expect(signed?.find('.table-primary-cell__subtitle').text()).toBe('ada@example.com')
+    expect(declined?.find('.table-primary-cell__title').text()).toBe('Bea Gil')
+    expect(declined?.find('.table-primary-cell__subtitle').exists()).toBe(false)
     expect(signed?.text()).toContain('Autorización de imagen')
     expect(signed?.text()).toContain(t('pages.admin.eventDetail.terms.accepted'))
     expect(signed?.text()).toContain(formatDateTime('2026-09-01T10:00:00Z'))
@@ -95,7 +99,40 @@ describe('EventTermsTab', () => {
         t('pages.admin.eventDetail.terms.columns.signature'),
       ]),
     )
+    expect(wrapper.findComponent(ColumnFilterSelect).props('options')).toEqual([
+      { label: 'Autorización de imagen', value: 'terms-1' },
+      { label: 'Normas', value: 'terms-2' },
+    ])
     expect(wrapper.text()).toContain(t('pages.admin.eventDetail.terms.empty'))
+  })
+
+  it('searches people from the toolbar, filters by document and sorts by first name', async () => {
+    const urls: URL[] = []
+    const { wrapper } = await renderTab([buildTermsDecision()], urls)
+
+    const search = wrapper.findComponent(SearchInput)
+    expect(search.props('label')).toBe(t('pages.admin.eventDetail.terms.columns.searchPerson'))
+    search.vm.$emit('update:modelValue', 'ada')
+    await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('search')).toBe('ada'))
+
+    const documentFilter = wrapper.findComponent(ColumnFilterSelect)
+    documentFilter.vm.$emit('update:modelValue', 'terms-2')
+    documentFilter.vm.$emit('apply')
+    await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('termsDocumentId')).toBe('terms-2'))
+    expect(urls.at(-1)?.searchParams.get('search')).toBe('ada')
+    await vi.waitFor(() =>
+      expect(wrapper.findAll('.filter-chip__label').map((chip) => chip.text())).toEqual([
+        t('table.filterChip', {
+          label: t('pages.admin.eventDetail.terms.columns.document'),
+          value: 'Normas',
+        }),
+      ]),
+    )
+
+    const person = wrapper.get('.el-table__header th')
+    expect(person.text()).toBe(t('pages.admin.eventDetail.terms.columns.person'))
+    await click(person.get('.sort-caret.ascending').element)
+    await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('sort')).toBe('firstName'))
   })
 
   it('tells when the decisions cannot be loaded', async () => {

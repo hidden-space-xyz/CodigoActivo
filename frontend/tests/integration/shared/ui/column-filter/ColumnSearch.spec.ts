@@ -1,11 +1,29 @@
+import { defineComponent, h } from 'vue'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { ElInput, ElPopover } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
 import { renderWithProviders, t } from '../../../../support/render'
-import { ColumnSearch } from '@/shared/ui/column-filter'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { ColumnSearch, provideTableFilters } from '@/shared/ui/column-filter'
 
 type Value = string | number | null | undefined
+
+async function renderInTable(props: {
+  modelValue: Value
+  'onUpdate:modelValue'?: (value: string | number | null) => void
+  onApply?: () => void
+}) {
+  const box: { active?: ReturnType<typeof provideTableFilters>['active'] } = {}
+  const Host = defineComponent({
+    setup() {
+      box.active = provideTableFilters().active
+      return () => h(ColumnSearch, { label: 'Email', ...props })
+    },
+  })
+  await renderWithProviders(Host, { attach: true })
+  return () => box.active?.value ?? []
+}
 
 async function renderSearch(props: Record<string, unknown> = {}) {
   const rendered = await renderWithProviders(ColumnSearch, {
@@ -48,8 +66,40 @@ describe('ColumnSearch', () => {
 
     const label = t('table.searchBy', { label: 'Email' })
     expect(wrapper.find('.column-filter__toggle').attributes('aria-label')).toBe(label)
+    expect(wrapper.find('.column-filter__toggle').findComponent(AppIcon).props('name')).toBe(
+      'search',
+    )
     expect(wrapper.findComponent(ElInput).props('placeholder')).toBe(label)
     expect(wrapper.findComponent(ElInput).props('type')).toBe('text')
+  })
+
+  it('registers its term as the chip of the table it sits in', async () => {
+    const onUpdate = vi.fn()
+    const onApply = vi.fn()
+    const active = await renderInTable({
+      modelValue: 'ada',
+      'onUpdate:modelValue': onUpdate,
+      onApply,
+    })
+
+    expect(active().map(({ label, value }) => ({ label, value }))).toEqual([
+      { label: 'Email', value: 'ada' },
+    ])
+
+    active()[0]?.clear()
+
+    expect(onUpdate).toHaveBeenCalledWith(null)
+    expect(onApply).toHaveBeenCalledTimes(1)
+  })
+
+  it('registers numeric terms as text and nothing while inactive', async () => {
+    const numeric = await renderInTable({ modelValue: 3 })
+    const blank = await renderInTable({ modelValue: '' })
+    const empty = await renderInTable({ modelValue: null })
+
+    expect(numeric()[0]?.value).toBe('3')
+    expect(blank()).toEqual([])
+    expect(empty()).toEqual([])
   })
 
   it('uses a custom placeholder', async () => {

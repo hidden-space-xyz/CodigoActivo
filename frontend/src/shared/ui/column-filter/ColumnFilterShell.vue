@@ -3,20 +3,27 @@ import { ref } from 'vue'
 
 import { AppIcon } from '@/shared/ui/app-icon'
 
-defineProps<{
-  /** Column header text rendered next to the toggle. */
-  label: string
-  /** Highlights the toggle and swaps its search icon for a filled filter icon. */
-  active: boolean
-  /** Accessible name and title of the toggle button. */
-  toggleLabel: string
-  /** Accessible name of the clear button inside the panel. */
-  clearLabel: string
-  /** Shows the clear button next to the slotted control. */
-  showClear: boolean
-  /** Raises the panel's minimum width for wider controls such as date ranges. */
-  wide?: boolean
-}>()
+withDefaults(
+  defineProps<{
+    /** Column header text rendered next to the toggle, or the text of the toolbar pill. */
+    label: string
+    /** Highlights the toggle and swaps its icon for a filled filter icon. */
+    active: boolean
+    /** Accessible name of the toggle button, also its title in a header. */
+    toggleLabel: string
+    /** Accessible name of the clear button inside the panel. */
+    clearLabel: string
+    /** Shows the clear button next to the slotted control. */
+    showClear: boolean
+    /** Raises the panel's minimum width for wider controls such as date ranges. */
+    wide?: boolean
+    /** Icon of the inactive toggle, hinting at the kind of filter. */
+    icon?: 'search' | 'filter' | 'calendar'
+    /** `header` sits next to a column title; `toolbar` is a labelled pill above the table. */
+    variant?: 'header' | 'toolbar'
+  }>(),
+  { wide: false, icon: 'search', variant: 'header' },
+)
 
 const emit = defineEmits<{
   /** Fired after the popover finishes opening, e.g. to focus the slotted input. */
@@ -40,16 +47,28 @@ defineExpose({
 
 <template>
   <span class="column-filter">
-    <span>{{ label }}</span>
+    <span v-if="variant === 'header'" class="column-filter__label">{{ label }}</span>
     <el-popover
       v-model:visible="visible"
       trigger="click"
-      placement="bottom"
+      :placement="variant === 'toolbar' ? 'bottom-start' : 'bottom'"
       width="auto"
       @after-enter="emit('show')"
     >
       <template #reference>
         <button
+          v-if="variant === 'toolbar'"
+          type="button"
+          class="column-filter__pill"
+          :class="{ 'column-filter__pill--active': active }"
+          :aria-label="toggleLabel"
+          @click.stop
+        >
+          <AppIcon :name="active ? 'filter-fill' : icon" class="column-filter__pill-icon" />
+          {{ label }}
+        </button>
+        <button
+          v-else
           type="button"
           class="column-filter__toggle"
           :class="{ 'column-filter__toggle--active': active }"
@@ -57,7 +76,7 @@ defineExpose({
           :title="toggleLabel"
           @click.stop
         >
-          <AppIcon :name="active ? 'filter-fill' : 'search'" />
+          <AppIcon :name="active ? 'filter-fill' : icon" />
         </button>
       </template>
 
@@ -88,11 +107,21 @@ defineExpose({
 .column-filter {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.column-filter__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .column-filter__toggle {
   position: relative;
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -114,8 +143,52 @@ defineExpose({
   background: color-mix(in srgb, var(--ca-text) 12%, transparent);
 }
 
-.column-filter__toggle--active {
-  color: var(--ca-orange);
+.column-filter__toggle--active,
+.column-filter__toggle--active:hover {
+  color: var(--ca-orange-ink);
+  background: var(--ca-orange-soft);
+}
+
+.column-filter__pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px dashed var(--ca-border-strong-2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ca-text-muted);
+  font: 600 13px/1 var(--ca-font-display);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.column-filter__pill:hover {
+  color: var(--ca-text);
+  border-color: var(--ca-text-faint);
+}
+
+.column-filter__pill--active,
+.column-filter__pill--active:hover {
+  border: 1px solid transparent;
+  background: var(--ca-orange-soft);
+  color: var(--ca-orange-ink);
+}
+
+.column-filter__pill-icon {
+  font-size: 14px;
+}
+
+.column-filter__toggle:focus-visible,
+.column-filter__pill:focus-visible {
+  outline: 2px solid var(--ca-orange-ink);
+  outline-offset: 2px;
 }
 
 .column-filter__panel {
@@ -152,6 +225,7 @@ defineExpose({
 
 @media (pointer: coarse) {
   .column-filter__toggle::after,
+  .column-filter__pill::after,
   .column-filter__clear::after {
     content: '';
     position: absolute;

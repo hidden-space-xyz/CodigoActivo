@@ -361,6 +361,11 @@ dependents and admin user forms only bind fields and show its messages.
 - Forms use `useForm` (`shared/lib/form`) around a pure `read(draft)` that returns the problem of each field
   (a translation key in a `form.problems` group, or `true` for a red border only) and, without problems, the
   value to send. Admin create/edit dialogs follow the `useCrudDialog` state machine.
+- Admin tables render through `shared/ui/data-table`: a card with a toolbar (an optional search box bound to
+  a column filter, filter pills, the result count and page actions), a chip per active filter except the
+  search box, with «Limpiar filtros», the table and a pager hidden while every row fits on the smallest page.
+  Header and toolbar filter components register their chips with the table they sit in; page-owned filters
+  go in `extraFilters`. Row actions use `shared/ui/row-actions`: inline icon buttons plus a labelled menu.
 - Route names and params are typed in `shared/routes`. Route guards resolve authentication and administrator
   access before entering protected pages; detail pages receive their path params as props.
 - The session is the `GET /api/auth/me` query in the TanStack Query cache, read through `useSession`; ending it

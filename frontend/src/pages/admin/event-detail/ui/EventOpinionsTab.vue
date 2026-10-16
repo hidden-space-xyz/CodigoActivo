@@ -57,7 +57,7 @@ const table = useEventRatings(
       </ul>
 
       <el-pagination
-        v-if="table.total.value > 25 || table.first.value > 0"
+        v-if="table.showPagination.value"
         v-bind="table.paginationProps.value"
         class="paginator"
         @update:current-page="table.onCurrentPageChange"

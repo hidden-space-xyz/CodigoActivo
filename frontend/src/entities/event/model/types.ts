@@ -176,6 +176,8 @@ export interface EventListParams {
   readonly eventDateTo?: string
   readonly signupFrom?: string
   readonly signupTo?: string
+  /** Upcoming or past events only; omitted for all. */
+  readonly scope?: 'Upcoming' | 'Past'
   readonly page?: number
   readonly pageSize?: number
   readonly sort?: string

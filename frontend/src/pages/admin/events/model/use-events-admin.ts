@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, readonly, ref } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
@@ -14,9 +14,12 @@ import { useCrudDialog } from '@/shared/lib/crud'
 import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
 
+type EventListScope = 'upcoming' | 'past' | 'all'
+
 /**
- * Admin events list: a table ordered by start date with a filter per column, the create/edit
- * dialog, which loads the whole event before editing it, featuring one event and deletion after
+ * Admin events list: a table of the upcoming events ordered by start date, with a scope switch to
+ * the past events or all of them (newest first) and a filter per column, the create/edit dialog,
+ * which loads the whole event before editing it, featuring one event and deletion after
  * confirmation, each outcome reported with a toast. Call it in `setup`.
  */
 export function useEventsAdmin() {
@@ -24,10 +27,13 @@ export function useEventsAdmin() {
   const queryClient = useQueryClient()
   const feedback = useCrudFeedback()
   const { confirmDelete } = useDeleteConfirm()
+  const scope = ref<EventListScope>('upcoming')
 
   const table = useServerTable({
     ...eventList,
     defaultSort: { field: 'eventStartsAt', order: 1 },
+    extraParams: () =>
+      scope.value === 'all' ? {} : { scope: scope.value === 'upcoming' ? 'Upcoming' : 'Past' },
     columns: {
       search: { type: 'text' },
       category: { param: 'categoryTypeId' },
@@ -62,6 +68,11 @@ export function useEventsAdmin() {
     create.mutate(input, feedback.outcome(t('pages.admin.events.toasts.created'), dialog.close))
   }
 
+  function setScope(next: EventListScope): void {
+    scope.value = next
+    table.setSort('eventStartsAt', next === 'upcoming' ? 1 : -1)
+  }
+
   function feature(event: EventListing): void {
     if (event.featured) return
     featuring.mutate(event.id, feedback.outcome(t('pages.admin.events.toasts.featured')))
@@ -79,6 +90,8 @@ export function useEventsAdmin() {
 
   return {
     table,
+    scope: readonly(scope),
+    setScope,
     dialog,
     saving,
     featuring: featuring.isPending,

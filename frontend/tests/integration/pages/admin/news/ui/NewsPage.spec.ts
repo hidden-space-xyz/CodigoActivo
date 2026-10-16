@@ -1,4 +1,4 @@
-import { flushPromises } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
 import { NewsPage } from '@/pages/admin/news'
@@ -13,16 +13,23 @@ import {
   dismissDialog,
   expectNotification,
   findButton,
+  findButtons,
   inputValue,
   isDialogOpen,
   openDialog,
+  openRowMenu,
   pickFiles,
   queryOf,
+  rowMenuItem,
+  rowMenuLabels,
+  textOf,
+  tp,
   typeInto,
 } from '../../../../../support/dom'
 import { EMPTY_DOC_JSON } from '@/shared/lib/rich-text'
 import { ColumnFilterDate, ColumnSearch } from '@/shared/ui/column-filter'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
+import { SearchInput } from '@/shared/ui/search-input'
 
 const NEW_LABEL = 'pages.admin.news.newLabel'
 
@@ -61,6 +68,14 @@ async function renderPage() {
   return renderWithProviders(NewsPage, { attach: true })
 }
 
+async function chooseFirstRowAction(wrapper: VueWrapper, label: string): Promise<void> {
+  const menu = await openRowMenu(wrapper.find('.el-table__body tr').element)
+  await click(rowMenuItem(menu, label))
+  await vi.waitFor(() =>
+    expect(menu.closest<HTMLElement>('.el-popper')?.style.display).toBe('none'),
+  )
+}
+
 async function pickThumbnail(dialog: HTMLElement): Promise<void> {
   const input = dialog.querySelector<HTMLInputElement>('.thumb input[type="file"]')
   if (!input) throw new Error('missing thumbnail input')
@@ -78,16 +93,37 @@ describe('admin news page', () => {
 
     expect(wrapper.text()).toContain(t('pages.admin.news.header.title'))
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-createdAt' })
+    expect(textOf(wrapper.find('.data-table__count').element)).toBe(tp('table.results', 2))
     const rows = wrapper.findAll('.el-table__body tr')
-    expect(rows[0]?.text()).toContain('Hackathon')
-    expect(rows[0]?.find('.el-tag').text()).toBe(t('pages.admin.news.featured'))
-    expect(
-      rows[0]?.find(`button[aria-label="${t('pages.admin.news.featured')}"]`).attributes(),
-    ).toHaveProperty('disabled')
-    expect(rows[1]?.find('.el-tag').exists()).toBe(false)
-    expect(rows[1]?.find(`button[aria-label="${t('pages.admin.news.feature')}"]`).exists()).toBe(
-      true,
+    expect(rows).toHaveLength(2)
+    const [featured, other] = rows.map((row) => row.element)
+    if (!featured || !other) throw new Error('missing rows')
+    expect(textOf(featured.querySelector('.table-primary-cell__title'))).toBe('Hackathon')
+    expect(textOf(featured.querySelector('.table-primary-cell__subtitle'))).toBe('Join us')
+    expect(featured.querySelector('.table-primary-cell__leading .list-thumb--table')).not.toBeNull()
+    expect(featured.querySelectorAll('.el-tag')).toHaveLength(1)
+    expect(textOf(featured.querySelector('.el-tag'))).toBe(t('pages.admin.news.featured'))
+    expect(other.querySelector('.el-tag')).toBeNull()
+    expect(findButtons(t('common.edit'), featured)).toHaveLength(1)
+    expect(featured.querySelector('.row-actions__more')?.getAttribute('aria-label')).toBe(
+      t('table.moreActionsFor', { name: 'Hackathon' }),
     )
+
+    const featuredMenu = await openRowMenu(featured)
+    expect(rowMenuLabels(featuredMenu)).toEqual([t('pages.admin.news.feature'), t('common.delete')])
+    const alreadyFeatured = rowMenuItem(featuredMenu, t('pages.admin.news.feature'))
+    expect(alreadyFeatured.getAttribute('aria-disabled')).toBe('true')
+    expect(textOf(alreadyFeatured.querySelector('.row-actions__item-reason'))).toBe(
+      t('pages.admin.news.alreadyFeatured'),
+    )
+    expect(rowMenuItem(featuredMenu, t('common.delete')).classList).toContain(
+      'row-actions__item--danger',
+    )
+
+    const otherMenu = await openRowMenu(other)
+    const feature = rowMenuItem(otherMenu, t('pages.admin.news.feature'))
+    expect(feature.getAttribute('aria-disabled')).not.toBe('true')
+    expect(feature.querySelector('.row-actions__item-reason')).toBeNull()
   })
 
   it('renders through the application router for admins', async () => {
@@ -111,13 +147,14 @@ describe('admin news page', () => {
     )
   })
 
-  it('sends title, subtitle and creation date filters', async () => {
+  it('sends the title or subtitle search and the creation date filter', async () => {
     const urls = serveNews()
     const { wrapper } = await renderPage()
 
-    const [title, subtitle] = wrapper.findAllComponents(ColumnSearch)
-    title?.vm.$emit('update:modelValue', 'hack')
-    subtitle?.vm.$emit('update:modelValue', 'join')
+    expect(wrapper.findAllComponents(ColumnSearch)).toHaveLength(0)
+    const search = wrapper.findComponent(SearchInput)
+    expect(search.props('label')).toBe(t('common.searchByTitleOrSubtitle'))
+    search.vm.$emit('update:modelValue', 'hack')
     wrapper
       .findComponent(ColumnFilterDate)
       .vm.$emit('update:modelValue', [new Date(2025, 2, 1), new Date(2025, 2, 31)])
@@ -127,11 +164,13 @@ describe('admin news page', () => {
       page: '1',
       pageSize: '25',
       sort: '-createdAt',
-      title: 'hack',
-      subtitle: 'join',
+      search: 'hack',
       createdFrom: '2025-03-01',
       createdTo: '2025-03-31',
     })
+    const chips = wrapper.findAll('.filter-chip')
+    expect(chips).toHaveLength(1)
+    expect(chips[0]?.text()).toContain(t('pages.admin.news.columns.created'))
   })
 
   it('features a news item and reports failures', async () => {
@@ -145,14 +184,14 @@ describe('admin news page', () => {
         return new HttpResponse(null, { status: 204 })
       }),
     )
-    await renderPage()
+    const { wrapper } = await renderPage()
 
-    await click(findButton(t('pages.admin.news.feature')))
+    await chooseFirstRowAction(wrapper, t('pages.admin.news.feature'))
     await expectNotification(t('pages.admin.news.toasts.featured'))
     expect(featured).toEqual(['news-item-1'])
 
     fail = true
-    await click(findButton(t('pages.admin.news.feature')))
+    await chooseFirstRowAction(wrapper, t('pages.admin.news.feature'))
     await expectNotification(t('common.error'))
   })
 
@@ -330,9 +369,9 @@ describe('admin news page', () => {
         return new HttpResponse(null, { status: 204 })
       }),
     )
-    await renderPage()
+    const { wrapper } = await renderPage()
 
-    await click(findButton(t('common.delete')))
+    await chooseFirstRowAction(wrapper, t('common.delete'))
     const box = document.body.querySelector('.el-message-box')
     expect(box?.textContent).toContain(t('pages.admin.news.delete.header'))
     expect(box?.textContent).toContain('"Hackathon"')
@@ -341,7 +380,7 @@ describe('admin news page', () => {
     expect(deleted).toEqual(['news-item-1'])
 
     fail = true
-    await click(findButton(t('common.delete')))
+    await chooseFirstRowAction(wrapper, t('common.delete'))
     await acceptMessageBox()
     await expectNotification(t('common.error'))
   })

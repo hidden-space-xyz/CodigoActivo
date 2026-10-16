@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useId } from 'vue'
+
 import { ActionButton } from '@/shared/ui/action-button'
 
 defineProps<{
@@ -12,16 +14,19 @@ defineEmits<{
   /** Fired when the create button is pressed. */
   create: []
 }>()
+
+const titleId = useId()
 </script>
 
 <template>
-  <section class="catalog">
+  <section class="catalog" :aria-labelledby="titleId">
     <div class="catalog__head">
-      <h2 class="catalog__title">{{ title }}</h2>
+      <h2 :id="titleId" class="catalog__title">{{ title }}</h2>
       <ActionButton
         :label="newLabel"
         icon="plus"
         type="primary"
+        plain
         size="small"
         @click="$emit('create')"
       />
@@ -32,20 +37,25 @@ defineEmits<{
 
 <style scoped>
 .catalog {
+  overflow: clip;
   background: var(--ca-surface);
   border: 1px solid var(--ca-border-soft);
-  border-radius: 14px;
-  padding: 18px 20px;
+  border-radius: var(--ca-radius-lg);
+  box-shadow: var(--ca-shadow-sm);
 }
 
 .catalog__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ca-border-soft);
 }
 
 .catalog__title {
+  min-width: 0;
   font-family: var(--ca-font-display);
   font-size: 18px;
   font-weight: 600;

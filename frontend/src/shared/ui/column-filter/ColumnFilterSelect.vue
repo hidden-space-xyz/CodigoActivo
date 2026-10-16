@@ -2,15 +2,21 @@
 import { computed, ref, watch } from 'vue'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
+import { useTableFilterRegistration } from './filter-registry'
 
-const props = defineProps<{
-  /** Selected option value; `null` means no filter. */
-  modelValue: string | boolean | null
-  /** Column header text, also used in the toggle's accessible name and the placeholder. */
-  label: string
-  /** Choices listed in the popover; boolean values support yes/no columns. */
-  options: { label: string; value: string | boolean }[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** Selected option value; `null` means no filter. */
+    modelValue: string | boolean | null
+    /** Column header text, also used in the toggle's accessible name and the placeholder. */
+    label: string
+    /** Choices listed in the popover; boolean values support yes/no columns. */
+    options: { label: string; value: string | boolean }[]
+    /** `header` sits next to a column title; `toolbar` is a labelled pill above the table. */
+    variant?: 'header' | 'toolbar'
+  }>(),
+  { variant: 'header' },
+)
 
 const emit = defineEmits<{
   /** Fired when an option is picked or cleared (`null`); the popover then closes. */
@@ -47,6 +53,12 @@ function clear(): void {
   commit()
   shell.value?.hide()
 }
+
+useTableFilterRegistration(() => {
+  if (!active.value) return null
+  const selected = props.options.find((option) => option.value === props.modelValue)
+  return { label: props.label, value: selected?.label ?? String(props.modelValue) }
+}, clear)
 </script>
 
 <template>
@@ -54,6 +66,8 @@ function clear(): void {
     ref="shell"
     :label="label"
     :active="active"
+    icon="filter"
+    :variant="variant"
     :toggle-label="$t('table.filterBy', { label })"
     :clear-label="$t('table.clearFilter')"
     :show-clear="draft != null"

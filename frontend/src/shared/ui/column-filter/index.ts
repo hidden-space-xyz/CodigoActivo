@@ -1,5 +1,6 @@
 export { default as ColumnFilterDate } from './ColumnFilterDate.vue'
 export { default as ColumnFilterSelect } from './ColumnFilterSelect.vue'
 export { default as ColumnSearch } from './ColumnSearch.vue'
+export { provideTableFilters } from './filter-registry'
 export { toSelectOptions } from './options'
 export type { SelectOption } from './options'

@@ -2,6 +2,7 @@ import { flushPromises } from '@vue/test-utils'
 import { ElButton, ElSelect } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
+import { elementPlusLocale } from '@/app/config/element-plus-locale'
 import { ResourcesPage } from '@/pages/admin/resources'
 import ResourceFormDialog from '@/pages/admin/resources/ui/ResourceFormDialog.vue'
 import type { ResourceListItemResponse } from '@/shared/api/generated/models'
@@ -25,6 +26,7 @@ import {
   openDialog,
   pickFiles,
   queryOf,
+  tp,
   typeInto,
 } from '../../../../../support/dom'
 import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
@@ -67,14 +69,38 @@ describe('admin resources page', () => {
     const { wrapper } = await renderPage()
 
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-createdAt' })
+    expect(wrapper.find('.data-table__count').text()).toBe(tp('table.results', 2))
     const rows = wrapper.findAll('.el-table__body tr')
     expect(rows).toHaveLength(2)
-    expect(rows[0]?.text()).toContain('Guía de Python')
-    expect(rows[0]?.text()).toContain('Enlace')
-    expect(rows[0]?.find('a').attributes('href')).toBe('https://vuejs.org')
+    expect(rows[0]?.find('.table-primary-cell__title').text()).toBe('Guía de Python')
+    expect(rows[0]?.find('.table-primary-cell__subtitle').text()).toBe('Primeros pasos')
+    expect(rows[0]?.find('.table-primary-cell__leading .list-thumb--table').exists()).toBe(true)
+    expect(rows[0]?.find('.list-thumb img').attributes('alt')).toBe('')
+    expect(rows[0]?.find('.color-tag--dot').text()).toBe('Enlace')
+    const link = rows[0]?.find('a')
+    expect(link?.attributes('href')).toBe('https://vuejs.org')
+    expect(link?.attributes('target')).toBe('_blank')
+    expect(link?.find('.external-link__text').text()).toBe('vuejs.org')
     expect(rows[0]?.text()).toMatch(/2026/)
+    expect(rows[0]?.find('.row-actions__more').exists()).toBe(false)
+    expect(findButtons(t('common.edit'), rows[0]?.element)).toHaveLength(1)
+    expect(findButtons(t('common.delete'), rows[0]?.element)).toHaveLength(1)
+    expect(rows[1]?.find('.table-primary-cell__subtitle').exists()).toBe(false)
+    expect(rows[1]?.find('.color-tag--dot').text()).toBe('Artículo')
     expect(rows[1]?.find('a').exists()).toBe(false)
     expect(rows[1]?.text()).toContain('—')
+    expect(
+      wrapper
+        .findAll('.el-table__header .caret-wrapper')
+        .map((sort) => sort.attributes('aria-label')),
+    ).toEqual(
+      ['title', 'type', 'url', 'created'].map((column) =>
+        elementPlusLocale.el.table.sortLabel.replace(
+          '{column}',
+          t(`pages.admin.resources.columns.${column}`),
+        ),
+      ),
+    )
   })
 
   it('renders through the application router for admins', async () => {
@@ -98,14 +124,19 @@ describe('admin resources page', () => {
     )
   })
 
-  it('sends title, subtitle, type, url and creation filters', async () => {
+  it('sends search, type, url and creation filters and clears them all at once', async () => {
     const urls = serveResources()
     const { wrapper } = await renderPage()
 
+    const search = wrapper.find<HTMLInputElement>('.data-table__search input')
+    expect(search.attributes('aria-label')).toBe(t('common.searchByTitleOrSubtitle'))
+    await search.setValue('vue')
+    await search.trigger('keydown', { key: 'Enter' })
     const searches = wrapper.findAllComponents(ColumnSearch)
-    searches[0]?.vm.$emit('update:modelValue', 'vue')
-    searches[1]?.vm.$emit('update:modelValue', 'start')
-    searches[2]?.vm.$emit('update:modelValue', 'vuejs.org')
+    expect(searches.map((filter) => filter.props('label'))).toEqual([
+      t('pages.admin.resources.columns.url'),
+    ])
+    searches[0]?.vm.$emit('update:modelValue', 'vuejs.org')
     wrapper.findComponent(ColumnFilterSelect).vm.$emit('update:modelValue', 'type-link')
     wrapper
       .findComponent(ColumnFilterDate)
@@ -116,8 +147,7 @@ describe('admin resources page', () => {
       page: '1',
       pageSize: '25',
       sort: '-createdAt',
-      title: 'vue',
-      subtitle: 'start',
+      search: 'vue',
       url: 'vuejs.org',
       resourceTypeId: 'type-link',
       createdFrom: '2025-01-01',
@@ -126,6 +156,18 @@ describe('admin resources page', () => {
       { label: 'Artículo', value: 'type-article' },
       { label: 'Enlace', value: 'type-link' },
     ])
+    const chips = wrapper.findAll('.filter-chip__label').map((chip) => chip.text())
+    expect(chips).toHaveLength(3)
+    expect(chips.slice(0, 2)).toEqual([
+      t('table.filterChip', { label: t('pages.admin.resources.columns.type'), value: 'Enlace' }),
+      t('table.filterChip', { label: t('pages.admin.resources.columns.url'), value: 'vuejs.org' }),
+    ])
+
+    await click(findButton(t('table.clearFilters'), wrapper.element))
+
+    expect(queryOf(urls.at(-1) ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-createdAt' })
+    expect(search.element.value).toBe('')
+    expect(wrapper.find('.data-table__chips').exists()).toBe(false)
   })
 
   it('creates an external resource', async () => {
@@ -298,6 +340,8 @@ describe('admin resources page', () => {
     await click(findButton(t('common.edit')))
     await vi.waitFor(() => expect(detailCalls).toBe(1))
     expect(findButton(t('pages.admin.resources.newResource')).disabled).toBe(true)
+    expect(findButton(t('common.edit')).disabled).toBe(true)
+    expect(findButton(t('common.delete')).disabled).toBe(false)
 
     // Disabled buttons swallow clicks; emit directly to exercise the handlers' own guards.
     const buttons = wrapper.findAllComponents(ElButton)

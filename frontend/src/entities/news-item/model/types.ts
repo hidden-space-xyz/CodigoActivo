@@ -30,8 +30,8 @@ export interface NewsItemInput {
 
 /** Filters, sort and page of the admin news list. */
 export interface NewsListParams {
-  readonly title?: string
-  readonly subtitle?: string
+  /** Text matched against the title or the subtitle. */
+  readonly search?: string
   readonly createdFrom?: string
   readonly createdTo?: string
   readonly page?: number

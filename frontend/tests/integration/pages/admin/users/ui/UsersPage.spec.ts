@@ -1,10 +1,13 @@
 import { flushPromises } from '@vue/test-utils'
-import { ElSelect, ElSwitch } from 'element-plus'
+import { ElSelect } from 'element-plus'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import UserFormDialog from '@/pages/admin/users/ui/UserFormDialog.vue'
 import { UsersPage } from '@/pages/admin/users'
 import type { UserResponse } from '@/shared/api/generated/models'
+import { formatDate } from '@/shared/lib/date'
+import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
+import { SearchInput } from '@/shared/ui/search-input'
 
 import { renderApp, renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../../support/server'
@@ -16,24 +19,34 @@ import {
 } from '../../../../../support/builders'
 import {
   acceptMessageBox,
+  cancelMessageBox,
   click,
   dismissDialog,
   expectNotification,
   findButton,
   inputValue,
   isDialogOpen,
+  messageBox,
   openDialog,
+  openRowMenu,
   queryOf,
+  rowMenuItem,
+  rowMenuLabels,
+  textOf,
   tp,
   typeInto,
 } from '../../../../../support/dom'
-import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
 
 const EDIT_TITLE = 'pages.admin.users.form.editHeader'
 const TYPE_TITLE = 'pages.admin.users.typeDialog.header'
 const EMAIL_TITLE = 'features.sendEmail.header'
 const GRANT_TITLE = 'pages.admin.users.grantAdmin.header'
 const RESET_2FA_TITLE = 'pages.admin.users.resetTwoFactor.header'
+const CHANGE_TYPE = 'pages.admin.users.actions.changeType'
+const SEND_EMAIL = 'pages.admin.users.actions.sendEmail'
+const RESET_2FA = 'pages.admin.users.actions.resetTwoFactor'
+const GRANT_ADMIN = 'pages.admin.users.actions.grantAdmin'
+const REVOKE_ADMIN = 'pages.admin.users.actions.revokeAdmin'
 
 const ada = buildUserResponse({
   dependentCount: 2,
@@ -113,8 +126,26 @@ function rowElement(
   return row.element as HTMLElement
 }
 
-async function renderPage() {
-  return renderWithProviders(UsersPage, { attach: true })
+async function renderPage(user?: { id: string; isAdmin: boolean }) {
+  return renderWithProviders(UsersPage, { attach: true, ...(user ? { user } : {}) })
+}
+
+type PageWrapper = Awaited<ReturnType<typeof renderPage>>['wrapper']
+
+async function chooseRowAction(wrapper: PageWrapper, index: number, key: string): Promise<void> {
+  await click(rowMenuItem(await openRowMenu(rowElement(wrapper, index)), t(key)))
+}
+
+function selectFilter(wrapper: PageWrapper, labelKey: string) {
+  const filter = wrapper
+    .findAllComponents(ColumnFilterSelect)
+    .find((candidate) => candidate.props('label') === t(labelKey))
+  if (!filter) throw new Error(`Select filter "${labelKey}" not rendered`)
+  return filter
+}
+
+function chipLabels(wrapper: PageWrapper): string[] {
+  return wrapper.findAll('.filter-chip__label').map((chip) => textOf(chip.element))
 }
 
 describe('admin users page', () => {
@@ -142,24 +173,45 @@ describe('admin users page', () => {
     expect(first?.text()).toContain('ada@example.test')
     expect(first?.text()).toContain('12345678Z')
     expect(first?.text()).not.toContain('(')
-    expect(first?.text()).toContain('Active')
+    expect(first?.find('.color-tag--dot').text()).toBe('Active')
     expect(first?.text()).toContain('Participant')
-    expect(first?.text()).toContain(tp('pages.admin.users.dependentsLabel', 2, { count: 2 }))
-    expect(
-      first?.find(`button[aria-label="${t('pages.admin.users.aria.sendEmail')}"]`).exists(),
-    ).toBe(true)
+    expect(first?.find('.table-primary-cell__badges').exists()).toBe(false)
+    expect(textOf(first?.find('.table-primary-cell__meta').element)).toBe(
+      tp('pages.admin.users.dependentsLabel', 2, { count: 2 }),
+    )
+    expect(first?.find('.row-actions__more').attributes('aria-label')).toBe(
+      t('table.moreActionsFor', { name: 'Ada Lovelace' }),
+    )
+    expect(rowMenuLabels(await openRowMenu(rowElement(wrapper, 0)))).toEqual([
+      t(CHANGE_TYPE),
+      t(SEND_EMAIL),
+      t(RESET_2FA),
+      t(GRANT_ADMIN),
+      t('common.delete'),
+    ])
 
     expect(second?.text()).toContain('Tim Lovelace')
-    expect(second?.text()).toContain('(9)')
+    expect(second?.find('.table-primary-cell__badges').text()).toBe(
+      t('pages.admin.users.columns.admin'),
+    )
+    expect(second?.findAll('.user-meta > *').map((part) => textOf(part.element))).toEqual([
+      t('pages.admin.users.guardianPrefix'),
+      'Ada Lovelace',
+      '·',
+      tp('pages.admin.users.age', 9),
+    ])
+    expect(second?.find('.user-meta__age').attributes('title')).toBe(formatDate('2016-02-01'))
     expect(second?.find('button').text()).toContain('Ada Lovelace')
-    expect(
-      second?.find(`button[aria-label="${t('pages.admin.users.aria.sendEmail')}"]`).exists(),
-    ).toBe(false)
-    expect(wrapper.findAllComponents(ElSwitch)[1]?.props('modelValue')).toBe(true)
+    expect(rowMenuLabels(await openRowMenu(rowElement(wrapper, 1)))).toEqual([
+      t(CHANGE_TYPE),
+      t(REVOKE_ADMIN),
+      t('common.delete'),
+    ])
 
     expect(third?.text()).toContain('Ghost User')
     expect(third?.text()).not.toContain('(')
     expect(third?.text()).toContain('—')
+    expect(third?.find('.table-primary-cell__meta').exists()).toBe(false)
   })
 
   it('renders through the application router for admins', async () => {
@@ -189,19 +241,35 @@ describe('admin users page', () => {
     const recorded = serveUsers()
     const { wrapper } = await renderPage()
 
-    const [name, email, phone, nationalId] = wrapper.findAllComponents(ColumnSearch)
-    name?.vm.$emit('update:modelValue', 'ada')
+    const searches = wrapper.findAllComponents(ColumnSearch)
+    expect(searches.map((search) => search.props('label'))).toEqual([
+      t('common.email'),
+      t('common.phone'),
+      t('pages.admin.users.columns.nationalId'),
+    ])
+    const [email, phone, nationalId] = searches
+    wrapper.findComponent(SearchInput).vm.$emit('update:modelValue', 'ada')
     email?.vm.$emit('update:modelValue', 'example')
     phone?.vm.$emit('update:modelValue', '600')
     nationalId?.vm.$emit('update:modelValue', 'x123')
-    wrapper
-      .findComponent(ColumnFilterDate)
-      .vm.$emit('update:modelValue', [new Date(1980, 0, 1), new Date(2000, 11, 31)])
-    const [consent, status, type, admin] = wrapper.findAllComponents(ColumnFilterSelect)
-    consent?.vm.$emit('update:modelValue', true)
-    status?.vm.$emit('update:modelValue', 'status-active')
-    type?.vm.$emit('update:modelValue', 'type-member')
-    admin?.vm.$emit('update:modelValue', false)
+    const birth = wrapper.findComponent(ColumnFilterDate)
+    expect(birth.props('label')).toBe(t('pages.admin.users.columns.birth'))
+    expect(birth.props('variant')).toBe('toolbar')
+    birth.vm.$emit('update:modelValue', [new Date(1980, 0, 1), new Date(2000, 11, 31)])
+    const consent = selectFilter(wrapper, 'pages.admin.users.columns.promotionalConsent')
+    const status = selectFilter(wrapper, 'common.status')
+    const type = selectFilter(wrapper, 'pages.admin.users.columns.type')
+    const admin = selectFilter(wrapper, 'pages.admin.users.columns.admin')
+    expect([admin, consent, status, type].map((filter) => filter.props('variant'))).toEqual([
+      'toolbar',
+      'toolbar',
+      'header',
+      'header',
+    ])
+    consent.vm.$emit('update:modelValue', true)
+    status.vm.$emit('update:modelValue', 'status-active')
+    type.vm.$emit('update:modelValue', 'type-member')
+    admin.vm.$emit('update:modelValue', false)
     await flushPromises()
 
     expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
@@ -219,27 +287,35 @@ describe('admin users page', () => {
       userTypeId: 'type-member',
       isAdmin: 'false',
     })
-    expect(status?.props('options')).toEqual([
+    expect(status.props('options')).toEqual([
       { label: 'Active', value: 'status-active' },
       { label: 'Blocked', value: 'status-blocked' },
     ])
-    expect(consent?.props('options')).toEqual(admin?.props('options'))
-    expect(admin?.props('options')).toEqual([
+    expect(consent.props('options')).toEqual(admin.props('options'))
+    expect(admin.props('options')).toEqual([
       { label: t('common.yes'), value: true },
       { label: t('common.no'), value: false },
     ])
+    expect(chipLabels(wrapper)).toHaveLength(8)
+    expect(chipLabels(wrapper)).toContain(
+      t('table.filterChip', {
+        label: t('pages.admin.users.columns.promotionalConsent'),
+        value: t('common.yes'),
+      }),
+    )
   })
 
   it('narrows the table to a tutor or to dependents and clears the relation filter', async () => {
     const recorded = serveUsers([ada, tim])
     const { wrapper } = await renderPage()
-    wrapper.findAllComponents(ColumnSearch)[0]?.vm.$emit('update:modelValue', 'lov')
+    wrapper.findComponent(SearchInput).vm.$emit('update:modelValue', 'lov')
     await flushPromises()
+    expect(queryOf(recorded.list.at(-1) ?? '')).toMatchObject({ name: 'lov' })
 
     await click(findButton('Ada Lovelace', rowElement(wrapper, 1)))
-    expect(wrapper.find('.relation-filter').text()).toContain(
-      t('pages.admin.users.relation.tutorOf', { fullName: 'Tim Lovelace' }),
-    )
+    const tutorOf = t('pages.admin.users.relation.tutorOf', { fullName: 'Tim Lovelace' })
+    expect(chipLabels(wrapper)).toEqual([tutorOf])
+    expect(wrapper.find<HTMLInputElement>('.data-table__search input').element.value).toBe('')
     expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
       page: '1',
       pageSize: '25',
@@ -250,13 +326,12 @@ describe('admin users page', () => {
     await click(
       findButton(tp('pages.admin.users.dependentsLabel', 2, { count: 2 }), rowElement(wrapper, 0)),
     )
-    expect(wrapper.find('.relation-filter').text()).toContain(
-      t('pages.admin.users.relation.dependentsOf', { fullName: 'Ada Lovelace' }),
-    )
+    const dependentsOf = t('pages.admin.users.relation.dependentsOf', { fullName: 'Ada Lovelace' })
+    expect(chipLabels(wrapper)).toEqual([dependentsOf])
     expect(queryOf(recorded.list.at(-1) ?? '')).toMatchObject({ parentId: 'user-1' })
 
-    await click(findButton(t('pages.admin.users.relation.clear')))
-    expect(wrapper.find('.relation-filter').exists()).toBe(false)
+    await click(findButton(t('table.removeFilter', { label: dependentsOf })))
+    expect(wrapper.find('.filter-chip').exists()).toBe(false)
     expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
       page: '1',
       pageSize: '25',
@@ -364,11 +439,11 @@ describe('admin users page', () => {
     await click(findButton(t('common.cancel'), openDialog(t(EDIT_TITLE))))
     await vi.waitFor(() => expect(isDialogOpen(t(EDIT_TITLE))).toBe(false))
 
-    await click(findButton(t('pages.admin.users.aria.changeType')))
+    await chooseRowAction(wrapper, 0, CHANGE_TYPE)
     await dismissDialog(wrapper, t(TYPE_TITLE))
     await vi.waitFor(() => expect(isDialogOpen(t(TYPE_TITLE))).toBe(false))
 
-    await click(findButton(t('pages.admin.users.aria.sendEmail')))
+    await chooseRowAction(wrapper, 0, SEND_EMAIL)
     await click(findButton(t('common.cancel'), openDialog(t(EMAIL_TITLE))))
     await vi.waitFor(() => expect(isDialogOpen(t(EMAIL_TITLE))).toBe(false))
 
@@ -388,7 +463,7 @@ describe('admin users page', () => {
     )
     const { wrapper } = await renderPage()
 
-    await click(findButton(t('pages.admin.users.aria.changeType')))
+    await chooseRowAction(wrapper, 0, CHANGE_TYPE)
     const dialog = openDialog(t(TYPE_TITLE))
     expect(dialog.textContent).toContain(
       t('pages.admin.users.typeDialog.lead', { fullName: 'Ada Lovelace' }),
@@ -410,7 +485,7 @@ describe('admin users page', () => {
     await vi.waitFor(() => expect(isDialogOpen(t(TYPE_TITLE))).toBe(false))
 
     fail = true
-    await click(findButton(t('pages.admin.users.aria.changeType')))
+    await chooseRowAction(wrapper, 0, CHANGE_TYPE)
     await click(findButton(t('common.apply'), openDialog(t(TYPE_TITLE))))
     await expectNotification(t('common.error'))
     await click(findButton(t('common.cancel'), openDialog(t(TYPE_TITLE))))
@@ -421,7 +496,7 @@ describe('admin users page', () => {
     serveUsers([tim])
     const { wrapper } = await renderPage()
 
-    await click(findButton(t('pages.admin.users.aria.changeType'), rowElement(wrapper, 0)))
+    await chooseRowAction(wrapper, 0, CHANGE_TYPE)
     const dialog = openDialog(t(TYPE_TITLE))
     expect(findButton(t('common.apply'), dialog).disabled).toBe(true)
     await click(findButton(t('common.apply'), dialog))
@@ -442,8 +517,7 @@ describe('admin users page', () => {
     )
     const { wrapper } = await renderPage()
 
-    wrapper.findComponent(ElSwitch).vm.$emit('update:modelValue', true)
-    await flushPromises()
+    await chooseRowAction(wrapper, 0, GRANT_ADMIN)
     const dialog = openDialog(t(GRANT_TITLE))
     expect(dialog.textContent).toContain(
       t('pages.admin.users.grantAdmin.message', { fullName: 'Ada Lovelace' }),
@@ -475,10 +549,8 @@ describe('admin users page', () => {
       ),
     )
     const { wrapper } = await renderPage()
-    const adaSwitch = wrapper.findComponent(ElSwitch)
 
-    adaSwitch.vm.$emit('update:modelValue', true)
-    await flushPromises()
+    await chooseRowAction(wrapper, 0, GRANT_ADMIN)
     const dialog = openDialog(t(GRANT_TITLE))
     await typeInto('#grant-admin-password', 'wrong-password')
     await click(findButton(t('pages.admin.users.grantAdmin.confirm'), dialog))
@@ -488,7 +560,7 @@ describe('admin users page', () => {
     )
     expect(document.body.querySelectorAll('.el-notification')).toHaveLength(0)
     expect(isDialogOpen(t(GRANT_TITLE))).toBe(true)
-    expect(adaSwitch.props('modelValue')).toBe(false)
+    expect(rowElement(wrapper, 0).querySelector('.table-primary-cell__badges')).toBeNull()
 
     rejectPassword = false
     await click(findButton(t('pages.admin.users.grantAdmin.confirm'), dialog))
@@ -499,14 +571,13 @@ describe('admin users page', () => {
     await click(findButton(t('common.cancel'), dialog))
     await vi.waitFor(() => expect(isDialogOpen(t(GRANT_TITLE))).toBe(false))
 
-    adaSwitch.vm.$emit('update:modelValue', true)
-    await flushPromises()
+    await chooseRowAction(wrapper, 0, GRANT_ADMIN)
     expect(inputValue('#grant-admin-password')).toBe('')
     await dismissDialog(wrapper, t(GRANT_TITLE))
     await vi.waitFor(() => expect(isDialogOpen(t(GRANT_TITLE))).toBe(false))
   })
 
-  it('revokes the admin role without asking for a password', async () => {
+  it('revokes the admin role after confirmation without asking for a password', async () => {
     serveUsers([tim])
     const requests: unknown[] = []
     let fail = false
@@ -518,26 +589,84 @@ describe('admin users page', () => {
       }),
     )
     const { wrapper } = await renderPage()
-    const [timSwitch] = wrapper.findAllComponents(ElSwitch)
 
-    timSwitch?.vm.$emit('update:modelValue', false)
+    await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
+    expect(messageBox().textContent).toContain(
+      t('pages.admin.users.revokeAdmin.message', { fullName: 'Tim Lovelace' }),
+    )
+    await cancelMessageBox()
+    await flushPromises()
+    expect(requests).toEqual([])
+    expect(isDialogOpen(t(GRANT_TITLE))).toBe(false)
+
+    await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
+    await acceptMessageBox()
     await expectNotification(t('pages.admin.users.toasts.adminRevoked'))
     expect(requests).toEqual([{ id: 'child-1', body: { isAdmin: false, currentPassword: null } }])
 
     fail = true
-    timSwitch?.vm.$emit('update:modelValue', false)
+    await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
+    await acceptMessageBox()
     await expectNotification(t('common.error'))
+  })
+
+  it('warns admins that revoking their own role ends their access', async () => {
+    serveUsers([buildUserResponse({ isAdmin: true })])
+    const requests: unknown[] = []
+    server.use(
+      http.patch('/api/users/:userId/admin', async ({ request, params }) => {
+        requests.push({ id: params.userId, body: await request.json() })
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { wrapper } = await renderPage({ id: 'user-1', isAdmin: true })
+
+    await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
+    expect(messageBox().textContent).toContain(t('pages.admin.users.revokeAdmin.messageSelf'))
+    await cancelMessageBox()
+    await flushPromises()
+
+    expect(requests).toEqual([])
   })
 
   it('locks the role and the deletion of the initial administrator', async () => {
     serveUsers([buildUserResponse({ isAdmin: true, isInitialAdmin: true }), tim])
     const { wrapper } = await renderPage()
-    const [initialSwitch, timSwitch] = wrapper.findAllComponents(ElSwitch)
+    const blocked = t('pages.admin.users.blocked.initialAdmin')
 
-    expect(initialSwitch?.props('disabled')).toBe(true)
-    expect(timSwitch?.props('disabled')).toBe(false)
-    expect(findButton(t('common.delete'), rowElement(wrapper, 0)).disabled).toBe(true)
-    expect(findButton(t('common.delete'), rowElement(wrapper, 1)).disabled).toBe(false)
+    const initialMenu = await openRowMenu(rowElement(wrapper, 0))
+    const initialRevoke = rowMenuItem(initialMenu, t(REVOKE_ADMIN))
+    const initialDelete = rowMenuItem(initialMenu, t('common.delete'))
+    expect(initialRevoke.getAttribute('aria-disabled')).toBe('true')
+    expect(textOf(initialRevoke.querySelector('.row-actions__item-reason'))).toBe(blocked)
+    expect(initialDelete.getAttribute('aria-disabled')).toBe('true')
+    expect(textOf(initialDelete.querySelector('.row-actions__item-reason'))).toBe(blocked)
+    await click(initialDelete)
+    expect(document.body.querySelector('.el-message-box')).toBeNull()
+
+    const timMenu = await openRowMenu(rowElement(wrapper, 1))
+    const timDelete = rowMenuItem(timMenu, t('common.delete'))
+    expect(rowMenuItem(timMenu, t(REVOKE_ADMIN)).getAttribute('aria-disabled')).not.toBe('true')
+    expect(timDelete.getAttribute('aria-disabled')).not.toBe('true')
+    expect(timDelete.querySelector('.row-actions__item-reason')).toBeNull()
+  })
+
+  it('marks the own account and keeps it from being deleted here', async () => {
+    serveUsers([ada, buildUserResponse({ id: 'user-2', firstName: 'Grace', lastName: 'Hopper' })])
+    const { wrapper } = await renderPage({ id: 'user-1', isAdmin: true })
+    const [own, other] = rows(wrapper)
+
+    expect(own?.find('.table-primary-cell__badges').text()).toBe(t('pages.admin.users.badges.you'))
+    expect(other?.find('.table-primary-cell__badges').exists()).toBe(false)
+
+    const ownDelete = rowMenuItem(await openRowMenu(rowElement(wrapper, 0)), t('common.delete'))
+    expect(ownDelete.getAttribute('aria-disabled')).toBe('true')
+    expect(textOf(ownDelete.querySelector('.row-actions__item-reason'))).toBe(
+      t('pages.admin.users.blocked.self'),
+    )
+
+    const otherDelete = rowMenuItem(await openRowMenu(rowElement(wrapper, 1)), t('common.delete'))
+    expect(otherDelete.getAttribute('aria-disabled')).not.toBe('true')
   })
 
   it('deletes a user after confirmation and reports failures', async () => {
@@ -553,14 +682,16 @@ describe('admin users page', () => {
     )
     const { wrapper } = await renderPage()
 
-    await click(findButton(t('common.delete'), rowElement(wrapper, 0)))
-    expect(document.body.querySelector('.el-message-box:last-of-type')?.textContent).toBeDefined()
+    await chooseRowAction(wrapper, 0, 'common.delete')
+    expect(messageBox().textContent).toContain(
+      t('pages.admin.users.delete.message', { fullName: 'Ada Lovelace' }),
+    )
     await acceptMessageBox()
     await expectNotification(t('pages.admin.users.toasts.deleted'))
     expect(deleted).toEqual(['user-1'])
 
     fail = true
-    await click(findButton(t('common.delete'), rowElement(wrapper, 0)))
+    await chooseRowAction(wrapper, 0, 'common.delete')
     await acceptMessageBox()
     await expectNotification(t('common.error'))
   })
@@ -579,9 +710,10 @@ describe('admin users page', () => {
       filename = this.download
     })
     const { wrapper } = await renderPage()
-    wrapper
-      .findAllComponents(ColumnFilterSelect)[2]
-      ?.vm.$emit('update:modelValue', 'type-participant')
+    selectFilter(wrapper, 'pages.admin.users.columns.type').vm.$emit(
+      'update:modelValue',
+      'type-participant',
+    )
     await flushPromises()
     expect(wrapper.find('.phone-cell__secondary').text()).toBe('611111111')
 
@@ -687,7 +819,9 @@ describe('admin users page', () => {
     expect(received?.subject).toBe('News')
     expect(queryOf(received?.url ?? '')).toEqual({ parentId: 'user-1' })
     await vi.waitFor(() => expect(isDialogOpen(t(EMAIL_TITLE))).toBe(false))
-    expect(wrapper.find('.relation-filter').exists()).toBe(true)
+    expect(chipLabels(wrapper)).toEqual([
+      t('pages.admin.users.relation.dependentsOf', { fullName: 'Ada Lovelace' }),
+    ])
   })
 
   it('queues an email for a single user and reports failures', async () => {
@@ -706,9 +840,9 @@ describe('admin users page', () => {
         return HttpResponse.json({ recipients: 1, withoutConsent: 0 })
       }),
     )
-    await renderPage()
+    const { wrapper } = await renderPage()
 
-    await click(findButton(t('pages.admin.users.aria.sendEmail')))
+    await chooseRowAction(wrapper, 0, SEND_EMAIL)
     let dialog = openDialog(t(EMAIL_TITLE))
     expect(dialog.textContent).toContain('Ada Lovelace')
     await vi.waitFor(() => expect(audienceUrls.map(queryOf)).toEqual([{ id: 'user-1' }]))
@@ -722,7 +856,7 @@ describe('admin users page', () => {
     expect(sentTo).toEqual(['user-1'])
 
     fail = true
-    await click(findButton(t('pages.admin.users.aria.sendEmail')))
+    await chooseRowAction(wrapper, 0, SEND_EMAIL)
     dialog = openDialog(t(EMAIL_TITLE))
     await typeInto('#send-email-subject', 'Hi')
     await typeInto('#send-email-body', 'Again')
@@ -736,7 +870,7 @@ describe('admin users page', () => {
     serveUsers([buildUserResponse({ ...ada, twoFactorMethod: 'Authenticator' })])
     const { wrapper } = await renderPage()
 
-    await click(findButton(t('pages.admin.users.aria.resetTwoFactor'), rowElement(wrapper, 0)))
+    await chooseRowAction(wrapper, 0, RESET_2FA)
 
     expect(openDialog(t(RESET_2FA_TITLE)).textContent).toContain(
       t('pages.admin.users.resetTwoFactor.message', { fullName: 'Ada Lovelace' }),
@@ -754,7 +888,7 @@ describe('admin users page', () => {
     )
     const { wrapper } = await renderPage()
 
-    await click(findButton(t('pages.admin.users.aria.resetTwoFactor'), rowElement(wrapper, 0)))
+    await chooseRowAction(wrapper, 0, RESET_2FA)
     const dialog = openDialog(t(RESET_2FA_TITLE))
     expect(dialog.textContent).toContain(
       t('pages.admin.users.resetTwoFactor.messageEmail', { fullName: 'Ada Lovelace' }),
@@ -783,13 +917,9 @@ describe('admin users page', () => {
       ),
     )
     const { wrapper } = await renderPage()
-    expect(
-      rowElement(wrapper, 1).querySelector(
-        `button[aria-label="${t('pages.admin.users.aria.resetTwoFactor')}"]`,
-      ),
-    ).toBeNull()
+    expect(rowMenuLabels(await openRowMenu(rowElement(wrapper, 1)))).not.toContain(t(RESET_2FA))
 
-    await click(findButton(t('pages.admin.users.aria.resetTwoFactor'), rowElement(wrapper, 0)))
+    await chooseRowAction(wrapper, 0, RESET_2FA)
     const dialog = openDialog(t(RESET_2FA_TITLE))
     await typeInto('#reset-two-factor-password', 'wrong-password')
     await click(findButton(t('pages.admin.users.resetTwoFactor.confirm'), dialog))

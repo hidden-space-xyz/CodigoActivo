@@ -144,6 +144,59 @@ export async function cancelMessageBox(): Promise<void> {
   await click(cancel)
 }
 
+/**
+ * Opens the "more actions" menu of a table row and resolves with the rendered menu
+ * (ul[role=menu] labelled by the trigger).
+ */
+export async function openRowMenu(row: Element): Promise<HTMLElement> {
+  const trigger = row.querySelector<HTMLElement>('.row-actions__more')
+  if (!trigger) throw new Error('Row has no "more actions" menu')
+  const findMenu = () =>
+    document.body.querySelector<HTMLElement>(`ul[role="menu"][aria-labelledby="${trigger.id}"]`)
+  await vi.waitFor(
+    () => {
+      const previous = findMenu()
+      if (trigger.getAttribute('aria-expanded') === 'true' || (previous && isVisible(previous))) {
+        throw new Error('Row menu is still closing')
+      }
+    },
+    { timeout: 3000 },
+  )
+  await click(trigger)
+  let menu: HTMLElement | null = null
+  await vi.waitFor(
+    () => {
+      menu = findMenu()
+      if (!menu || !isVisible(menu)) throw new Error('Row menu did not open')
+    },
+    { timeout: 3000 },
+  )
+  return menu as unknown as HTMLElement
+}
+
+function rowMenuItems(menu: ParentNode): HTMLElement[] {
+  return [...menu.querySelectorAll<HTMLElement>('li[role="menuitem"]')]
+}
+
+function rowMenuItemLabel(item: Element): string {
+  return textOf(item.querySelector('.row-actions__item-label'))
+}
+
+/** Labels of the items of an open row menu, in order. */
+export function rowMenuLabels(menu: ParentNode): string[] {
+  return rowMenuItems(menu).map(rowMenuItemLabel)
+}
+
+/** Item (li[role=menuitem]) of an open row menu labelled `label`; throws when there is none. */
+export function rowMenuItem(menu: ParentNode, label: string): HTMLElement {
+  const item = rowMenuItems(menu).find((candidate) => rowMenuItemLabel(candidate) === label)
+  if (!item) {
+    const labels = JSON.stringify(rowMenuLabels(menu))
+    throw new Error(`Row menu item "${label}" not found; got ${labels}`)
+  }
+  return item
+}
+
 /** Title and message of every notification toast currently shown. */
 export function notifications(): { title: string; message: string }[] {
   return [...document.body.querySelectorAll('.el-notification')].map((item) => ({

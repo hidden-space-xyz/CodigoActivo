@@ -28,6 +28,11 @@ that page; move it down only when a second slice needs it. Steiger enforces thes
   Explain purpose and non-obvious behavior, not the name or types. Tests (`tests/`, `*.spec.ts`, `*.test.ts`,
   `__tests__/`) are exempt.
 - Theme values use `--ca-*` variables; map Element Plus values to them instead of adding isolated colors.
+- Admin tables: bind each `useServerTable` column filter to the `DataTable` `search` box or to a
+  `ColumnSearch`, `ColumnFilterSelect` or `ColumnFilterDate` inside it, and pass page-owned filters as
+  `extraFilters`; give columns with a `#header` slot a `label`; keep each cell slot's root a single element or
+  component; build row actions with `RowActions` (no per-action colours) in a
+  `width="100" align="right" fixed="right"` column.
 - Keep strict TypeScript, ESLint, accessibility, i18n, Stylelint, Steiger, Knip and Prettier checks green.
 
 ## Tests

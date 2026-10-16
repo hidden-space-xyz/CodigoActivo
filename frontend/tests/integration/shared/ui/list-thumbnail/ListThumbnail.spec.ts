@@ -32,4 +32,32 @@ describe('ListThumbnail', () => {
     expect(placeholder.attributes('aria-hidden')).toBe('true')
     expect(placeholder.find('.app-icon').exists()).toBe(true)
   })
+
+  it('fills a card frame by default and offers a table size that shows whole logos', async () => {
+    const card = await renderWithProviders(ListThumbnail, { props: { thumbnailId: 'file-9' } })
+    const table = await renderWithProviders(ListThumbnail, {
+      props: { thumbnailId: 'file-9', size: 'table', fit: 'contain' },
+    })
+
+    expect(card.wrapper.classes()).toEqual(['list-thumb'])
+    expect(table.wrapper.classes()).toEqual(
+      expect.arrayContaining(['list-thumb', 'list-thumb--table', 'list-thumb--contain']),
+    )
+  })
+
+  it('falls back to the placeholder when the image fails and retries a new file', async () => {
+    const { wrapper } = await renderWithProviders(ListThumbnail, {
+      props: { thumbnailId: 'file-9' },
+    })
+
+    await wrapper.find('img').trigger('error')
+
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.find('.list-thumb__placeholder').exists()).toBe(true)
+
+    await wrapper.setProps({ thumbnailId: 'file-10' })
+
+    expect(wrapper.find('img').attributes('src')).toBe('/api/files/file-10/content')
+    expect(wrapper.find('.list-thumb__placeholder').exists()).toBe(false)
+  })
 })

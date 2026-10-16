@@ -1,14 +1,39 @@
 <script setup lang="ts">
-import { ActionButton } from '@/shared/ui/action-button'
+import { useI18n } from 'vue-i18n'
+
+import type { TermsDocument } from '@/entities/terms-document'
 import { ColumnSearch } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
+import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { useTermsDocumentsAdmin } from '../model/use-terms-documents-admin'
 import CatalogSection from './CatalogSection.vue'
 import TermsDocumentFormDialog from './TermsDocumentFormDialog.vue'
 
+const { t } = useI18n()
 const { table, dialog, saving, save, confirmRemove } = useTermsDocumentsAdmin()
 const { visible, editing, openCreate, openEdit } = dialog
+
+function rowActions(termsDocument: TermsDocument): RowAction[] {
+  return [
+    {
+      key: 'edit',
+      label: t('common.edit'),
+      icon: 'pencil',
+      inline: true,
+      run: () => void openEdit(termsDocument),
+    },
+    {
+      key: 'delete',
+      label: t('common.delete'),
+      icon: 'trash',
+      inline: true,
+      danger: true,
+      run: () => confirmRemove(termsDocument),
+    },
+  ]
+}
 </script>
 
 <template>
@@ -19,10 +44,17 @@ const { visible, editing, openCreate, openEdit } = dialog
   >
     <DataTable
       :table="table"
+      variant="flush"
       :empty-text="$t('pages.admin.catalogs.termsDocuments.empty.none')"
       :error-text="$t('pages.admin.catalogs.termsDocuments.empty.error')"
     >
-      <el-table-column prop="name" sortable="custom">
+      <el-table-column
+        prop="name"
+        :label="$t('common.name')"
+        min-width="180"
+        sortable="custom"
+        :fixed="table.isNarrow.value ? false : 'left'"
+      >
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('name').value"
@@ -31,39 +63,19 @@ const { visible, editing, openCreate, openEdit } = dialog
             @apply="table.onFilter"
           />
         </template>
-      </el-table-column>
-      <el-table-column
-        :label="$t('pages.admin.catalogs.termsDocuments.columns.signature')"
-        width="150"
-        align="center"
-      >
         <template #default="{ row }">
-          <el-tag v-if="row.requiresSignature" type="info">
-            {{ $t('pages.admin.catalogs.termsDocuments.requiresSignature') }}
-          </el-tag>
-          <span v-else class="no-signature">—</span>
+          <TablePrimaryCell :title="row.name">
+            <template v-if="row.requiresSignature" #badges>
+              <el-tag type="info" size="small" disable-transitions>{{
+                $t('pages.admin.catalogs.termsDocuments.requiresSignature')
+              }}</el-tag>
+            </template>
+          </TablePrimaryCell>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="120" align="center">
+      <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
         <template #default="{ row }">
-          <div class="ca-row-actions">
-            <ActionButton
-              icon="pencil"
-              type="success"
-              text
-              circle
-              :aria-label="$t('common.edit')"
-              @click="openEdit(row)"
-            />
-            <ActionButton
-              icon="trash"
-              text
-              circle
-              type="danger"
-              :aria-label="$t('common.delete')"
-              @click="confirmRemove(row)"
-            />
-          </div>
+          <RowActions :actions="rowActions(row)" />
         </template>
       </el-table-column>
     </DataTable>
@@ -76,9 +88,3 @@ const { visible, editing, openCreate, openEdit } = dialog
     />
   </CatalogSection>
 </template>
-
-<style scoped>
-.no-signature {
-  color: var(--ca-text-dim);
-}
-</style>

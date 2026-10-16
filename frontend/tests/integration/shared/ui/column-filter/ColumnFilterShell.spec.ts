@@ -3,6 +3,7 @@ import { ElPopover } from 'element-plus'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { AppIcon } from '@/shared/ui/app-icon'
 import ColumnFilterShell from '@/shared/ui/column-filter/ColumnFilterShell.vue'
 
 import { renderWithProviders, t } from '../../../../support/render'
@@ -34,11 +35,59 @@ describe('ColumnFilterShell', () => {
     })
 
     expect(wrapper.find('.column-filter > span').text()).toBe('Name')
+    expect(wrapper.find('.column-filter__label').text()).toBe('Name')
+    expect(wrapper.find('.column-filter__pill').exists()).toBe(false)
     const toggle = wrapper.find('.column-filter__toggle')
     expect(toggle.attributes('aria-label')).toBe('Filter by name')
     expect(toggle.attributes('title')).toBe('Filter by name')
     expect(toggle.classes()).not.toContain('column-filter__toggle--active')
     expect(toggle.find('path[fill-rule="evenodd"]').exists()).toBe(false)
+    expect(toggle.findComponent(AppIcon).props('name')).toBe('search')
+  })
+
+  it('shows the requested icon on an inactive toggle', async () => {
+    const { wrapper } = await renderWithProviders(ColumnFilterShell, {
+      props: { ...baseProps, icon: 'calendar' },
+      attach: true,
+    })
+
+    expect(wrapper.find('.column-filter__toggle').findComponent(AppIcon).props('name')).toBe(
+      'calendar',
+    )
+  })
+
+  it('renders a labelled toolbar pill that opens the panel', async () => {
+    const { wrapper } = await renderWithProviders(ColumnFilterShell, {
+      props: { ...baseProps, icon: 'filter', variant: 'toolbar' },
+      attach: true,
+    })
+
+    expect(wrapper.find('.column-filter__label').exists()).toBe(false)
+    expect(wrapper.find('.column-filter__toggle').exists()).toBe(false)
+    const pill = wrapper.find('button.column-filter__pill')
+    expect(pill.text()).toBe('Name')
+    expect(pill.attributes('type')).toBe('button')
+    expect(pill.attributes('aria-label')).toBe('Filter by name')
+    expect(pill.classes()).not.toContain('column-filter__pill--active')
+    expect(pill.findComponent(AppIcon).props('name')).toBe('filter')
+
+    await pill.trigger('click')
+
+    await vi.waitFor(() => expect(wrapper.findComponent(ElPopover).props('visible')).toBe(true))
+    await vi.waitFor(() =>
+      expect(document.body.querySelector('.column-filter__panel')).not.toBeNull(),
+    )
+  })
+
+  it('highlights an active toolbar pill', async () => {
+    const { wrapper } = await renderWithProviders(ColumnFilterShell, {
+      props: { ...baseProps, active: true, variant: 'toolbar' },
+      attach: true,
+    })
+
+    const pill = wrapper.find('.column-filter__pill')
+    expect(pill.classes()).toContain('column-filter__pill--active')
+    expect(pill.findComponent(AppIcon).props('name')).toBe('filter-fill')
   })
 
   it('highlights the toggle with a filled filter icon when active', async () => {

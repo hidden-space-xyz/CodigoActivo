@@ -9,7 +9,6 @@ import { type CsvValue, useCsvExport } from '@/shared/lib/download'
 import { useCrudFeedback } from '@/shared/lib/feedback'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
-import { AppIcon } from '@/shared/ui/app-icon'
 import { ColorTag } from '@/shared/ui/color-tag'
 import {
   ColumnFilterDate,
@@ -18,6 +17,8 @@ import {
   toSelectOptions,
 } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
+import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { useUsersAdmin } from '../model/use-users-admin'
 import AdminPasswordDialog from './AdminPasswordDialog.vue'
@@ -30,10 +31,12 @@ const {
   table,
   types,
   statuses,
-  relationFilter,
+  relationChips,
   showGuardianOf,
   showDependentsOf,
-  clearRelationFilter,
+  isOwnAccount,
+  adminBlockReason,
+  deleteBlockReason,
   editDialog,
   editError,
   openEdit,
@@ -73,11 +76,13 @@ const yesNoOptions: { label: string; value: boolean }[] = [
   { label: t('common.no'), value: false },
 ]
 
-function birthDateWithAge(user: User): string {
-  const formatted = formatDate(user.birthDate)
-  if (formatted === '—') return '—'
+function ageLabel(user: User): string | null {
   const age = ageFrom(user.birthDate)
-  return age === null ? formatted : t('pages.admin.users.birthDateWithAge', { formatted, age })
+  return age === null ? null : t('pages.admin.users.age', age)
+}
+
+function hasFamily(user: User): boolean {
+  return Boolean(user.parentId) || user.dependentCount > 0
 }
 
 function dependentsLabel(count: number): string {
@@ -145,6 +150,81 @@ const {
   fetchAudience: (user) => usersAudience(user ? { id: user.id } : table.filterParams.value),
   onError: (error) => feedback.error(error),
 })
+
+function blockedBy(
+  reason: string | undefined,
+  busy = false,
+): Pick<RowAction, 'disabled' | 'reason'> {
+  return reason === undefined ? { disabled: busy } : { disabled: true, reason }
+}
+
+function userActions(user: User): RowAction[] {
+  const actions: RowAction[] = [
+    {
+      key: 'edit',
+      label: t('common.edit'),
+      icon: 'pencil',
+      inline: true,
+      disabled: loadingUser.value,
+      run: () => {
+        void openEdit(user)
+      },
+    },
+    {
+      key: 'changeType',
+      label: t('pages.admin.users.actions.changeType'),
+      icon: 'tag',
+      run: () => {
+        void typeDialog.openEdit(user)
+      },
+    },
+  ]
+  if (user.email) {
+    actions.push(
+      {
+        key: 'sendEmail',
+        label: t('pages.admin.users.actions.sendEmail'),
+        icon: 'envelope',
+        run: () => {
+          openEmail(user)
+        },
+      },
+      {
+        key: 'resetTwoFactor',
+        label: t('pages.admin.users.actions.resetTwoFactor'),
+        icon: 'lock',
+        run: () => {
+          openResetTwoFactor(user)
+        },
+      },
+    )
+  }
+  actions.push(
+    {
+      key: 'admin',
+      label: user.isAdmin
+        ? t('pages.admin.users.actions.revokeAdmin')
+        : t('pages.admin.users.actions.grantAdmin'),
+      icon: 'key',
+      ...blockedBy(adminBlockReason(user), settingAdmin.value),
+      run: () => {
+        toggleAdmin(user, !user.isAdmin)
+      },
+    },
+    {
+      key: 'delete',
+      label: t('common.delete'),
+      icon: 'trash',
+      danger: true,
+      divided: true,
+      ...blockedBy(deleteBlockReason(user)),
+      run: () => {
+        confirmRemove(user)
+      },
+    },
+  )
+  return actions
+}
 </script>
 
 <template>
@@ -152,12 +232,43 @@ const {
     <AdminPageHeader
       :title="$t('pages.admin.users.header.title')"
       :subtitle="$t('pages.admin.users.header.subtitle')"
+    />
+
+    <DataTable
+      :table="table"
+      :empty-text="$t('pages.admin.users.empty.none')"
+      :error-text="$t('pages.admin.users.empty.error')"
+      :search="{ key: 'name', label: $t('pages.admin.users.search.name') }"
+      :extra-filters="relationChips"
     >
+      <template #filters>
+        <ColumnFilterSelect
+          v-model="table.columnFilter('isAdmin').value"
+          variant="toolbar"
+          :label="$t('pages.admin.users.columns.admin')"
+          :options="yesNoOptions"
+          @apply="table.onFilter"
+        />
+        <ColumnFilterSelect
+          v-model="table.columnFilter('promotionalConsent').value"
+          variant="toolbar"
+          :label="$t('pages.admin.users.columns.promotionalConsent')"
+          :options="yesNoOptions"
+          @apply="table.onFilter"
+        />
+        <ColumnFilterDate
+          v-model="table.columnFilter('birthDate').value"
+          variant="toolbar"
+          :label="$t('pages.admin.users.columns.birth')"
+          @apply="table.onFilter"
+        />
+      </template>
       <template #actions>
         <ActionButton
           :label="$t('pages.admin.users.export.label')"
           :tooltip="$t('pages.admin.users.export.tooltip')"
           icon="download"
+          size="small"
           :loading="exporting"
           :disabled="table.total.value === 0"
           @click="exportCsv"
@@ -166,43 +277,69 @@ const {
           :label="$t('pages.admin.users.email.bulkLabel')"
           :tooltip="$t('pages.admin.users.email.bulkTooltip')"
           icon="envelope"
-          class="ca-action-icon--email"
+          size="small"
           :disabled="table.total.value === 0"
           @click="openEmail(null)"
         />
       </template>
-    </AdminPageHeader>
 
-    <div v-if="relationFilter" class="relation-filter">
-      <span class="relation-filter__icon"><AppIcon name="filter" /></span>
-      <span class="relation-filter__label">{{ relationFilter.label }}</span>
-      <ActionButton
-        icon="times"
-        text
-        circle
-        size="small"
-        :aria-label="$t('pages.admin.users.relation.clear')"
-        @click="clearRelationFilter"
-      />
-    </div>
-
-    <DataTable
-      :table="table"
-      :empty-text="$t('pages.admin.users.empty.none')"
-      :error-text="$t('pages.admin.users.empty.error')"
-    >
-      <el-table-column prop="firstName" sortable="custom" min-width="170">
-        <template #header>
-          <ColumnSearch
-            v-model="table.columnFilter('name').value"
-            :label="$t('common.name')"
-            :placeholder="$t('pages.admin.users.search.name')"
-            @apply="table.onFilter"
-          />
+      <el-table-column
+        prop="firstName"
+        :label="$t('pages.admin.users.columns.user')"
+        sortable="custom"
+        min-width="210"
+        :fixed="table.isNarrow.value ? false : 'left'"
+      >
+        <template #default="{ row }">
+          <TablePrimaryCell :title="fullName(row)">
+            <template v-if="row.isAdmin || isOwnAccount(row)" #badges>
+              <el-tag v-if="row.isAdmin" size="small" disable-transitions>{{
+                $t('pages.admin.users.columns.admin')
+              }}</el-tag>
+              <el-tag v-if="isOwnAccount(row)" size="small" type="info" disable-transitions>{{
+                $t('pages.admin.users.badges.you')
+              }}</el-tag>
+            </template>
+            <template v-if="ageLabel(row) !== null || hasFamily(row)" #meta>
+              <span class="user-meta">
+                <span v-if="row.parentId">{{ $t('pages.admin.users.guardianPrefix') }}</span>
+                <button
+                  v-if="row.parentId"
+                  type="button"
+                  class="user-meta__link"
+                  :title="$t('pages.admin.users.tooltips.showTutor')"
+                  @click="showGuardianOf(row)"
+                >
+                  {{ row.parentName }}
+                </button>
+                <button
+                  v-else-if="row.dependentCount > 0"
+                  type="button"
+                  class="user-meta__link"
+                  :title="$t('pages.admin.users.tooltips.showDependents')"
+                  @click="showDependentsOf(row)"
+                >
+                  {{ dependentsLabel(row.dependentCount) }}
+                </button>
+                <span v-if="ageLabel(row) !== null && hasFamily(row)" aria-hidden="true">·</span>
+                <span
+                  v-if="ageLabel(row) !== null"
+                  class="user-meta__age"
+                  :title="formatDate(row.birthDate)"
+                  >{{ ageLabel(row) }}</span
+                >
+              </span>
+            </template>
+          </TablePrimaryCell>
         </template>
-        <template #default="{ row }">{{ fullName(row) }}</template>
       </el-table-column>
-      <el-table-column prop="email" sortable="custom" min-width="290">
+      <el-table-column
+        prop="email"
+        :label="$t('common.email')"
+        sortable="custom"
+        min-width="150"
+        show-overflow-tooltip
+      >
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('email').value"
@@ -213,7 +350,7 @@ const {
         </template>
         <template #default="{ row }">{{ row.email || '—' }}</template>
       </el-table-column>
-      <el-table-column prop="phone" sortable="custom" min-width="165">
+      <el-table-column prop="phone" :label="$t('common.phone')" sortable="custom" width="128">
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('phone').value"
@@ -231,7 +368,12 @@ const {
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="nationalId" sortable="custom" min-width="150">
+      <el-table-column
+        prop="nationalId"
+        :label="$t('pages.admin.users.columns.nationalId')"
+        sortable="custom"
+        width="120"
+      >
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('nationalId').value"
@@ -242,30 +384,7 @@ const {
         </template>
         <template #default="{ row }">{{ row.nationalId || '—' }}</template>
       </el-table-column>
-      <el-table-column prop="birthDate" sortable="custom" min-width="185">
-        <template #header>
-          <ColumnFilterDate
-            v-model="table.columnFilter('birthDate').value"
-            :label="$t('pages.admin.users.columns.birth')"
-            @apply="table.onFilter"
-          />
-        </template>
-        <template #default="{ row }">{{ birthDateWithAge(row) }}</template>
-      </el-table-column>
-      <el-table-column prop="promotionalConsent" sortable="custom" min-width="200">
-        <template #header>
-          <ColumnFilterSelect
-            v-model="table.columnFilter('promotionalConsent').value"
-            :label="$t('pages.admin.users.columns.promotionalConsent')"
-            :options="yesNoOptions"
-            @apply="table.onFilter"
-          />
-        </template>
-        <template #default="{ row }">{{
-          row.promotionalConsent ? $t('common.yes') : $t('common.no')
-        }}</template>
-      </el-table-column>
-      <el-table-column prop="status" sortable="custom" min-width="145">
+      <el-table-column prop="status" :label="$t('common.status')" sortable="custom" width="124">
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('status').value"
@@ -275,11 +394,21 @@ const {
           />
         </template>
         <template #default="{ row }">
-          <ColorTag v-if="row.status.name" :value="row.status.name" :color="row.status.color" />
+          <ColorTag
+            v-if="row.status.name"
+            variant="dot"
+            :value="row.status.name"
+            :color="row.status.color"
+          />
           <span v-else>—</span>
         </template>
       </el-table-column>
-      <el-table-column prop="type" sortable="custom" min-width="150">
+      <el-table-column
+        prop="type"
+        :label="$t('pages.admin.users.columns.type')"
+        sortable="custom"
+        width="132"
+      >
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('type').value"
@@ -289,113 +418,16 @@ const {
           />
         </template>
         <template #default="{ row }">
-          <ColorTag v-if="row.type" :value="row.type.name" :color="row.type.color" />
+          <ColorTag v-if="row.type" variant="dot" :value="row.type.name" :color="row.type.color" />
           <span v-else>—</span>
         </template>
       </el-table-column>
-      <el-table-column
-        prop="dependents"
-        :label="$t('pages.admin.users.columns.family')"
-        sortable="custom"
-        min-width="175"
-      >
+      <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
         <template #default="{ row }">
-          <div class="family-cell">
-            <ActionButton
-              v-if="row.parentId"
-              :label="row.parentName"
-              icon="user"
-              text
-              size="small"
-              :tooltip="$t('pages.admin.users.tooltips.showTutor')"
-              @click="showGuardianOf(row)"
-            />
-            <ActionButton
-              v-if="row.dependentCount > 0"
-              :label="dependentsLabel(row.dependentCount)"
-              icon="users"
-              text
-              size="small"
-              :tooltip="$t('pages.admin.users.tooltips.showDependents')"
-              @click="showDependentsOf(row)"
-            />
-            <span v-if="!row.parentId && row.dependentCount === 0">—</span>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="isAdmin" sortable="custom" width="130">
-        <template #header>
-          <ColumnFilterSelect
-            v-model="table.columnFilter('isAdmin').value"
-            :label="$t('pages.admin.users.columns.admin')"
-            :options="yesNoOptions"
-            @apply="table.onFilter"
+          <RowActions
+            :actions="userActions(row)"
+            :menu-label="$t('table.moreActionsFor', { name: fullName(row) })"
           />
-        </template>
-        <template #default="{ row }">
-          <el-switch
-            :model-value="row.isAdmin"
-            :disabled="settingAdmin || row.isInitialAdmin"
-            :aria-label="$t('pages.admin.users.aria.admin')"
-            @update:model-value="
-              (value: string | number | boolean) => toggleAdmin(row, value === true)
-            "
-          />
-        </template>
-      </el-table-column>
-      <el-table-column
-        :label="$t('common.actions')"
-        width="240"
-        align="center"
-        :fixed="table.actionsFixed.value"
-      >
-        <template #default="{ row }">
-          <div class="ca-row-actions">
-            <ActionButton
-              icon="pencil"
-              type="success"
-              text
-              circle
-              :aria-label="$t('common.edit')"
-              :disabled="loadingUser"
-              @click="openEdit(row)"
-            />
-            <ActionButton
-              icon="sync"
-              text
-              circle
-              class="ca-action-icon--change-type"
-              :aria-label="$t('pages.admin.users.aria.changeType')"
-              @click="typeDialog.openEdit(row)"
-            />
-            <ActionButton
-              v-if="row.email"
-              icon="envelope"
-              text
-              circle
-              class="ca-action-icon--email"
-              :aria-label="$t('pages.admin.users.aria.sendEmail')"
-              @click="openEmail(row)"
-            />
-            <ActionButton
-              v-if="row.email"
-              icon="undo"
-              text
-              circle
-              type="warning"
-              :aria-label="$t('pages.admin.users.aria.resetTwoFactor')"
-              @click="openResetTwoFactor(row)"
-            />
-            <ActionButton
-              icon="trash"
-              text
-              circle
-              type="danger"
-              :aria-label="$t('common.delete')"
-              :disabled="row.isInitialAdmin"
-              @click="confirmRemove(row)"
-            />
-          </div>
         </template>
       </el-table-column>
     </DataTable>
@@ -460,43 +492,62 @@ const {
 </template>
 
 <style scoped>
-.relation-filter {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 14px;
-  padding: 4px 6px 4px 14px;
-  border: 1px solid var(--ca-border-soft);
-  border-radius: 999px;
-  background: var(--ca-surface);
+.user-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
 }
 
-.relation-filter__icon {
-  display: inline-flex;
-  font-size: 12px;
-  color: var(--ca-text-muted);
+.user-meta > * {
+  flex: none;
 }
 
-.relation-filter__label {
-  font-size: 13px;
-  font-weight: 600;
+.user-meta__link {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--ca-orange-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.user-meta__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.user-meta__link:focus-visible {
+  outline: 2px solid transparent;
+  background-color: var(--ca-orange-soft);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
 }
 
 .phone-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+}
+
+.phone-cell > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .phone-cell__secondary {
   font-size: 12.5px;
+  line-height: 18px;
   color: var(--ca-text-muted);
-}
-
-.family-cell {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px;
 }
 </style>

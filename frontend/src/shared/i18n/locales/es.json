@@ -53,6 +53,7 @@
       "nameEnd": "Activo"
     },
     "openMenu": "Abrir menú",
+    "opensInNewTab": "(se abre en una pestaña nueva)",
     "sessionEnded": {
       "title": "Sesión cerrada",
       "message": "Tu sesión ha terminado. Vuelve a iniciar sesión para continuar."
@@ -139,7 +140,17 @@
     "clear": "Limpiar",
     "clearSearch": "Limpiar búsqueda",
     "clearFilter": "Limpiar filtro",
-    "ref": "Ref: {id}"
+    "ref": "Ref: {id}",
+    "results": "{n} resultado | {n} resultados",
+    "clearFilters": "Limpiar filtros",
+    "activeFilters": "Filtros activos",
+    "filterChip": "{label}: {value}",
+    "removeFilter": "Quitar el filtro «{label}»",
+    "rangeSince": "desde {date}",
+    "rangeUntil": "hasta {date}",
+    "noMatches": "Ningún resultado coincide con los filtros.",
+    "moreActions": "Más acciones",
+    "moreActionsFor": "Más acciones para {name}"
   },
   "dataState": {
     "empty": "No hay datos todavía.",
@@ -614,14 +625,11 @@
         },
         "columns": {
           "title": "Título",
-          "subtitle": "Subtítulo",
           "type": "Tipo",
           "url": "Enlace",
           "created": "Creado"
         },
         "search": {
-          "title": "Buscar título",
-          "subtitle": "Buscar subtítulo",
           "url": "Buscar enlace"
         },
         "toasts": {
@@ -661,16 +669,15 @@
         "newPartner": "Nuevo patrocinador",
         "empty": {
           "error": "No se pudieron cargar los patrocinadores.",
-          "none": "Aún no hay patrocinadores. Crea el primero."
+          "none": "Aún no hay patrocinadores."
         },
         "columns": {
-          "logo": "Logo",
           "tier": "Nivel",
           "website": "Sitio web",
           "fromDate": "Alta"
         },
         "search": {
-          "name": "Buscar nombre",
+          "name": "Buscar por nombre",
           "website": "Buscar sitio"
         },
         "toasts": {
@@ -734,31 +741,46 @@
         "columns": {
           "birth": "Nacimiento",
           "nationalId": "DNI/NIE",
-          "promotionalConsent": "Consentimiento promocional",
+          "promotionalConsent": "Promociones",
           "type": "Tipo",
-          "family": "Familia",
-          "admin": "Admin"
+          "admin": "Admin",
+          "user": "Usuario"
+        },
+        "badges": {
+          "you": "Tú"
+        },
+        "age": "{n} año | {n} años",
+        "guardianPrefix": "Tutor:",
+        "actions": {
+          "changeType": "Cambiar tipo",
+          "sendEmail": "Escribir un correo",
+          "resetTwoFactor": "Restablecer la verificación en dos pasos",
+          "grantAdmin": "Conceder administrador",
+          "revokeAdmin": "Retirar administrador"
+        },
+        "revokeAdmin": {
+          "header": "Retirar rol de administrador",
+          "message": "{fullName} dejará de tener acceso a la administración.",
+          "messageSelf": "Vas a retirarte tu propio rol de administrador y perderás el acceso a este panel en cuanto confirmes.",
+          "confirm": "Retirar"
+        },
+        "blocked": {
+          "initialAdmin": "Cuenta de administración inicial",
+          "self": "Elimina tu cuenta desde «Mi cuenta»"
         },
         "search": {
-          "name": "Buscar nombre",
+          "name": "Buscar por nombre",
           "email": "Buscar correo",
           "phone": "Buscar teléfono",
           "nationalId": "Buscar DNI/NIE"
         },
         "relation": {
           "tutorOf": "Tutor de {fullName}",
-          "dependentsOf": "Dependientes de {fullName}",
-          "clear": "Quitar filtro"
+          "dependentsOf": "Dependientes de {fullName}"
         },
         "tooltips": {
           "showTutor": "Mostrar solo a su tutor",
           "showDependents": "Mostrar sus dependientes"
-        },
-        "aria": {
-          "admin": "Administrador",
-          "changeType": "Cambiar tipo",
-          "sendEmail": "Escribir un correo",
-          "resetTwoFactor": "Restablecer la verificación en dos pasos"
         },
         "export": {
           "label": "Exportar CSV",
@@ -778,7 +800,6 @@
           "targetFiltered": "el usuario que coincide con los filtros actuales | los {n} usuarios que coinciden con los filtros actuales"
         },
         "dependentsLabel": "1 dependiente | {count} dependientes",
-        "birthDateWithAge": "{formatted} ({age})",
         "toasts": {
           "updated": "Usuario actualizado.",
           "emailChangeSent": "Usuario actualizado. Te hemos enviado un correo a {email}: tu correo no cambiará hasta que lo confirmes desde ese mensaje.",
@@ -831,23 +852,30 @@
         "newEvent": "Nuevo evento",
         "empty": {
           "error": "No se pudieron cargar los eventos.",
-          "none": "Aún no hay eventos."
+          "none": "Aún no hay eventos.",
+          "noUpcoming": "No hay eventos próximos.",
+          "noPast": "Aún no hay eventos pasados."
         },
         "columns": {
           "event": "Evento",
           "searchEvent": "Buscar por título o subtítulo",
           "categories": "Categorías",
-          "duration": "Duración",
-          "signup": "Inscripción"
+          "signup": "Inscripción",
+          "dates": "Fechas"
         },
+        "scope": {
+          "label": "Mostrar eventos",
+          "upcoming": "Próximos",
+          "past": "Pasados",
+          "all": "Todos"
+        },
+        "actions": {
+          "feature": "Destacar evento"
+        },
+        "alreadyFeatured": "Ya es el evento destacado",
         "earlySignupFrom": "Anticipada: {date}",
         "tag": {
           "featured": "Destacado"
-        },
-        "aria": {
-          "featured": "Evento destacado",
-          "feature": "Destacar evento",
-          "manage": "Gestionar"
         },
         "toasts": {
           "featured": "Evento destacado.",
@@ -903,13 +931,8 @@
       },
       "news": {
         "newLabel": "Añadir novedad",
-        "search": {
-          "title": "Buscar título",
-          "subtitle": "Buscar subtítulo"
-        },
         "columns": {
           "title": "Título",
-          "subtitle": "Subtítulo",
           "created": "Creado"
         },
         "delete": {
@@ -922,11 +945,12 @@
           "subtitle": "Subtítulo",
           "title": "Título"
         },
-        "feature": "Destacar",
-        "featured": "Destacado",
+        "feature": "Destacar en portada",
+        "featured": "Destacada",
+        "alreadyFeatured": "Ya es la novedad destacada",
         "empty": {
-          "none": "Aún no hay registros.",
-          "error": "No se pudieron cargar los registros."
+          "none": "Aún no hay novedades.",
+          "error": "No se pudieron cargar las novedades."
         },
         "toasts": {
           "saved": "Cambios guardados.",
@@ -959,9 +983,8 @@
             "none": "Sin categorías.",
             "error": "No se pudieron cargar las categorías."
           },
-          "newButton": "Nueva",
+          "newButton": "Nueva categoría",
           "search": {
-            "color": "Buscar color",
             "name": "Buscar nombre"
           },
           "title": "Categorías de eventos"
@@ -990,11 +1013,8 @@
             "none": "Sin términos y condiciones.",
             "error": "No se pudieron cargar los términos y condiciones."
           },
-          "newButton": "Nuevos",
+          "newButton": "Nuevos términos",
           "title": "Términos y condiciones",
-          "columns": {
-            "signature": "Firma"
-          },
           "requiresSignature": "Requiere firma",
           "search": {
             "name": "Buscar nombre"
@@ -1033,7 +1053,7 @@
           "error": "No se pudieron cargar las decisiones.",
           "columns": {
             "person": "Persona",
-            "searchPerson": "Buscar nombre o correo",
+            "searchPerson": "Buscar por nombre o correo",
             "document": "Documento",
             "decision": "Decisión",
             "decidedAt": "Fecha",
@@ -1052,7 +1072,7 @@
         },
         "columns": {
           "title": "Título",
-          "searchTitle": "Buscar título",
+          "searchTitle": "Buscar por título",
           "schedule": "Horario",
           "modality": "Modalidad"
         },

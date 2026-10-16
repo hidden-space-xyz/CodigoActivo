@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
@@ -31,15 +31,15 @@ export function useEventActivitiesAdmin(eventId: () => string) {
   const feedback = useCrudFeedback()
   const { confirmDelete } = useDeleteConfirm()
 
-  const modalityId = ref<string | null>(null)
   const table = useServerTable({
     ...activityList,
     defaultSort: { field: 'activityStartsAt', order: 1 },
     columns: {
       title: { type: 'text' },
       activityDate: { type: 'dateRange', fromParam: 'activityDateFrom', toParam: 'activityDateTo' },
+      modality: { param: 'modalityTypeId' },
     },
-    extraParams: () => ({ eventId: eventId(), modalityTypeId: modalityId.value ?? undefined }),
+    extraParams: () => ({ eventId: eventId() }),
   })
   const dialog = useCrudDialog<ActivityListing, ActivityDetail>({
     load: (row) => queryClient.fetchQuery({ ...activityQueries.detail(row.id), staleTime: 0 }),
@@ -87,5 +87,5 @@ export function useEventActivitiesAdmin(eventId: () => string) {
     })
   }
 
-  return { table, modalityId, dialog, saving, save, confirmRemove }
+  return { table, dialog, saving, save, confirmRemove }
 }

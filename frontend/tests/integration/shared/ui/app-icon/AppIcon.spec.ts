@@ -41,6 +41,12 @@ describe('AppIcon', () => {
     expect(custom.wrapper.find('.el-icon').classes()).toContain('app-icon--spin')
   })
 
+  it('renders the row menu icon', async () => {
+    const { wrapper } = await renderWithProviders(AppIcon, { props: { name: 'more' } })
+
+    expect(wrapper.find('.el-icon svg').exists()).toBe(true)
+  })
+
   it('renders nothing for an unknown name', async () => {
     const { wrapper } = await renderWithProviders(AppIcon, { props: { name: 'does-not-exist' } })
 

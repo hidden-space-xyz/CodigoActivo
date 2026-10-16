@@ -33,6 +33,31 @@ describe('useNewsAdmin', () => {
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-createdAt' })
   })
 
+  it('searches the title or the subtitle with one term', async () => {
+    const urls: string[] = []
+    server.use(
+      http.get('/api/news', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(paged([]))
+      }),
+    )
+    const { result } = await mountComposable(() => useNewsAdmin())
+    await vi.waitFor(() => expect(urls).toHaveLength(1))
+
+    result.table.columnFilter('search').value = 'hack'
+    result.table.onFilter()
+
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: '-createdAt',
+        search: 'hack',
+      }),
+    )
+    expect(result.table.hasActiveFilters.value).toBe(true)
+  })
+
   it('features only a news item that is not featured yet', async () => {
     const featured: string[] = []
     server.use(
