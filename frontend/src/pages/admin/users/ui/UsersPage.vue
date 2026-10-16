@@ -35,6 +35,7 @@ const {
   showGuardianOf,
   showDependentsOf,
   isOwnAccount,
+  typeBlockReason,
   adminBlockReason,
   deleteBlockReason,
   editDialog,
@@ -174,6 +175,7 @@ function userActions(user: User): RowAction[] {
       key: 'changeType',
       label: t('pages.admin.users.actions.changeType'),
       icon: 'tag',
+      ...blockedBy(typeBlockReason(user)),
       run: () => {
         void typeDialog.openEdit(user)
       },

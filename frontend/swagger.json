@@ -5312,6 +5312,8 @@
           "FileUploadUnsupportedFormat",
           "UserNotFound",
           "UserSelfDeleteRequiresVerification",
+          "UserSelfAdminChangeForbidden",
+          "UserSelfTypeChangeForbidden",
           "UserDeleteInitialAdminForbidden",
           "UserCannotRemoveInitialAdmin",
           "ParentUserNotFound",

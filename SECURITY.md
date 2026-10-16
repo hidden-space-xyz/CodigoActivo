@@ -76,6 +76,10 @@ authentication are not supported.
   `InitialAdministrator.Id` and with a random, discarded password, so its first password is set through a
   password reset to that address. That generic account can be neither demoted (`UserCannotRemoveInitialAdmin`)
   nor deleted, so the application always keeps an administrator; the SPA disables both actions for it.
+- Nobody changes their own role, administrators included: on the caller's own id, `PATCH
+  /api/users/{id}/admin` returns `UserSelfAdminChangeForbidden` before any password is checked, and `PATCH
+  /api/users/{id}/change-type` returns `UserSelfTypeChangeForbidden`. Another administrator must make the
+  change; the SPA disables both actions on the caller's row.
 - `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
   password whenever the update would replace the account's email, phone or secondary phone. A missing or
   wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three

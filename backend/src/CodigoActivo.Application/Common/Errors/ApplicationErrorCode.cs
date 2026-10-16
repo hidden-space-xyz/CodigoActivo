@@ -166,6 +166,16 @@ public enum ApplicationErrorCode
     UserSelfDeleteRequiresVerification,
 
     /// <summary>
+    /// Selects the option for a user who grants or revokes their own administrator rights.
+    /// </summary>
+    UserSelfAdminChangeForbidden,
+
+    /// <summary>
+    /// Selects the option for a user who changes their own membership type.
+    /// </summary>
+    UserSelfTypeChangeForbidden,
+
+    /// <summary>
     /// Selects the parent user not found option.
     /// </summary>
     ParentUserNotFound,

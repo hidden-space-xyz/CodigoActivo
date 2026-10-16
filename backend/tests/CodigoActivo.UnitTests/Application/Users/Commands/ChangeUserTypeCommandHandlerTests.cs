@@ -16,11 +16,12 @@ public sealed class ChangeUserTypeCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestClock clock = new(today: Today);
+    private readonly TestCurrentUser currentUser = new(isAdmin: true);
     private readonly ChangeUserTypeCommandHandler sut;
 
     public ChangeUserTypeCommandHandlerTests()
     {
-        sut = new ChangeUserTypeCommandHandler(users, clock);
+        sut = new ChangeUserTypeCommandHandler(users, currentUser, clock);
     }
 
     [Fact]
@@ -34,6 +35,29 @@ public sealed class ChangeUserTypeCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task HandleAsyncOwnAccountReturnsForbiddenAndKeepsTheType(bool isAdmin)
+    {
+        var user = NewUser(dob: AdultDob, isAdmin: isAdmin);
+        currentUser.Id = user.Id;
+        currentUser.IsAdmin = isAdmin;
+        users.FindReturns(user);
+
+        var result = await sut.HandleAsync(
+            new ChangeUserTypeCommand(user.Id, UserType.Member),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.UserSelfTypeChangeForbidden);
+        user.UserType.Should().Be(UserType.Participant);
+        user.PullDomainEvents().Should().BeEmpty();
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .GetByIdAsync(default, TestContext.Current.CancellationToken);
     }
 
     [Fact]

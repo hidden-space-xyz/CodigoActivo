@@ -50,6 +50,7 @@ public sealed class SetAdminCommandHandlerTests
         );
         sut = new SetAdminCommandHandler(
             users,
+            currentUser,
             PasswordGuards.Create(hasher, uow, clock, users: users, currentUser: currentUser),
             clock
         );
@@ -89,6 +90,46 @@ public sealed class SetAdminCommandHandlerTests
         var result = await HandleAsync(Guid.NewGuid(), true, ActingPassword);
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
+        await AssertNotSavedAsync();
+    }
+
+    [Theory]
+    [InlineData(true, ActingPassword)]
+    [InlineData(true, "wrong-password")]
+    [InlineData(false, null)]
+    public async Task HandleAsyncOwnAccountReturnsForbiddenWithoutCheckingThePassword(
+        bool isAdmin,
+        string? currentPassword
+    )
+    {
+        users.FindReturns(actingAdmin);
+
+        var result = await HandleAsync(actingAdmin.Id.Value, isAdmin, currentPassword);
+
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.UserSelfAdminChangeForbidden);
+        actingAdmin.IsAdmin.Should().BeTrue();
+        actingAdmin.PasswordLockout.FailedAttempts.Should().Be(0);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .GetByIdAsync(default, TestContext.Current.CancellationToken);
+        await AssertNotSavedAsync();
+        await events.PublishAsync(actingAdmin);
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncNonAdministratorGrantingThemselvesReturnsForbidden()
+    {
+        var member = NewUser(isAdmin: false);
+        Persisted.Overwrite(member, new { PasswordHash = hasher.Hash(ActingPassword) });
+        currentUser.Id = member.Id;
+        currentUser.IsAdmin = false;
+        users.FindReturns(member);
+
+        var result = await HandleAsync(member.Id.Value, true, ActingPassword);
+
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.UserSelfAdminChangeForbidden);
+        member.IsAdmin.Should().BeFalse();
         await AssertNotSavedAsync();
     }
 

@@ -1,9 +1,8 @@
 import { computed, ref, type Ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 
-import { refreshSession, useSession } from '@/entities/session'
+import { useSession } from '@/entities/session'
 import {
   fullName,
   isSameEmail,
@@ -39,16 +38,14 @@ export interface UserRelationFilter {
  * replaces contact details, need the signed-in admin's password: a refused one is shown in the
  * dialog instead of a toast. An admin's new email for their own account waits for the link
  * emailed to it, as the success toast says. Revoking the admin role and deleting ask for
- * confirmation and then act at once; an admin who revokes their own role is taken to the home page
- * with a refreshed session. The initial administrator can be neither demoted nor deleted,
- * and the caller cannot delete their own account here; the block reasons explain why. Call it in
- * `setup`.
+ * confirmation and then act at once. The initial administrator can be neither demoted nor deleted,
+ * and the caller can neither change their own type or admin role nor delete their own account
+ * here; the block reasons explain why. Call it in `setup`.
  */
 export function useUsersAdmin() {
   const { t } = useI18n()
   const session = useSession()
   const queryClient = useQueryClient()
-  const router = useRouter()
   const feedback = useCrudFeedback()
   const { confirmDelete } = useDeleteConfirm()
   const { confirmAction } = useActionConfirm()
@@ -138,8 +135,14 @@ export function useUsersAdmin() {
     return own !== null && own.id === user.id
   }
 
+  function typeBlockReason(user: User): string | undefined {
+    return isOwnAccount(user) ? t('pages.admin.users.blocked.selfRole') : undefined
+  }
+
   function adminBlockReason(user: User): string | undefined {
-    return user.isInitialAdmin ? t('pages.admin.users.blocked.initialAdmin') : undefined
+    if (user.isInitialAdmin) return t('pages.admin.users.blocked.initialAdmin')
+    if (isOwnAccount(user)) return t('pages.admin.users.blocked.selfRole')
+    return undefined
   }
 
   function deleteBlockReason(user: User): string | undefined {
@@ -184,25 +187,15 @@ export function useUsersAdmin() {
     }
     confirmAction({
       header: t('pages.admin.users.revokeAdmin.header'),
-      message: isOwnAccount(user)
-        ? t('pages.admin.users.revokeAdmin.messageSelf')
-        : t('pages.admin.users.revokeAdmin.message', { fullName: fullName(user) }),
+      message: t('pages.admin.users.revokeAdmin.message', { fullName: fullName(user) }),
       acceptLabel: t('pages.admin.users.revokeAdmin.confirm'),
       accept: () => {
         setAdmin.mutate(
           { id: user.id, isAdmin: false, currentPassword: null },
-          feedback.outcome(
-            t('pages.admin.users.toasts.adminRevoked'),
-            isOwnAccount(user) ? leaveAdminArea : undefined,
-          ),
+          feedback.outcome(t('pages.admin.users.toasts.adminRevoked')),
         )
       },
     })
-  }
-
-  function leaveAdminArea(): void {
-    void router.push({ name: 'home' })
-    void refreshSession(queryClient)
   }
 
   function grantAdmin(currentPassword: string): void {
@@ -248,6 +241,7 @@ export function useUsersAdmin() {
     showGuardianOf,
     showDependentsOf,
     isOwnAccount,
+    typeBlockReason,
     adminBlockReason,
     deleteBlockReason,
     editDialog,
