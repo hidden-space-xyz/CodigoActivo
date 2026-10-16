@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import type { RouteLocationRaw } from 'vue-router'
-
 defineProps<{
   /** Main text on one line with an ellipsis; the full text is its tooltip. */
   title: string
   /** Muted second line with an ellipsis and its full text as tooltip; hidden when empty. */
   subtitle?: string | null
-  /** Turns the title into a link, for records with their own page. */
-  to?: RouteLocationRaw
 }>()
 </script>
 
@@ -18,10 +14,7 @@ defineProps<{
     </div>
     <div class="table-primary-cell__body">
       <div class="table-primary-cell__head">
-        <RouterLink v-if="to" :to="to" class="table-primary-cell__title" :title="title">{{
-          title
-        }}</RouterLink>
-        <span v-else class="table-primary-cell__title" :title="title">{{ title }}</span>
+        <span class="table-primary-cell__title" :title="title">{{ title }}</span>
         <span v-if="$slots.badges" class="table-primary-cell__badges">
           <slot name="badges" />
         </span>
@@ -70,27 +63,6 @@ defineProps<{
   white-space: nowrap;
   font-weight: 600;
   color: var(--ca-text-bright);
-  text-decoration: none;
-}
-
-a.table-primary-cell__title {
-  border-radius: 4px;
-  transition: color 0.15s ease;
-}
-
-a.table-primary-cell__title:hover {
-  color: var(--ca-orange-ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-a.table-primary-cell__title:focus-visible {
-  outline: 2px solid transparent;
-  border-radius: 3px;
-  background-color: var(--ca-orange-soft);
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 2px;
 }
 
 .table-primary-cell__badges {

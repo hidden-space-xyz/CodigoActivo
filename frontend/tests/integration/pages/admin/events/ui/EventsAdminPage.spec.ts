@@ -191,10 +191,10 @@ describe('EventsAdminPage', () => {
     expect(formatDateRange('2026-11-07', '2026-11-07')).not.toContain('–')
 
     const [first, second, third] = [tableRow(0), tableRow(1), tableRow(2)]
-    const title = first.querySelector('a.table-primary-cell__title')
-    expect(title?.getAttribute('href')).toBe(`/admin/events/${EVENT_ID}`)
+    const title = first.querySelector('.table-primary-cell__title')
+    expect(title?.tagName).toBe('SPAN')
     expect(textOf(title)).toBe('Hackathon')
-    expect(wrapper.find(`a[href="/admin/events/${EVENT_ID}"]`).exists()).toBe(true)
+    expect(wrapper.find(`a[href="/admin/events/${EVENT_ID}"]`).exists()).toBe(false)
     expect(textOf(first.querySelector('.table-primary-cell__subtitle'))).toBe('Code all night')
     expect(first.querySelector('.table-primary-cell__leading .list-thumb--table')).not.toBeNull()
     const featured = first.querySelector('.table-primary-cell__badges .el-tag')
@@ -232,13 +232,14 @@ describe('EventsAdminPage', () => {
     expect(third.querySelector('.signup-cell .el-tag')?.classList).toContain('el-tag--success')
   })
 
-  it('offers edit in the row and the other actions in a menu named after the event', async () => {
+  it('offers manage and edit in the row and the other actions in a menu named after the event', async () => {
     await renderPage([
       buildAdminEventListItem({ featured: true }),
       buildAdminEventListItem({ id: 'ev-2', title: 'Workshop' }),
     ])
 
     const [first, second] = [tableRow(0), tableRow(1)]
+    expect(findButtons(t('pages.admin.events.actions.manage'), first)).toHaveLength(1)
     expect(findButtons(t('common.edit'), first)).toHaveLength(1)
     expect(findButtons(t('common.delete'), first)).toHaveLength(0)
     expect(first.querySelector('.row-actions__more')?.getAttribute('aria-label')).toBe(
@@ -263,6 +264,15 @@ describe('EventsAdminPage', () => {
     const otherItem = rowMenuItem(otherMenu, t('pages.admin.events.actions.feature'))
     expect(otherItem.getAttribute('aria-disabled')).not.toBe('true')
     expect(otherItem.querySelector('.row-actions__item-reason')).toBeNull()
+  })
+
+  it('opens the event management page from the row', async () => {
+    const { router } = await renderPage()
+
+    await click(rowButton(t('pages.admin.events.actions.manage')))
+
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('admin-event-detail'))
+    expect(router.currentRoute.value.fullPath).toBe(`/admin/events/${EVENT_ID}`)
   })
 
   it('shows the empty message of each scope and the error message', async () => {

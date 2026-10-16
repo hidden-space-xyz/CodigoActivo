@@ -33,20 +33,6 @@ describe('TablePrimaryCell', () => {
     expect(wrapper.find('.table-primary-cell__subtitle').exists()).toBe(false)
   })
 
-  it('links the title to the record page', async () => {
-    const { wrapper } = await renderWithProviders(TablePrimaryCell, {
-      props: {
-        title: 'Hackathon',
-        to: { name: 'admin-event-detail', params: { eventId: 'event-1' } },
-      },
-    })
-
-    const link = wrapper.find('a.table-primary-cell__title')
-    expect(link.attributes('href')).toBe('/admin/events/event-1')
-    expect(link.attributes('title')).toBe('Hackathon')
-    expect(link.text()).toBe('Hackathon')
-  })
-
   it('renders the leading, badges and meta slots', async () => {
     const { wrapper } = await renderWithProviders(TablePrimaryCell, {
       props: { title: 'Ada Lovelace' },
