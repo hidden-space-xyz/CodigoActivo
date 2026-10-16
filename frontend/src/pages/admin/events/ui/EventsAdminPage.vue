@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuery } from '@tanstack/vue-query'
+import { useRouter } from 'vue-router'
 
 import { statusLabelKey, type EventListing } from '@/entities/event'
 import { eventCategoryQueries } from '@/entities/event-category'
@@ -22,6 +23,7 @@ import EventFormDialog from './EventFormDialog.vue'
 const SHOWN_CATEGORIES = 2
 
 const { t } = useI18n()
+const router = useRouter()
 const { table, scope, setScope, dialog, saving, featuring, save, feature, confirmRemove } =
   useEventsAdmin()
 const { visible, editing, loading, openCreate, openEdit } = dialog
@@ -58,6 +60,15 @@ function signupTitle(event: EventListing): string {
 
 function eventActions(event: EventListing): RowAction[] {
   return [
+    {
+      key: 'manage',
+      label: t('pages.admin.events.actions.manage'),
+      icon: 'cog',
+      inline: true,
+      run: () => {
+        void router.push({ name: 'admin-event-detail', params: { eventId: event.id } })
+      },
+    },
     {
       key: 'edit',
       label: t('common.edit'),
@@ -133,11 +144,7 @@ function eventActions(event: EventListing): RowAction[] {
         :fixed="table.isNarrow.value ? false : 'left'"
       >
         <template #default="{ row }">
-          <TablePrimaryCell
-            :title="row.title"
-            :subtitle="row.subtitle"
-            :to="{ name: 'admin-event-detail', params: { eventId: row.id } }"
-          >
+          <TablePrimaryCell :title="row.title" :subtitle="row.subtitle">
             <template #leading>
               <ListThumbnail size="table" :thumbnail-id="row.thumbnailId" />
             </template>

@@ -872,6 +872,7 @@
           "all": "Todos"
         },
         "actions": {
+          "manage": "Gestionar evento",
           "feature": "Destacar evento"
         },
         "alreadyFeatured": "Ya es el evento destacado",
