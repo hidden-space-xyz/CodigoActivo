@@ -20,5 +20,14 @@ describe('admin catalogs page', () => {
     expect(wrapper.text()).toContain(t('pages.admin.catalogs.eventCategories.title'))
     expect(wrapper.text()).toContain(t('pages.admin.catalogs.termsDocuments.title'))
     expect(wrapper.text()).toContain('Privacy')
+
+    const sections = wrapper.findAll('.catalogs-grid > section')
+    const headingIds = sections.map((section) => section.find('h2').attributes('id'))
+    expect(sections.map((section) => section.attributes('aria-labelledby'))).toEqual(headingIds)
+    expect(sections.map((section) => section.find('h2').text())).toEqual([
+      t('pages.admin.catalogs.eventCategories.title'),
+      t('pages.admin.catalogs.termsDocuments.title'),
+    ])
+    expect(new Set(headingIds).size).toBe(2)
   })
 })

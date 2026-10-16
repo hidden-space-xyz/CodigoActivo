@@ -23,6 +23,7 @@ import TermsDocumentsSection from './TermsDocumentsSection.vue'
 .catalogs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  align-items: start;
   gap: 18px;
 }
 </style>

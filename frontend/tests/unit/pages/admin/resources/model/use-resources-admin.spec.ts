@@ -45,6 +45,32 @@ describe('useResourcesAdmin', () => {
     await vi.waitFor(() => expect(result.types.data.value).toHaveLength(1))
   })
 
+  it('searches title and subtitle with one term and filters by type, url and creation date', async () => {
+    const urls = serveList()
+    const { result } = await mountComposable(() => useResourcesAdmin())
+    await vi.waitFor(() => expect(urls).toHaveLength(1))
+
+    result.table.columnFilter('search').value = 'python'
+    result.table.columnFilter('type').value = 'type-article'
+    result.table.columnFilter('url').value = 'python.org'
+    result.table.columnFilter('created').value = ['2026-01-01', '2026-01-31']
+    result.table.onFilter()
+
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: '-createdAt',
+        search: 'python',
+        resourceTypeId: 'type-article',
+        url: 'python.org',
+        createdFrom: '2026-01-01',
+        createdTo: '2026-01-31',
+      }),
+    )
+    expect(result.table.hasActiveFilters.value).toBe(true)
+  })
+
   it('loads the whole resource before editing it and reports one that no longer exists', async () => {
     serveList()
     server.use(

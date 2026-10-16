@@ -9,7 +9,8 @@ type ServerTableFieldType = 'text' | 'number' | 'dateRange'
 export type ServerTableSortOrder = 'ascending' | 'descending'
 
 const ROWS_PER_PAGE_OPTIONS = [25, 50, 100]
-const PAGINATION_LAYOUT = 'total, sizes, prev, pager, next'
+const SMALLEST_PAGE_SIZE = Math.min(...ROWS_PER_PAGE_OPTIONS)
+const PAGINATION_LAYOUT = 'sizes, prev, pager, next'
 const PAGINATION_LAYOUT_NARROW = 'prev, pager, next'
 const NARROW_QUERY = '(max-width: 640px)'
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -114,6 +115,8 @@ interface UseServerTableOptions<T, TParams> extends ServerTableSource<T, TParams
   readonly rows?: number | undefined
   readonly extraParams?: (() => Record<string, unknown>) | undefined
   readonly enabled?: (() => boolean) | undefined
+  /** Row identity for Element Plus; defaults to `'id'`. Lists whose rows have no id pass a function. */
+  readonly rowKey?: string | ((row: T) => string) | undefined
 }
 
 function initialFilters<TParams>(
@@ -129,10 +132,12 @@ function initialFilters<TParams>(
  *
  * Builds `page`, `pageSize`, `sort` (`-field` for descending) and column filter params, keeps the
  * previous page visible while fetching, and returns ready-to-bind `tableProps`/`paginationProps`
- * plus event handlers. Sort, page-size and `extraParams` changes, `onFilter` and `clearFilters` go
- * back to the first page; an empty page beyond the end jumps to the last one. Narrow viewports get
- * a compact paginator and an actions column that scrolls with the rest instead of covering it. `fetchAll` collects every row matching the current filters and sort, e.g.
- * for CSV export.
+ * plus event handlers. Sort, page-size and `extraParams` changes, `onFilter`, `clearFilters` and
+ * `setSort` (a sort chosen by code) go back to the first page; an empty page beyond the end jumps
+ * to the last one. Narrow viewports get a compact paginator. `hasActiveFilters` tells whether a
+ * column filter, not `extraParams`, narrows the list; `showPagination` whether there is more than
+ * the smallest page to browse. `fetchAll` collects every row matching the current filters and
+ * sort, e.g. for CSV export.
  */
 export function useServerTable<T, TParams = Record<string, unknown>>(
   options: UseServerTableOptions<T, TParams>,
@@ -150,8 +155,8 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     first.value = 0
   })
 
-  const filterParams = computed<Record<string, unknown>>(() => {
-    const result: Record<string, unknown> = { ...extra.value }
+  const columnParams = computed<Record<string, unknown>>(() => {
+    const result: Record<string, unknown> = {}
 
     for (const [key, column] of Object.entries(columns)) {
       const value = filters.value[key]?.value
@@ -173,6 +178,13 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
 
     return result
   })
+
+  const filterParams = computed<Record<string, unknown>>(() => ({
+    ...extra.value,
+    ...columnParams.value,
+  }))
+
+  const hasActiveFilters = computed(() => Object.keys(columnParams.value).length > 0)
 
   const sortParam = computed(() =>
     sortField.value ? `${sortOrder.value === -1 ? '-' : ''}${sortField.value}` : undefined,
@@ -217,13 +229,12 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
 
   const tableProps = computed(() => ({
     data: page.value.items,
-    rowKey: 'id',
-    stripe: true,
+    rowKey: options.rowKey ?? 'id',
     defaultSort: defaultSort.value,
     scrollbarAlwaysOn: narrow.value,
   }))
 
-  const actionsFixed = computed<'right' | false>(() => (narrow.value ? false : 'right'))
+  const showPagination = computed(() => page.value.total > SMALLEST_PAGE_SIZE || first.value > 0)
 
   const paginationProps = computed(() => ({
     currentPage: Math.floor(first.value / rows.value) + 1,
@@ -239,6 +250,12 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     const order = event.order
     sortField.value = order === null || typeof event.prop !== 'string' ? undefined : event.prop
     sortOrder.value = order === 'descending' ? -1 : 1
+    first.value = 0
+  }
+
+  function setSort(field: string | undefined, order: 1 | -1 = 1): void {
+    sortField.value = field
+    sortOrder.value = order
     first.value = 0
   }
 
@@ -275,6 +292,14 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     return (filters.value[key] ?? created) as ServerTableFilter
   }
 
+  function filterValue(key: string): ServerTableFilterValue {
+    return filters.value[key]?.value
+  }
+
+  function refetch(): void {
+    void tableQuery.refetch()
+  }
+
   return {
     tableProps,
     paginationProps,
@@ -284,9 +309,11 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     items: computed(() => page.value.items),
     total: computed(() => page.value.total),
     loading: tableQuery.isFetching,
+    isInitialLoading: tableQuery.isLoading,
     isError: tableQuery.isError,
     isNarrow: narrow,
-    actionsFixed,
+    hasActiveFilters,
+    showPagination,
     first,
     rows,
     sortField,
@@ -294,8 +321,11 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     filterParams,
     sortParam,
     columnFilter,
+    filterValue,
     clearFilters,
     fetchAll,
+    refetch,
+    setSort,
     onSortChange,
     onCurrentPageChange,
     onPageSizeChange,

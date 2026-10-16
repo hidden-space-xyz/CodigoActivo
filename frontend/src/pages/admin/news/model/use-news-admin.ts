@@ -15,9 +15,10 @@ import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
 
 /**
- * Admin news list: a table of the newest news items with a filter per column, the create/edit
- * dialog, which loads the whole news item before editing it, featuring one news item and deletion
- * after confirmation, each outcome reported with a toast. Call it in `setup`.
+ * Admin news list: a table of the newest news items, searchable by title or subtitle and filtered by
+ * creation date, the create/edit dialog, which loads the whole news item before editing it,
+ * featuring one news item and deletion after confirmation, each outcome reported with a toast. Call
+ * it in `setup`.
  */
 export function useNewsAdmin() {
   const { t } = useI18n()
@@ -29,8 +30,7 @@ export function useNewsAdmin() {
     ...newsList,
     defaultSort: { field: 'createdAt', order: -1 },
     columns: {
-      title: { type: 'text' },
-      subtitle: { type: 'text' },
+      search: { type: 'text' },
       created: { type: 'dateRange', fromParam: 'createdFrom', toParam: 'createdTo' },
     },
   })

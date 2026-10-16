@@ -25,7 +25,7 @@ const INPUT: EventInput = {
 }
 
 describe('useEventsAdmin', () => {
-  it('requests the events by start date and sends the column filters', async () => {
+  it('requests the upcoming events by start date and sends the column filters', async () => {
     const urls: string[] = []
     server.use(
       http.get('/api/events', ({ request }) => {
@@ -36,7 +36,13 @@ describe('useEventsAdmin', () => {
 
     const { result } = await mountComposable(() => useEventsAdmin())
     await vi.waitFor(() => expect(result.table.items.value).toHaveLength(1))
-    expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'eventStartsAt' })
+    expect(result.scope.value).toBe('upcoming')
+    expect(queryOf(urls[0] ?? '')).toEqual({
+      page: '1',
+      pageSize: '25',
+      sort: 'eventStartsAt',
+      scope: 'Upcoming',
+    })
 
     result.table.columnFilter('search').value = 'hack'
     result.table.columnFilter('category').value = 'cat-2'
@@ -49,12 +55,60 @@ describe('useEventsAdmin', () => {
       page: '1',
       pageSize: '25',
       sort: 'eventStartsAt',
+      scope: 'Upcoming',
       search: 'hack',
       categoryTypeId: 'cat-2',
       eventDateFrom: '2026-10-01',
       eventDateTo: '2026-10-31',
       signupFrom: '2026-09-01',
     })
+  })
+
+  it('switches the scope with its sort and goes back to the first page', async () => {
+    const urls: string[] = []
+    server.use(
+      http.get('/api/events', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json(paged([buildEventListItem()], 80))
+      }),
+    )
+
+    const { result } = await mountComposable(() => useEventsAdmin())
+    await vi.waitFor(() => expect(urls).toHaveLength(1))
+
+    result.table.onCurrentPageChange(3)
+    await vi.waitFor(() => expect(queryOf(urls.at(-1) ?? '').page).toBe('3'))
+
+    result.setScope('past')
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: '-eventStartsAt',
+        scope: 'Past',
+      }),
+    )
+    expect(result.scope.value).toBe('past')
+
+    result.setScope('all')
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: '-eventStartsAt',
+      }),
+    )
+
+    result.setScope('upcoming')
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: 'eventStartsAt',
+        scope: 'Upcoming',
+      }),
+    )
+    expect(result.table.sortOrder.value).toBe(1)
   })
 
   it('features only an event that is not featured yet', async () => {

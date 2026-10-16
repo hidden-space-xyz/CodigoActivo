@@ -1,4 +1,4 @@
-import { flushPromises } from '@vue/test-utils'
+import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { ElPagination, ElTable } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -22,9 +22,19 @@ import {
   EVENT_ID,
   THUMBNAIL_ID,
 } from '../../../../../support/builders'
-import { findButtons, notificationTexts } from '../../../../../support/dom'
+import {
+  click,
+  findButtons,
+  notificationTexts,
+  openRowMenu,
+  queryOf,
+  rowMenuItem,
+  rowMenuLabels,
+  textOf,
+} from '../../../../../support/dom'
 import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
-import { formatDateRange } from '@/shared/lib/date'
+import { SearchInput } from '@/shared/ui/search-input'
+import { formatDateRange, formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
 
 const ADMIN_EVENT = {
   title: 'Hackathon',
@@ -107,6 +117,33 @@ function rowButton(label: string, index = 0): HTMLButtonElement {
   return button
 }
 
+function tableRow(index = 0): HTMLElement {
+  const row = document.body.querySelectorAll<HTMLElement>('.el-table__body tr.el-table__row')[index]
+  if (!row) throw new Error(`Table row ${String(index)} not found`)
+  return row
+}
+
+async function chooseRowMenuItem(label: string, index = 0): Promise<void> {
+  const menu = await openRowMenu(tableRow(index))
+  await click(rowMenuItem(menu, label))
+}
+
+async function chooseScope(wrapper: VueWrapper, label: string): Promise<void> {
+  const item = wrapper
+    .findAll('.el-segmented__item')
+    .find((candidate) => candidate.text() === label)
+  if (!item) throw new Error(`Scope "${label}" not found`)
+  await click(item.find('input').element)
+}
+
+function headerCell(wrapper: VueWrapper, label: string) {
+  const cell = wrapper
+    .findAll('.el-table__header th')
+    .find((candidate) => candidate.text().includes(label))
+  if (!cell) throw new Error(`Header "${label}" not found`)
+  return cell
+}
+
 async function confirmMessageBox(previousBoxes = 0) {
   await vi.waitFor(() =>
     expect(document.body.querySelectorAll('.el-message-box').length).toBeGreaterThan(previousBoxes),
@@ -120,11 +157,12 @@ async function confirmMessageBox(previousBoxes = 0) {
 }
 
 describe('EventsAdminPage', () => {
-  it('lists events with their tags, categories, dates and early signup', async () => {
+  it('lists events with their stage, categories, dates and early signup', async () => {
     const { wrapper } = await renderPage([
       buildAdminEventListItem({
         featured: true,
         earlySignupStartsAt: '2026-08-20T08:00:00Z',
+        stage: 'EarlySignupOpen',
       }),
       buildAdminEventListItem({
         id: 'ev-2',
@@ -132,29 +170,111 @@ describe('EventsAdminPage', () => {
         categories: [],
         eventStartsAt: '2026-11-07',
         eventEndsAt: '2026-11-07',
+        stage: 'Finished',
+      }),
+      buildAdminEventListItem({
+        id: 'ev-3',
+        title: 'Festival',
+        categories: [
+          buildEventCategory({ categoryTypeId: 'cat-1', name: 'Tech', color: '#112233' }),
+          buildEventCategory({ categoryTypeId: 'cat-2', name: 'Art', color: 'not-a-color' }),
+          buildEventCategory({ categoryTypeId: 'cat-3', name: 'Music', color: '#778899' }),
+        ],
       }),
     ])
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Workshop'))
     const text = wrapper.text()
-    expect(wrapper.find('.subtitle-cell').text()).toBe('Code all night')
+    expect(text).toContain(t('pages.admin.events.header.title'))
     expect(text).toContain(formatDateRange('2026-10-10', '2026-10-12'))
     expect(text).toContain(formatDateRange('2026-11-07', '2026-11-07'))
     expect(formatDateRange('2026-11-07', '2026-11-07')).not.toContain('–')
-    expect(text).toContain(t('pages.admin.events.header.title'))
-    expect(text).toContain('Hackathon')
-    expect(text).toContain(t('pages.admin.events.tag.featured'))
-    expect(text).toContain('Tech')
-    expect(text).toContain('—')
-    expect(text).toContain(t('pages.admin.events.earlySignupFrom', { date: '' }).trim())
-    expect(findButtons(t('pages.admin.events.aria.featured'))[0]?.disabled).toBe(true)
-    expect(findButtons(t('pages.admin.events.aria.feature'))[0]?.disabled).toBe(false)
-    const manage = wrapper.find(`a[href="/admin/events/${EVENT_ID}"]`)
-    expect(manage.exists()).toBe(true)
+
+    const [first, second, third] = [tableRow(0), tableRow(1), tableRow(2)]
+    const title = first.querySelector('a.table-primary-cell__title')
+    expect(title?.getAttribute('href')).toBe(`/admin/events/${EVENT_ID}`)
+    expect(textOf(title)).toBe('Hackathon')
+    expect(wrapper.find(`a[href="/admin/events/${EVENT_ID}"]`).exists()).toBe(true)
+    expect(textOf(first.querySelector('.table-primary-cell__subtitle'))).toBe('Code all night')
+    expect(first.querySelector('.table-primary-cell__leading .list-thumb--table')).not.toBeNull()
+    const featured = first.querySelector('.table-primary-cell__badges .el-tag')
+    expect(textOf(featured)).toBe(t('pages.admin.events.tag.featured'))
+    expect(featured?.classList).toContain('el-tag--warning')
+    expect(second.querySelector('.table-primary-cell__badges')).toBeNull()
+
+    const firstCategories = [...first.querySelectorAll('.cats-cell .color-tag--dot')]
+    expect(firstCategories.map(textOf)).toEqual(['Tech'])
+    expect(textOf(second.querySelector('.cats-cell'))).toBe('—')
+    const thirdCategories = [...third.querySelectorAll('.cats-cell .color-tag--dot')]
+    expect(thirdCategories.map(textOf)).toEqual(['Tech', 'Art'])
+    const more = third.querySelector('.cats-cell__more')
+    expect(textOf(more)).toBe('+1')
+    expect(more?.getAttribute('title')).toBe('Music')
+    expect(first.querySelector('.cats-cell__more')).toBeNull()
+
+    const firstSignup = first.querySelector('.signup-cell')
+    const firstStage = firstSignup?.querySelector('.el-tag')
+    expect(textOf(firstStage)).toBe(t('entities.event.status.earlySignupOpen'))
+    expect(firstStage?.classList).toContain('el-tag--warning')
+    expect(firstSignup?.querySelector('.signup-cell__dates')?.textContent).toBe(
+      formatDateRange(ADMIN_EVENT.signupStartsAt, ADMIN_EVENT.signupEndsAt),
+    )
+    const signupWindow = formatDateTimeRange(ADMIN_EVENT.signupStartsAt, ADMIN_EVENT.signupEndsAt)
+    expect(firstSignup?.getAttribute('title')).toBe(
+      `${signupWindow} · ${t('pages.admin.events.earlySignupFrom', {
+        date: formatDateTime('2026-08-20T08:00:00Z'),
+      })}`,
+    )
+    const secondSignup = second.querySelector('.signup-cell')
+    expect(secondSignup?.getAttribute('title')).toBe(signupWindow)
+    expect(secondSignup?.querySelector('.el-tag')?.classList).toContain('el-tag--primary')
+    expect(textOf(secondSignup?.querySelector('.el-tag'))).toBe(t('entities.event.status.finished'))
+    expect(third.querySelector('.signup-cell .el-tag')?.classList).toContain('el-tag--success')
   })
 
-  it('shows the empty and error messages', async () => {
+  it('offers edit in the row and the other actions in a menu named after the event', async () => {
+    await renderPage([
+      buildAdminEventListItem({ featured: true }),
+      buildAdminEventListItem({ id: 'ev-2', title: 'Workshop' }),
+    ])
+
+    const [first, second] = [tableRow(0), tableRow(1)]
+    expect(findButtons(t('common.edit'), first)).toHaveLength(1)
+    expect(findButtons(t('common.delete'), first)).toHaveLength(0)
+    expect(first.querySelector('.row-actions__more')?.getAttribute('aria-label')).toBe(
+      t('table.moreActionsFor', { name: 'Hackathon' }),
+    )
+
+    const featuredMenu = await openRowMenu(first)
+    expect(rowMenuLabels(featuredMenu)).toEqual([
+      t('pages.admin.events.actions.feature'),
+      t('common.delete'),
+    ])
+    const featuredItem = rowMenuItem(featuredMenu, t('pages.admin.events.actions.feature'))
+    expect(featuredItem.getAttribute('aria-disabled')).toBe('true')
+    expect(textOf(featuredItem.querySelector('.row-actions__item-reason'))).toBe(
+      t('pages.admin.events.alreadyFeatured'),
+    )
+    expect(rowMenuItem(featuredMenu, t('common.delete')).classList).toContain(
+      'row-actions__item--danger',
+    )
+
+    const otherMenu = await openRowMenu(second)
+    const otherItem = rowMenuItem(otherMenu, t('pages.admin.events.actions.feature'))
+    expect(otherItem.getAttribute('aria-disabled')).not.toBe('true')
+    expect(otherItem.querySelector('.row-actions__item-reason')).toBeNull()
+  })
+
+  it('shows the empty message of each scope and the error message', async () => {
     const { wrapper } = await renderPage([])
+    await vi.waitFor(() =>
+      expect(wrapper.text()).toContain(t('pages.admin.events.empty.noUpcoming')),
+    )
+
+    await chooseScope(wrapper, t('pages.admin.events.scope.past'))
+    await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.admin.events.empty.noPast')))
+
+    await chooseScope(wrapper, t('pages.admin.events.scope.all'))
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.admin.events.empty.none')))
 
     server.use(http.get('/api/events', () => apiError(500)))
@@ -178,21 +298,91 @@ describe('EventsAdminPage', () => {
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('page')).toBe('3'))
   })
 
-  it('applies the header column filters to the request', async () => {
+  it('switches between upcoming, past and all events, newest first for the latter', async () => {
     const urls: URL[] = []
     const { wrapper } = await renderPage([buildAdminEventListItem()], urls)
 
-    const searches = wrapper.findAllComponents(ColumnSearch)
-    expect(searches).toHaveLength(1)
+    expect(queryOf(urls[0]?.href ?? '')).toEqual({
+      page: '1',
+      pageSize: '25',
+      sort: 'eventStartsAt',
+      scope: 'Upcoming',
+    })
+    const segmented = wrapper.find('.el-segmented')
+    expect(segmented.attributes('aria-label')).toBe(t('pages.admin.events.scope.label'))
+    expect(segmented.findAll('.el-segmented__item').map((item) => item.text())).toEqual([
+      t('pages.admin.events.scope.upcoming'),
+      t('pages.admin.events.scope.past'),
+      t('pages.admin.events.scope.all'),
+    ])
+    expect(segmented.find('.el-segmented__item.is-selected').text()).toBe(
+      t('pages.admin.events.scope.upcoming'),
+    )
+    expect(headerCell(wrapper, t('pages.admin.events.columns.dates')).classes()).toContain(
+      'ascending',
+    )
+
+    await chooseScope(wrapper, t('pages.admin.events.scope.past'))
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1)?.href ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: '-eventStartsAt',
+        scope: 'Past',
+      }),
+    )
+    await vi.waitFor(() =>
+      expect(headerCell(wrapper, t('pages.admin.events.columns.dates')).classes()).toContain(
+        'descending',
+      ),
+    )
+    expect(segmented.find('.el-segmented__item.is-selected').text()).toBe(
+      t('pages.admin.events.scope.past'),
+    )
+
+    await chooseScope(wrapper, t('pages.admin.events.scope.all'))
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1)?.href ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: '-eventStartsAt',
+      }),
+    )
+    expect(wrapper.find('.data-table__chips').exists()).toBe(false)
+
+    await chooseScope(wrapper, t('pages.admin.events.scope.upcoming'))
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1)?.href ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: 'eventStartsAt',
+        scope: 'Upcoming',
+      }),
+    )
+    await vi.waitFor(() =>
+      expect(headerCell(wrapper, t('pages.admin.events.columns.dates')).classes()).toContain(
+        'ascending',
+      ),
+    )
+  })
+
+  it('applies the toolbar search and the header column filters to the request', async () => {
+    const urls: URL[] = []
+    const { wrapper } = await renderPage([buildAdminEventListItem()], urls)
+
+    expect(wrapper.findAllComponents(ColumnSearch)).toHaveLength(0)
+    const search = wrapper.findComponent(SearchInput)
+    expect(search.props('label')).toBe(t('pages.admin.events.columns.searchEvent'))
     const [eventDate, signup] = wrapper.findAllComponents(ColumnFilterDate)
-    searches[0]?.vm.$emit('update:modelValue', 'hack')
-    searches[0]?.vm.$emit('apply')
+    expect(eventDate?.props('label')).toBe(t('pages.admin.events.columns.dates'))
+    expect(signup?.props('label')).toBe(t('pages.admin.events.columns.signup'))
+    search.vm.$emit('update:modelValue', 'hack')
     const category = wrapper.findComponent(ColumnFilterSelect)
     category.vm.$emit('update:modelValue', 'cat-2')
     category.vm.$emit('apply')
-    eventDate?.vm.$emit('update:modelValue', ['2026-10-01', '2026-10-31'])
+    eventDate?.vm.$emit('update:modelValue', [new Date(2026, 9, 1), new Date(2026, 9, 31)])
     eventDate?.vm.$emit('apply')
-    signup?.vm.$emit('update:modelValue', ['2026-09-01', '2026-09-30'])
+    signup?.vm.$emit('update:modelValue', [new Date(2026, 8, 1), new Date(2026, 8, 30)])
     signup?.vm.$emit('apply')
 
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('signupTo')).toBe('2026-09-30'))
@@ -202,10 +392,26 @@ describe('EventsAdminPage', () => {
     expect(last?.searchParams.get('eventDateFrom')).toBe('2026-10-01')
     expect(last?.searchParams.get('eventDateTo')).toBe('2026-10-31')
     expect(last?.searchParams.get('signupFrom')).toBe('2026-09-01')
+    expect(last?.searchParams.get('scope')).toBe('Upcoming')
     expect(category.props('options')).toEqual([
       { label: 'Tech', value: 'cat-1' },
       { label: 'Art', value: 'cat-2' },
     ])
+    await vi.waitFor(() =>
+      expect(
+        wrapper.findAll('.filter-chip__label').map((chip) => chip.element.textContent),
+      ).toEqual([
+        t('table.filterChip', { label: t('pages.admin.events.columns.categories'), value: 'Art' }),
+        t('table.filterChip', {
+          label: t('pages.admin.events.columns.dates'),
+          value: formatDateRange('2026-10-01', '2026-10-31'),
+        }),
+        t('table.filterChip', {
+          label: t('pages.admin.events.columns.signup'),
+          value: formatDateRange('2026-09-01', '2026-09-30'),
+        }),
+      ]),
+    )
   })
 
   it('closes the dialog when it asks to be hidden', async () => {
@@ -221,7 +427,7 @@ describe('EventsAdminPage', () => {
     expect(dialog.props('visible')).toBe(false)
   })
 
-  it('features an event and reports failures', async () => {
+  it('features an event from the row menu and reports failures', async () => {
     let calls = 0
     server.use(
       http.patch('/api/events/:eventId/feature', () => {
@@ -231,12 +437,12 @@ describe('EventsAdminPage', () => {
     )
     await renderPage()
 
-    rowButton(t('pages.admin.events.aria.feature')).click()
+    await chooseRowMenuItem(t('pages.admin.events.actions.feature'))
     await vi.waitFor(() =>
       expect(notificationTexts().join('\n')).toContain(t('pages.admin.events.toasts.featured')),
     )
 
-    rowButton(t('pages.admin.events.aria.feature')).click()
+    await chooseRowMenuItem(t('pages.admin.events.actions.feature'))
     await vi.waitFor(() => expect(notificationTexts().join('\n')).toContain(t('errors.generic')))
     expect(calls).toBe(2)
   })
@@ -376,7 +582,7 @@ describe('EventsAdminPage', () => {
     expect(rowButton(t('common.edit')).disabled).toBe(false)
   })
 
-  it('deletes an event after confirmation and reports failures', async () => {
+  it('deletes an event from the row menu after confirmation and reports failures', async () => {
     const deleted: string[] = []
     server.use(
       http.delete('/api/events/:eventId', ({ params }) => {
@@ -386,7 +592,7 @@ describe('EventsAdminPage', () => {
     )
     await renderPage()
 
-    rowButton(t('common.delete')).click()
+    await chooseRowMenuItem(t('common.delete'))
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain(
         t('pages.admin.events.delete.message', { title: 'Hackathon' }),
@@ -399,7 +605,7 @@ describe('EventsAdminPage', () => {
     expect(deleted).toEqual([EVENT_ID])
 
     const boxes = document.body.querySelectorAll('.el-message-box').length
-    rowButton(t('common.delete')).click()
+    await chooseRowMenuItem(t('common.delete'))
     await confirmMessageBox(boxes)
     await vi.waitFor(() => expect(deleted).toHaveLength(2))
     await vi.waitFor(() => expect(notificationTexts().join('\n')).toContain(t('errors.generic')))

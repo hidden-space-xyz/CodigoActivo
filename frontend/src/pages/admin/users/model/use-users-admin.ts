@@ -1,8 +1,9 @@
-import { ref, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
-import { useSession } from '@/entities/session'
+import { refreshSession, useSession } from '@/entities/session'
 import {
   fullName,
   isSameEmail,
@@ -14,8 +15,14 @@ import {
 } from '@/entities/user'
 import { hasErrorCode } from '@/shared/api'
 import { useCrudDialog } from '@/shared/lib/crud'
-import { getErrorMessage, useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
+import {
+  getErrorMessage,
+  useActionConfirm,
+  useCrudFeedback,
+  useDeleteConfirm,
+} from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
+import type { TableFilterChip } from '@/shared/ui/data-table'
 
 /** Narrows the user table to a relative of one user: their guardian or their dependents. */
 export interface UserRelationFilter {
@@ -26,20 +33,25 @@ export interface UserRelationFilter {
 }
 
 /**
- * Admin user list: a table with a filter per column and an optional relation filter, and the
- * dialogs that edit a user (loaded whole first), change their type, grant the admin role or
- * return their second factor to email. The last two, and any edit that replaces contact details,
- * need the signed-in admin's password: a refused one is shown in the dialog instead of a toast.
- * An admin's new email for their own account waits for the link emailed to it, as the success
- * toast says. Revoking the admin role and deleting (after confirmation) act at once. Call it in
+ * Admin user list: a table with a filter per column and an optional relation filter (also listed
+ * as a table chip), and the dialogs that edit a user (loaded whole first), change their type,
+ * grant the admin role or return their second factor to email. The last two, and any edit that
+ * replaces contact details, need the signed-in admin's password: a refused one is shown in the
+ * dialog instead of a toast. An admin's new email for their own account waits for the link
+ * emailed to it, as the success toast says. Revoking the admin role and deleting ask for
+ * confirmation and then act at once; an admin who revokes their own role is taken to the home page
+ * with a refreshed session. The initial administrator can be neither demoted nor deleted,
+ * and the caller cannot delete their own account here; the block reasons explain why. Call it in
  * `setup`.
  */
 export function useUsersAdmin() {
   const { t } = useI18n()
   const session = useSession()
   const queryClient = useQueryClient()
+  const router = useRouter()
   const feedback = useCrudFeedback()
   const { confirmDelete } = useDeleteConfirm()
+  const { confirmAction } = useActionConfirm()
 
   const relationFilter = ref<UserRelationFilter | null>(null)
   const table = useServerTable({
@@ -115,6 +127,27 @@ export function useUsersAdmin() {
     relationFilter.value = null
   }
 
+  const relationChips = computed<TableFilterChip[]>(() =>
+    relationFilter.value
+      ? [{ key: 'relation', label: relationFilter.value.label, remove: clearRelationFilter }]
+      : [],
+  )
+
+  function isOwnAccount(user: User): boolean {
+    const own = session.user
+    return own !== null && own.id === user.id
+  }
+
+  function adminBlockReason(user: User): string | undefined {
+    return user.isInitialAdmin ? t('pages.admin.users.blocked.initialAdmin') : undefined
+  }
+
+  function deleteBlockReason(user: User): string | undefined {
+    if (user.isInitialAdmin) return t('pages.admin.users.blocked.initialAdmin')
+    if (isOwnAccount(user)) return t('pages.admin.users.blocked.self')
+    return undefined
+  }
+
   function openEdit(user: User): Promise<void> {
     editError.value = ''
     return editDialog.openEdit(user)
@@ -124,7 +157,7 @@ export function useUsersAdmin() {
     const user = editDialog.editing.value
     if (!user) return
     editError.value = ''
-    const ownEmailChange = user.id === session.user?.id && !isSameEmail(input.email, user.email)
+    const ownEmailChange = isOwnAccount(user) && !isSameEmail(input.email, user.email)
     const successMessage = ownEmailChange
       ? t('pages.admin.users.toasts.emailChangeSent', { email: input.email })
       : t('pages.admin.users.toasts.updated')
@@ -149,10 +182,27 @@ export function useUsersAdmin() {
       void grantDialog.openEdit(user)
       return
     }
-    setAdmin.mutate(
-      { id: user.id, isAdmin: false, currentPassword: null },
-      feedback.outcome(t('pages.admin.users.toasts.adminRevoked')),
-    )
+    confirmAction({
+      header: t('pages.admin.users.revokeAdmin.header'),
+      message: isOwnAccount(user)
+        ? t('pages.admin.users.revokeAdmin.messageSelf')
+        : t('pages.admin.users.revokeAdmin.message', { fullName: fullName(user) }),
+      acceptLabel: t('pages.admin.users.revokeAdmin.confirm'),
+      accept: () => {
+        setAdmin.mutate(
+          { id: user.id, isAdmin: false, currentPassword: null },
+          feedback.outcome(
+            t('pages.admin.users.toasts.adminRevoked'),
+            isOwnAccount(user) ? leaveAdminArea : undefined,
+          ),
+        )
+      },
+    })
+  }
+
+  function leaveAdminArea(): void {
+    void router.push({ name: 'home' })
+    void refreshSession(queryClient)
   }
 
   function grantAdmin(currentPassword: string): void {
@@ -194,10 +244,12 @@ export function useUsersAdmin() {
     table,
     types,
     statuses,
-    relationFilter,
+    relationChips,
     showGuardianOf,
     showDependentsOf,
-    clearRelationFilter,
+    isOwnAccount,
+    adminBlockReason,
+    deleteBlockReason,
     editDialog,
     editError,
     openEdit,

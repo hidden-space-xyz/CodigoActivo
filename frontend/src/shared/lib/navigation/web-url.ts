@@ -20,3 +20,33 @@ export function toWebUrl(value: string | null | undefined): string | null {
     return null
   }
 }
+
+const BIDI_CONTROLS = /[‎‏‪-‮⁦-⁩]/g
+
+function decodeForDisplay(value: string): string {
+  try {
+    return decodeURI(value).replace(BIDI_CONTROLS, '')
+  } catch {
+    return value
+  }
+}
+
+/**
+ * Host and path of a web address without scheme, "www." or the path's trailing slash, for compact
+ * display. The host is taken as written, so internationalized domains stay readable instead of
+ * showing as punycode; the input is returned unchanged when it does not parse.
+ */
+export function displayUrl(url: string): string {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return url
+  }
+  const [host = ''] = url
+    .trim()
+    .replace(/^[a-z][a-z\d+.-]*:\/\//i, '')
+    .split(/[/?#]/, 1)
+  const path = parsed.search || parsed.hash ? parsed.pathname : parsed.pathname.replace(/\/$/, '')
+  return `${host.toLowerCase().replace(/^www\./, '')}${decodeForDisplay(`${path}${parsed.search}${parsed.hash}`)}`
+}

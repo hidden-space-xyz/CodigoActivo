@@ -52,7 +52,6 @@ describe('useServerTable', () => {
     expect(result.tableProps.value).toEqual({
       data: rows(3),
       rowKey: 'id',
-      stripe: true,
       defaultSort: { prop: 'createdAt', order: 'descending' },
       scrollbarAlwaysOn: false,
     })
@@ -61,7 +60,7 @@ describe('useServerTable', () => {
       pageSize: 25,
       total: 3,
       pageSizes: [25, 50, 100],
-      layout: 'total, sizes, prev, pager, next',
+      layout: 'sizes, prev, pager, next',
       pagerCount: 7,
       background: true,
     })
@@ -242,12 +241,149 @@ describe('useServerTable', () => {
   it('does not fetch while disabled', async () => {
     const fetchPage = fixedPage(1)
 
-    await mountComposable(() =>
+    const { result } = await mountComposable(() =>
       useServerTable<Row>({ queryKey: ['disabled'], fetchPage, enabled: () => false }),
     )
     await flushPromises()
 
     expect(fetchPage).not.toHaveBeenCalled()
+    expect(result.isInitialLoading.value).toBe(false)
+  })
+
+  it('tells the first load from a refetch that keeps the previous rows', async () => {
+    const pending: ((page: ServerTablePage<Row>) => void)[] = []
+    const fetchPage = vi.fn(
+      () => new Promise<ServerTablePage<Row>>((resolve) => pending.push(resolve)),
+    )
+    const { result } = await mountComposable(() =>
+      useServerTable<Row>({ queryKey: ['initial'], fetchPage, columns: { name: {} } }),
+    )
+
+    expect(result.isInitialLoading.value).toBe(true)
+    expect(result.loading.value).toBe(true)
+
+    pending[0]?.({ items: rows(2), total: 2 })
+    await vi.waitFor(() => expect(result.items.value).toHaveLength(2))
+    expect(result.isInitialLoading.value).toBe(false)
+    expect(result.loading.value).toBe(false)
+
+    result.columnFilter('name').value = 'ada'
+    result.onFilter()
+    await vi.waitFor(() => expect(fetchPage).toHaveBeenCalledTimes(2))
+
+    expect(result.loading.value).toBe(true)
+    expect(result.isInitialLoading.value).toBe(false)
+    expect(result.items.value).toHaveLength(2)
+  })
+
+  it('refetches the current page on demand', async () => {
+    const fetchPage = fixedPage(1)
+    const { result } = await mountComposable(() =>
+      useServerTable<Row>({ queryKey: ['refetch'], fetchPage }),
+    )
+    await vi.waitFor(() => expect(result.total.value).toBe(1))
+
+    result.refetch()
+
+    await vi.waitFor(() => expect(fetchPage).toHaveBeenCalledTimes(2))
+    expect(lastParams(fetchPage)).toEqual({ page: 1, pageSize: 25 })
+  })
+
+  it('reports active column filters but ignores the extra parameters', async () => {
+    const { result } = await mountComposable(() =>
+      useServerTable<Row>({
+        queryKey: ['active'],
+        fetchPage: fixedPage(0),
+        columns: { name: {}, period: { type: 'dateRange' } },
+        extraParams: () => ({ eventId: 'event-1' }),
+      }),
+    )
+
+    expect(result.hasActiveFilters.value).toBe(false)
+
+    result.columnFilter('period').value = [null, null]
+    expect(result.hasActiveFilters.value).toBe(false)
+
+    result.columnFilter('name').value = 'ada'
+    expect(result.hasActiveFilters.value).toBe(true)
+    expect(result.filterParams.value).toEqual({ eventId: 'event-1', name: 'ada' })
+
+    result.clearFilters()
+    expect(result.hasActiveFilters.value).toBe(false)
+  })
+
+  it('reads the value of a column filter', async () => {
+    const { result } = await mountComposable(() =>
+      useServerTable<Row>({ queryKey: ['values'], fetchPage: fixedPage(0), columns: { name: {} } }),
+    )
+
+    expect(result.filterValue('name')).toBeNull()
+    expect(result.filterValue('unknown')).toBeUndefined()
+
+    result.columnFilter('name').value = 'ada'
+
+    expect(result.filterValue('name')).toBe('ada')
+  })
+
+  it.each([
+    [25, false],
+    [26, true],
+  ])('shows the paginator for %i matching rows: %s', async (total, shown) => {
+    const fetchPage = fixedPage(total, 25)
+    const { result } = await mountComposable(() =>
+      useServerTable<Row>({ queryKey: ['pager', total], fetchPage }),
+    )
+    await vi.waitFor(() => expect(result.total.value).toBe(total))
+
+    expect(result.showPagination.value).toBe(shown)
+  })
+
+  it('keeps the paginator beyond the first page', async () => {
+    const { result } = await mountComposable(() =>
+      useServerTable<Row>({ queryKey: ['pager-later'], fetchPage: fixedPage(0) }),
+    )
+    expect(result.showPagination.value).toBe(false)
+
+    result.onCurrentPageChange(2)
+
+    expect(result.showPagination.value).toBe(true)
+  })
+
+  it('sorts from code and returns to the first page', async () => {
+    const fetchPage = fixedPage(200, 25)
+    const { result } = await mountComposable(() =>
+      useServerTable<Row>({
+        queryKey: ['set-sort'],
+        fetchPage,
+        defaultSort: { field: 'eventStartsAt' },
+      }),
+    )
+    result.onCurrentPageChange(3)
+
+    result.setSort('eventStartsAt', -1)
+
+    expect(result.sortParam.value).toBe('-eventStartsAt')
+    expect(result.first.value).toBe(0)
+    expect(result.defaultSort.value).toEqual({ prop: 'eventStartsAt', order: 'descending' })
+    await vi.waitFor(() =>
+      expect(lastParams(fetchPage)).toEqual({ page: 1, pageSize: 25, sort: '-eventStartsAt' }),
+    )
+
+    result.setSort('title')
+    expect(result.sortParam.value).toBe('title')
+
+    result.setSort(undefined)
+    expect(result.sortParam.value).toBeUndefined()
+  })
+
+  it('passes a custom row key to the table', async () => {
+    const rowKey = (row: Row): string => `row-${String(row.id)}`
+
+    const { result } = await mountComposable(() =>
+      useServerTable<Row>({ queryKey: ['keyed'], fetchPage: fixedPage(0), rowKey }),
+    )
+
+    expect(result.tableProps.value.rowKey).toBe(rowKey)
   })
 
   it('exposes fetch failures', async () => {
@@ -272,15 +408,6 @@ describe('useServerTable', () => {
     expect(result.paginationProps.value.layout).toBe('prev, pager, next')
     expect(result.paginationProps.value.pagerCount).toBe(5)
     expect(result.tableProps.value.scrollbarAlwaysOn).toBe(true)
-    expect(result.actionsFixed.value).toBe(false)
-  })
-
-  it('keeps the actions column in view on wider viewports', async () => {
-    const { result } = await mountComposable(() =>
-      useServerTable<Row>({ queryKey: ['wide'], fetchPage: fixedPage(0) }),
-    )
-
-    expect(result.actionsFixed.value).toBe('right')
   })
 })
 

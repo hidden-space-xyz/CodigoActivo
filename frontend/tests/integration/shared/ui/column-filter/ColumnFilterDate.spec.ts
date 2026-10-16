@@ -1,15 +1,33 @@
+import { defineComponent, h } from 'vue'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { ElDatePicker, ElPopover } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
 import { setMediaQueryMatches } from '../../../../support/media'
 import { renderWithProviders, t } from '../../../../support/render'
-import { ColumnFilterDate } from '@/shared/ui/column-filter'
+import { formatDate, formatDateRange } from '@/shared/lib/date'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { ColumnFilterDate, provideTableFilters } from '@/shared/ui/column-filter'
 
 type Range = (Date | null)[] | null
 
 const from = new Date(2025, 0, 1)
 const to = new Date(2025, 0, 31)
+
+async function renderInTable(props: {
+  modelValue: Range
+  'onUpdate:modelValue'?: (value: Range) => void
+}) {
+  const box: { active?: ReturnType<typeof provideTableFilters>['active'] } = {}
+  const Host = defineComponent({
+    setup() {
+      box.active = provideTableFilters().active
+      return () => h(ColumnFilterDate, { label: 'Created', ...props })
+    },
+  })
+  await renderWithProviders(Host, { attach: true })
+  return () => box.active?.value ?? []
+}
 
 async function renderFilter(modelValue: Range) {
   const rendered = await renderWithProviders(ColumnFilterDate, {
@@ -43,6 +61,9 @@ describe('ColumnFilterDate', () => {
     expect(wrapper.find('.column-filter__toggle').attributes('aria-label')).toBe(
       t('table.filterBy', { label: 'Created' }),
     )
+    expect(wrapper.find('.column-filter__toggle').findComponent(AppIcon).props('name')).toBe(
+      'calendar',
+    )
     const props = picker(wrapper).props()
     expect(props.type).toBe('daterange')
     expect(props.modelValue).toEqual([])
@@ -51,6 +72,45 @@ describe('ColumnFilterDate', () => {
     expect(props.editable).toBe(false)
     expect(props.startPlaceholder).toBe(t('table.rangeFrom'))
     expect(props.endPlaceholder).toBe(t('table.rangeTo'))
+  })
+
+  it('renders as a toolbar pill', async () => {
+    const { wrapper } = await renderWithProviders(ColumnFilterDate, {
+      props: { modelValue: null, label: 'Birth', variant: 'toolbar' },
+      attach: true,
+    })
+
+    const pill = wrapper.find('.column-filter__pill')
+    expect(pill.text()).toBe('Birth')
+    expect(pill.findComponent(AppIcon).props('name')).toBe('calendar')
+    expect(wrapper.find('.column-filter__toggle').exists()).toBe(false)
+  })
+
+  it.each([
+    ['a complete range', [from, to], formatDateRange('2025-01-01', '2025-01-31')],
+    ['a start date', [from, null], t('table.rangeSince', { date: formatDate('2025-01-01') })],
+    ['a half-selected range', [from], t('table.rangeSince', { date: formatDate('2025-01-01') })],
+    ['an end date', [null, to], t('table.rangeUntil', { date: formatDate('2025-01-31') })],
+  ])('registers %s as a readable chip value', async (_case, modelValue, value) => {
+    const active = await renderInTable({ modelValue })
+
+    expect(active().map(({ label, value: text }) => ({ label, value: text }))).toEqual([
+      { label: 'Created', value },
+    ])
+  })
+
+  it('registers no chip without dates and clears from the chip', async () => {
+    const inactive = await renderInTable({ modelValue: [null, null] })
+    const empty = await renderInTable({ modelValue: null })
+    expect(inactive()).toEqual([])
+    expect(empty()).toEqual([])
+
+    const onUpdate = vi.fn()
+    const active = await renderInTable({ modelValue: [from, to], 'onUpdate:modelValue': onUpdate })
+
+    active()[0]?.clear()
+
+    expect(onUpdate).toHaveBeenCalledWith(null)
   })
 
   it('uses a single editable panel on narrow screens', async () => {

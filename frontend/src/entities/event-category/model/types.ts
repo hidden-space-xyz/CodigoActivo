@@ -14,7 +14,6 @@ export interface EventCategoryInput {
 /** Filters, sort and page of the admin category list. */
 export interface EventCategoryListParams {
   readonly name?: string
-  readonly color?: string
   readonly page?: number
   readonly pageSize?: number
   readonly sort?: string

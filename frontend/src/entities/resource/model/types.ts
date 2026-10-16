@@ -40,8 +40,8 @@ export interface ResourceInput {
 
 /** Filters, sort and page of the admin resource list. */
 export interface ResourceListParams {
-  readonly title?: string
-  readonly subtitle?: string
+  /** Text matched against the title or the subtitle. */
+  readonly search?: string
   readonly resourceTypeId?: string
   readonly url?: string
   readonly createdFrom?: string

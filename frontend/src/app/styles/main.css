@@ -78,48 +78,6 @@ a {
   border-color: var(--ca-border-strong);
 }
 
-.ca-row-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.ca-row-actions .el-button + .el-button {
-  margin-left: 0;
-}
-
-.ca-row-actions .el-button .el-icon {
-  color: #ffffff;
-}
-
-.ca-row-actions .el-button.el-button--warning .el-icon {
-  color: var(--ca-action-yellow);
-}
-
-.ca-row-actions .el-button.el-button--success .el-icon {
-  color: var(--ca-action-green);
-}
-
-.ca-row-actions .el-button.el-button--danger .el-icon {
-  color: var(--ca-action-red);
-}
-
-.el-button.ca-action-icon--change-type .el-icon {
-  color: var(--ca-action-blue);
-}
-
-.el-button.ca-action-icon--assignment .el-icon {
-  color: var(--ca-action-pink);
-}
-
-.el-button.ca-action-icon--email .el-icon {
-  color: var(--ca-action-purple);
-}
-
-.el-button.ca-action-icon--manage .el-icon {
-  color: var(--ca-action-orange);
-}
-
 @media (max-width: 640px) {
   input,
   select,

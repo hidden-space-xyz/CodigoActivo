@@ -4,21 +4,18 @@ import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { activityQueries } from '@/entities/activity'
+import { activityQueries, type ActivityListing } from '@/entities/activity'
 import { eventQueries } from '@/entities/event'
-import { formatDateTimeRange } from '@/shared/lib/date'
+import { formatDate, formatTimeRange } from '@/shared/lib/date'
 import { formatNumber } from '@/shared/lib/number'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
 import { BrandButton } from '@/shared/ui/brand-button'
-import {
-  ColumnFilterDate,
-  ColumnFilterSelect,
-  ColumnSearch,
-  toSelectOptions,
-} from '@/shared/ui/column-filter'
+import { ColumnFilterDate, ColumnFilterSelect, toSelectOptions } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
 import { ListThumbnail } from '@/shared/ui/list-thumbnail'
+import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { eventReportQueries } from '../api/queries'
 import { useEventActivitiesAdmin } from '../model/use-event-activities-admin'
@@ -40,9 +37,7 @@ const event = useQuery(() => eventQueries.detail(props.eventId))
 const stats = useQuery(() => eventReportQueries.stats(props.eventId))
 const modalities = useQuery(activityQueries.modalities())
 const roles = useQuery(activityQueries.roles())
-const { table, modalityId, dialog, saving, save, confirmRemove } = useEventActivitiesAdmin(
-  () => props.eventId,
-)
+const { table, dialog, saving, save, confirmRemove } = useEventActivitiesAdmin(() => props.eventId)
 const { visible, editing, loading, openCreate, openEdit } = dialog
 
 const summaryCards = computed(() => [
@@ -63,8 +58,27 @@ const ratingsAverage = computed(() => {
 
 const modalityOptions = computed(() => toSelectOptions(modalities.data.value))
 
-function filterByModality(value: string | boolean | null): void {
-  modalityId.value = typeof value === 'string' ? value : null
+function activityActions(activity: ActivityListing): RowAction[] {
+  return [
+    {
+      key: 'edit',
+      label: t('common.edit'),
+      icon: 'pencil',
+      inline: true,
+      disabled: loading.value,
+      run: () => void openEdit(activity),
+    },
+    {
+      key: 'delete',
+      label: t('common.delete'),
+      icon: 'trash',
+      inline: true,
+      danger: true,
+      run: () => {
+        confirmRemove(activity)
+      },
+    },
+  ]
 }
 
 function openBadges(): void {
@@ -87,12 +101,6 @@ function openRoster(): void {
       :subtitle="event.data.value?.subtitle ?? ''"
     >
       <template #actions>
-        <ActionButton
-          :label="$t('pages.admin.eventDetail.newActivity')"
-          icon="plus"
-          :disabled="loading"
-          @click="openCreate"
-        />
         <ActionButton
           :label="$t('pages.admin.eventDetail.printBadges')"
           icon="print"
@@ -128,23 +136,38 @@ function openRoster(): void {
           :table="table"
           :empty-text="$t('pages.admin.eventDetail.empty.none')"
           :error-text="$t('pages.admin.eventDetail.empty.error')"
+          :search="{ key: 'title', label: $t('pages.admin.eventDetail.columns.searchTitle') }"
         >
-          <el-table-column :label="$t('common.image')" width="110">
+          <template #actions>
+            <ActionButton
+              :label="$t('pages.admin.eventDetail.newActivity')"
+              icon="plus"
+              size="small"
+              :disabled="loading"
+              @click="openCreate"
+            />
+          </template>
+          <el-table-column
+            prop="title"
+            :label="$t('pages.admin.eventDetail.columns.title')"
+            min-width="240"
+            sortable="custom"
+            :fixed="table.isNarrow.value ? false : 'left'"
+          >
             <template #default="{ row }">
-              <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
+              <TablePrimaryCell :title="row.title" :subtitle="row.location">
+                <template #leading>
+                  <ListThumbnail size="table" :thumbnail-id="row.thumbnailId" />
+                </template>
+              </TablePrimaryCell>
             </template>
           </el-table-column>
-          <el-table-column prop="title" min-width="200" sortable="custom">
-            <template #header>
-              <ColumnSearch
-                v-model="table.columnFilter('title').value"
-                :label="$t('pages.admin.eventDetail.columns.title')"
-                :placeholder="$t('pages.admin.eventDetail.columns.searchTitle')"
-                @apply="table.onFilter"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column prop="activityStartsAt" min-width="210" sortable="custom">
+          <el-table-column
+            prop="activityStartsAt"
+            :label="$t('pages.admin.eventDetail.columns.schedule')"
+            width="170"
+            sortable="custom"
+          >
             <template #header>
               <ColumnFilterDate
                 v-model="table.columnFilter('activityDate').value"
@@ -153,51 +176,34 @@ function openRoster(): void {
               />
             </template>
             <template #default="{ row }">
-              {{ formatDateTimeRange(row.startsAt, row.endsAt) }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="modalityName" min-width="180" sortable="custom">
-            <template #header>
-              <ColumnFilterSelect
-                :model-value="modalityId"
-                :label="$t('pages.admin.eventDetail.columns.modality')"
-                :options="modalityOptions"
-                @update:model-value="filterByModality"
-              />
-            </template>
-            <template #default="{ row }">
-              <div class="modality-cell">
-                <span class="modality-cell__type">{{ row.modality }}</span>
-                <span class="modality-cell__loc">{{ row.location }}</span>
+              <div class="schedule-cell">
+                <span>{{ formatDate(row.startsAt) }}</span>
+                <span class="schedule-cell__time">{{
+                  formatTimeRange(row.startsAt, row.endsAt, row.startsAt)
+                }}</span>
               </div>
             </template>
           </el-table-column>
           <el-table-column
-            :label="$t('common.actions')"
-            width="120"
-            align="center"
-            :fixed="table.actionsFixed.value"
+            prop="modalityName"
+            :label="$t('pages.admin.eventDetail.columns.modality')"
+            width="150"
+            sortable="custom"
+            show-overflow-tooltip
           >
+            <template #header>
+              <ColumnFilterSelect
+                v-model="table.columnFilter('modality').value"
+                :label="$t('pages.admin.eventDetail.columns.modality')"
+                :options="modalityOptions"
+                @apply="table.onFilter"
+              />
+            </template>
+            <template #default="{ row }">{{ row.modality }}</template>
+          </el-table-column>
+          <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
             <template #default="{ row }">
-              <div class="ca-row-actions">
-                <ActionButton
-                  icon="pencil"
-                  type="success"
-                  text
-                  circle
-                  :aria-label="$t('common.edit')"
-                  :disabled="loading"
-                  @click="openEdit(row)"
-                />
-                <ActionButton
-                  icon="trash"
-                  text
-                  circle
-                  type="danger"
-                  :aria-label="$t('common.delete')"
-                  @click="confirmRemove(row)"
-                />
-              </div>
+              <RowActions :actions="activityActions(row)" />
             </template>
           </el-table-column>
         </DataTable>
@@ -271,18 +277,22 @@ function openRoster(): void {
   margin-bottom: 30px;
 }
 
-.modality-cell {
+.schedule-cell {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
-.modality-cell__type {
-  font-weight: 600;
+.schedule-cell > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.modality-cell__loc {
+.schedule-cell__time {
   font-size: 12.5px;
+  line-height: 18px;
   color: var(--ca-text-muted);
 }
 </style>

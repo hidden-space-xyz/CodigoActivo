@@ -236,7 +236,6 @@ function hasConflicts(attendee: EventAttendee): boolean {
         :label="$t('pages.admin.eventDetail.attendees.email.bulkLabel')"
         :tooltip="$t('pages.admin.eventDetail.attendees.email.bulkTooltip')"
         icon="envelope"
-        class="ca-action-icon--email"
         :disabled="table.total.value === 0"
         @click="openEmail(null)"
       />
@@ -354,7 +353,6 @@ function hasConflicts(attendee: EventAttendee): boolean {
                 text
                 circle
                 size="small"
-                class="ca-action-icon--email"
                 :aria-label="$t('pages.admin.eventDetail.attendees.email.rowLabel')"
                 @click="openEmail(attendee)"
               />
@@ -392,7 +390,6 @@ function hasConflicts(attendee: EventAttendee): boolean {
                   text
                   circle
                   size="small"
-                  class="ca-action-icon--assignment"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeRole')"
                   @click="openRole(attendee, assignment)"
                 />
@@ -401,7 +398,6 @@ function hasConflicts(attendee: EventAttendee): boolean {
                   text
                   circle
                   size="small"
-                  class="ca-action-icon--assignment"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeStatus')"
                   @click="openStatus(attendee, assignment)"
                 />
@@ -412,7 +408,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
       </ul>
 
       <el-pagination
-        v-if="table.total.value > 25 || table.first.value > 0"
+        v-if="table.showPagination.value"
         v-bind="table.paginationProps.value"
         class="paginator"
         @update:current-page="table.onCurrentPageChange"

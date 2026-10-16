@@ -69,13 +69,13 @@ authentication are not supported.
   and a locked second factor with `TwoFactorLocked`.
 - Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
   session cookie alone cannot promote another account); a wrong password returns
-  `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password, but the body must state
-  `isAdmin`: one without it is refused instead of being read as a revocation. Public registration never
-  grants administrator access; on an empty database, startup creates the initial administrator from
-  `BOOTSTRAP_ADMIN_EMAIL`, ignored once a user exists, under the fixed id `InitialAdministrator.Id` and with a
-  random, discarded password, so its first password is set through a password reset to that address. That
-  generic account can be neither demoted (`UserCannotRemoveInitialAdmin`) nor deleted, so the application
-  always keeps an administrator; the SPA disables both actions for it.
+  `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password (the SPA asks for
+  confirmation), but the body must state `isAdmin`: one without it is refused instead of being read as a
+  revocation. Public registration never grants administrator access; on an empty database, startup creates
+  the initial administrator from `BOOTSTRAP_ADMIN_EMAIL`, ignored once a user exists, under the fixed id
+  `InitialAdministrator.Id` and with a random, discarded password, so its first password is set through a
+  password reset to that address. That generic account can be neither demoted (`UserCannotRemoveInitialAdmin`)
+  nor deleted, so the application always keeps an administrator; the SPA disables both actions for it.
 - `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
   password whenever the update would replace the account's email, phone or secondary phone. A missing or
   wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three
@@ -159,10 +159,10 @@ anonymity](#event-rating-anonymity)), and is refused only to the initial adminis
 (`UserDeleteInitialAdminForbidden`), before the password is checked. `GET /api/me/deletion` tells the caller
 whether they may delete their account, so the SPA hides the action from the initial administrator. `DELETE
 /api/users/{id}` refuses the initial administrator and the caller's own id
-(`UserSelfDeleteRequiresVerification`); an administrator can delete any other administrator without re-entering
-a password, as with any other user. Every deletion credits the initial administrator instead of the household as
-author, last editor or uploader of events, activities, news, partners, resources and files, in the same
-transaction; the original credit is not kept anywhere.
+(`UserSelfDeleteRequiresVerification`); the SPA disables that action on both rows. An administrator can delete
+any other administrator without re-entering a password, as with any other user. Every deletion credits the
+initial administrator instead of the household as author, last editor or uploader of events, activities, news,
+partners, resources and files, in the same transaction; the original credit is not kept anywhere.
 
 **Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's,
 a guardian's, or that of an unverified account whose email another account claims — first stores one JSON

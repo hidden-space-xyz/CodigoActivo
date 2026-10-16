@@ -48,8 +48,14 @@ describe('useEventActivitiesAdmin', () => {
       sort: 'activityStartsAt',
     })
 
-    result.modalityId.value = 'mod-2'
+    result.table.columnFilter('modality').value = 'mod-2'
+    result.table.onFilter()
     await vi.waitFor(() => expect(queryOf(urls.at(-1) ?? '').modalityTypeId).toBe('mod-2'))
+    expect(result.table.hasActiveFilters.value).toBe(true)
+
+    result.table.clearFilters()
+    expect(result.table.hasActiveFilters.value).toBe(false)
+    expect(result.table.filterParams.value).toEqual({ eventId: 'event-1' })
   })
 
   it('creates, edits and deletes activities, refreshing the counts and attendees', async () => {

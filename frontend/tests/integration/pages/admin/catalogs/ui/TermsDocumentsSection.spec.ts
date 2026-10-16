@@ -62,10 +62,21 @@ describe('TermsDocumentsSection', () => {
     const { wrapper } = await renderSection()
 
     const rows = wrapper.findAll('.el-table__body tr')
+    expect(rows[0]?.find('.table-primary-cell__title').attributes('title')).toBe('Privacy')
+    expect(rows[0]?.find('.table-primary-cell__badges').exists()).toBe(false)
     expect(rows[0]?.text()).not.toContain(
       t('pages.admin.catalogs.termsDocuments.requiresSignature'),
     )
-    expect(rows[1]?.text()).toContain(t('pages.admin.catalogs.termsDocuments.requiresSignature'))
+    const badge = rows[1]?.find('.table-primary-cell__badges .el-tag')
+    expect(badge?.text()).toBe(t('pages.admin.catalogs.termsDocuments.requiresSignature'))
+    expect(badge?.classes()).toContain('el-tag--small')
+    expect(rows[1]?.findAll('.row-actions__button').map((b) => b.attributes('aria-label'))).toEqual(
+      [t('common.edit'), t('common.delete')],
+    )
+    expect(wrapper.findAll('th').map((th) => th.text())).toEqual([
+      t('common.name'),
+      t('common.actions'),
+    ])
   })
 
   it('shows empty and error states', async () => {

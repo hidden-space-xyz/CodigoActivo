@@ -4,8 +4,9 @@ import { computed } from 'vue'
 import type { EventTermsSummary } from '@/entities/event'
 import { fullName } from '@/entities/user'
 import { formatDateTime } from '@/shared/lib/date'
-import { ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
+import { ColumnFilterSelect } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
+import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { useEventTermsDecisions } from '../model/use-event-terms-decisions'
 
@@ -35,24 +36,26 @@ const documentOptions = computed(() =>
       :table="table"
       :empty-text="$t('pages.admin.eventDetail.terms.empty')"
       :error-text="$t('pages.admin.eventDetail.terms.error')"
+      :search="{ key: 'person', label: $t('pages.admin.eventDetail.terms.columns.searchPerson') }"
     >
-      <el-table-column prop="lastName" min-width="220" sortable="custom">
-        <template #header>
-          <ColumnSearch
-            v-model="table.columnFilter('person').value"
-            :label="$t('pages.admin.eventDetail.terms.columns.person')"
-            :placeholder="$t('pages.admin.eventDetail.terms.columns.searchPerson')"
-            @apply="table.onFilter"
-          />
-        </template>
+      <el-table-column
+        prop="firstName"
+        :label="$t('pages.admin.eventDetail.terms.columns.person')"
+        min-width="240"
+        sortable="custom"
+        :fixed="table.isNarrow.value ? false : 'left'"
+      >
         <template #default="{ row }">
-          <div class="person">
-            <span class="person__name">{{ fullName(row) }}</span>
-            <span v-if="row.email" class="person__email">{{ row.email }}</span>
-          </div>
+          <TablePrimaryCell :title="fullName(row)" :subtitle="row.email" />
         </template>
       </el-table-column>
-      <el-table-column prop="document" min-width="200" sortable="custom">
+      <el-table-column
+        prop="document"
+        :label="$t('pages.admin.eventDetail.terms.columns.document')"
+        min-width="180"
+        sortable="custom"
+        show-overflow-tooltip
+      >
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('document').value"
@@ -63,9 +66,9 @@ const documentOptions = computed(() =>
         </template>
         <template #default="{ row }">{{ row.documentName }}</template>
       </el-table-column>
-      <el-table-column :label="$t('pages.admin.eventDetail.terms.columns.decision')" width="130">
+      <el-table-column :label="$t('pages.admin.eventDetail.terms.columns.decision')" width="120">
         <template #default="{ row }">
-          <el-tag :type="row.accepted ? 'success' : 'danger'">
+          <el-tag :type="row.accepted ? 'success' : 'danger'" size="small" disable-transitions>
             {{
               row.accepted
                 ? $t('pages.admin.eventDetail.terms.accepted')
@@ -77,12 +80,12 @@ const documentOptions = computed(() =>
       <el-table-column
         prop="decidedAt"
         :label="$t('pages.admin.eventDetail.terms.columns.decidedAt')"
-        min-width="170"
+        width="170"
         sortable="custom"
       >
         <template #default="{ row }">{{ formatDateTime(row.decidedAt) }}</template>
       </el-table-column>
-      <el-table-column :label="$t('pages.admin.eventDetail.terms.columns.signature')" width="190">
+      <el-table-column :label="$t('pages.admin.eventDetail.terms.columns.signature')" width="130">
         <template #default="{ row }">
           <button
             v-if="row.signatureUrl"
@@ -144,29 +147,14 @@ const documentOptions = computed(() =>
   margin-bottom: 12px;
 }
 
-.person {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.person__name {
-  font-weight: 600;
-}
-
-.person__email {
-  font-size: 12.5px;
-  color: var(--ca-text-muted);
-}
-
 .signature-thumb {
   display: block;
-  width: 150px;
-  height: 50px;
+  width: 100px;
+  height: 34px;
   padding: 2px;
   background: var(--ca-signature-paper);
   border: 1px solid var(--ca-border);
-  border-radius: 8px;
+  border-radius: var(--ca-radius-sm);
   cursor: zoom-in;
 }
 

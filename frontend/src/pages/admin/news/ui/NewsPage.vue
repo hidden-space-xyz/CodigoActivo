@@ -1,16 +1,57 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+import type { NewsSummary } from '@/entities/news-item'
 import { formatDateTime } from '@/shared/lib/date'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
-import { ColumnFilterDate, ColumnSearch } from '@/shared/ui/column-filter'
+import { ColumnFilterDate } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
 import { ListThumbnail } from '@/shared/ui/list-thumbnail'
+import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { useNewsAdmin } from '../model/use-news-admin'
 import NewsFormDialog from './NewsFormDialog.vue'
 
+const { t } = useI18n()
 const { table, dialog, saving, featuring, save, feature, confirmRemove } = useNewsAdmin()
 const { visible, editing, loading, openCreate, openEdit } = dialog
+
+function newsActions(newsItem: NewsSummary): RowAction[] {
+  return [
+    {
+      key: 'edit',
+      label: t('common.edit'),
+      icon: 'pencil',
+      inline: true,
+      disabled: loading.value,
+      run: () => {
+        void openEdit(newsItem)
+      },
+    },
+    {
+      key: 'feature',
+      label: t('pages.admin.news.feature'),
+      icon: 'star',
+      disabled: newsItem.featured || featuring.value,
+      ...(newsItem.featured ? { reason: t('pages.admin.news.alreadyFeatured') } : {}),
+      run: () => {
+        feature(newsItem)
+      },
+    },
+    {
+      key: 'delete',
+      label: t('common.delete'),
+      icon: 'trash',
+      danger: true,
+      divided: true,
+      run: () => {
+        confirmRemove(newsItem)
+      },
+    },
+  ]
+}
 </script>
 
 <template>
@@ -34,41 +75,34 @@ const { visible, editing, loading, openCreate, openEdit } = dialog
       :table="table"
       :empty-text="$t('pages.admin.news.empty.none')"
       :error-text="$t('pages.admin.news.empty.error')"
+      :search="{ key: 'search', label: $t('common.searchByTitleOrSubtitle') }"
     >
-      <el-table-column :label="$t('common.image')" width="110">
+      <el-table-column
+        prop="title"
+        :label="$t('pages.admin.news.columns.title')"
+        min-width="240"
+        sortable="custom"
+        :fixed="table.isNarrow.value ? false : 'left'"
+      >
         <template #default="{ row }">
-          <ListThumbnail :thumbnail-id="row.thumbnailId" :alt="row.title" style="width: 88px" />
+          <TablePrimaryCell :title="row.title" :subtitle="row.subtitle">
+            <template #leading>
+              <ListThumbnail size="table" :thumbnail-id="row.thumbnailId" />
+            </template>
+            <template v-if="row.featured" #badges>
+              <el-tag type="warning" size="small" disable-transitions>
+                {{ $t('pages.admin.news.featured') }}
+              </el-tag>
+            </template>
+          </TablePrimaryCell>
         </template>
       </el-table-column>
-      <el-table-column prop="title" min-width="220" sortable="custom">
-        <template #header>
-          <ColumnSearch
-            v-model="table.columnFilter('title').value"
-            :label="$t('pages.admin.news.columns.title')"
-            :placeholder="$t('pages.admin.news.search.title')"
-            @apply="table.onFilter"
-          />
-        </template>
-        <template #default="{ row }">
-          <span class="title-cell">
-            {{ row.title }}
-            <el-tag v-if="row.featured" type="warning">
-              {{ $t('pages.admin.news.featured') }}
-            </el-tag>
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="subtitle" min-width="240" sortable="custom">
-        <template #header>
-          <ColumnSearch
-            v-model="table.columnFilter('subtitle').value"
-            :label="$t('pages.admin.news.columns.subtitle')"
-            :placeholder="$t('pages.admin.news.search.subtitle')"
-            @apply="table.onFilter"
-          />
-        </template>
-      </el-table-column>
-      <el-table-column prop="createdAt" sortable="custom" width="200">
+      <el-table-column
+        prop="createdAt"
+        :label="$t('pages.admin.news.columns.created')"
+        sortable="custom"
+        width="170"
+      >
         <template #header>
           <ColumnFilterDate
             v-model="table.columnFilter('created').value"
@@ -78,44 +112,12 @@ const { visible, editing, loading, openCreate, openEdit } = dialog
         </template>
         <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column
-        :label="$t('common.actions')"
-        width="160"
-        align="center"
-        :fixed="table.actionsFixed.value"
-      >
+      <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
         <template #default="{ row }">
-          <div class="ca-row-actions">
-            <ActionButton
-              :icon="row.featured ? 'star-fill' : 'star'"
-              type="warning"
-              text
-              circle
-              :aria-label="
-                row.featured ? $t('pages.admin.news.featured') : $t('pages.admin.news.feature')
-              "
-              :disabled="row.featured || featuring"
-              :class="{ 'is-featured': row.featured }"
-              @click="feature(row)"
-            />
-            <ActionButton
-              icon="pencil"
-              type="success"
-              text
-              circle
-              :aria-label="$t('common.edit')"
-              :disabled="loading"
-              @click="openEdit(row)"
-            />
-            <ActionButton
-              icon="trash"
-              type="danger"
-              text
-              circle
-              :aria-label="$t('common.delete')"
-              @click="confirmRemove(row)"
-            />
-          </div>
+          <RowActions
+            :actions="newsActions(row)"
+            :menu-label="$t('table.moreActionsFor', { name: row.title })"
+          />
         </template>
       </el-table-column>
     </DataTable>
@@ -128,15 +130,3 @@ const { visible, editing, loading, openCreate, openEdit } = dialog
     />
   </div>
 </template>
-
-<style scoped>
-.title-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ca-row-actions :deep(.is-featured .el-icon) {
-  color: var(--ca-action-yellow);
-}
-</style>

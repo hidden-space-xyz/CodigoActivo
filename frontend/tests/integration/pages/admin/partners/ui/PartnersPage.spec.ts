@@ -2,10 +2,13 @@ import { flushPromises } from '@vue/test-utils'
 import { ElDatePicker, ElInputNumber, ElPagination, ElTable } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
+import { elementPlusLocale } from '@/app/config/element-plus-locale'
 import { PartnersPage } from '@/pages/admin/partners'
 import PartnerFormDialog from '@/pages/admin/partners/ui/PartnerFormDialog.vue'
 import type { PartnerResponse } from '@/shared/api/generated/models'
+import { formatDate } from '@/shared/lib/date'
 
+import { setMediaQueryMatches } from '../../../../../support/media'
 import { renderApp, renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, paged, server } from '../../../../../support/server'
 import { buildPartnerResponse } from '../../../../../support/builders'
@@ -20,9 +23,11 @@ import {
   openDialog,
   pickFiles,
   queryOf,
+  tp,
   typeInto,
 } from '../../../../../support/dom'
 import { ColumnFilterDate, ColumnSearch } from '@/shared/ui/column-filter'
+import { SearchInput } from '@/shared/ui/search-input'
 
 function servePartners(items: PartnerResponse[] = [buildPartnerResponse()]) {
   const urls: string[] = []
@@ -42,8 +47,12 @@ async function renderPage() {
   return renderWithProviders(PartnersPage, { attach: true })
 }
 
+function sortLabel(column: string): string {
+  return elementPlusLocale.el.table.sortLabel.replace('{column}', column)
+}
+
 describe('admin partners page', () => {
-  it('lists partners sorted by tier with website links and formatted dates', async () => {
+  it('lists partners sorted by tier with logos, website links and formatted dates', async () => {
     const urls = servePartners([
       buildPartnerResponse(),
       buildPartnerResponse({ id: 'partner-2', name: 'Globex', website: null, fromDate: '' }),
@@ -52,14 +61,68 @@ describe('admin partners page', () => {
     const { wrapper } = await renderPage()
 
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'tier' })
+    expect(wrapper.find('.data-table__count').text()).toBe(tp('table.results', 2))
+    expect(wrapper.find('.data-table__footer').isVisible()).toBe(false)
+    expect(
+      wrapper.findAll('th .caret-wrapper').map((caret) => caret.attributes('aria-label')),
+    ).toEqual(
+      [
+        t('common.name'),
+        t('pages.admin.partners.columns.tier'),
+        t('pages.admin.partners.columns.website'),
+        t('pages.admin.partners.columns.fromDate'),
+      ].map(sortLabel),
+    )
+
     const rows = wrapper.findAll('.el-table__body tr')
     expect(rows).toHaveLength(2)
-    expect(rows[0]?.text()).toContain('Acme')
-    expect(rows[0]?.find('a').attributes('href')).toBe('https://acme.test')
-    expect(rows[0]?.find('img').attributes('src')).toBe('/api/files/thumb-partner-1/content')
-    expect(rows[1]?.text()).toContain('Globex')
-    expect(rows[1]?.find('a').exists()).toBe(false)
-    expect(rows[1]?.text()).toContain('—')
+    const [first, second] = rows
+    if (!first || !second) throw new Error('missing rows')
+    const title = first.find('.table-primary-cell__title')
+    expect(title.text()).toBe('Acme')
+    expect(title.attributes('title')).toBe('Acme')
+    const logo = first.find('.table-primary-cell__leading .list-thumb')
+    expect(logo.classes()).toEqual(
+      expect.arrayContaining(['list-thumb--table', 'list-thumb--contain']),
+    )
+    expect(logo.find('img').attributes()).toMatchObject({
+      src: '/api/files/thumb-partner-1/content',
+      alt: '',
+    })
+    const link = first.find('a')
+    expect(link.attributes()).toMatchObject({
+      href: 'https://acme.test',
+      target: '_blank',
+      rel: 'noopener',
+    })
+    expect(link.find('.external-link__text').text()).toBe('acme.test')
+    expect(first.text()).toContain(formatDate('2024-03-15'))
+    expect(
+      first.findAll('.row-actions button').map((button) => button.attributes('aria-label')),
+    ).toEqual([t('common.edit'), t('common.delete')])
+    expect(findButton(t('common.delete'), first.element).classList).toContain(
+      'row-actions__button--danger',
+    )
+    expect(first.find('.row-actions__more').exists()).toBe(false)
+    expect(second.find('.table-primary-cell__title').text()).toBe('Globex')
+    expect(second.find('a').exists()).toBe(false)
+    expect(second.text()).toContain('—')
+  })
+
+  it('pins the name column on wide screens only and the actions column on every screen', async () => {
+    servePartners()
+
+    const wide = await renderPage()
+    const wideRow = wide.wrapper.find('.el-table__body tr')
+    expect(wideRow.find('td.el-table-fixed-column--left .table-primary-cell').exists()).toBe(true)
+    expect(wideRow.find('td.el-table-fixed-column--right .row-actions').exists()).toBe(true)
+    wide.wrapper.unmount()
+
+    setMediaQueryMatches((query) => query === '(max-width: 640px)')
+    const narrow = await renderPage()
+    const narrowRow = narrow.wrapper.find('.el-table__body tr')
+    expect(narrowRow.find('td.el-table-fixed-column--left').exists()).toBe(false)
+    expect(narrowRow.find('td.el-table-fixed-column--right .row-actions').exists()).toBe(true)
   })
 
   it('renders through the application router for admins', async () => {
@@ -87,15 +150,20 @@ describe('admin partners page', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.admin.partners.empty.error')))
   })
 
-  it('sends column filters, sorting and pagination to the API', async () => {
+  it('sends the toolbar search, column filters, sorting and pagination to the API', async () => {
     const urls = servePartners([buildPartnerResponse()])
     const { wrapper } = await renderPage()
 
+    const search = wrapper.findComponent(SearchInput)
+    expect(search.props('label')).toBe(t('pages.admin.partners.search.name'))
+    search.vm.$emit('update:modelValue', 'acme')
     const searches = wrapper.findAllComponents(ColumnSearch)
-    searches[0]?.vm.$emit('update:modelValue', 'acme')
-    searches[0]?.vm.$emit('apply')
-    searches[1]?.vm.$emit('update:modelValue', 2)
-    searches[2]?.vm.$emit('update:modelValue', 'acme.test')
+    expect(searches.map((columnSearch) => columnSearch.props('label'))).toEqual([
+      t('pages.admin.partners.columns.tier'),
+      t('pages.admin.partners.columns.website'),
+    ])
+    searches[0]?.vm.$emit('update:modelValue', 2)
+    searches[1]?.vm.$emit('update:modelValue', 'acme.test')
     wrapper
       .findComponent(ColumnFilterDate)
       .vm.$emit('update:modelValue', [new Date(2024, 0, 1), new Date(2024, 11, 31)])
@@ -121,6 +189,33 @@ describe('admin partners page', () => {
     pagination.vm.$emit('current-change', 3)
     await flushPromises()
     expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ page: '3', pageSize: '50' })
+  })
+
+  it('shows a chip per header filter and clears every filter at once', async () => {
+    const urls = servePartners([buildPartnerResponse()])
+    const { wrapper } = await renderPage()
+
+    wrapper.findComponent(SearchInput).vm.$emit('update:modelValue', 'acme')
+    const [tier, website] = wrapper.findAllComponents(ColumnSearch)
+    tier?.vm.$emit('update:modelValue', 2)
+    tier?.vm.$emit('apply')
+    website?.vm.$emit('update:modelValue', 'acme.test')
+    website?.vm.$emit('apply')
+    await flushPromises()
+
+    expect(wrapper.findAll('.filter-chip__label').map((chip) => chip.text())).toEqual([
+      t('table.filterChip', { label: t('pages.admin.partners.columns.tier'), value: '2' }),
+      t('table.filterChip', {
+        label: t('pages.admin.partners.columns.website'),
+        value: 'acme.test',
+      }),
+    ])
+
+    await click(findButton(t('table.clearFilters')))
+
+    expect(queryOf(urls.at(-1) ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'tier' })
+    expect(wrapper.find('.filter-chip').exists()).toBe(false)
+    expect(wrapper.find<HTMLInputElement>('.data-table__search input').element.value).toBe('')
   })
 
   it('creates a partner after uploading its logo', async () => {

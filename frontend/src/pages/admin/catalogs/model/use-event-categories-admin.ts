@@ -13,8 +13,8 @@ import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
 
 /**
- * Event category catalog: a table sorted by name and filterable by name and color, the create/edit
- * dialog and deletion after confirmation, each outcome reported with a toast. Call it in `setup`.
+ * Event category catalog: a table sorted and filterable by name, the create/edit dialog and
+ * deletion after confirmation, each outcome reported with a toast. Call it in `setup`.
  */
 export function useEventCategoriesAdmin() {
   const { t } = useI18n()
@@ -26,7 +26,6 @@ export function useEventCategoriesAdmin() {
     defaultSort: { field: 'name', order: 1 },
     columns: {
       name: { type: 'text' },
-      color: { type: 'text' },
     },
   })
   const dialog = useCrudDialog<EventCategory>()

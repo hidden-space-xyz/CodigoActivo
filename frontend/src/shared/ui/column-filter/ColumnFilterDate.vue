@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
+import { useTableFilterRegistration } from './filter-registry'
+import { formatDate, formatDateRange, toDateOnly } from '@/shared/lib/date'
 import { useMediaQuery } from '@/shared/lib/media-query'
 
-const props = defineProps<{
-  /** Selected `[from, to]` range; `null` means no filter. */
-  modelValue: (Date | null)[] | null
-  /** Column header text, also used in the toggle's accessible name. */
-  label: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** Selected `[from, to]` range; `null` means no filter. */
+    modelValue: (Date | null)[] | null
+    /** Column header text, also used in the toggle's accessible name. */
+    label: string
+    /** `header` sits next to a column title; `toolbar` is a labelled pill above the table. */
+    variant?: 'header' | 'toolbar'
+  }>(),
+  { variant: 'header' },
+)
 
 const emit = defineEmits<{
   /**
@@ -21,6 +29,7 @@ const emit = defineEmits<{
   apply: []
 }>()
 
+const { t } = useI18n()
 const shell = ref<InstanceType<typeof ColumnFilterShell>>()
 const draft = ref<(Date | null)[] | null>(props.modelValue)
 const narrow = useMediaQuery('(max-width: 640px)')
@@ -58,6 +67,21 @@ function clear(): void {
   commit()
   shell.value?.hide()
 }
+
+function describeRange(): string | null {
+  const [start, end] = props.modelValue ?? []
+  const from = start instanceof Date ? toDateOnly(start) : null
+  const to = end instanceof Date ? toDateOnly(end) : null
+  if (from && to) return formatDateRange(from, to)
+  if (from) return t('table.rangeSince', { date: formatDate(from) })
+  if (to) return t('table.rangeUntil', { date: formatDate(to) })
+  return null
+}
+
+useTableFilterRegistration(() => {
+  const value = describeRange()
+  return value === null ? null : { label: props.label, value }
+}, clear)
 </script>
 
 <template>
@@ -65,6 +89,8 @@ function clear(): void {
     ref="shell"
     :label="label"
     :active="active"
+    icon="calendar"
+    :variant="variant"
     :toggle-label="$t('table.filterBy', { label })"
     :clear-label="$t('table.clearFilter')"
     :show-clear="active || draft != null"

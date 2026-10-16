@@ -15,9 +15,10 @@ import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
 
 /**
- * Admin resource list: a table of the newest resources with a filter per column, the create/edit
- * dialog, which loads the whole resource before editing it, and deletion after confirmation, each
- * outcome reported with a toast. Call it in `setup`.
+ * Admin resource list: a table of the newest resources searched by title or subtitle and filtered
+ * by type, link and creation date, the create/edit dialog, which loads the whole resource before
+ * editing it, and deletion after confirmation, each outcome reported with a toast. Call it in
+ * `setup`.
  */
 export function useResourcesAdmin() {
   const { t } = useI18n()
@@ -29,8 +30,7 @@ export function useResourcesAdmin() {
     ...resourceList,
     defaultSort: { field: 'createdAt', order: -1 },
     columns: {
-      title: { type: 'text' },
-      subtitle: { type: 'text' },
+      search: { type: 'text' },
       type: { param: 'resourceTypeId' },
       url: { type: 'text' },
       created: { type: 'dateRange', fromParam: 'createdFrom', toParam: 'createdTo' },

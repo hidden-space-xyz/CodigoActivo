@@ -61,4 +61,54 @@ describe('ColorTag', () => {
       expect(tag.background).toBe('')
     }
   })
+
+  it('renders both solid tags without the appear transition', async () => {
+    const colored = await renderWithProviders(ColorTag, {
+      props: { value: 'Robotics', color: '#123' },
+    })
+    const neutral = await renderWithProviders(ColorTag, { props: { value: 'None' } })
+
+    for (const { wrapper } of [colored, neutral]) {
+      expect(wrapper.findComponent(ElTag).props('disableTransitions')).toBe(true)
+      expect(wrapper.find('.el-tag').classes()).not.toContain('color-tag--truncate')
+      expect(wrapper.find('.el-tag').attributes('title')).toBeUndefined()
+    }
+  })
+
+  it('keeps a truncated tag on one line with its full text as tooltip', async () => {
+    const colored = await renderWithProviders(ColorTag, {
+      props: { value: 'Robotics and electronics', color: '#123', truncate: true },
+    })
+    const neutral = await renderWithProviders(ColorTag, {
+      props: { value: 'Robotics and electronics', truncate: true },
+    })
+
+    for (const { wrapper } of [colored, neutral]) {
+      const tag = wrapper.find('.el-tag')
+      expect(tag.classes()).toContain('color-tag--truncate')
+      expect(tag.attributes('title')).toBe('Robotics and electronics')
+    }
+  })
+
+  it('renders a coloured dot before plain text in the dot variant', async () => {
+    const { wrapper } = await renderWithProviders(ColorTag, {
+      props: { value: 'Active', color: '#2E9E57', variant: 'dot' },
+    })
+
+    expect(wrapper.find('.el-tag').exists()).toBe(false)
+    const root = wrapper.find('span.color-tag--dot')
+    expect(root.attributes('title')).toBe('Active')
+    expect(root.find('.color-tag__text').text()).toBe('Active')
+    const dot = root.find('.color-tag__dot')
+    expect(dot.attributes('aria-hidden')).toBe('true')
+    expect((dot.element as HTMLElement).style.background).toBe('rgb(46, 158, 87)')
+  })
+
+  it('falls back to a neutral dot for an invalid colour', async () => {
+    const { wrapper } = await renderWithProviders(ColorTag, {
+      props: { value: 'Unknown', color: 'purple', variant: 'dot' },
+    })
+
+    expect(wrapper.find('.color-tag__dot').attributes('style')).toBeUndefined()
+  })
 })

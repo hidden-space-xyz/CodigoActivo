@@ -1,15 +1,33 @@
+import { defineComponent, h } from 'vue'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { ElPopover, ElSelect } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
 import { renderWithProviders, t } from '../../../../support/render'
-import { ColumnFilterSelect } from '@/shared/ui/column-filter'
+import { AppIcon } from '@/shared/ui/app-icon'
+import { ColumnFilterSelect, provideTableFilters } from '@/shared/ui/column-filter'
 
 const options = [
   { label: 'Active', value: 'active' },
   { label: 'Yes', value: true },
   { label: 'No', value: false },
 ]
+
+async function renderInTable(props: {
+  modelValue: string | boolean | null
+  'onUpdate:modelValue'?: (value: string | boolean | null) => void
+  onApply?: () => void
+}) {
+  const box: { active?: ReturnType<typeof provideTableFilters>['active'] } = {}
+  const Host = defineComponent({
+    setup() {
+      box.active = provideTableFilters().active
+      return () => h(ColumnFilterSelect, { label: 'Status', options, ...props })
+    },
+  })
+  await renderWithProviders(Host, { attach: true })
+  return () => box.active?.value ?? []
+}
 
 async function renderFilter(modelValue: string | boolean | null) {
   const rendered = await renderWithProviders(ColumnFilterSelect, {
@@ -41,9 +59,53 @@ describe('ColumnFilterSelect', () => {
     const toggle = wrapper.find('.column-filter__toggle')
     expect(toggle.attributes('aria-label')).toBe(t('table.filterBy', { label: 'Status' }))
     expect(toggle.classes()).not.toContain('column-filter__toggle--active')
+    expect(toggle.findComponent(AppIcon).props('name')).toBe('filter')
     expect(wrapper.findComponent(ElSelect).props('placeholder')).toBe(
       t('table.filterBy', { label: 'Status' }),
     )
+  })
+
+  it('renders as a toolbar pill', async () => {
+    const { wrapper } = await renderWithProviders(ColumnFilterSelect, {
+      props: { modelValue: null, label: 'Admin', options, variant: 'toolbar' },
+      attach: true,
+    })
+
+    const pill = wrapper.find('.column-filter__pill')
+    expect(pill.text()).toBe('Admin')
+    expect(pill.attributes('aria-label')).toBe(t('table.filterBy', { label: 'Admin' }))
+    expect(wrapper.find('.column-filter__toggle').exists()).toBe(false)
+  })
+
+  it.each([
+    ['active', 'Active'],
+    [true, 'Yes'],
+    [false, 'No'],
+    ['archived', 'archived'],
+  ])('registers %j as the chip value %j', async (modelValue, value) => {
+    const active = await renderInTable({ modelValue })
+
+    expect(active().map(({ label, value: text }) => ({ label, value: text }))).toEqual([
+      { label: 'Status', value },
+    ])
+  })
+
+  it('registers no chip without a selection and clears from the chip', async () => {
+    const inactive = await renderInTable({ modelValue: null })
+    expect(inactive()).toEqual([])
+
+    const onUpdate = vi.fn()
+    const onApply = vi.fn()
+    const active = await renderInTable({
+      modelValue: 'active',
+      'onUpdate:modelValue': onUpdate,
+      onApply,
+    })
+
+    active()[0]?.clear()
+
+    expect(onUpdate).toHaveBeenCalledWith(null)
+    expect(onApply).toHaveBeenCalledTimes(1)
   })
 
   it('emits the picked option, applies it and closes the popover', async () => {

@@ -48,7 +48,29 @@ describe('EventCategoriesSection', () => {
 
     expect(wrapper.text()).toContain(t('pages.admin.catalogs.eventCategories.title'))
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'name' })
-    expect(wrapper.find('.el-table__body').text()).toContain('Workshop')
+    expect(wrapper.find('.data-table').classes()).toContain('data-table--flush')
+    expect(wrapper.find('th .caret-wrapper').attributes('aria-label')).toContain(t('common.name'))
+
+    const row = wrapper.find('.el-table__body tr')
+    const tag = row.find('.category-cell .color-tag')
+    expect(tag.text()).toBe('Workshop')
+    expect(tag.attributes('title')).toBe('Workshop')
+    expect(tag.classes()).toContain('color-tag--truncate')
+    expect(row.find('.category-cell__hex').text()).toBe('#FF0000')
+  })
+
+  it('offers edit and delete as inline row buttons', async () => {
+    serveCategories()
+    const { wrapper } = await renderSection()
+
+    const row = wrapper.find('.el-table__body tr')
+    const buttons = row.findAll('.row-actions__button')
+    expect(buttons.map((button) => button.attributes('aria-label'))).toEqual([
+      t('common.edit'),
+      t('common.delete'),
+    ])
+    expect(buttons[1]?.classes()).toContain('row-actions__button--danger')
+    expect(row.find('.row-actions__more').exists()).toBe(false)
   })
 
   it('shows empty and error states', async () => {
@@ -66,16 +88,24 @@ describe('EventCategoriesSection', () => {
     )
   })
 
-  it('filters by name and color', async () => {
+  it('filters by name and shows the filter as a chip', async () => {
     const urls = serveCategories()
     const { wrapper } = await renderSection()
 
-    const [name, color] = wrapper.findAllComponents(ColumnSearch)
-    name?.vm.$emit('update:modelValue', 'work')
-    color?.vm.$emit('update:modelValue', '#FF')
+    const searches = wrapper.findAllComponents(ColumnSearch)
+    expect(searches).toHaveLength(1)
+    searches[0]?.vm.$emit('update:modelValue', 'work')
     await flushPromises()
 
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ name: 'work', color: '#FF' })
+    expect(queryOf(urls.at(-1) ?? '')).toEqual({
+      page: '1',
+      pageSize: '25',
+      sort: 'name',
+      name: 'work',
+    })
+    expect(wrapper.find('.filter-chip__label').text()).toBe(
+      t('table.filterChip', { label: t('common.name'), value: 'work' }),
+    )
   })
 
   it('creates a category with the default color and a picked color', async () => {

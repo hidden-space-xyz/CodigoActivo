@@ -28,7 +28,9 @@ import {
   THUMBNAIL_ID,
 } from '../../../../../support/builders'
 import { findButtons, notificationTexts, tp } from '../../../../../support/dom'
-import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
+import { formatDate, formatDateRange, formatTimeRange } from '@/shared/lib/date'
+import { ColumnFilterDate, ColumnFilterSelect } from '@/shared/ui/column-filter'
+import { SearchInput } from '@/shared/ui/search-input'
 
 const ADMIN_EVENT = {
   title: 'Hackathon',
@@ -136,10 +138,21 @@ describe('EventDetailPage', () => {
     expect(cards[2]).toContain('4,3')
     expect(cards[2]).toContain('/5')
     expect(cards[2]).toContain(tp('pages.admin.eventDetail.summary.ratings', 2))
-    expect(text).toContain('Robotics')
     expect(text).toContain('Painting')
     expect(text).toContain('On site')
-    expect(text).toContain('Room 1')
+    expect(wrapper.find('.data-table__count').text()).toBe(tp('table.results', 2))
+    expect(wrapper.find('.data-table__toolbar').text()).toContain(
+      t('pages.admin.eventDetail.newActivity'),
+    )
+    const first = wrapper.findAll('.el-table__body tr')[0]
+    expect(first?.find('.table-primary-cell__title').text()).toBe('Robotics')
+    expect(first?.find('.table-primary-cell__subtitle').text()).toBe('Room 1')
+    expect(first?.find('.list-thumb--table').exists()).toBe(true)
+    expect(first?.find('.list-thumb img').attributes('alt')).toBe('')
+    expect(first?.findAll('.schedule-cell > span').map((line) => line.text())).toEqual([
+      formatDate('2026-10-10T09:00:00.000Z'),
+      formatTimeRange('2026-10-10T09:00:00.000Z', '2026-10-10T11:00:00.000Z'),
+    ])
   })
 
   it('falls back when the event, summary data and role names are missing', async () => {
@@ -212,11 +225,11 @@ describe('EventDetailPage', () => {
     const urls: URL[] = []
     const { wrapper } = await renderDetail({ tableUrls: urls })
 
-    const search = wrapper.findComponent(ColumnSearch)
+    const search = wrapper.findComponent(SearchInput)
+    expect(search.props('label')).toBe(t('pages.admin.eventDetail.columns.searchTitle'))
     search.vm.$emit('update:modelValue', 'robot')
-    search.vm.$emit('apply')
     const dates = wrapper.findComponent(ColumnFilterDate)
-    dates.vm.$emit('update:modelValue', ['2026-10-10', '2026-10-11'])
+    dates.vm.$emit('update:modelValue', [new Date(2026, 9, 10), new Date(2026, 9, 11)])
     dates.vm.$emit('apply')
     const modality = wrapper.findComponent(ColumnFilterSelect)
     expect(modality.props('options')).toEqual([
@@ -224,13 +237,29 @@ describe('EventDetailPage', () => {
       { label: 'Online', value: 'mod-2' },
     ])
     modality.vm.$emit('update:modelValue', 'mod-2')
+    modality.vm.$emit('apply')
 
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('modalityTypeId')).toBe('mod-2'))
     expect(urls.at(-1)?.searchParams.get('title')).toBe('robot')
     expect(urls.at(-1)?.searchParams.get('activityDateFrom')).toBe('2026-10-10')
+    expect(urls.at(-1)?.searchParams.get('page')).toBe('1')
+    await vi.waitFor(() =>
+      expect(wrapper.findAll('.filter-chip__label').map((chip) => chip.text())).toEqual([
+        t('table.filterChip', {
+          label: t('pages.admin.eventDetail.columns.schedule'),
+          value: formatDateRange('2026-10-10', '2026-10-11'),
+        }),
+        t('table.filterChip', {
+          label: t('pages.admin.eventDetail.columns.modality'),
+          value: 'Online',
+        }),
+      ]),
+    )
 
-    modality.vm.$emit('update:modelValue', true)
+    modality.vm.$emit('update:modelValue', null)
+    modality.vm.$emit('apply')
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.has('modalityTypeId')).toBe(false))
+    expect(urls.at(-1)?.searchParams.get('title')).toBe('robot')
 
     wrapper.findComponent(ElTable).vm.$emit('sort-change', { prop: 'title', order: 'ascending' })
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('sort')).toBe('title'))

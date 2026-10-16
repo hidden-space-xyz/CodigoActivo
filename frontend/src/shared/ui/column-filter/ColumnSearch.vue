@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { InputInstance } from 'element-plus'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
+import { useTableFilterRegistration } from './filter-registry'
 import { MAX_SEARCH_LENGTH } from '@/shared/config'
 
 const props = withDefaults(
@@ -76,6 +77,11 @@ function clear(): void {
   draft.value = ''
   applyNow()
 }
+
+useTableFilterRegistration(
+  () => (active.value ? { label: props.label, value: String(props.modelValue) } : null),
+  clear,
+)
 
 async function focusInput(): Promise<void> {
   await nextTick()
