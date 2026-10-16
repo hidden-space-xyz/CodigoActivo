@@ -79,6 +79,8 @@ export interface UserListParams {
   readonly isAdmin?: boolean
   readonly promotionalConsent?: boolean
   readonly parentId?: string
+  /** Independent accounts or dependents only; omitted for both. */
+  readonly scope?: 'Independent' | 'Dependent'
   readonly birthDateFrom?: string
   readonly birthDateTo?: string
   readonly page?: number

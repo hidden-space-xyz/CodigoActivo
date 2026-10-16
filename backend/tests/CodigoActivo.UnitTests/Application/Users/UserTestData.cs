@@ -123,11 +123,11 @@ internal static class UserTestData
         };
     }
 
-    public static UserStatusTypeRow NewStatusTypeRow(string name)
+    public static UserStatusTypeRow NewStatusTypeRow(string name, Guid? id = null)
     {
         return new()
         {
-            Id = Guid.NewGuid(),
+            Id = id ?? Guid.NewGuid(),
             Name = name,
             Description = string.Empty,
             Color = "#000",

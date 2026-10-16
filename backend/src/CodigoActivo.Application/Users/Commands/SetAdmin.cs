@@ -27,7 +27,8 @@ public sealed record SetAdminCommand(
 
 /// <summary>
 /// Executes the command to grant or revoke the administrator rights of a user. Nobody changes
-/// their own rights, administrators included, and the initial administrator never loses them.
+/// their own rights, administrators included, a dependent never gets them and the initial
+/// administrator never loses them.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>

@@ -1,4 +1,4 @@
-import { computed, ref, type Ref } from 'vue'
+import { computed, readonly, ref, type Ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
@@ -23,6 +23,22 @@ import {
 import { useServerTable } from '@/shared/lib/paging'
 import type { TableFilterChip } from '@/shared/ui/data-table'
 
+type UserListScope = 'independent' | 'dependent' | 'all'
+
+const SCOPE_PARAMS: Record<UserListScope, Readonly<Record<string, string>>> = {
+  independent: { scope: 'Independent' },
+  dependent: { scope: 'Dependent' },
+  all: {},
+}
+
+const DEFAULT_SORT_FIELD = 'firstName'
+
+const HIDDEN_FIELDS: Record<UserListScope, readonly string[]> = {
+  independent: ['birthDate'],
+  dependent: ['email', 'phone', 'nationalId', 'status', 'isAdmin', 'promotionalConsent'],
+  all: [],
+}
+
 /** Narrows the user table to a relative of one user: their guardian or their dependents. */
 export interface UserRelationFilter {
   /** Localized text shown in the active-filter chip. */
@@ -32,15 +48,21 @@ export interface UserRelationFilter {
 }
 
 /**
- * Admin user list: a table with a filter per column and an optional relation filter (also listed
- * as a table chip), and the dialogs that edit a user (loaded whole first), change their type,
- * grant the admin role or return their second factor to email. The last two, and any edit that
- * replaces contact details, need the signed-in admin's password: a refused one is shown in the
- * dialog instead of a toast. An admin's new email for their own account waits for the link
- * emailed to it, as the success toast says. Revoking the admin role and deleting ask for
- * confirmation and then act at once. The initial administrator can be neither demoted nor deleted,
- * and the caller can neither change their own type or admin role nor delete their own account
- * here; the block reasons explain why. Call it in `setup`.
+ * Admin user list: a table of the independent accounts, with a scope switch to the dependents or
+ * everyone, a filter per column and an optional relation filter (also listed as a table chip) that
+ * moves to the scope of the people it shows and is dropped when the scope changes. Each scope hides
+ * the fields its people never have (`showsField`) and drops their filters and their sort: the
+ * birth date of independent accounts, and the contact details, DNI/NIE, status, admin role and
+ * promotional consent of dependents.
+ *
+ * It also opens the dialogs that edit a user (loaded whole first), change their type, grant the
+ * admin role or return their second factor to email. The last two, and any edit that replaces
+ * contact details, need the signed-in admin's password: a refused one is shown in the dialog
+ * instead of a toast. An admin's new email for their own account waits for the link emailed to it,
+ * as the success toast says. Revoking the admin role and deleting ask for confirmation and then act
+ * at once. The initial administrator can be neither demoted nor deleted, and the caller can neither
+ * change their own type or admin role nor delete their own account here; the block reasons explain
+ * why. Call it in `setup`.
  */
 export function useUsersAdmin() {
   const { t } = useI18n()
@@ -50,10 +72,11 @@ export function useUsersAdmin() {
   const { confirmDelete } = useDeleteConfirm()
   const { confirmAction } = useActionConfirm()
 
+  const scope = ref<UserListScope>('independent')
   const relationFilter = ref<UserRelationFilter | null>(null)
   const table = useServerTable({
     ...userList,
-    defaultSort: { field: 'firstName', order: 1 },
+    defaultSort: { field: DEFAULT_SORT_FIELD, order: 1 },
     columns: {
       name: { type: 'text' },
       email: { type: 'text' },
@@ -65,7 +88,7 @@ export function useUsersAdmin() {
       isAdmin: { param: 'isAdmin' },
       promotionalConsent: { param: 'promotionalConsent' },
     },
-    extraParams: () => ({ ...relationFilter.value?.params }),
+    extraParams: () => ({ ...SCOPE_PARAMS[scope.value], ...relationFilter.value?.params }),
   })
   const types = useQuery(userQueries.types())
   const statuses = useQuery(userQueries.statuses())
@@ -103,9 +126,21 @@ export function useUsersAdmin() {
     }
   }
 
+  function showsField(field: string): boolean {
+    return !HIDDEN_FIELDS[scope.value].includes(field)
+  }
+
+  function changeScope(next: UserListScope): void {
+    scope.value = next
+    const hidden = HIDDEN_FIELDS[next]
+    for (const field of hidden) table.columnFilter(field).value = null
+    if (hidden.includes(table.sortField.value ?? '')) table.setSort(DEFAULT_SORT_FIELD)
+  }
+
   function showGuardianOf(user: User): void {
     if (!user.parentId) return
     table.clearFilters()
+    changeScope('independent')
     relationFilter.value = {
       label: t('pages.admin.users.relation.tutorOf', { fullName: fullName(user) }),
       params: { id: user.parentId },
@@ -114,6 +149,7 @@ export function useUsersAdmin() {
 
   function showDependentsOf(user: User): void {
     table.clearFilters()
+    changeScope('dependent')
     relationFilter.value = {
       label: t('pages.admin.users.relation.dependentsOf', { fullName: fullName(user) }),
       params: { parentId: user.id },
@@ -122,6 +158,11 @@ export function useUsersAdmin() {
 
   function clearRelationFilter(): void {
     relationFilter.value = null
+  }
+
+  function setScope(next: UserListScope): void {
+    changeScope(next)
+    clearRelationFilter()
   }
 
   const relationChips = computed<TableFilterChip[]>(() =>
@@ -237,6 +278,9 @@ export function useUsersAdmin() {
     table,
     types,
     statuses,
+    scope: readonly(scope),
+    setScope,
+    showsField,
     relationChips,
     showGuardianOf,
     showDependentsOf,

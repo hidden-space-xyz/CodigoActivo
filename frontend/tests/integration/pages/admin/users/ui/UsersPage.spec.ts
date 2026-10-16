@@ -64,10 +64,15 @@ const tim = omit(
     gender: 'Male',
     parentId: 'user-1',
     parentName: 'Ada Lovelace',
-    isAdmin: true,
   }),
   'type',
 )
+const grace = buildUserResponse({
+  id: 'user-3',
+  firstName: 'Grace',
+  lastName: 'Hopper',
+  isAdmin: true,
+})
 
 function ghost(overrides: Partial<UserResponse> = {}): UserResponse {
   return buildUserResponse({
@@ -148,6 +153,18 @@ function chipLabels(wrapper: PageWrapper): string[] {
   return wrapper.findAll('.filter-chip__label').map((chip) => textOf(chip.element))
 }
 
+async function chooseScope(wrapper: PageWrapper, labelKey: string): Promise<void> {
+  const item = wrapper
+    .findAll('.el-segmented__item')
+    .find((candidate) => candidate.text() === t(labelKey))
+  if (!item) throw new Error(`Scope "${labelKey}" not found`)
+  await click(item.find('input').element)
+}
+
+function selectedScope(wrapper: PageWrapper): string {
+  return textOf(wrapper.find('.el-segmented__item.is-selected').element)
+}
+
 describe('admin users page', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
@@ -159,7 +176,7 @@ describe('admin users page', () => {
   })
 
   it('lists users with contact, age, catalog tags and family links', async () => {
-    const recorded = serveUsers([ada, tim, ghost({ dependentCount: 0, email: '' })])
+    const recorded = serveUsers([ada, tim, ghost({ dependentCount: 0, email: '', isAdmin: true })])
 
     const { wrapper } = await renderPage()
 
@@ -167,6 +184,7 @@ describe('admin users page', () => {
       page: '1',
       pageSize: '25',
       sort: 'firstName',
+      scope: 'Independent',
     })
     const [first, second, third] = rows(wrapper)
     expect(first?.text()).toContain('Ada Lovelace')
@@ -177,7 +195,7 @@ describe('admin users page', () => {
     expect(first?.text()).toContain('Participant')
     expect(first?.find('.table-primary-cell__badges').exists()).toBe(false)
     expect(textOf(first?.find('.table-primary-cell__meta').element)).toBe(
-      tp('pages.admin.users.dependentsLabel', 2, { count: 2 }),
+      t('pages.admin.users.dependentsLabel', { count: 2 }),
     )
     expect(first?.find('.row-actions__more').attributes('aria-label')).toBe(
       t('table.moreActionsFor', { name: 'Ada Lovelace' }),
@@ -191,9 +209,7 @@ describe('admin users page', () => {
     ])
 
     expect(second?.text()).toContain('Tim Lovelace')
-    expect(second?.find('.table-primary-cell__badges').text()).toBe(
-      t('pages.admin.users.columns.admin'),
-    )
+    expect(second?.find('.table-primary-cell__badges').exists()).toBe(false)
     expect(second?.findAll('.user-meta > *').map((part) => textOf(part.element))).toEqual([
       t('pages.admin.users.guardianPrefix'),
       'Ada Lovelace',
@@ -204,11 +220,13 @@ describe('admin users page', () => {
     expect(second?.find('button').text()).toContain('Ada Lovelace')
     expect(rowMenuLabels(await openRowMenu(rowElement(wrapper, 1)))).toEqual([
       t(CHANGE_TYPE),
-      t(REVOKE_ADMIN),
       t('common.delete'),
     ])
 
     expect(third?.text()).toContain('Ghost User')
+    expect(third?.find('.table-primary-cell__badges').text()).toBe(
+      t('pages.admin.users.columns.admin'),
+    )
     expect(third?.text()).not.toContain('(')
     expect(third?.text()).toContain('—')
     expect(third?.find('.table-primary-cell__meta').exists()).toBe(false)
@@ -225,9 +243,17 @@ describe('admin users page', () => {
   it('shows empty and error states and disables bulk actions without users', async () => {
     serveUsers([])
     const empty = await renderPage()
-    expect(empty.wrapper.text()).toContain(t('pages.admin.users.empty.none'))
+    expect(empty.wrapper.text()).toContain(t('pages.admin.users.empty.noIndependent'))
     expect(findButton(t('pages.admin.users.export.label')).disabled).toBe(true)
     expect(findButton(t('pages.admin.users.email.bulkLabel')).disabled).toBe(true)
+    await chooseScope(empty.wrapper, 'pages.admin.users.scope.dependent')
+    await vi.waitFor(() =>
+      expect(empty.wrapper.text()).toContain(t('pages.admin.users.empty.noDependent')),
+    )
+    await chooseScope(empty.wrapper, 'pages.admin.users.scope.all')
+    await vi.waitFor(() =>
+      expect(empty.wrapper.text()).toContain(t('pages.admin.users.empty.none')),
+    )
     empty.wrapper.unmount()
 
     server.use(http.get('/api/users', () => apiError(500)))
@@ -240,6 +266,7 @@ describe('admin users page', () => {
   it('sends column filters and exposes catalog options', async () => {
     const recorded = serveUsers()
     const { wrapper } = await renderPage()
+    await chooseScope(wrapper, 'pages.admin.users.scope.all')
 
     const searches = wrapper.findAllComponents(ColumnSearch)
     expect(searches.map((search) => search.props('label'))).toEqual([
@@ -320,15 +347,20 @@ describe('admin users page', () => {
       page: '1',
       pageSize: '25',
       sort: 'firstName',
+      scope: 'Independent',
       id: 'user-1',
     })
 
     await click(
-      findButton(tp('pages.admin.users.dependentsLabel', 2, { count: 2 }), rowElement(wrapper, 0)),
+      findButton(t('pages.admin.users.dependentsLabel', { count: 2 }), rowElement(wrapper, 0)),
     )
     const dependentsOf = t('pages.admin.users.relation.dependentsOf', { fullName: 'Ada Lovelace' })
     expect(chipLabels(wrapper)).toEqual([dependentsOf])
-    expect(queryOf(recorded.list.at(-1) ?? '')).toMatchObject({ parentId: 'user-1' })
+    expect(selectedScope(wrapper)).toBe(t('pages.admin.users.scope.dependent'))
+    expect(queryOf(recorded.list.at(-1) ?? '')).toMatchObject({
+      scope: 'Dependent',
+      parentId: 'user-1',
+    })
 
     await click(findButton(t('table.removeFilter', { label: dependentsOf })))
     expect(wrapper.find('.filter-chip').exists()).toBe(false)
@@ -336,7 +368,62 @@ describe('admin users page', () => {
       page: '1',
       pageSize: '25',
       sort: 'firstName',
+      scope: 'Dependent',
     })
+  })
+
+  it('switches between independent accounts, dependents and everyone', async () => {
+    const recorded = serveUsers([ada, tim])
+    const { wrapper } = await renderPage()
+
+    const segmented = wrapper.find('.el-segmented')
+    expect(segmented.attributes('aria-label')).toBe(t('pages.admin.users.scope.label'))
+    expect(segmented.findAll('.el-segmented__item').map((item) => item.text())).toEqual([
+      t('pages.admin.users.scope.independent'),
+      t('pages.admin.users.scope.dependent'),
+      t('pages.admin.users.scope.all'),
+    ])
+    expect(selectedScope(wrapper)).toBe(t('pages.admin.users.scope.independent'))
+    expect(wrapper.findComponent(ColumnFilterDate).exists()).toBe(false)
+    selectFilter(wrapper, 'common.status').vm.$emit('update:modelValue', 'status-active')
+    await flushPromises()
+    expect(chipLabels(wrapper)).toHaveLength(1)
+
+    await chooseScope(wrapper, 'pages.admin.users.scope.dependent')
+    await vi.waitFor(() =>
+      expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: 'firstName',
+        scope: 'Dependent',
+      }),
+    )
+    expect(selectedScope(wrapper)).toBe(t('pages.admin.users.scope.dependent'))
+    expect(wrapper.find('.filter-chip').exists()).toBe(false)
+    expect(wrapper.findAllComponents(ColumnSearch)).toHaveLength(0)
+    expect(
+      wrapper.findAllComponents(ColumnFilterSelect).map((filter) => filter.props('label')),
+    ).toEqual([t('pages.admin.users.columns.type')])
+    expect(wrapper.findComponent(ColumnFilterDate).exists()).toBe(true)
+    expect(rowElement(wrapper, 0).textContent).not.toContain('ada@example.test')
+
+    await click(findButton('Ada Lovelace', rowElement(wrapper, 1)))
+    expect(selectedScope(wrapper)).toBe(t('pages.admin.users.scope.independent'))
+    expect(wrapper.findComponent(ColumnFilterDate).exists()).toBe(false)
+    expect(wrapper.findAllComponents(ColumnSearch)).toHaveLength(3)
+    expect(selectFilter(wrapper, 'common.status').exists()).toBe(true)
+    expect(selectFilter(wrapper, 'pages.admin.users.columns.admin').exists()).toBe(true)
+    expect(rowElement(wrapper, 0).textContent).toContain('ada@example.test')
+
+    await chooseScope(wrapper, 'pages.admin.users.scope.all')
+    await vi.waitFor(() =>
+      expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: 'firstName',
+      }),
+    )
+    expect(wrapper.find('.filter-chip').exists()).toBe(false)
   })
 
   it('loads the user detail when editing and saves the changes', async () => {
@@ -578,7 +665,7 @@ describe('admin users page', () => {
   })
 
   it('revokes the admin role after confirmation without asking for a password', async () => {
-    serveUsers([tim])
+    serveUsers([grace])
     const requests: unknown[] = []
     let fail = false
     server.use(
@@ -592,7 +679,7 @@ describe('admin users page', () => {
 
     await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
     expect(messageBox().textContent).toContain(
-      t('pages.admin.users.revokeAdmin.message', { fullName: 'Tim Lovelace' }),
+      t('pages.admin.users.revokeAdmin.message', { fullName: 'Grace Hopper' }),
     )
     await cancelMessageBox()
     await flushPromises()
@@ -602,7 +689,7 @@ describe('admin users page', () => {
     await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
     await acceptMessageBox()
     await expectNotification(t('pages.admin.users.toasts.adminRevoked'))
-    expect(requests).toEqual([{ id: 'child-1', body: { isAdmin: false, currentPassword: null } }])
+    expect(requests).toEqual([{ id: 'user-3', body: { isAdmin: false, currentPassword: null } }])
 
     fail = true
     await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
@@ -611,7 +698,7 @@ describe('admin users page', () => {
   })
 
   it('locks the role and the deletion of the initial administrator', async () => {
-    serveUsers([buildUserResponse({ isAdmin: true, isInitialAdmin: true }), tim])
+    serveUsers([buildUserResponse({ isAdmin: true, isInitialAdmin: true }), grace])
     const { wrapper } = await renderPage()
     const blocked = t('pages.admin.users.blocked.initialAdmin')
 
@@ -625,11 +712,11 @@ describe('admin users page', () => {
     await click(initialDelete)
     expect(document.body.querySelector('.el-message-box')).toBeNull()
 
-    const timMenu = await openRowMenu(rowElement(wrapper, 1))
-    const timDelete = rowMenuItem(timMenu, t('common.delete'))
-    expect(rowMenuItem(timMenu, t(REVOKE_ADMIN)).getAttribute('aria-disabled')).not.toBe('true')
-    expect(timDelete.getAttribute('aria-disabled')).not.toBe('true')
-    expect(timDelete.querySelector('.row-actions__item-reason')).toBeNull()
+    const graceMenu = await openRowMenu(rowElement(wrapper, 1))
+    const graceDelete = rowMenuItem(graceMenu, t('common.delete'))
+    expect(rowMenuItem(graceMenu, t(REVOKE_ADMIN)).getAttribute('aria-disabled')).not.toBe('true')
+    expect(graceDelete.getAttribute('aria-disabled')).not.toBe('true')
+    expect(graceDelete.querySelector('.row-actions__item-reason')).toBeNull()
   })
 
   it('marks the own account and keeps its type, admin role and deletion out of reach', async () => {
@@ -732,8 +819,20 @@ describe('admin users page', () => {
     await expectNotification(tp('pages.admin.users.export.toast.exported', 2, { n: 2 }))
     const exportRequests = recorded.list.filter((url) => queryOf(url).pageSize === '100')
     expect(exportRequests.map(queryOf)).toEqual([
-      { userTypeId: 'type-participant', sort: 'firstName', page: '1', pageSize: '100' },
-      { userTypeId: 'type-participant', sort: 'firstName', page: '2', pageSize: '100' },
+      {
+        scope: 'Independent',
+        userTypeId: 'type-participant',
+        sort: 'firstName',
+        page: '1',
+        pageSize: '100',
+      },
+      {
+        scope: 'Independent',
+        userTypeId: 'type-participant',
+        sort: 'firstName',
+        page: '2',
+        pageSize: '100',
+      },
     ])
     expect(filename).toBe(t('pages.admin.users.export.filename', { date: '2026-01-15' }))
     const lines = (await blob?.text())?.replace(/^﻿/, '').split('\r\n') ?? []
@@ -761,7 +860,7 @@ describe('admin users page', () => {
     )
     expect(lines[2]).toMatch(
       new RegExp(
-        `^Tim;Lovelace;;;;;[^;]+;${t('entities.user.gender.Male')};Active;;${t('common.yes')};${t('common.no')};Ada Lovelace$`,
+        `^Tim;Lovelace;;;;;[^;]+;${t('entities.user.gender.Male')};Active;;${t('common.no')};${t('common.no')};Ada Lovelace$`,
       ),
     )
   })
@@ -809,7 +908,7 @@ describe('admin users page', () => {
       }),
     )
     const { wrapper } = await renderPage()
-    await click(findButton(tp('pages.admin.users.dependentsLabel', 2, { count: 2 })))
+    await click(findButton(t('pages.admin.users.dependentsLabel', { count: 2 })))
 
     await click(findButton(t('pages.admin.users.email.bulkLabel')))
     const dialog = openDialog(t(EMAIL_TITLE))
@@ -819,7 +918,7 @@ describe('admin users page', () => {
         tp('features.sendEmail.withoutConsentWarning', 1, { count: 1 }),
       ),
     )
-    expect(audienceUrls.map(queryOf)).toEqual([{ parentId: 'user-1' }])
+    expect(audienceUrls.map(queryOf)).toEqual([{ scope: 'Dependent', parentId: 'user-1' }])
     await typeInto('#send-email-subject', 'News')
     await typeInto('#send-email-body', 'Hello everyone')
     await click(findButton(t('features.sendEmail.send'), dialog))
@@ -827,7 +926,7 @@ describe('admin users page', () => {
 
     await expectNotification(tp('features.sendEmail.toast.queued', 2, { count: 2 }))
     expect(received?.subject).toBe('News')
-    expect(queryOf(received?.url ?? '')).toEqual({ parentId: 'user-1' })
+    expect(queryOf(received?.url ?? '')).toEqual({ scope: 'Dependent', parentId: 'user-1' })
     await vi.waitFor(() => expect(isDialogOpen(t(EMAIL_TITLE))).toBe(false))
     expect(chipLabels(wrapper)).toEqual([
       t('pages.admin.users.relation.dependentsOf', { fullName: 'Ada Lovelace' }),

@@ -4,6 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { UserScope } from './userScope';
 
 export type PostApiEmailsUsersParams = {
 id?: string;
@@ -28,6 +29,7 @@ userStatusTypeId?: string;
 isAdmin?: boolean;
 promotionalConsent?: boolean;
 parentId?: string;
+scope?: UserScope;
 birthDateFrom?: string;
 birthDateTo?: string;
 page?: number;

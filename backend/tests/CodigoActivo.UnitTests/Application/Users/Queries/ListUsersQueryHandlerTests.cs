@@ -80,6 +80,22 @@ public sealed class ListUsersQueryHandlerTests
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Kid");
     }
 
+    [Theory]
+    [InlineData(UserScope.Independent, "Tutor")]
+    [InlineData(UserScope.Dependent, "Kid")]
+    public async Task HandleAsyncScopeFilterReturnsOnlyIndependentAccountsOrDependents(
+        UserScope scope,
+        string expected
+    )
+    {
+        var guardian = NewUserRow(first: "Tutor");
+        store.Users.AddRange([guardian, NewUserRow(first: "Kid", parent: guardian)]);
+
+        var result = await ListAsAdminAsync(new UserListQuery { Scope = scope });
+
+        result.Items.Should().ContainSingle().Which.FirstName.Should().Be(expected);
+    }
+
     [Fact]
     public async Task HandleAsyncNameSearchIsAccentAndCaseInsensitive()
     {

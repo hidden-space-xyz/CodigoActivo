@@ -1130,6 +1130,13 @@
             }
           },
           {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UserScope"
+            }
+          },
+          {
             "name": "birthDateFrom",
             "in": "query",
             "schema": {
@@ -1449,6 +1456,13 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UserScope"
             }
           },
           {
@@ -3756,6 +3770,13 @@
             }
           },
           {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UserScope"
+            }
+          },
+          {
             "name": "birthDateFrom",
             "in": "query",
             "schema": {
@@ -5316,6 +5337,7 @@
           "UserSelfTypeChangeForbidden",
           "UserDeleteInitialAdminForbidden",
           "UserCannotRemoveInitialAdmin",
+          "UserDependentCannotBeAdmin",
           "ParentUserNotFound",
           "UserParentIsMinor",
           "UserChildBirthDateNotMinor",
@@ -7940,6 +7962,13 @@
           }
         },
         "additionalProperties": false
+      },
+      "UserScope": {
+        "enum": [
+          "Independent",
+          "Dependent"
+        ],
+        "type": "string"
       },
       "UserStatusResponse": {
         "required": [

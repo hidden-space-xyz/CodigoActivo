@@ -218,6 +218,21 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task ListFilterByScopeSplitsIndependentAccountsFromDependents()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var independents = await client.GetAsync(TestUri.Rel("/api/users?scope=Independent"), Ct);
+        var dependents = await client.GetAsync(TestUri.Rel("/api/users?scope=Dependent"), Ct);
+
+        var independentPage = await independents.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
+        independentPage!.Total.Should().Be(4);
+        independentPage.Items.Should().NotContain(u => u.Id == TestSeedData.Users.MemberChildId);
+        var dependentPage = await dependents.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
+        dependentPage!.Items.Should().ContainSingle(u => u.Id == TestSeedData.Users.MemberChildId);
+    }
+
+    [Fact]
     public async Task ListPageAndPageSizeGivenReturnsRequestedSliceWithTotal()
     {
         var client = await LoginAsAdminAsync();
@@ -413,7 +428,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task StatusTypesAsAdminReturnsAllStatusTypes()
+    public async Task StatusTypesAsAdminReturnsEveryStatusButDependent()
     {
         var client = await LoginAsAdminAsync();
 
@@ -421,8 +436,9 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var statuses = await response.ReadJsonAsync<List<UserStatusTypeResponse>>(Ct);
-        statuses.Should().HaveCount(4);
+        statuses.Should().HaveCount(3);
         statuses.Should().Contain(s => s.Id == KnownIds.UserStatusTypes.Active);
+        statuses.Should().NotContain(s => s.Id == KnownIds.UserStatusTypes.Dependent);
     }
 
     [Fact]
@@ -1276,6 +1292,21 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
         var user = await FindAsync<User>(TestSeedData.Users.MemberId);
         user!.IsAdmin.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetAdminOnDependentReturnsBadRequest()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}/admin",
+            new SetAdminRequest(true, TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserDependentCannotBeAdmin);
+        (await FindAsync<User>(TestSeedData.Users.MemberChildId))!.IsAdmin.Should().BeFalse();
     }
 
     [Fact]

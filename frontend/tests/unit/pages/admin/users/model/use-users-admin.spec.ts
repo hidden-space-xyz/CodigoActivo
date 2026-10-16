@@ -42,23 +42,92 @@ describe('useUsersAdmin', () => {
     const urls = serveUserPages([[buildUserResponse()]])
     const { result } = await mountComposable(() => useUsersAdmin())
     await vi.waitFor(() => expect(result.table.items.value).toHaveLength(1))
-    expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'firstName' })
+    expect(queryOf(urls[0] ?? '')).toEqual({
+      page: '1',
+      pageSize: '25',
+      sort: 'firstName',
+      scope: 'Independent',
+    })
     expect(result.relationChips.value).toEqual([])
 
     result.showDependentsOf(toUser(buildUserResponse()))
     await flushPromises()
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ parentId: 'user-1' })
+    expect(result.scope.value).toBe('dependent')
+    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ scope: 'Dependent', parentId: 'user-1' })
 
     result.showGuardianOf(toUser(buildDependentResponse()))
     await flushPromises()
-    expect(result.table.filterParams.value).toEqual({ id: 'user-1' })
+    expect(result.scope.value).toBe('independent')
+    expect(result.table.filterParams.value).toEqual({ scope: 'Independent', id: 'user-1' })
     expect(result.relationChips.value[0]?.label).toBe(
       t('pages.admin.users.relation.tutorOf', { fullName: 'Byron Lovelace' }),
     )
 
     result.relationChips.value[0]?.remove()
     await flushPromises()
-    expect(result.table.filterParams.value).toEqual({})
+    expect(result.table.filterParams.value).toEqual({ scope: 'Independent' })
+  })
+
+  it('switches between independent accounts, dependents and everyone', async () => {
+    const urls = serveUserPages([[buildUserResponse()]])
+    const { result } = await mountComposable(() => useUsersAdmin())
+    await vi.waitFor(() => expect(result.table.items.value).toHaveLength(1))
+    expect(result.scope.value).toBe('independent')
+    expect(result.showsField('email')).toBe(true)
+    expect(result.showsField('birthDate')).toBe(false)
+    result.table.columnFilter('status').value = 'status-active'
+    result.table.columnFilter('email').value = 'ada'
+    result.table.columnFilter('phone').value = '600'
+    result.table.columnFilter('nationalId').value = 'x123'
+    result.table.columnFilter('isAdmin').value = false
+    result.table.columnFilter('promotionalConsent').value = true
+    result.table.columnFilter('type').value = 'type-member'
+    result.table.onSortChange({ prop: 'email', order: 'descending' })
+    await flushPromises()
+    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({
+      userStatusTypeId: 'status-active',
+      email: 'ada',
+      sort: '-email',
+    })
+
+    result.setScope('dependent')
+    await flushPromises()
+    expect(result.scope.value).toBe('dependent')
+    expect(result.showsField('email')).toBe(false)
+    expect(result.showsField('birthDate')).toBe(true)
+    expect(queryOf(urls.at(-1) ?? '')).toEqual({
+      page: '1',
+      pageSize: '25',
+      sort: 'firstName',
+      scope: 'Dependent',
+      userTypeId: 'type-member',
+    })
+
+    result.table.onSortChange({ prop: 'type', order: 'descending' })
+    result.setScope('dependent')
+    await flushPromises()
+    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ sort: '-type' })
+
+    result.table.columnFilter('birthDate').value = ['2015-01-01', '2016-12-31']
+    await flushPromises()
+    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ birthDateFrom: '2015-01-01' })
+    result.setScope('independent')
+    await flushPromises()
+    expect(queryOf(urls.at(-1) ?? '')).toEqual({
+      page: '1',
+      pageSize: '25',
+      sort: '-type',
+      scope: 'Independent',
+      userTypeId: 'type-member',
+    })
+
+    result.showGuardianOf(toUser(buildDependentResponse()))
+    await flushPromises()
+    result.setScope('all')
+    await flushPromises()
+    expect(['email', 'birthDate'].map((field) => result.showsField(field))).toEqual([true, true])
+    expect(result.relationChips.value).toEqual([])
+    expect(queryOf(urls.at(-1) ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-type' })
   })
 
   it('lists the relation filter as a table chip that removes it', async () => {
@@ -69,7 +138,7 @@ describe('useUsersAdmin', () => {
     result.showDependentsOf(toUser(buildUserResponse()))
     await flushPromises()
 
-    expect(result.table.filterParams.value).toEqual({ parentId: 'user-1' })
+    expect(result.table.filterParams.value).toEqual({ scope: 'Dependent', parentId: 'user-1' })
     expect(result.relationChips.value).toEqual([
       {
         key: 'relation',
@@ -82,7 +151,7 @@ describe('useUsersAdmin', () => {
     await flushPromises()
 
     expect(result.relationChips.value).toEqual([])
-    expect(result.table.filterParams.value).toEqual({})
+    expect(result.table.filterParams.value).toEqual({ scope: 'Dependent' })
   })
 
   it('explains why the initial administrator and the own account are protected', async () => {
@@ -194,8 +263,8 @@ describe('useUsersAdmin', () => {
     expect(users).toHaveLength(101)
     expect(users.at(-1)?.id).toBe('user-last')
     expect(urls.slice(-2).map(queryOf)).toEqual([
-      { isAdmin: 'true', sort: '-email', page: '1', pageSize: '100' },
-      { isAdmin: 'true', sort: '-email', page: '2', pageSize: '100' },
+      { scope: 'Independent', isAdmin: 'true', sort: '-email', page: '1', pageSize: '100' },
+      { scope: 'Independent', isAdmin: 'true', sort: '-email', page: '2', pageSize: '100' },
     ])
   })
 
