@@ -1089,6 +1089,20 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task ChangeTypeOfOwnAccountAsAdminReturnsForbiddenAndKeepsType()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.AdminId}/change-type?userTypeId={KnownIds.UserTypes.Sponsor}",
+            ct: Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.UserSelfTypeChangeForbidden);
+        (await FindAsync<User>(TestSeedData.Users.AdminId))!.UserType.Should().Be(UserType.Member);
+    }
+
+    [Fact]
     public async Task AddChildAsMemberCreatesDependent()
     {
         var client = await LoginAsMemberAsync();
@@ -1327,5 +1341,48 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeForbiddenAsync(ErrorCode.UserCannotRemoveInitialAdmin);
         (await FindAsync<User>(KnownIds.Users.InitialAdministrator))!.IsAdmin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetAdminOnOwnAccountReturnsForbiddenEvenToAnAdministrator()
+    {
+        var initial = await LoginAsAdminAsync();
+        var grant = await initial.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/admin",
+            new SetAdminRequest(true, TestSeedData.Password),
+            Ct
+        );
+        grant.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var member = await LoginAsMemberAsync();
+
+        var revoke = await member.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/admin",
+            new SetAdminRequest(false, null),
+            Ct
+        );
+        var regrant = await member.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/admin",
+            new SetAdminRequest(true, TestSeedData.Password),
+            Ct
+        );
+
+        await revoke.ShouldBeForbiddenAsync(ErrorCode.UserSelfAdminChangeForbidden);
+        await regrant.ShouldBeForbiddenAsync(ErrorCode.UserSelfAdminChangeForbidden);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.IsAdmin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetAdminOnOwnAccountAsInitialAdministratorReturnsForbidden()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.AdminId}/admin",
+            new SetAdminRequest(false, null),
+            Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.UserSelfAdminChangeForbidden);
+        (await FindAsync<User>(TestSeedData.Users.AdminId))!.IsAdmin.Should().BeTrue();
     }
 }

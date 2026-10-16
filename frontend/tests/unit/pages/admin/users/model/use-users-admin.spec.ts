@@ -105,9 +105,15 @@ describe('useUsersAdmin', () => {
     ])
     expect(anonymous.result.isOwnAccount(own)).toBe(false)
 
+    expect(result.typeBlockReason(own)).toBe(t('pages.admin.users.blocked.selfRole'))
+    expect(result.typeBlockReason(initial)).toBeUndefined()
+    expect(result.typeBlockReason(other)).toBeUndefined()
+    expect(anonymous.result.typeBlockReason(own)).toBeUndefined()
+
     expect(result.adminBlockReason(initial)).toBe(t('pages.admin.users.blocked.initialAdmin'))
-    expect(result.adminBlockReason(own)).toBeUndefined()
+    expect(result.adminBlockReason(own)).toBe(t('pages.admin.users.blocked.selfRole'))
     expect(result.adminBlockReason(other)).toBeUndefined()
+    expect(anonymous.result.adminBlockReason(own)).toBeUndefined()
 
     expect(result.deleteBlockReason(initial)).toBe(t('pages.admin.users.blocked.initialAdmin'))
     expect(result.deleteBlockReason(own)).toBe(t('pages.admin.users.blocked.self'))
@@ -156,36 +162,6 @@ describe('useUsersAdmin', () => {
     await expectNotification(t('pages.admin.users.toasts.adminRevoked'))
     expect(requests).toEqual([{ id: 'user-2', body: { isAdmin: false, currentPassword: null } }])
     expect(router.currentRoute.value.name).toBe('admin-users')
-  })
-
-  it('warns admins that revoking their own role ends their access and leaves the panel', async () => {
-    serveUserPages([[]])
-    const requests: unknown[] = []
-    let sessionChecks = 0
-    server.use(
-      http.patch('/api/users/:userId/admin', async ({ request, params }) => {
-        requests.push({ id: params.userId, body: await request.json() })
-        return noContent()
-      }),
-      http.get('/api/auth/me', () => {
-        sessionChecks += 1
-        return new HttpResponse(null, { status: 401 })
-      }),
-    )
-    const { result, router } = await mountComposable(() => useUsersAdmin(), {
-      user: { id: 'user-1', isAdmin: true },
-      route: '/admin/users',
-    })
-
-    result.toggleAdmin(toUser(buildUserResponse({ isAdmin: true })), false)
-    await flushPromises()
-
-    expect(messageBox().textContent).toContain(t('pages.admin.users.revokeAdmin.messageSelf'))
-    await acceptMessageBox()
-    await expectNotification(t('pages.admin.users.toasts.adminRevoked'))
-    expect(requests).toEqual([{ id: 'user-1', body: { isAdmin: false, currentPassword: null } }])
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
-    await vi.waitFor(() => expect(sessionChecks).toBe(1))
   })
 
   it('filters the table by promotional consent and DNI/NIE', async () => {

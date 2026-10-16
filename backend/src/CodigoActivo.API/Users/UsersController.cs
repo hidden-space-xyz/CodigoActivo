@@ -147,7 +147,8 @@ public class UsersController : ApiControllerBase
 
     /// <summary>
     /// Sets the admin state. Granting it requires the caller's password, so the endpoint shares
-    /// the credential rate limits. The initial administrator always keeps it.
+    /// the credential rate limits. The caller's own state is refused, and the initial
+    /// administrator always keeps it.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
@@ -241,7 +242,7 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Changes the type to the requested value.
+    /// Changes the type to the requested value. The caller's own type is refused.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="userTypeId">Identifier of the user type.</param>

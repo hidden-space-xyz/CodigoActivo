@@ -282,6 +282,16 @@ public enum ErrorCode
     UserSelfDeleteRequiresVerification,
 
     /// <summary>
+    /// Selects the option for a user who grants or revokes their own administrator rights.
+    /// </summary>
+    UserSelfAdminChangeForbidden,
+
+    /// <summary>
+    /// Selects the option for a user who changes their own membership type.
+    /// </summary>
+    UserSelfTypeChangeForbidden,
+
+    /// <summary>
     /// Selects the user delete initial admin forbidden option.
     /// </summary>
     UserDeleteInitialAdminForbidden,

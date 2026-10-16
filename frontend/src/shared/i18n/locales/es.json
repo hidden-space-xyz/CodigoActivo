@@ -257,6 +257,8 @@
     "FileUploadUnsupportedFormat": "El formato del archivo no es compatible.",
     "UserNotFound": "No se encontró el usuario.",
     "UserSelfDeleteRequiresVerification": "Para eliminar tu propia cuenta debes confirmarlo con tu contraseña y tu segundo factor desde «Mi cuenta».",
+    "UserSelfAdminChangeForbidden": "No puedes cambiar tu propio rol de administrador: debe hacerlo otro administrador.",
+    "UserSelfTypeChangeForbidden": "No puedes cambiar tu propio tipo de usuario: debe hacerlo otro administrador.",
     "UserDeleteInitialAdminForbidden": "La cuenta genérica de administración no se puede eliminar.",
     "UserCannotRemoveInitialAdmin": "No se puede quitar el rango de administrador a la cuenta genérica de administración.",
     "ParentUserNotFound": "No se encontró el usuario responsable.",
@@ -761,12 +763,12 @@
         "revokeAdmin": {
           "header": "Retirar rol de administrador",
           "message": "{fullName} dejará de tener acceso a la administración.",
-          "messageSelf": "Vas a retirarte tu propio rol de administrador y perderás el acceso a este panel en cuanto confirmes.",
           "confirm": "Retirar"
         },
         "blocked": {
           "initialAdmin": "Cuenta de administración inicial",
-          "self": "Elimina tu cuenta desde «Mi cuenta»"
+          "self": "Elimina tu cuenta desde «Mi cuenta»",
+          "selfRole": "Debe cambiarlo otro administrador"
         },
         "search": {
           "name": "Buscar por nombre",

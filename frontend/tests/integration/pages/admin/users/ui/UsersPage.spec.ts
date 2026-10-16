@@ -610,25 +610,6 @@ describe('admin users page', () => {
     await expectNotification(t('common.error'))
   })
 
-  it('warns admins that revoking their own role ends their access', async () => {
-    serveUsers([buildUserResponse({ isAdmin: true })])
-    const requests: unknown[] = []
-    server.use(
-      http.patch('/api/users/:userId/admin', async ({ request, params }) => {
-        requests.push({ id: params.userId, body: await request.json() })
-        return new HttpResponse(null, { status: 204 })
-      }),
-    )
-    const { wrapper } = await renderPage({ id: 'user-1', isAdmin: true })
-
-    await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
-    expect(messageBox().textContent).toContain(t('pages.admin.users.revokeAdmin.messageSelf'))
-    await cancelMessageBox()
-    await flushPromises()
-
-    expect(requests).toEqual([])
-  })
-
   it('locks the role and the deletion of the initial administrator', async () => {
     serveUsers([buildUserResponse({ isAdmin: true, isInitialAdmin: true }), tim])
     const { wrapper } = await renderPage()
@@ -651,22 +632,51 @@ describe('admin users page', () => {
     expect(timDelete.querySelector('.row-actions__item-reason')).toBeNull()
   })
 
-  it('marks the own account and keeps it from being deleted here', async () => {
-    serveUsers([ada, buildUserResponse({ id: 'user-2', firstName: 'Grace', lastName: 'Hopper' })])
+  it('marks the own account and keeps its type, admin role and deletion out of reach', async () => {
+    const requests: string[] = []
+    serveUsers([
+      buildUserResponse({ isAdmin: true }),
+      buildUserResponse({ id: 'user-2', firstName: 'Grace', lastName: 'Hopper' }),
+    ])
+    server.use(
+      http.patch('/api/users/:userId/admin', ({ params }) => {
+        requests.push(String(params.userId))
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
     const { wrapper } = await renderPage({ id: 'user-1', isAdmin: true })
     const [own, other] = rows(wrapper)
 
-    expect(own?.find('.table-primary-cell__badges').text()).toBe(t('pages.admin.users.badges.you'))
+    expect(textOf(own?.find('.table-primary-cell__badges').element)).toContain(
+      t('pages.admin.users.badges.you'),
+    )
     expect(other?.find('.table-primary-cell__badges').exists()).toBe(false)
 
-    const ownDelete = rowMenuItem(await openRowMenu(rowElement(wrapper, 0)), t('common.delete'))
+    const ownMenu = await openRowMenu(rowElement(wrapper, 0))
+    const ownType = rowMenuItem(ownMenu, t(CHANGE_TYPE))
+    const ownRevoke = rowMenuItem(ownMenu, t(REVOKE_ADMIN))
+    const ownDelete = rowMenuItem(ownMenu, t('common.delete'))
+    for (const item of [ownType, ownRevoke]) {
+      expect(item.getAttribute('aria-disabled')).toBe('true')
+      expect(textOf(item.querySelector('.row-actions__item-reason'))).toBe(
+        t('pages.admin.users.blocked.selfRole'),
+      )
+    }
     expect(ownDelete.getAttribute('aria-disabled')).toBe('true')
     expect(textOf(ownDelete.querySelector('.row-actions__item-reason'))).toBe(
       t('pages.admin.users.blocked.self'),
     )
+    await click(ownType)
+    await click(ownRevoke)
+    await flushPromises()
+    expect(isDialogOpen(t(TYPE_TITLE))).toBe(false)
+    expect(document.body.querySelector('.el-message-box')).toBeNull()
+    expect(requests).toEqual([])
 
-    const otherDelete = rowMenuItem(await openRowMenu(rowElement(wrapper, 1)), t('common.delete'))
-    expect(otherDelete.getAttribute('aria-disabled')).not.toBe('true')
+    const otherMenu = await openRowMenu(rowElement(wrapper, 1))
+    for (const key of [CHANGE_TYPE, GRANT_ADMIN, 'common.delete']) {
+      expect(rowMenuItem(otherMenu, t(key)).getAttribute('aria-disabled')).not.toBe('true')
+    }
   })
 
   it('deletes a user after confirmation and reports failures', async () => {

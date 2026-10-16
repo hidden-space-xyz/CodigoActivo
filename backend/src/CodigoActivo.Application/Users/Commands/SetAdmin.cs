@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
@@ -24,14 +26,16 @@ public sealed record SetAdminCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to grant or revoke the administrator rights of a user. The initial
-/// administrator never loses them.
+/// Executes the command to grant or revoke the administrator rights of a user. Nobody changes
+/// their own rights, administrators included, and the initial administrator never loses them.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class SetAdminCommandHandler(
     IUserRepository users,
+    ICurrentUser currentUser,
     PasswordAttemptGuard passwordAttempts,
     IClock clock
 ) : ICommandHandler<SetAdminCommand, Result>
@@ -45,6 +49,11 @@ public sealed class SetAdminCommandHandler(
     public async Task<Result> HandleAsync(SetAdminCommand command, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(command);
+
+        if (command.UserId == currentUser.RequiredId())
+        {
+            return Error.Forbidden(ApplicationErrorCode.UserSelfAdminChangeForbidden);
+        }
 
         if (
             command.IsAdmin
