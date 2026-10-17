@@ -2,7 +2,6 @@
 import { useI18n } from 'vue-i18n'
 
 import type { TermsDocument } from '@/entities/terms-document'
-import { ColumnSearch } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
 import { RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
@@ -47,6 +46,7 @@ function rowActions(termsDocument: TermsDocument): RowAction[] {
       variant="flush"
       :empty-text="$t('pages.admin.catalogs.termsDocuments.empty.none')"
       :error-text="$t('pages.admin.catalogs.termsDocuments.empty.error')"
+      :search="{ key: 'name', label: $t('pages.admin.catalogs.termsDocuments.search.name') }"
     >
       <el-table-column
         prop="name"
@@ -55,14 +55,6 @@ function rowActions(termsDocument: TermsDocument): RowAction[] {
         sortable="custom"
         :fixed="table.isNarrow.value ? false : 'left'"
       >
-        <template #header>
-          <ColumnSearch
-            v-model="table.columnFilter('name').value"
-            :label="$t('common.name')"
-            :placeholder="$t('pages.admin.catalogs.termsDocuments.search.name')"
-            @apply="table.onFilter"
-          />
-        </template>
         <template #default="{ row }">
           <TablePrimaryCell :title="row.name">
             <template v-if="row.requiresSignature" #badges>

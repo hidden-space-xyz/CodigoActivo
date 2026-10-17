@@ -21,6 +21,7 @@ import {
 } from '../../../../../support/dom'
 import { ColumnSearch } from '@/shared/ui/column-filter'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
+import { SearchInput } from '@/shared/ui/search-input'
 
 const NEW_TITLE = 'pages.admin.catalogs.termsDocuments.form.newHeader'
 const EDIT_TITLE = 'pages.admin.catalogs.termsDocuments.form.editHeader'
@@ -49,7 +50,10 @@ describe('TermsDocumentsSection', () => {
     expect(wrapper.find('.el-table__body').text()).toContain('Privacy')
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'name' })
 
-    wrapper.findComponent(ColumnSearch).vm.$emit('update:modelValue', 'priv')
+    expect(wrapper.findAllComponents(ColumnSearch)).toHaveLength(0)
+    const search = wrapper.findComponent(SearchInput)
+    expect(search.props('label')).toBe(t('pages.admin.catalogs.termsDocuments.search.name'))
+    search.vm.$emit('update:modelValue', 'priv')
     await flushPromises()
     expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ name: 'priv' })
   })

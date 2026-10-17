@@ -21,6 +21,7 @@ import {
   typeInto,
 } from '../../../../../support/dom'
 import { ColumnSearch } from '@/shared/ui/column-filter'
+import { SearchInput } from '@/shared/ui/search-input'
 
 const NEW_TITLE = 'pages.admin.catalogs.eventCategories.form.newHeader'
 const EDIT_TITLE = 'pages.admin.catalogs.eventCategories.form.editHeader'
@@ -88,13 +89,14 @@ describe('EventCategoriesSection', () => {
     )
   })
 
-  it('filters by name and shows the filter as a chip', async () => {
+  it('filters by name from the toolbar search without a chip', async () => {
     const urls = serveCategories()
     const { wrapper } = await renderSection()
 
-    const searches = wrapper.findAllComponents(ColumnSearch)
-    expect(searches).toHaveLength(1)
-    searches[0]?.vm.$emit('update:modelValue', 'work')
+    expect(wrapper.findAllComponents(ColumnSearch)).toHaveLength(0)
+    const search = wrapper.findComponent(SearchInput)
+    expect(search.props('label')).toBe(t('pages.admin.catalogs.eventCategories.search.name'))
+    search.vm.$emit('update:modelValue', 'work')
     await flushPromises()
 
     expect(queryOf(urls.at(-1) ?? '')).toEqual({
@@ -103,9 +105,8 @@ describe('EventCategoriesSection', () => {
       sort: 'name',
       name: 'work',
     })
-    expect(wrapper.find('.filter-chip__label').text()).toBe(
-      t('table.filterChip', { label: t('common.name'), value: 'work' }),
-    )
+    expect(wrapper.find('.filter-chip').exists()).toBe(false)
+    expect(wrapper.find('.data-table__clear').exists()).toBe(true)
   })
 
   it('creates a category with the default color and a picked color', async () => {
