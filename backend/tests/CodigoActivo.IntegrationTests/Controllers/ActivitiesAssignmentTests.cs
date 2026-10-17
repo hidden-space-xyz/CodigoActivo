@@ -8,8 +8,12 @@ using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.IntegrationTests.Infrastructure;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -237,6 +241,33 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
             )
         );
         stored.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AssignSignupCommittedFirstByAnotherRequestAnswersConflictAndLogsNothing()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        var rival = new RivalSignupInterceptor();
+        await using var host = Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+                services.ConfigureDbContext<CodigoActivoDbContext>(options =>
+                    options.AddInterceptors(rival)
+                )
+            )
+        );
+        using var client = await LoginAsync(host, TestSeedData.MemberCredentials);
+        rival.RunOnceBeforeASignupIsSaved(() =>
+            SeedAssignmentAsync(activityId, TestSeedData.Users.MemberId)
+        );
+
+        using var response = await client.PatchJsonAsync(
+            $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
+            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
+            Ct
+        );
+
+        await response.ShouldBeConflictAsync(ErrorCode.ActivityAssignmentAlreadyExists);
+        Factory.Logs.Entries.Should().BeEmpty();
     }
 
     [Fact]
@@ -664,5 +695,34 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var response = await client.GetAsync(TestUri.Rel("/api/activities/signup-roles"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    private sealed class RivalSignupInterceptor : SaveChangesInterceptor
+    {
+        private Func<Task>? rival;
+
+        public void RunOnceBeforeASignupIsSaved(Func<Task> action)
+        {
+            rival = action;
+        }
+
+        public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var savesASignup =
+                eventData
+                    .Context?.ChangeTracker.Entries<Assignment>()
+                    .Any(entry => entry.State == EntityState.Added)
+                ?? false;
+            if (savesASignup && Interlocked.Exchange(ref rival, null) is { } action)
+            {
+                await action();
+            }
+
+            return result;
+        }
     }
 }

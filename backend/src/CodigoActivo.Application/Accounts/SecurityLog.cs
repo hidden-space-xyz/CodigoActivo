@@ -5,9 +5,9 @@ namespace CodigoActivo.Application.Accounts;
 
 /// <summary>
 /// Declares the security events the application keeps. Routine authentication outcomes are not
-/// recorded: only the lockouts that stop an account, the administrator flag and the security
-/// notification the limiter dropped are. No template carries an identifier, an address, a name or
-/// anything typed by the client, so no entry can be traced back to a person.
+/// recorded: only the lockouts that stop an account and the security notification the limiter
+/// dropped are. No template carries an identifier, an address, a name or anything typed by the
+/// client, so no entry can be traced back to a person.
 /// </summary>
 public static partial class SecurityLog
 {
@@ -36,17 +36,6 @@ public static partial class SecurityLog
         this ILogger logger,
         int maxFailedAttempts
     );
-
-    /// <summary>
-    /// Records that the administrator flag of an account was granted or revoked.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="isAdmin">State the flag was set to.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "The administrator flag of an account was set to {IsAdmin}"
-    )]
-    public static partial void AdministratorFlagChanged(this ILogger logger, bool isAdmin);
 
     /// <summary>
     /// Records that the automatic-message limiter refused a security notification, so the owner of

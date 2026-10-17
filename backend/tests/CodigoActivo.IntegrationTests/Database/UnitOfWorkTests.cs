@@ -13,7 +13,6 @@ using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
 using Xunit;
 using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
@@ -379,7 +378,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var db = postgres.CreateContext();
         var publisher = new RecordingPublisher();
-        var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+        var uow = new UnitOfWork(db, publisher);
         (await db.Events.SingleAsync(e => e.Id == SeededEventId, Ct)).Feature();
         var duplicate = NewUser(Guid.NewGuid(), UserEmail);
         db.Users.Add(duplicate);
@@ -399,7 +398,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var db = postgres.CreateContext())
         {
             var publisher = new RecordingPublisher();
-            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var uow = new UnitOfWork(db, publisher);
 
             var refused = () =>
                 uow.ExecuteInTransactionAsync(
@@ -504,7 +503,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var db = postgres.CreateContext())
         {
             var publisher = new RecordingPublisher();
-            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var uow = new UnitOfWork(db, publisher);
             (await db.Events.SingleAsync(e => e.Id == SeededEventId, Ct)).Feature();
             var attempts = 0;
 
@@ -541,7 +540,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var db = postgres.CreateContext())
         {
             var publisher = new RecordingPublisher();
-            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var uow = new UnitOfWork(db, publisher);
             var chosen = await db.Events.SingleAsync(e => e.Id == SeededEventId, Ct);
             var attempts = 0;
 
@@ -590,7 +589,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var db = postgres.CreateContext())
         {
             var publisher = new RecordingPublisher();
-            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var uow = new UnitOfWork(db, publisher);
             var users = new UserRepository(db, uow);
             var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
 
@@ -621,7 +620,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var db = postgres.CreateContext())
         {
             var publisher = new RecordingPublisher();
-            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var uow = new UnitOfWork(db, publisher);
             var users = new UserRepository(db, uow);
             var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
             user.ChangeType(UserType.Sponsor, Fixed);
@@ -660,7 +659,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var db = postgres.CreateContext())
         {
             var publisher = new RecordingPublisher();
-            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var uow = new UnitOfWork(db, publisher);
             var users = new UserRepository(db, uow);
             var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
             user.ChangeType(UserType.Sponsor, Fixed);
@@ -699,7 +698,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
         await using (var db = postgres.CreateContext())
         {
             var publisher = new RecordingPublisher();
-            var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+            var uow = new UnitOfWork(db, publisher);
             var users = new UserRepository(db, uow);
             var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
             user.ChangeType(UserType.Sponsor, Fixed);
@@ -745,7 +744,7 @@ public sealed class UnitOfWorkTests(PostgresContainerFixture postgres) : IAsyncL
     {
         await using var db = postgres.CreateContext();
         var publisher = new RecordingPublisher();
-        var uow = new UnitOfWork(db, publisher, NullLogger<UnitOfWork>.Instance);
+        var uow = new UnitOfWork(db, publisher);
         var users = new UserRepository(db, uow);
         var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
         user.ChangeType(UserType.Sponsor, Fixed);

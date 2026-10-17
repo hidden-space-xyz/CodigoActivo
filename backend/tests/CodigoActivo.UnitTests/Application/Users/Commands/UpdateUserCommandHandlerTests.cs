@@ -47,8 +47,7 @@ public sealed class UpdateUserCommandHandlerTests
         currentUser.Id = actingUser.Id;
         notifications = new AccountSecurityNotifications(
             users,
-            new AccountSecurityNotifier(emailSender, clock, composer, notifierLogger),
-            NullLogger<AccountSecurityNotifications>.Instance
+            new AccountSecurityNotifier(emailSender, clock, composer, notifierLogger)
         );
         sut = new UpdateUserCommandHandler(
             users,

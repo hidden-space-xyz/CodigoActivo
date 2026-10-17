@@ -27,8 +27,7 @@ public sealed class AccountSecurityNotificationsTests
                 clock,
                 composer,
                 NullLogger<AccountSecurityNotifier>.Instance
-            ),
-            NullLogger<AccountSecurityNotifications>.Instance
+            )
         );
     }
 

@@ -16,6 +16,11 @@ public sealed class EmailOutboxProcessorTests
     private readonly EmailOutboxProtector protector = new(new EphemeralDataProtectionProvider());
     private readonly EmailOutboxSignal signal = new();
     private readonly RecordingEmailSender transport = new();
+    private readonly EmailGuardOptions guard = new();
+    private readonly TestClock clock = new()
+    {
+        UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero),
+    };
 
     private static EmailBatch Batch(string address = "ana@example.test")
     {
@@ -40,7 +45,8 @@ public sealed class EmailOutboxProcessorTests
             emailTransport ?? transport,
             protector,
             options,
-            new TestClock { UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero) },
+            guard,
+            clock,
             NullLogger<EmailOutboxDeliverer>.Instance
         );
 
@@ -48,6 +54,8 @@ public sealed class EmailOutboxProcessorTests
             deliverer,
             signal,
             options,
+            guard,
+            clock,
             logger ?? NullLogger<EmailOutboxProcessor>.Instance
         );
     }
@@ -73,7 +81,7 @@ public sealed class EmailOutboxProcessorTests
     }
 
     [Fact]
-    public async Task ExecuteAsyncDeliveryRunThrowsLogsTheFailureAndKeepsRunning()
+    public async Task ExecuteAsyncDeliveryRunKeepsThrowingLogsTheFailureOnceAndKeepsRunning()
     {
         var store = new FakeEmailOutboxStore(protector)
         {
@@ -98,13 +106,15 @@ public sealed class EmailOutboxProcessorTests
 
         logger
             .LevelEntries.Should()
-            .Contain(entry =>
+            .ContainSingle()
+            .Which.Should()
+            .Match<(LogLevel Level, string Message)>(entry =>
                 entry.Level == LogLevel.Error && entry.Message.Contains("next run will retry")
             );
     }
 
     [Fact]
-    public async Task StopAsyncDrainDeadlineElapsesReturnsAndWarnsWithoutTheMessageContent()
+    public async Task StopAsyncDrainDeadlineElapsesReturnsWithoutLogging()
     {
         var store = new FakeEmailOutboxStore(protector);
         await store.TryEnqueueAsync(Batch(), TestContext.Current.CancellationToken);
@@ -122,12 +132,7 @@ public sealed class EmailOutboxProcessorTests
         await blocking.Reached.Task.WaitAsync(Patience, TestContext.Current.CancellationToken);
         await processor.StopAsync(TestContext.Current.CancellationToken);
 
-        logger
-            .LevelEntries.Should()
-            .Contain(entry =>
-                entry.Level == LogLevel.Warning && entry.Message.Contains("stay stored")
-            );
-        logger.Entries.Should().NotContain(entry => entry.Contains("482913"));
+        logger.Entries.Should().BeEmpty("the messages in flight stay stored for the next start");
         blocking.Release();
     }
 

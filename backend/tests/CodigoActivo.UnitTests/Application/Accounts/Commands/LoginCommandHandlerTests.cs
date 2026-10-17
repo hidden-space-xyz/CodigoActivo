@@ -48,8 +48,7 @@ public sealed class LoginCommandHandlerTests
                     clock,
                     composer,
                     NullLogger<AccountSecurityNotifier>.Instance
-                ),
-                NullLogger<AccountSecurityNotifications>.Instance
+                )
             )
         );
         sut = new LoginCommandHandler(

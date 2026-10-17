@@ -13,6 +13,11 @@ public sealed class LogRecorder : ILoggerProvider
 
     public IReadOnlyCollection<string> Entries => [.. entries];
 
+    public void Clear()
+    {
+        entries.Clear();
+    }
+
     public ILogger CreateLogger(string categoryName)
     {
         return new Logger(categoryName, entries);

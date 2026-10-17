@@ -13,7 +13,6 @@ using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -276,11 +275,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         context.Users.Attach(user);
         new UserRepository(
             context,
-            new UnitOfWork(
-                context,
-                Substitute.For<IDomainEventPublisher>(),
-                NullLogger<UnitOfWork>.Instance
-            )
+            new UnitOfWork(context, Substitute.For<IDomainEventPublisher>())
         ).Remove(user);
 
         var save = () => context.SaveChangesAsync(TestContext.Current.CancellationToken);

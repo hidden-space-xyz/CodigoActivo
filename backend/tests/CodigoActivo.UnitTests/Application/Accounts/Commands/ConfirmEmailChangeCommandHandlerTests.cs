@@ -44,8 +44,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
                     clock,
                     composer,
                     NullLogger<AccountSecurityNotifier>.Instance
-                ),
-                NullLogger<AccountSecurityNotifications>.Instance
+                )
             )
         );
         sut = new ConfirmEmailChangeCommandHandler(

@@ -226,7 +226,7 @@ restarts refill them, replicas multiply them.
 | `EmailGuard:GlobalCredentialReserve` | Global capacity reserved for verification, reset and second-factor codes | `200`   |
 | `EmailGuard:MaxTrackedRecipients`    | Maximum address budgets held in memory                                   | `50000` |
 | `EmailGuard:SweepIntervalMinutes`    | Idle-budget cleanup interval                                             | `5`     |
-| `EmailGuard:AlertIntervalMinutes`    | Minimum interval between repeated guard alerts                           | `15`    |
+| `EmailGuard:AlertIntervalMinutes`    | Minimum interval between repeated guard alerts or outbox failures        | `15`    |
 
 Verification and reset mail cannot spend the last half of `GlobalCredentialReserve`, which stays for
 second-factor codes, and second-factor codes have per-address budgets of their own.
@@ -256,9 +256,11 @@ None of the `EmailQueue:*` settings are forwarded by the base Compose file; chan
 uppercase environment variable and adding it to `api.environment` in `docker-compose.yml`.
 
 Alert on every `Error` entry, among them a full outbox (`EmailOutboxFull`), an exhausted global budget
-(`GlobalEmailBudgetExhausted`) and exhausted attempts (`EmailDeliveryGaveUp`), and watch the `Warning` events
-for recipient throttling (`RecipientEmailQuotaReached`), a low global budget (`GlobalEmailBudgetLow`), delivery
-failures (`EmailDeliveryAttemptFailed`) and an incomplete shutdown drain (`EmailOutboxDrainIncomplete`). See [SECURITY.md](SECURITY.md#logging) for where these events are written.
+(`GlobalEmailBudgetExhausted`) and exhausted attempts (`EmailDeliveryGaveUp`, with the last error), and watch
+the `Warning` event for delivery failures (`EmailDeliveryAttemptFailed`). That event, a failed outbox run and a
+failed removal of spent messages repeat while their cause lasts, so each is logged at most once per
+`EmailGuard:AlertIntervalMinutes`. Recipient throttling, a low global budget and an incomplete shutdown drain
+are not logged. See [SECURITY.md](SECURITY.md#logging) for where these events are written.
 
 ## Disposable email domains
 

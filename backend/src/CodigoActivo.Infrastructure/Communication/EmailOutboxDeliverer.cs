@@ -11,12 +11,16 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// next attempt. A message is attempted <see cref="EmailQueueOptions.MaxAttempts"/> times in total,
 /// counted from the claim, and the row is removed on the last failure, so the table only ever holds
 /// mail that still has a chance of leaving. The stored content shared by a batch is unprotected once
-/// per run, shared by every recipient of it, and dropped when the run ends.
+/// per run, shared by every recipient of it, and dropped when the run ends. A failed attempt that
+/// will be retried and a failed removal of spent messages repeat while their cause lasts, so each is
+/// logged at most once per <see cref="EmailGuardOptions.AlertInterval"/>; the last error of a
+/// message stays on its row and is logged in full when the message is given up.
 /// </summary>
 /// <param name="store">Outbox rows this run works with.</param>
 /// <param name="transport">The transport value.</param>
 /// <param name="protector">Protector applied to the stored subject, bodies and attachments.</param>
 /// <param name="options">Configuration values used by the component.</param>
+/// <param name="guard">Email guard configuration, whose alert interval spaces repeated failures.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class EmailOutboxDeliverer(
@@ -24,10 +28,14 @@ public sealed class EmailOutboxDeliverer(
     IEmailTransport transport,
     EmailOutboxProtector protector,
     EmailQueueOptions options,
+    EmailGuardOptions guard,
     IClock clock,
     ILogger<EmailOutboxDeliverer> logger
 )
 {
+    private readonly LogThrottle attemptFailures = new(guard.AlertInterval);
+    private readonly LogThrottle exhaustedRemovalFailures = new(guard.AlertInterval);
+
     /// <summary>
     /// Claims and delivers the messages that are due, with the configured number of workers running
     /// concurrently, and clears the stored content that no message references any more. The content
@@ -106,15 +114,18 @@ public sealed class EmailOutboxDeliverer(
                 return;
             }
 
-            var nextAttemptAt = clock.UtcNow + EmailQueueOptions.RetryDelayAfter(attempts);
+            var now = clock.UtcNow;
             await store.RescheduleAsync(
                 message.Id,
                 attempts,
-                nextAttemptAt,
+                now + EmailQueueOptions.RetryDelayAfter(attempts),
                 Describe(failure),
                 CancellationToken.None
             );
-            logger.EmailDeliveryAttemptFailed(attempts, message.Kind, failure);
+            if (attemptFailures.TryEnter(now))
+            {
+                logger.EmailDeliveryAttemptFailed(attempts, message.Kind, failure);
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -133,7 +144,10 @@ public sealed class EmailOutboxDeliverer(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.ExhaustedEmailNotRemoved(ex);
+            if (exhaustedRemovalFailures.TryEnter(now))
+            {
+                logger.ExhaustedEmailNotRemoved(ex);
+            }
         }
     }
 
