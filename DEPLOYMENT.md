@@ -139,8 +139,9 @@ take the listed default when empty or missing.
 | `SMTP_FROM_NAME`        | Sender display name                                                           | `Código Activo`                             | Empty                                          |
 
 Neither the template nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
-volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the log files; only the
-application clock follows `APP_TIMEZONE`.
+volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the PostgreSQL log files
+and the daily partitions of the API's log tables; only the application clock follows `APP_TIMEZONE`, which
+the log pages also use for their day filters.
 
 ### Secrets
 
