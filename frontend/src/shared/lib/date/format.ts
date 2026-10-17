@@ -3,6 +3,11 @@ const dateTimeFormatter = new Intl.DateTimeFormat('es-ES', {
   timeStyle: 'short',
 })
 
+const dateTimeSecondsFormatter = new Intl.DateTimeFormat('es-ES', {
+  dateStyle: 'medium',
+  timeStyle: 'medium',
+})
+
 const dateFormatter = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' })
 
 const timeFormatter = new Intl.DateTimeFormat('es-ES', { timeStyle: 'short' })
@@ -60,6 +65,14 @@ export function formatDateTime(value?: string | null): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
   return dateTimeFormatter.format(date)
+}
+
+/** Medium date plus time with seconds for an ISO timestamp, or `—` when missing or invalid. */
+export function formatDateTimeSeconds(value?: string | null): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return dateTimeSecondsFormatter.format(date)
 }
 
 /** Medium date, or `—`. Plain `YYYY-MM-DD` values are read as local dates so they don't shift. */

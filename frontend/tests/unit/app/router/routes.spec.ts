@@ -42,6 +42,8 @@ describe('routes', () => {
       noindex: true,
     })
     expect(named('event-detail').props).toBe(true)
+    expect(named('admin-diagnostics').path).toBe('/admin/diagnostics')
+    expect(named('admin-audit').path).toBe('/admin/audit')
   })
 
   it('keeps guest pages for guests and the account for signed-in users', () => {

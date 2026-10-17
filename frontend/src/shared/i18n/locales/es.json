@@ -1317,6 +1317,205 @@
           "people": " Personas: {n}",
           "score": " Media {score} / 5 · valoraciones: {n}"
         }
+      },
+      "diagnostics": {
+        "header": {
+          "title": "Diagnóstico",
+          "subtitle": "Avisos y errores técnicos que ha registrado la aplicación en los últimos 30 días."
+        },
+        "columns": {
+          "occurredAt": "Fecha",
+          "level": "Nivel",
+          "source": "Origen",
+          "message": "Mensaje",
+          "trace": "Traza"
+        },
+        "search": "Buscar en el mensaje",
+        "searchSource": "Buscar por evento o categoría",
+        "empty": {
+          "none": "No hay entradas en el registro de diagnóstico.",
+          "error": "No se pudo cargar el registro de diagnóstico."
+        },
+        "levels": {
+          "Trace": "Traza",
+          "Debug": "Depuración",
+          "Information": "Información",
+          "Warning": "Aviso",
+          "Error": "Error",
+          "Critical": "Crítico"
+        },
+        "exception": "Excepción",
+        "viewDetail": "Ver detalle",
+        "openAudit": "Ver la auditoría de esta traza",
+        "noTrace": "Esta entrada no tiene traza",
+        "moreActions": "Más acciones de la entrada",
+        "filterTrace": "Filtrar por la traza {trace}",
+        "filters": {
+          "trace": "Traza: {trace}"
+        },
+        "detail": {
+          "title": "Detalle de la entrada",
+          "category": "Categoría",
+          "event": "Evento",
+          "properties": "Valores",
+          "exception": "Excepción",
+          "noException": "Esta entrada no tiene excepción.",
+          "error": "No se pudo cargar la entrada; puede que ya haya caducado."
+        }
+      },
+      "audit": {
+        "header": {
+          "title": "Auditoría",
+          "subtitle": "Quién hizo qué, cuándo, desde dónde y con qué resultado en los últimos 60 días."
+        },
+        "columns": {
+          "occurredAt": "Fecha",
+          "actor": "Quién",
+          "ip": "IP",
+          "action": "Acción",
+          "entity": "Entidad",
+          "details": "Detalles",
+          "outcome": "Resultado",
+          "trace": "Traza"
+        },
+        "search": "Buscar por nombre o email",
+        "empty": {
+          "none": "No hay entradas en el registro de auditoría.",
+          "error": "No se pudo cargar el registro de auditoría."
+        },
+        "deletedAccount": "Cuenta eliminada",
+        "itemCount": "Elementos: {count}",
+        "openDiagnostics": "Ver el diagnóstico de esta traza",
+        "noTrace": "Esta entrada no tiene traza",
+        "moreActions": "Más acciones de la entrada",
+        "filterActor": "Filtrar por {actor}",
+        "filterEntity": "Filtrar por {entity}",
+        "filterIp": "Filtrar por la IP {ip}",
+        "filterTrace": "Filtrar por la traza {trace}",
+        "filters": {
+          "actor": "Quién: {actor}",
+          "entity": "Entidad: {entity}",
+          "ip": "IP: {ip}",
+          "trace": "Traza: {trace}"
+        },
+        "actorTypes": {
+          "User": "Usuario",
+          "Anonymous": "Anónimo",
+          "System": "Sistema"
+        },
+        "entityTypes": {
+          "Activity": "Actividad",
+          "Event": "Evento",
+          "EventCategoryType": "Categoría",
+          "NewsItem": "Novedad",
+          "Partner": "Patrocinador",
+          "Resource": "Recurso",
+          "StoredFile": "Archivo",
+          "TermsDocument": "Términos y condiciones",
+          "User": "Usuario"
+        },
+        "outcomes": {
+          "Succeeded": "Correcto",
+          "Rejected": "Rechazado",
+          "Failed": "Fallido"
+        },
+        "actions": {
+          "BeginAuthenticatorSetup": "Empezar a configurar la app de autenticación",
+          "ChangePassword": "Cambiar la contraseña",
+          "CompleteLogin": "Completar el inicio de sesión",
+          "ConfirmAuthenticator": "Confirmar la app de autenticación",
+          "ConfirmEmailChange": "Confirmar el cambio de email",
+          "DeleteOwnAccount": "Eliminar la propia cuenta",
+          "DisableAuthenticator": "Desactivar la app de autenticación",
+          "EndLoginChallenge": "Cancelar el inicio de sesión",
+          "EndSession": "Cerrar sesión",
+          "ForgotPassword": "Pedir restablecer la contraseña",
+          "Login": "Iniciar sesión",
+          "Register": "Registrarse",
+          "RemoveExpiredSessions": "Eliminar sesiones caducadas",
+          "RequestAccountDeletionCode": "Pedir el código para eliminar la cuenta",
+          "ResendTwoFactorCode": "Reenviar el código de acceso",
+          "ResendVerification": "Reenviar el enlace de verificación",
+          "ResetPassword": "Restablecer la contraseña",
+          "VerifyUser": "Verificar la cuenta",
+          "AssignActivity": "Inscribir en una actividad",
+          "AssignHousehold": "Inscribir a la unidad familiar",
+          "ChangeAssignmentRole": "Cambiar el rol de una inscripción",
+          "ChangeAssignmentStatus": "Cambiar el estado de una inscripción",
+          "CreateActivity": "Crear una actividad",
+          "DeleteActivity": "Eliminar una actividad",
+          "UnassignActivity": "Retirar una inscripción",
+          "UpdateActivity": "Editar una actividad",
+          "SendEmailToEventAttendees": "Enviar un email a los asistentes",
+          "SendEmailToUser": "Enviar un email a un usuario",
+          "SendEmailToUsers": "Enviar un email a usuarios",
+          "CreateEventCategoryType": "Crear una categoría",
+          "DeleteEventCategoryType": "Eliminar una categoría",
+          "UpdateEventCategoryType": "Editar una categoría",
+          "CreateEvent": "Crear un evento",
+          "DeleteEvent": "Eliminar un evento",
+          "SetEventFeatured": "Destacar un evento",
+          "UpdateEvent": "Editar un evento",
+          "CreateFile": "Subir un archivo",
+          "DeleteFile": "Eliminar un archivo",
+          "CreateNewsItem": "Crear una novedad",
+          "DeleteNewsItem": "Eliminar una novedad",
+          "SetNewsItemFeatured": "Destacar una novedad",
+          "UpdateNewsItem": "Editar una novedad",
+          "CreatePartner": "Crear un patrocinador",
+          "DeletePartner": "Eliminar un patrocinador",
+          "UpdatePartner": "Editar un patrocinador",
+          "CreateResource": "Crear un recurso",
+          "DeleteResource": "Eliminar un recurso",
+          "UpdateResource": "Editar un recurso",
+          "CreateTermsDocument": "Crear términos y condiciones",
+          "DeleteTermsDocument": "Eliminar términos y condiciones",
+          "UpdateTermsDocument": "Editar términos y condiciones",
+          "AddChild": "Añadir un menor",
+          "ChangeUserType": "Cambiar el tipo de usuario",
+          "DeleteUser": "Eliminar un usuario",
+          "PurgeDeletedAccounts": "Purgar copias de cuentas eliminadas",
+          "ResetTwoFactor": "Restablecer el segundo factor",
+          "SetAdmin": "Cambiar los permisos de administrador",
+          "UpdateUser": "Editar un usuario"
+        },
+        "codes": {
+          "UniqueConstraintViolation": "Otra petición guardó el mismo dato a la vez.",
+          "MessageInvalid": "Los datos enviados no son válidos.",
+          "RegistrationInvalid": "Los datos del registro no son válidos.",
+          "ActingForAnotherUserForbidden": "Intentó actuar en nombre de otra persona.",
+          "UserNationalIdInvalid": "El DNI/NIE no es válido.",
+          "UserEmailInvalid": "El email no es válido.",
+          "UserChildBirthDateInFuture": "La fecha de nacimiento del menor es futura.",
+          "UserNotPendingVerification": "La cuenta no estaba pendiente de verificación.",
+          "ActivityRoleCapacityOutOfRange": "Las plazas de un rol están fuera de rango.",
+          "EventRatingScoreOutOfRange": "La puntuación está fuera de rango.",
+          "EventRatingAnswerTooLong": "Una respuesta de la valoración es demasiado larga.",
+          "EventTermsSignatureInvalid": "La firma no es válida."
+        },
+        "detailNames": {
+          "IsAdmin": "Administrador",
+          "Status": "Estado",
+          "Role": "Rol",
+          "UserType": "Tipo de usuario",
+          "Type": "Tipo",
+          "RequiresSignature": "Requiere firma",
+          "PromotionalConsent": "Publicidad"
+        },
+        "detailValues": {
+          "true": "Sí",
+          "false": "No",
+          "Requested": "Solicitada",
+          "Confirmed": "Confirmada",
+          "Denied": "Rechazada",
+          "Leader": "Líder",
+          "Volunteer": "Voluntario",
+          "Participant": "Participante",
+          "Member": "Socio",
+          "Sponsor": "Patrocinador",
+          "Internal": "Interno",
+          "External": "Externo"
+        }
       }
     },
     "login": {
@@ -1655,6 +1854,8 @@
         "partners": "Patrocinadores",
         "resources": "Recursos",
         "users": "Usuarios",
+        "diagnostics": "Diagnóstico",
+        "audit": "Auditoría",
         "settings": "Configuración"
       },
       "menuTitle": "Administración",

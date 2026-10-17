@@ -14,8 +14,10 @@ const props = withDefaults(
     options: { label: string; value: string | boolean }[]
     /** `header` sits next to a column title; `toolbar` is a labelled pill above the table. */
     variant?: 'header' | 'toolbar'
+    /** Lets the user type to narrow a long list of options. */
+    filterable?: boolean
   }>(),
-  { variant: 'header' },
+  { variant: 'header', filterable: false },
 )
 
 const emit = defineEmits<{
@@ -78,6 +80,7 @@ useTableFilterRegistration(() => {
         :model-value="draft"
         :placeholder="$t('table.filterBy', { label })"
         clearable
+        :filterable="filterable"
         :append-to="panel"
         class="column-filter-select"
         @change="onChange"

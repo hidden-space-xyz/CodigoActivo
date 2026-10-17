@@ -16,5 +16,7 @@ export const ADMIN_NAV = [
   { labelKey: 'widgets.adminShell.nav.partners', routeName: 'admin-partners', icon: 'building' },
   { labelKey: 'widgets.adminShell.nav.resources', routeName: 'admin-resources', icon: 'book' },
   { labelKey: 'widgets.adminShell.nav.users', routeName: 'admin-users', icon: 'users' },
+  { labelKey: 'widgets.adminShell.nav.diagnostics', routeName: 'admin-diagnostics', icon: 'list' },
+  { labelKey: 'widgets.adminShell.nav.audit', routeName: 'admin-audit', icon: 'check-square' },
   { labelKey: 'widgets.adminShell.nav.settings', routeName: 'admin-catalogs', icon: 'cog' },
 ] as const satisfies readonly AdminNavItem[]

@@ -4,6 +4,7 @@ export {
   formatDate,
   formatDateRange,
   formatDateTime,
+  formatDateTimeSeconds,
   formatDateTimeRange,
   formatTimeRange,
   parseDateOnly,

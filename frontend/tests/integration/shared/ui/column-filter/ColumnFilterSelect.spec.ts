@@ -131,6 +131,17 @@ describe('ColumnFilterSelect', () => {
     )
   })
 
+  it('lets the user type to narrow the options only when filterable', async () => {
+    const { wrapper } = await renderFilter(null)
+    await open(wrapper)
+
+    expect(wrapper.findComponent(ElSelect).props('filterable')).toBe(false)
+
+    await wrapper.setProps({ filterable: true })
+
+    expect(wrapper.findComponent(ElSelect).props('filterable')).toBe(true)
+  })
+
   it('treats an emptied select as no filter', async () => {
     const { wrapper } = await renderFilter('active')
 
