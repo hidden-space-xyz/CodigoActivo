@@ -138,7 +138,11 @@ public abstract class PartitionedLogSink<TRow>(
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
-                SelfLog.WriteLine("Dropped a {0} event that could not be converted: {1}", table.Name, ex.GetType());
+                SelfLog.WriteLine(
+                    "Dropped a {0} event that could not be converted: {1}",
+                    table.Name,
+                    ex.GetType()
+                );
             }
         }
 
@@ -155,7 +159,11 @@ public abstract class PartitionedLogSink<TRow>(
             }
             catch (PostgresException ex) when (IsRefusedData(ex))
             {
-                SelfLog.WriteLine("Dropped a {0} row the database refused with {1}", table.Name, ex.SqlState);
+                SelfLog.WriteLine(
+                    "Dropped a {0} row the database refused with {1}",
+                    table.Name,
+                    ex.SqlState
+                );
             }
         }
     }

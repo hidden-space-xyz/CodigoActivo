@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Passwords;
@@ -39,13 +40,15 @@ public sealed record LoginCommand(
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="twoFactor">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed login codes.</param>
+/// <param name="auditSubject">Names the account the request found for the audit log.</param>
 public sealed class LoginCommandHandler(
     IUserRepository users,
     AccountLock accountLock,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
     TwoFactorOptions twoFactor,
-    LoginCodeIssuer loginCodes
+    LoginCodeIssuer loginCodes,
+    IAuditSubject auditSubject
 ) : ICommandHandler<LoginCommand, Result<LoginChallengeKey>>
 {
     /// <summary>
@@ -61,6 +64,11 @@ public sealed class LoginCommandHandler(
     {
         var email = EmailAddress.Create(command.Identifier);
         var user = email.IsSuccess ? await users.GetByEmailAsync(email.Value, ct) : null;
+        if (user is not null)
+        {
+            auditSubject.Name(user.Id);
+        }
+
         var accepted = await passwordAttempts.VerifyLoginPasswordAsync(user, command.Password, ct);
         if (user is null || !accepted)
         {

@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using System.Reflection;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Validation;
@@ -87,6 +90,164 @@ public sealed class UnitOfWorkCommandDecorator<TCommand, TResult>(
         }
 
         return result;
+    }
+}
+
+/// <summary>
+/// Records every command in the audit log: who ran it and from where, what it acted on, its flags
+/// and choices and how it ended. The main thing is the one the handler named through
+/// <see cref="IAuditSubject"/>, else the one a successful result created, else the first typed
+/// identifier of the command; every other identifier it names is related. Auditing never changes
+/// the outcome of a command: a failure to record is logged, and the result or exception of the
+/// command goes on as is. Commands marked <see cref="IUnaudited"/> are never recorded, and a
+/// <see cref="IScheduledCommand"/> only when it changed something.
+/// </summary>
+/// <typeparam name="TCommand">Type of command handled.</typeparam>
+/// <typeparam name="TResult">Result type of the command.</typeparam>
+/// <param name="inner">Decorated handler.</param>
+/// <param name="trail">Audit log the entries are queued to.</param>
+/// <param name="subject">Main thing the handler named, if any.</param>
+/// <param name="currentUser">Signed-in user, if any.</param>
+/// <param name="origin">Origin of the request, if any.</param>
+/// <param name="logger">Logger of entries that could not be recorded.</param>
+public sealed class AuditCommandDecorator<TCommand, TResult>(
+    ICommandHandler<TCommand, TResult> inner,
+    IAuditTrail trail,
+    IAuditSubject subject,
+    ICurrentUser currentUser,
+    IRequestOrigin origin,
+    ILogger<AuditCommandDecorator<TCommand, TResult>> logger
+) : ICommandHandler<TCommand, TResult>
+    where TCommand : ICommand<TResult>
+    where TResult : Result
+{
+    private const string ConcurrentUpdate = "ConcurrentUpdate";
+    private const string UniqueConstraintViolation = "UniqueConstraintViolation";
+
+    private static readonly AuditAction? Action = typeof(IUnaudited).IsAssignableFrom(
+        typeof(TCommand)
+    )
+        ? null
+        : CommandAudit.ActionOf(typeof(TCommand));
+
+    private static readonly bool Scheduled = typeof(IScheduledCommand).IsAssignableFrom(
+        typeof(TCommand)
+    );
+
+    private static readonly PropertyInfo? ResultValue = typeof(TResult).IsGenericType
+        ? typeof(TResult).GetProperty(nameof(Result<object>.Value))
+        : null;
+
+    /// <inheritdoc />
+    public async Task<TResult> HandleAsync(TCommand command, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        if (Action is not { } action)
+        {
+            return await inner.HandleAsync(command, ct);
+        }
+
+        subject.Clear();
+        try
+        {
+            var result = await inner.HandleAsync(command, ct);
+            Record(
+                action,
+                command,
+                result,
+                result.IsSuccess ? AuditOutcome.Succeeded : AuditOutcome.Rejected,
+                result.Error?.Code.ToString()
+            );
+            return result;
+        }
+        catch (ConcurrentUpdateException)
+        {
+            Record(action, command, null, AuditOutcome.Rejected, ConcurrentUpdate);
+            throw;
+        }
+        catch (UniqueConstraintViolationException)
+        {
+            Record(action, command, null, AuditOutcome.Rejected, UniqueConstraintViolation);
+            throw;
+        }
+        catch (Exception)
+        {
+            Record(action, command, null, AuditOutcome.Failed, errorCode: null);
+            throw;
+        }
+        finally
+        {
+            subject.Clear();
+        }
+    }
+
+    private void Record(
+        AuditAction action,
+        TCommand command,
+        TResult? result,
+        AuditOutcome outcome,
+        string? errorCode
+    )
+    {
+        try
+        {
+            var value = result is { IsSuccess: true } ? ResultValue?.GetValue(result) : null;
+            var count = value as int?;
+            if (Scheduled && count is 0)
+            {
+                return;
+            }
+
+            var named = CommandAudit.EntitiesOf(command);
+            var entity =
+                subject.Entity
+                ?? CommandAudit.EntityOfResult(value)
+                ?? (named.Count > 0 ? named[0] : null);
+            var actor = currentUser.Id;
+            trail.Record(
+                new AuditRecord(
+                    action,
+                    actor is not null ? AuditActorType.User
+                        : Scheduled ? AuditActorType.System
+                        : AuditActorType.Anonymous,
+                    actor,
+                    origin.ClientAddress,
+                    entity,
+                    [.. named.Where(related => related != entity)],
+                    CommandAudit.DetailsOf(command),
+                    outcome,
+                    errorCode,
+                    count
+                )
+            );
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            logger.AuditEntryLost(typeof(TCommand).Name, ex);
+        }
+    }
+}
+
+/// <summary>
+/// Holds the main thing the running command named for the audit log, for one scope.
+/// </summary>
+public sealed class AuditSubject : IAuditSubject
+{
+    /// <inheritdoc />
+    public AuditEntity? Entity { get; private set; }
+
+    /// <inheritdoc />
+    public void Name<TId>(TId id)
+        where TId : struct, IEntityId<TId>
+    {
+        Entity = AuditEntity.Of(id);
+    }
+
+    /// <inheritdoc />
+    public void Clear()
+    {
+        Entity = null;
     }
 }
 

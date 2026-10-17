@@ -158,7 +158,8 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
   expired sessions; hosted services in Infrastructure only run them on a schedule. What the copy holds and how
   long it is kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
 - Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
-  `IFileStorage`, the email, persistence and read ports) live in `Application/Abstractions` or in the feature
+  `IFileStorage`, `IAuditTrail`, `IRequestOrigin`, the email, persistence and read ports) live in
+  `Application/Abstractions` or in the feature
   that consumes them. Domain declares only the repositories of its aggregates.
 - EF Core uses Npgsql and snake-case names. IDs are client-generated `Guid` values wrapped in typed
   identifiers. Closed value sets are domain enums stored as strings or as the `Guid` of their catalog row.
@@ -181,9 +182,9 @@ Each use case is a message and a sealed handler in `CodigoActivo.Application/<Fe
 root.
 `UseCaseRegistration` (Composition) registers every `ICommandHandler<,>`, `IQueryHandler<,>` and
 `IDomainEventListener<>` it finds by the contract it implements, and wraps the handlers in decorators: a command
-runs through `LoggingCommandDecorator` (warns about slow use cases), `ValidationCommandDecorator` and
-`UnitOfWorkCommandDecorator` (commits once the handler succeeds); a query through `LoggingQueryDecorator`,
-`ValidationQueryDecorator` and `CachingQueryDecorator`. Controllers inject the handler contract
+runs through `LoggingCommandDecorator` (warns about slow use cases), `AuditCommandDecorator` (records it in the
+audit log), `ValidationCommandDecorator` and `UnitOfWorkCommandDecorator` (commits once the handler succeeds); a
+query through `LoggingQueryDecorator`, `ValidationQueryDecorator` and `CachingQueryDecorator`. Controllers inject the handler contract
 (`ICommandHandler<TCommand, TResult>`) with `[FromServices]`, the only way an action receives a service
 (implicit service binding is disabled); there is no MediatR dispatcher.
 
@@ -220,6 +221,16 @@ of `BeginAuthenticatorSetup`, the recipient count of `SendEmail*` or the number 
 removed. The controller then runs the query that builds the HTTP response. Commands never call query handlers; they may read
 the read store only for lookups that change nothing: email audiences, the names the signup notifier shows and
 the guardianship `ActingUserPolicy` checks.
+
+`AuditCommandDecorator` hands every command to `IAuditTrail` (`Application/Abstractions/Auditing`) as an
+`AuditRecord`: the actor (`ICurrentUser`, or the system for an `IScheduledCommand`), the caller address
+(`IRequestOrigin`, implemented by `HttpRequestOrigin` in the API), the `AuditAction` named after the command,
+the main entity (the one the handler named through `IAuditSubject`, as login does with the account it found by
+email, else the typed ID a `Result<TId>` created, else the first typed ID of the command), the other typed IDs
+as related entities, the `bool` and enum parameters as details and the outcome. `CommandAudit` reads only those
+values, never text. `IUnaudited` keeps a command out (only `SaveEventRating`), a scheduled command is recorded
+only when it changed something, and a failure to record never changes the command's result.
+`SerilogAuditTrail` (Infrastructure) queues the record to `audit_log_entries`.
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
 tells who is signed in; commands and queries take the author, the acting user and the administrator flag from

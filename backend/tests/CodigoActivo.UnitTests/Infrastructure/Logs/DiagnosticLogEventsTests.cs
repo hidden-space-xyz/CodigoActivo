@@ -13,7 +13,8 @@ namespace CodigoActivo.UnitTests.Infrastructure.Logs;
 
 public sealed class DiagnosticLogEventsTests
 {
-    private const string Category = "CodigoActivo.Infrastructure.Communication.EmailOutboxDeliverer";
+    private const string Category =
+        "CodigoActivo.Infrastructure.Communication.EmailOutboxDeliverer";
 
     private static LogEvent Capture(Action<Microsoft.Extensions.Logging.ILogger> write)
     {

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -13,7 +14,8 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Participation.Commands;
 
 /// <summary>
-/// Carries the input required to save event rating.
+/// Carries the input required to save event rating. It is never audited: a rating stores no author
+/// and an audit entry would name one.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Score">Score from 1 to 5, if any.</param>
@@ -26,7 +28,7 @@ public sealed record SaveEventRatingCommand(
     [property: MaxLength(EventRating.MaxAnswerLength)] string? MostLiked,
     [property: MaxLength(EventRating.MaxAnswerLength)] string? LeastLiked,
     [property: MaxLength(EventRating.MaxAnswerLength)] string? Suggestions
-) : ICommand<Result>;
+) : ICommand<Result>, IUnaudited;
 
 /// <summary>
 /// Executes the command to save event rating. Every accepted call appends one anonymous rating row:

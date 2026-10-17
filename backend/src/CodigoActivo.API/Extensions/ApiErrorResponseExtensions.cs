@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Errors;
 using CodigoActivo.Domain.Common;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace CodigoActivo.API.Extensions;
 
@@ -36,7 +37,7 @@ public static class ApiErrorResponseExtensions
     )
     {
         var (status, title) = MapKind(error.Kind);
-        return (status, new ApiErrorResponse(title, status, error.Code, context.TraceIdentifier));
+        return (status, new ApiErrorResponse(title, status, error.Code, TraceIdOf(context)));
     }
 
     /// <summary>
@@ -53,7 +54,7 @@ public static class ApiErrorResponseExtensions
                 "Internal Server Error",
                 Status,
                 ErrorCode.UnexpectedError,
-                context.TraceIdentifier
+                TraceIdOf(context)
             )
         );
     }
@@ -72,9 +73,26 @@ public static class ApiErrorResponseExtensions
                 "Too Many Requests",
                 Status,
                 ErrorCode.TooManyRequests,
-                context.TraceIdentifier
+                TraceIdOf(context)
             )
         );
+    }
+
+    /// <summary>
+    /// Gets the reference an error response shows: the trace id of the request activity, the one
+    /// the diagnostic and audit logs store, or the connection-based identifier when there is none.
+    /// </summary>
+    /// <param name="context">HTTP context of the request.</param>
+    /// <returns>The reference of the request.</returns>
+    private static string TraceIdOf(HttpContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        return
+            context.Features.Get<IHttpActivityFeature>()?.Activity is { } activity
+            && activity.TraceId != default
+            ? activity.TraceId.ToHexString()
+            : context.TraceIdentifier;
     }
 
     private static (int Status, string Title) MapKind(ErrorKind kind)

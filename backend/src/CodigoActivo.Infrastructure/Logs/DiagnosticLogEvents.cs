@@ -79,7 +79,8 @@ public static class DiagnosticLogEvents
 
     private static string? EventName(LogEvent logEvent)
     {
-        return logEvent.Properties.TryGetValue(EventIdProperty, out var eventId)
+        return
+            logEvent.Properties.TryGetValue(EventIdProperty, out var eventId)
             && eventId is StructureValue structure
             ? structure
                 .Properties.Where(property => property.Name == "Name")

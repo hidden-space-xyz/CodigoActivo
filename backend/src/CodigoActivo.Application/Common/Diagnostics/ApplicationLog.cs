@@ -62,4 +62,21 @@ public static partial class ApplicationLog
         string useCase,
         long elapsedMilliseconds
     );
+
+    /// <summary>
+    /// Records that the audit entry of a command could not be built or queued, so the audit log
+    /// misses it; the command itself ended as it would have without auditing.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="useCase">Type name of the command.</param>
+    /// <param name="exception">Failure raised while recording the entry.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "The audit entry of a {UseCase} could not be recorded"
+    )]
+    public static partial void AuditEntryLost(
+        this ILogger logger,
+        string useCase,
+        Exception exception
+    );
 }

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
@@ -52,6 +53,7 @@ public sealed record RegisterCommand(
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 /// <param name="disposableEmails">Checker that refuses addresses of disposable email providers.</param>
 /// <param name="emailClaims">Committer that replaces an unverified account holding the email.</param>
+/// <param name="auditSubject">Names the account the registration created or found for the audit log.</param>
 public sealed class RegisterCommandHandler(
     IUserRepository users,
     IClock clock,
@@ -61,7 +63,8 @@ public sealed class RegisterCommandHandler(
     AccountEmails accountEmails,
     ILogger<RegisterCommandHandler> logger,
     DisposableEmailChecker disposableEmails,
-    EmailClaims emailClaims
+    EmailClaims emailClaims,
+    IAuditSubject auditSubject
 ) : ICommandHandler<RegisterCommand, Result>
 {
     /// <summary>
@@ -97,6 +100,7 @@ public sealed class RegisterCommandHandler(
         var holder = await users.GetByEmailAsync(email, ct);
         if (holder is { OwnsEmail: true })
         {
+            auditSubject.Name(holder.Id);
             await TrySendEmailInUseNoticeAsync(holder, ct);
             return Result.Success();
         }
@@ -105,6 +109,7 @@ public sealed class RegisterCommandHandler(
         var otpCode = AccountTokens.Create();
         adult.IssueOtp(codeHasher.Hash(otpCode), now, verification.OtpLifetime);
         await users.AddAsync(adult, ct);
+        auditSubject.Name(adult.Id);
         foreach (var child in minors)
         {
             await users.AddAsync(child, ct);
