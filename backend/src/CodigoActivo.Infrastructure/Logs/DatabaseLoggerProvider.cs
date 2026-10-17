@@ -12,7 +12,10 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// Disposing it writes what is still queued.
 /// </summary>
 [ProviderAlias("Database")]
-public sealed class DatabaseLoggerProvider : ILoggerProvider, ISupportExternalScope, IAsyncDisposable
+public sealed class DatabaseLoggerProvider
+    : ILoggerProvider,
+        ISupportExternalScope,
+        IAsyncDisposable
 {
     private readonly SerilogLoggerProvider provider;
 

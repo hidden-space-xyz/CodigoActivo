@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -8,6 +9,7 @@ using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -28,6 +30,7 @@ public sealed class LoginCommandHandlerTests
     private readonly FakeAccountEmailComposer composer = new();
     private readonly TwoFactorOptions twoFactor = new();
     private readonly CountingPasswordHasher hasher = new();
+    private readonly AuditSubject auditSubject = new();
     private readonly CommittedEvents events;
     private readonly LoginCommandHandler sut;
 
@@ -62,7 +65,8 @@ public sealed class LoginCommandHandlerTests
                 twoFactor,
                 accountEmails,
                 NullLogger<LoginCodeIssuer>.Instance
-            )
+            ),
+            auditSubject
         );
     }
 
@@ -108,6 +112,7 @@ public sealed class LoginCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.InvalidCredentials);
         emailSender.Sent.Should().BeEmpty();
+        auditSubject.Entity.Should().BeNull();
         await AssertNotSavedAsync();
     }
 
@@ -166,6 +171,12 @@ public sealed class LoginCommandHandlerTests
         user.PasswordLockout.FailedAttempts.Should()
             .Be(1, "the guard counts the failure on its own");
         user.PasswordLockout.LockedAt.Should().BeNull();
+        auditSubject
+            .Entity.Should()
+            .Be(
+                new AuditEntity(AuditEntityType.User, user.Id.Value),
+                "the audit log names the account"
+            );
         await AssertNotSavedAsync();
         await AssertAccountRowNeverLockedAsync();
     }

@@ -1,11 +1,13 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -23,6 +25,7 @@ public sealed class ForgotPasswordCommandHandlerTests
     private readonly FakeAccountEmailComposer composer = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly PasswordResetOptions passwordReset = new();
+    private readonly AuditSubject auditSubject = new();
     private readonly ForgotPasswordCommandHandler sut;
 
     public ForgotPasswordCommandHandlerTests()
@@ -40,7 +43,8 @@ public sealed class ForgotPasswordCommandHandlerTests
                 passwordReset,
                 new TwoFactorOptions()
             ),
-            NullLogger<ForgotPasswordCommandHandler>.Instance
+            NullLogger<ForgotPasswordCommandHandler>.Instance,
+            auditSubject
         );
     }
 
@@ -79,6 +83,7 @@ public sealed class ForgotPasswordCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
+        auditSubject.Entity.Should().BeNull();
     }
 
     [Fact]
@@ -184,6 +189,7 @@ public sealed class ForgotPasswordCommandHandlerTests
         email.Name.Should().Be(nameof(IAccountEmailComposer.PasswordReset));
         email.Recipient.Should().Be(new EmailRecipient(user.Email!.Value, user.FirstName));
         email.UserId.Should().Be(user.Id);
+        auditSubject.Entity.Should().Be(new AuditEntity(AuditEntityType.User, user.Id.Value));
         email.Lifetime.Should().Be(passwordReset.CodeLifetime);
         var code = email.Code;
         code.Should()

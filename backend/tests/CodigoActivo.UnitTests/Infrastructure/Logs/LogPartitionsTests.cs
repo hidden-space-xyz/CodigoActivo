@@ -6,7 +6,15 @@ namespace CodigoActivo.UnitTests.Infrastructure.Logs;
 
 public sealed class LogPartitionsTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 10, 17, 22, 30, 0, TimeSpan.FromHours(2));
+    private static readonly DateTimeOffset Now = new(
+        2026,
+        10,
+        17,
+        22,
+        30,
+        0,
+        TimeSpan.FromHours(2)
+    );
 
     [Fact]
     public void NameOfUsesTheTableAndTheUtcDay()
@@ -68,7 +76,11 @@ public sealed class LogPartitionsTests
         LogPartitions
             .UpcomingDays(Now)
             .Should()
-            .Equal(new DateOnly(2026, 10, 17), new DateOnly(2026, 10, 18), new DateOnly(2026, 10, 19));
+            .Equal(
+                new DateOnly(2026, 10, 17),
+                new DateOnly(2026, 10, 18),
+                new DateOnly(2026, 10, 19)
+            );
     }
 
     [Fact]

@@ -1,11 +1,13 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -26,6 +28,7 @@ public sealed class ResendVerificationCommandHandlerTests
     private readonly FakeAccountEmailComposer composer = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly RecordingLogger<ResendVerificationCommandHandler> logger = new();
+    private readonly AuditSubject auditSubject = new();
     private readonly ResendVerificationCommandHandler sut;
 
     public ResendVerificationCommandHandlerTests()
@@ -43,7 +46,8 @@ public sealed class ResendVerificationCommandHandlerTests
                 new PasswordResetOptions(),
                 new TwoFactorOptions()
             ),
-            logger
+            logger,
+            auditSubject
         );
     }
 
@@ -82,12 +86,13 @@ public sealed class ResendVerificationCommandHandlerTests
     [Fact]
     public async Task HandleAsyncVerifiedAccountGetsNothing()
     {
-        HolderOfTheAddress(NewUser(statusId: KnownIds.UserStatusTypes.Active));
+        var user = HolderOfTheAddress(NewUser(statusId: KnownIds.UserStatusTypes.Active));
 
         var result = await HandleAsync();
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
+        auditSubject.Entity.Should().Be(new AuditEntity(AuditEntityType.User, user.Id.Value));
         await AssertNeverLockedAsync();
     }
 

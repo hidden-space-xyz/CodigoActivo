@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Security;
@@ -49,6 +50,8 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     public FakeEmailSender EmailSender { get; } = new();
 
     public LogRecorder Logs { get; } = new();
+
+    public RecordingAuditTrail Audit { get; } = new();
 
     private static EmailGuardOptions UnboundedEmailGuard()
     {
@@ -138,6 +141,8 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<LogDatabase>();
             services.AddSingleton(_ => new LogDatabase(postgres.ConnectionString));
+            services.RemoveAll<IAuditTrail>();
+            services.AddSingleton<IAuditTrail>(Audit);
 
             services.RemoveAll<IPasswordHasher>();
             services.AddSingleton<IPasswordHasher, FakePasswordHasher>();
@@ -254,6 +259,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     {
         EmailSender.Clear();
         Logs.Clear();
+        Audit.Clear();
         ResetClock();
         await SeedFreshDatabaseAsync();
         await ResetCachesAsync();

@@ -356,16 +356,21 @@ inserts, so `event_ratings`' physical row order (and `xmin`) reflects write orde
 **Known limitations:** PostgreSQL write-ahead log access (`pg_wal`, in volume copies and point-in-time
 recovery); dead tuples until the next `VACUUM`; differential observation of two dumps taken before/after a
 submission; and, for events with one or two ratings, deducible authorship from count or free-text content (no
-minimum-rating threshold exists). Stored logs do not correlate an IP with an account or a rating request (see
-[Logging](#logging)): the only stored logs are the API's, which carry no client IP, requested path or user id.
-The stored rating content still carries no author reference.
+minimum-rating threshold exists). Saving a rating is never audited (`SaveEventRatingCommand` is `IUnaudited`)
+and the diagnostic log carries no client IP, requested path or user id, so no stored log ties a rating to an
+account (see [Logging](#logging)). The audit log does record, with their instants, the other commands of the
+same person, such as the login before the rating: someone with database access could still match the
+physical order (`xmin`) of `event_ratings` against those instants. The stored rating content still carries no
+author reference.
 
 ### Logging
 
-Logging follows GDPR data minimization: only failures and warnings an operator has to diagnose are recorded,
-so normal use writes nothing, and no entry stored in Production survives more than 30 days. Never logged:
-names, emails, phone numbers, anything typed by the client, the requested path or query, client IP, user
-agent, cookies, tokens and one-time codes. Logged: counters, enum/kind values, error/SMTP/HTTP codes, the HTTP
+The API keeps two logs, both read only by administrators: the diagnostic log and the
+[audit log](#audit-log). The diagnostic log follows GDPR data minimization: only failures and warnings an
+operator has to diagnose are recorded, so normal use writes nothing to it, and none of its entries survives
+more than 30 days. Never in the diagnostic log: names, emails, phone numbers, anything typed by the client,
+the requested path or query, client IP, user agent, cookies, tokens and one-time codes. Logged: counters,
+enum/kind values, error/SMTP/HTTP codes, the HTTP
 method, the matched endpoint's route template, and exception type/message/stack traces. No event template
 carries an id, but an exception message may quote the pseudonymous GUID of a row or stored file it failed on,
 such as the path of a file under `/app/files`; it is written as is.
@@ -391,7 +396,8 @@ such as the path of a file under `/app/files`; it is written as is.
 - **Security events**: only three events exist, all `Warning` and free of any user id —
   `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked;
   written once the lock commits) and `SecurityNotificationRateLimited` (a security-change email was dropped
-  by the limiter). Logins, logouts, password changes and administrator rights changes are not recorded.
+  by the limiter). Logins, logouts, password changes and administrator rights changes are not diagnostic
+  events: the audit log records them.
 - **API log output**: every event the level policy lets through is stored in the `diagnostic_log_entries`
   table of the application database by a batching Serilog sink (`DatabaseLoggerProvider`): the UTC instant,
   the level, the category, the event name, the rendered message (up to 4,000 characters), the exception with
@@ -420,13 +426,33 @@ such as the path of a file under `/app/files`; it is written as is.
   the migrations, and every hour (`LogRetentionWorker`) `LogPartitionMaintainer` creates the partitions of
   today and the next two days, drops the partitions whose whole day is older than the cutoff and deletes the
   older rows of the partition the cutoff falls in. The cutoff is the retention minus one hour, so no diagnostic
-  entry survives more than 30 days. Each statement runs in a short transaction with a 5-second lock timeout; a
-  failed run is logged as `LogMaintenanceFailed` (`Error`) and never stops the API. Purging stops while the
-  API is stopped, so the effective retention lengthens by however long it is
+  entry survives more than 30 days and no audit entry more than 60. Each statement runs in a short transaction
+  with a 5-second lock timeout; a failed run is logged as `LogMaintenanceFailed` (`Error`) and never stops the
+  API. Purging stops while the API is stopped, so the effective retention lengthens by however long it is
   down. PostgreSQL rotates its own files at midnight with `log_truncate_on_rotation=on`, emptying the file of
   the new weekday, so `logs-db` holds at most 7 days while `db` runs. A day that starts while `db` is stopped
   is appended to its old file instead, which then keeps entries from a week earlier. See
   [DEPLOYMENT.md](DEPLOYMENT.md#production-topology).
+- **What administrators see**: the diagnostic log shows them trace ids, route templates, the GUIDs exception
+  messages quote and, in the audit log, client IPs and account ids. Raising a framework category such as
+  `Microsoft.AspNetCore` to `Information` would store requested paths and query strings there too.
+
+### Audit log
+
+`AuditCommandDecorator` records every command the application runs in `audit_log_entries`, through the same
+batching pipeline and failure guarantees as the diagnostic log: a failure to record never changes the
+command's result. An entry keeps the instant, who ran it (a user with their account id, an anonymous caller or
+the system), the caller's IP as the trusted proxy forwarded it (the address the rate limits use, see
+[Transport and proxy trust](#transport-and-proxy-trust)), the command, the main entity and the other entities
+it named by type and GUID, its `bool` and enum parameters (`AuditConventionTests` pins the list; a person's
+gender is never recorded), how it ended (succeeded, rejected with the error code, or failed) with the number
+of items a purge removed, and the trace id that error responses show as their reference. It never stores
+anything typed by the client: names, emails, passwords, one-time codes, signatures, secrets and free text stay
+out, and so does the requested path. Login, password reset and verification requests record the account the
+email belongs to, so failed logins are attributed to their account. Saving an event rating is never
+recorded, and the scheduled purges are recorded only when they removed something. The account ids have no
+foreign key, so an erased account's entries remain until their 60-day retention ends; they are not part of
+its legal copy.
 
 ### Production configuration and secrets
 

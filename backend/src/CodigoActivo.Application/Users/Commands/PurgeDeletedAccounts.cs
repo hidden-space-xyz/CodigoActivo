@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Domain.Common;
@@ -8,7 +9,7 @@ namespace CodigoActivo.Application.Users.Commands;
 /// <summary>
 /// Carries the request to purge the legal copies kept long enough.
 /// </summary>
-public sealed record PurgeDeletedAccountsCommand : ICommand<Result<int>>;
+public sealed record PurgeDeletedAccountsCommand : ICommand<Result<int>>, IScheduledCommand;
 
 /// <summary>
 /// Executes the command that physically removes the legal copies whose retention period, set by

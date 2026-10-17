@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
@@ -30,6 +31,7 @@ public sealed record ResendVerificationCommand(
 /// <param name="verification">The verification value.</param>
 /// <param name="accountEmails">The account emails value.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
+/// <param name="auditSubject">Names the account the request found for the audit log.</param>
 public sealed class ResendVerificationCommandHandler(
     IUserRepository users,
     AccountLock accountLock,
@@ -37,7 +39,8 @@ public sealed class ResendVerificationCommandHandler(
     IOneTimeCodeHasher codeHasher,
     AccountVerificationOptions verification,
     AccountEmails accountEmails,
-    ILogger<ResendVerificationCommandHandler> logger
+    ILogger<ResendVerificationCommandHandler> logger,
+    IAuditSubject auditSubject
 ) : ICommandHandler<ResendVerificationCommand, Result>
 {
     /// <summary>
@@ -59,6 +62,11 @@ public sealed class ResendVerificationCommandHandler(
     {
         var email = EmailAddress.Create(command.Email);
         var user = email.IsSuccess ? await users.GetByEmailAsync(email.Value, ct) : null;
+        if (user is not null)
+        {
+            auditSubject.Name(user.Id);
+        }
+
         return user is not null && MayResend(user)
             ? await accountLock.RunAsync(
                 user,

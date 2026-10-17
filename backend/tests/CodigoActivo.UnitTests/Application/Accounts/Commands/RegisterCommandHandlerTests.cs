@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
@@ -8,6 +9,7 @@ using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
@@ -32,6 +34,7 @@ public sealed class RegisterCommandHandlerTests
     private readonly FakeAccountEmailComposer composer = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly FakeDisposableEmailDomainStore disposableDomains = new();
+    private readonly AuditSubject auditSubject = new();
     private readonly RegisterCommandHandler sut;
 
     public RegisterCommandHandlerTests()
@@ -55,7 +58,8 @@ public sealed class RegisterCommandHandlerTests
                 users.LocksEveryAccount(),
                 AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
                 uow
-            )
+            ),
+            auditSubject
         );
     }
 
@@ -166,6 +170,7 @@ public sealed class RegisterCommandHandlerTests
         adult.NationalId!.Value.Should().Be("X1234567L");
         adult.PromotionalConsent.Should().BeTrue();
         adult.BirthDate.Should().BeNull();
+        auditSubject.Entity.Should().Be(new AuditEntity(AuditEntityType.User, adult.Id.Value));
         var minor = added[1];
         minor.NationalId.Should().BeNull();
         minor.PromotionalConsent.Should().BeFalse();
@@ -214,6 +219,7 @@ public sealed class RegisterCommandHandlerTests
                 )
             );
         emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be(holder.Email!.Value);
+        auditSubject.Entity.Should().Be(new AuditEntity(AuditEntityType.User, holder.Id.Value));
         await users
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);

@@ -29,7 +29,9 @@ public sealed class DiagnosticLogEntryConfiguration : IEntityTypeConfiguration<D
             .Property(entry => entry.Message)
             .HasMaxLength(DiagnosticLogEntry.MessageMaxLength)
             .IsRequired();
-        builder.Property(entry => entry.Exception).HasMaxLength(DiagnosticLogEntry.ExceptionMaxLength);
+        builder
+            .Property(entry => entry.Exception)
+            .HasMaxLength(DiagnosticLogEntry.ExceptionMaxLength);
         builder.Property(entry => entry.TraceId).HasMaxLength(DiagnosticLogEntry.TraceIdLength);
         builder.Property(entry => entry.Properties).HasColumnType("jsonb");
 

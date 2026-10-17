@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Domain.Common;
@@ -8,7 +9,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the request to remove the sessions that are no longer accepted.
 /// </summary>
-public sealed record RemoveExpiredSessionsCommand : ICommand<Result<int>>;
+public sealed record RemoveExpiredSessionsCommand : ICommand<Result<int>>, IScheduledCommand;
 
 /// <summary>
 /// Executes the command that removes the sessions past their expiry.

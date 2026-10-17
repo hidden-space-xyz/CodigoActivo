@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Application.Common.Validation;
@@ -22,8 +23,9 @@ public static class UseCaseRegistration
     ];
 
     /// <summary>
-    /// Adds the use cases. From the outside in, a command runs through logging, validation and
-    /// the unit of work before its handler; a query runs through logging, validation and caching.
+    /// Adds the use cases. From the outside in, a command runs through logging, the audit log,
+    /// validation and the unit of work before its handler; a query runs through logging,
+    /// validation and caching.
     /// </summary>
     /// <param name="services">Service collection to add to.</param>
     /// <returns>The same service collection.</returns>
@@ -50,9 +52,11 @@ public static class UseCaseRegistration
 
         services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
         services.AddScoped<MessageValidator>();
+        services.AddScoped<IAuditSubject, AuditSubject>();
 
         services.Decorate(typeof(ICommandHandler<,>), typeof(UnitOfWorkCommandDecorator<,>));
         services.Decorate(typeof(ICommandHandler<,>), typeof(ValidationCommandDecorator<,>));
+        services.Decorate(typeof(ICommandHandler<,>), typeof(AuditCommandDecorator<,>));
         services.Decorate(typeof(ICommandHandler<,>), typeof(LoggingCommandDecorator<,>));
         services.Decorate(typeof(IQueryHandler<,>), typeof(CachingQueryDecorator<,>));
         services.Decorate(typeof(IQueryHandler<,>), typeof(ValidationQueryDecorator<,>));

@@ -1,3 +1,4 @@
+using System.Reflection;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Messaging;
@@ -57,8 +58,28 @@ public sealed class HandlerRegistrationTests
         services.AddLogging();
         services.AddSingleton(Substitute.For<ICacheInvalidator>());
         services.AddSingleton(Substitute.For<ICurrentUser>());
+        services.AddSingleton(Substitute.For<IRequestOrigin>());
         services.AddCodigoActivo(configuration);
         return services;
+    }
+
+    private static List<Type> Decorators(object handler)
+    {
+        var chain = new List<Type>();
+        for (
+            var current = handler;
+            current.GetType().IsGenericType;
+            current = current
+                    .GetType()
+                    .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Single(field => IsUseCaseContract(field.FieldType))
+                    .GetValue(current)!
+        )
+        {
+            chain.Add(current.GetType().GetGenericTypeDefinition());
+        }
+
+        return chain;
     }
 
     [Fact]
@@ -90,7 +111,7 @@ public sealed class HandlerRegistrationTests
     }
 
     [Fact]
-    public void AddCodigoActivoCommandsRunThroughLoggingValidationAndTheUnitOfWork()
+    public void AddCodigoActivoCommandsRunThroughLoggingAuditValidationAndTheUnitOfWork()
     {
         using var provider = BuildServices().BuildServiceProvider();
         using var scope = provider.CreateScope();
@@ -102,11 +123,14 @@ public sealed class HandlerRegistrationTests
 
         var resolved = scope.ServiceProvider.GetRequiredService(command);
 
-        resolved
-            .GetType()
-            .GetGenericTypeDefinition()
+        Decorators(resolved)
             .Should()
-            .Be(typeof(LoggingCommandDecorator<,>));
+            .Equal(
+                typeof(LoggingCommandDecorator<,>),
+                typeof(AuditCommandDecorator<,>),
+                typeof(ValidationCommandDecorator<,>),
+                typeof(UnitOfWorkCommandDecorator<,>)
+            );
     }
 
     [Fact]
