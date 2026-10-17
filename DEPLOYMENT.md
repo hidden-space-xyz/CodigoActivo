@@ -302,6 +302,10 @@ signs in with the bootstrap administrator, the only administrator, whose passwor
 at `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding downloads its sample images from
 `picsum.photos` (three attempts each, at most five minutes in total), so `api` needs outbound HTTPS there on
 the start that seeds; a failed download stops that start.
+Demo mode also fills the diagnostic and audit logs with an invented three-week history that follows the demo
+data: logins, signups, published content, a password attack, email outages and slow requests. A later start
+writes a new one once the audit log holds no entry of a demo account from the last 30 days, the diagnostic
+retention. A failure to write it is logged as a warning and does not stop the start.
 
 Changing mode requires destroying all named volumes and therefore all application data:
 

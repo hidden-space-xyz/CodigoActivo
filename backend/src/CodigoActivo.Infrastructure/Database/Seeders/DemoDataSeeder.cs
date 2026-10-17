@@ -56,6 +56,12 @@ public sealed class DemoDataSeeder(
 
     private static UserId DemoAuthorId => DemoUser(0);
 
+    /// <summary>
+    /// Gets the identifiers of every demo account, adults and children.
+    /// </summary>
+    internal static IEnumerable<UserId> UserIds =>
+        Enumerable.Range(0, UserSeeds.Length).Select(DemoUser);
+
     private static readonly (
         int? EarlyOpensDaysBeforeStart,
         int OpensDaysBeforeStart,

@@ -15,7 +15,7 @@ namespace CodigoActivo.Composition;
 /// <summary>
 /// Runs the start-up steps from a service scope: the configuration check, schema migrations,
 /// log table maintenance, catalog seeding, the initial administrator, the deployment mode lock and
-/// the optional demo data.
+/// the optional demo data and log history.
 /// </summary>
 public static class StartupInitialization
 {
@@ -106,5 +106,17 @@ public static class StartupInitialization
     public static Task SeedDemoDataAsync(this IServiceProvider services, CancellationToken ct)
     {
         return services.GetRequiredService<DemoDataSeeder>().SeedAsync(ct);
+    }
+
+    /// <summary>
+    /// Adds the invented diagnostic and audit history of demo mode when the log tables have none.
+    /// A failure is logged and does not stop the start.
+    /// </summary>
+    /// <param name="services">Scoped service provider.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public static Task SeedDemoLogsAsync(this IServiceProvider services, CancellationToken ct)
+    {
+        return services.GetRequiredService<DemoLogSeeder>().SeedAsync(ct);
     }
 }

@@ -577,8 +577,10 @@ the general API limits of nginx and the API.
 `DEMO_MODE=true` seeds invented accounts with a random, hashed and discarded 32-byte password, fictitious
 addresses, and the second factor still required, so only the bootstrap administrator can sign in. Such
 deployments are disposable and must never contain private data. Seeding downloads its sample images from
-`picsum.photos`, at most 10 MiB each, in requests that carry no user data. The mode is locked on first start;
-see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode-and-initial-administrator).
+`picsum.photos`, at most 10 MiB each, in requests that carry no user data. Its log pages mix the real entries
+with an invented history, including a password attack, whose callers use the IP ranges reserved for
+documentation (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`, `2001:db8::/32`). The mode is locked
+on first start; see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode-and-initial-administrator).
 
 ## Operational checklist
 

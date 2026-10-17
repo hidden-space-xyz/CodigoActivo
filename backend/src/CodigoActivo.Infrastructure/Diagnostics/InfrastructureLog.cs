@@ -172,6 +172,18 @@ public static partial class InfrastructureLog
     public static partial void LogMaintenanceFailed(this ILogger logger, Exception exception);
 
     /// <summary>
+    /// Records that the invented history of a demo deployment could not be written to the log
+    /// tables, which leaves its diagnostic and audit pages without it until a later start.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure that stopped the writing.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "The demo log history could not be written; the next start will retry"
+    )]
+    public static partial void DemoLogHistoryFailed(this ILogger logger, Exception exception);
+
+    /// <summary>
     /// Records that the disposable email domain list could not be downloaded.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
