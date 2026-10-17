@@ -232,16 +232,18 @@ describe('EventsAdminPage', () => {
     expect(third.querySelector('.signup-cell .el-tag')?.classList).toContain('el-tag--success')
   })
 
-  it('offers manage and edit in the row and the other actions in a menu named after the event', async () => {
+  it('offers edit and manage in the row and the other actions in a menu named after the event', async () => {
     await renderPage([
       buildAdminEventListItem({ featured: true }),
       buildAdminEventListItem({ id: 'ev-2', title: 'Workshop' }),
     ])
 
     const [first, second] = [tableRow(0), tableRow(1)]
-    expect(findButtons(t('pages.admin.events.actions.manage'), first)).toHaveLength(1)
-    expect(findButtons(t('common.edit'), first)).toHaveLength(1)
-    expect(findButtons(t('common.delete'), first)).toHaveLength(0)
+    expect(
+      [...first.querySelectorAll('.row-actions__button')].map((button) =>
+        button.getAttribute('aria-label'),
+      ),
+    ).toEqual([t('common.edit'), t('pages.admin.events.actions.manage')])
     expect(first.querySelector('.row-actions__more')?.getAttribute('aria-label')).toBe(
       t('table.moreActionsFor', { name: 'Hackathon' }),
     )

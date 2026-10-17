@@ -61,15 +61,6 @@ function signupTitle(event: EventListing): string {
 function eventActions(event: EventListing): RowAction[] {
   return [
     {
-      key: 'manage',
-      label: t('pages.admin.events.actions.manage'),
-      icon: 'cog',
-      inline: true,
-      run: () => {
-        void router.push({ name: 'admin-event-detail', params: { eventId: event.id } })
-      },
-    },
-    {
       key: 'edit',
       label: t('common.edit'),
       icon: 'pencil',
@@ -77,6 +68,15 @@ function eventActions(event: EventListing): RowAction[] {
       disabled: loading.value,
       run: () => {
         void openEdit(event)
+      },
+    },
+    {
+      key: 'manage',
+      label: t('pages.admin.events.actions.manage'),
+      icon: 'cog',
+      inline: true,
+      run: () => {
+        void router.push({ name: 'admin-event-detail', params: { eventId: event.id } })
       },
     },
     {
