@@ -44,8 +44,7 @@ public sealed class SetAdminCommandHandlerTests
                     clock,
                     composer,
                     NullLogger<AccountSecurityNotifier>.Instance
-                ),
-                NullLogger<AccountSecurityNotifications>.Instance
+                )
             )
         );
         sut = new SetAdminCommandHandler(

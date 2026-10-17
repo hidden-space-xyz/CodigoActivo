@@ -22,6 +22,8 @@ public sealed class ApiLoggingLevelPolicyTests : IDisposable
         "CodigoActivo.Application.Common.Messaging.LoggingQueryDecorator";
     private const string HostingCategory = "Microsoft.AspNetCore.Hosting.Diagnostics";
     private const string DatabaseCommandCategory = "Microsoft.EntityFrameworkCore.Database.Command";
+    private const string SaveChangesCategory = "Microsoft.EntityFrameworkCore.Update";
+    private const string QueryCategory = "Microsoft.EntityFrameworkCore.Query";
 
     private static readonly Guid Identifier = new("3f6a0f4c-1c8a-4a3f-9a6e-2f0b7d5c8e11");
 
@@ -136,6 +138,18 @@ public sealed class ApiLoggingLevelPolicyTests : IDisposable
             .IsEnabled(LogLevel.Error)
             .Should()
             .BeFalse("a failed command is reported with its whole SQL statement");
+        factory
+            .CreateLogger(SaveChangesCategory)
+            .IsEnabled(LogLevel.Error)
+            .Should()
+            .BeFalse(
+                "a failed save is rethrown and recorded where it is caught, if it is no expected race"
+            );
+        factory
+            .CreateLogger(QueryCategory)
+            .IsEnabled(LogLevel.Warning)
+            .Should()
+            .BeFalse("query compilation hints are no failures");
         factory
             .CreateLogger(LogCategories.Lifecycle)
             .IsEnabled(LogLevel.Information)

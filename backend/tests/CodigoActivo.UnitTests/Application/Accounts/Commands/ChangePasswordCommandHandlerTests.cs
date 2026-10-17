@@ -40,8 +40,7 @@ public sealed class ChangePasswordCommandHandlerTests
                     clock,
                     composer,
                     NullLogger<AccountSecurityNotifier>.Instance
-                ),
-                NullLogger<AccountSecurityNotifications>.Instance
+                )
             ),
             new SessionsEndOnPasswordReplacedOrLocked(sessions)
         );

@@ -104,7 +104,8 @@ public sealed class EmailGuardOptions
     public TimeSpan SweepInterval { get; set; } = DefaultSweepInterval;
 
     /// <summary>
-    /// Gets or sets the alert interval value.
+    /// Gets or sets the minimum interval between two log entries of the same repeated email alert
+    /// or outbox failure.
     /// </summary>
     public TimeSpan AlertInterval { get; set; } = DefaultAlertInterval;
 }

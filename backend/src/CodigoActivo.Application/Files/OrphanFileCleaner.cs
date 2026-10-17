@@ -1,8 +1,6 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
-using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Domain.Files;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Files;
 
@@ -26,17 +24,16 @@ public interface IOrphanFileCleaner
 /// <summary>
 /// Removes orphan file data that is no longer referenced. The rows are deleted in one transaction,
 /// so a refused delete leaves nothing staged for a later commit of the same request; the stored
-/// content is only deleted once the rows are gone.
+/// content is only deleted once the rows are gone. The cleanup is best effort: a failure only
+/// leaves unreferenced data behind, so it is neither raised nor logged.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
-/// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class OrphanFileCleaner(
     IStoredFileRepository files,
     IUnitOfWork uow,
-    IFileStorage storage,
-    ILogger<OrphanFileCleaner> logger
+    IFileStorage storage
 ) : IOrphanFileCleaner
 {
     /// <inheritdoc />
@@ -63,10 +60,7 @@ public sealed class OrphanFileCleaner(
                 DeleteStoredContent(file.Id, file.Extension);
             }
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.OrphanFileCleanupFailed(ex);
-        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { }
     }
 
     private async Task<IReadOnlyList<StoredFile>> RemoveOrphansAsync(
@@ -98,9 +92,6 @@ public sealed class OrphanFileCleaner(
         {
             storage.Delete(FileNaming.StoredName(fileId, extension));
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.OrphanFileCleanupFailed(ex);
-        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { }
     }
 }

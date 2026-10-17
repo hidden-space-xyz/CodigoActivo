@@ -38,20 +38,6 @@ internal static partial class ApiLog
     internal static partial void SessionRevocationFailed(this ILogger logger, Exception exception);
 
     /// <summary>
-    /// Records that signing out could not close the pending second-factor challenge.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure raised while closing the challenge.</param>
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "Failed to close the pending challenge while signing out"
-    )]
-    internal static partial void PendingChallengeCloseFailed(
-        this ILogger logger,
-        Exception exception
-    );
-
-    /// <summary>
     /// Records that an expired log file could not be listed or removed, so it stays in the log
     /// directory until the next sweep. The path is left to the attached exception, which is written
     /// as is; the file name holds only its date.

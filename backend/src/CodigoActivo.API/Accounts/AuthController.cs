@@ -407,7 +407,8 @@ public class AuthController : ApiControllerBase
     /// second-factor challenge is closed on the account, before the cookies are deleted, so neither
     /// presented ticket stops being accepted only because a copy of it survives. The endpoint is
     /// idempotent and needs no valid session, so a ticket whose row is already gone is still
-    /// answered by clearing both cookies; a failed revocation is logged and never keeps them.
+    /// answered by clearing both cookies; a failed revocation is logged and never keeps them. A
+    /// challenge that fails to close is not logged, since it expires on its own within minutes.
     /// </summary>
     /// <param name="sessionTickets">Revokes the session of the caller.</param>
     /// <param name="challengeTickets">Closes the pending second-factor challenge.</param>
@@ -437,10 +438,7 @@ public class AuthController : ApiControllerBase
             var pending = await HttpContext.AuthenticateAsync(TwoFactorAuthentication.Scheme);
             await challengeTickets.EndChallengeAsync(pending.Principal, ct);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.PendingChallengeCloseFailed(ex);
-        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { }
 
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignOutAsync(TwoFactorAuthentication.Scheme);

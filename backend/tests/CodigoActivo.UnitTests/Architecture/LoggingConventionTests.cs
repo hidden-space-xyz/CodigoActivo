@@ -16,14 +16,11 @@ public sealed partial class LoggingConventionTests
         "Attempts",
         "Capacity",
         "Count",
-        "Drain",
         "Effect",
-        "IsAdmin",
         "Kind",
         "Limit",
         "MaxFailedAttempts",
         "Method",
-        "Remaining",
         "RouteTemplate",
         "SecurityChange",
     ];
@@ -60,7 +57,6 @@ public sealed partial class LoggingConventionTests
 
     private static readonly string[] SecurityEvents =
     [
-        "AdministratorFlagChanged",
         "PasswordLockoutTriggered",
         "SecurityNotificationRateLimited",
         "TwoFactorLockoutTriggered",

@@ -43,8 +43,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
                     clock,
                     composer,
                     NullLogger<AccountSecurityNotifier>.Instance
-                ),
-                NullLogger<AccountSecurityNotifications>.Instance
+                )
             )
         );
         sut = new ResetTwoFactorCommandHandler(

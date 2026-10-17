@@ -229,6 +229,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     public async Task ResetDatabaseAsync()
     {
         EmailSender.Clear();
+        Logs.Clear();
         ResetClock();
         await SeedFreshDatabaseAsync();
         await ResetCachesAsync();

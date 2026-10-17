@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Infrastructure.Diagnostics;
 
 namespace CodigoActivo.Infrastructure.Communication;
 
@@ -8,12 +9,7 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// </summary>
 /// <param name="Scope">The scope value.</param>
 /// <param name="Alert">The alert value.</param>
-/// <param name="GlobalRemaining">The global remaining value.</param>
-public readonly record struct EmailSendDecision(
-    EmailLimitScope Scope,
-    EmailGuardAlert Alert,
-    int GlobalRemaining
-);
+public readonly record struct EmailSendDecision(EmailLimitScope Scope, EmailGuardAlert Alert);
 
 /// <summary>
 /// Enforces the configured limits for email send. The global budget is tiered: ordinary mail
@@ -26,18 +22,17 @@ public readonly record struct EmailSendDecision(
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
 {
-    private const double GlobalLowWatermark = 0.2;
     private const double HoursPerDay = 24;
 
     private readonly Lock gate = new();
     private readonly Dictionary<RecipientKey, RecipientState> recipients = [];
 
+    private readonly LogThrottle globalExhaustedAlerts = new(options.AlertInterval);
+    private readonly LogThrottle saturationAlerts = new(options.AlertInterval);
+
     private Bucket global = Bucket.Full(options.GlobalBurst, clock.UtcNow);
     private DateTimeOffset lastSweepAt = clock.UtcNow;
     private bool lastSweepFreedRoom = true;
-    private DateTimeOffset? lastGlobalLowAlertAt;
-    private DateTimeOffset? lastGlobalExhaustedAlertAt;
-    private DateTimeOffset? lastSaturationAlertAt;
 
     /// <summary>
     /// Gets the tracked recipients value.
@@ -81,11 +76,7 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
                 if (recipients.Count >= options.MaxTrackedRecipients)
                 {
                     global = global.Consume();
-                    return new EmailSendDecision(
-                        EmailLimitScope.None,
-                        SaturationAlert(now),
-                        Remaining()
-                    );
+                    return new EmailSendDecision(EmailLimitScope.None, SaturationAlert(now));
                 }
 
                 state = new RecipientState(
@@ -107,23 +98,14 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
 
             if (hourly.Tokens < 1 || daily.Tokens < 1)
             {
-                var alert = state.Throttled
-                    ? EmailGuardAlert.None
-                    : EmailGuardAlert.RecipientThrottled;
-                state.Throttled = true;
-                return Denied(EmailLimitScope.Recipient, alert);
+                return Denied(EmailLimitScope.Recipient, EmailGuardAlert.None);
             }
 
             state.Hourly = hourly.Consume();
             state.Daily = daily.Consume();
-            state.Throttled = false;
             global = global.Consume();
 
-            return new EmailSendDecision(
-                EmailLimitScope.None,
-                GlobalLowAlert(now, reserve),
-                Remaining()
-            );
+            return new EmailSendDecision(EmailLimitScope.None, EmailGuardAlert.None);
         }
     }
 
@@ -175,49 +157,23 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         };
     }
 
-    private EmailSendDecision Denied(EmailLimitScope scope, EmailGuardAlert alert)
+    private static EmailSendDecision Denied(EmailLimitScope scope, EmailGuardAlert alert)
     {
-        return new EmailSendDecision(scope, alert, Remaining());
-    }
-
-    private int Remaining()
-    {
-        return int.CreateTruncating(global.Tokens);
+        return new EmailSendDecision(scope, alert);
     }
 
     private EmailGuardAlert GlobalExhaustedAlert(DateTimeOffset now)
     {
-        return ShouldAlert(ref lastGlobalExhaustedAlertAt, now)
+        return globalExhaustedAlerts.TryEnter(now)
             ? EmailGuardAlert.GlobalBudgetExhausted
             : EmailGuardAlert.None;
     }
 
     private EmailGuardAlert SaturationAlert(DateTimeOffset now)
     {
-        return ShouldAlert(ref lastSaturationAlertAt, now)
+        return saturationAlerts.TryEnter(now)
             ? EmailGuardAlert.TrackingSaturated
             : EmailGuardAlert.None;
-    }
-
-    private EmailGuardAlert GlobalLowAlert(DateTimeOffset now, int reserve)
-    {
-        var available = global.Tokens - reserve;
-        return
-            available < options.GlobalBurst * GlobalLowWatermark
-            && ShouldAlert(ref lastGlobalLowAlertAt, now)
-            ? EmailGuardAlert.GlobalBudgetLow
-            : EmailGuardAlert.None;
-    }
-
-    private bool ShouldAlert(ref DateTimeOffset? lastAt, DateTimeOffset now)
-    {
-        if (lastAt is not null && now - lastAt.Value < options.AlertInterval)
-        {
-            return false;
-        }
-
-        lastAt = now;
-        return true;
     }
 
     private void SweepIfDue(DateTimeOffset now)
@@ -272,11 +228,6 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         /// Gets or sets the daily value.
         /// </summary>
         public Bucket Daily { get; set; } = daily;
-
-        /// <summary>
-        /// Gets or sets the throttled value.
-        /// </summary>
-        public bool Throttled { get; set; }
     }
 
     private readonly record struct Bucket(double Tokens, DateTimeOffset UpdatedAt)

@@ -41,8 +41,7 @@ public sealed class ConfirmAuthenticatorCommandHandlerTests
                     clock,
                     composer,
                     NullLogger<AccountSecurityNotifier>.Instance
-                ),
-                NullLogger<AccountSecurityNotifications>.Instance
+                )
             )
         );
         sut = new ConfirmAuthenticatorCommandHandler(

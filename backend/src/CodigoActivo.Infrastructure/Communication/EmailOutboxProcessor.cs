@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -7,19 +8,26 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <summary>
 /// Runs the email outbox in the background: it delivers due messages as soon as this process stores
 /// one and polls for the rest, which also picks up the work of other instances and the retries that
-/// became due. A failed run is logged and never stops the loop or the host.
+/// became due. A failed run never stops the loop or the host; it is logged at most once per
+/// <see cref="EmailGuardOptions.AlertInterval"/>, since an unreachable dependency fails every poll.
 /// </summary>
 /// <param name="deliverer">Component that claims and delivers one batch of due messages.</param>
 /// <param name="signal">Signal raised when this process stores email.</param>
 /// <param name="options">Configuration values used by the component.</param>
+/// <param name="guard">Email guard configuration, whose alert interval spaces repeated failures.</param>
+/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class EmailOutboxProcessor(
     EmailOutboxDeliverer deliverer,
     EmailOutboxSignal signal,
     EmailQueueOptions options,
+    EmailGuardOptions guard,
+    IClock clock,
     ILogger<EmailOutboxProcessor> logger
 ) : BackgroundService
 {
+    private readonly LogThrottle runFailures = new(guard.AlertInterval);
+
     /// <summary>
     /// Stops claiming new messages and waits for the deliveries in flight, up to the configured
     /// drain. Whatever is not delivered stays in the outbox for the next start.
@@ -32,11 +40,6 @@ public sealed class EmailOutboxProcessor(
         drain.CancelAfter(options.ShutdownDrain);
 
         await base.StopAsync(drain.Token);
-
-        if (ExecuteTask is { IsCompleted: false })
-        {
-            logger.EmailOutboxDrainIncomplete(options.ShutdownDrain);
-        }
     }
 
     /// <summary>
@@ -69,7 +72,11 @@ public sealed class EmailOutboxProcessor(
         catch (Exception ex)
             when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
-            logger.EmailOutboxRunFailed(ex);
+            if (runFailures.TryEnter(clock.UtcNow))
+            {
+                logger.EmailOutboxRunFailed(ex);
+            }
+
             return 0;
         }
         catch (OperationCanceledException)

@@ -52,12 +52,6 @@ public sealed class ThrottledEmailSender(
     {
         switch (decision.Alert)
         {
-            case EmailGuardAlert.RecipientThrottled:
-                logger.RecipientEmailQuotaReached();
-                break;
-            case EmailGuardAlert.GlobalBudgetLow:
-                logger.GlobalEmailBudgetLow(decision.GlobalRemaining);
-                break;
             case EmailGuardAlert.GlobalBudgetExhausted:
                 logger.GlobalEmailBudgetExhausted();
                 break;

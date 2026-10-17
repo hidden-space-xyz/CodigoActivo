@@ -62,13 +62,4 @@ public static partial class ApplicationLog
         string useCase,
         long elapsedMilliseconds
     );
-
-    /// <summary>
-    /// Records that best-effort cleanup left unreferenced file data behind, which only wastes
-    /// storage.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure raised while removing the orphan data.</param>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Orphan file cleanup failed")]
-    public static partial void OrphanFileCleanupFailed(this ILogger logger, Exception exception);
 }

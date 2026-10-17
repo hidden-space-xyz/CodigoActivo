@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Domain.Users;
-using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Accounts.Notifications;
 
@@ -10,11 +9,9 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="notifier">Sender of the account security notifications.</param>
-/// <param name="logger">Logger of administrator rights changes.</param>
 public sealed class AccountSecurityNotifications(
     IUserRepository users,
-    AccountSecurityNotifier notifier,
-    ILogger<AccountSecurityNotifications> logger
+    AccountSecurityNotifier notifier
 )
     : IDomainEventListener<PasswordChanged>,
         IDomainEventListener<PasswordReset>,
@@ -71,7 +68,6 @@ public sealed class AccountSecurityNotifications(
     public Task HandleAsync(AdministratorRightsChanged domainEvent, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
-        logger.AdministratorFlagChanged(domainEvent.IsAdmin);
         return NotifyAsync(
             domainEvent.UserId,
             domainEvent.IsAdmin

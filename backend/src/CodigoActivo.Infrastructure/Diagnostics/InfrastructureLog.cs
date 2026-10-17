@@ -6,10 +6,9 @@ namespace CodigoActivo.Infrastructure.Diagnostics;
 
 /// <summary>
 /// Declares the operational events of the infrastructure layer: outbound email trouble, failed
-/// background runs, failed effects of committed changes, unreadable authenticator keys, retried
-/// account erasures and disposable email domain list refreshes. Templates carry counts, enum values,
-/// handler type names and exceptions, never identifiers, addresses, names or values typed by the
-/// client.
+/// background runs, failed effects of committed changes, unreadable authenticator keys and
+/// disposable email domain list refreshes. Templates carry counts, enum values, handler type names
+/// and exceptions, never identifiers, addresses, names or values typed by the client.
 /// </summary>
 public static partial class InfrastructureLog
 {
@@ -102,17 +101,6 @@ public static partial class InfrastructureLog
     public static partial void EmailOutboxRunFailed(this ILogger logger, Exception exception);
 
     /// <summary>
-    /// Records that shutdown did not leave enough time to finish the deliveries in flight.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="drain">Time the worker was given to finish.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "The email outbox did not finish delivering within {Drain}; the messages in flight stay stored"
-    )]
-    public static partial void EmailOutboxDrainIncomplete(this ILogger logger, TimeSpan drain);
-
-    /// <summary>
     /// Records that the outbox is full, so an automatic email was held back.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -122,27 +110,6 @@ public static partial class InfrastructureLog
         Message = "The outbound email outbox is full at {Capacity} pending messages; an email was held back"
     )]
     public static partial void EmailOutboxFull(this ILogger logger, int capacity);
-
-    /// <summary>
-    /// Records that the per-recipient quota is holding automatic mail.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "The per-recipient outbound email quota is now holding mail; an email was not sent"
-    )]
-    public static partial void RecipientEmailQuotaReached(this ILogger logger);
-
-    /// <summary>
-    /// Records that the global outbound budget is close to holding automatic mail.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="remaining">Messages left before automatic mail is held.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "The global outbound email budget is running low with {Remaining} messages left before automatic mail is held"
-    )]
-    public static partial void GlobalEmailBudgetLow(this ILogger logger, int remaining);
 
     /// <summary>
     /// Records that the global outbound budget is spent and automatic mail is being denied.
@@ -191,18 +158,6 @@ public static partial class InfrastructureLog
         Message = "The deleted account purge run failed; the next run will retry"
     )]
     public static partial void DeletedAccountPurgeFailed(this ILogger logger, Exception exception);
-
-    /// <summary>
-    /// Records that PostgreSQL aborted a transaction, such as an account erasure, to resolve a
-    /// deadlock and that it runs again.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="attempts">Attempts already spent on the transaction.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Attempt {Attempts} of a transaction was aborted to resolve a deadlock and will be retried"
-    )]
-    public static partial void TransactionDeadlockRetried(this ILogger logger, int attempts);
 
     /// <summary>
     /// Records that the disposable email domain list could not be downloaded.

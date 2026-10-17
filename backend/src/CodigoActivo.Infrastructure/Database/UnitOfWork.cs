@@ -2,10 +2,8 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Database.Context;
-using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.Extensions.Logging;
 using Npgsql;
 
 namespace CodigoActivo.Infrastructure.Database;
@@ -19,12 +17,8 @@ namespace CodigoActivo.Infrastructure.Database;
 /// </summary>
 /// <param name="context">Database context shared by the repositories of the scope.</param>
 /// <param name="publisher">Publisher of the committed domain events.</param>
-/// <param name="logger">Logger of retried transactions.</param>
-public sealed class UnitOfWork(
-    CodigoActivoDbContext context,
-    IDomainEventPublisher publisher,
-    ILogger<UnitOfWork> logger
-) : IUnitOfWork
+public sealed class UnitOfWork(CodigoActivoDbContext context, IDomainEventPublisher publisher)
+    : IUnitOfWork
 {
     /// <summary>
     /// Attempts made when PostgreSQL resolves a deadlock by aborting a transaction, which happens
@@ -127,7 +121,6 @@ public sealed class UnitOfWork(
                         throw;
                     }
 
-                    logger.TransactionDeadlockRetried(attempt);
                     continue;
                 }
             }

@@ -375,20 +375,23 @@ such as the path of a file under `/app/files`; it is written as is.
   architecture tests `LoggingConventionTests`/`LoggingCallSiteTests` enforce an allowed-placeholder list and
   that no event is declared below `Warning`. `Logging:LogLevel` in `appsettings.json` is the level policy for
   both the console and the file sink: `Default` is `Warning`, which also drops the framework's start and stop
-  messages; `Microsoft.EntityFrameworkCore.Database.Command` is `None`, since the SQL of a failing command can
-  carry literal values. An environment can override any category with `Logging__LogLevel__<Category>`. There
-  is no per-request logging middleware: unhandled exceptions are recorded only by `GlobalExceptionHandler`,
-  with the HTTP method and the route template, never the requested path. Expected outcomes are not logged: a
-  refused concurrent update (409 `ConcurrentUpdate`) or a rejected CSRF token, which the client refreshes and
-  sends again. A use case is logged as slow only above 5 seconds. `NormalUseLoggingTests` drives anonymous,
+  messages; `Microsoft.EntityFrameworkCore` is `None`: every EF Core failure is rethrown and recorded where it
+  is caught, so its own entries only repeated it, quoted the SQL of a failing command (which can carry literal
+  values) and reported expected unique-key races and retried deadlocks as errors. An environment can override
+  any category with `Logging__LogLevel__<Category>`. There is no per-request logging middleware: unhandled
+  exceptions are recorded only by `GlobalExceptionHandler`, with the HTTP method and the route template, never
+  the requested path. Expected outcomes are not logged: a refused concurrent update (409 `ConcurrentUpdate`), a
+  signup that lost a unique-key race (409), a deadlock that a retry resolved, or a rejected CSRF token, which
+  the client refreshes and sends again. A use case is logged as slow only above 5 seconds. A failure that
+  repeats on every outbox run (`EmailOutboxRunFailed`, `ExhaustedEmailNotRemoved`, `EmailDeliveryAttemptFailed`)
+  is logged at most once per `EmailGuard:AlertIntervalMinutes`. `NormalUseLoggingTests` drives anonymous,
   member and administrator flows and fails if any entry passes the policy. EF Core sensitive-data logging
   stays disabled; `SmtpEmailSender` strips the recipient and server reply out of SMTP exceptions before they
   are logged.
-- **Security events**: only four events exist, all `Warning` and free of any user id —
+- **Security events**: only three events exist, all `Warning` and free of any user id —
   `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked;
-  written once the lock commits),
-  `AdministratorFlagChanged` (the administrator flag changed) and `SecurityNotificationRateLimited` (a
-  security-change email was dropped by the limiter). Logins, logouts and password changes are not recorded.
+  written once the lock commits) and `SecurityNotificationRateLimited` (a security-change email was dropped
+  by the limiter). Logins, logouts, password changes and administrator rights changes are not recorded.
 - **API log output**: the flat `LOG_DIRECTORY` variable selects the sink. With a value, every event goes to
   daily files `api-<yyyyMMdd>.log`, continued in `api-<yyyyMMdd>_N.log` past 64 MiB (Serilog file sink; the
   file name uses the container's local date, event timestamps are UTC) through a Serilog output template: one line with the UTC timestamp, the level, the

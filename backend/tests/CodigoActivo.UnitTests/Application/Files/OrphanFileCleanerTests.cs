@@ -4,7 +4,6 @@ using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -22,8 +21,7 @@ public sealed class OrphanFileCleanerTests
         sut = new OrphanFileCleaner(
             files,
             uow.RunsTransactionsOf<IReadOnlyList<StoredFile>>(),
-            storage,
-            NullLogger<OrphanFileCleaner>.Instance
+            storage
         );
     }
 
@@ -161,7 +159,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsyncSaveRefusedLogsAndKeepsContent()
+    public async Task DeleteOrphanedAsyncSaveRefusedSwallowsExceptionAndKeepsContent()
     {
         var orphan = NewFile();
         InUseFilesAre();

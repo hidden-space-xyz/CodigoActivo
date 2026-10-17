@@ -18,6 +18,7 @@ public sealed class EmailOutboxDelivererTests
     private readonly RecordingEmailSender transport = new();
     private readonly TestClock clock = new() { UtcNow = Now };
     private readonly EmailQueueOptions options = new();
+    private readonly EmailGuardOptions guard = new();
 
     private static EmailBatch Batch(params string[] addresses)
     {
@@ -58,6 +59,7 @@ public sealed class EmailOutboxDelivererTests
             transport,
             protector,
             options,
+            guard,
             clock,
             logger ?? NullLogger<EmailOutboxDeliverer>.Instance
         );
@@ -157,6 +159,26 @@ public sealed class EmailOutboxDelivererTests
     }
 
     [Fact]
+    public async Task DeliverDueAsyncRepeatedFailedAttemptsWarnOncePerAlertInterval()
+    {
+        var store = Store();
+        await store.TryEnqueueAsync(Batch("uno@example.test", "dos@example.test"), Ct());
+        transport.ThrowOnSend = new InvalidOperationException("Connection refused");
+        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var deliverer = Create(store, logger);
+
+        await deliverer.DeliverDueAsync(Ct());
+        clock.UtcNow = Now + guard.AlertInterval;
+        await deliverer.DeliverDueAsync(Ct());
+
+        store.Rescheduled.Should().HaveCount(4);
+        logger
+            .LevelEntries.Should()
+            .HaveCount(2)
+            .And.AllSatisfy(entry => entry.Level.Should().Be(LogLevel.Warning));
+    }
+
+    [Fact]
     public async Task DeliverDueAsyncSendTimesOutCountsAsAFailedAttempt()
     {
         var store = Store();
@@ -168,6 +190,7 @@ public sealed class EmailOutboxDelivererTests
             blocking,
             protector,
             options,
+            guard,
             clock,
             NullLogger<EmailOutboxDeliverer>.Instance
         );
@@ -212,6 +235,7 @@ public sealed class EmailOutboxDelivererTests
             transport,
             new EmailOutboxProtector(provider),
             options,
+            guard,
             clock,
             NullLogger<EmailOutboxDeliverer>.Instance
         );
@@ -325,6 +349,7 @@ public sealed class EmailOutboxDelivererTests
             transport,
             shared,
             options,
+            guard,
             clock,
             NullLogger<EmailOutboxDeliverer>.Instance
         );
@@ -394,6 +419,7 @@ public sealed class EmailOutboxDelivererTests
             gate,
             protector,
             options,
+            guard,
             clock,
             NullLogger<EmailOutboxDeliverer>.Instance
         );

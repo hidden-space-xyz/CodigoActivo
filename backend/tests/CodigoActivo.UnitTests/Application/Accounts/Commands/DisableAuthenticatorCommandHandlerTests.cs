@@ -43,8 +43,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
                     clock,
                     composer,
                     NullLogger<AccountSecurityNotifier>.Instance
-                ),
-                NullLogger<AccountSecurityNotifications>.Instance
+                )
             )
         );
         sut = new DisableAuthenticatorCommandHandler(

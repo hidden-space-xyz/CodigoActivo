@@ -11,16 +11,6 @@ public enum EmailGuardAlert
     None,
 
     /// <summary>
-    /// Selects the recipient throttled option.
-    /// </summary>
-    RecipientThrottled,
-
-    /// <summary>
-    /// Selects the global budget low option.
-    /// </summary>
-    GlobalBudgetLow,
-
-    /// <summary>
     /// Selects the global budget exhausted option.
     /// </summary>
     GlobalBudgetExhausted,

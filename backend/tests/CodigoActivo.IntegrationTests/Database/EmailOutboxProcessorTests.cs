@@ -24,6 +24,7 @@ public sealed class EmailOutboxProcessorTests(CodigoActivoWebAppFactory factory)
     public async Task ExecuteAsyncStoredEmailIsDeliveredByTheHostedWorkerAndLeavesTheOutboxEmpty()
     {
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(50) };
+        var guard = new EmailGuardOptions();
         var signal = new EmailOutboxSignal();
         var protector = Factory.Services.GetRequiredService<EmailOutboxProtector>();
         var store = new EmailOutboxStore(
@@ -40,16 +41,19 @@ public sealed class EmailOutboxProcessorTests(CodigoActivoWebAppFactory factory)
                 transport,
                 protector,
                 options,
+                guard,
                 Factory.Clock,
                 NullLogger<EmailOutboxDeliverer>.Instance
             ),
             signal,
             options,
+            guard,
+            Factory.Clock,
             NullLogger<EmailOutboxProcessor>.Instance
         );
         var sender = new ThrottledEmailSender(
             store,
-            new EmailGuardOptions(),
+            guard,
             options,
             Factory.Clock,
             NullLogger<ThrottledEmailSender>.Instance
