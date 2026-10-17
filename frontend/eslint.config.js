@@ -250,6 +250,8 @@ export default withVueTs(
             '/^pages\\.cookiePolicy\\.used\\.(kinds|session|twoFactor|csrf|theme|staleBuild)\\./u',
             '/^pages\\.cookiePolicy\\.manage\\.(chrome|firefox|safariIos|safariMac|edge)$/u',
             '/^pages\\.admin\\.eventRoster\\.rolePlural/u',
+            '/^pages\\.admin\\.diagnostics\\.levels\\./u',
+            '/^pages\\.admin\\.audit\\.(actions|actorTypes|entityTypes|outcomes|codes|detailNames|detailValues)\\./u',
             '/^entities\\.event\\.status\\./u',
             '/^entities\\.user\\.gender\\./u',
             '/^entities\\.user\\.person\\./u',

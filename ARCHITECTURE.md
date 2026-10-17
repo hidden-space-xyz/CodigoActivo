@@ -364,7 +364,7 @@ expose query keys (`xKeys`), `queryOptions` factories (`xQueries`), paged source
 `usePagedList`, and `mutationOptions` factories (`xMutations`) that list the keys they refresh in
 `meta.invalidates`; the query client invalidates them after a successful mutation, and a page adds keys of
 another slice with `alsoInvalidates`. Reports read by a single page (event statistics, attendees, ratings,
-badges, roster and dashboard analytics) live in that page's `api` segment.
+badges, roster, dashboard analytics and the diagnostic and audit logs) live in that page's `api` segment.
 
 Person field rules mirror the backend `User` rules in one place, `entities/user`: `usePersonForm` (and the
 `parseIndependentPerson`/`parseDependentPerson` functions behind it) validates and normalizes an independent

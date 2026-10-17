@@ -200,6 +200,12 @@ export const routes: readonly RouteRecordRaw[] = [
   adminRoute('/admin/users', 'admin-users', () =>
     import('@/pages/admin/users').then((m) => m.UsersPage),
   ),
+  adminRoute('/admin/diagnostics', 'admin-diagnostics', () =>
+    import('@/pages/admin/diagnostics').then((m) => m.DiagnosticsPage),
+  ),
+  adminRoute('/admin/audit', 'admin-audit', () =>
+    import('@/pages/admin/audit').then((m) => m.AuditPage),
+  ),
   adminRoute('/admin/catalogs', 'admin-catalogs', () =>
     import('@/pages/admin/catalogs').then((m) => m.CatalogsPage),
   ),

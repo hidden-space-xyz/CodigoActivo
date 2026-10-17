@@ -45,6 +45,8 @@ describe('AdminShell', () => {
       '/admin/partners',
       '/admin/resources',
       '/admin/users',
+      '/admin/diagnostics',
+      '/admin/audit',
       '/admin/catalogs',
     ])
     expect(wrapper.find('.admin__sidebar .admin__link--active').text()).toBe(

@@ -6,6 +6,7 @@ import {
   formatDateRange,
   formatDateTime,
   formatDateTimeRange,
+  formatDateTimeSeconds,
   formatTimeRange,
   parseDateOnly,
   toDateOnly,
@@ -62,6 +63,18 @@ describe('ageFrom', () => {
     expect(ageFrom(undefined)).toBeNull()
     expect(ageFrom('garbage')).toBeNull()
     expect(ageFrom(new Date('invalid'))).toBeNull()
+  })
+})
+
+describe('formatDateTimeSeconds', () => {
+  it('formats a timestamp with medium date and time with seconds', () => {
+    expect(formatDateTimeSeconds('2025-01-15T10:30:05')).toBe('15 ene 2025, 10:30:05')
+  })
+
+  it('returns a dash for missing or invalid values', () => {
+    expect(formatDateTimeSeconds(null)).toBe('—')
+    expect(formatDateTimeSeconds('')).toBe('—')
+    expect(formatDateTimeSeconds('nope')).toBe('—')
   })
 })
 
