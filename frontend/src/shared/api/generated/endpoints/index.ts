@@ -3,6 +3,7 @@ export * from './auth/auth';
 export * from './emails/emails';
 export * from './events/events';
 export * from './files/files';
+export * from './logs/logs';
 export * from './me/me';
 export * from './news/news';
 export * from './partners/partners';

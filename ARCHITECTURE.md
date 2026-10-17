@@ -204,9 +204,12 @@ the read model depends on no feature.
 Queries read the database through `IReadStore`: no-tracking `IQueryable` sources of read rows
 (`Application/Abstractions/Querying/ReadModel`) that `CodigoActivoReadDbContext` maps onto the same tables,
 excluded from migrations. They project to response shapes in the database, materialize through
-`IQueryExecutor`, and never depend on repositories or domain entities. The one exception is the dashboard
+`IQueryExecutor`, and never depend on repositories or domain entities. There are two exceptions: the dashboard
 port `IDashboardCountsReader` (`Application/Reports`, plain SQL in `Infrastructure/Reports`), which counts
-whole tables in one round trip and creation times per chart bucket with `width_bucket`. A query that may be
+whole tables in one round trip and creation times per chart bucket with `width_bucket`, and the log port
+`ILogEntryReader` (`Application/Logs`, `Infrastructure/Logs/LogEntryReader`), which reads the partitioned log
+tables through read rows of its own in the read context, filters them on their trigram, containment and B-tree
+indexes and joins the names of the users an audit entry mentions. A query that may be
 cached implements `ICachedQuery` (duration, tags and key) and `CachingQueryDecorator` keeps its result in
 `HybridCache`; only immutable catalogs and expensive non-personal aggregates do. Queries never mutate, commit or
 invalidate caches.

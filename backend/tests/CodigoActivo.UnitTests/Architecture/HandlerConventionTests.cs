@@ -11,6 +11,7 @@ using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Emails.Commands;
+using CodigoActivo.Application.Logs;
 using CodigoActivo.Application.Reports;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -40,6 +41,7 @@ public sealed class HandlerConventionTests
         typeof(IReadStore),
         typeof(IQueryExecutor),
         typeof(IDashboardCountsReader),
+        typeof(ILogEntryReader),
     ];
 
     private static List<(Type Handler, Type Contract)> HandlerImplementations()

@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Auditing;
+using CodigoActivo.Application.Logs;
 using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Composition.Persistence;
 using CodigoActivo.Infrastructure.Logs;
@@ -11,8 +12,8 @@ using Serilog.Debugging;
 namespace CodigoActivo.Composition.Logs;
 
 /// <summary>
-/// Registers the log tables: their own connections, the partition maintenance, the audit log and
-/// the provider that stores the events of the host.
+/// Registers the log tables: their own connections, the partition maintenance, the audit log, the
+/// reader of both logs and the provider that stores the events of the host.
 /// </summary>
 public static class LogsRegistration
 {
@@ -33,6 +34,7 @@ public static class LogsRegistration
         services.AddSingleton(_ => new LogDatabase(connectionString));
         services.AddSingleton<LogPartitionMaintainer>();
         services.AddSingleton<IAuditTrail, SerilogAuditTrail>();
+        services.AddScoped<ILogEntryReader, LogEntryReader>();
         services.AddHostedService<LogRetentionWorker>();
         return services;
     }

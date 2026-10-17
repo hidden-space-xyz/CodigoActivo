@@ -103,6 +103,39 @@ public sealed class HttpUrlAttribute : ValidationAttribute
 }
 
 /// <summary>
+/// Accepts an IPv4 address in dotted-quad notation or an IPv6 address, without a port, a prefix
+/// length or a zone.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
+public sealed class IpAddressAttribute : ValidationAttribute
+{
+    /// <summary>
+    /// Identifies the longest text an IPv6 address can take.
+    /// </summary>
+    public const int MaxLength = 45;
+
+    /// <inheritdoc />
+    public override bool IsValid(object? value)
+    {
+        if (value is null)
+        {
+            return true;
+        }
+
+        return value is string text
+            && text.Length <= MaxLength
+            && text.All(character => char.IsAsciiHexDigit(character) || character is '.' or ':')
+            && System.Net.IPAddress.TryParse(text, out var address)
+            && (
+                address.AddressFamily is System.Net.Sockets.AddressFamily.InterNetworkV6
+                    ? text.Contains(':', StringComparison.Ordinal)
+                    : !text.Contains(':', StringComparison.Ordinal)
+                        && text.Count(character => character == '.') == 3
+            );
+    }
+}
+
+/// <summary>
 /// Accepts a date that is set and is not after the current day, which <see cref="MessageValidator"/>
 /// supplies in <see cref="ValidationContext.Items"/> under <see cref="MessageValidator.TodayKey"/>.
 /// </summary>

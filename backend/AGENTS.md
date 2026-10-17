@@ -41,7 +41,8 @@ Domain + Application + Infrastructure <- Composition <- API
   standard attributes only, plus the catalog membership check through `CatalogIdentifiers`, and map themselves to
   the command.
 - Queries read only through `IReadStore` rows and `IQueryExecutor` (the dashboard port
-  `IDashboardCountsReader` is the one exception), never through repositories or domain entities. They never
+  `IDashboardCountsReader` and the log port `ILogEntryReader` are the exceptions), never through repositories
+  or domain entities. They never
   mutate, commit, invalidate caches or send email; a cacheable query implements `ICachedQuery` and never
   touches `HybridCache` itself.
 - Commands use repositories and leave the commit to the unit of work decorator; they save on their own only to

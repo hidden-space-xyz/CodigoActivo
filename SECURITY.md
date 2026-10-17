@@ -454,6 +454,9 @@ recorded, and the scheduled purges are recorded only when they removed something
 foreign key, so an erased account's entries remain until their 60-day retention ends; they are not part of
 its legal copy.
 
+Only administrators read either log: `GET /api/logs/diagnostics`, `/api/logs/diagnostics/{id}` and
+`/api/logs/audit` require the administrator role and share the report rate limit.
+
 ### Production configuration and secrets
 
 Production refuses to start with weak secrets, a non-public or non-HTTPS `APP_BASE_URL` or unencrypted SMTP;
