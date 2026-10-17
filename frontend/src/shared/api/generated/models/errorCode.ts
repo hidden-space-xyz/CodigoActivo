@@ -44,6 +44,7 @@ export const ErrorCode = {
   EventTermsSignatureNotFound: 'EventTermsSignatureNotFound',
   EventTermsDocumentDuplicated: 'EventTermsDocumentDuplicated',
   TermsDocumentNotFound: 'TermsDocumentNotFound',
+  DiagnosticLogEntryNotFound: 'DiagnosticLogEntryNotFound',
   TermsDocumentNameAlreadyExists: 'TermsDocumentNameAlreadyExists',
   TermsDocumentInUse: 'TermsDocumentInUse',
   ResourceNotFound: 'ResourceNotFound',

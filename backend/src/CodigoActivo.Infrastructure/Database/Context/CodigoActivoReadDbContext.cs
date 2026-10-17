@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Infrastructure.Logs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -90,6 +91,7 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         ConfigureEvents(modelBuilder);
         ConfigureActivities(modelBuilder);
         ConfigureContent(modelBuilder);
+        ConfigureLogs(modelBuilder);
     }
 
     private static EntityTypeBuilder<TRow> Table<TRow>(ModelBuilder modelBuilder, string name)
@@ -211,5 +213,23 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
 
         Table<PartnerRow>(modelBuilder, "partners").HasKey(p => p.Id);
         Table<FileRow>(modelBuilder, "files").HasKey(f => f.Id);
+    }
+
+    private static void ConfigureLogs(ModelBuilder modelBuilder)
+    {
+        var diagnostics = Table<DiagnosticLogRow>(modelBuilder, LogTable.Diagnostics.Name);
+        diagnostics.HasKey(r => new { r.OccurredAt, r.Id });
+        diagnostics.Property(r => r.Level).HasConversion<short>();
+        diagnostics.Property(r => r.Properties).HasColumnType("jsonb");
+
+        var audit = Table<AuditLogRow>(modelBuilder, LogTable.Audit.Name);
+        audit.HasKey(r => new { r.OccurredAt, r.Id });
+        audit.Property(r => r.ActorType).HasConversion<string>();
+        audit.Property(r => r.Action).HasConversion<string>();
+        audit.Property(r => r.EntityType).HasConversion<string>();
+        audit.Property(r => r.Outcome).HasConversion<string>();
+        audit.Property(r => r.ClientIp).HasColumnType("inet");
+        audit.Property(r => r.Related).HasColumnType("jsonb");
+        audit.Property(r => r.Details).HasColumnType("jsonb");
     }
 }

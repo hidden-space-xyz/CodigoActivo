@@ -237,6 +237,7 @@
     "EventTermsSignatureRequired": "Firma los documentos de términos y condiciones que lo requieren para apuntarte.",
     "EventTermsSignatureNotFound": "Esta decisión no tiene firma.",
     "TermsDocumentNotFound": "No se encontraron los términos y condiciones.",
+    "DiagnosticLogEntryNotFound": "Esta entrada del registro de diagnóstico ya no existe.",
     "TermsDocumentNameAlreadyExists": "Ya existen unos términos y condiciones con ese nombre.",
     "TermsDocumentInUse": "No se pueden eliminar estos términos y condiciones porque hay eventos que los usan o personas que ya los han aceptado.",
     "ResourceNotFound": "No se encontró el recurso.",

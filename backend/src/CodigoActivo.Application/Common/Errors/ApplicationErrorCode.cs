@@ -86,6 +86,11 @@ public enum ApplicationErrorCode
     TermsDocumentNotFound,
 
     /// <summary>
+    /// No diagnostic log entry has the requested identifier, or it is past its retention.
+    /// </summary>
+    DiagnosticLogEntryNotFound,
+
+    /// <summary>
     /// Selects the terms document name already exists option.
     /// </summary>
     TermsDocumentNameAlreadyExists,

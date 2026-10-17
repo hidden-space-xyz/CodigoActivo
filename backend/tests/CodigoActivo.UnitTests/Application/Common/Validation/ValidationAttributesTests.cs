@@ -292,6 +292,31 @@ public sealed class ValidationAttributesTests
     }
 
     [Theory]
+    [InlineData(null)]
+    [InlineData("203.0.113.9")]
+    [InlineData("2001:db8::1")]
+    [InlineData("2001:0DB8:0:0:0:0:0:1")]
+    [InlineData("::ffff:203.0.113.9")]
+    public void IsValidIpAddressAcceptsPlainAddresses(string? value)
+    {
+        new IpAddressAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("203.0.113")]
+    [InlineData("1")]
+    [InlineData("203.0.113.9:8080")]
+    [InlineData("203.0.113.0/24")]
+    [InlineData("fe80::1%eth0")]
+    [InlineData("[2001:db8::1]")]
+    [InlineData("localhost")]
+    public void IsValidIpAddressRejectsPortsPrefixesZonesAndShortForms(string value)
+    {
+        new IpAddressAttribute().IsValid(value).Should().BeFalse();
+    }
+
+    [Theory]
     [InlineData(2026, 7, 5)]
     [InlineData(2027, 1, 1)]
     public void GetValidationResultNotDefaultOrFutureDateFutureDateFails(

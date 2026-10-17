@@ -2600,6 +2600,256 @@
         }
       }
     },
+    "/api/logs/diagnostics": {
+      "get": {
+        "tags": [
+          "Logs"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/DiagnosticLevel"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "traceId",
+            "in": "query",
+            "schema": {
+              "pattern": "^[0-9a-fA-F]{32}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "occurredFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "occurredTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticLogEntryResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logs/diagnostics/{id}": {
+      "get": {
+        "tags": [
+          "Logs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticLogEntryDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logs/audit": {
+      "get": {
+        "tags": [
+          "Logs"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AuditActorType"
+            }
+          },
+          {
+            "name": "actorId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AuditAction"
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AuditEntityType"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AuditOutcome"
+            }
+          },
+          {
+            "name": "clientIp",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "traceId",
+            "in": "query",
+            "schema": {
+              "pattern": "^[0-9a-fA-F]{32}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "occurredFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "occurredTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogEntryResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/assigned-activities": {
       "get": {
         "tags": [
@@ -4560,6 +4810,248 @@
         },
         "additionalProperties": false
       },
+      "AuditAction": {
+        "enum": [
+          "BeginAuthenticatorSetup",
+          "ChangePassword",
+          "CompleteLogin",
+          "ConfirmAuthenticator",
+          "ConfirmEmailChange",
+          "DeleteOwnAccount",
+          "DisableAuthenticator",
+          "EndLoginChallenge",
+          "EndSession",
+          "ForgotPassword",
+          "Login",
+          "Register",
+          "RemoveExpiredSessions",
+          "RequestAccountDeletionCode",
+          "ResendTwoFactorCode",
+          "ResendVerification",
+          "ResetPassword",
+          "VerifyUser",
+          "AssignActivity",
+          "AssignHousehold",
+          "ChangeAssignmentRole",
+          "ChangeAssignmentStatus",
+          "CreateActivity",
+          "DeleteActivity",
+          "UnassignActivity",
+          "UpdateActivity",
+          "SendEmailToEventAttendees",
+          "SendEmailToUser",
+          "SendEmailToUsers",
+          "CreateEventCategoryType",
+          "DeleteEventCategoryType",
+          "UpdateEventCategoryType",
+          "CreateEvent",
+          "DeleteEvent",
+          "SetEventFeatured",
+          "UpdateEvent",
+          "CreateFile",
+          "DeleteFile",
+          "CreateNewsItem",
+          "DeleteNewsItem",
+          "SetNewsItemFeatured",
+          "UpdateNewsItem",
+          "CreatePartner",
+          "DeletePartner",
+          "UpdatePartner",
+          "CreateResource",
+          "DeleteResource",
+          "UpdateResource",
+          "CreateTermsDocument",
+          "DeleteTermsDocument",
+          "UpdateTermsDocument",
+          "AddChild",
+          "ChangeUserType",
+          "DeleteUser",
+          "PurgeDeletedAccounts",
+          "ResetTwoFactor",
+          "SetAdmin",
+          "UpdateUser"
+        ],
+        "type": "string"
+      },
+      "AuditActorType": {
+        "enum": [
+          "User",
+          "Anonymous",
+          "System"
+        ],
+        "type": "string"
+      },
+      "AuditDetailResponse": {
+        "required": [
+          "name",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AuditEntityType": {
+        "enum": [
+          "Activity",
+          "Event",
+          "EventCategoryType",
+          "NewsItem",
+          "Partner",
+          "Resource",
+          "StoredFile",
+          "TermsDocument",
+          "User"
+        ],
+        "type": "string"
+      },
+      "AuditLogEntryResponse": {
+        "required": [
+          "action",
+          "actorType",
+          "details",
+          "id",
+          "occurredAt",
+          "outcome",
+          "related"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorType": {
+            "$ref": "#/components/schemas/AuditActorType"
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "actorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientIp": {
+            "type": "string",
+            "nullable": true
+          },
+          "action": {
+            "$ref": "#/components/schemas/AuditAction"
+          },
+          "entityType": {
+            "$ref": "#/components/schemas/AuditEntityType"
+          },
+          "entityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "entityName": {
+            "type": "string",
+            "nullable": true
+          },
+          "related": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditRelatedEntityResponse"
+            }
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditDetailResponse"
+            }
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AuditOutcome"
+          },
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AuditLogEntryResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditLogEntryResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AuditOutcome": {
+        "enum": [
+          "Succeeded",
+          "Rejected",
+          "Failed"
+        ],
+        "type": "string"
+      },
+      "AuditRelatedEntityResponse": {
+        "required": [
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/AuditEntityType"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
       "AuthenticatorSetupRequest": {
         "required": [
           "currentPassword"
@@ -5249,6 +5741,135 @@
         },
         "additionalProperties": false
       },
+      "DiagnosticLevel": {
+        "enum": [
+          "Trace",
+          "Debug",
+          "Information",
+          "Warning",
+          "Error",
+          "Critical"
+        ],
+        "type": "string"
+      },
+      "DiagnosticLogEntryDetailResponse": {
+        "required": [
+          "category",
+          "id",
+          "level",
+          "message",
+          "occurredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "level": {
+            "$ref": "#/components/schemas/DiagnosticLevel"
+          },
+          "category": {
+            "type": "string"
+          },
+          "eventName": {
+            "type": "string",
+            "nullable": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "exception": {
+            "type": "string",
+            "nullable": true
+          },
+          "properties": {
+            "type": "string",
+            "nullable": true
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DiagnosticLogEntryResponse": {
+        "required": [
+          "category",
+          "hasException",
+          "id",
+          "level",
+          "message",
+          "occurredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "level": {
+            "$ref": "#/components/schemas/DiagnosticLevel"
+          },
+          "category": {
+            "type": "string"
+          },
+          "eventName": {
+            "type": "string",
+            "nullable": true
+          },
+          "message": {
+            "type": "string"
+          },
+          "hasException": {
+            "type": "boolean"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DiagnosticLogEntryResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticLogEntryResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "DisableAuthenticatorRequest": {
         "required": [
           "code",
@@ -5320,6 +5941,7 @@
           "EventTermsSignatureNotFound",
           "EventTermsDocumentDuplicated",
           "TermsDocumentNotFound",
+          "DiagnosticLogEntryNotFound",
           "TermsDocumentNameAlreadyExists",
           "TermsDocumentInUse",
           "ResourceNotFound",
@@ -8246,6 +8868,9 @@
     },
     {
       "name": "Files"
+    },
+    {
+      "name": "Logs"
     },
     {
       "name": "Me"
