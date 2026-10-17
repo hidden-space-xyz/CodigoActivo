@@ -25,19 +25,19 @@ policy. Networks: `frontend` (shared by `web` and `api`) and internal-only `back
 
 | Volume               | Contents                                                           |
 | -------------------- | ------------------------------------------------------------------ |
-| `db-data`            | PostgreSQL data                                                    |
+| `db-data`            | PostgreSQL data, including the API's diagnostic and audit logs     |
 | `api-files`          | Uploaded files                                                     |
 | `api-dataprotection` | ASP.NET Data Protection keys and the generated Ed25519 certificate |
 | `api-state`          | The immutable demo/normal deployment-mode choice                   |
-| `logs-api`           | Daily API log files                                                |
 | `logs-db`            | PostgreSQL log files, one per weekday                              |
 
-Every base service disables container logging (`logging: driver: none`); `docker compose logs` shows nothing.
-The API writes its log files into `logs-api` and purges them itself; PostgreSQL writes its own into `logs-db`
-and overwrites each one a week later. See [SECURITY.md](SECURITY.md#logging) for what is logged and how
-retention works. Do not include `logs-api` or `logs-db` in backups: they hold only diagnostics subject to that
-retention. Queued email is persisted in `db-data`, not held in memory; see
-[Email delivery](#email-delivery).
+The API stores its log in two PostgreSQL tables, which administrators read on the «Diagnóstico» and
+«Auditoría» pages and the API purges itself; PostgreSQL writes its own log files into `logs-db` and overwrites
+each one a week later. See [SECURITY.md](SECURITY.md#logging) for what is logged and how retention works. Do
+not include `logs-db` in backups: it holds only diagnostics subject to that retention. `db` and `web` disable
+container logging (`logging: driver: none`); `api` keeps a capped `json-file` log (2 files of 1 MB) for what
+cannot reach the database: a failed start and failures of the logging pipeline itself. Queued email is
+persisted in `db-data`, not held in memory; see [Email delivery](#email-delivery).
 
 Both application containers run as non-root, drop Linux capabilities, use `no-new-privileges` and have
 read-only root filesystems with explicit writable mounts. `db` also uses `no-new-privileges` and keeps only
@@ -68,7 +68,7 @@ openssl rand -base64 48 | tr -d '\r\n' > secrets/data_protection_certificate_pas
 touch secrets/smtp_password
 docker compose up -d
 docker compose ps
-docker compose exec api sh -c 'tail -n 100 /var/log/codigoactivo/api-*.log'
+docker compose logs api
 docker compose exec db sh -c 'tail -n 100 /var/log/postgresql/postgresql-*.log'
 ```
 
@@ -77,8 +77,8 @@ these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty)
 `SMTP_FROM_ADDRESS`, plus `SMTP_USERNAME` and its password in `secrets/smtp_password` when the server needs a
 login. See [Secrets](#secrets) for the file rules.
 
-A failed start writes its fatal event to the daily file in `logs-api`; with `logging: driver: none`, an `api`
-container that keeps restarting without a new file there means `LOG_DIRECTORY` is not writable.
+`docker compose logs api` shows only a failed start (its fatal event) and failures of the logging pipeline;
+everything else the API logs is on the «Diagnóstico» page.
 
 Every login is completed with a one-time code, emailed unless the user enrolled an authenticator app, so
 startup fails everywhere when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing or `SMTP_PORT` is outside 1-65535.
@@ -329,9 +329,8 @@ publishing SMTP on port `1025` and its inbox UI on port `8025` and points every 
 `.env` SMTP settings are ignored), exposes PostgreSQL on port `5432` and makes
 the backend network non-internal, and disables the API read-only root filesystem in favor of
 debugger-oriented privileges. Visual Studio uses the same Compose project through
-`backend/docker-compose.dcproj`. As a development-only exception to the log policy in
-[SECURITY.md](SECURITY.md#logging), the overlay clears `LOG_DIRECTORY`, so the API logs to the console,
-kept by Docker's `json-file` driver at 5 MB per file, two files.
+`backend/docker-compose.dcproj`. In Development the API also writes its log to the console, which the overlay
+keeps at 5 MB per file, two files.
 
 ## Releases and upgrades
 
@@ -365,7 +364,9 @@ version; rerunning a commit older than the latest release is rejected. Actions n
 repository contents, packages and security events.
 
 The production Compose file follows `latest`. Upgrade with `docker compose pull && docker compose up -d`, then
-review the log files in `logs-api` and `logs-db` (see [SECURITY.md](SECURITY.md#logging)) and smoke test.
+review `docker compose logs api`, the «Diagnóstico» page and `logs-db` (see [SECURITY.md](SECURITY.md#logging))
+and smoke test. A deployment upgraded from a release that logged to files keeps an orphaned `logs-api` volume;
+remove it with `docker volume rm <project>_logs-api` once its files are no longer needed.
 The PostgreSQL image does not upgrade `db-data` across major versions; changing from PostgreSQL 18 requires a
 dump and restore.
 
@@ -384,7 +385,8 @@ after it was taken, and its protected content depends on the Data Protection key
 queued. `db-data` also holds `deleted_accounts`, the blocked copies of erased accounts that the API purges two
 years after each deletion: a backup keeps a copy for as long as the backup itself is kept, so backup retention
 adds to those two years, and a restored backup brings expired copies back until the purge that runs 30 seconds
-after startup.
+after startup. The diagnostic and audit log tables live in `db-data` too: their 30 and 60 days of retention
+grow by the age of the backup, and a restored backup's expired entries are removed when the API starts.
 
 Before public exposure, verify TLS and forwarded headers, firewall access to port `8080`, SMTP delivery,
 database and volume recovery, registration and email verification, the two-step login, password reset,

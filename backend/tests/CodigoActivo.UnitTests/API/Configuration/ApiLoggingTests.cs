@@ -1,192 +1,146 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Configuration;
-using CodigoActivo.API.Diagnostics;
-using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Composition.Diagnostics;
+using CodigoActivo.Infrastructure.Logs;
+using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
+using NSubstitute;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.API.Configuration;
 
-public sealed class ApiLoggingTests : IDisposable
+public sealed class ApiLoggingTests
 {
+    private const string HostingCategory = "Microsoft.AspNetCore.Hosting.Diagnostics";
+    private const string DatabaseCommandCategory = "Microsoft.EntityFrameworkCore.Database.Command";
+    private const string SaveChangesCategory = "Microsoft.EntityFrameworkCore.Update";
+    private const string QueryCategory = "Microsoft.EntityFrameworkCore.Query";
     private const string DecoratorCategory =
-        "CodigoActivo.Application.Common.Messaging.LoggingCommandDecorator";
+        "CodigoActivo.Application.Common.Messaging.LoggingQueryDecorator";
 
-    private readonly string directory = Path.Join(
-        Path.GetTempPath(),
-        "codigoactivo-tests",
-        Guid.NewGuid().ToString("N")
-    );
-
-    private static IConfiguration Configuration(string? logDirectory)
-    {
-        return new ConfigurationBuilder()
-            .AddInMemoryCollection(
-                new Dictionary<string, string?> { ["LOG_DIRECTORY"] = logDirectory }
-            )
-            .Build();
-    }
-
-    private static IReadOnlyList<string> Providers(ApiLogging logging)
+    private static List<Type?> Providers(string environment)
     {
         var services = new ServiceCollection();
-        services.AddLogging(logging.Configure);
-        using var provider = services.BuildServiceProvider();
+        services.AddLogging(logging => ApiLogging.Configure(logging, Environment(environment)));
 
         return
         [
-            .. provider
-                .GetServices<ILoggerProvider>()
-                .Select(candidate => candidate.GetType().Name),
+            .. services
+                .Where(descriptor => descriptor.ServiceType == typeof(ILoggerProvider))
+                .Select(descriptor => descriptor.ImplementationType),
         ];
     }
 
-    private IReadOnlyList<string> WrittenLines()
+    private static IHostEnvironment Environment(string name)
     {
-        return
-        [
-            .. Directory
-                .EnumerateFiles(directory)
-                .SelectMany(File.ReadAllLines)
-                .Where(line => !string.IsNullOrWhiteSpace(line)),
-        ];
-    }
-
-    public void Dispose()
-    {
-        if (Directory.Exists(directory))
-        {
-            Directory.Delete(directory, recursive: true);
-        }
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void StartWithoutALogDirectoryWritesToTheConsoleOnly(string? configured)
-    {
-        using var logging = ApiLogging.Start(Configuration(configured));
-
-        Providers(logging).Should().ContainSingle().Which.Should().Be("ConsoleLoggerProvider");
+        var environment = Substitute.For<IHostEnvironment>();
+        environment.EnvironmentName.Returns(name);
+        return environment;
     }
 
     [Fact]
-    public void StartWithALogDirectoryWritesToTheFileOnly()
+    public void ConfigureInProductionStoresEventsOnlyInTheDatabase()
     {
-        using var logging = ApiLogging.Start(Configuration(directory));
-
-        Providers(logging).Should().ContainSingle().Which.Should().Be("SerilogLoggerProvider");
-    }
-
-    [Fact]
-    public void StartWithALogDirectoryThrowsWhenTheDailyFileCannotBeOpened()
-    {
-        Directory.CreateDirectory(Path.Join(directory, $"api-{DateTime.Now:yyyyMMdd}.log"));
-
-        var start = () => ApiLogging.Start(Configuration(directory));
-
-        start
+        Providers(Environments.Production)
             .Should()
-            .Throw<InvalidOperationException>("a process without any log must not keep running")
-            .WithMessage($"*{directory}*");
+            .ContainSingle()
+            .Which.Should()
+            .Be<DatabaseLoggerProvider>();
     }
 
     [Fact]
-    public void StartWithALogDirectoryWritesOneDailyFileNamedAfterTheDate()
+    public void ConfigureInDevelopmentAlsoWritesToTheConsole()
     {
-        using (var logging = ApiLogging.Start(Configuration(directory)))
-        {
-            logging.CreateLogger(DecoratorCategory).SlowUseCase("UpdateUserCommand", 5432);
-        }
-
-        var file = Directory.EnumerateFiles(directory).Should().ContainSingle().Subject;
-        Path.GetFileName(file)
+        Providers(Environments.Development)
             .Should()
-            .MatchRegex(@"^api-\d{8}\.log$", "the sink rolls once per day");
+            .BeEquivalentTo([typeof(DatabaseLoggerProvider), typeof(ConsoleLoggerProvider)]);
     }
 
     [Fact]
-    public void StartWithALogDirectoryWritesOneLinePerMessageWithTheUtcTimestampLevelAndCategory()
-    {
-        using (var logging = ApiLogging.Start(Configuration(directory)))
-        {
-            var logger = logging.CreateLogger(DecoratorCategory);
-            logger.SlowUseCase("UpdateUserCommand", 5432);
-            logger.SlowUseCase("DeleteUserCommand", 6543);
-        }
-
-        var lines = WrittenLines();
-        lines.Should().HaveCount(2);
-        lines[0]
-            .Should()
-            .MatchRegex(
-                @"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z WRN CodigoActivo\.Application\.Common\.Messaging\.LoggingCommandDecorator UpdateUserCommand took 5432 ms$"
-            );
-        lines[1].Should().EndWith("DeleteUserCommand took 6543 ms");
-    }
-
-    [Fact]
-    public void StartWithALogDirectoryKeepsTheFatalStartupEventWhenTheConfigurationSilencesEveryLevel()
+    public void ConfigureLetsTheConfiguredLevelsDecideWhatTheDatabaseKeeps()
     {
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(
-                new Dictionary<string, string?>
-                {
-                    [ApiLogging.DirectoryKey] = directory,
-                    ["Logging:LogLevel:Default"] = "None",
-                    [$"Logging:LogLevel:{LogCategories.Lifecycle}"] = "None",
-                }
-            )
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false)
             .Build();
+        configuration["Logging:LogLevel:Default"].Should().Be("Warning");
 
-        var failure = Failure();
-
-        using (var logging = ApiLogging.Start(configuration))
+        var services = new ServiceCollection();
+        services.AddSingleton(new LogDatabase("Host=127.0.0.1;Port=1;Database=unused"));
+        services.AddSingleton(Substitute.For<IClock>());
+        services.AddSingleton<LogPartitionMaintainer>();
+        services.AddLogging(logging =>
         {
-            logging.CreateLogger(LogCategories.Lifecycle).HostTerminatedUnexpectedly(failure);
-        }
+            logging.AddConfiguration(configuration.GetSection("Logging"));
+            ApiLogging.Configure(logging, Environment(Environments.Production));
+        });
+        using var provider = services.BuildServiceProvider();
+        var factory = provider.GetRequiredService<ILoggerFactory>();
 
-        var lines = WrittenLines();
-        lines[0]
+        factory
+            .CreateLogger(HostingCategory)
+            .IsEnabled(LogLevel.Information)
             .Should()
-            .EndWith($"FTL {LogCategories.Lifecycle} The API host terminated unexpectedly");
-        lines.Should().Contain("System.InvalidOperationException: boom");
+            .BeFalse("the request pipeline events carry the path and the query string");
+        factory
+            .CreateLogger(DatabaseCommandCategory)
+            .IsEnabled(LogLevel.Error)
+            .Should()
+            .BeFalse("a failed command is reported with its whole SQL statement");
+        factory
+            .CreateLogger(SaveChangesCategory)
+            .IsEnabled(LogLevel.Error)
+            .Should()
+            .BeFalse("a failed save is rethrown and recorded where it is caught");
+        factory
+            .CreateLogger(QueryCategory)
+            .IsEnabled(LogLevel.Warning)
+            .Should()
+            .BeFalse("query compilation hints are no failures");
+        factory
+            .CreateLogger("Microsoft.Hosting.Lifetime")
+            .IsEnabled(LogLevel.Information)
+            .Should()
+            .BeFalse("a start or a stop that succeeds is normal operation");
+        factory
+            .CreateLogger(LogCategories.Lifecycle)
+            .IsEnabled(LogLevel.Critical)
+            .Should()
+            .BeTrue();
+        factory.CreateLogger(DecoratorCategory).IsEnabled(LogLevel.Information).Should().BeFalse();
+        factory.CreateLogger(DecoratorCategory).IsEnabled(LogLevel.Warning).Should().BeTrue();
     }
 
     [Fact]
-    public void StartWithALogDirectoryWritesTheExceptionOfAnEventBelowItsMessage()
+    public void RecordFatalWithABuiltHostAlsoWritesThroughItsProviders()
     {
-        using (var logging = ApiLogging.Start(Configuration(directory)))
-        {
-            logging
-                .CreateLogger("CodigoActivo.API.Middlewares.GlobalExceptionHandler")
-                .UnhandledRequestException("DELETE", "api/users/{id}", Failure());
-        }
+        var recorder = new RecordingLoggerProvider();
+        using var host = new ServiceCollection()
+            .AddLogging(logging => logging.AddProvider(recorder))
+            .BuildServiceProvider();
+        using var logging = new ApiLogging();
 
-        var lines = WrittenLines();
-        lines[0]
-            .Should()
-            .EndWith(
-                "ERR CodigoActivo.API.Middlewares.GlobalExceptionHandler "
-                    + "Unhandled exception while processing DELETE api/users/{id}"
-            );
-        lines[1].Should().Be("System.InvalidOperationException: boom");
-        lines[2].Should().Be("second line");
+        logging.RecordFatal(new InvalidOperationException("boom"), host);
+
+        recorder
+            .Entries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be($"Critical {LogCategories.Lifecycle}: The API host terminated unexpectedly boom");
     }
 
-    private static InvalidOperationException Failure()
+    [Fact]
+    public void RecordFatalBeforeTheHostIsBuiltOnlyNeedsTheConsole()
     {
-        try
-        {
-            throw new InvalidOperationException("boom\nsecond line");
-        }
-        catch (InvalidOperationException ex)
-        {
-            return ex;
-        }
+        using var logging = new ApiLogging();
+
+        var record = () => logging.RecordFatal(new InvalidOperationException("boom"), host: null);
+
+        record.Should().NotThrow();
     }
 }

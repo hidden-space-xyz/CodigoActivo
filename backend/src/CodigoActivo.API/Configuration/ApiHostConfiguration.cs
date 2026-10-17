@@ -4,10 +4,10 @@ internal static class ApiHostConfiguration
 {
     private const string SecretsDirectory = "/run/secrets";
 
-    internal static void ConfigureApiHost(this WebApplicationBuilder builder, ApiLogging logging)
+    internal static void ConfigureApiHost(this WebApplicationBuilder builder)
     {
         builder.Configuration.AddKeyPerFile(SecretsDirectory, optional: true);
-        logging.Configure(builder.Logging);
+        ApiLogging.Configure(builder.Logging, builder.Environment);
         ConfigureAllowedHosts(builder);
         ConfigureKestrel(builder);
     }

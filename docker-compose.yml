@@ -80,13 +80,16 @@ services:
       - api-files:/app/files
       - api-dataprotection:/home/app/.aspnet/DataProtection-Keys
       - api-state:/app/state
-      - logs-api:/var/log/codigoactivo
     networks: [backend, frontend]
     read_only: true
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    logging: *logging
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "2"
 
   web:
     image: ghcr.io/hidden-space-xyz/codigoactivo-frontend:latest
@@ -121,7 +124,6 @@ volumes:
   api-files:
   api-dataprotection:
   api-state:
-  logs-api:
   logs-db:
 
 secrets:

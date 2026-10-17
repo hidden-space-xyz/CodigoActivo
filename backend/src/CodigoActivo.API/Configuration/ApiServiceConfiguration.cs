@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json.Serialization;
-using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Middlewares;
@@ -32,7 +31,6 @@ internal static class ApiServiceConfiguration
         builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
         builder.Services.AddScoped<SessionTicketValidator>();
         builder.Services.AddScoped<TwoFactorTicketValidator>();
-        LogFileRetentionCleaner.AddLogFileRetention(builder.Services, builder.Configuration);
 
         AddForwardedHeaders(builder.Services);
         AddControllers(builder.Services);

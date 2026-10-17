@@ -45,7 +45,7 @@ outbox for events or event sourcing.
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `CodigoActivo.Domain`         | Aggregates, typed identifiers, value objects, domain events and policies, repository ports, `Result`, `Error` and `DomainErrorCode` | None                                |
 | `CodigoActivo.Application`    | Use cases with their validated messages, response contracts, the read model, the use case decorators and the ports they need       | Domain                              |
-| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, file storage, Argon2id, HMAC-SHA256 one-time code hashing, TOTP (Otp.NET), the encrypted Data Protection key ring, SMTP, email templates and the clock | Domain, Application                 |
+| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, file storage, Argon2id, HMAC-SHA256 one-time code hashing, TOTP (Otp.NET), the encrypted Data Protection key ring, SMTP, email templates, the clock and the log tables with their Serilog sinks | Domain, Application                 |
 | `CodigoActivo.Composition`    | The composition root: registrations by feature, strict configuration-to-options mapping checked on start, data protection and database initialization | Domain, Application, Infrastructure |
 | `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, rate and concurrency limits, output caching, OpenAPI, SEO documents and startup | Composition                         |
 
@@ -170,7 +170,8 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
   `Files/`...) holds its EF configurations, repositories and background services; `Database/` keeps the
   contexts, conventions, catalogs, shared configurations and repository base, the unit of work, the query
   executor, seeders and migrations; `Communication/` holds the email delivery shared by every feature, and
-  `Caching/`, `Messaging/`, `Security/`, `Time/` and `Diagnostics/` the other technical services.
+  `Caching/`, `Messaging/`, `Security/`, `Time/`, `Diagnostics/` and `Logs/` (the partitioned log tables, their
+  own connection pool and the Serilog sinks that write them) the other technical services.
 
 ### Commands and queries
 

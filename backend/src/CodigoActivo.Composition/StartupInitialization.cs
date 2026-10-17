@@ -2,17 +2,20 @@ using CodigoActivo.Composition.Accounts;
 using CodigoActivo.Composition.Platform;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
+using CodigoActivo.Infrastructure.Logs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace CodigoActivo.Composition;
 
 /// <summary>
 /// Runs the start-up steps from a service scope: the configuration check, schema migrations,
-/// catalog seeding, the initial administrator, the deployment mode lock and the optional demo data.
+/// log table maintenance, catalog seeding, the initial administrator, the deployment mode lock and
+/// the optional demo data.
 /// </summary>
 public static class StartupInitialization
 {
@@ -51,6 +54,20 @@ public static class StartupInitialization
     public static Task MigrateDatabaseAsync(this IServiceProvider services, CancellationToken ct)
     {
         return services.GetRequiredService<CodigoActivoDbContext>().Database.MigrateAsync(ct);
+    }
+
+    /// <summary>
+    /// Prepares the partitions of the log tables and removes the expired entries. A failure is
+    /// logged and does not stop the start: nothing else depends on the log tables.
+    /// </summary>
+    /// <param name="services">Scoped service provider.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public static Task MaintainLogTablesAsync(this IServiceProvider services, CancellationToken ct)
+    {
+        return services
+            .GetRequiredService<LogPartitionMaintainer>()
+            .TryMaintainAsync(services.GetRequiredService<ILogger<LogPartitionMaintainer>>(), ct);
     }
 
     /// <summary>

@@ -183,6 +183,7 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresExtension("pg_trgm");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CodigoActivoDbContext).Assembly);
     }
 }

@@ -171,6 +171,8 @@ dist-ssr/
 *.tsbuildinfo
 
 logs/
+!backend/src/**/Logs/
+!backend/tests/**/Logs/
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*

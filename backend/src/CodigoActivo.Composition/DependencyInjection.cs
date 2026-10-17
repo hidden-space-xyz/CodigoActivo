@@ -3,6 +3,7 @@ using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Composition.Content;
 using CodigoActivo.Composition.Emails;
 using CodigoActivo.Composition.Events;
+using CodigoActivo.Composition.Logs;
 using CodigoActivo.Composition.Persistence;
 using CodigoActivo.Composition.Platform;
 using CodigoActivo.Composition.Users;
@@ -43,6 +44,7 @@ public static class DependencyInjection
         return services
             .AddPlatform(configuration, production)
             .AddPersistence(configuration)
+            .AddLogs(configuration)
             .AddAccounts(configuration)
             .AddUsers()
             .AddEvents()

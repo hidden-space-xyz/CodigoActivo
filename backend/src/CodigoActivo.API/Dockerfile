@@ -28,14 +28,11 @@ RUN dotnet publish src/CodigoActivo.API/CodigoActivo.API.csproj \
     -c $BUILD_CONFIGURATION -o /app/publish --no-restore -p:UseAppHost=false
 
 FROM base AS final
-ENV ASPNETCORE_ENVIRONMENT=Production \
-    LOG_DIRECTORY=/var/log/codigoactivo
+ENV ASPNETCORE_ENVIRONMENT=Production
 WORKDIR /app
 COPY --from=publish --chown=1654:1654 /app/publish ./
-RUN mkdir -p /app/files /app/state /home/app/.aspnet/DataProtection-Keys /var/log/codigoactivo \
-    && chown -R 1654:1654 /app/files /app/state /home/app \
-    && chown 1654:1654 /var/log/codigoactivo \
-    && chmod 700 /var/log/codigoactivo
+RUN mkdir -p /app/files /app/state /home/app/.aspnet/DataProtection-Keys \
+    && chown -R 1654:1654 /app/files /app/state /home/app
 USER 1654
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
     CMD wget -q -O /dev/null --header="X-Forwarded-Proto: https" http://127.0.0.1:8080/api/auth/csrf || exit 1
