@@ -13,6 +13,12 @@ export function formatNumber(value?: number | null): string {
   return numberFormatter.format(value)
 }
 
+/** Score rounded to one decimal in the Spanish locale (e.g. `4,3`), or `—` for missing or `NaN`. */
+export function formatScore(value?: number | null): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  return numberFormatter.format(Number(value.toFixed(1)))
+}
+
 /** Localized size in B, whole KB or one-decimal MB (1024-based); `—` for negative or NaN input. */
 export function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '—'

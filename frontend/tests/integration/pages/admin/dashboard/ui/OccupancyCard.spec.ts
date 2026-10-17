@@ -53,9 +53,9 @@ describe('OccupancyCard', () => {
       'Sin aforo',
     ])
     expect(rows.map((row) => row.find('.occupancy__pct').text())).toEqual(['75%', '100%', '—%'])
-    expect(rows[0]?.find('.occupancy__fill').attributes('style')).toContain('width: 75%')
-    expect(rows[1]?.find('.occupancy__fill').attributes('style')).toContain('width: 100%')
-    expect(rows[2]?.find('.occupancy__fill').attributes('style')).toContain('width: 0%')
+    expect(rows[0]?.find('.seat-meter__fill').attributes('style')).toContain('width: 75%')
+    expect(rows[1]?.find('.seat-meter__fill').attributes('style')).toContain('width: 100%')
+    expect(rows[2]?.find('.seat-meter__fill').attributes('style')).toContain('width: 0%')
   })
 
   it('expands and collapses the activities of an event', async () => {
@@ -73,7 +73,8 @@ describe('OccupancyCard', () => {
     )
     expect(activities[0]?.find('.occupancy__activity-pct').text()).toContain('100%')
     expect(activities[0]?.find('.occupancy__activity-plazas').text()).toBe('(10/10)')
-    expect(activities[0]?.find('.occupancy__fill').attributes('style')).toContain('width: 100%')
+    expect(activities[0]?.find('.seat-meter__fill').attributes('style')).toContain('width: 100%')
+    expect(activities[0]?.find('.seat-meter').classes()).toContain('seat-meter--sm')
     expect(activities[1]?.find('.occupancy__activity-pct').text()).toContain('—%')
 
     await firstRow()?.trigger('click')

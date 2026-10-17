@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
 import { useChartTheme } from '@/shared/lib/chart'
+import { formatNumber, formatScore } from '@/shared/lib/number'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
 import { DataState } from '@/shared/ui/data-state'
 
@@ -13,7 +14,9 @@ import { useDashboardRange } from '../model/use-dashboard-range'
 import AnalyticsChart from './AnalyticsChart.vue'
 import KpiCards from './KpiCards.vue'
 import OccupancyCard from './OccupancyCard.vue'
+import PendingSignupsCard from './PendingSignupsCard.vue'
 import RangeFilter from './RangeFilter.vue'
+import RoleCoverageCard from './RoleCoverageCard.vue'
 
 const { t } = useI18n()
 const { preset, customRange, range, setPreset, setCustomRange } = useDashboardRange()
@@ -22,85 +25,35 @@ const { data, isLoading, isError, isFetching } = useQuery(() =>
 )
 const { palette } = useChartTheme()
 
-const granularity = computed(() => data.value?.granularity ?? 'month')
-
-const chartOptions = computed(() => {
+const view = computed(() => {
+  const d = data.value
+  if (!d) return null
   const p = palette.value
   return {
-    userGrowth: charts.areaOptions(p),
-    inscriptions: charts.barOptions(p, true),
-    content: charts.barOptions(p, false),
-    calendar: charts.barOptions(p, false),
-    usersByType: charts.doughnutOptions(p, t),
-    audience: charts.doughnutOptions(p, t),
-    participantsByGender: charts.doughnutOptions(p, t),
-    categories: charts.doughnutOptions(p, t),
+    newUsers: charts.timeSeriesChart(d.newUsers, d.granularity, p, charts.USER_TYPE_STYLE, t),
+    inscriptions: charts.timeSeriesChart(
+      d.inscriptions,
+      d.granularity,
+      p,
+      charts.INSCRIPTION_STATUS_STYLE,
+      t,
+    ),
+    topEvents: charts.topEventsChart(d.topEvents, p, t),
+    satisfaction: charts.satisfactionChart(d.satisfaction, p, t),
+    categoryDemand: charts.categoryDemandChart(d.categoryDemand, p, t),
+    participantProfile: charts.participantProfileChart(d.participantProfile, p, t),
+    recurrence: charts.recurrenceChart(d.recurrence, p, t),
   }
 })
 
-const view = computed(() => {
-  const p = palette.value
-  const g = granularity.value
-  const d = data.value
-  const o = chartOptions.value
-  const topEvents = d?.topEvents ?? []
-  return {
-    userGrowth: {
-      data: charts.stackedAreaData(d?.userGrowth, g, p, charts.USER_TYPE_STYLE, t),
-      options: o.userGrowth,
-      empty: !charts.hasSeriesData(d?.userGrowth),
-    },
-    inscriptions: {
-      data: charts.barSeriesData(d?.inscriptions, g, p, charts.INSCRIPTION_STATUS_STYLE, t),
-      options: o.inscriptions,
-      empty: !charts.hasSeriesData(d?.inscriptions),
-    },
-    content: {
-      data: charts.barSeriesData(d?.contentPublished, g, p, charts.CONTENT_STYLE, t),
-      options: o.content,
-      empty: !charts.hasSeriesData(d?.contentPublished),
-    },
-    calendar: {
-      data: charts.barSeriesData(d?.eventsCalendar, 'month', p, charts.CALENDAR_STYLE, t),
-      options: o.calendar,
-      empty: !charts.hasSeriesData(d?.eventsCalendar),
-    },
-    usersByType: {
-      data: charts.doughnutData(d?.usersByType, p, t, charts.USER_TYPE_STYLE),
-      options: o.usersByType,
-      empty: !charts.hasSliceData(d?.usersByType),
-    },
-    audience: {
-      data: charts.doughnutData(d?.audienceComposition, p, t, charts.AUDIENCE_STYLE),
-      options: o.audience,
-      empty: !charts.hasSliceData(d?.audienceComposition),
-    },
-    participantsByGender: {
-      data: charts.doughnutData(d?.participantsByGender, p, t, charts.GENDER_STYLE),
-      options: o.participantsByGender,
-      empty: !charts.hasSliceData(d?.participantsByGender),
-    },
-    categories: {
-      data: charts.doughnutData(d?.eventsByCategory, p, t),
-      options: o.categories,
-      empty: !charts.hasSliceData(d?.eventsByCategory),
-    },
-    topEvents: {
-      data: charts.rankingBarData(
-        topEvents.map((event) => charts.wrapLabel(event.title)),
-        topEvents.map((event) => event.confirmed),
-        p.orange,
-        p,
-        t,
-      ),
-      options: charts.rankingOptions(
-        p,
-        topEvents.map((event) => event.title),
-        t,
-      ),
-      empty: topEvents.length === 0,
-    },
-  }
+const satisfactionSubtitle = computed(() => {
+  const satisfaction = data.value?.satisfaction
+  if (satisfaction?.average == null) return t('pages.admin.dashboard.charts.satisfaction.subtitle')
+  return t(
+    'pages.admin.dashboard.charts.satisfaction.summary',
+    { average: formatScore(satisfaction.average), n: formatNumber(satisfaction.scored) },
+    satisfaction.scored,
+  )
 })
 </script>
 
@@ -126,117 +79,101 @@ const view = computed(() => {
       :empty="false"
       :error-text="$t('pages.admin.dashboard.error')"
     >
-      <div v-if="data" class="dashboard" :class="{ 'dashboard--refetching': isFetching }">
+      <div v-if="data && view" class="dashboard" :class="{ 'dashboard--refetching': isFetching }">
         <KpiCards :kpis="data.kpis" />
 
-        <div class="dashboard__grid">
-          <div class="g-7">
-            <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.userGrowth.title')"
-              :subtitle="$t('pages.admin.dashboard.charts.userGrowth.subtitle')"
-              type="line"
-              :data="view.userGrowth.data"
-              :options="view.userGrowth.options"
-              :height="280"
-              :empty="view.userGrowth.empty"
-            />
+        <section class="dashboard__section" aria-labelledby="dashboard-upcoming">
+          <header>
+            <h2 id="dashboard-upcoming" class="dashboard__section-title">
+              {{ $t('pages.admin.dashboard.sections.upcoming.title') }}
+            </h2>
+            <p class="dashboard__section-subtitle">
+              {{ $t('pages.admin.dashboard.sections.upcoming.subtitle') }}
+            </p>
+          </header>
+          <div class="dashboard__grid">
+            <div class="g-7">
+              <PendingSignupsCard :pending="data.pendingSignups" />
+            </div>
+            <div class="g-5">
+              <RoleCoverageCard :roles="data.roleCoverage" />
+            </div>
+            <div class="g-12">
+              <OccupancyCard :occupancy="data.occupancy" />
+            </div>
           </div>
-          <div class="g-5">
-            <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.inscriptions.title')"
-              :subtitle="$t('pages.admin.dashboard.charts.inscriptions.subtitle')"
-              type="bar"
-              :data="view.inscriptions.data"
-              :options="view.inscriptions.options"
-              :height="280"
-              :empty="view.inscriptions.empty"
-            />
-          </div>
+        </section>
 
-          <div class="g-7">
-            <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.topEvents.title')"
-              :subtitle="$t('pages.admin.dashboard.charts.topEvents.subtitle')"
-              type="bar"
-              :data="view.topEvents.data"
-              :options="view.topEvents.options"
-              :height="340"
-              :empty="view.topEvents.empty"
-            />
-          </div>
-          <div class="g-5">
-            <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.content.title')"
-              :subtitle="$t('pages.admin.dashboard.charts.content.subtitle')"
-              type="bar"
-              :data="view.content.data"
-              :options="view.content.options"
-              :height="340"
-              :empty="view.content.empty"
-            />
-          </div>
+        <section class="dashboard__section" aria-labelledby="dashboard-period">
+          <header>
+            <h2 id="dashboard-period" class="dashboard__section-title">
+              {{ $t('pages.admin.dashboard.sections.period.title') }}
+            </h2>
+            <p class="dashboard__section-subtitle">
+              {{ $t('pages.admin.dashboard.sections.period.subtitle') }}
+            </p>
+          </header>
+          <div class="dashboard__grid">
+            <div class="g-7">
+              <AnalyticsChart
+                :title="$t('pages.admin.dashboard.charts.newUsers.title')"
+                :subtitle="$t('pages.admin.dashboard.charts.newUsers.subtitle')"
+                :chart="view.newUsers"
+                :height="280"
+              />
+            </div>
+            <div class="g-5">
+              <AnalyticsChart
+                :title="$t('pages.admin.dashboard.charts.inscriptions.title')"
+                :subtitle="$t('pages.admin.dashboard.charts.inscriptions.subtitle')"
+                :chart="view.inscriptions"
+                :height="280"
+              />
+            </div>
 
-          <div class="g-4">
-            <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.usersByType.title')"
-              :subtitle="$t('pages.admin.dashboard.charts.currentComposition')"
-              type="doughnut"
-              :data="view.usersByType.data"
-              :options="view.usersByType.options"
-              :height="240"
-              :empty="view.usersByType.empty"
-            />
-          </div>
-          <div class="g-4">
-            <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.audience.title')"
-              :subtitle="$t('pages.admin.dashboard.charts.currentComposition')"
-              type="doughnut"
-              :data="view.audience.data"
-              :options="view.audience.options"
-              :height="240"
-              :empty="view.audience.empty"
-            />
-          </div>
-          <div class="g-4">
-            <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.participantsByGender.title')"
-              :subtitle="$t('pages.admin.dashboard.charts.currentComposition')"
-              type="doughnut"
-              :data="view.participantsByGender.data"
-              :options="view.participantsByGender.options"
-              :height="240"
-              :empty="view.participantsByGender.empty"
-            />
-          </div>
+            <div class="g-7">
+              <AnalyticsChart
+                :title="$t('pages.admin.dashboard.charts.topEvents.title')"
+                :subtitle="$t('pages.admin.dashboard.charts.topEvents.subtitle')"
+                :chart="view.topEvents"
+                :height="380"
+              />
+            </div>
+            <div class="g-5">
+              <AnalyticsChart
+                :title="$t('pages.admin.dashboard.charts.satisfaction.title')"
+                :subtitle="satisfactionSubtitle"
+                :chart="view.satisfaction"
+                :height="380"
+              />
+            </div>
 
-          <div class="g-5">
-            <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.categories.title')"
-              :subtitle="$t('pages.admin.dashboard.charts.currentComposition')"
-              type="doughnut"
-              :data="view.categories.data"
-              :options="view.categories.options"
-              :height="300"
-              :empty="view.categories.empty"
-            />
+            <div class="g-4">
+              <AnalyticsChart
+                :title="$t('pages.admin.dashboard.charts.categoryDemand.title')"
+                :subtitle="$t('pages.admin.dashboard.charts.categoryDemand.subtitle')"
+                :chart="view.categoryDemand"
+                :height="300"
+              />
+            </div>
+            <div class="g-4">
+              <AnalyticsChart
+                :title="$t('pages.admin.dashboard.charts.participantProfile.title')"
+                :subtitle="$t('pages.admin.dashboard.charts.participantProfile.subtitle')"
+                :chart="view.participantProfile"
+                :height="300"
+              />
+            </div>
+            <div class="g-4">
+              <AnalyticsChart
+                :title="$t('pages.admin.dashboard.charts.recurrence.title')"
+                :subtitle="$t('pages.admin.dashboard.charts.recurrence.subtitle')"
+                :chart="view.recurrence"
+                :height="300"
+              />
+            </div>
           </div>
-          <div class="g-7">
-            <AnalyticsChart
-              :title="$t('pages.admin.dashboard.charts.calendar.title')"
-              :subtitle="$t('pages.admin.dashboard.charts.calendar.subtitle')"
-              type="bar"
-              :data="view.calendar.data"
-              :options="view.calendar.options"
-              :height="300"
-              :empty="view.calendar.empty"
-            />
-          </div>
-
-          <div class="g-12">
-            <OccupancyCard :occupancy="data.occupancy" />
-          </div>
-        </div>
+        </section>
       </div>
     </DataState>
   </div>
@@ -246,12 +183,32 @@ const view = computed(() => {
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
   transition: opacity 0.2s ease;
 }
 
 .dashboard--refetching {
   opacity: 0.72;
+}
+
+.dashboard__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dashboard__section-title {
+  font-family: var(--ca-font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ca-text-bright);
+  letter-spacing: -0.01em;
+}
+
+.dashboard__section-subtitle {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--ca-text-muted);
 }
 
 .dashboard__grid {

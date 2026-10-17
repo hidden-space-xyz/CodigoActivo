@@ -57,6 +57,11 @@ const TILES: readonly TileMeta[] = [
     icon: 'calendar',
   },
   {
+    key: 'activities',
+    label: t('pages.admin.dashboard.kpi.activities'),
+    icon: 'clock',
+  },
+  {
     key: 'resources',
     label: t('pages.admin.dashboard.kpi.resources'),
     icon: 'book',
@@ -65,6 +70,11 @@ const TILES: readonly TileMeta[] = [
     key: 'news',
     label: t('pages.admin.dashboard.kpi.news'),
     icon: 'megaphone',
+  },
+  {
+    key: 'partners',
+    label: t('pages.admin.dashboard.kpi.partners'),
+    icon: 'building',
   },
 ]
 
@@ -125,8 +135,20 @@ const tiles = computed(() => {
 <style scoped>
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .kpi-card {

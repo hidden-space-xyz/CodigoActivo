@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatFileSize, formatNumber, formatSignedPercent } from '@/shared/lib/number'
+import { formatFileSize, formatNumber, formatScore, formatSignedPercent } from '@/shared/lib/number'
 
 describe('formatNumber', () => {
   it('uses Spanish thousands separators', () => {
@@ -12,6 +12,20 @@ describe('formatNumber', () => {
     expect(formatNumber(null)).toBe('—')
     expect(formatNumber(undefined)).toBe('—')
     expect(formatNumber(Number.NaN)).toBe('—')
+  })
+})
+
+describe('formatScore', () => {
+  it('rounds to one decimal with a Spanish decimal comma', () => {
+    expect(formatScore(4.25)).toBe('4,3')
+    expect(formatScore(4.04)).toBe('4')
+    expect(formatScore(5)).toBe('5')
+  })
+
+  it('returns a dash for missing or NaN values', () => {
+    expect(formatScore(null)).toBe('—')
+    expect(formatScore(undefined)).toBe('—')
+    expect(formatScore(Number.NaN)).toBe('—')
   })
 })
 

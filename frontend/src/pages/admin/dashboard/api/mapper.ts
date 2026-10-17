@@ -1,15 +1,23 @@
 import type {
   DashboardAnalyticsResponse,
+  DashboardBreakdownResponse,
   DashboardSliceResponse,
   DashboardTimeSeriesResponse,
 } from '@/shared/api/generated/models'
 
-import type { DashboardAnalytics, Slice, TimeSeries } from '../model/types'
+import type { Breakdown, DashboardAnalytics, Slice, TimeSeries } from '../model/types'
 
 function toTimeSeries(series: DashboardTimeSeriesResponse): TimeSeries {
   return {
     buckets: series.buckets,
     series: series.series.map((set) => ({ key: set.key, values: set.values })),
+  }
+}
+
+function toBreakdown(breakdown: DashboardBreakdownResponse): Breakdown {
+  return {
+    groups: breakdown.groups,
+    series: breakdown.series.map((set) => ({ key: set.key, values: set.values })),
   }
 }
 
@@ -32,19 +40,43 @@ export function toDashboardAnalytics(analytics: DashboardAnalyticsResponse): Das
       inRange: kpi.inRange,
       previousRange: kpi.previousRange,
     })),
-    userGrowth: toTimeSeries(analytics.userGrowth),
+    newUsers: toTimeSeries(analytics.newUsers),
     inscriptions: toTimeSeries(analytics.inscriptions),
-    contentPublished: toTimeSeries(analytics.contentPublished),
-    eventsCalendar: toTimeSeries(analytics.eventsCalendar),
-    usersByType: analytics.usersByType.map(toSlice),
-    audienceComposition: analytics.audienceComposition.map(toSlice),
-    participantsByGender: analytics.participantsByGender.map(toSlice),
-    eventsByCategory: analytics.eventsByCategory.map(toSlice),
     topEvents: analytics.topEvents.map((event) => ({
       id: event.eventId,
       title: event.title,
       confirmed: event.confirmed,
+      seatsFilled: event.seatsFilled,
+      seatsDesired: event.seatsDesired,
     })),
+    pendingSignups: {
+      total: analytics.pendingSignups.total,
+      events: analytics.pendingSignups.events.map((event) => ({
+        id: event.eventId,
+        title: event.title,
+        pending: event.pending,
+        oldestRequestedAt: event.oldestRequestedAt,
+        nextActivityStartsAt: event.nextActivityStartsAt,
+      })),
+    },
+    roleCoverage: analytics.roleCoverage.map((role) => ({
+      key: role.key,
+      confirmed: role.confirmed,
+      desired: role.desired,
+    })),
+    participantProfile: toBreakdown(analytics.participantProfile),
+    categoryDemand: analytics.categoryDemand.map(toSlice),
+    recurrence: analytics.recurrence.map(toSlice),
+    satisfaction: {
+      average: analytics.satisfaction.average ?? null,
+      scored: analytics.satisfaction.scored,
+      events: analytics.satisfaction.events.map((event) => ({
+        id: event.eventId,
+        title: event.title,
+        average: event.average,
+        scored: event.scored,
+      })),
+    },
     occupancy: {
       confirmed: analytics.occupancy.confirmed,
       desired: analytics.occupancy.desired,

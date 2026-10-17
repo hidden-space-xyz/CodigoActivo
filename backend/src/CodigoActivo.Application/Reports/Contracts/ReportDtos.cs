@@ -275,12 +275,90 @@ public record DashboardTimeSeriesResponse(
 public record DashboardSliceResponse(string Key, string? Label, string? Color, int Count);
 
 /// <summary>
-/// Contains the dashboard top event data returned by the API.
+/// Groups of a breakdown, each with one value per series, such as people per age group and gender.
+/// </summary>
+/// <param name="Groups">Keys of the groups, in display order.</param>
+/// <param name="Series">One series per key, with a value per group in the order of <paramref name="Groups"/>.</param>
+public record DashboardBreakdownResponse(
+    IReadOnlyList<string> Groups,
+    IReadOnlyList<DashboardSeriesResponse> Series
+);
+
+/// <summary>
+/// An event of the ranking of confirmed signups in the activities of the range.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Title">The title value.</param>
-/// <param name="Confirmed">The confirmed value.</param>
-public record DashboardTopEventResponse(Guid EventId, string Title, int Confirmed);
+/// <param name="Confirmed">Confirmed signups in its activities of the range, in any role.</param>
+/// <param name="SeatsFilled">Seats those activities filled, counting each role up to its desired number.</param>
+/// <param name="SeatsDesired">Seats those activities wanted, summed over the roles with a desired number.</param>
+public record DashboardTopEventResponse(
+    Guid EventId,
+    string Title,
+    int Confirmed,
+    int SeatsFilled,
+    int SeatsDesired
+);
+
+/// <summary>
+/// Signups of an event still waiting for a decision in its upcoming activities.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
+/// <param name="Title">The title value.</param>
+/// <param name="Pending">Signups requested and not yet confirmed or denied.</param>
+/// <param name="OldestRequestedAt">When the oldest of them was requested.</param>
+/// <param name="NextActivityStartsAt">Start of the soonest activity with one of them.</param>
+public record DashboardPendingEventResponse(
+    Guid EventId,
+    string Title,
+    int Pending,
+    DateTimeOffset OldestRequestedAt,
+    DateTimeOffset NextActivityStartsAt
+);
+
+/// <summary>
+/// Signups waiting for a decision in upcoming activities, overall and per event.
+/// </summary>
+/// <param name="Total">Signups waiting across every upcoming activity.</param>
+/// <param name="Events">Events with any of them, the soonest activity first.</param>
+public record DashboardPendingSignupsResponse(
+    int Total,
+    IReadOnlyList<DashboardPendingEventResponse> Events
+);
+
+/// <summary>
+/// Seats of one role filled versus wanted across the upcoming activities.
+/// </summary>
+/// <param name="Key">Role: <c>leader</c>, <c>volunteer</c> or <c>participant</c>.</param>
+/// <param name="Confirmed">Seats filled by confirmed people, counting each activity up to its desired number.</param>
+/// <param name="Desired">Seats wanted, summed over the activities that set a desired number for the role.</param>
+public record DashboardRoleCoverageResponse(string Key, int Confirmed, int Desired);
+
+/// <summary>
+/// Mean score of one event that ended in the range.
+/// </summary>
+/// <param name="EventId">Identifier of the event.</param>
+/// <param name="Title">The title value.</param>
+/// <param name="Average">Mean of its scored ratings.</param>
+/// <param name="Scored">Number of its ratings that carry a score.</param>
+public record DashboardEventSatisfactionResponse(
+    Guid EventId,
+    string Title,
+    double Average,
+    int Scored
+);
+
+/// <summary>
+/// Scores of the events that ended in the range.
+/// </summary>
+/// <param name="Average">Mean of every scored rating of those events, or <see langword="null"/> without any.</param>
+/// <param name="Scored">Number of their ratings that carry a score.</param>
+/// <param name="Events">The latest of those events with a score, the most recent first.</param>
+public record DashboardSatisfactionResponse(
+    double? Average,
+    int Scored,
+    IReadOnlyList<DashboardEventSatisfactionResponse> Events
+);
 
 /// <summary>
 /// Contains the dashboard occupancy activity data returned by the API.
@@ -333,29 +411,29 @@ public record DashboardOccupancyResponse(
 /// <param name="RangeEnd">The range end value.</param>
 /// <param name="Granularity">The granularity value.</param>
 /// <param name="Kpis">The kpis value.</param>
-/// <param name="UserGrowth">The user growth value.</param>
+/// <param name="NewUsers">Accounts created in each bucket, per membership type.</param>
 /// <param name="Inscriptions">The inscriptions value.</param>
-/// <param name="ContentPublished">The content published value.</param>
-/// <param name="UsersByType">The users by type value.</param>
-/// <param name="AudienceComposition">The audience composition value.</param>
-/// <param name="ParticipantsByGender">The participants by gender value.</param>
-/// <param name="EventsByCategory">The events by category value.</param>
-/// <param name="TopEvents">The top events value.</param>
-/// <param name="EventsCalendar">The events calendar value.</param>
+/// <param name="TopEvents">Events with the most confirmed signups in their activities of the range.</param>
+/// <param name="PendingSignups">Signups waiting for a decision in upcoming activities, whatever the range.</param>
+/// <param name="RoleCoverage">Seats filled versus wanted per role in upcoming activities, whatever the range.</param>
+/// <param name="ParticipantProfile">Distinct people confirmed in activities of the range, per age group (on the last day of the range) and gender.</param>
+/// <param name="CategoryDemand">Confirmed signups in activities of the range per event category, the busiest first.</param>
+/// <param name="Recurrence">Distinct people confirmed in activities of the range, by how many events they joined.</param>
+/// <param name="Satisfaction">Scores of the events that ended in the range.</param>
 /// <param name="Occupancy">The occupancy value.</param>
 public record DashboardAnalyticsResponse(
     DateOnly RangeStart,
     DateOnly RangeEnd,
     string Granularity,
     IReadOnlyList<DashboardKpiResponse> Kpis,
-    DashboardTimeSeriesResponse UserGrowth,
+    DashboardTimeSeriesResponse NewUsers,
     DashboardTimeSeriesResponse Inscriptions,
-    DashboardTimeSeriesResponse ContentPublished,
-    IReadOnlyList<DashboardSliceResponse> UsersByType,
-    IReadOnlyList<DashboardSliceResponse> AudienceComposition,
-    IReadOnlyList<DashboardSliceResponse> ParticipantsByGender,
-    IReadOnlyList<DashboardSliceResponse> EventsByCategory,
     IReadOnlyList<DashboardTopEventResponse> TopEvents,
-    DashboardTimeSeriesResponse EventsCalendar,
+    DashboardPendingSignupsResponse PendingSignups,
+    IReadOnlyList<DashboardRoleCoverageResponse> RoleCoverage,
+    DashboardBreakdownResponse ParticipantProfile,
+    IReadOnlyList<DashboardSliceResponse> CategoryDemand,
+    IReadOnlyList<DashboardSliceResponse> Recurrence,
+    DashboardSatisfactionResponse Satisfaction,
     DashboardOccupancyResponse Occupancy
 );

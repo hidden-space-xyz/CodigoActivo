@@ -60,31 +60,6 @@ internal sealed class DashboardTimeline
     }
 
     /// <summary>
-    /// Lists the first day of every bucket between two days.
-    /// </summary>
-    /// <param name="start">First day.</param>
-    /// <param name="end">Last day.</param>
-    /// <param name="granularity">Bucket size: day, week or month.</param>
-    /// <returns>The first day of every bucket that holds a day of the range.</returns>
-    public static List<DateOnly> BucketsBetween(DateOnly start, DateOnly end, string granularity)
-    {
-        var buckets = new List<DateOnly>();
-        var cursor = BucketStart(start, granularity);
-        while (cursor <= end)
-        {
-            buckets.Add(cursor);
-            cursor = granularity switch
-            {
-                "day" => cursor.AddDays(1),
-                "week" => cursor.AddDays(7),
-                _ => cursor.AddMonths(1),
-            };
-        }
-
-        return buckets;
-    }
-
-    /// <summary>
     /// Counts what was created in each bucket of the window.
     /// </summary>
     /// <param name="key">Key of the series.</param>
@@ -93,28 +68,6 @@ internal sealed class DashboardTimeline
     public DashboardSeriesResponse Flow(string key, IEnumerable<IntervalCount> counts)
     {
         return new DashboardSeriesResponse(key, PerBucket(counts));
-    }
-
-    /// <summary>
-    /// Counts what existed at the end of each bucket of the window.
-    /// </summary>
-    /// <param name="key">Key of the series.</param>
-    /// <param name="counts">Rows created per interval.</param>
-    /// <returns>The series.</returns>
-    public DashboardSeriesResponse Cumulative(string key, IEnumerable<IntervalCount> counts)
-    {
-        var materialized = counts.ToList();
-        var running = materialized
-            .Where(count => count.Interval < FirstBucketInterval)
-            .Sum(count => count.Count);
-        var values = PerBucket(materialized);
-        for (var i = 0; i < values.Length; i++)
-        {
-            running += values[i];
-            values[i] = running;
-        }
-
-        return new DashboardSeriesResponse(key, values);
     }
 
     /// <summary>
@@ -135,6 +88,24 @@ internal sealed class DashboardTimeline
                 .Where(count => count.Interval == PreviousInterval)
                 .Sum(count => count.Count)
         );
+    }
+
+    private static List<DateOnly> BucketsBetween(DateOnly start, DateOnly end, string granularity)
+    {
+        var buckets = new List<DateOnly>();
+        var cursor = BucketStart(start, granularity);
+        while (cursor <= end)
+        {
+            buckets.Add(cursor);
+            cursor = granularity switch
+            {
+                "day" => cursor.AddDays(1),
+                "week" => cursor.AddDays(7),
+                _ => cursor.AddMonths(1),
+            };
+        }
+
+        return buckets;
     }
 
     private static DateOnly BucketStart(DateOnly date, string granularity)

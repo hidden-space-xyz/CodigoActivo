@@ -26,7 +26,7 @@ async function renderTiles() {
 }
 
 describe('KpiCards', () => {
-  it('renders the six fixed tiles in order with their totals', async () => {
+  it('renders the eight fixed tiles in order with their totals', async () => {
     const { tiles } = await renderTiles()
 
     expect(tiles.map((tile) => tile.find('.kpi-card__label').text())).toEqual([
@@ -34,14 +34,18 @@ describe('KpiCards', () => {
       t('pages.admin.dashboard.kpi.members'),
       t('pages.admin.dashboard.kpi.inscriptions'),
       t('pages.admin.dashboard.kpi.events'),
+      t('pages.admin.dashboard.kpi.activities'),
       t('pages.admin.dashboard.kpi.resources'),
       t('pages.admin.dashboard.kpi.news'),
+      t('pages.admin.dashboard.kpi.partners'),
     ])
     expect(tiles.map((tile) => tile.find('.kpi-card__value').text())).toEqual([
       '1200',
       '80',
       '500',
       '12',
+      '0',
+      '0',
       '0',
       '0',
     ])

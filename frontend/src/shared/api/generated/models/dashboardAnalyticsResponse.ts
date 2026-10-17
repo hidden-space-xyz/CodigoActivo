@@ -4,8 +4,12 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { DashboardBreakdownResponse } from './dashboardBreakdownResponse';
 import type { DashboardKpiResponse } from './dashboardKpiResponse';
 import type { DashboardOccupancyResponse } from './dashboardOccupancyResponse';
+import type { DashboardPendingSignupsResponse } from './dashboardPendingSignupsResponse';
+import type { DashboardRoleCoverageResponse } from './dashboardRoleCoverageResponse';
+import type { DashboardSatisfactionResponse } from './dashboardSatisfactionResponse';
 import type { DashboardSliceResponse } from './dashboardSliceResponse';
 import type { DashboardTimeSeriesResponse } from './dashboardTimeSeriesResponse';
 import type { DashboardTopEventResponse } from './dashboardTopEventResponse';
@@ -15,14 +19,14 @@ export interface DashboardAnalyticsResponse {
   rangeEnd: string;
   granularity: string;
   kpis: DashboardKpiResponse[];
-  userGrowth: DashboardTimeSeriesResponse;
+  newUsers: DashboardTimeSeriesResponse;
   inscriptions: DashboardTimeSeriesResponse;
-  contentPublished: DashboardTimeSeriesResponse;
-  usersByType: DashboardSliceResponse[];
-  audienceComposition: DashboardSliceResponse[];
-  participantsByGender: DashboardSliceResponse[];
-  eventsByCategory: DashboardSliceResponse[];
   topEvents: DashboardTopEventResponse[];
-  eventsCalendar: DashboardTimeSeriesResponse;
+  pendingSignups: DashboardPendingSignupsResponse;
+  roleCoverage: DashboardRoleCoverageResponse[];
+  participantProfile: DashboardBreakdownResponse;
+  categoryDemand: DashboardSliceResponse[];
+  recurrence: DashboardSliceResponse[];
+  satisfaction: DashboardSatisfactionResponse;
   occupancy: DashboardOccupancyResponse;
 }

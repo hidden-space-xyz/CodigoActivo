@@ -1198,10 +1198,20 @@
           "subtitle": "Crecimiento y actividad de la plataforma"
         },
         "error": "No se pudieron cargar las estadísticas.",
+        "sections": {
+          "upcoming": {
+            "title": "Próximas actividades",
+            "subtitle": "Situación actual; no depende del periodo seleccionado"
+          },
+          "period": {
+            "title": "En el periodo seleccionado",
+            "subtitle": "Altas, inscripciones y participación entre las fechas elegidas"
+          }
+        },
         "charts": {
-          "userGrowth": {
-            "title": "Crecimiento de usuarios",
-            "subtitle": "Total acumulado por tipo"
+          "newUsers": {
+            "title": "Altas de usuarios",
+            "subtitle": "Cuentas nuevas por tipo en cada intervalo"
           },
           "inscriptions": {
             "title": "Inscripciones a lo largo del tiempo",
@@ -1209,42 +1219,55 @@
           },
           "topEvents": {
             "title": "Eventos con más inscripciones",
-            "subtitle": "Confirmadas · histórico"
+            "subtitle": "Confirmadas en actividades del periodo · % de plazas cubiertas"
           },
-          "content": {
-            "title": "Publicación de contenido",
-            "subtitle": "Novedades y recursos publicados en el periodo"
+          "satisfaction": {
+            "title": "Satisfacción por evento",
+            "subtitle": "Puntuación media de los eventos terminados en el periodo",
+            "summary": "Media {average} / 5 · {n} valoración con puntuación | Media {average} / 5 · {n} valoraciones con puntuación"
           },
-          "usersByType": {
-            "title": "Usuarios por tipo"
+          "categoryDemand": {
+            "title": "Demanda por categoría",
+            "subtitle": "Inscripciones confirmadas en actividades del periodo"
           },
-          "audience": {
-            "title": "Adultos y menores"
+          "participantProfile": {
+            "title": "Perfil de las personas inscritas",
+            "subtitle": "Personas con inscripción confirmada, por edad y género"
           },
-          "participantsByGender": {
-            "title": "Participantes por género"
-          },
-          "categories": {
-            "title": "Eventos por categoría"
-          },
-          "calendar": {
-            "title": "Calendario de eventos",
-            "subtitle": "Eventos por mes · pasados y próximos (±6 meses)"
-          },
-          "currentComposition": "Composición actual"
+          "recurrence": {
+            "title": "Participación recurrente",
+            "subtitle": "Personas según en cuántos eventos se han inscrito"
+          }
         },
         "chart": {
-          "empty": "Sin datos en este periodo."
+          "empty": "Sin datos en este periodo.",
+          "seatsCovered": "{p}% de plazas cubiertas"
         },
         "kpi": {
           "users": "Usuarios",
           "members": "Socios",
           "inscriptions": "Inscripciones",
           "events": "Eventos",
+          "activities": "Actividades",
           "resources": "Recursos",
           "news": "Novedades",
+          "partners": "Patrocinadores",
           "inRange": "+{n} en el periodo",
           "noNew": "Sin altas nuevas"
+        },
+        "pending": {
+          "title": "Solicitudes pendientes",
+          "subtitle": "Inscripciones por confirmar o rechazar en actividades futuras · pulsa un evento para gestionarlas",
+          "summary": "{n} solicitud pendiente | {n} solicitudes pendientes",
+          "count": "{n} pendiente | {n} pendientes",
+          "meta": "Próxima actividad: {next} · Más antigua: {oldest}",
+          "empty": "No hay solicitudes pendientes."
+        },
+        "roleCoverage": {
+          "title": "Cobertura por rol",
+          "subtitle": "Plazas cubiertas con inscripciones confirmadas en próximas actividades",
+          "seats": "{confirmed} de {desired}",
+          "noCapacity": "Sin aforo definido"
         },
         "range": {
           "aria": "Rango de tiempo",
@@ -1266,17 +1289,32 @@
           "confirmed": "Confirmadas",
           "requested": "Solicitadas",
           "denied": "Rechazadas",
-          "adults": "Adultos",
-          "minors": "Menores",
-          "news": "Novedades",
-          "resources": "Recursos",
-          "past": "Pasados",
-          "upcoming": "Próximos",
-          "confirmedDataset": "Inscripciones confirmadas"
+          "confirmedDataset": "Inscripciones confirmadas",
+          "people": "Personas",
+          "averageScore": "Puntuación media",
+          "roles": {
+            "leader": "Líderes",
+            "volunteer": "Voluntariado",
+            "participant": "Participantes"
+          },
+          "ageGroups": {
+            "upTo5": "0–5 años",
+            "from6To11": "6–11 años",
+            "from12To17": "12–17 años",
+            "adults": "Adultos"
+          },
+          "recurrence": {
+            "once": "1 evento",
+            "twice": "2 eventos",
+            "threeToFive": "3–5 eventos",
+            "sixOrMore": "6 o más"
+          }
         },
         "tooltip": {
           "ranking": " {n} confirmadas",
-          "slice": " {label}: {n} ({p}%)"
+          "seats": " {p}% de las plazas cubiertas ({filled} de {desired})",
+          "people": " Personas: {n}",
+          "score": " Media {score} / 5 · valoraciones: {n}"
         }
       }
     },
