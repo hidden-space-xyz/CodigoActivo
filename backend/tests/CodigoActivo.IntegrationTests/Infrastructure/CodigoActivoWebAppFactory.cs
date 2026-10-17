@@ -12,6 +12,7 @@ using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.Infrastructure.Files;
+using CodigoActivo.Infrastructure.Logs;
 using CodigoActivo.Infrastructure.Users;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -126,13 +127,17 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
             RemoveHostedService<DeletedAccountPurger>(services);
             RemoveHostedService<EmailOutboxProcessor>(services);
             RemoveHostedService<DisposableEmailDomainRefresher>(services);
+            RemoveHostedService<LogRetentionWorker>(services);
 
             services.RemoveAll<DeploymentModeLock>();
             services.AddSingleton(new DeploymentModeLock(deploymentModeFile));
 
-            services.AddSingleton<ILoggerProvider>(Logs);
+            UseRecordedLogs(services);
 
             UseTestDatabase(services);
+
+            services.RemoveAll<LogDatabase>();
+            services.AddSingleton(_ => new LogDatabase(postgres.ConnectionString));
 
             services.RemoveAll<IPasswordHasher>();
             services.AddSingleton<IPasswordHasher, FakePasswordHasher>();
@@ -163,8 +168,9 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     /// Drops a background worker whose timing would race the tests: the periodic session and deleted
     /// account purges would delete rows behind a test that moves the clock on purpose, the email
     /// delivery worker would compete with the synchronous drain installed by
-    /// <see cref="UseSynchronousEmailOutbox"/>, and the disposable email domain refresh would reach
-    /// the internet and fill the list behind the tests. All are exercised directly instead.
+    /// <see cref="UseSynchronousEmailOutbox"/>, the disposable email domain refresh would reach
+    /// the internet and fill the list behind the tests, and the log retention would drop the
+    /// partitions a test prepared. All are exercised directly instead.
     /// </summary>
     /// <typeparam name="T">Hosted service to unregister.</typeparam>
     private static void RemoveHostedService<T>(IServiceCollection services)
@@ -177,6 +183,24 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         {
             services.Remove(descriptor);
         }
+    }
+
+    /// <summary>
+    /// Replaces the database provider with <see cref="LogRecorder"/>: the tests read what the
+    /// level policy lets through without waiting for the batching sink, and the log tables only
+    /// hold what a test writes into them on purpose.
+    /// </summary>
+    private void UseRecordedLogs(IServiceCollection services)
+    {
+        var database = services
+            .Where(descriptor => descriptor.ImplementationType == typeof(DatabaseLoggerProvider))
+            .ToList();
+        foreach (var descriptor in database)
+        {
+            services.Remove(descriptor);
+        }
+
+        services.AddSingleton<ILoggerProvider>(Logs);
     }
 
     /// <summary>

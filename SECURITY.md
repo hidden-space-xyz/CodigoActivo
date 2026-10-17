@@ -374,7 +374,7 @@ such as the path of a file under `/app/files`; it is written as is.
   `ApplicationLog` (Application), `InfrastructureLog` and `ApiLog`. `CA1848` is an error (`backend/.editorconfig`), and the
   architecture tests `LoggingConventionTests`/`LoggingCallSiteTests` enforce an allowed-placeholder list and
   that no event is declared below `Warning`. `Logging:LogLevel` in `appsettings.json` is the level policy for
-  both the console and the file sink: `Default` is `Warning`, which also drops the framework's start and stop
+  both the database and the console: `Default` is `Warning`, which also drops the framework's start and stop
   messages; `Microsoft.EntityFrameworkCore` is `None`: every EF Core failure is rethrown and recorded where it
   is caught, so its own entries only repeated it, quoted the SQL of a failing command (which can carry literal
   values) and reported expected unique-key races and retried deadlocks as errors. An environment can override
@@ -392,14 +392,18 @@ such as the path of a file under `/app/files`; it is written as is.
   `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked;
   written once the lock commits) and `SecurityNotificationRateLimited` (a security-change email was dropped
   by the limiter). Logins, logouts, password changes and administrator rights changes are not recorded.
-- **API log output**: the flat `LOG_DIRECTORY` variable selects the sink. With a value, every event goes to
-  daily files `api-<yyyyMMdd>.log`, continued in `api-<yyyyMMdd>_N.log` past 64 MiB (Serilog file sink; the
-  file name uses the container's local date, event timestamps are UTC) through a Serilog output template: one line with the UTC timestamp, the level, the
-  category and the message, followed by the exception, if any, on the next lines; nothing goes to the console.
-  Without a value (or empty, the local-development case) events go to the console. The fatal startup event
-  (`FTL CodigoActivo.Lifecycle The API host terminated unexpectedly`) is always recorded regardless of the
-  level policy, and the process exits non-zero. If the daily file cannot be opened for writing, the API does
-  not start.
+- **API log output**: every event the level policy lets through is stored in the `diagnostic_log_entries`
+  table of the application database by a batching Serilog sink (`DatabaseLoggerProvider`): the UTC instant,
+  the level, the category, the event name, the rendered message (up to 4,000 characters), the exception with
+  its stack trace (up to 32,000), the trace id and the values of the message template. Properties of logging
+  scopes, such as the requested path, are dropped. Logging never affects a request: emitting only enqueues
+  (at most 10,000 events; beyond that they are dropped), batches of up to 1,000 are written every 2 seconds
+  with a binary `COPY` over a pool of three connections of its own (`codigoactivo-logs`, short timeouts, no
+  logger), a row the database refuses is dropped alone, and a batch that cannot be written is retried with
+  backoff for 2 minutes and then dropped. Development also writes to the console. The fatal startup event
+  (`CodigoActivo.Lifecycle The API host terminated unexpectedly`) always goes to the console regardless of the
+  level policy, and to the table when the host was built; the process exits non-zero. Failures of the logging
+  pipeline itself go to standard error. Nothing about logging is needed for the API to start.
 - **nginx**: `access_log off` and `error_log` writes to `/dev/stderr` at `crit`, so no request or error is
   stored; a failed API shows in `docker compose ps`, and the 5xx it returns is logged by the API itself.
 - **PostgreSQL**: its logging collector writes one file per weekday, `postgresql-<Mon..Sun>.log` (UTC), into
@@ -410,13 +414,15 @@ such as the path of a file under `/app/files`; it is written as is.
   migrator. Messages written before the collector starts go to the discarded stderr. A known residual: a
   `FATAL` authentication failure names the attempted role; `db` is reachable only from the internal `backend`
   network.
-- **Retention and container logs**: every base Compose service uses `logging: driver: none` (`docker compose
-  logs` shows nothing). `LogFileRetentionCleaner`, a background service registered whenever `LOG_DIRECTORY`
-  is set, sweeps the `logs-api` directory at startup and every hour and deletes `api-<yyyyMMdd>[_N].log` files
-  whose last write is older than 28 days. Because a daily file spans 24 hours, no stored entry survives more
-  than 29 days plus one sweep interval, under the 30-day limit. A removal failure is logged as
-  `LogFileRemovalFailed` (`Warning`) and does not stop the sweep; no other file in the directory is ever
-  touched. Purging stops while the API is stopped, so the effective retention lengthens by however long it is
+- **Retention and container logs**: `db` and `web` use `logging: driver: none`; `api` keeps a `json-file`
+  log of two 1 MB files, which in Production only receives the fatal startup event and failures of the
+  logging pipeline. The log tables are partitioned by UTC day (`<table>_pYYYYMMDD`). At startup, right after
+  the migrations, and every hour (`LogRetentionWorker`) `LogPartitionMaintainer` creates the partitions of
+  today and the next two days, drops the partitions whose whole day is older than the cutoff and deletes the
+  older rows of the partition the cutoff falls in. The cutoff is the retention minus one hour, so no diagnostic
+  entry survives more than 30 days. Each statement runs in a short transaction with a 5-second lock timeout; a
+  failed run is logged as `LogMaintenanceFailed` (`Error`) and never stops the API. Purging stops while the
+  API is stopped, so the effective retention lengthens by however long it is
   down. PostgreSQL rotates its own files at midnight with `log_truncate_on_rotation=on`, emptying the file of
   the new weekday, so `logs-db` holds at most 7 days while `db` runs. A day that starts while `db` is stopped
   is appended to its old file instead, which then keeps entries from a week earlier. See

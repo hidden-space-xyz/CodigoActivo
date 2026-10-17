@@ -41,8 +41,8 @@ at <http://localhost:8025>: login codes, verification links and the password res
 administrator's first password.
 
 The API listens on <http://localhost:5150> (the `https` launch profile adds <https://localhost:7039>) and
-serves Swagger at `/swagger` in Development. Without `LOG_DIRECTORY` it logs to the console. Missing variables
-fall back as described in [DEPLOYMENT.md](DEPLOYMENT.md#secrets).
+serves Swagger at `/swagger` in Development, where it logs to the console as well as to the log tables of its
+database. Missing variables fall back as described in [DEPLOYMENT.md](DEPLOYMENT.md#secrets).
 
 ### Frontend
 

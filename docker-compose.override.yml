@@ -13,7 +13,6 @@ services:
         max-file: "2"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      LOG_DIRECTORY: ""
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       SMTP_SECURITY: None

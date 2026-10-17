@@ -44,7 +44,12 @@ internal static class PersistenceRegistration
         return services;
     }
 
-    private static string BuildConnectionString(Settings settings)
+    /// <summary>
+    /// Builds the connection string of the application database from the flat settings.
+    /// </summary>
+    /// <param name="settings">Settings of the application.</param>
+    /// <returns>The connection string.</returns>
+    internal static string BuildConnectionString(Settings settings)
     {
         return new NpgsqlConnectionStringBuilder
         {

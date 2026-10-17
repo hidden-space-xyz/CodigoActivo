@@ -1,216 +1,77 @@
-using System.Globalization;
-using System.Text;
-using Serilog;
-using Serilog.Configuration;
-using Serilog.Core;
-using Serilog.Events;
-using Serilog.Extensions.Logging;
-using Serilog.Formatting;
-using Serilog.Formatting.Display;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
+using CodigoActivo.API.Diagnostics;
+using CodigoActivo.Composition.Diagnostics;
+using CodigoActivo.Composition.Logs;
 
 namespace CodigoActivo.API.Configuration;
 
 /// <summary>
-/// Chooses where the process writes its log. With a <c>LOG_DIRECTORY</c> value every event goes to a
-/// daily file in that directory and nothing to the console; without one the console is used, which is
-/// the local development case. The same instance also serves the startup code that runs before the
-/// host exists, so a failed validation or a fatal exception reaches the file too. Old files are never
-/// removed here: retention belongs to <see cref="Diagnostics.LogFileRetentionCleaner"/>.
+/// Chooses where the process writes its log. The host stores its events in the
+/// <c>diagnostic_log_entries</c> table, and in Development it also writes them to the console.
+/// The code that runs before the host exists, or after it failed to start, has a console logger
+/// of its own: a start that fails may do so before the database or a valid configuration exists,
+/// and the container keeps the console output for that case.
 /// <para>
-/// The <c>Logging:LogLevel</c> section of the configuration decides every event of the host, for the
-/// file exactly as for the console: the sink accepts every level it is handed and adds no policy of
-/// its own. The logger that serves the code running before the host does not read that section: it
-/// only emits the fatal startup event and emits it unconditionally, because a startup that fails may
-/// do so before a valid configuration exists.
+/// The <c>Logging:LogLevel</c> section of the configuration decides every event of the host, for
+/// the table exactly as for the console. The startup logger does not read that section: it only
+/// emits the fatal startup event and emits it unconditionally.
 /// </para>
 /// </summary>
 internal sealed class ApiLogging : IDisposable
 {
-    internal const string DirectoryKey = "LOG_DIRECTORY";
-
-    private const string FileNamePattern = "api-.log";
-    private const string OutputTemplate =
-        "{UtcTimestamp:yyyy-MM-ddTHH:mm:ss.fffZ} {Level:u3} {SourceContext} {Message:lj}{NewLine}{Exception}";
-    private const long FileSizeLimitBytes = 64L * 1024 * 1024;
-
-    private static readonly TimeSpan FlushInterval = TimeSpan.FromSeconds(1);
-
-    private readonly Serilog.Core.Logger? fileLogger;
-    private readonly ILoggerFactory factory;
-
-    private ApiLogging(Serilog.Core.Logger? fileLogger)
-    {
-        this.fileLogger = fileLogger;
-        factory = LoggerFactory.Create(Configure);
-    }
+    private readonly ILoggerFactory startup = LoggerFactory.Create(AddConsole);
 
     /// <summary>
-    /// Opens the configured sink and returns the logging the process uses from now on. In file mode the
-    /// daily file is opened here, so a destination that cannot be written stops the process instead of
-    /// leaving it running without any log.
-    /// </summary>
-    /// <param name="configuration">Configuration holding the flat <c>LOG_DIRECTORY</c> value.</param>
-    /// <returns>The logging shared by the startup code and the host.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// The daily file of the configured directory cannot be opened for writing.
-    /// </exception>
-    internal static ApiLogging Start(IConfiguration configuration)
-    {
-        ArgumentNullException.ThrowIfNull(configuration);
-
-        var directory = configuration[DirectoryKey]?.Trim();
-        return new ApiLogging(string.IsNullOrEmpty(directory) ? null : CreateFileLogger(directory));
-    }
-
-    /// <summary>
-    /// Creates a logger usable before the host is built. It applies no level rule: the fatal startup
-    /// event reaches the sink even when <c>Logging:LogLevel</c> silences everything or is missing.
-    /// </summary>
-    /// <param name="category">Category the entries are written under.</param>
-    /// <returns>A logger writing to the configured sink.</returns>
-    internal ILogger CreateLogger(string category)
-    {
-        return factory.CreateLogger(category);
-    }
-
-    /// <summary>
-    /// Installs the configured sink as the only logging provider of the host. The provider is added
-    /// without a level filter of its own, so what reaches the sink is decided by the rules of
-    /// <c>Logging:LogLevel</c> the host reads into the builder.
+    /// Installs the providers of the host: the database, and the console in Development. The
+    /// providers have no level filter of their own, so what reaches them is decided by the rules
+    /// of <c>Logging:LogLevel</c> the host reads into the builder.
     /// </summary>
     /// <param name="logging">Logging builder of the host.</param>
-    internal void Configure(ILoggingBuilder logging)
+    /// <param name="environment">Environment of the host.</param>
+    internal static void Configure(ILoggingBuilder logging, IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(logging);
+        ArgumentNullException.ThrowIfNull(environment);
 
         logging.ClearProviders();
+        logging.AddDatabaseLogging();
 
-        if (fileLogger is not { } file)
+        if (environment.IsDevelopment())
         {
-            logging.AddSimpleConsole(options =>
-            {
-                options.IncludeScopes = false;
-                options.SingleLine = true;
-                options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff zzz ";
-            });
-            return;
-        }
-
-        logging.Services.AddSingleton<ILoggerProvider>(_ => new SerilogLoggerProvider(
-            file,
-            dispose: false
-        ));
-    }
-
-    internal static Serilog.Core.Logger CreateFileLogger(string directory)
-    {
-        Directory.CreateDirectory(directory);
-        EnsureDailyFileIsWritable(directory);
-
-        return WriteToDailyFile(
-                new LoggerConfiguration().MinimumLevel.Verbose().WriteTo,
-                directory,
-                new MessageTemplateTextFormatter(OutputTemplate, CultureInfo.InvariantCulture),
-                FlushInterval
-            )
-            .CreateLogger();
-    }
-
-    private static LoggerConfiguration WriteToDailyFile(
-        LoggerSinkConfiguration sink,
-        string directory,
-        ITextFormatter formatter,
-        TimeSpan? flushToDiskInterval
-    )
-    {
-        return sink.File(
-            formatter,
-            Path.Join(directory, FileNamePattern),
-            fileSizeLimitBytes: FileSizeLimitBytes,
-            rollingInterval: RollingInterval.Day,
-            rollOnFileSizeLimit: true,
-            retainedFileCountLimit: null,
-            retainedFileTimeLimit: null,
-            encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-            flushToDiskInterval: flushToDiskInterval
-        );
-    }
-
-    private static void EnsureDailyFileIsWritable(string directory)
-    {
-        var failures = new SinkFailureRecorder();
-        Exception? thrown = null;
-
-        try
-        {
-            using var probe = new LoggerConfiguration()
-                .MinimumLevel.Verbose()
-                .WriteTo.Fallible(
-                    sink =>
-                        WriteToDailyFile(
-                            sink,
-                            directory,
-                            SilentFormatter.Instance,
-                            flushToDiskInterval: null
-                        ),
-                    failures
-                )
-                .CreateLogger();
-
-            probe.Write(LogEventLevel.Verbose, "Daily log file probe");
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            thrown = ex;
-        }
-
-        var failure = failures.Failure ?? thrown?.Message;
-        if (failure is null)
-        {
-            return;
-        }
-
-        throw new InvalidOperationException(
-            $"The daily log file of '{directory}' cannot be opened for writing: {failure}",
-            thrown
-        );
-    }
-
-    private sealed class SilentFormatter : ITextFormatter
-    {
-        internal static readonly SilentFormatter Instance = new();
-
-        public void Format(LogEvent logEvent, TextWriter output) { }
-    }
-
-    private sealed class SinkFailureRecorder : ILoggingFailureListener
-    {
-        internal string? Failure { get; private set; }
-
-        public void OnLoggingFailed(
-            object sender,
-            LoggingFailureKind kind,
-            string message,
-            IReadOnlyCollection<LogEvent>? events,
-            Exception? exception
-        )
-        {
-            if (Failure is not null || (kind == LoggingFailureKind.Temporary && exception is null))
-            {
-                return;
-            }
-
-            Failure = exception is null ? message : $"{message}: {exception.Message}";
+            AddConsole(logging);
         }
     }
 
     /// <summary>
-    /// Flushes and closes the sink.
+    /// Records that the process is ending because starting or running the host failed: always on
+    /// the console and, when the host was built, through its providers too.
+    /// </summary>
+    /// <param name="exception">Failure that ended the process.</param>
+    /// <param name="host">Services of the host, when it was built.</param>
+    internal void RecordFatal(Exception exception, IServiceProvider? host)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+
+        startup.CreateLogger(LogCategories.Lifecycle).HostTerminatedUnexpectedly(exception);
+        host?.GetService<ILoggerFactory>()
+            ?.CreateLogger(LogCategories.Lifecycle)
+            .HostTerminatedUnexpectedly(exception);
+    }
+
+    /// <summary>
+    /// Flushes and closes the startup console logger.
     /// </summary>
     public void Dispose()
     {
-        factory.Dispose();
-        fileLogger?.Dispose();
+        startup.Dispose();
+    }
+
+    private static void AddConsole(ILoggingBuilder logging)
+    {
+        logging.AddSimpleConsole(options =>
+        {
+            options.IncludeScopes = false;
+            options.SingleLine = true;
+            options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff zzz ";
+        });
     }
 }

@@ -1,17 +1,16 @@
 using CodigoActivo.API.Configuration;
-using CodigoActivo.API.Diagnostics;
 using CodigoActivo.API.Startup;
-using CodigoActivo.Composition.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
-using var logging = ApiLogging.Start(builder.Configuration);
+using var logging = new ApiLogging();
+WebApplication? app = null;
 
 try
 {
-    builder.ConfigureApiHost(logging);
+    builder.ConfigureApiHost();
     builder.AddApiServices();
 
-    await using var app = builder.Build();
+    app = builder.Build();
 
     await app.InitializeAsync(app.Lifetime.ApplicationStopping);
     app.ConfigureRequestPipeline();
@@ -20,6 +19,13 @@ try
 }
 catch (Exception ex) when (ex is not HostAbortedException)
 {
-    logging.CreateLogger(LogCategories.Lifecycle).HostTerminatedUnexpectedly(ex);
+    logging.RecordFatal(ex, app?.Services);
     throw;
+}
+finally
+{
+    if (app is not null)
+    {
+        await app.DisposeAsync();
+    }
 }

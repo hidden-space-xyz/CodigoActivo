@@ -38,16 +38,6 @@ internal static partial class ApiLog
     internal static partial void SessionRevocationFailed(this ILogger logger, Exception exception);
 
     /// <summary>
-    /// Records that an expired log file could not be listed or removed, so it stays in the log
-    /// directory until the next sweep. The path is left to the attached exception, which is written
-    /// as is; the file name holds only its date.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure raised while removing the file.</param>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Expired log file removal failed")]
-    internal static partial void LogFileRemovalFailed(this ILogger logger, Exception exception);
-
-    /// <summary>
     /// Records that the process is ending because starting or running the host failed.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>

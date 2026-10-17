@@ -22,6 +22,7 @@ internal static class ApplicationInitializer
         services.ValidateConfiguration();
 
         await services.MigrateDatabaseAsync(cancellationToken);
+        await services.MaintainLogTablesAsync(cancellationToken);
         await services.SeedCatalogsAsync(cancellationToken);
         await services.SeedInitialAdministratorAsync(cancellationToken);
         var demoMode = services.LockDeploymentMode();
