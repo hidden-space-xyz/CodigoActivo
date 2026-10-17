@@ -44,6 +44,16 @@ public sealed class DemoDataSeederTests
         [.. graph.Events.SelectMany(ev => ev.Categories)];
 
     [Fact]
+    public void UserIdsListEveryDemoAccount()
+    {
+        DemoDataSeeder
+            .UserIds.Should()
+            .BeEquivalentTo(
+                graph.Users.Where(user => user.Id != administrator.Id).Select(user => user.Id)
+            );
+    }
+
+    [Fact]
     public void BuildGraphAdultsGetARandomThrowawayPasswordThatChangesEveryRun()
     {
         var adults = graph.Users.Where(user => user.ParentId is null).ToList();
