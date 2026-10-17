@@ -7,7 +7,7 @@ import { useRouter } from 'vue-router'
 import { activityQueries, type ActivityListing } from '@/entities/activity'
 import { eventQueries } from '@/entities/event'
 import { formatDate, formatTimeRange } from '@/shared/lib/date'
-import { formatNumber } from '@/shared/lib/number'
+import { formatScore } from '@/shared/lib/number'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
 import { BrandButton } from '@/shared/ui/brand-button'
@@ -51,10 +51,7 @@ const summaryCards = computed(() => [
   })),
 ])
 const scoredRatingsCount = computed(() => stats.data.value?.scoredRatingsCount ?? 0)
-const ratingsAverage = computed(() => {
-  const average = stats.data.value?.ratingsAverage
-  return average === null || average === undefined ? '—' : formatNumber(Number(average.toFixed(1)))
-})
+const ratingsAverage = computed(() => formatScore(stats.data.value?.ratingsAverage))
 
 const modalityOptions = computed(() => toSelectOptions(modalities.data.value))
 

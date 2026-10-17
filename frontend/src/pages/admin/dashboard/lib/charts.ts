@@ -11,247 +11,112 @@ import {
   valueScale,
   wrapLabel,
 } from '@/shared/lib/chart'
-import { formatNumber } from '@/shared/lib/number'
+import { formatNumber, formatScore } from '@/shared/lib/number'
 
-import type { Slice, TimeSeries } from '../model/types'
+import type { Breakdown, Satisfaction, Slice, TimeSeries, TopEvent } from '../model/types'
 import { formatBucketLabel } from './bucket-label'
-
-export { barOptions, wrapLabel }
+import { seatPercent } from './seats'
 
 interface SeriesStyle {
   labelKey: TranslationKey
   color: (palette: ChartPalette) => string
-  soft: (palette: ChartPalette) => string
 }
 
 type StyleMap = Record<string, SeriesStyle>
 
-/** Labels and palette colors for the `userGrowth` and `usersByType` series, keyed by user type. */
+type LabelMap = Record<string, TranslationKey>
+
+/** Chart.js data and options of one dashboard card, and whether it has nothing to draw. */
+export interface ChartView {
+  readonly data: ChartData<'bar'>
+  readonly options: ChartOptions<'bar'>
+  readonly empty: boolean
+}
+
+/** Labels and palette colors of the new users series, keyed by user type. */
 export const USER_TYPE_STYLE: StyleMap = {
-  member: {
-    labelKey: 'pages.admin.dashboard.series.member',
-    color: (p) => p.orange,
-    soft: (p) => p.orangeSoft,
-  },
-  sponsor: {
-    labelKey: 'pages.admin.dashboard.series.sponsor',
-    color: (p) => p.lime,
-    soft: (p) => p.limeSoft,
-  },
-  participant: {
-    labelKey: 'pages.admin.dashboard.series.participant',
-    color: (p) => p.azure,
-    soft: (p) => p.azureSoft,
-  },
+  member: { labelKey: 'pages.admin.dashboard.series.member', color: (p) => p.orange },
+  sponsor: { labelKey: 'pages.admin.dashboard.series.sponsor', color: (p) => p.lime },
+  participant: { labelKey: 'pages.admin.dashboard.series.participant', color: (p) => p.azure },
 }
 
 /** Inscription series styles keyed by status: green confirmed, amber requested, red denied. */
 export const INSCRIPTION_STATUS_STYLE: StyleMap = {
-  confirmed: {
-    labelKey: 'pages.admin.dashboard.series.confirmed',
-    color: (p) => p.success,
-    soft: (p) => p.successSoft,
-  },
-  requested: {
-    labelKey: 'pages.admin.dashboard.series.requested',
-    color: (p) => p.warning,
-    soft: (p) => p.warningSoft,
-  },
-  denied: {
-    labelKey: 'pages.admin.dashboard.series.denied',
-    color: (p) => p.danger,
-    soft: (p) => p.dangerSoft,
-  },
-}
-
-/** Styles for the adults/minors slices of the audience composition doughnut. */
-export const AUDIENCE_STYLE: StyleMap = {
-  adults: {
-    labelKey: 'pages.admin.dashboard.series.adults',
-    color: (p) => p.azure,
-    soft: (p) => p.azureSoft,
-  },
-  minors: {
-    labelKey: 'pages.admin.dashboard.series.minors',
-    color: (p) => p.lime,
-    soft: (p) => p.limeSoft,
-  },
+  confirmed: { labelKey: 'pages.admin.dashboard.series.confirmed', color: (p) => p.success },
+  requested: { labelKey: 'pages.admin.dashboard.series.requested', color: (p) => p.warning },
+  denied: { labelKey: 'pages.admin.dashboard.series.denied', color: (p) => p.danger },
 }
 
 /**
- * Participant gender slice styles, keyed by the API gender value. `PreferNotToSay` is neutral
+ * Participant gender series styles, keyed by the API gender value. `PreferNotToSay` is neutral
  * gray because it marks an undisclosed value rather than a category.
  */
 export const GENDER_STYLE: StyleMap = {
-  Male: {
-    labelKey: genderLabelKey('Male'),
-    color: (p) => p.azure,
-    soft: (p) => p.azureSoft,
-  },
-  Female: {
-    labelKey: genderLabelKey('Female'),
-    color: (p) => p.lime,
-    soft: (p) => p.limeSoft,
-  },
-  Other: {
-    labelKey: genderLabelKey('Other'),
-    color: (p) => p.orange,
-    soft: (p) => p.orangeSoft,
-  },
-  PreferNotToSay: {
-    labelKey: genderLabelKey('PreferNotToSay'),
-    color: (p) => p.textDim,
-    soft: (p) => p.border,
-  },
+  Male: { labelKey: genderLabelKey('Male'), color: (p) => p.azure },
+  Female: { labelKey: genderLabelKey('Female'), color: (p) => p.lime },
+  Other: { labelKey: genderLabelKey('Other'), color: (p) => p.orange },
+  PreferNotToSay: { labelKey: genderLabelKey('PreferNotToSay'), color: (p) => p.textDim },
 }
 
-/** Styles for published news items and resources in the content bar chart. */
-export const CONTENT_STYLE: StyleMap = {
-  news: {
-    labelKey: 'pages.admin.dashboard.series.news',
-    color: (p) => p.orange,
-    soft: (p) => p.orangeSoft,
-  },
-  resources: {
-    labelKey: 'pages.admin.dashboard.series.resources',
-    color: (p) => p.azure,
-    soft: (p) => p.azureSoft,
-  },
+/** Labels of the participant profile age groups, keyed by the API group. */
+const AGE_GROUP_LABELS: LabelMap = {
+  '0-5': 'pages.admin.dashboard.series.ageGroups.upTo5',
+  '6-11': 'pages.admin.dashboard.series.ageGroups.from6To11',
+  '12-17': 'pages.admin.dashboard.series.ageGroups.from12To17',
+  adults: 'pages.admin.dashboard.series.ageGroups.adults',
 }
 
-/** Styles for past versus upcoming events in the monthly events calendar chart. */
-export const CALENDAR_STYLE: StyleMap = {
-  past: {
-    labelKey: 'pages.admin.dashboard.series.past',
-    color: (p) => p.azure,
-    soft: (p) => p.azureSoft,
-  },
-  upcoming: {
-    labelKey: 'pages.admin.dashboard.series.upcoming',
-    color: (p) => p.orange,
-    soft: (p) => p.orangeSoft,
-  },
+/** Labels of the recurrence groups, keyed by how many events the API counted. */
+const RECURRENCE_LABELS: LabelMap = {
+  '1': 'pages.admin.dashboard.series.recurrence.once',
+  '2': 'pages.admin.dashboard.series.recurrence.twice',
+  '3-5': 'pages.admin.dashboard.series.recurrence.threeToFive',
+  '6+': 'pages.admin.dashboard.series.recurrence.sixOrMore',
 }
 
-function axisLabels(series: TimeSeries | undefined, granularity: string): string[] {
-  return (series?.buckets ?? []).map((bucket) => formatBucketLabel(bucket, granularity))
+function label(key: string, labels: LabelMap, t: Translate): string {
+  const labelKey = labels[key]
+  return labelKey ? t(labelKey) : key
 }
 
-/** Whether any bucket of any series has a positive value; used to show the empty state instead. */
-export function hasSeriesData(series: TimeSeries | undefined): boolean {
-  return (series?.series ?? []).some((set) => set.values.some((value) => value > 0))
+function hasSeriesData(chart: TimeSeries | Breakdown): boolean {
+  return chart.series.some((set) => set.values.some((value) => value > 0))
 }
 
-/** Whether at least one slice has a positive count, i.e. the doughnut would draw something. */
-export function hasSliceData(slices: readonly Slice[] | undefined): boolean {
-  return (slices ?? []).some((slice) => slice.count > 0)
-}
-
-/**
- * Builds filled, smoothed line datasets for a stacked area chart. Series without an entry in
- * `styleMap` fall back to their raw key and the dim text color.
- */
-export function stackedAreaData(
-  series: TimeSeries | undefined,
-  granularity: string,
+function styledDatasets(
+  chart: TimeSeries | Breakdown,
   palette: ChartPalette,
   styleMap: StyleMap,
   t: Translate,
-): ChartData<'line'> {
-  return {
-    labels: axisLabels(series, granularity),
-    datasets: (series?.series ?? []).map((set) => {
-      const style = styleMap[set.key]
-      const color = style?.color(palette) ?? palette.textDim
-      return {
-        label: style ? t(style.labelKey) : set.key,
-        data: [...set.values],
-        borderColor: color,
-        backgroundColor: style?.soft(palette) ?? color,
-        fill: true,
-        tension: 0.35,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointBackgroundColor: color,
-      }
-    }),
-  }
+): ChartData<'bar'>['datasets'] {
+  return chart.series.map((set) => {
+    const style = styleMap[set.key]
+    return {
+      label: style ? t(style.labelKey) : set.key,
+      data: [...set.values],
+      backgroundColor: style?.color(palette) ?? palette.textDim,
+      borderColor: palette.surface,
+      borderWidth: 1.5,
+      borderRadius: 3,
+      borderSkipped: false,
+    }
+  })
 }
 
-/**
- * Builds one bar dataset per series, with x labels formatted for `granularity`. Unstyled series
- * fall back to their raw key and the dim text color.
- */
-export function barSeriesData(
-  series: TimeSeries | undefined,
-  granularity: string,
-  palette: ChartPalette,
-  styleMap: StyleMap,
-  t: Translate,
-): ChartData<'bar'> {
-  return {
-    labels: axisLabels(series, granularity),
-    datasets: (series?.series ?? []).map((set) => {
-      const style = styleMap[set.key]
-      return {
-        label: style ? t(style.labelKey) : set.key,
-        data: [...set.values],
-        backgroundColor: style?.color(palette) ?? palette.textDim,
-        borderColor: palette.surface,
-        borderWidth: 1.5,
-        borderRadius: 3,
-        borderSkipped: false,
-      }
-    }),
-  }
-}
-
-/**
- * Builds a single-dataset doughnut, dropping zero-count slices. Label and color come from
- * `styleMap` when the key is known, otherwise from the slice's own label/color sent by the API.
- */
-export function doughnutData(
-  slices: readonly Slice[] | undefined,
-  palette: ChartPalette,
-  t: Translate,
-  styleMap?: StyleMap,
-): ChartData<'doughnut'> {
-  const items = (slices ?? []).filter((slice) => slice.count > 0)
-  return {
-    labels: items.map((slice) => {
-      const style = styleMap?.[slice.key]
-      return style ? t(style.labelKey) : (slice.label ?? slice.key)
-    }),
-    datasets: [
-      {
-        data: items.map((slice) => slice.count),
-        backgroundColor: items.map(
-          (slice) => styleMap?.[slice.key]?.color(palette) ?? slice.color ?? palette.textDim,
-        ),
-        borderColor: palette.surface,
-        borderWidth: 2,
-        hoverOffset: 6,
-      },
-    ],
-  }
-}
-
-/** Single-color ranking dataset of confirmed inscriptions; `labels` may be pre-wrapped lines. */
-export function rankingBarData(
+function rankingData(
   labels: (string | string[])[],
   values: number[],
-  color: string,
+  colors: string | string[],
+  datasetLabel: string,
   palette: ChartPalette,
-  t: Translate,
 ): ChartData<'bar'> {
   return {
     labels,
     datasets: [
       {
-        label: t('pages.admin.dashboard.series.confirmedDataset'),
+        label: datasetLabel,
         data: values,
-        backgroundColor: color,
+        backgroundColor: colors,
         borderColor: palette.surface,
         borderWidth: 1.5,
         borderRadius: 4,
@@ -261,35 +126,17 @@ export function rankingBarData(
   }
 }
 
-/** Options for the stacked area chart: index-mode tooltip over all series and bottom legend. */
-export function areaOptions(palette: ChartPalette): ChartOptions<'line'> {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: legend(palette),
-      tooltip: {
-        ...tooltipBox(palette),
-        callbacks: {
-          label: (item: TooltipItem<'line'>) =>
-            ` ${item.dataset.label ?? ''}: ${formatNumber(item.parsed.y)}`,
-        },
-      },
-    },
-    scales: { x: categoryScale(palette, true), y: valueScale(palette, true) },
-  }
-}
-
 /**
- * Horizontal bar options without legend. `fullLabels` holds the unwrapped titles, shown in the
- * tooltip because the axis labels may be truncated by `wrapLabel`.
+ * Horizontal single-series bars without legend. `fullLabels` holds the unwrapped names shown as
+ * tooltip titles, `describe` the tooltip lines of the bar at an index, and `max` caps the axis.
  */
-export function rankingOptions(
+function rankingOptions(
   palette: ChartPalette,
   fullLabels: string[],
-  t: Translate,
+  describe: (index: number) => string | string[],
+  max?: number,
 ): ChartOptions<'bar'> {
+  const x = valueScale(palette, false)
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -300,46 +147,196 @@ export function rankingOptions(
         ...tooltipBox(palette),
         callbacks: {
           title: (items: TooltipItem<'bar'>[]) => fullLabels[items[0]?.dataIndex ?? 0] ?? '',
-          label: (item: TooltipItem<'bar'>) =>
-            t('pages.admin.dashboard.tooltip.ranking', { n: formatNumber(item.parsed.x) }),
+          label: (item: TooltipItem<'bar'>) => describe(item.dataIndex),
         },
       },
     },
     scales: {
-      x: valueScale(palette, false),
+      x: max === undefined ? x : { ...x, max },
       y: categoryScale(palette, false, { autoSkip: false }),
     },
   }
 }
 
-/** Doughnut options whose tooltip shows each slice with its percentage of the visible slices. */
-export function doughnutOptions(palette: ChartPalette, t: Translate): ChartOptions<'doughnut'> {
+/**
+ * Stacked bars per date bucket, one series per key styled by `styleMap` (unknown keys keep their
+ * raw key and the dim color); empty when no bucket has a positive value.
+ */
+export function timeSeriesChart(
+  series: TimeSeries,
+  granularity: string,
+  palette: ChartPalette,
+  styleMap: StyleMap,
+  t: Translate,
+): ChartView {
   return {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '62%',
-    plugins: {
-      legend: legend(palette),
-      tooltip: {
-        ...tooltipBox(palette),
-        callbacks: {
-          label: (item: TooltipItem<'doughnut'>) => {
-            const data = item.dataset.data
-            const total = data.reduce(
-              (sum, value, index) =>
-                item.chart.getDataVisibility(index) ? sum + (value ?? 0) : sum,
-              0,
-            )
-            const value = item.parsed
-            const percent = total > 0 ? Math.round((value / total) * 100) : 0
-            return t('pages.admin.dashboard.tooltip.slice', {
-              label: item.label,
-              n: formatNumber(value),
-              p: percent,
-            })
+    data: {
+      labels: series.buckets.map((bucket) => formatBucketLabel(bucket, granularity)),
+      datasets: styledDatasets(series, palette, styleMap, t),
+    },
+    options: barOptions(palette, true),
+    empty: !hasSeriesData(series),
+  }
+}
+
+/**
+ * Ranking of confirmed signups per event. When the event's activities set a desired number, the
+ * label keeps one line of the title and adds the share of seats filled; the tooltip shows the full
+ * title and repeats the share with the seat counts.
+ */
+export function topEventsChart(
+  events: readonly TopEvent[],
+  palette: ChartPalette,
+  t: Translate,
+): ChartView {
+  const percents = events.map((event) => seatPercent(event.seatsFilled, event.seatsDesired))
+  return {
+    data: rankingData(
+      events.map((event, index) => {
+        const percent = percents[index]
+        return percent === null
+          ? wrapLabel(event.title)
+          : [
+              ...wrapLabel(event.title, 26, 1),
+              t('pages.admin.dashboard.chart.seatsCovered', { p: percent }),
+            ]
+      }),
+      events.map((event) => event.confirmed),
+      palette.orange,
+      t('pages.admin.dashboard.series.confirmedDataset'),
+      palette,
+    ),
+    options: rankingOptions(
+      palette,
+      events.map((event) => event.title),
+      (index) => {
+        const event = events[index]
+        if (!event) return ''
+        const confirmed = t('pages.admin.dashboard.tooltip.ranking', {
+          n: formatNumber(event.confirmed),
+        })
+        const percent = percents[index]
+        return percent === null
+          ? confirmed
+          : [
+              confirmed,
+              t('pages.admin.dashboard.tooltip.seats', {
+                p: percent,
+                filled: formatNumber(event.seatsFilled),
+                desired: formatNumber(event.seatsDesired),
+              }),
+            ]
+      },
+    ),
+    empty: events.length === 0,
+  }
+}
+
+/** Ranking of confirmed signups per event category, each bar in its category's color. */
+export function categoryDemandChart(
+  categories: readonly Slice[],
+  palette: ChartPalette,
+  t: Translate,
+): ChartView {
+  const names = categories.map((category) => category.label ?? category.key)
+  return {
+    data: rankingData(
+      names.map((name) => wrapLabel(name)),
+      categories.map((category) => category.count),
+      categories.map((category) => category.color ?? palette.textDim),
+      t('pages.admin.dashboard.series.confirmedDataset'),
+      palette,
+    ),
+    options: rankingOptions(palette, names, (index) =>
+      t('pages.admin.dashboard.tooltip.ranking', {
+        n: formatNumber(categories[index]?.count),
+      }),
+    ),
+    empty: !categories.some((category) => category.count > 0),
+  }
+}
+
+/** People per age group, one stacked segment per gender. */
+export function participantProfileChart(
+  profile: Breakdown,
+  palette: ChartPalette,
+  t: Translate,
+): ChartView {
+  return {
+    data: {
+      labels: profile.groups.map((group) => label(group, AGE_GROUP_LABELS, t)),
+      datasets: styledDatasets(profile, palette, GENDER_STYLE, t),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: legend(palette),
+        tooltip: {
+          ...tooltipBox(palette),
+          callbacks: {
+            label: (item: TooltipItem<'bar'>) =>
+              ` ${item.dataset.label ?? ''}: ${formatNumber(item.parsed.x)}`,
           },
         },
       },
+      scales: {
+        x: valueScale(palette, true),
+        y: categoryScale(palette, true, { autoSkip: false }),
+      },
     },
+    empty: !hasSeriesData(profile),
+  }
+}
+
+/** People per number of events they joined, in the API's fixed order. */
+export function recurrenceChart(
+  groups: readonly Slice[],
+  palette: ChartPalette,
+  t: Translate,
+): ChartView {
+  const names = groups.map((group) => label(group.key, RECURRENCE_LABELS, t))
+  return {
+    data: rankingData(
+      names,
+      groups.map((group) => group.count),
+      palette.lime,
+      t('pages.admin.dashboard.series.people'),
+      palette,
+    ),
+    options: rankingOptions(palette, names, (index) =>
+      t('pages.admin.dashboard.tooltip.people', { n: formatNumber(groups[index]?.count) }),
+    ),
+    empty: !groups.some((group) => group.count > 0),
+  }
+}
+
+/** Mean score per event on a 0–5 axis; the tooltip adds how many scored ratings it covers. */
+export function satisfactionChart(
+  satisfaction: Satisfaction,
+  palette: ChartPalette,
+  t: Translate,
+): ChartView {
+  const events = satisfaction.events
+  return {
+    data: rankingData(
+      events.map((event) => wrapLabel(event.title)),
+      events.map((event) => event.average),
+      palette.azure,
+      t('pages.admin.dashboard.series.averageScore'),
+      palette,
+    ),
+    options: rankingOptions(
+      palette,
+      events.map((event) => event.title),
+      (index) =>
+        t('pages.admin.dashboard.tooltip.score', {
+          score: formatScore(events[index]?.average),
+          n: formatNumber(events[index]?.scored),
+        }),
+      5,
+    ),
+    empty: events.length === 0,
   }
 }

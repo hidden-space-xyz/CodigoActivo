@@ -9,4 +9,6 @@ export interface DashboardTopEventResponse {
   eventId: string;
   title: string;
   confirmed: number;
+  seatsFilled: number;
+  seatsDesired: number;
 }

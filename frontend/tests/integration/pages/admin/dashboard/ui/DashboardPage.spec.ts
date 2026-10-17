@@ -43,7 +43,7 @@ beforeEach(() => {
 })
 
 describe('dashboard page', () => {
-  it('loads the last 12 months and renders KPIs, charts and occupancy', async () => {
+  it('loads the last 12 months and renders KPIs, both sections and every chart', async () => {
     const ranges = serveAnalytics()
 
     const { wrapper } = await renderPage()
@@ -51,41 +51,58 @@ describe('dashboard page', () => {
 
     expect(ranges).toEqual([{ from: '2025-09-17', to: '2026-09-17' }])
     expect(wrapper.find('h1').text()).toBe(t('pages.admin.dashboard.header.title'))
-    expect(wrapper.findAll('.kpi-card')).toHaveLength(6)
+    expect(wrapper.findAll('.kpi-card')).toHaveLength(8)
+    expect(wrapper.findAll('.dashboard__section-title').map((title) => title.text())).toEqual([
+      t('pages.admin.dashboard.sections.upcoming.title'),
+      t('pages.admin.dashboard.sections.period.title'),
+    ])
+    expect(wrapper.text()).toContain(t('pages.admin.dashboard.pending.title'))
+    expect(wrapper.text()).toContain(t('pages.admin.dashboard.roleCoverage.title'))
     expect(wrapper.text()).toContain(t('pages.admin.dashboard.occupancy.title'))
     expect(wrapper.findAll('.analytics-chart__empty')).toHaveLength(0)
-    expect(liveCharts()).toHaveLength(9)
+    expect(liveCharts()).toHaveLength(7)
   })
 
   it('builds each chart from the matching part of the analytics', async () => {
     serveAnalytics()
 
     const { wrapper } = await renderPage()
-    await vi.waitFor(() => expect(liveCharts()).toHaveLength(9))
-    expect(wrapper.exists()).toBe(true)
+    await vi.waitFor(() => expect(liveCharts()).toHaveLength(7))
+    expect(liveCharts().every((chart) => chart.config.type === 'bar')).toBe(true)
 
-    const growth = chartByTitle(t('pages.admin.dashboard.charts.userGrowth.title'))
-    expect(growth?.config.type).toBe('line')
-    expect(growth?.config.data).toMatchObject({
+    const newUsers = chartByTitle(t('pages.admin.dashboard.charts.newUsers.title'))
+    expect(newUsers?.config.data).toMatchObject({
       datasets: [{ label: t('pages.admin.dashboard.series.member'), data: [1, 2] }],
-    })
-
-    const categories = chartByTitle(t('pages.admin.dashboard.charts.categories.title'))
-    expect(categories?.config.type).toBe('doughnut')
-    expect(categories?.config.data).toMatchObject({
-      labels: ['Programación'],
-      datasets: [{ data: [3], backgroundColor: ['#ff6600'] }],
     })
 
     const topEvents = chartByTitle(t('pages.admin.dashboard.charts.topEvents.title'))
     expect(topEvents?.config.data).toMatchObject({
-      labels: [['Hackathon de primavera']],
+      labels: [
+        ['Hackathon de primavera', t('pages.admin.dashboard.chart.seatsCovered', { p: 75 })],
+      ],
       datasets: [{ data: [42] }],
     })
     expect(topEvents?.config.options).toMatchObject({ indexAxis: 'y' })
 
-    const gender = chartByTitle(t('pages.admin.dashboard.charts.participantsByGender.title'))
-    expect(gender?.config.data).toMatchObject({ datasets: [{ data: [5] }] })
+    const categories = chartByTitle(t('pages.admin.dashboard.charts.categoryDemand.title'))
+    expect(categories?.config.data).toMatchObject({
+      labels: [['Programación']],
+      datasets: [{ data: [3], backgroundColor: ['#ff6600'] }],
+    })
+
+    const profile = chartByTitle(t('pages.admin.dashboard.charts.participantProfile.title'))
+    expect(profile?.config.data).toMatchObject({ datasets: [{ data: [0, 2, 1, 5] }] })
+
+    const recurrence = chartByTitle(t('pages.admin.dashboard.charts.recurrence.title'))
+    expect(recurrence?.config.data).toMatchObject({ datasets: [{ data: [6, 2] }] })
+
+    const satisfaction = chartByTitle(t('pages.admin.dashboard.charts.satisfaction.title'))
+    expect(satisfaction?.config.data).toMatchObject({ datasets: [{ data: [4.5] }] })
+    const satisfactionCard = satisfaction?.canvas.closest('.chart-card')
+    expect(satisfactionCard?.querySelector('.chart-card__subtitle')?.textContent).toBe(
+      'Media 4,5 / 5 · 2 valoraciones con puntuación',
+    )
+    expect(wrapper.find('.pending__total').text()).toBe('3 solicitudes pendientes')
   })
 
   it('shows the empty placeholder for every chart without data', async () => {
@@ -93,15 +110,15 @@ describe('dashboard page', () => {
     serveAnalytics(
       buildDashboardAnalytics({
         kpis: [],
-        userGrowth: noSeries,
+        newUsers: noSeries,
         inscriptions: noSeries,
-        contentPublished: noSeries,
-        eventsCalendar: noSeries,
-        usersByType: [],
-        audienceComposition: [],
-        participantsByGender: [],
-        eventsByCategory: [{ key: 'cat-1', label: 'Programación', color: '#ff6600', count: 0 }],
-        topEvents: [{ eventId: 'event-1', title: '', confirmed: 0 }],
+        topEvents: [],
+        pendingSignups: { total: 0, events: [] },
+        roleCoverage: [],
+        participantProfile: { groups: ['adults'], series: [{ key: 'Male', values: [0] }] },
+        categoryDemand: [{ key: 'cat-1', label: 'Programación', color: '#ff6600', count: 0 }],
+        recurrence: [{ key: '1', count: 0 }],
+        satisfaction: { scored: 0, events: [] },
         occupancy: { confirmed: 0, desired: 0, events: [] },
       }),
     )
@@ -109,15 +126,13 @@ describe('dashboard page', () => {
     const { wrapper } = await renderPage()
     await vi.waitFor(() => expect(wrapper.find('.kpi-grid').exists()).toBe(true))
 
-    expect(wrapper.findAll('.analytics-chart__empty')).toHaveLength(8)
-    expect(liveCharts()).toHaveLength(1)
-    expect(liveCharts()[0]?.config.data).toMatchObject({
-      labels: [['']],
-      datasets: [{ data: [0] }],
-    })
+    expect(wrapper.findAll('.analytics-chart__empty')).toHaveLength(7)
+    expect(liveCharts()).toHaveLength(0)
+    expect(wrapper.text()).toContain(t('pages.admin.dashboard.charts.satisfaction.subtitle'))
+    expect(wrapper.find('.pending__empty').exists()).toBe(true)
     expect(wrapper.find('.occupancy__empty').exists()).toBe(true)
     expect(wrapper.findAll('.kpi-card__value').map((value) => value.text())).toEqual(
-      Array(6).fill('0'),
+      Array(8).fill('0'),
     )
   })
 

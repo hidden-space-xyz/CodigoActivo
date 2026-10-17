@@ -1,56 +1,39 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  areaOptions,
-  AUDIENCE_STYLE,
-  barOptions,
-  barSeriesData,
-  CALENDAR_STYLE,
-  CONTENT_STYLE,
-  doughnutData,
-  doughnutOptions,
+  categoryDemandChart,
   GENDER_STYLE,
-  hasSeriesData,
-  hasSliceData,
   INSCRIPTION_STATUS_STYLE,
-  rankingBarData,
-  rankingOptions,
-  stackedAreaData,
+  participantProfileChart,
+  recurrenceChart,
+  satisfactionChart,
+  timeSeriesChart,
+  topEventsChart,
   USER_TYPE_STYLE,
-  wrapLabel,
 } from '@/pages/admin/dashboard/lib/charts'
 import { formatBucketLabel } from '@/pages/admin/dashboard/lib/bucket-label'
-import type { Slice, TimeSeries } from '@/pages/admin/dashboard/model/types'
+import type { Breakdown, Slice, TimeSeries, TopEvent } from '@/pages/admin/dashboard/model/types'
 
 import { t } from '../../../../../support/render'
 import { TEST_PALETTE } from '../../../../../support/chart-mock'
 
 interface TooltipCallbacks {
   title: (items: unknown[]) => string
-  label: (item: unknown) => string
+  label: (item: unknown) => string | string[]
 }
 
 interface TestableOptions {
+  indexAxis?: string
   plugins: {
-    legend: { display: boolean; labels: { color: string } }
-    tooltip: { backgroundColor: string; callbacks: TooltipCallbacks }
+    legend: { display: boolean }
+    tooltip: { callbacks: TooltipCallbacks }
   }
-  scales: Record<string, { stacked: boolean; ticks: { autoSkip?: boolean; color: string } }>
+  scales: Record<string, { stacked: boolean; max?: number; ticks: { autoSkip?: boolean } }>
 }
 
 function inspect(options: object): TestableOptions {
   return options as TestableOptions
 }
-
-const series: TimeSeries = {
-  buckets: ['2026-08-01', '2026-09-01'],
-  series: [
-    { key: 'member', values: [1, 2] },
-    { key: 'unknown', values: [3, 4] },
-  ],
-}
-
-const noSeries: TimeSeries = { buckets: [], series: [] }
 
 function slice(
   key: string,
@@ -61,124 +44,54 @@ function slice(
   return { key, label, color, count }
 }
 
+function topEvent(overrides: Partial<TopEvent> = {}): TopEvent {
+  return {
+    id: 'event-1',
+    title: 'Hackathon de primavera',
+    confirmed: 42,
+    seatsFilled: 30,
+    seatsDesired: 40,
+    ...overrides,
+  }
+}
+
 describe('dashboard chart styles', () => {
   it('resolve labels and colors from the palette', () => {
     expect(USER_TYPE_STYLE.member?.labelKey).toBe('pages.admin.dashboard.series.member')
     expect(USER_TYPE_STYLE.member?.color(TEST_PALETTE)).toBe('orange')
-    expect(USER_TYPE_STYLE.member?.soft(TEST_PALETTE)).toBe('orange-soft')
     expect(USER_TYPE_STYLE.sponsor?.color(TEST_PALETTE)).toBe('lime')
-    expect(USER_TYPE_STYLE.sponsor?.soft(TEST_PALETTE)).toBe('lime-soft')
     expect(USER_TYPE_STYLE.participant?.color(TEST_PALETTE)).toBe('azure')
-    expect(USER_TYPE_STYLE.participant?.soft(TEST_PALETTE)).toBe('azure-soft')
 
     expect(INSCRIPTION_STATUS_STYLE.confirmed?.color(TEST_PALETTE)).toBe('success')
-    expect(INSCRIPTION_STATUS_STYLE.confirmed?.soft(TEST_PALETTE)).toBe('success-soft')
     expect(INSCRIPTION_STATUS_STYLE.requested?.color(TEST_PALETTE)).toBe('warning')
-    expect(INSCRIPTION_STATUS_STYLE.requested?.soft(TEST_PALETTE)).toBe('warning-soft')
     expect(INSCRIPTION_STATUS_STYLE.denied?.color(TEST_PALETTE)).toBe('danger')
-    expect(INSCRIPTION_STATUS_STYLE.denied?.soft(TEST_PALETTE)).toBe('danger-soft')
-
-    expect(AUDIENCE_STYLE.adults?.color(TEST_PALETTE)).toBe('azure')
-    expect(AUDIENCE_STYLE.adults?.soft(TEST_PALETTE)).toBe('azure-soft')
-    expect(AUDIENCE_STYLE.minors?.color(TEST_PALETTE)).toBe('lime')
-    expect(AUDIENCE_STYLE.minors?.soft(TEST_PALETTE)).toBe('lime-soft')
 
     expect(GENDER_STYLE.Male?.color(TEST_PALETTE)).toBe('azure')
-    expect(GENDER_STYLE.Male?.soft(TEST_PALETTE)).toBe('azure-soft')
     expect(GENDER_STYLE.Female?.color(TEST_PALETTE)).toBe('lime')
-    expect(GENDER_STYLE.Female?.soft(TEST_PALETTE)).toBe('lime-soft')
     expect(GENDER_STYLE.Other?.color(TEST_PALETTE)).toBe('orange')
-    expect(GENDER_STYLE.Other?.soft(TEST_PALETTE)).toBe('orange-soft')
     expect(GENDER_STYLE.PreferNotToSay?.labelKey).toBe('entities.user.gender.PreferNotToSay')
     expect(GENDER_STYLE.PreferNotToSay?.color(TEST_PALETTE)).toBe('text-dim')
-    expect(GENDER_STYLE.PreferNotToSay?.soft(TEST_PALETTE)).toBe('border')
-
-    expect(CONTENT_STYLE.news?.color(TEST_PALETTE)).toBe('orange')
-    expect(CONTENT_STYLE.news?.soft(TEST_PALETTE)).toBe('orange-soft')
-    expect(CONTENT_STYLE.resources?.color(TEST_PALETTE)).toBe('azure')
-    expect(CONTENT_STYLE.resources?.soft(TEST_PALETTE)).toBe('azure-soft')
-
-    expect(CALENDAR_STYLE.past?.color(TEST_PALETTE)).toBe('azure')
-    expect(CALENDAR_STYLE.past?.soft(TEST_PALETTE)).toBe('azure-soft')
-    expect(CALENDAR_STYLE.upcoming?.color(TEST_PALETTE)).toBe('orange')
-    expect(CALENDAR_STYLE.upcoming?.soft(TEST_PALETTE)).toBe('orange-soft')
   })
 })
 
-describe('hasSeriesData', () => {
-  it('is false without series or with only zero values', () => {
-    expect(hasSeriesData(undefined)).toBe(false)
-    expect(hasSeriesData(noSeries)).toBe(false)
-    expect(hasSeriesData({ buckets: [], series: [{ key: 'a', values: [0, 0] }] })).toBe(false)
-  })
+describe('timeSeriesChart', () => {
+  const series: TimeSeries = {
+    buckets: ['2026-08-01', '2026-09-01'],
+    series: [
+      { key: 'member', values: [1, 2] },
+      { key: 'unknown', values: [0, 0] },
+    ],
+  }
 
-  it('is true when any bucket is positive', () => {
-    expect(
-      hasSeriesData({
-        buckets: [],
-        series: [
-          { key: 'a', values: [0] },
-          { key: 'b', values: [0, 2] },
-        ],
-      }),
-    ).toBe(true)
-  })
-})
+  it('stacks one styled bar dataset per series over the formatted buckets', () => {
+    const chart = timeSeriesChart(series, 'month', TEST_PALETTE, USER_TYPE_STYLE, t)
 
-describe('hasSliceData', () => {
-  it('is true only when a slice has a positive count', () => {
-    expect(hasSliceData(undefined)).toBe(false)
-    expect(hasSliceData([slice('a', 0), slice('b', 0)])).toBe(false)
-    expect(hasSliceData([slice('a', 1)])).toBe(true)
-  })
-})
-
-describe('stackedAreaData', () => {
-  it('builds styled filled datasets with formatted bucket labels', () => {
-    const data = stackedAreaData(series, 'month', TEST_PALETTE, USER_TYPE_STYLE, t)
-
-    expect(data.labels).toEqual([
+    expect(chart.empty).toBe(false)
+    expect(chart.data.labels).toEqual([
       formatBucketLabel('2026-08-01', 'month'),
       formatBucketLabel('2026-09-01', 'month'),
     ])
-    expect(data.datasets).toHaveLength(2)
-    expect(data.datasets[0]).toMatchObject({
-      label: t('pages.admin.dashboard.series.member'),
-      data: [1, 2],
-      borderColor: 'orange',
-      backgroundColor: 'orange-soft',
-      pointBackgroundColor: 'orange',
-      fill: true,
-      tension: 0.35,
-      pointRadius: 0,
-    })
-  })
-
-  it('falls back to the raw key and the dim color for unstyled series', () => {
-    const data = stackedAreaData(series, 'day', TEST_PALETTE, USER_TYPE_STYLE, t)
-
-    expect(data.labels?.[0]).toBe(formatBucketLabel('2026-08-01', 'day'))
-    expect(data.datasets[1]).toMatchObject({
-      label: 'unknown',
-      borderColor: 'text-dim',
-      backgroundColor: 'text-dim',
-    })
-  })
-
-  it('returns empty labels and datasets without a series', () => {
-    expect(stackedAreaData(undefined, 'month', TEST_PALETTE, USER_TYPE_STYLE, t)).toEqual({
-      labels: [],
-      datasets: [],
-    })
-  })
-})
-
-describe('barSeriesData', () => {
-  it('builds one bar dataset per series with styled or fallback colors', () => {
-    const data = barSeriesData(series, 'month', TEST_PALETTE, USER_TYPE_STYLE, t)
-
-    expect(data.labels).toHaveLength(2)
-    expect(data.datasets[0]).toMatchObject({
+    expect(chart.data.datasets[0]).toMatchObject({
       label: t('pages.admin.dashboard.series.member'),
       data: [1, 2],
       backgroundColor: 'orange',
@@ -186,205 +99,202 @@ describe('barSeriesData', () => {
       borderRadius: 3,
       borderSkipped: false,
     })
-    expect(data.datasets[1]).toMatchObject({ label: 'unknown', backgroundColor: 'text-dim' })
+    expect(chart.data.datasets[1]).toMatchObject({ label: 'unknown', backgroundColor: 'text-dim' })
+    expect(inspect(chart.options).scales.x?.stacked).toBe(true)
   })
 
-  it('returns empty labels and datasets without a series', () => {
-    expect(barSeriesData(noSeries, 'month', TEST_PALETTE, CONTENT_STYLE, t)).toEqual({
-      labels: [],
-      datasets: [],
-    })
-  })
-})
-
-describe('doughnutData', () => {
-  it('drops empty slices and prefers the style map over the API label and color', () => {
-    const data = doughnutData(
-      [
-        slice('member', 4, 'API member', '#111111'),
-        slice('other', 2, 'API other', '#222222'),
-        slice('plain', 1),
-        slice('empty', 0, 'Empty'),
-      ],
+  it('is empty when no bucket has a positive value', () => {
+    const chart = timeSeriesChart(
+      { buckets: ['2026-08-01'], series: [{ key: 'member', values: [0] }] },
+      'day',
       TEST_PALETTE,
-      t,
       USER_TYPE_STYLE,
+      t,
     )
 
-    expect(data.labels).toEqual([t('pages.admin.dashboard.series.member'), 'API other', 'plain'])
-    expect(data.datasets[0]).toMatchObject({
-      data: [4, 2, 1],
-      backgroundColor: ['orange', '#222222', 'text-dim'],
-      borderColor: 'surface',
-      hoverOffset: 6,
-    })
+    expect(chart.empty).toBe(true)
+    expect(chart.data.labels).toEqual([formatBucketLabel('2026-08-01', 'day')])
   })
+})
 
-  it('uses the API values without a style map, falling back to the key and dim color', () => {
-    const data = doughnutData(
-      [slice('cat-1', 3, 'Robótica', '#00ff00'), slice('cat-2', 2)],
+describe('topEventsChart', () => {
+  it('ranks confirmed signups and adds the share of seats filled to the label', () => {
+    const chart = topEventsChart(
+      [topEvent(), topEvent({ id: 'event-2', title: 'Taller', confirmed: 5, seatsDesired: 0 })],
       TEST_PALETTE,
       t,
     )
 
-    expect(data.labels).toEqual(['Robótica', 'cat-2'])
-    expect(data.datasets[0]?.backgroundColor).toEqual(['#00ff00', 'text-dim'])
-  })
-
-  it('returns an empty dataset for missing slices', () => {
-    expect(doughnutData(undefined, TEST_PALETTE, t).labels).toEqual([])
-    expect(doughnutData(undefined, TEST_PALETTE, t).datasets[0]?.data).toEqual([])
-  })
-})
-
-describe('wrapLabel', () => {
-  it('returns a single empty line for blank text', () => {
-    expect(wrapLabel('')).toEqual([''])
-    expect(wrapLabel('   ')).toEqual([''])
-  })
-
-  it('keeps short text on one line', () => {
-    expect(wrapLabel('Hackathon de primavera')).toEqual(['Hackathon de primavera'])
-  })
-
-  it('wraps words onto a second line without an ellipsis when everything fits', () => {
-    expect(wrapLabel('Taller de robótica avanzada para jóvenes')).toEqual([
-      'Taller de robótica',
-      'avanzada para jóvenes',
+    expect(chart.empty).toBe(false)
+    expect(chart.data.labels).toEqual([
+      ['Hackathon de primavera', t('pages.admin.dashboard.chart.seatsCovered', { p: 75 })],
+      ['Taller'],
     ])
-  })
-
-  it('truncates the last line with an ellipsis when words are cut off', () => {
-    expect(wrapLabel('one two three four five six', 10, 2)).toEqual(['one two', 'three fou…'])
-    expect(wrapLabel('hello world again', 10, 1)).toEqual(['hello…'])
-  })
-
-  it('does not add an ellipsis for surrounding whitespace', () => {
-    expect(wrapLabel(' Hackathon ')).toEqual(['Hackathon'])
-  })
-
-  it('shortens a single word longer than a line', () => {
-    expect(wrapLabel('Supercalifragilistico', 10)).toEqual(['Supercali…'])
-  })
-})
-
-describe('rankingBarData', () => {
-  it('builds a single colored dataset of confirmed inscriptions', () => {
-    const data = rankingBarData(
-      [['Hackathon', 'de primavera'], 'Taller'],
-      [42, 7],
-      '#f60',
-      TEST_PALETTE,
-      t,
-    )
-
-    expect(data.labels).toEqual([['Hackathon', 'de primavera'], 'Taller'])
-    expect(data.datasets).toEqual([
+    expect(chart.data.datasets).toEqual([
       expect.objectContaining({
         label: t('pages.admin.dashboard.series.confirmedDataset'),
-        data: [42, 7],
-        backgroundColor: '#f60',
-        borderColor: 'surface',
-        borderRadius: 4,
+        data: [42, 5],
+        backgroundColor: 'orange',
       }),
     ])
   })
-})
 
-describe('areaOptions', () => {
-  it('stacks both axes, shows the legend and formats the tooltip value', () => {
-    const options = inspect(areaOptions(TEST_PALETTE))
+  it('shows the full title, the confirmed count and the seats in the tooltip', () => {
+    const chart = topEventsChart(
+      [topEvent(), topEvent({ id: 'event-2', title: 'Taller', confirmed: 5, seatsDesired: 0 })],
+      TEST_PALETTE,
+      t,
+    )
+    const options = inspect(chart.options)
+    const { title, label } = options.plugins.tooltip.callbacks
 
-    expect(areaOptions(TEST_PALETTE)).toMatchObject({
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-    })
-    expect(options.plugins.legend).toMatchObject({ display: true, labels: { color: 'text-muted' } })
-    expect(options.plugins.tooltip.backgroundColor).toBe('surface')
-    expect(options.scales.x).toMatchObject({ stacked: true, ticks: { autoSkip: true } })
-    expect(options.scales.y).toMatchObject({ stacked: true, beginAtZero: true })
-
-    const label = options.plugins.tooltip.callbacks.label
-    expect(label({ dataset: { label: 'Socios' }, parsed: { y: 12345 } })).toBe(' Socios: 12.345')
-    expect(label({ dataset: {}, parsed: { y: 3 } })).toBe(' : 3')
-  })
-})
-
-describe('barOptions', () => {
-  it.each([true, false])('sets stacked=%s on both axes', (stacked) => {
-    const options = inspect(barOptions(TEST_PALETTE, stacked))
-
-    expect(options.scales.x?.stacked).toBe(stacked)
-    expect(options.scales.y?.stacked).toBe(stacked)
-    expect(options.plugins.legend.display).toBe(true)
-  })
-
-  it('formats the tooltip value with the dataset label', () => {
-    const { label } = inspect(barOptions(TEST_PALETTE, false)).plugins.tooltip.callbacks
-
-    expect(label({ dataset: { label: 'Recursos' }, parsed: { y: 4 } })).toBe(' Recursos: 4')
-    expect(label({ dataset: {}, parsed: { y: 0 } })).toBe(' : 0')
-  })
-})
-
-describe('rankingOptions', () => {
-  it('draws horizontal bars without legend and without skipping category labels', () => {
-    const raw = rankingOptions(TEST_PALETTE, ['Uno', 'Dos'], t)
-    const options = inspect(raw)
-
-    expect(raw.indexAxis).toBe('y')
+    expect(options.indexAxis).toBe('y')
     expect(options.plugins.legend.display).toBe(false)
-    expect(options.scales.y).toMatchObject({ stacked: false, ticks: { autoSkip: false } })
-    expect(options.scales.x).toMatchObject({ stacked: false, beginAtZero: true })
+    expect(options.scales.y?.ticks.autoSkip).toBe(false)
+    expect(title([{ dataIndex: 1 }])).toBe('Taller')
+    expect(title([])).toBe('Hackathon de primavera')
+    expect(title([{ dataIndex: 5 }])).toBe('')
+    expect(label({ dataIndex: 0 })).toEqual([
+      t('pages.admin.dashboard.tooltip.ranking', { n: '42' }),
+      t('pages.admin.dashboard.tooltip.seats', { p: 75, filled: '30', desired: '40' }),
+    ])
+    expect(label({ dataIndex: 1 })).toBe(t('pages.admin.dashboard.tooltip.ranking', { n: '5' }))
+    expect(label({ dataIndex: 9 })).toBe('')
   })
 
-  it('shows the unwrapped title and the confirmed count in the tooltip', () => {
-    const { title, label } = inspect(rankingOptions(TEST_PALETTE, ['Uno', 'Dos'], t)).plugins
+  it('is empty without events', () => {
+    expect(topEventsChart([], TEST_PALETTE, t).empty).toBe(true)
+  })
+})
+
+describe('categoryDemandChart', () => {
+  it('colors each bar with its category and falls back to the key and the dim color', () => {
+    const chart = categoryDemandChart(
+      [slice('cat-1', 3, 'Robótica', '#00ff00'), slice('cat-2', 1)],
+      TEST_PALETTE,
+      t,
+    )
+
+    expect(chart.empty).toBe(false)
+    expect(chart.data.labels).toEqual([['Robótica'], ['cat-2']])
+    expect(chart.data.datasets[0]).toMatchObject({
+      data: [3, 1],
+      backgroundColor: ['#00ff00', 'text-dim'],
+    })
+    const { title, label } = inspect(chart.options).plugins.tooltip.callbacks
+    expect(title([{ dataIndex: 0 }])).toBe('Robótica')
+    expect(label({ dataIndex: 0 })).toBe(t('pages.admin.dashboard.tooltip.ranking', { n: '3' }))
+  })
+
+  it('is empty when no category has a confirmed signup', () => {
+    expect(categoryDemandChart([slice('cat-1', 0, 'Robótica')], TEST_PALETTE, t).empty).toBe(true)
+  })
+})
+
+describe('participantProfileChart', () => {
+  const profile: Breakdown = {
+    groups: ['0-5', 'adults', 'unknown'],
+    series: [
+      { key: 'Male', values: [1, 0, 0] },
+      { key: 'Female', values: [0, 4, 0] },
+    ],
+  }
+
+  it('stacks one gender segment per age group on horizontal bars', () => {
+    const chart = participantProfileChart(profile, TEST_PALETTE, t)
+    const options = inspect(chart.options)
+
+    expect(chart.empty).toBe(false)
+    expect(chart.data.labels).toEqual([
+      t('pages.admin.dashboard.series.ageGroups.upTo5'),
+      t('pages.admin.dashboard.series.ageGroups.adults'),
+      'unknown',
+    ])
+    expect(chart.data.datasets.map((dataset) => dataset.backgroundColor)).toEqual(['azure', 'lime'])
+    expect(options.indexAxis).toBe('y')
+    expect(options.plugins.legend.display).toBe(true)
+    expect(options.scales.x?.stacked).toBe(true)
+    expect(options.scales.y).toMatchObject({ stacked: true, ticks: { autoSkip: false } })
+  })
+
+  it('shows each gender with its count in the tooltip', () => {
+    const { label } = inspect(participantProfileChart(profile, TEST_PALETTE, t).options).plugins
       .tooltip.callbacks
 
-    expect(title([{ dataIndex: 1 }])).toBe('Dos')
-    expect(title([])).toBe('Uno')
-    expect(title([{ dataIndex: 5 }])).toBe('')
-    expect(label({ parsed: { x: 1500 } })).toBe(
-      t('pages.admin.dashboard.tooltip.ranking', { n: '1500' }),
-    )
+    expect(label({ dataset: { label: 'Mujer' }, parsed: { x: 1200 } })).toBe(' Mujer: 1200')
+    expect(label({ dataset: {}, parsed: { x: 0 } })).toBe(' : 0')
+  })
+
+  it('is empty when every group is zero', () => {
+    expect(
+      participantProfileChart(
+        { groups: ['adults'], series: [{ key: 'Male', values: [0] }] },
+        TEST_PALETTE,
+        t,
+      ).empty,
+    ).toBe(true)
   })
 })
 
-describe('doughnutOptions', () => {
-  it('uses a cutout and shows the legend', () => {
-    const raw = doughnutOptions(TEST_PALETTE, t)
+describe('recurrenceChart', () => {
+  it('labels the groups by how many events people joined', () => {
+    const chart = recurrenceChart(
+      [slice('1', 7), slice('2', 3), slice('3-5', 1), slice('6+', 0), slice('other', 2)],
+      TEST_PALETTE,
+      t,
+    )
 
-    expect(raw.cutout).toBe('62%')
-    expect(inspect(raw).plugins.legend.display).toBe(true)
+    expect(chart.empty).toBe(false)
+    expect(chart.data.labels).toEqual([
+      t('pages.admin.dashboard.series.recurrence.once'),
+      t('pages.admin.dashboard.series.recurrence.twice'),
+      t('pages.admin.dashboard.series.recurrence.threeToFive'),
+      t('pages.admin.dashboard.series.recurrence.sixOrMore'),
+      'other',
+    ])
+    expect(chart.data.datasets[0]).toMatchObject({
+      label: t('pages.admin.dashboard.series.people'),
+      data: [7, 3, 1, 0, 2],
+      backgroundColor: 'lime',
+    })
+    const { label } = inspect(chart.options).plugins.tooltip.callbacks
+    expect(label({ dataIndex: 0 })).toBe(t('pages.admin.dashboard.tooltip.people', { n: '7' }))
   })
 
-  it('computes the percentage over the visible slices only', () => {
-    const { label } = inspect(doughnutOptions(TEST_PALETTE, t)).plugins.tooltip.callbacks
-    const hidden = new Set([2])
-    const item = {
-      label: 'Adultos',
-      parsed: 30,
-      dataset: { data: [30, 10, 60] },
-      chart: { getDataVisibility: (index: number) => !hidden.has(index) },
-    }
+  it('is empty when nobody joined', () => {
+    expect(recurrenceChart([slice('1', 0)], TEST_PALETTE, t).empty).toBe(true)
+  })
+})
 
-    expect(label(item)).toBe(
-      t('pages.admin.dashboard.tooltip.slice', { label: 'Adultos', n: '30', p: 75 }),
+describe('satisfactionChart', () => {
+  it('draws the mean score per event on an axis capped at five', () => {
+    const chart = satisfactionChart(
+      {
+        average: 4.2,
+        scored: 12,
+        events: [{ id: 'event-1', title: 'Hackathon', average: 4.25, scored: 8 }],
+      },
+      TEST_PALETTE,
+      t,
+    )
+    const options = inspect(chart.options)
+
+    expect(chart.empty).toBe(false)
+    expect(chart.data.labels).toEqual([['Hackathon']])
+    expect(chart.data.datasets[0]).toMatchObject({
+      label: t('pages.admin.dashboard.series.averageScore'),
+      data: [4.25],
+      backgroundColor: 'azure',
+    })
+    expect(options.scales.x?.max).toBe(5)
+    expect(options.plugins.tooltip.callbacks.label({ dataIndex: 0 })).toBe(
+      t('pages.admin.dashboard.tooltip.score', { score: '4,3', n: '8' }),
     )
   })
 
-  it('treats missing values as zero and reports 0% when nothing is visible', () => {
-    const { label } = inspect(doughnutOptions(TEST_PALETTE, t)).plugins.tooltip.callbacks
-
-    expect(
-      label({
-        label: 'Menores',
-        parsed: 0,
-        dataset: { data: [null, 0] },
-        chart: { getDataVisibility: () => true },
-      }),
-    ).toBe(t('pages.admin.dashboard.tooltip.slice', { label: 'Menores', n: '0', p: 0 }))
+  it('is empty without scored events', () => {
+    expect(satisfactionChart({ average: null, scored: 0, events: [] }, TEST_PALETTE, t).empty).toBe(
+      true,
+    )
   })
 })

@@ -1,1 +1,1 @@
-export { formatFileSize, formatNumber, formatSignedPercent } from './format'
+export { formatFileSize, formatNumber, formatScore, formatSignedPercent } from './format'

@@ -6,6 +6,7 @@ using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Users;
@@ -110,6 +111,54 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     public async Task DashboardAnalyticsAsyncSeededEventAggregatesEverySectionInTheDatabase()
     {
         await SeedEventGraphAsync();
+        var categoryId = Guid.NewGuid();
+        var upcomingStart = new DateTimeOffset(2026, 8, 1, 10, 0, 0, TimeSpan.Zero);
+        await Factory.SeedAsync(db =>
+        {
+            db.EventCategoryTypes.Add(
+                Persisted.As<EventCategoryType>(
+                    new
+                    {
+                        Id = categoryId,
+                        Name = "Voluntariado",
+                        Color = "#112233",
+                    }
+                )
+            );
+            db.EventCategories.Add(
+                Persisted.As<EventCategory>(
+                    new { EventId = EventId, EventCategoryTypeId = categoryId }
+                )
+            );
+            db.EventRatings.AddRange(
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 4 }),
+                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 }),
+                Persisted.As<EventRating>(new { EventId = EventId, MostLiked = "Todo" })
+            );
+            db.Files.Add(Thumbnail(ActivityCThumbnailId));
+            db.Activities.Add(
+                BuildActivity(ActivityCId, "Cierre", ActivityCThumbnailId, upcomingStart)
+            );
+            db.ActivityRoleCapacities.Add(
+                Persisted.As<ActivityRoleCapacity>(
+                    new
+                    {
+                        ActivityId = ActivityCId,
+                        Role = ActivityRole.Participant,
+                        DesiredCount = 4,
+                    }
+                )
+            );
+            db.Assignments.Add(
+                NewAssignment(
+                    ActivityCId,
+                    TestSeedData.Users.MemberId,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    KnownIds.AssignmentStatusTypes.Requested
+                )
+            );
+            return Task.CompletedTask;
+        });
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
@@ -126,18 +175,45 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             .Which.Values[mayFirst]
             .Should()
             .Be(2);
-        body.Inscriptions.Series.Single(s => s.Key == "requested").Values[mayFirst].Should().Be(1);
-        body.Kpis.Single(k => k.Key == "inscriptions").InRange.Should().Be(4);
-        body.Kpis.Single(k => k.Key == "activities").InRange.Should().Be(2);
+        body.Inscriptions.Series.Single(s => s.Key == "requested").Values[mayFirst].Should().Be(2);
+        body.Kpis.Single(k => k.Key == "inscriptions").InRange.Should().Be(5);
+        body.Kpis.Single(k => k.Key == "activities").InRange.Should().Be(3);
         body.TopEvents.Should()
             .ContainSingle()
             .Which.Should()
-            .Be(new DashboardTopEventResponse(EventId, "Feria de Voluntariado", 2));
-        var may = body.EventsCalendar.Buckets.ToList().IndexOf(new DateOnly(2026, 5, 1));
-        body.EventsCalendar.Series.Single(s => s.Key == "past").Values[may].Should().Be(1);
-        body.UsersByType.Sum(slice => slice.Count)
+            .Be(new DashboardTopEventResponse(EventId, "Feria de Voluntariado", 2, 0, 0));
+        body.PendingSignups.Should()
+            .BeEquivalentTo(
+                new DashboardPendingSignupsResponse(
+                    1,
+                    [
+                        new DashboardPendingEventResponse(
+                            EventId,
+                            "Feria de Voluntariado",
+                            1,
+                            At,
+                            upcomingStart
+                        ),
+                    ]
+                )
+            );
+        body.RoleCoverage.Single(role => role.Key == "participant")
             .Should()
-            .Be(body.Kpis.Single(k => k.Key == "users").Total);
+            .Be(new DashboardRoleCoverageResponse("participant", 0, 4));
+        body.ParticipantProfile.Series.Single(s => s.Key == "Male")
+            .Values.Should()
+            .Equal([0, 1, 0, 0], "the seeded child is 11 on the last day of the range");
+        body.ParticipantProfile.Series.Sum(s => s.Values.Sum()).Should().Be(2);
+        body.CategoryDemand.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be(new DashboardSliceResponse(categoryId.ToString(), "Voluntariado", "#112233", 2));
+        body.Recurrence.Single(slice => slice.Key == "1").Count.Should().Be(2);
+        body.Satisfaction.Average.Should().Be(4.5);
+        body.Satisfaction.Events.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be(new DashboardEventSatisfactionResponse(EventId, "Feria de Voluntariado", 4.5, 2));
     }
 
     private static Activity BuildActivity(

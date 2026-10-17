@@ -6,7 +6,9 @@ import { formatNumber } from '@/shared/lib/number'
 import { AppIcon } from '@/shared/ui/app-icon'
 import { ChartCard } from '@/shared/ui/chart'
 
+import { seatPercent as percent } from '../lib/seats'
 import type { Occupancy } from '../model/types'
+import SeatMeter from './SeatMeter.vue'
 
 const props = defineProps<{
   /**
@@ -23,10 +25,6 @@ const overall = computed(() => percent(props.occupancy.confirmed, props.occupanc
 const expanded = ref<Record<string, boolean>>({})
 function toggle(id: string): void {
   expanded.value[id] = !expanded.value[id]
-}
-
-function percent(confirmed: number, desired: number): number | null {
-  return desired > 0 ? Math.round((confirmed / desired) * 100) : null
 }
 </script>
 
@@ -60,12 +58,7 @@ function percent(confirmed: number, desired: number): number | null {
             <AppIcon :name="expanded[event.id] ? 'chevron-down' : 'chevron-right'" />
           </span>
           <span class="occupancy__name" :title="event.title">{{ event.title }}</span>
-          <span class="occupancy__meter">
-            <span
-              class="occupancy__fill"
-              :style="{ width: `${percent(event.confirmed, event.desired) ?? 0}%` }"
-            />
-          </span>
+          <SeatMeter :percent="percent(event.confirmed, event.desired)" />
           <span class="occupancy__pct">{{ percent(event.confirmed, event.desired) ?? '—' }}%</span>
         </button>
 
@@ -77,12 +70,7 @@ function percent(confirmed: number, desired: number): number | null {
               }}</span>
               <span class="occupancy__activity-date">{{ formatDateTime(activity.startsAt) }}</span>
             </span>
-            <span class="occupancy__meter occupancy__meter--sm">
-              <span
-                class="occupancy__fill"
-                :style="{ width: `${percent(activity.confirmed, activity.desired) ?? 0}%` }"
-              />
-            </span>
+            <SeatMeter small :percent="percent(activity.confirmed, activity.desired)" />
             <span class="occupancy__activity-pct">
               {{ percent(activity.confirmed, activity.desired) ?? '—' }}%
               <span class="occupancy__activity-plazas"
@@ -161,25 +149,6 @@ function percent(confirmed: number, desired: number): number | null {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.occupancy__meter {
-  height: 8px;
-  border-radius: 999px;
-  background: var(--ca-surface-2);
-  overflow: hidden;
-}
-
-.occupancy__meter--sm {
-  height: 6px;
-}
-
-.occupancy__fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--ca-lime);
-  transition: width 0.3s ease;
 }
 
 .occupancy__pct {

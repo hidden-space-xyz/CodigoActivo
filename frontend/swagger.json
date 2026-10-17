@@ -4898,20 +4898,20 @@
       },
       "DashboardAnalyticsResponse": {
         "required": [
-          "audienceComposition",
-          "contentPublished",
-          "eventsByCategory",
-          "eventsCalendar",
+          "categoryDemand",
           "granularity",
           "inscriptions",
           "kpis",
+          "newUsers",
           "occupancy",
-          "participantsByGender",
+          "participantProfile",
+          "pendingSignups",
           "rangeEnd",
           "rangeStart",
-          "topEvents",
-          "userGrowth",
-          "usersByType"
+          "recurrence",
+          "roleCoverage",
+          "satisfaction",
+          "topEvents"
         ],
         "type": "object",
         "properties": {
@@ -4932,38 +4932,11 @@
               "$ref": "#/components/schemas/DashboardKpiResponse"
             }
           },
-          "userGrowth": {
+          "newUsers": {
             "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
           },
           "inscriptions": {
             "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
-          },
-          "contentPublished": {
-            "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
-          },
-          "usersByType": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardSliceResponse"
-            }
-          },
-          "audienceComposition": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardSliceResponse"
-            }
-          },
-          "participantsByGender": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardSliceResponse"
-            }
-          },
-          "eventsByCategory": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardSliceResponse"
-            }
           },
           "topEvents": {
             "type": "array",
@@ -4971,8 +4944,32 @@
               "$ref": "#/components/schemas/DashboardTopEventResponse"
             }
           },
-          "eventsCalendar": {
-            "$ref": "#/components/schemas/DashboardTimeSeriesResponse"
+          "pendingSignups": {
+            "$ref": "#/components/schemas/DashboardPendingSignupsResponse"
+          },
+          "roleCoverage": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardRoleCoverageResponse"
+            }
+          },
+          "participantProfile": {
+            "$ref": "#/components/schemas/DashboardBreakdownResponse"
+          },
+          "categoryDemand": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSliceResponse"
+            }
+          },
+          "recurrence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSliceResponse"
+            }
+          },
+          "satisfaction": {
+            "$ref": "#/components/schemas/DashboardSatisfactionResponse"
           },
           "occupancy": {
             "$ref": "#/components/schemas/DashboardOccupancyResponse"
@@ -5208,6 +5205,8 @@
         "required": [
           "confirmed",
           "eventId",
+          "seatsDesired",
+          "seatsFilled",
           "title"
         ],
         "type": "object",
@@ -5220,6 +5219,14 @@
             "type": "string"
           },
           "confirmed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "seatsFilled": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "seatsDesired": {
             "type": "integer",
             "format": "int32"
           }
@@ -8070,6 +8077,154 @@
         "properties": {
           "otp": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardBreakdownResponse": {
+        "required": [
+          "groups",
+          "series"
+        ],
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSeriesResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardEventSatisfactionResponse": {
+        "required": [
+          "average",
+          "eventId",
+          "scored",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "average": {
+            "type": "number",
+            "format": "double"
+          },
+          "scored": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardPendingEventResponse": {
+        "required": [
+          "eventId",
+          "nextActivityStartsAt",
+          "oldestRequestedAt",
+          "pending",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "oldestRequestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nextActivityStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardPendingSignupsResponse": {
+        "required": [
+          "events",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardPendingEventResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardRoleCoverageResponse": {
+        "required": [
+          "confirmed",
+          "desired",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "confirmed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "desired": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardSatisfactionResponse": {
+        "required": [
+          "events",
+          "scored"
+        ],
+        "type": "object",
+        "properties": {
+          "average": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "scored": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardEventSatisfactionResponse"
+            }
           }
         },
         "additionalProperties": false

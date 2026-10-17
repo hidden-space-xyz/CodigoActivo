@@ -1,34 +1,30 @@
 <script setup lang="ts">
 import { BaseChart, ChartCard } from '@/shared/ui/chart'
 
+import type { ChartView } from '../lib/charts'
+
 withDefaults(
   defineProps<{
     /** Card heading. */
     title: string
     /** Short explanation shown under the heading. */
     subtitle: string
-    /** Chart.js chart type; changing it recreates the chart. */
-    type: 'line' | 'bar' | 'doughnut'
-    /** Chart.js `data` object, typically built by the helpers in `lib/charts.ts`. */
-    data: object
-    /** Chart.js `options` object matching `type`. */
-    options: object
+    /** Bar chart built by `lib/charts.ts`; its `empty` flag shows the placeholder instead. */
+    chart: ChartView
     /** Canvas (or empty placeholder) height in pixels; defaults to 260. */
     height?: number
-    /** Shows the "no data" placeholder instead of rendering the chart. */
-    empty?: boolean
   }>(),
-  { height: 260, empty: false },
+  { height: 260 },
 )
 </script>
 
 <template>
   <ChartCard :title="title" :subtitle="subtitle">
-    <div v-if="empty" class="analytics-chart__empty" :style="{ height: `${height}px` }">
+    <div v-if="chart.empty" class="analytics-chart__empty" :style="{ height: `${height}px` }">
       {{ $t('pages.admin.dashboard.chart.empty') }}
     </div>
     <div v-else class="analytics-chart__canvas" :style="{ height: `${height}px` }">
-      <BaseChart :type="type" :data="data" :options="options" />
+      <BaseChart type="bar" :data="chart.data" :options="chart.options" />
     </div>
   </ChartCard>
 </template>
