@@ -3,7 +3,6 @@ import { useI18n } from 'vue-i18n'
 
 import type { EventCategory } from '@/entities/event-category'
 import { ColorTag } from '@/shared/ui/color-tag'
-import { ColumnSearch } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
 import { RowActions, type RowAction } from '@/shared/ui/row-actions'
 
@@ -47,6 +46,7 @@ function rowActions(category: EventCategory): RowAction[] {
       variant="flush"
       :empty-text="$t('pages.admin.catalogs.eventCategories.empty.none')"
       :error-text="$t('pages.admin.catalogs.eventCategories.empty.error')"
+      :search="{ key: 'name', label: $t('pages.admin.catalogs.eventCategories.search.name') }"
     >
       <el-table-column
         prop="name"
@@ -55,14 +55,6 @@ function rowActions(category: EventCategory): RowAction[] {
         sortable="custom"
         :fixed="table.isNarrow.value ? false : 'left'"
       >
-        <template #header>
-          <ColumnSearch
-            v-model="table.columnFilter('name').value"
-            :label="$t('common.name')"
-            :placeholder="$t('pages.admin.catalogs.eventCategories.search.name')"
-            @apply="table.onFilter"
-          />
-        </template>
         <template #default="{ row }">
           <span class="category-cell">
             <ColorTag :value="row.name" :color="row.color" truncate />
