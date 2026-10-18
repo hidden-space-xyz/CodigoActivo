@@ -338,8 +338,8 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   unsubscribe button. `User` appends every change to `news_consent_changes` with its instant and source
   (`Registration`, `Profile`, `UnsubscribeLink`, `OneClickUnsubscribe`) and the blocked copy keeps them. Consents stored before that table existed have no
   recorded change.
-- Only adults register, and only a parent or legal guardian, who represents the minor (Civil Code article
-  162), adds a minor: `POST /api/auth/register` refuses a body without `declaresAdult`
+- Only adults register, and only a parent or legal guardian, who represents the minor (Civil Code articles
+  162 and 225), adds a minor: `POST /api/auth/register` refuses a body without `declaresAdult`
   (`UserAdultDeclarationRequired`) before looking the address up, and every minor, added at registration or
   through `POST /api/users/{id}/children`, needs `declaresGuardianship` (`UserGuardianshipDeclarationRequired`).
   `users.adult_declared_at` and `users.guardianship_declared_at` keep when each was declared, also in the
