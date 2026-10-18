@@ -1348,7 +1348,6 @@
         "viewDetail": "Ver detalle",
         "openAudit": "Ver la auditoría de esta traza",
         "noTrace": "Esta entrada no tiene traza",
-        "moreActions": "Más acciones de la entrada",
         "filterTrace": "Filtrar por la traza {trace}",
         "filters": {
           "trace": "Traza: {trace}"
@@ -1374,7 +1373,6 @@
           "ip": "IP",
           "action": "Acción",
           "entity": "Entidad",
-          "details": "Detalles",
           "outcome": "Resultado",
           "trace": "Traza"
         },
@@ -1384,10 +1382,8 @@
           "error": "No se pudo cargar el registro de auditoría."
         },
         "deletedAccount": "Cuenta eliminada",
-        "itemCount": "Elementos: {count}",
         "openDiagnostics": "Ver el diagnóstico de esta traza",
         "noTrace": "Esta entrada no tiene traza",
-        "moreActions": "Más acciones de la entrada",
         "filterActor": "Filtrar por {actor}",
         "filterEntity": "Filtrar por {entity}",
         "filterIp": "Filtrar por la IP {ip}",
@@ -1492,29 +1488,6 @@
           "EventRatingScoreOutOfRange": "La puntuación está fuera de rango.",
           "EventRatingAnswerTooLong": "Una respuesta de la valoración es demasiado larga.",
           "EventTermsSignatureInvalid": "La firma no es válida."
-        },
-        "detailNames": {
-          "IsAdmin": "Administrador",
-          "Status": "Estado",
-          "Role": "Rol",
-          "UserType": "Tipo de usuario",
-          "Type": "Tipo",
-          "RequiresSignature": "Requiere firma",
-          "PromotionalConsent": "Publicidad"
-        },
-        "detailValues": {
-          "true": "Sí",
-          "false": "No",
-          "Requested": "Solicitada",
-          "Confirmed": "Confirmada",
-          "Denied": "Rechazada",
-          "Leader": "Líder",
-          "Volunteer": "Voluntario",
-          "Participant": "Participante",
-          "Member": "Socio",
-          "Sponsor": "Patrocinador",
-          "Internal": "Interno",
-          "External": "Externo"
         }
       }
     },

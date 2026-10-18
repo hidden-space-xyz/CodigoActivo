@@ -15,7 +15,6 @@ import {
   actionLabelKey,
   actorLabel,
   actorTypeLabelKey,
-  detailLabel,
   entityLabel,
   entityTypeLabelKey,
   errorCodeLabel,
@@ -205,19 +204,6 @@ function entryActions(entry: AuditEntry): RowAction[] {
           </div>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('pages.admin.audit.columns.details')" min-width="180">
-        <template #default="{ row }">
-          <ul v-if="row.details.length > 0 || row.itemCount !== null" class="details">
-            <li v-for="detail in row.details" :key="detail.name">
-              {{ detailLabel(detail, t, hasMessage) }}
-            </li>
-            <li v-if="row.itemCount !== null">
-              {{ $t('pages.admin.audit.itemCount', { count: row.itemCount }) }}
-            </li>
-          </ul>
-          <span v-else class="muted">—</span>
-        </template>
-      </el-table-column>
       <el-table-column :label="$t('pages.admin.audit.columns.outcome')" min-width="200">
         <template #header>
           <ColumnFilterSelect
@@ -238,7 +224,7 @@ function entryActions(entry: AuditEntry): RowAction[] {
           </div>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('pages.admin.audit.columns.trace')" width="150">
+      <el-table-column :label="$t('pages.admin.audit.columns.trace')" width="110">
         <template #default="{ row }">
           <button
             v-if="row.traceId"
@@ -248,17 +234,14 @@ function entryActions(entry: AuditEntry): RowAction[] {
             :aria-label="$t('pages.admin.audit.filterTrace', { trace: row.traceId })"
             @click="filterByTrace(row.traceId)"
           >
-            {{ row.traceId }}
+            {{ shortId(row.traceId) }}
           </button>
           <span v-else class="muted">—</span>
         </template>
       </el-table-column>
       <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
         <template #default="{ row }">
-          <RowActions
-            :actions="entryActions(row)"
-            :menu-label="$t('pages.admin.audit.moreActions')"
-          />
+          <RowActions :actions="entryActions(row)" />
         </template>
       </el-table-column>
     </DataTable>
@@ -321,12 +304,5 @@ function entryActions(entry: AuditEntry): RowAction[] {
 
 .muted {
   color: var(--ca-text-dim);
-}
-
-.details {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 13px;
 }
 </style>

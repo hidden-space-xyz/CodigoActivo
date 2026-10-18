@@ -44,7 +44,6 @@ public sealed class DemoLogHistoryTests
         Workshop,
         FeaturedEvent,
         Adults[2],
-        ActivityRole.Participant,
         AssignmentStatus.Confirmed,
         Now.AddDays(-4)
     );
@@ -53,7 +52,6 @@ public sealed class DemoLogHistoryTests
         Workshop,
         FeaturedEvent,
         Child,
-        ActivityRole.Participant,
         AssignmentStatus.Requested,
         Now.AddDays(-3)
     );
@@ -76,7 +74,6 @@ public sealed class DemoLogHistoryTests
                     Workshop,
                     FeaturedEvent,
                     Adults[3],
-                    ActivityRole.Leader,
                     AssignmentStatus.Confirmed,
                     Now.AddDays(-40)
                 ),
@@ -154,7 +151,6 @@ public sealed class DemoLogHistoryTests
         signup.EntityType.Should().Be("Activity");
         signup.EntityId.Should().Be(Workshop);
         signup.Related.Should().Be(Related(("User", Adults[2])));
-        signup.Details.Should().Be("""{"Role":"Participant"}""");
         audit
             .Should()
             .Contain(entry =>
@@ -190,7 +186,6 @@ public sealed class DemoLogHistoryTests
         decision.OccurredAt.Should().BeAfter(adultSignup.CreatedAt);
         decision.EntityId.Should().Be(Workshop);
         decision.Related.Should().Be(Related(("User", Adults[2])));
-        decision.Details.Should().Be("""{"Status":"Confirmed"}""");
     }
 
     [Fact]
@@ -314,11 +309,7 @@ public sealed class DemoLogHistoryTests
         cleanups
             .Should()
             .OnlyContain(entry =>
-                entry.ActorType == "System"
-                && entry.ClientIp == null
-                && entry.TraceId == null
-                && entry.ItemCount >= 1
-                && entry.ItemCount <= 5
+                entry.ActorType == "System" && entry.ClientIp == null && entry.TraceId == null
             );
     }
 

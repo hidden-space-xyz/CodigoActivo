@@ -25,10 +25,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     entity_type character varying(100) NULL,
                     entity_id uuid NULL,
                     related jsonb NULL,
-                    details jsonb NULL,
                     outcome character varying(100) NOT NULL,
                     error_code character varying(100) NULL,
-                    item_count integer NULL,
                     trace_id character varying(32) NULL,
                     CONSTRAINT pk_audit_log_entries PRIMARY KEY (occurred_at, id)
                 ) PARTITION BY RANGE (occurred_at);

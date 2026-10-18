@@ -63,11 +63,6 @@ public class AuditLogEntry
     public string? Related { get; init; }
 
     /// <summary>
-    /// Gets the flags and choices of the command, as a JSON object.
-    /// </summary>
-    public string? Details { get; init; }
-
-    /// <summary>
     /// Gets how the command ended.
     /// </summary>
     public string Outcome { get; init; } = string.Empty;
@@ -76,11 +71,6 @@ public class AuditLogEntry
     /// Gets the code of the error that rejected the command.
     /// </summary>
     public string? ErrorCode { get; init; }
-
-    /// <summary>
-    /// Gets how many items the command changed, when it reports a count.
-    /// </summary>
-    public int? ItemCount { get; init; }
 
     /// <summary>
     /// Gets the trace id of the request the command ran in.

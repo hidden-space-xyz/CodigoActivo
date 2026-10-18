@@ -101,35 +101,4 @@ public sealed class AuditConventionTests
             .HaveCount(NeverRecordedIdentifiers.Length)
             .And.OnlyContain(type => AuditEntity.TypeOf(type) == null);
     }
-
-    [Fact]
-    public void RecordedDetailsAreTheReviewedFlagsAndChoices()
-    {
-        var details = Commands()
-            .SelectMany(command =>
-                CommandAudit
-                    .DetailPropertiesOf(command)
-                    .Select(property => $"{command.Name}.{property.Name}")
-            )
-            .ToList();
-
-        details
-            .Should()
-            .BeEquivalentTo(
-                [
-                    "AssignActivityCommand.Role",
-                    "ChangeAssignmentRoleCommand.Role",
-                    "ChangeAssignmentStatusCommand.Status",
-                    "ChangeUserTypeCommand.UserType",
-                    "CreateResourceCommand.Type",
-                    "CreateTermsDocumentCommand.RequiresSignature",
-                    "RegisterCommand.PromotionalConsent",
-                    "SetAdminCommand.IsAdmin",
-                    "UpdateResourceCommand.Type",
-                    "UpdateTermsDocumentCommand.RequiresSignature",
-                    "UpdateUserCommand.PromotionalConsent",
-                ],
-                "a new flag or choice reaches the audit log only after reviewing that it names no personal data"
-            );
-    }
 }

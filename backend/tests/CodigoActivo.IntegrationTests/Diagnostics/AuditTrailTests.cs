@@ -79,7 +79,6 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
         record.ActorType.Should().Be(AuditActorType.User);
         record.ActorId.Should().Be(UserId.From(TestSeedData.Users.AdminId));
         record.Entity.Should().Be(Member);
-        record.Details.Should().Equal(new AuditDetail("IsAdmin", true));
         record.Outcome.Should().Be(AuditOutcome.Succeeded);
         record.ToString().Should().NotContain(TestSeedData.Password);
     }
@@ -127,7 +126,6 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
         record.Action.Should().Be(AuditAction.PurgeDeletedAccounts);
         record.ActorType.Should().Be(AuditActorType.System);
         record.ClientAddress.Should().BeNull();
-        record.ItemCount.Should().Be(1);
     }
 
     [Fact]

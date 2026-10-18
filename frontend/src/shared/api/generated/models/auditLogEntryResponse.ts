@@ -6,7 +6,6 @@
  */
 import type { AuditAction } from './auditAction';
 import type { AuditActorType } from './auditActorType';
-import type { AuditDetailResponse } from './auditDetailResponse';
 import type { AuditEntityType } from './auditEntityType';
 import type { AuditOutcome } from './auditOutcome';
 import type { AuditRelatedEntityResponse } from './auditRelatedEntityResponse';
@@ -30,12 +29,9 @@ export interface AuditLogEntryResponse {
   /** @nullable */
   entityName?: string | null;
   related: AuditRelatedEntityResponse[];
-  details: AuditDetailResponse[];
   outcome: AuditOutcome;
   /** @nullable */
   errorCode?: string | null;
-  /** @nullable */
-  itemCount?: number | null;
   /** @nullable */
   traceId?: string | null;
 }

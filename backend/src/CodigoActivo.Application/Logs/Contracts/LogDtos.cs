@@ -87,10 +87,8 @@ public sealed record DiagnosticLogEntryDetailResponse(
 /// <param name="EntityId">Identifier of the main entity, if any.</param>
 /// <param name="EntityName">Full name of the main entity when it is a user that still exists.</param>
 /// <param name="Related">Other entities the command named.</param>
-/// <param name="Details">Flags and choices of the command.</param>
 /// <param name="Outcome">How it ended.</param>
 /// <param name="ErrorCode">Code of the error that rejected it, if any.</param>
-/// <param name="ItemCount">How many items it changed, when it reports a count.</param>
 /// <param name="TraceId">Trace it ran in, if any.</param>
 public sealed record AuditLogEntryResponse(
     Guid Id,
@@ -105,10 +103,8 @@ public sealed record AuditLogEntryResponse(
     Guid? EntityId,
     string? EntityName,
     IReadOnlyList<AuditRelatedEntityResponse> Related,
-    IReadOnlyList<AuditDetailResponse> Details,
     AuditOutcome Outcome,
     string? ErrorCode,
-    int? ItemCount,
     string? TraceId
 );
 
@@ -118,10 +114,3 @@ public sealed record AuditLogEntryResponse(
 /// <param name="Type">Kind of the entity.</param>
 /// <param name="Id">Identifier of the entity.</param>
 public sealed record AuditRelatedEntityResponse(AuditEntityType Type, Guid Id);
-
-/// <summary>
-/// Represents one flag or choice of an audited command.
-/// </summary>
-/// <param name="Name">Name of the command parameter.</param>
-/// <param name="Value">Its value: <c>true</c>, <c>false</c> or the name of an enum member.</param>
-public sealed record AuditDetailResponse(string Name, string Value);

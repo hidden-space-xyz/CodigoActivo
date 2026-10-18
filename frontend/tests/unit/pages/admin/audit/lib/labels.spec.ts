@@ -9,7 +9,6 @@ import {
   actionLabelKey,
   actorLabel,
   actorTypeLabelKey,
-  detailLabel,
   entityLabel,
   entityTypeLabelKey,
   errorCodeLabel,
@@ -76,11 +75,5 @@ describe('audit labels', () => {
       'Otra petición guardó el mismo dato a la vez.',
     )
     expect(errorCodeLabel('SomethingNew', t, has)).toBe('SomethingNew')
-  })
-
-  it('translates the known flag names and values and keeps the others', () => {
-    expect(detailLabel({ name: 'IsAdmin', value: 'true' }, t, has)).toBe('Administrador: Sí')
-    expect(detailLabel({ name: 'Status', value: 'Denied' }, t, has)).toBe('Estado: Rechazada')
-    expect(detailLabel({ name: 'Mode', value: 'Fast' }, t, has)).toBe('Mode: Fast')
   })
 })

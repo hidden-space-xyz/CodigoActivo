@@ -106,11 +106,6 @@ public sealed class AuditLogRow
     public string? Related { get; init; }
 
     /// <summary>
-    /// Gets the flags and choices as a JSON object, if any.
-    /// </summary>
-    public string? Details { get; init; }
-
-    /// <summary>
     /// Gets how the command ended.
     /// </summary>
     public AuditOutcome Outcome { get; init; }
@@ -119,11 +114,6 @@ public sealed class AuditLogRow
     /// Gets the code of the error that rejected the command, if any.
     /// </summary>
     public string? ErrorCode { get; init; }
-
-    /// <summary>
-    /// Gets how many items the command changed, if it reports a count.
-    /// </summary>
-    public int? ItemCount { get; init; }
 
     /// <summary>
     /// Gets the trace the command ran in, if any.
