@@ -270,6 +270,7 @@
     "UserDeleteInitialAdminForbidden": "La cuenta genérica de administración no se puede eliminar.",
     "UserCannotRemoveInitialAdmin": "No se puede quitar el rango de administrador a la cuenta genérica de administración.",
     "UserDependentCannotBeAdmin": "Un dependiente no puede ser administrador.",
+    "UserPendingVerificationCannotBeAdmin": "Esta cuenta aún no ha confirmado su correo electrónico, así que no puede ser administradora.",
     "ParentUserNotFound": "No se encontró el usuario responsable.",
     "UserParentIsMinor": "Una persona a cargo de un responsable no puede tener a su vez menores a su cargo.",
     "UserChildBirthDateNotMinor": "La fecha de nacimiento indicada no corresponde a un menor de edad.",

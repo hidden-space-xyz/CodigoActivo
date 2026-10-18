@@ -6025,6 +6025,7 @@
           "UserDeleteInitialAdminForbidden",
           "UserCannotRemoveInitialAdmin",
           "UserDependentCannotBeAdmin",
+          "UserPendingVerificationCannotBeAdmin",
           "ParentUserNotFound",
           "UserParentIsMinor",
           "UserChildBirthDateNotMinor",

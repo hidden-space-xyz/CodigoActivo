@@ -404,6 +404,11 @@ public static class AppStrings
     public static string EmailsVerificationIgnoreNote => Get("emails.verification.ignoreNote");
 
     /// <summary>
+    /// Gets the paragraph that reminds the news consent given at registration.
+    /// </summary>
+    public static string EmailsVerificationNewsConsent => Get("emails.verification.newsConsent");
+
+    /// <summary>
     /// Gets the emails verification intro html value.
     /// </summary>
     public static string EmailsVerificationIntroHtml => Get("emails.verification.introHtml");

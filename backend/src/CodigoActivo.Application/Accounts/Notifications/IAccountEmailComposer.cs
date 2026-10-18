@@ -10,18 +10,21 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 public interface IAccountEmailComposer
 {
     /// <summary>
-    /// Composes the message that verifies a new account.
+    /// Composes the message that verifies a new account. When the registration accepted news, it
+    /// says so, since whoever registered may not own the address.
     /// </summary>
     /// <param name="recipient">Account holder receiving the message.</param>
     /// <param name="userId">Identifier of the account to verify.</param>
     /// <param name="code">One-time verification code.</param>
     /// <param name="lifetime">Validity of the code.</param>
+    /// <param name="newsConsent">Whether the registration accepted news by email.</param>
     /// <returns>The composed message.</returns>
     public EmailMessage AccountVerification(
         EmailRecipient recipient,
         UserId userId,
         string code,
-        TimeSpan lifetime
+        TimeSpan lifetime,
+        bool newsConsent
     );
 
     /// <summary>

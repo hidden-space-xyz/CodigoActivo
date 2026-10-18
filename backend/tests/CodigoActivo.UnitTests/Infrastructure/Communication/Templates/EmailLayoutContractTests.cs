@@ -105,7 +105,8 @@ public sealed class EmailLayoutContractTests
                 "Ada",
                 $"{Site}/verify-account",
                 Site,
-                TimeSpan.FromMinutes(15)
+                TimeSpan.FromMinutes(15),
+                newsConsent: true
             ),
             "emailChange" => EmailChangeEmail.Create(
                 "ada@test.com",

@@ -199,6 +199,45 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
         emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ada@parent.test");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task HandleAsyncAddressPendingVerificationGetsNoDecisionEmail(bool minor)
+    {
+        var pending = new UserRow
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Pedro",
+            LastName = "Pendiente",
+            Email = "pedro@pending.test",
+            UserStatusTypeId = KnownIds.UserStatusTypes.Pending,
+            UserTypeId = KnownIds.UserTypes.Participant,
+        };
+        var child = new UserRow
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Kid",
+            LastName = "One",
+            ParentId = pending.Id,
+            Parent = pending,
+            UserStatusTypeId = KnownIds.UserStatusTypes.Dependent,
+            UserTypeId = KnownIds.UserTypes.Participant,
+        };
+        readStore.Users.AddRange([pending, child]);
+        readStore.CatalogRoles();
+        var signedUp = minor ? child.Id : pending.Id;
+        var activity = SignedUpActivity(signedUp, status: AssignmentStatus.Requested);
+
+        await ChangeStatusAsync(
+            activity.Id.Value,
+            signedUp,
+            new ChangeAssignmentStatusRequest(KnownIds.AssignmentStatusTypes.Confirmed)
+        );
+
+        composer.Composed.Should().BeEmpty();
+        emailSender.Sent.Should().BeEmpty();
+    }
+
     [Fact]
     public async Task HandleAsyncEmailDeliveryFailsStillStagesTheStatusChange()
     {

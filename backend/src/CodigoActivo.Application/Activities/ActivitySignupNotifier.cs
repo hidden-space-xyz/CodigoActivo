@@ -9,7 +9,8 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Activities;
 
 /// <summary>
-/// Builds and sends notifications for activity signup.
+/// Builds and sends notifications for activity signup. An address its account has not confirmed yet
+/// gets none, since anyone may have registered it with someone else's address.
 /// </summary>
 /// <param name="readStore">Read side used to describe the activity and reach the participant.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -24,6 +25,8 @@ public sealed class ActivitySignupNotifier(
     ILogger<ActivitySignupNotifier> logger
 )
 {
+    private static readonly Guid PendingStatusId = CatalogIds.UserStatuses.IdOf(UserStatus.Pending);
+
     /// <summary>
     /// Notifies the affected users about decision.
     /// </summary>
@@ -118,9 +121,11 @@ public sealed class ActivitySignupNotifier(
                     u.Id,
                     u.FirstName,
                     u.LastName,
-                    u.Email,
+                    u.UserStatusTypeId == PendingStatusId ? null : u.Email,
                     u.Parent == null ? null : u.Parent.FirstName,
-                    u.Parent == null ? null : u.Parent.Email
+                    u.Parent == null || u.Parent.UserStatusTypeId == PendingStatusId
+                        ? null
+                        : u.Parent.Email
                 )),
             ct
         );

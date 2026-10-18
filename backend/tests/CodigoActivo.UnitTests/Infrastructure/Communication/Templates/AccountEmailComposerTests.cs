@@ -34,7 +34,7 @@ public sealed class AccountEmailComposerTests
     [Fact]
     public void AccountVerificationTrailingSlashBaseUrlLinksTheVerificationPage()
     {
-        var message = sut.AccountVerification(Ana, AnaId, "the-code", Lifetime);
+        var message = sut.AccountVerification(Ana, AnaId, "the-code", Lifetime, newsConsent: false);
 
         message.Kind.Should().Be(EmailKind.AccountVerification);
         message.ToAddress.Should().Be("ana@test.com");
@@ -45,6 +45,16 @@ public sealed class AccountEmailComposerTests
             .Contain($"https://app.test/verify-account#userId={AnaId}&code=the-code")
             .And.Contain("15 minutos");
         message.HtmlBody.Should().Contain($"https://app.test/verify-account#userId={AnaId}");
+        message.TextBody.Should().NotContain("novedades");
+    }
+
+    [Fact]
+    public void AccountVerificationOfARegistrationThatAcceptedNewsSaysSo()
+    {
+        var message = sut.AccountVerification(Ana, AnaId, "the-code", Lifetime, newsConsent: true);
+
+        message.TextBody.Should().Contain("aceptaste recibir novedades");
+        message.HtmlBody.Should().Contain("aceptaste recibir novedades");
     }
 
     [Fact]

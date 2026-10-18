@@ -1047,13 +1047,14 @@ public class User : AggregateRoot<UserId>
 
     /// <summary>
     /// Grants or revokes the administrator rights. A dependent, who never signs in, never gets them,
-    /// and the initial administrator never loses them.
+    /// nor does an account whose email is still unconfirmed, and the initial administrator never
+    /// loses them.
     /// </summary>
     /// <param name="isAdmin">Whether the account is an administrator from now on.</param>
     /// <param name="now">Current time.</param>
     /// <returns>
-    /// Whether the rights changed, or a failed result when they would be given to a dependent or
-    /// taken from the initial administrator.
+    /// Whether the rights changed, or a failed result when they would be given to a dependent or an
+    /// unconfirmed account, or taken from the initial administrator.
     /// </returns>
     public Result<bool> SetAdministrator(bool isAdmin, DateTimeOffset now)
     {
@@ -1074,6 +1075,11 @@ public class User : AggregateRoot<UserId>
         if (IsAdmin == isAdmin)
         {
             return false;
+        }
+
+        if (isAdmin && IsPendingVerification)
+        {
+            return Error.Validation(DomainErrorCode.UserPendingVerificationCannotBeAdmin);
         }
 
         IsAdmin = isAdmin;

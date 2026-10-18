@@ -136,6 +136,11 @@ public enum DomainErrorCode
     UserDependentCannotBeAdmin,
 
     /// <summary>
+    /// Selects the option for administrator rights given to an account whose email is unconfirmed.
+    /// </summary>
+    UserPendingVerificationCannotBeAdmin,
+
+    /// <summary>
     /// Selects the option for a parent that is itself a dependent.
     /// </summary>
     UserParentIsMinor,

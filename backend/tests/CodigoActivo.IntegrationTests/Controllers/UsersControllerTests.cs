@@ -1338,6 +1338,23 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task SetAdminOnAccountPendingVerificationReturnsBadRequestAndSendsNothing()
+    {
+        var client = await LoginAsAdminAsync();
+        Factory.EmailSender.Clear();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.PendingId}/admin",
+            new SetAdminRequest(true, TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserPendingVerificationCannotBeAdmin);
+        (await FindAsync<User>(TestSeedData.Users.PendingId))!.IsAdmin.Should().BeFalse();
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task SetAdminRevokeWithoutPasswordRemovesAdmin()
     {
         var client = await LoginAsAdminAsync();

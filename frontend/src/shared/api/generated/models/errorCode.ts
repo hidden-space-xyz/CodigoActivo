@@ -70,6 +70,7 @@ export const ErrorCode = {
   UserDeleteInitialAdminForbidden: 'UserDeleteInitialAdminForbidden',
   UserCannotRemoveInitialAdmin: 'UserCannotRemoveInitialAdmin',
   UserDependentCannotBeAdmin: 'UserDependentCannotBeAdmin',
+  UserPendingVerificationCannotBeAdmin: 'UserPendingVerificationCannotBeAdmin',
   ParentUserNotFound: 'ParentUserNotFound',
   UserParentIsMinor: 'UserParentIsMinor',
   UserChildBirthDateNotMinor: 'UserChildBirthDateNotMinor',

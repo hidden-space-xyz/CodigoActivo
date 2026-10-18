@@ -312,6 +312,11 @@ public enum ErrorCode
     UserDependentCannotBeAdmin,
 
     /// <summary>
+    /// Selects the option for administrator rights given to an account whose email is unconfirmed.
+    /// </summary>
+    UserPendingVerificationCannotBeAdmin,
+
+    /// <summary>
     /// Selects the parent user not found option.
     /// </summary>
     ParentUserNotFound,
