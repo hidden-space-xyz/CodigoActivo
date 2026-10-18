@@ -6,6 +6,7 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Common.Validation;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Resources;
@@ -37,11 +38,13 @@ public sealed record CreateResourceCommand(
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work that saves the resource in the transaction that locks its files.</param>
 public sealed class CreateResourceCommandHandler(
     IResourceRepository resources,
     IStoredFileRepository files,
     ICurrentUser currentUser,
-    IClock clock
+    IClock clock,
+    IUnitOfWork uow
 ) : ICommandHandler<CreateResourceCommand, Result<ResourceId>>
 {
     /// <summary>
@@ -57,28 +60,46 @@ public sealed class CreateResourceCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var content = ResourceContent.For(
-            command.Type,
-            RichText.FromOptional(command.Description),
-            command.Url
-        );
+        var description = RichText.FromOptional(command.Description);
+        var content = ResourceContent.For(command.Type, description, command.Url);
         if (content.IsFailure)
         {
             return content.Error!;
         }
 
-        if (!await files.ExistsAsync(command.ThumbnailId, ct))
+        return await uow.ExecuteInTransactionAsync(
+            attempt => CreateLockedAsync(command, description, content.Value, attempt),
+            ct
+        );
+    }
+
+    private async Task<Result<ResourceId>> CreateLockedAsync(
+        CreateResourceCommand command,
+        RichText? description,
+        ResourceContent content,
+        CancellationToken ct
+    )
+    {
+        var available = await ContentFiles.EnsureAvailableAsync(
+            files,
+            command.ThumbnailId,
+            description,
+            ApplicationErrorCode.ResourceThumbnailNotFound,
+            ct
+        );
+        if (available.IsFailure)
         {
-            return Error.Validation(ApplicationErrorCode.ResourceThumbnailNotFound);
+            return available.Error!;
         }
 
         var resource = Resource.Create(
             new ResourceDetails(command.Title, command.Subtitle, command.ThumbnailId),
-            content.Value,
+            content,
             currentUser.RequiredId(),
             clock.UtcNow
         );
         await resources.AddAsync(resource, ct);
+        await uow.SaveChangesAsync(ct);
         return resource.Id;
     }
 }

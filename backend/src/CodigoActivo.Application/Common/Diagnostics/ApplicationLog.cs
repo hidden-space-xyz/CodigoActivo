@@ -11,6 +11,21 @@ namespace CodigoActivo.Application.Common.Diagnostics;
 public static partial class ApplicationLog
 {
     /// <summary>
+    /// Records that the content of a deleted file could not be removed from storage, so it stays on
+    /// the volume until an operator removes it.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure that stopped the removal.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Removing the content of a deleted file from storage failed; it stays on the volume"
+    )]
+    public static partial void StoredFileContentDeleteFailed(
+        this ILogger logger,
+        Exception exception
+    );
+
+    /// <summary>
     /// Records that an automatic email could not be handed to the outbound transport.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>

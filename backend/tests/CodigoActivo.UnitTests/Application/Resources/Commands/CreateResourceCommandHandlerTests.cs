@@ -19,6 +19,7 @@ namespace CodigoActivo.UnitTests.Application.Resources.Commands;
 public sealed class CreateResourceCommandHandlerTests
 {
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly FakeReadStore readStore = new();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestCurrentUser currentUser = new();
@@ -27,7 +28,13 @@ public sealed class CreateResourceCommandHandlerTests
 
     public CreateResourceCommandHandlerTests()
     {
-        sut = new CreateResourceCommandHandler(resources, files, currentUser, clock);
+        sut = new CreateResourceCommandHandler(
+            resources,
+            files,
+            currentUser,
+            clock,
+            uow.RunsTransactionsOf<Result<ResourceId>>()
+        );
     }
 
     private async Task<List<Resource>> CaptureAddedResourcesAsync()

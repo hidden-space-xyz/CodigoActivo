@@ -41,6 +41,58 @@ public class StoredFileRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<StoredFileId>> LockExistingAsync(
+        IReadOnlyCollection<StoredFileId> ids,
+        CancellationToken ct = default
+    )
+    {
+        var values = OrderedValues(ids);
+        if (values.Length is 0)
+        {
+            return [];
+        }
+
+        FormattableString sql = $"""
+            SELECT id AS "Value" FROM files WHERE id = ANY({values}) ORDER BY id FOR KEY SHARE
+            """;
+        return
+        [
+            .. (await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Select(
+                StoredFileId.From
+            ),
+        ];
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<StoredFileId>> LockForDeletionAsync(
+        IReadOnlyCollection<StoredFileId> ids,
+        CancellationToken ct = default
+    )
+    {
+        var values = OrderedValues(ids);
+        if (values.Length is 0)
+        {
+            return [];
+        }
+
+        FormattableString sql = $"""
+            SELECT id AS "Value" FROM files WHERE id = ANY({values}) ORDER BY id FOR UPDATE
+            """;
+        return
+        [
+            .. (await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Select(
+                StoredFileId.From
+            ),
+        ];
+    }
+
+    private static Guid[] OrderedValues(IReadOnlyCollection<StoredFileId> ids)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        return [.. ids.Select(id => id.Value).Distinct().Order()];
+    }
+
+    /// <inheritdoc />
     public Task<bool> ExistsAsync(StoredFileId id, CancellationToken ct = default)
     {
         return Set.AnyAsync(file => file.Id == id, ct);

@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -108,9 +109,17 @@ public sealed class UpdateEventCommandHandler(
             return Error.Validation(ApplicationErrorCode.EventActivitiesOutsideNewRange);
         }
 
-        if (!await files.ExistsAsync(draft.ThumbnailId, ct))
+        var description = RichText.From(draft.Description);
+        var available = await ContentFiles.EnsureAvailableAsync(
+            files,
+            draft.ThumbnailId,
+            description,
+            ApplicationErrorCode.EventThumbnailNotFound,
+            ct
+        );
+        if (available.IsFailure)
         {
-            return Error.Validation(ApplicationErrorCode.EventThumbnailNotFound);
+            return available;
         }
 
         var terms = await EventTermsRequests.ResolveAsync(draft.TermsDocuments, termsDocuments, ct);
@@ -120,12 +129,7 @@ public sealed class UpdateEventCommandHandler(
         }
 
         ev.Update(
-            new EventContent(
-                draft.Title,
-                draft.Subtitle,
-                RichText.From(draft.Description),
-                draft.ThumbnailId
-            ),
+            new EventContent(draft.Title, draft.Subtitle, description, draft.ThumbnailId),
             schedule,
             categories,
             terms.Value,

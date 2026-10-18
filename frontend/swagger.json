@@ -6020,6 +6020,7 @@
           "EventCategoryTypeNameAlreadyExists",
           "EventCategoryTypeOnlyCategoryOfEvent",
           "EventThumbnailNotFound",
+          "RichTextFileNotFound",
           "EventCategoriesRequired",
           "EventScheduleRequired",
           "EventScheduleInvalidRange",

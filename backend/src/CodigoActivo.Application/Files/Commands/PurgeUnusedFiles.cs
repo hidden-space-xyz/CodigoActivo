@@ -14,8 +14,9 @@ public sealed record PurgeUnusedFilesCommand : ICommand<Result<int>>, IScheduled
 /// <summary>
 /// Executes the command that deletes the uploads that no content references
 /// <see cref="StoredFile.UnusedRetentionDays"/> after they were uploaded, such as an image picked
-/// for a form that was never saved. <see cref="IOrphanFileCleaner"/> checks the references again in
-/// the transaction that deletes them.
+/// for a form that was never saved. <see cref="IOrphanFileCleaner"/> locks them and checks the
+/// references again in the transaction that deletes them, and a failure is raised so the scheduled
+/// run reports it.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
@@ -41,6 +42,6 @@ public sealed class PurgeUnusedFilesCommandHandler(
             StoredFile.UnusedPurgeCutoff(clock.UtcNow),
             ct
         );
-        return await orphanCleaner.DeleteOrphanedAsync(candidates, ct);
+        return await orphanCleaner.PurgeOrphanedAsync(candidates, ct);
     }
 }

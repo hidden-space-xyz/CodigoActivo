@@ -11,7 +11,8 @@ public class StoredFile : AggregateRoot<StoredFileId>
 {
     /// <summary>
     /// Days an upload that no content references is kept, so a form or an edit left open for a
-    /// while can still save it; after that it is deleted.
+    /// while can still save it; after that it is deleted, and a later save that still references it
+    /// is refused.
     /// </summary>
     public const int UnusedRetentionDays = 7;
 

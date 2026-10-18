@@ -20,6 +20,7 @@ namespace CodigoActivo.UnitTests.Application.Resources.Commands;
 public sealed class UpdateResourceCommandHandlerTests
 {
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly FakeReadStore readStore = new();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestCurrentUser currentUser = new();
@@ -28,7 +29,13 @@ public sealed class UpdateResourceCommandHandlerTests
 
     public UpdateResourceCommandHandlerTests()
     {
-        sut = new UpdateResourceCommandHandler(resources, files, currentUser, clock);
+        sut = new UpdateResourceCommandHandler(
+            resources,
+            files,
+            currentUser,
+            clock,
+            uow.RunsTransactions()
+        );
     }
 
     [Fact]

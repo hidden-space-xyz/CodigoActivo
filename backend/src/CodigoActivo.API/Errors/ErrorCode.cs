@@ -117,6 +117,11 @@ public enum ErrorCode
     EventThumbnailNotFound,
 
     /// <summary>
+    /// A file embedded in the rich text of content no longer exists.
+    /// </summary>
+    RichTextFileNotFound,
+
+    /// <summary>
     /// Selects the event categories required option.
     /// </summary>
     EventCategoriesRequired,

@@ -21,6 +21,7 @@ namespace CodigoActivo.UnitTests.Application.Events.Commands;
 public sealed class CreateEventCommandHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly ITermsDocumentRepository termsDocuments =
         Substitute.For<ITermsDocumentRepository>();
@@ -38,7 +39,8 @@ public sealed class CreateEventCommandHandlerTests
             termsDocuments,
             new EventCategoryChecker(categoryTypes),
             currentUser,
-            clock
+            clock,
+            uow.RunsTransactionsOf<Result<EventId>>()
         );
     }
 
@@ -297,6 +299,7 @@ public sealed class CreateEventCommandHandlerTests
     public async Task HandleAsyncThumbnailMissingReturnsThumbnailNotFound()
     {
         files.ThumbnailExists(false);
+        categoryTypes.HasCategoryCount(1);
         var request = CreateReq(categoryTypeIds: [Guid.NewGuid()]);
 
         var result = await sut.HandleAsync(

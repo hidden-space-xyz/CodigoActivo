@@ -114,6 +114,24 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task CreateWithAnEmbeddedImageThatNoLongerExistsIsRefused()
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new CreateNewsItemRequest(
+            "Gamma",
+            "Tagline",
+            $$$"""{"type":"doc","content":[{"type":"image","attrs":{"src":"/api/files/{{{Guid.NewGuid()}}}/content"}}]}""",
+            thumbnailId
+        );
+
+        var response = await client.PostJsonAsync("/api/news", request, Ct);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RichTextFileNotFound);
+        (await Factory.QueryAsync(db => Task.FromResult(db.News.Count()))).Should().Be(0);
+    }
+
+    [Fact]
     public async Task CreateAsMemberReturnsForbidden()
     {
         var thumbnailId = await SeedThumbnailAsync();
