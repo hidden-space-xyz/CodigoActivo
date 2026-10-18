@@ -534,7 +534,11 @@ The development override removes parts of this boundary and must not be deployed
 Stored uploads are limited to 10 MiB by default and saved under `/app/files` in the `api-files` volume; nginx
 also enforces a `12m` request-body limit. Kestrel refuses any other request body above 2 MiB, which no valid
 JSON request reaches; only the multipart upload and email endpoints raise it, to the upload limit plus 64 KiB.
-Access to stored files goes through API authorization, not a direct static volume mount. Administrator email
+Access to stored files goes through API authorization, not a direct static volume mount. An upload is kept
+while content references it (`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after
+it was uploaded, such as an image picked for a form that was never saved, is deleted with its content by
+`PurgeUnusedFiles`, which `UnusedFilePurger` runs 30 seconds after startup and then hourly, checking the
+references again in the deleting transaction. Administrator email
 attachments never reach the `api-files` volume: they are read once
 per batch into the Data Protection-protected outbox content described above and removed once every message
 referencing them is delivered or discarded, with count, combined bytes and recipient count bounded by

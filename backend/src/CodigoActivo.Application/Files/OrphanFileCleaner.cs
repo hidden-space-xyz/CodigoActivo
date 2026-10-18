@@ -14,8 +14,8 @@ public interface IOrphanFileCleaner
     /// </summary>
     /// <param name="fileIds">Identifiers of the candidate files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    public Task DeleteOrphanedAsync(
+    /// <returns>A task whose result contains how many files were deleted.</returns>
+    public Task<int> DeleteOrphanedAsync(
         IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default
     );
@@ -37,7 +37,7 @@ public sealed class OrphanFileCleaner(
 ) : IOrphanFileCleaner
 {
     /// <inheritdoc />
-    public async Task DeleteOrphanedAsync(
+    public async Task<int> DeleteOrphanedAsync(
         IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default
     )
@@ -47,7 +47,7 @@ public sealed class OrphanFileCleaner(
             var candidates = fileIds.Distinct().ToList();
             if (candidates.Count is 0)
             {
-                return;
+                return 0;
             }
 
             var removed = await uow.ExecuteInTransactionAsync(
@@ -59,8 +59,13 @@ public sealed class OrphanFileCleaner(
             {
                 DeleteStoredContent(file.Id, file.Extension);
             }
+
+            return removed.Count;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException) { }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return 0;
+        }
     }
 
     private async Task<IReadOnlyList<StoredFile>> RemoveOrphansAsync(

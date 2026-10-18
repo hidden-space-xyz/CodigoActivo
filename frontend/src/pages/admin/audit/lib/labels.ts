@@ -33,6 +33,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'Register',
   'RemoveExpiredSessions',
   'PurgeUnverifiedAccounts',
+  'PurgeUnusedFiles',
   'RequestAccountDeletionCode',
   'ResendTwoFactorCode',
   'ResendVerification',

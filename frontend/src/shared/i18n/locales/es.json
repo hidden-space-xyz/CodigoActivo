@@ -552,7 +552,7 @@
             "data": "Las fotografías y los vídeos de las actividades en los que se os reconozca a ti o a los menores a tu cargo y, cuando publicamos resultados o premios, el nombre de quien los obtiene.",
             "purpose": "Dar a conocer nuestras actividades en esta web y en nuestros perfiles de Instagram, Facebook, LinkedIn y YouTube. Solo publicamos la imagen o el nombre de quien lo ha consentido en el documento de uso de imágenes del evento.",
             "legalBasis": "Tu consentimiento (art. 6.1.a RGPD y arts. 2.2 y 3 de la Ley Orgánica 1/1982). El de un menor de 14 años lo da su padre, madre o tutor legal; a partir de los 14 años, el propio menor (art. 7 LOPDGDD). Puedes retirarlo cuando quieras escribiéndonos, sin que afecte a lo publicado antes.",
-            "retention": "Lo publicado, hasta que se retire el consentimiento: entonces lo quitamos de esta web y de nuestros perfiles. El material que no publicamos lo guardamos en Google Drive para poder usarlo más adelante con el mismo fin, también hasta que se retire el consentimiento."
+            "retention": "Lo publicado, hasta que se retire el consentimiento: entonces lo quitamos de esta web y de nuestros perfiles. El material que no publicamos lo guardamos en Google Drive para poder usarlo más adelante con el mismo fin, también hasta que se retire el consentimiento. Una imagen que subimos a esta web y no llegamos a usar se borra a los 7 días."
           },
           "inquiries": {
             "title": "Consultas y solicitudes",
@@ -1604,6 +1604,7 @@
           "Register": "Registrarse",
           "RemoveExpiredSessions": "Eliminar sesiones caducadas",
           "PurgeUnverifiedAccounts": "Eliminar cuentas sin activar",
+          "PurgeUnusedFiles": "Eliminar archivos subidos sin usar",
           "RequestAccountDeletionCode": "Pedir el código para eliminar la cuenta",
           "ResendTwoFactorCode": "Reenviar el código de acceso",
           "ResendVerification": "Reenviar el enlace de verificación",

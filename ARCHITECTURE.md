@@ -156,9 +156,10 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
   `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, is the safety
   net that refuses any other user deletion, any deletion of the initial administrator and any change to a
   stored copy. The
-  `PurgeDeletedAccounts`, `PurgeUnverifiedAccounts` and `RemoveExpiredSessions` commands delete legal copies
-  past their retention, accounts nobody verified within 30 days (through `AccountEraser`) and expired
-  sessions; hosted services in Infrastructure only run them on a schedule. What the copy holds and how
+  `PurgeDeletedAccounts`, `PurgeUnverifiedAccounts`, `PurgeUnusedFiles` and `RemoveExpiredSessions` commands
+  delete legal copies past their retention, accounts nobody verified within 30 days (through `AccountEraser`),
+  uploads no content used within 7 days (through `IOrphanFileCleaner`) and expired sessions; hosted services in
+  Infrastructure only run them on a schedule. What the copy holds and how
   long it is kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
 - Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
   `IFileStorage`, `IAuditTrail`, `IRequestOrigin`, the email, persistence and read ports) live in

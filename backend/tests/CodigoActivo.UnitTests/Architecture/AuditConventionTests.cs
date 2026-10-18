@@ -75,7 +75,8 @@ public sealed class AuditConventionTests
             .BeEquivalentTo(
                 "RemoveExpiredSessionsCommand",
                 "PurgeDeletedAccountsCommand",
-                "PurgeUnverifiedAccountsCommand"
+                "PurgeUnverifiedAccountsCommand",
+                "PurgeUnusedFilesCommand"
             );
     }
 
