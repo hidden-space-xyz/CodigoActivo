@@ -72,6 +72,7 @@ describe('privacy policy page', () => {
 
     const rights = wrapper.get('[aria-labelledby="privacy-rights"]')
     expect(rights.get('strong').text()).toBe(t('pages.privacyPolicy.rights.objection'))
+    expect(rights.text()).toContain(t('pages.privacyPolicy.rights.deceased'))
     const hrefs = rights.findAll('a').map((link) => link.attributes('href'))
     expect(hrefs).toEqual([
       router.resolve({ name: 'account' }).href,

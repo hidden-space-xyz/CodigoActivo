@@ -123,6 +123,7 @@ function facts(activity: ProcessingActivity) {
           <template v-else>—</template>
         </template>
       </i18n-t>
+      <p>{{ $t('pages.privacyPolicy.rights.deceased') }}</p>
       <i18n-t keypath="pages.privacyPolicy.rights.complaint" tag="p">
         <template #authority>
           <a :href="AUTHORITY_URL" target="_blank" rel="noopener">{{
