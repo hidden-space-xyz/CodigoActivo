@@ -1,5 +1,6 @@
 using System.Text;
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Infrastructure.Communication.Templates;
 using Microsoft.AspNetCore.DataProtection;
 
 namespace CodigoActivo.Infrastructure.Communication;
@@ -141,7 +142,8 @@ public sealed class EmailOutboxProtector
     }
 
     /// <summary>
-    /// Addresses the shared content of a batch to one recipient.
+    /// Addresses the shared content of a batch to one recipient, with their own unsubscribe link
+    /// in the place a promotional email leaves for it.
     /// </summary>
     /// <param name="message">Stored message that carries the recipient and the kind.</param>
     /// <param name="payload">Content already read with <see cref="Unprotect"/>.</param>
@@ -156,8 +158,8 @@ public sealed class EmailOutboxProtector
             message.ToAddress,
             message.ToName,
             payload.Subject,
-            payload.HtmlBody,
-            payload.TextBody,
+            EmailLayout.LinkUnsubscribe(payload.HtmlBody, message.UnsubscribeUrl, html: true),
+            EmailLayout.LinkUnsubscribe(payload.TextBody, message.UnsubscribeUrl, html: false),
             payload.Attachments,
             payload.InlineImages
         );

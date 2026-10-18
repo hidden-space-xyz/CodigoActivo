@@ -30,6 +30,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     [
         "Assignment.UserId",
         "EventTermsAcceptance.UserId",
+        "PromotionalConsentChange.UserId",
         "User.ParentId",
     ];
 
@@ -90,7 +91,9 @@ public sealed class DeletedAccountCoverageTests : IDisposable
 
     private IEnumerable<string> PropertiesOf<T>()
     {
-        return MemberPaths(Entity<T>(), prefix: string.Empty);
+        var entity = Entity<T>();
+        return MemberPaths(entity, prefix: string.Empty)
+            .Concat(entity.GetNavigations().Select(navigation => navigation.Name));
     }
 
     private static IEnumerable<string> MemberPaths(IReadOnlyTypeBase type, string prefix)
@@ -192,6 +195,23 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         PropertiesOf<EventTermsAcceptance>()
             .Should()
             .BeEquivalentTo(CopiedDecisionProperties, Decide);
+    }
+
+    [Fact]
+    public void EveryPromotionalConsentChangePropertyIsCopied()
+    {
+        PropertiesOf<PromotionalConsentChange>()
+            .Should()
+            .BeEquivalentTo(
+                [
+                    .. typeof(LegalCopyConsentChange)
+                        .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                        .Select(property => property.Name),
+                    nameof(PromotionalConsentChange.UserId),
+                    PromotionalConsentChangeConfiguration.Sequence,
+                ],
+                Decide
+            );
     }
 
     [Fact]

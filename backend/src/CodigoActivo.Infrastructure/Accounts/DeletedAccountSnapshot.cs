@@ -6,6 +6,7 @@ using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Context;
+using CodigoActivo.Infrastructure.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Accounts;
@@ -20,7 +21,7 @@ internal static class DeletedAccountSnapshot
     /// <summary>
     /// Version of the JSON layout, stored in every copy.
     /// </summary>
-    internal const int SchemaVersion = 1;
+    internal const int SchemaVersion = 2;
 
     private static readonly JsonSerializerOptions SerializerOptions = new(
         JsonSerializerDefaults.Web
@@ -75,6 +76,17 @@ internal static class DeletedAccountSnapshot
                 u.LastLoginAt,
             }
         ).ToListAsync(ct);
+        var householdIds = people.ConvertAll(row => row.Id);
+        var consentChanges = (
+            await context
+                .PromotionalConsentChanges.AsNoTracking()
+                .Where(change => householdIds.Contains(change.UserId))
+                .OrderBy(change => change.ChangedAt)
+                .ThenBy(change =>
+                    EF.Property<long>(change, PromotionalConsentChangeConfiguration.Sequence)
+                )
+                .ToListAsync(ct)
+        ).ToLookup(change => change.UserId);
         var household = people.ConvertAll(row => new LegalCopyPerson(
             row.Id.Value,
             row.FirstName,
@@ -86,6 +98,14 @@ internal static class DeletedAccountSnapshot
             row.BirthDate,
             row.Gender,
             row.PromotionalConsent,
+            [
+                .. consentChanges[row.Id]
+                    .Select(change => new LegalCopyConsentChange(
+                        change.Granted,
+                        change.Source,
+                        change.ChangedAt
+                    )),
+            ],
             CatalogIds.UserTypes.IdOf(row.UserType),
             row.TypeName,
             CatalogIds.UserStatuses.IdOf(row.Status),
@@ -97,7 +117,6 @@ internal static class DeletedAccountSnapshot
             row.UpdatedAt,
             row.LastLoginAt
         ));
-        var householdIds = people.ConvertAll(row => row.Id);
         var guardianId = people.Single(row => row.Id == userId).ParentId;
 
         var guardianRow = guardianId is null

@@ -43,6 +43,7 @@ public sealed class LegalCopyTests
             null,
             Gender.Other,
             false,
+            [],
             KnownIds.UserTypes.Participant,
             "Participante",
             KnownIds.UserStatusTypes.Active,

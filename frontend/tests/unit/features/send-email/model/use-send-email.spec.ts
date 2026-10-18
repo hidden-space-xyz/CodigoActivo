@@ -16,6 +16,7 @@ interface CapturedEmail {
   url: string
   subject: FormDataEntryValue | null
   body: FormDataEntryValue | null
+  purpose: FormDataEntryValue | null
   attachments: string[]
 }
 
@@ -25,14 +26,20 @@ async function capture(request: Request): Promise<CapturedEmail> {
     url: request.url,
     subject: form.get('subject'),
     body: form.get('body'),
+    purpose: form.get('purpose'),
     attachments: form.getAll('attachments').map((value) => (value as File).name),
   }
 }
 
-const payload: SendEmailPayload = { subject: '  Hello ', body: ' Body text  ', attachments: [] }
+const payload: SendEmailPayload = {
+  subject: '  Hello ',
+  body: ' Body text  ',
+  purpose: 'Informational',
+  attachments: [],
+}
 
 describe('useSendEmail', () => {
-  it('emails one user with trimmed subject and body and no attachments', async () => {
+  it('emails one user with trimmed subject and body, its purpose and no attachments', async () => {
     let received: CapturedEmail | undefined
     server.use(
       http.post('/api/emails/users/:userId', async ({ request }) => {
@@ -49,6 +56,7 @@ describe('useSendEmail', () => {
       url: 'http://localhost:3000/api/emails/users/user-7',
       subject: 'Hello',
       body: 'Body text',
+      purpose: 'Informational',
       attachments: [],
     })
   })
@@ -67,11 +75,13 @@ describe('useSendEmail', () => {
       params: { name: 'ada', isAdmin: false },
       payload: {
         ...payload,
+        purpose: 'Promotional',
         attachments: [new File(['a'], 'a.txt'), new File(['b'], 'b.pdf')],
       },
     })
 
     expect(queryOf(received?.url ?? '')).toEqual({ name: 'ada', isAdmin: 'false' })
+    expect(received?.purpose).toBe('Promotional')
     expect(received?.attachments).toEqual(['a.txt', 'b.pdf'])
   })
 

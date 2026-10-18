@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using AwesomeAssertions;
+using CodigoActivo.API.Emails.Contracts;
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Security;
 using CodigoActivo.Application.Common.Catalogs;
@@ -9,6 +10,7 @@ using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -378,6 +380,113 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeTooManyRequestsAsync();
         response.Headers.RetryAfter.Should().NotBeNull();
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SendToUsersPromotionalOnlyMailsConsentingUsersWithTheirUnsubscribeLink()
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.SendEmailFormAsync(
+            UsersUrl,
+            "Nuevo taller",
+            "Abrimos inscripciones.",
+            purpose: "Promotional"
+        );
+
+        var result = await ReadResultAsync(response);
+        result.Queued.Should().Be(1, "only the member gave their promotional consent");
+        var message = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
+        message.ToAddress.Should().Be(TestSeedData.MemberEmail);
+        message
+            .TextBody.Should()
+            .Contain("/unsubscribe#token=")
+            .And.Contain("contacto@codigoactivo.es");
+        message.HtmlBody.Should().Contain("/unsubscribe#token=").And.NotContain("{{");
+    }
+
+    [Fact]
+    public async Task SendToUsersInformationalCarriesNoUnsubscribeLink()
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.SendEmailFormAsync(UsersUrl);
+
+        await ReadResultAsync(response);
+        Factory
+            .EmailSender.Sent.Should()
+            .NotBeEmpty()
+            .And.AllSatisfy(m => m.TextBody.Should().NotContain("/unsubscribe"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Spam")]
+    [InlineData("7")]
+    public async Task SendToUsersMissingOrUnknownPurposeReturnsBadRequestValidationFailed(
+        string? purpose
+    )
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.SendEmailFormAsync(UsersUrl, purpose: purpose);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task UnsubscribeLinkOfAPromotionalEmailWithdrawsTheConsentWithoutASession()
+    {
+        var admin = await LoginAsAdminAsync();
+        using var sent = await admin.SendEmailFormAsync(UsersUrl, purpose: "Promotional");
+        await ReadResultAsync(sent);
+        var text = Factory.EmailSender.Sent.Should().ContainSingle().Subject.TextBody;
+        var token = text[(text.IndexOf("#token=", StringComparison.Ordinal) + 7)..].Split('\n')[0];
+
+        using var response = await CreateClient()
+            .PostJsonAsync("/api/emails/unsubscribe", new UnsubscribeRequest(token), Ct);
+        using var again = await CreateClient()
+            .PostJsonAsync("/api/emails/unsubscribe", new UnsubscribeRequest(token), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        again.StatusCode.Should().Be(HttpStatusCode.NoContent, "the link can be followed again");
+        var member = await Factory.QueryAsync(db =>
+            db.Users.Include(u => u.PromotionalConsentChanges)
+                .SingleAsync(u => u.Id == UserId.From(TestSeedData.Users.MemberId), Ct)
+        );
+        member.PromotionalConsent.Should().BeFalse();
+        var withdrawal = member.PromotionalConsentChanges.Should().ContainSingle().Subject;
+        withdrawal.Granted.Should().BeFalse();
+        withdrawal.Source.Should().Be(PromotionalConsentSource.UnsubscribeLink);
+        withdrawal.ChangedAt.Should().Be(Factory.Clock.UtcNow);
+
+        Factory.EmailSender.Clear();
+        using var next = await admin.SendEmailFormAsync(UsersUrl, purpose: "Promotional");
+        await next.ShouldBeBadRequestAsync(ErrorCode.EmailNoRecipients);
+    }
+
+    [Fact]
+    public async Task UnsubscribeAlteredLinkReturnsBadRequestUnsubscribeLinkInvalid()
+    {
+        using var response = await CreateClient()
+            .PostJsonAsync("/api/emails/unsubscribe", new UnsubscribeRequest("not-a-token"), Ct);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EmailUnsubscribeLinkInvalid);
+    }
+
+    [Fact]
+    public async Task SendToUserPromotionalWithoutConsentReturnsRecipientWithoutConsent()
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.SendEmailFormAsync(
+            $"{UsersUrl}/{TestSeedData.Users.PendingId}",
+            purpose: "Promotional"
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EmailRecipientWithoutConsent);
         Factory.EmailSender.Sent.Should().BeEmpty();
     }
 

@@ -149,7 +149,7 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
 - Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
   which replaces an unverified account whose email a registration or a confirmed email change takes. In one
   such transaction it locks the household, stores the legal copy (composed by `LegalCopy` and serialized by
-  Infrastructure as JSON with `SchemaVersion` 1), hands the content credited to the household over to the
+  Infrastructure as JSON with `SchemaVersion` 2), hands the content credited to the household over to the
   initial administrator and removes the account; any other change staged in the unit of work commits with it.
   `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, is the safety
   net that refuses any other user deletion, any deletion of the initial administrator and any change to a
@@ -323,7 +323,11 @@ a PostgreSQL outbox, in a unit of work of its own committed before the call retu
 `EmailOutboxProcessor` hosted service claims due rows and delivers them through `IEmailTransport`
 (`SmtpEmailSender`), with retries and an attempt limit. The send commands (`SendEmailToUsers`,
 `SendEmailToEventAttendees`) and the audience-preview queries in `Application/Emails/Queries` share recipient
-selection through `ManualEmailAudience`, so a preview always matches what the corresponding send would reach. Operational values are in
+selection through `ManualEmailAudience`, so a preview always matches what the corresponding send would reach;
+the send's `ManualEmailPurpose` decides whether recipients without promotional consent are left out. A
+promotional batch keeps one shared content whose footer leaves a slot for the unsubscribe link:
+`ManualEmailComposer` gives each `EmailRecipient` its own link (a token from `IUnsubscribeTokens`), the outbox
+row stores it, and `EmailLayout.LinkUnsubscribe` puts it in place at delivery. Operational values are in
 [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery); security properties are in
 [SECURITY.md](SECURITY.md#email-abuse-controls).
 

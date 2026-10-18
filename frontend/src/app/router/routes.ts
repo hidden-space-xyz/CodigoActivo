@@ -168,6 +168,12 @@ export const routes: readonly RouteRecordRaw[] = [
     meta: { seo: { titleKey: 'seo.routes.resetPassword.title', noindex: true } },
   },
   {
+    path: '/unsubscribe',
+    name: 'unsubscribe',
+    component: () => import('@/pages/unsubscribe').then((m) => m.UnsubscribePage),
+    meta: { seo: { titleKey: 'seo.routes.unsubscribe.title', noindex: true } },
+  },
+  {
     path: '/account',
     name: 'account',
     component: () => import('@/pages/account').then((m) => m.AccountPage),

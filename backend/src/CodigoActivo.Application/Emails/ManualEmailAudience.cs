@@ -6,8 +6,9 @@ namespace CodigoActivo.Application.Emails;
 
 /// <summary>
 /// Recipients a manual email reaches once the users matching its filters are known: only users
-/// with an email address, each address once regardless of letter case. The send commands and the
-/// audience queries share it so the preview always matches what is sent.
+/// with an email address, each address once regardless of letter case, and for a promotional email
+/// only those with promotional consent. The send commands and the audience queries share it so the
+/// preview always matches what is sent.
 /// </summary>
 /// <param name="Recipients">Distinct recipients that have an email address.</param>
 /// <param name="Skipped">Matching users left out because they have no email address.</param>
@@ -38,9 +39,25 @@ public sealed record ManualEmailAudience(IReadOnlyList<Recipient> Recipients, in
     }
 
     /// <summary>
+    /// Selects the recipients an email written for <paramref name="purpose"/> reaches: a
+    /// promotional email only reaches those who gave their promotional consent.
+    /// </summary>
+    /// <param name="purpose">What the email is written for.</param>
+    /// <returns>The recipients the email reaches.</returns>
+    public IReadOnlyList<Recipient> ReachedBy(ManualEmailPurpose purpose)
+    {
+        return purpose is ManualEmailPurpose.Promotional
+            ? [.. Recipients.Where(r => r.PromotionalConsent)]
+            : Recipients;
+    }
+
+    /// <summary>
     /// Summarizes the audience for the administrator composing the email.
     /// </summary>
-    /// <returns>How many recipients there are and how many of them lack promotional consent.</returns>
+    /// <returns>
+    /// How many recipients an informational email reaches and how many of them a promotional one
+    /// leaves out for lack of promotional consent.
+    /// </returns>
     public EmailAudienceResponse ToResponse()
     {
         return new EmailAudienceResponse(

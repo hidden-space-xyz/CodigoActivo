@@ -39,6 +39,7 @@ export const AuditAction = {
   SendEmailToEventAttendees: 'SendEmailToEventAttendees',
   SendEmailToUser: 'SendEmailToUser',
   SendEmailToUsers: 'SendEmailToUsers',
+  Unsubscribe: 'Unsubscribe',
   CreateEventCategoryType: 'CreateEventCategoryType',
   DeleteEventCategoryType: 'DeleteEventCategoryType',
   UpdateEventCategoryType: 'UpdateEventCategoryType',

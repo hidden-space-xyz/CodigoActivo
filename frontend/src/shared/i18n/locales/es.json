@@ -25,7 +25,7 @@
     "birthDate": "Fecha de nacimiento",
     "nationalId": "DNI/NIE",
     "promotionalConsent": "Consentimiento promocional",
-    "promotionalConsentOption": "Opcional. Quiero recibir por email novedades sobre las actividades de Código Activo. Esta preferencia puede modificarse en cualquier momento desde «Mi cuenta».",
+    "promotionalConsentOption": "Opcional. Quiero recibir por email novedades sobre las actividades de Código Activo. Esta preferencia puede modificarse en cualquier momento desde «Mi cuenta» o con el enlace para darse de baja que incluye cada novedad.",
     "gender": "Género",
     "image": "Imagen",
     "imageRequired": "La imagen es obligatoria.",
@@ -119,6 +119,9 @@
       },
       "resetPassword": {
         "title": "Restablecer contraseña"
+      },
+      "unsubscribe": {
+        "title": "Darse de baja"
       },
       "account": {
         "title": "Mi cuenta"
@@ -301,6 +304,8 @@
     "AuthenticatorAlreadyEnabled": "Ya usas una aplicación de autenticación. Para cambiarla, vuelve primero a la verificación por correo.",
     "EmailNoRecipients": "Ningún destinatario con correo coincide con los filtros actuales.",
     "EmailRecipientWithoutAddress": "Esta persona no tiene correo electrónico, así que no se le puede escribir.",
+    "EmailRecipientWithoutConsent": "Esta persona no ha aceptado recibir comunicaciones promocionales, así que solo puedes enviarle un correo informativo.",
+    "EmailUnsubscribeLinkInvalid": "El enlace para darte de baja no es válido. Comprueba que lo has abierto entero desde el correo.",
     "EmailTooManyRecipients": "Hay demasiados destinatarios para un solo envío. Afina los filtros e inténtalo de nuevo.",
     "EmailTooManyAttachments": "Has adjuntado demasiados archivos.",
     "EmailAttachmentEmpty": "Uno de los archivos adjuntos está vacío.",
@@ -513,10 +518,10 @@
           },
           "emails": {
             "title": "Comunicaciones por email",
-            "data": "Tu nombre, tu email y tu preferencia sobre recibir novedades.",
+            "data": "Tu nombre, tu email y tu preferencia sobre recibir novedades, con la fecha y el medio de cada cambio: el registro, «Mi cuenta» o el enlace para darte de baja.",
             "purpose": "Enviarte los correos que el servicio necesita (verificación del email, códigos de acceso, avisos de seguridad, el estado de tus inscripciones e información práctica de los eventos en los que participas) y, solo si lo aceptas, novedades sobre las actividades de la asociación.",
-            "legalBasis": "Para los correos del servicio, su prestación (art. 6.1.b RGPD); para las novedades, tu consentimiento (art. 6.1.a RGPD y art. 21 LSSI), que puedes retirar gratis cuando quieras desde «Mi cuenta» o escribiéndonos.",
-            "retention": "Cada correo espera en la cola de envío, con el asunto y el contenido cifrados, solo hasta que se entrega o se descarta tras cinco intentos fallidos. Tu preferencia, hasta que la cambies o elimines la cuenta."
+            "legalBasis": "Para los correos del servicio, su prestación (art. 6.1.b RGPD); para las novedades, tu consentimiento (art. 6.1.a RGPD y art. 21 LSSI), que puedes retirar gratis cuando quieras con el enlace para darte de baja que incluye cada novedad, sin iniciar sesión, desde «Mi cuenta» o escribiéndonos a la dirección que también figura en cada novedad.",
+            "retention": "Cada correo espera en la cola de envío, con el asunto y el contenido cifrados, solo hasta que se entrega o se descarta tras cinco intentos fallidos. Tu preferencia, hasta que la cambies o elimines la cuenta, y la fecha y el medio de cada cambio, mientras mantengas la cuenta, para poder demostrar tu consentimiento; si la eliminas, pasan a la copia bloqueada."
           },
           "ratings": {
             "title": "Valoraciones de los eventos",
@@ -555,7 +560,7 @@
           },
           "erasure": {
             "title": "Copia bloqueada al eliminar una cuenta o un menor",
-            "data": "Una copia de los datos de la persona eliminada y, si es una cuenta, de sus menores; si se elimina solo a un menor, también la identificación de su padre, madre o tutor; sus inscripciones; sus decisiones sobre los documentos de los eventos, con las firmas y el texto de cada documento tal como estaba al eliminarla, y quién pidió la eliminación. Nunca incluye contraseñas, códigos ni claves.",
+            "data": "Una copia de los datos de la persona eliminada y, si es una cuenta, de sus menores; si se elimina solo a un menor, también la identificación de su padre, madre o tutor; sus inscripciones; sus decisiones sobre los documentos de los eventos, con las firmas y el texto de cada documento tal como estaba al eliminarla; los cambios de su consentimiento para recibir novedades, y quién pidió la eliminación. Nunca incluye contraseñas, códigos ni claves.",
             "purpose": "Atender las posibles responsabilidades nacidas del tratamiento. Nadie la consulta desde la web: solo puede ponerse a disposición de jueces y tribunales, el Ministerio Fiscal o las administraciones públicas competentes, en particular la Agencia Española de Protección de Datos.",
             "legalBasis": "La obligación legal de bloquear los datos suprimidos (art. 6.1.c RGPD y art. 32 LOPDGDD).",
             "retention": "Dos años desde la eliminación; después se borra automáticamente. Las copias de seguridad la conservan hasta que se sustituyen."
@@ -1593,6 +1598,7 @@
           "SendEmailToEventAttendees": "Enviar un email a los asistentes",
           "SendEmailToUser": "Enviar un email a un usuario",
           "SendEmailToUsers": "Enviar un email a usuarios",
+          "Unsubscribe": "Darse de baja de las novedades por email",
           "CreateEventCategoryType": "Crear una categoría",
           "DeleteEventCategoryType": "Eliminar una categoría",
           "UpdateEventCategoryType": "Editar una categoría",
@@ -1744,6 +1750,16 @@
       "newPasswordLabel": "Nueva contraseña",
       "confirmPasswordLabel": "Repite la contraseña",
       "submit": "Cambiar contraseña"
+    },
+    "unsubscribe": {
+      "eyebrow": "// novedades",
+      "title": "Darte de baja de las novedades",
+      "unsubscribing": "Estamos dándote de baja…",
+      "successTitle": "Te has dado de baja",
+      "successText": "Ya no te enviaremos novedades sobre las actividades de la asociación. Seguirás recibiendo los correos que el servicio necesita, como los códigos de acceso o el estado de tus inscripciones. Si cambias de opinión, puedes volver a aceptarlas desde «Mi cuenta».",
+      "errorTitle": "No hemos podido darte de baja",
+      "incompleteLink": "El enlace para darte de baja no es válido o está incompleto.",
+      "hint": "También puedes dejar de recibir novedades desde «Mi cuenta» o escribiéndonos a {email}."
     },
     "verifyAccount": {
       "eyebrow": "// verificación",
@@ -1936,7 +1952,15 @@
       "header": "Enviar correo",
       "target": "Destinatarios: {target}",
       "recipients": "Nadie de esta selección tiene correo electrónico, así que no se puede enviar el mensaje. | El mensaje llegará a 1 dirección de correo. | El mensaje llegará a {count} direcciones de correo: quien no tiene correo electrónico, como los menores, no lo recibe.",
-      "withoutConsentWarning": "Uno de los destinatarios no ha dado su consentimiento para recibir contenido promocional. Ten cuidado con lo que envías: limítate a información necesaria y no incluyas publicidad. | {count} de los destinatarios no han dado su consentimiento para recibir contenido promocional. Ten cuidado con lo que envías: limítate a información necesaria y no incluyas publicidad.",
+      "promotionalRecipients": "Nadie de esta selección ha aceptado recibir comunicaciones promocionales, así que no se puede enviar este correo. | El correo promocional llegará a 1 dirección de correo. | El correo promocional llegará a {count} direcciones de correo.",
+      "withoutConsent": "1 destinatario no ha aceptado recibir comunicaciones promocionales y no recibirá este correo. | {count} destinatarios no han aceptado recibir comunicaciones promocionales y no recibirán este correo.",
+      "purpose": {
+        "label": "Tipo de correo",
+        "informational": "Informativo",
+        "informationalHint": "Información necesaria sobre la cuenta, las inscripciones o las actividades en las que se participa. Llega a todos los destinatarios y no puede incluir publicidad.",
+        "promotional": "Promocional",
+        "promotionalHint": "Novedades, eventos o campañas de la asociación. Solo llega a quien aceptó recibir comunicaciones promocionales e incluye nuestro correo de contacto y un enlace para darse de baja."
+      },
       "subject": "Asunto",
       "subjectPlaceholder": "Asunto del correo",
       "body": "Mensaje",
@@ -1965,7 +1989,8 @@
         "problems": {
           "subjectRequired": "Escribe un asunto.",
           "subjectSingleLine": "El asunto no puede contener tabuladores ni saltos de línea.",
-          "bodyRequired": "Escribe un mensaje."
+          "bodyRequired": "Escribe un mensaje.",
+          "purposeRequired": "Elige si el correo es informativo o promocional."
         }
       }
     }

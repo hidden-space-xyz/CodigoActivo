@@ -33,28 +33,30 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
         );
     }
 
-    private static UserRow NewAttendee(string first, string? email, params Guid[] statusIds)
+    private static UserRow NewAttendee(
+        string first,
+        string? email,
+        Guid statusId,
+        bool promotionalConsent = false
+    )
     {
-        var user = NewUserRow(first, email);
-        foreach (var statusId in statusIds)
-        {
-            user.Assignments.Add(
-                new AssignmentRow
+        var user = NewUserRow(first, email, promotionalConsent: promotionalConsent);
+        user.Assignments.Add(
+            new AssignmentRow
+            {
+                UserId = user.Id,
+                ActivityId = Guid.NewGuid(),
+                ActivityRoleTypeId = KnownIds.ActivityRoleTypes.Participant,
+                AssignmentStatusId = statusId,
+                Activity = new ActivityRow
                 {
-                    UserId = user.Id,
-                    ActivityId = Guid.NewGuid(),
-                    ActivityRoleTypeId = KnownIds.ActivityRoleTypes.Participant,
-                    AssignmentStatusId = statusId,
-                    Activity = new ActivityRow
-                    {
-                        Title = "Actividad de prueba",
-                        Description = "Descripción de la actividad",
-                        Location = "Sala principal",
-                        EventId = EventId,
-                    },
-                }
-            );
-        }
+                    Title = "Actividad de prueba",
+                    Description = "Descripción de la actividad",
+                    Location = "Sala principal",
+                    EventId = EventId,
+                },
+            }
+        );
 
         return user;
     }
@@ -72,6 +74,35 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
                 global::CodigoActivo.Domain.Events.EventId.From(EventId),
                 new EventAttendeeListQuery { StatusId = KnownIds.AssignmentStatusTypes.Confirmed },
                 Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        outbox.Messages.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.local");
+    }
+
+    [Fact]
+    public async Task HandleAsyncPromotionalOnlyMailsAttendeesWithConsent()
+    {
+        store.Users.AddRange([
+            NewAttendee(
+                "Ana",
+                "ana@test.local",
+                KnownIds.AssignmentStatusTypes.Confirmed,
+                promotionalConsent: true
+            ),
+            NewAttendee("Berto", "berto@test.local", KnownIds.AssignmentStatusTypes.Confirmed),
+        ]);
+
+        var result = await sut.HandleAsync(
+            new SendEmailToEventAttendeesCommand(
+                global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                new EventAttendeeListQuery(),
+                Request(),
+                ManualEmailPurpose.Promotional,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -91,6 +122,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
                 global::CodigoActivo.Domain.Events.EventId.From(EventId),
                 new EventAttendeeListQuery(),
                 Request(),
+                ManualEmailPurpose.Informational,
                 []
             ),
             TestContext.Current.CancellationToken

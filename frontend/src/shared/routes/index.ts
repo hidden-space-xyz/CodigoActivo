@@ -32,6 +32,7 @@ interface RouteNamedMap {
   'confirm-email': NamedRoute<'confirm-email', '/confirm-email'>
   'forgot-password': NamedRoute<'forgot-password', '/forgot-password'>
   'reset-password': NamedRoute<'reset-password', '/reset-password'>
+  unsubscribe: NamedRoute<'unsubscribe', '/unsubscribe'>
   account: NamedRoute<'account', '/account'>
   'admin-dashboard': NamedRoute<'admin-dashboard', '/admin/dashboard'>
   'admin-events': NamedRoute<'admin-events', '/admin/events'>

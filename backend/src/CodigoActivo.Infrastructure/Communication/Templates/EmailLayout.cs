@@ -31,12 +31,17 @@ public sealed record EmailContent(
 /// <param name="RecipientName">Name the message greets; a null or empty name greets nobody.</param>
 /// <param name="SiteUrl">The site url value.</param>
 /// <param name="Accent">The accent value.</param>
+/// <param name="Promotional">
+/// Whether the email is a commercial communication, whose footer carries the contact address and
+/// leaves a place for the unsubscribe link of each recipient.
+/// </param>
 public sealed record EmailDocument(
     string Heading,
     string Preheader,
     string? RecipientName,
     string SiteUrl,
-    EmailAccent Accent
+    EmailAccent Accent,
+    bool Promotional = false
 );
 
 /// <summary>
@@ -45,6 +50,8 @@ public sealed record EmailDocument(
 public static class EmailLayout
 {
     private const string TextRule = "------------------------------------------------------------";
+
+    private const string UnsubscribeSlot = "{{unsubscribe-url}}";
 
     private const string BlockSeparator = "\n\n";
 
@@ -83,9 +90,46 @@ public static class EmailLayout
         }
 
         sections.AddRange(blocks.Select(block => block.Text.Trim()));
-        sections.Add($"{TextRule}\n{AppStrings.EmailsFooterTagline}\n{document.SiteUrl}");
+        var footer = $"{AppStrings.EmailsFooterTagline}\n{document.SiteUrl}";
+        sections.Add(
+            document.Promotional
+                ? $"{TextRule}\n{PromotionalNoticeText()}{BlockSeparator}{footer}"
+                : $"{TextRule}\n{footer}"
+        );
 
         return string.Join(BlockSeparator, sections);
+    }
+
+    /// <summary>
+    /// Puts the unsubscribe link of one recipient in the place the footer of a promotional email
+    /// leaves for it.
+    /// </summary>
+    /// <param name="body">Rendered body shared by every recipient of the email.</param>
+    /// <param name="unsubscribeUrl">
+    /// Unsubscribe link of the recipient; <see langword="null"/> leaves the body as it is.
+    /// </param>
+    /// <param name="html">Whether the body is HTML, where the link is encoded.</param>
+    /// <returns>The body of the recipient.</returns>
+    public static string LinkUnsubscribe(string body, string? unsubscribeUrl, bool html)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        if (unsubscribeUrl is null)
+        {
+            return body;
+        }
+
+        return body.Replace(
+            UnsubscribeSlot,
+            html ? WebUtility.HtmlEncode(unsubscribeUrl) : unsubscribeUrl,
+            StringComparison.Ordinal
+        );
+    }
+
+    private static string PromotionalNoticeText()
+    {
+        return $"{AppStrings.EmailsFooterPromotionalNotice}\n"
+            + $"{AppStrings.EmailsFooterUnsubscribeText(UnsubscribeSlot)}\n"
+            + AppStrings.EmailsFooterContact(EmailBranding.ContactAddress);
     }
 
     private static string Html(EmailDocument document, List<EmailBlock> blocks)
@@ -215,6 +259,23 @@ public static class EmailLayout
             <p style="{EmailStyles.FooterLinkWrap}">
             <a class="ca-link" href="{siteUrl}" style="{EmailStyles.FooterLink}">{website}</a>
             </p>
+            {(document.Promotional ? PromotionalNoticeHtml() : string.Empty)}
+            """;
+    }
+
+    private static string PromotionalNoticeHtml()
+    {
+        var notice = WebUtility.HtmlEncode(AppStrings.EmailsFooterPromotionalNotice);
+        var unsubscribe = WebUtility.HtmlEncode(AppStrings.EmailsFooterUnsubscribeLabel);
+        var address = WebUtility.HtmlEncode(EmailBranding.ContactAddress);
+        var contact = AppStrings.EmailsFooterContact(
+            $"<a class=\"ca-link\" href=\"mailto:{address}\" style=\"{EmailStyles.FooterLink}\">{address}</a>"
+        );
+
+        return $"""
+            <p class="ca-muted" style="{EmailStyles.FooterNotice}">{notice}
+            <a class="ca-link" href="{UnsubscribeSlot}" style="{EmailStyles.FooterLink}">{unsubscribe}</a></p>
+            <p class="ca-muted" style="{EmailStyles.FooterNotice}">{contact}</p>
             """;
     }
 }

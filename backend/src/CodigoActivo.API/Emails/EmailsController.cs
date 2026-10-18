@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Emails.Contracts;
 using CodigoActivo.API.Security;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Common.Validation;
@@ -12,7 +13,9 @@ using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.RateLimiting;
 using EventId = CodigoActivo.Domain.Events.EventId;
 
@@ -31,6 +34,7 @@ public class EmailsController : ApiControllerBase
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="subject">The subject value.</param>
     /// <param name="body">The body value.</param>
+    /// <param name="purpose">What the email is written for, which decides who it reaches.</param>
     /// <param name="attachments">The attachments value.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -44,6 +48,10 @@ public class EmailsController : ApiControllerBase
         Guid userId,
         [FromForm] [Required] [MaxLength(ManualEmailText.SubjectMaxLength)] string subject,
         [FromForm] [Required] [MaxLength(ManualEmailText.BodyMaxLength)] string body,
+        [FromForm]
+        [BindRequired]
+        [EnumDataType(typeof(ManualEmailPurpose))]
+            ManualEmailPurpose purpose,
         [FromForm] IEnumerable<IFormFile>? attachments,
         [FromServices] ICommandHandler<SendEmailToUserCommand, Result<EmailDispatch>> handler,
         CancellationToken ct
@@ -54,6 +62,7 @@ public class EmailsController : ApiControllerBase
                 new SendEmailToUserCommand(
                     UserId.From(userId),
                     new ManualEmailText(subject, body),
+                    purpose,
                     ToAttachments(attachments)
                 ),
                 ct
@@ -68,6 +77,7 @@ public class EmailsController : ApiControllerBase
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="subject">The subject value.</param>
     /// <param name="body">The body value.</param>
+    /// <param name="purpose">What the email is written for, which decides who it reaches.</param>
     /// <param name="attachments">The attachments value.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -81,6 +91,10 @@ public class EmailsController : ApiControllerBase
         [FromQuery] UserListQuery query,
         [FromForm] [Required] [MaxLength(ManualEmailText.SubjectMaxLength)] string subject,
         [FromForm] [Required] [MaxLength(ManualEmailText.BodyMaxLength)] string body,
+        [FromForm]
+        [BindRequired]
+        [EnumDataType(typeof(ManualEmailPurpose))]
+            ManualEmailPurpose purpose,
         [FromForm] IEnumerable<IFormFile>? attachments,
         [FromServices] ICommandHandler<SendEmailToUsersCommand, Result<EmailDispatch>> handler,
         CancellationToken ct
@@ -91,6 +105,7 @@ public class EmailsController : ApiControllerBase
                 new SendEmailToUsersCommand(
                     query,
                     new ManualEmailText(subject, body),
+                    purpose,
                     ToAttachments(attachments)
                 ),
                 ct
@@ -106,6 +121,7 @@ public class EmailsController : ApiControllerBase
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="subject">The subject value.</param>
     /// <param name="body">The body value.</param>
+    /// <param name="purpose">What the email is written for, which decides who it reaches.</param>
     /// <param name="attachments">The attachments value.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -120,6 +136,10 @@ public class EmailsController : ApiControllerBase
         [FromQuery] EventAttendeeListQuery query,
         [FromForm] [Required] [MaxLength(ManualEmailText.SubjectMaxLength)] string subject,
         [FromForm] [Required] [MaxLength(ManualEmailText.BodyMaxLength)] string body,
+        [FromForm]
+        [BindRequired]
+        [EnumDataType(typeof(ManualEmailPurpose))]
+            ManualEmailPurpose purpose,
         [FromForm] IEnumerable<IFormFile>? attachments,
         [FromServices]
             ICommandHandler<SendEmailToEventAttendeesCommand, Result<EmailDispatch>> handler,
@@ -132,6 +152,7 @@ public class EmailsController : ApiControllerBase
                     EventId.From(eventId),
                     query,
                     new ManualEmailText(subject, body),
+                    purpose,
                     ToAttachments(attachments)
                 ),
                 ct
@@ -187,6 +208,27 @@ public class EmailsController : ApiControllerBase
                 ct
             )
         );
+    }
+
+    /// <summary>
+    /// Withdraws the promotional consent of the account the unsubscribe link of a promotional
+    /// email names. It needs no session, so the link works wherever the email is read, and it
+    /// answers 204 again when the link is followed once more.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpPost("unsubscribe")]
+    [AllowAnonymous]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<ActionResult> UnsubscribeAsync(
+        [FromBody] UnsubscribeRequest request,
+        [FromServices] ICommandHandler<UnsubscribeCommand, Result> handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(), ct));
     }
 
     private static SendEmailResultResponse ToResponse(EmailDispatch dispatch)

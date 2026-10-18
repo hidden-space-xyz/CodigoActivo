@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Infrastructure.Communication.Templates;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 
@@ -13,8 +14,8 @@ internal static class EmailBatchExtensions
                 recipient.Address,
                 recipient.Name,
                 batch.Subject,
-                batch.HtmlBody,
-                batch.TextBody,
+                EmailLayout.LinkUnsubscribe(batch.HtmlBody, recipient.UnsubscribeUrl, html: true),
+                EmailLayout.LinkUnsubscribe(batch.TextBody, recipient.UnsubscribeUrl, html: false),
                 batch.Attachments,
                 batch.InlineImages
             )),

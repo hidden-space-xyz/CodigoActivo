@@ -185,7 +185,8 @@ account and each dependent, the guardian's identification when
 a dependent is deleted alone, every signup of the household with activity, event, role, status and signup
 time, every terms decision (accepted or rejected, with its handwritten signature as base64 PNG) of the
 household — or the guardian's for the dependent's events — with each document's text as it stood at
-deletion (documents are not versioned), and who asked
+deletion (documents are not versioned), every change of each person's promotional consent with its instant
+and source, and who asked
 for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
 secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
 data is plain JSON protected only by database access. The `DeletedAccountPurger` hosted service runs
@@ -329,6 +330,11 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   the data, purpose, legal basis and retention, plus the processors, transfers and rights; the registration
   form shows its first layer (`PrivacyNotice`). Change them with any new personal field, processor, recipient
   or retention.
+- Promotional consent (article 21 of the Spanish LSSI, article 7.1 GDPR) is changed only by its holder: at
+  registration, in «Mi cuenta» or through the unsubscribe link of a promotional email. `User` appends every
+  change to `promotional_consent_changes` with its instant and source (`Registration`, `Profile`,
+  `UnsubscribeLink`) and the blocked copy keeps them. Consents stored before that table existed have no
+  recorded change.
 - Terms-document consent is recorded for the acting user, not the person signed up: signing up a household
   dependent stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
   for that event covers later dependent signups without a new prompt (`TermsGate`). An acceptance is immutable
@@ -560,13 +566,24 @@ Both automatic and administrator-written mail are stored in a PostgreSQL outbox 
 and delivered in the background by `EmailOutboxProcessor`, so a request that queues email returns once the
 row is committed, not once SMTP accepts it: see [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) for the
 delivery schedule, capacity and monitoring. The stored subject, bodies and attachments are protected with
-Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, kind and attachment names
-are stored in clear. Recreating the Data Protection key ring makes pending rows unreadable and they are
+Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, unsubscribe link, kind and
+attachment names are stored in clear. Recreating the Data Protection key ring makes pending rows unreadable and they are
 discarded on their next delivery attempt.
 
-Only administrators may use `/api/emails/...` endpoints; recipients are resolved on the server from the same
+Only administrators may send through `/api/emails/...`; recipients are resolved on the server from the same
 filters as user/attendee lists, never client-supplied addresses. Each recipient gets a separate message,
-dependents without their own address are skipped, and attachments remain transient. This mail bypasses the
+dependents without their own address are skipped, and attachments remain transient. Every send carries a
+required `purpose`: `Informational` reaches every addressable recipient; `Promotional` reaches only those with
+promotional consent, enforced by the server (`ManualEmailAudience.ReachedBy`; a single recipient without it
+is refused with `EmailRecipientWithoutConsent`), and its footer carries the contact address
+(`EmailBranding.ContactAddress`, the same as the SPA's `CONTACT.email`) and the recipient's own unsubscribe
+link, `/unsubscribe#token=…`. The token is the user id protected with Data Protection (purpose
+`CodigoActivo.Unsubscribe.v1`), so it cannot be forged and never expires while its key stays in the ring;
+recreating the ring invalidates the links already sent. The stored content is shared by the batch and each
+outbox row holds its recipient's link in clear (`unsubscribe_url`), put in place at delivery. The SPA page
+posts the token to the anonymous `POST /api/emails/unsubscribe` (credential rate limit), which withdraws the
+consent and answers 204 again for a withdrawn consent or an erased account, or `EmailUnsubscribeLinkInvalid`
+for an altered token. This mail bypasses the
 automatic-message limiter; the endpoint reports how many messages were queued and how many recipients were
 skipped, not what SMTP later did with them. Single-recipient messages allow 30 requests/minute
 per administrator (10 executing, 10 waiting); bulk messages allow 5 requests/minute (2 active, no waiting
@@ -577,8 +594,8 @@ the five-minute nginx upstream timeout.
 administrator preview a send before committing to it: given the same filters as `POST /api/emails/users` or
 `POST /api/emails/events/{eventId}/attendees`, they return `{ recipients, withoutConsent }` computed by the
 same shared selection (`ManualEmailAudience`) the send commands use, so the preview always matches what a
-send would reach — distinct addressable recipients deduplicated case-insensitively, and how many of them
-have `promotionalConsent` set to `false`. These preview endpoints carry none of the send limits above, only
+send would reach — distinct addressable recipients deduplicated case-insensitively, which an informational
+send reaches, and how many of them a promotional send leaves out for lack of consent. These preview endpoints carry none of the send limits above, only
 the general API limits of nginx and the API.
 
 ## Demo mode

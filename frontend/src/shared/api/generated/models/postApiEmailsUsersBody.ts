@@ -4,11 +4,13 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { ManualEmailPurpose } from './manualEmailPurpose';
 
 export type PostApiEmailsUsersBody = {
   /** @maxLength 200 */
   subject: string;
   /** @maxLength 10000 */
   body: string;
+  purpose: ManualEmailPurpose;
   attachments?: (Blob | File)[];
 };

@@ -33,6 +33,7 @@ public sealed class EmailLayoutContractTests
             "decisionConfirmed",
             "decisionDenied",
             "manual",
+            "promotional",
         ];
     }
 
@@ -152,6 +153,13 @@ public sealed class EmailLayoutContractTests
                 .Create(
                     ManualEmail.Render("Aviso", "Cambiamos de aula.", Site),
                     [new EmailRecipient("ada@test.com", "Ada")],
+                    []
+                )
+                .ToMessages()[0],
+            "promotional" => ManualEmail
+                .Create(
+                    ManualEmail.Render("Taller", "Nuevo taller.", Site, promotional: true),
+                    [new EmailRecipient("ada@test.com", "Ada", $"{Site}/unsubscribe#token=t")],
                     []
                 )
                 .ToMessages()[0],

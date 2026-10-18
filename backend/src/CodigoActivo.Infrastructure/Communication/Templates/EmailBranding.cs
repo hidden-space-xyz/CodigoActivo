@@ -92,6 +92,12 @@ public static class EmailBranding
     public const string LogoFileName = "codigo-activo.png";
 
     /// <summary>
+    /// Contact address of the association that promotional email gives to unsubscribe, the same
+    /// one the web application shows (<c>CONTACT.email</c> in the frontend configuration).
+    /// </summary>
+    public const string ContactAddress = "contacto@codigoactivo.es";
+
+    /// <summary>
     /// Stores the shared brand value.
     /// </summary>
     public static readonly EmailAccent Brand = new(Primary, PrimarySoft, PrimaryInk);

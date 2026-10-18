@@ -996,6 +996,7 @@
               "schema": {
                 "required": [
                   "body",
+                  "purpose",
                   "subject"
                 ],
                 "type": "object",
@@ -1007,6 +1008,9 @@
                   "body": {
                     "maxLength": 10000,
                     "type": "string"
+                  },
+                  "purpose": {
+                    "$ref": "#/components/schemas/ManualEmailPurpose"
                   },
                   "attachments": {
                     "type": "array",
@@ -1022,6 +1026,9 @@
                   "style": "form"
                 },
                 "body": {
+                  "style": "form"
+                },
+                "purpose": {
                   "style": "form"
                 },
                 "attachments": {
@@ -1183,6 +1190,7 @@
               "schema": {
                 "required": [
                   "body",
+                  "purpose",
                   "subject"
                 ],
                 "type": "object",
@@ -1194,6 +1202,9 @@
                   "body": {
                     "maxLength": 10000,
                     "type": "string"
+                  },
+                  "purpose": {
+                    "$ref": "#/components/schemas/ManualEmailPurpose"
                   },
                   "attachments": {
                     "type": "array",
@@ -1209,6 +1220,9 @@
                   "style": "form"
                 },
                 "body": {
+                  "style": "form"
+                },
+                "purpose": {
                   "style": "form"
                 },
                 "attachments": {
@@ -1325,6 +1339,7 @@
               "schema": {
                 "required": [
                   "body",
+                  "purpose",
                   "subject"
                 ],
                 "type": "object",
@@ -1336,6 +1351,9 @@
                   "body": {
                     "maxLength": 10000,
                     "type": "string"
+                  },
+                  "purpose": {
+                    "$ref": "#/components/schemas/ManualEmailPurpose"
                   },
                   "attachments": {
                     "type": "array",
@@ -1351,6 +1369,9 @@
                   "style": "form"
                 },
                 "body": {
+                  "style": "form"
+                },
+                "purpose": {
                   "style": "form"
                 },
                 "attachments": {
@@ -1617,6 +1638,27 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/emails/unsubscribe": {
+      "post": {
+        "tags": [
+          "Emails"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnsubscribeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -4861,6 +4903,7 @@
           "SendEmailToEventAttendees",
           "SendEmailToUser",
           "SendEmailToUsers",
+          "Unsubscribe",
           "CreateEventCategoryType",
           "DeleteEventCategoryType",
           "UpdateEventCategoryType",
@@ -5997,6 +6040,8 @@
           "AuthenticatorAlreadyEnabled",
           "EmailNoRecipients",
           "EmailRecipientWithoutAddress",
+          "EmailRecipientWithoutConsent",
+          "EmailUnsubscribeLinkInvalid",
           "EmailTooManyRecipients",
           "EmailTooManyAttachments",
           "EmailAttachmentEmpty",
@@ -7515,6 +7560,13 @@
         },
         "additionalProperties": false
       },
+      "ManualEmailPurpose": {
+        "enum": [
+          "Informational",
+          "Promotional"
+        ],
+        "type": "string"
+      },
       "NewsItemResponse": {
         "required": [
           "createdAt",
@@ -8187,6 +8239,18 @@
           "Authenticator"
         ],
         "type": "string"
+      },
+      "UnsubscribeRequest": {
+        "required": [
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       },
       "UpdateActivityRequest": {
         "required": [

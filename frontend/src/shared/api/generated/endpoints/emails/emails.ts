@@ -38,7 +38,8 @@ import type {
   PostApiEmailsUsersBody,
   PostApiEmailsUsersParams,
   PostApiEmailsUsersUserIdBody,
-  SendEmailResultResponse
+  SendEmailResultResponse,
+  UnsubscribeRequest
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
@@ -76,6 +77,9 @@ if(postApiEmailsUsersUserIdBody?.subject !== undefined) {
  }
 if(postApiEmailsUsersUserIdBody?.body !== undefined) {
  formData.append(`body`, postApiEmailsUsersUserIdBody.body);
+ }
+if(postApiEmailsUsersUserIdBody?.purpose !== undefined) {
+ formData.append(`purpose`, postApiEmailsUsersUserIdBody.purpose);
  }
 if(postApiEmailsUsersUserIdBody?.attachments !== undefined) {
  postApiEmailsUsersUserIdBody?.attachments.forEach(value => formData.append(`attachments`, value));
@@ -181,6 +185,9 @@ if(postApiEmailsUsersBody?.subject !== undefined) {
  }
 if(postApiEmailsUsersBody?.body !== undefined) {
  formData.append(`body`, postApiEmailsUsersBody.body);
+ }
+if(postApiEmailsUsersBody?.purpose !== undefined) {
+ formData.append(`purpose`, postApiEmailsUsersBody.purpose);
  }
 if(postApiEmailsUsersBody?.attachments !== undefined) {
  postApiEmailsUsersBody?.attachments.forEach(value => formData.append(`attachments`, value));
@@ -288,6 +295,9 @@ if(postApiEmailsEventsEventIdAttendeesBody?.subject !== undefined) {
  }
 if(postApiEmailsEventsEventIdAttendeesBody?.body !== undefined) {
  formData.append(`body`, postApiEmailsEventsEventIdAttendeesBody.body);
+ }
+if(postApiEmailsEventsEventIdAttendeesBody?.purpose !== undefined) {
+ formData.append(`purpose`, postApiEmailsEventsEventIdAttendeesBody.purpose);
  }
 if(postApiEmailsEventsEventIdAttendeesBody?.attachments !== undefined) {
  postApiEmailsEventsEventIdAttendeesBody?.attachments.forEach(value => formData.append(`attachments`, value));
@@ -535,3 +545,101 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiEmailsEventsEventIdAttendeesAudienceMutationOptions(options), queryClient);
     }
+    export type postApiEmailsUnsubscribeResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiEmailsUnsubscribeResponseSuccess = (postApiEmailsUnsubscribeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiEmailsUnsubscribeResponse = (postApiEmailsUnsubscribeResponseSuccess)
+
+export const getPostApiEmailsUnsubscribeUrl = () => {
+
+
+
+
+  return `/api/emails/unsubscribe`
+}
+
+export const postApiEmailsUnsubscribe = async (unsubscribeRequest?: UnsubscribeRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiEmailsUnsubscribeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiEmailsUnsubscribeResponse>(getPostApiEmailsUnsubscribeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(unsubscribeRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiEmailsUnsubscribeQueryKey = (unsubscribeRequest?: MaybeRefOrGetter<UnsubscribeRequest>,) => {
+    return [
+    'POST', 'api','emails','unsubscribe', unsubscribeRequest
+    ] as const;
+    }
+
+
+export const getPostApiEmailsUnsubscribeQueryOptions = <TData = Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError = unknown>(unsubscribeRequest?: MaybeRefOrGetter<UnsubscribeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiEmailsUnsubscribeQueryKey(unsubscribeRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>> = ({ signal }) => postApiEmailsUnsubscribe(toValue(unsubscribeRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError, TData>
+}
+
+export type PostApiEmailsUnsubscribeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>>
+export type PostApiEmailsUnsubscribeQueryError = unknown
+
+
+
+export function usePostApiEmailsUnsubscribe<TData = Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError = unknown>(
+ unsubscribeRequest?: MaybeRefOrGetter<UnsubscribeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiEmailsUnsubscribeQueryOptions(unsubscribeRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+

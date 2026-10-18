@@ -86,7 +86,11 @@ public sealed record EmailMessage(
 /// </summary>
 /// <param name="Address">The address value.</param>
 /// <param name="Name">The name value.</param>
-public sealed record EmailRecipient(string Address, string Name);
+/// <param name="UnsubscribeUrl">
+/// Link with which this addressee withdraws their promotional consent, shown in the place the
+/// shared content of a promotional email leaves for it; <see langword="null"/> for other email.
+/// </param>
+public sealed record EmailRecipient(string Address, string Name, string? UnsubscribeUrl = null);
 
 /// <summary>
 /// Represents one email written once and delivered to every listed recipient, so the shared

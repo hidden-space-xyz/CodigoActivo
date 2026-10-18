@@ -687,12 +687,12 @@ describe('admin users page', () => {
 
   it('queues an email for all filtered users after confirmation', async () => {
     serveUsers([ada, tim])
-    let received: { url: string; subject: unknown } | undefined
+    let received: { url: string; subject: unknown; purpose: unknown } | undefined
     const audienceUrls: string[] = []
     server.use(
       http.post('/api/emails/users', async ({ request }) => {
         const form = await request.formData()
-        received = { url: request.url, subject: form.get('subject') }
+        received = { url: request.url, subject: form.get('subject'), purpose: form.get('purpose') }
         return HttpResponse.json({ queued: 2 })
       }),
       http.get('/api/emails/users/audience', ({ request }) => {
@@ -707,11 +707,13 @@ describe('admin users page', () => {
     const dialog = openDialog(t(EMAIL_TITLE))
     expect(dialog.textContent).toContain(tp('pages.admin.users.email.targetFiltered', 2, { n: 2 }))
     await vi.waitFor(() =>
-      expect(dialog.querySelector('.el-alert--warning')?.textContent).toContain(
-        tp('features.sendEmail.withoutConsentWarning', 1, { count: 1 }),
-      ),
+      expect(dialog.textContent).toContain(tp('features.sendEmail.recipients', 2, { count: 2 })),
     )
     expect(audienceUrls.map(queryOf)).toEqual([{ scope: 'Dependent', parentId: 'user-1' }])
+    await click(dialog.querySelector('input[type="radio"][value="Promotional"]')!)
+    expect(dialog.querySelector('.el-alert--info')?.textContent).toContain(
+      tp('features.sendEmail.withoutConsent', 1, { count: 1 }),
+    )
     await typeInto('#send-email-subject', 'News')
     await typeInto('#send-email-body', 'Hello everyone')
     await click(findButton(t('features.sendEmail.send'), dialog))
@@ -719,6 +721,7 @@ describe('admin users page', () => {
 
     await expectNotification(tp('features.sendEmail.toast.queued', 2, { count: 2 }))
     expect(received?.subject).toBe('News')
+    expect(received?.purpose).toBe('Promotional')
     expect(queryOf(received?.url ?? '')).toEqual({ scope: 'Dependent', parentId: 'user-1' })
     await vi.waitFor(() => expect(isDialogOpen(t(EMAIL_TITLE))).toBe(false))
     expect(chipLabels(wrapper)).toEqual([
@@ -750,6 +753,7 @@ describe('admin users page', () => {
     await vi.waitFor(() => expect(audienceUrls.map(queryOf)).toEqual([{ id: 'user-1' }]))
     await flushPromises()
     expect(dialog.querySelector('.el-alert')).toBeNull()
+    await click(dialog.querySelector('input[type="radio"][value="Informational"]')!)
     await typeInto('#send-email-subject', 'Hi')
     await typeInto('#send-email-body', 'Personal note')
     await click(findButton(t('features.sendEmail.send'), dialog))
@@ -760,6 +764,7 @@ describe('admin users page', () => {
     fail = true
     await chooseRowAction(wrapper, 0, SEND_EMAIL)
     dialog = openDialog(t(EMAIL_TITLE))
+    await click(dialog.querySelector('input[type="radio"][value="Informational"]')!)
     await typeInto('#send-email-subject', 'Hi')
     await typeInto('#send-email-body', 'Again')
     await click(findButton(t('features.sendEmail.send'), dialog))

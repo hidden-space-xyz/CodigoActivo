@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Errors;
@@ -12,10 +13,12 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="Content">Subject and body of the email.</param>
+/// <param name="Purpose">What the email is written for, which decides whether it may reach the user.</param>
 /// <param name="Attachments">The attachments value.</param>
 public sealed record SendEmailToUserCommand(
     UserId UserId,
     ManualEmailText Content,
+    [property: EnumDataType(typeof(ManualEmailPurpose))] ManualEmailPurpose Purpose,
     IReadOnlyList<EmailAttachmentUpload> Attachments
 ) : ICommand<Result<EmailDispatch>>;
 
@@ -54,10 +57,13 @@ public sealed class SendEmailToUserCommandHandler(
             { } found when string.IsNullOrWhiteSpace(found.Email) => Error.Validation(
                 ApplicationErrorCode.EmailRecipientWithoutAddress
             ),
+            { PromotionalConsent: false } when command.Purpose is ManualEmailPurpose.Promotional =>
+                Error.Validation(ApplicationErrorCode.EmailRecipientWithoutConsent),
             { } found => await dispatcher.DispatchAsync(
                 [found],
                 skipped: 0,
                 command.Content,
+                command.Purpose,
                 command.Attachments,
                 ct
             ),

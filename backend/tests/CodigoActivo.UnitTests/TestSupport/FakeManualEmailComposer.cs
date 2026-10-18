@@ -6,7 +6,8 @@ namespace CodigoActivo.UnitTests.TestSupport;
 public sealed record ComposedManualEmail(
     string Subject,
     string Body,
-    IReadOnlyList<EmailRecipient> Recipients,
+    ManualEmailPurpose Purpose,
+    IReadOnlyList<ManualEmailRecipient> Recipients,
     IReadOnlyList<EmailAttachment> Attachments
 );
 
@@ -28,13 +29,14 @@ public sealed class FakeManualEmailComposer : IManualEmailComposer
     public EmailBatch Compose(
         string subject,
         string body,
-        IReadOnlyList<EmailRecipient> recipients,
+        ManualEmailPurpose purpose,
+        IReadOnlyList<ManualEmailRecipient> recipients,
         IReadOnlyList<EmailAttachment> attachments
     )
     {
         lock (composed)
         {
-            composed.Add(new ComposedManualEmail(subject, body, recipients, attachments));
+            composed.Add(new ComposedManualEmail(subject, body, purpose, recipients, attachments));
         }
 
         var text = $"{nameof(subject)} = {subject}, {nameof(body)} = {body}";
@@ -43,7 +45,12 @@ public sealed class FakeManualEmailComposer : IManualEmailComposer
             nameof(Compose),
             text,
             text,
-            recipients,
+            [
+                .. recipients.Select(recipient => new EmailRecipient(
+                    recipient.Address,
+                    recipient.Name
+                )),
+            ],
             attachments
         );
     }

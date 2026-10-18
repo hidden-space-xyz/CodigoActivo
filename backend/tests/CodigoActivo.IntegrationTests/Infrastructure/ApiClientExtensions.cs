@@ -123,7 +123,8 @@ public static class ApiClientExtensions
         string? subject = "Asunto de prueba",
         string? body = "Cuerpo de prueba",
         IReadOnlyList<(string FileName, string ContentType, byte[] Bytes)>? attachments = null,
-        bool withCsrf = true
+        bool withCsrf = true,
+        string? purpose = "Informational"
     )
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -144,6 +145,12 @@ public static class ApiClientExtensions
         if (bodyPart is not null)
         {
             form.Add(bodyPart, "body");
+        }
+
+        using var purposePart = purpose is null ? null : new StringContent(purpose);
+        if (purposePart is not null)
+        {
+            form.Add(purposePart, "purpose");
         }
 
         return await AddAttachmentThenSendAsync(client, request, form, attachments ?? [], 0);
