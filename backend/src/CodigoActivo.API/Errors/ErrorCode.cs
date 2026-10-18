@@ -379,6 +379,11 @@ public enum ErrorCode
     UserNationalIdRequired,
 
     /// <summary>
+    /// Selects the option for a registration whose holder did not declare being of age.
+    /// </summary>
+    UserAdultDeclarationRequired,
+
+    /// <summary>
     /// Selects the option for an account registered or updated with an email another account
     /// already uses.
     /// </summary>

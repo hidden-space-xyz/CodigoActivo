@@ -27,7 +27,11 @@ public sealed class NewsConsentTests
 
     private static User Account(bool newsConsent)
     {
-        var account = User.CreateIndependent(Details(newsConsent), Created).Value;
+        var account = User.CreateIndependent(
+            Details(newsConsent),
+            declaresAdult: true,
+            Created
+        ).Value;
         account.PullDomainEvents();
         return account;
     }

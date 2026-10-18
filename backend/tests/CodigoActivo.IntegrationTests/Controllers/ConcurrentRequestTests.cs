@@ -205,6 +205,7 @@ public sealed class ConcurrentRequestTests(CodigoActivoWebAppFactory factory)
             "Str0ngPass!23",
             "87654321X",
             ContractGender.Female,
+            true,
             false,
             null,
             null

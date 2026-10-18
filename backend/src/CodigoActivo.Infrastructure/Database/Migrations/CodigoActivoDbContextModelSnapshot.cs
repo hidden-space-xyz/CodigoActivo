@@ -734,6 +734,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset?>("AdultDeclaredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("adult_declared_at");
+
                     b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("date")
                         .HasColumnName("birth_date");

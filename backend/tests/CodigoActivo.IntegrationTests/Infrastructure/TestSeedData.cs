@@ -82,6 +82,7 @@ public static class TestSeedData
                 Status = UserStatus.Active,
                 UserType = UserType.Member,
                 CreatedAt = SeededAt,
+                AdultDeclaredAt = SeededAt,
             }
         );
 
@@ -114,6 +115,7 @@ public static class TestSeedData
                 Status = UserStatus.Pending,
                 UserType = UserType.Member,
                 CreatedAt = SeededAt,
+                AdultDeclaredAt = SeededAt,
             }
         );
 
@@ -131,6 +133,7 @@ public static class TestSeedData
                 Status = UserStatus.Blocked,
                 UserType = UserType.Member,
                 CreatedAt = SeededAt,
+                AdultDeclaredAt = SeededAt,
             }
         );
 

@@ -25,6 +25,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="Password">Password of the adult.</param>
 /// <param name="NationalId">DNI or NIE of the adult.</param>
 /// <param name="Gender">Gender of the adult.</param>
+/// <param name="DeclaresAdult">Whether the adult declared being of age.</param>
 /// <param name="NewsConsent">Whether the adult agrees to receive news by email.</param>
 /// <param name="Minors">Minors registered with the adult.</param>
 /// <param name="SecondaryPhone">Optional second phone of the adult.</param>
@@ -36,6 +37,7 @@ public sealed record RegisterCommand(
     [property: Required, MinLength(12), MaxLength(128), NotBlank] string Password,
     [property: Required, MaxLength(12), NotBlank, SpanishNationalId] string NationalId,
     [property: EnumDataType(typeof(Gender))] Gender Gender,
+    bool DeclaresAdult,
     bool NewsConsent,
     [property: MaxLength(Household.MaxDependents)] IReadOnlyList<MinorDraft> Minors,
     [property: MaxLength(40)] string? SecondaryPhone
@@ -146,6 +148,7 @@ public sealed class RegisterCommandHandler(
                 request.NationalId,
                 request.NewsConsent
             ),
+            request.DeclaresAdult,
             now
         );
         if (created.IsFailure)

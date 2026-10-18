@@ -42,6 +42,7 @@ public sealed class UnsubscribeCommandHandlerTests
                 "12345678Z",
                 NewsConsent: true
             ),
+            declaresAdult: true,
             new DateTimeOffset(2025, 1, 1, 9, 0, 0, TimeSpan.Zero)
         ).Value;
     }

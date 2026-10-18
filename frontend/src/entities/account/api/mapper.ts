@@ -160,5 +160,10 @@ export function toSaveEventRatingRequest(input: EventRatingInput): SaveEventRati
 
 /** Builds the body that registers an adult together with their minors. */
 export function toRegisterRequest(input: RegistrationInput): RegisterRequest {
-  return { ...input.adult, password: input.password, minors: input.minors.map(toMinorRequest) }
+  return {
+    ...input.adult,
+    password: input.password,
+    declaresAdult: input.declaresAdult,
+    minors: input.minors.map(toMinorRequest),
+  }
 }

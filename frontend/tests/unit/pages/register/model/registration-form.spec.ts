@@ -20,6 +20,7 @@ describe('registration form factories', () => {
       nationalId: '',
       gender: null,
       newsConsent: false,
+      declaresAdult: false,
       minors: [],
     })
   })

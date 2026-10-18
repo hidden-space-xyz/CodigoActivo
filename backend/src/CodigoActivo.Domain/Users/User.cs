@@ -98,6 +98,12 @@ public class User : AggregateRoot<UserId>
     public DateTimeOffset CreatedAt { get; private set; }
 
     /// <summary>
+    /// Gets when the holder declared being of age while registering the account; null for the
+    /// initial administrator, for dependents and for accounts registered before it was recorded.
+    /// </summary>
+    public DateTimeOffset? AdultDeclaredAt { get; private set; }
+
+    /// <summary>
     /// Gets the UTC timestamp of the most recent update.
     /// </summary>
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -163,22 +169,30 @@ public class User : AggregateRoot<UserId>
     public PasswordLockout PasswordLockout { get; private set; }
 
     /// <summary>
-    /// Creates an independent account, pending email verification and as a participant. It needs
-    /// a valid DNI or NIE, an email and a phone, may add a secondary phone different from the
-    /// phone, and has no birth date. The caller sets the password hash and the verification code
-    /// once the checks that need I/O have passed.
+    /// Creates an independent account, pending email verification and as a participant. Only
+    /// adults register, so the registrant must declare being of age, and the declaration is kept
+    /// with its time. It needs a valid DNI or NIE, an email and a phone, may add a secondary phone
+    /// different from the phone, and has no birth date. The caller sets the password hash and the
+    /// verification code once the checks that need I/O have passed.
     /// </summary>
     /// <param name="details">Details as supplied by the registrant.</param>
-    /// <param name="now">Current timestamp, stored as the creation time.</param>
+    /// <param name="declaresAdult">Whether the registrant declared being of age.</param>
+    /// <param name="now">Current timestamp, stored as the creation and declaration time.</param>
     /// <param name="id">Stable identifier for provisioned accounts; a new one otherwise.</param>
     /// <returns>The unsaved account, or the error of the first broken rule.</returns>
     public static Result<User> CreateIndependent(
         PersonDetails details,
+        bool declaresAdult,
         DateTimeOffset now,
         UserId? id = null
     )
     {
         ArgumentNullException.ThrowIfNull(details);
+        if (!declaresAdult)
+        {
+            return Error.Validation(DomainErrorCode.UserAdultDeclarationRequired);
+        }
+
         var account = new User
         {
             Id = id ?? UserId.New(),
@@ -187,6 +201,7 @@ public class User : AggregateRoot<UserId>
             Status = UserStatus.Pending,
             UserType = UserType.Participant,
             CreatedAt = now,
+            AdultDeclaredAt = now,
         };
         var change = account.PlanIndependentChange(details, guardianId: null);
         if (change.IsFailure)

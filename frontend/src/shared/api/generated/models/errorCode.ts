@@ -83,6 +83,7 @@ export const ErrorCode = {
   UserChildBirthDateRequired: 'UserChildBirthDateRequired',
   UserContactInfoRequired: 'UserContactInfoRequired',
   UserNationalIdRequired: 'UserNationalIdRequired',
+  UserAdultDeclarationRequired: 'UserAdultDeclarationRequired',
   UserEmailAlreadyInUse: 'UserEmailAlreadyInUse',
   SecondaryPhoneSameAsPrimary: 'SecondaryPhoneSameAsPrimary',
   UserPhoneInvalid: 'UserPhoneInvalid',

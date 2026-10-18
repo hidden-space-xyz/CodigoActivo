@@ -103,6 +103,7 @@ describe('register page', () => {
           nationalId: 'X1234567L',
           gender: 'Female',
           newsConsent: true,
+          declaresAdult: true,
           minors: [
             { firstName: 'Byron', lastName: 'King', birthDate: '2016-02-03', gender: 'Male' },
           ],

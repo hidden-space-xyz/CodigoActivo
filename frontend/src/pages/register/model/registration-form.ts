@@ -35,6 +35,8 @@ export interface RegistrationForm {
   gender: Gender | null
   /** Optional agreement to receive news by email; unchecked by default. */
   newsConsent: boolean
+  /** Set when the visitor confirms being of age at the age gate; nothing is sent without it. */
+  declaresAdult: boolean
   minors: MinorForm[]
 }
 
@@ -62,6 +64,7 @@ export function createEmptyRegistrationForm(): RegistrationForm {
     nationalId: '',
     gender: null,
     newsConsent: false,
+    declaresAdult: false,
     minors: [],
   }
 }
@@ -70,15 +73,16 @@ export function createEmptyRegistrationForm(): RegistrationForm {
  * Reads the form into a registration with the person rules of `@/entities/user`: trimmed names,
  * email and phones, a blank secondary phone as `null` and a normalized DNI or NIE; the password
  * confirmation is dropped. `null` while the adult or any minor breaks a rule, which the form shows
- * before submitting.
+ * before submitting, or while the visitor has not declared being of age at the age gate.
  */
 export function toRegistrationInput(form: RegistrationForm): RegistrationInput | null {
   const adult = parseIndependentPerson(form).person
   const minors = form.minors.map((minor) => parseDependentPerson(minor).person)
-  if (!adult || minors.some((minor) => minor === null)) return null
+  if (!form.declaresAdult || !adult || minors.some((minor) => minor === null)) return null
   return {
     adult,
     password: form.password,
+    declaresAdult: true,
     minors: minors.filter((minor) => minor !== null),
   }
 }

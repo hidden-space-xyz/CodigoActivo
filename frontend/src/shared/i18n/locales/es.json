@@ -283,6 +283,7 @@
     "UserChildLimitReached": "Has alcanzado el máximo de 20 menores a cargo.",
     "UserContactInfoRequired": "Debes indicar al menos un dato de contacto.",
     "UserNationalIdRequired": "Debes indicar el DNI o NIE.",
+    "UserAdultDeclarationRequired": "Para registrarte debes declarar que eres mayor de edad.",
     "UserEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
     "SecondaryPhoneSameAsPrimary": "El teléfono secundario debe ser distinto del principal.",
     "UserPhoneInvalid": "El teléfono no es válido. Usa solo números (entre 7 y 15), con espacios, guiones o un prefijo con +.",
@@ -475,9 +476,9 @@
         "items": {
           "account": {
             "title": "Tu cuenta y el acceso a la web",
-            "data": "Nombre, apellidos, email, teléfono y, si lo das, un segundo teléfono; tu contraseña, que guardamos transformada de forma irreversible; el método de verificación en dos pasos y, si usas una aplicación de autenticación, su clave cifrada; el email nuevo que pidas mientras no lo confirmas; las fechas de alta, de última modificación y de último acceso; el estado de la cuenta, si administras la web y tu relación con la asociación (socio, patrocinador o participante), que fija la administración.",
-            "purpose": "Crear y mantener tu cuenta, comprobar que el email es tuyo, permitirte iniciar sesión con verificación en dos pasos y recuperar la contraseña, y que gestiones tus datos desde «Mi cuenta». Tu relación con la asociación decide en qué roles puedes inscribirte y si puedes hacerlo antes que el resto.",
-            "legalBasis": "La prestación del servicio que solicitas al registrarte (art. 6.1.b RGPD).",
+            "data": "Nombre, apellidos, email, teléfono y, si lo das, un segundo teléfono; tu contraseña, que guardamos transformada de forma irreversible; el método de verificación en dos pasos y, si usas una aplicación de autenticación, su clave cifrada; el email nuevo que pidas mientras no lo confirmas; las fechas de alta, de última modificación y de último acceso; la fecha en que declaraste ser mayor de edad al registrarte; el estado de la cuenta, si administras la web y tu relación con la asociación (socio, patrocinador o participante), que fija la administración.",
+            "purpose": "Crear y mantener tu cuenta, poder demostrar que solo se registran personas mayores de edad, comprobar que el email es tuyo, permitirte iniciar sesión con verificación en dos pasos y recuperar la contraseña, y que gestiones tus datos desde «Mi cuenta». Tu relación con la asociación decide en qué roles puedes inscribirte y si puedes hacerlo antes que el resto.",
+            "legalBasis": "La prestación del servicio que solicitas al registrarte (art. 6.1.b RGPD) y, para guardar tu declaración de ser mayor de edad, la obligación de poder demostrarla (arts. 5.2 y 6.1.c RGPD y art. 7 LOPDGDD).",
             "retention": "Mientras mantengas la cuenta. Al eliminarla borramos de inmediato tus datos y los de los menores a tu cargo, salvo la copia bloqueada que se explica más abajo; las anotaciones de los registros de seguridad se borran al cumplir sus plazos, y las copias de seguridad, al sustituirse. Si no confirmas tu email en 30 días desde el registro, o si antes alguien vuelve a registrarse con ese email, borramos la cuenta y los menores añadidos en ella, que pasan a la copia bloqueada."
           },
           "nationalId": {
@@ -568,7 +569,7 @@
       },
       "minors": {
         "title": "Menores de edad",
-        "text": "Solo las personas mayores de edad pueden crear una cuenta. Los datos de un menor solo puede dárnoslos su padre, madre o tutor legal, que al añadirlo declara serlo y responde de que los datos sean correctos. Los menores no inician sesión y nunca les pedimos DNI, email ni teléfono.",
+        "text": "Solo las personas mayores de edad pueden crear una cuenta: al registrarte declaras serlo y guardamos la fecha de esa declaración. Los datos de un menor solo puede dárnoslos su padre, madre o tutor legal, que al añadirlo declara serlo y responde de que los datos sean correctos. Los menores no inician sesión y nunca les pedimos DNI, email ni teléfono.",
         "rights": "Los derechos de un menor de 14 años los ejerce en su nombre su padre, madre o tutor legal (art. 12.6 LOPDGDD). A partir de los 14 años puede ejercerlos el propio menor escribiéndonos, y es él quien da o retira el consentimiento en lo que se base en él (art. 7 LOPDGDD). Al cumplir 18 años puede escribirnos para ejercerlos directamente."
       },
       "required": {

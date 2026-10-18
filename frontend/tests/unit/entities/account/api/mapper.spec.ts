@@ -149,9 +149,17 @@ describe('account mapper', () => {
       newsConsent: false,
     } as const
 
-    expect(toRegisterRequest({ adult, password: 'Str0ngPass!23', minors: [MINOR] })).toEqual({
+    expect(
+      toRegisterRequest({
+        adult,
+        password: 'Str0ngPass!23',
+        declaresAdult: true,
+        minors: [MINOR],
+      }),
+    ).toEqual({
       ...adult,
       password: 'Str0ngPass!23',
+      declaresAdult: true,
       minors: [MINOR],
     })
   })
