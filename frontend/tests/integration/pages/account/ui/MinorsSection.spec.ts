@@ -304,6 +304,9 @@ describe('MinorsSection', () => {
     await click(findButton(t('common.delete'), minorItem('Anne King')))
     const dialog = openDialog(t('pages.account.minors.deleteHeader'))
     expect(dialog.querySelector('b')?.textContent.trim()).toBe('Anne King')
+    expect(dialog.querySelector('.acc-confirm')?.textContent).toBe(
+      t('pages.account.minors.deleteConfirm', { name: 'Anne King' }),
+    )
     await click(findButton(t('common.delete'), dialog))
 
     await vi.waitFor(() => expect(deletedPath).toBe('/api/users/child-2'))
