@@ -233,6 +233,7 @@ public sealed class DemoDataSeeder(
                 NationalId: BuildNationalId(index),
                 NewsConsent: index % 3 is not 0
             ),
+            declaresAdult: true,
             createdAt,
             DemoUser(index)
         ).Value;

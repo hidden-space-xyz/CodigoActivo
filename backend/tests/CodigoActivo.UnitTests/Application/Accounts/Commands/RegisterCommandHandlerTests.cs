@@ -93,7 +93,8 @@ public sealed class RegisterCommandHandlerTests
         Gender gender = Gender.Female,
         bool newsConsent = false,
         IReadOnlyList<RegisterMinorRequest>? minors = null,
-        string? secondaryPhone = null
+        string? secondaryPhone = null,
+        bool declaresAdult = true
     )
     {
         return new(
@@ -104,6 +105,7 @@ public sealed class RegisterCommandHandlerTests
             password,
             nationalId,
             gender,
+            declaresAdult,
             newsConsent,
             minors,
             secondaryPhone
@@ -170,6 +172,7 @@ public sealed class RegisterCommandHandlerTests
         adult.NationalId!.Value.Should().Be("X1234567L");
         adult.NewsConsent.Should().BeTrue();
         adult.BirthDate.Should().BeNull();
+        adult.AdultDeclaredAt.Should().NotBeNull();
         auditSubject.Entity.Should().Be(new AuditEntity(AuditEntityType.User, adult.Id.Value));
         var minor = added[1];
         minor.NationalId.Should().BeNull();
@@ -187,6 +190,17 @@ public sealed class RegisterCommandHandlerTests
         await users
             .DidNotReceiveWithAnyArgs()
             .GetByEmailAsync(default!, TestContext.Current.CancellationToken);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncWithoutTheAdultDeclarationIsRefusedWithoutAddingAnyone()
+    {
+        var result = await HandleAsync(NewRegister(declaresAdult: false));
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserAdultDeclarationRequired);
         await users
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);

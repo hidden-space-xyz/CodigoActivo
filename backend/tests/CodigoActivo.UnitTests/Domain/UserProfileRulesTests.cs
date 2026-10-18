@@ -55,7 +55,7 @@ public sealed class UserProfileRulesTests
 
     private static User StoredAdult()
     {
-        return User.CreateIndependent(AdultDetails(), Created).Value;
+        return User.CreateIndependent(AdultDetails(), declaresAdult: true, Created).Value;
     }
 
     private static User StoredChild(User guardian, DateOnly birthDate)
@@ -82,7 +82,7 @@ public sealed class UserProfileRulesTests
             true
         );
 
-        var result = User.CreateIndependent(details, Now);
+        var result = User.CreateIndependent(details, declaresAdult: true, Now);
 
         result.IsSuccess.Should().BeTrue();
         var account = result.Value;
@@ -101,7 +101,16 @@ public sealed class UserProfileRulesTests
         account.Status.Should().Be(UserStatus.Pending);
         account.UserType.Should().Be(UserType.Participant);
         account.CreatedAt.Should().Be(Now);
+        account.AdultDeclaredAt.Should().Be(Now);
         account.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateIndependentWithoutTheAdultDeclarationIsRefused()
+    {
+        var result = User.CreateIndependent(AdultDetails(), declaresAdult: false, Now);
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserAdultDeclarationRequired);
     }
 
     [Theory]
@@ -145,7 +154,7 @@ public sealed class UserProfileRulesTests
         var details = AdultDetails(email, phone, secondaryPhone, nationalId);
         var stored = StoredAdult();
 
-        var created = User.CreateIndependent(details, Now);
+        var created = User.CreateIndependent(details, declaresAdult: true, Now);
         var planned = stored.PlanProfileChange(details, guardianId: null, Today);
 
         created.ShouldFail(ErrorKind.Validation, expected);
@@ -155,7 +164,11 @@ public sealed class UserProfileRulesTests
     [Fact]
     public void CreateIndependentWithABirthDateIsRefused()
     {
-        var result = User.CreateIndependent(AdultDetails(birthDate: AdultDob), Now);
+        var result = User.CreateIndependent(
+            AdultDetails(birthDate: AdultDob),
+            declaresAdult: true,
+            Now
+        );
 
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserBirthDateNotAllowedForAdult);
     }

@@ -183,6 +183,11 @@ public enum DomainErrorCode
     UserNationalIdRequired,
 
     /// <summary>
+    /// Selects the option for a registration whose holder did not declare being of age.
+    /// </summary>
+    UserAdultDeclarationRequired,
+
+    /// <summary>
     /// Selects the option for a secondary phone equal to the main phone of the same account.
     /// </summary>
     SecondaryPhoneSameAsPrimary,

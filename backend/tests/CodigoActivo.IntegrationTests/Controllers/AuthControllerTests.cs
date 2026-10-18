@@ -46,6 +46,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             password,
             nationalId,
             gender,
+            true,
             newsConsent,
             minors,
             secondaryPhone
@@ -493,6 +494,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
                 password = "Str0ngPass!23",
                 nationalId = " 87654321-x ",
                 gender = "Female",
+                declaresAdult = true,
                 newsConsent = true,
                 birthDate = "2020-01-15",
             },
@@ -504,6 +506,31 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         stored!.NationalId!.Value.Should().Be(NewAdultNationalId);
         stored.NewsConsent.Should().BeTrue();
         stored.BirthDate.Should().BeNull();
+        stored.AdultDeclaredAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task RegisterWithoutTheAdultDeclarationIsRefusedAndStoresNothing()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                firstName = "Nadia",
+                lastName = "Nueva",
+                email = NewAdultEmail,
+                phone = "+34600000099",
+                password = "Str0ngPass!23",
+                nationalId = NewAdultNationalId,
+                gender = "Female",
+            },
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserAdultDeclarationRequired);
+        (await FindByEmailAsync(NewAdultEmail)).Should().BeNull();
     }
 
     [Fact]

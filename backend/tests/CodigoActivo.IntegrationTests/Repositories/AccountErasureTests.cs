@@ -475,7 +475,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
 
         var copy = await CopyOfAsync(TestSeedData.Users.MemberId);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(2);
+        copy.GetProperty("schemaVersion").GetInt32().Should().Be(3);
         copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Self");
         IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.MemberId);
         copy.GetProperty("guardian").ValueKind.Should().Be(JsonValueKind.Null);
@@ -490,6 +490,11 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         account.GetProperty("nationalId").GetString().Should().Be(TestSeedData.MemberNationalId);
         account.GetProperty("gender").GetString().Should().Be("Female");
         account.GetProperty("newsConsent").GetBoolean().Should().BeTrue();
+        account
+            .GetProperty("adultDeclaredAt")
+            .GetDateTimeOffset()
+            .Should()
+            .Be(account.GetProperty("createdAt").GetDateTimeOffset());
         Items(account.GetProperty("newsConsentChanges"))
             .Select(change =>
                 (

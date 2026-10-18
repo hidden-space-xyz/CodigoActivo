@@ -53,6 +53,7 @@ public sealed class LegalCopyTests
             parentId,
             Created,
             null,
+            null,
             null
         );
     }

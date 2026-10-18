@@ -338,6 +338,10 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   unsubscribe button. `User` appends every change to `news_consent_changes` with its instant and source
   (`Registration`, `Profile`, `UnsubscribeLink`, `OneClickUnsubscribe`) and the blocked copy keeps them. Consents stored before that table existed have no
   recorded change.
+- Only adults register (LOPDGDD article 7): `POST /api/auth/register` refuses a body without `declaresAdult`
+  (`UserAdultDeclarationRequired`) before looking the address up, and `users.adult_declared_at` keeps when the
+  holder declared it, also in the blocked copy. The SPA sends it once the visitor confirms being of age at its
+  age gate. Accounts registered before it was recorded have none.
 - Terms-document consent is recorded for the acting user, not the person signed up: signing up a household
   dependent stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
   for that event covers later dependent signups without a new prompt (`TermsGate`). An acceptance is immutable

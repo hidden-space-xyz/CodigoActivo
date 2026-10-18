@@ -77,10 +77,15 @@ interface RegistrantInput {
   readonly newsConsent: boolean
 }
 
-/** Everything a registration sends: the adult, the password and the minors registered with them. */
+/**
+ * Everything a registration sends: the adult, the password, the adult's declaration of being of age
+ * and the minors registered with them.
+ */
 export interface RegistrationInput {
   readonly adult: RegistrantInput
   readonly password: string
+  /** Whether the adult declared being of age; the API refuses the registration without it. */
+  readonly declaresAdult: boolean
   readonly minors: readonly MinorInput[]
 }
 

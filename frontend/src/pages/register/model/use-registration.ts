@@ -22,7 +22,8 @@ export type RegistrationStep = 'age-gate' | 'form' | 'success'
  * answers alike whether or not the email already has an account, so the result step only repeats
  * what was submitted. Every new account must verify its email, so after registering, resending the
  * email to the submitted address is locked by a 60-second cooldown (restarted on every resend).
- * `reset` clears the form and returns to the age gate.
+ * Confirming at the age gate records the declaration of being of age that the registration sends,
+ * and going back to the gate withdraws it. `reset` clears the form and returns to the age gate.
  */
 export function useRegistration() {
   const { t } = useI18n()
@@ -63,11 +64,13 @@ export function useRegistration() {
   })
 
   function confirmAdult(): void {
+    form.declaresAdult = true
     step.value = 'form'
     scrollToTop()
   }
 
   function backToGate(): void {
+    form.declaresAdult = false
     step.value = 'age-gate'
     scrollToTop()
   }

@@ -21,6 +21,7 @@ public sealed class EnumBindingTests(CodigoActivoWebAppFactory factory)
             password = "Str0ngPass!23",
             nationalId = "87654321X",
             gender,
+            declaresAdult = true,
         };
     }
 

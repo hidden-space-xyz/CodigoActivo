@@ -87,6 +87,7 @@ describe('useRegistration', () => {
     const bodies = serveRegister()
     const { result } = await mountComposable(() => useRegistration())
     fillAdult(result)
+    result.confirmAdult()
     result.form.minors.push({
       ...createEmptyMinor(),
       firstName: 'Byron',
@@ -99,9 +100,24 @@ describe('useRegistration', () => {
     await vi.waitFor(() => expect(result.step.value).toBe('success'))
 
     expect(bodies).toHaveLength(1)
+    expect(bodies[0]).toMatchObject({ declaresAdult: true })
     expect(result.submittedEmail.value).toBe('ada@example.test')
     expect(result.submittedMinorCount.value).toBe(1)
     expect(result.resendCooldown.value).toBe(60)
+  })
+
+  it('sends nothing once the visitor goes back to the age gate', async () => {
+    const bodies = serveRegister()
+    const { result } = await mountComposable(() => useRegistration())
+    fillAdult(result)
+    result.confirmAdult()
+    result.backToGate()
+
+    result.submit()
+    await flushPromises()
+
+    expect(result.form.declaresAdult).toBe(false)
+    expect(bodies).toEqual([])
   })
 
   it('shows an error notification and stays on the form when registration fails', async () => {

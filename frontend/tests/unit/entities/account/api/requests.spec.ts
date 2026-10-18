@@ -424,10 +424,20 @@ describe('account requests', () => {
       gender: 'Male',
     } as const
 
-    await registerRequest({ adult, password: 'Str0ngPass!23', minors: [minor] })
+    await registerRequest({
+      adult,
+      password: 'Str0ngPass!23',
+      declaresAdult: true,
+      minors: [minor],
+    })
     await resendVerificationRequest('ada@example.test')
 
-    expect(registered).toEqual({ ...adult, password: 'Str0ngPass!23', minors: [minor] })
+    expect(registered).toEqual({
+      ...adult,
+      password: 'Str0ngPass!23',
+      declaresAdult: true,
+      minors: [minor],
+    })
     expect(resent).toEqual({ email: 'ada@example.test' })
   })
 

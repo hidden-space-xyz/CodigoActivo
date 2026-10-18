@@ -71,6 +71,7 @@ public sealed class DisposableEmailDomainRefresherTests(CodigoActivoWebAppFactor
                     TestSeedData.Password,
                     "87654321X",
                     CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender.Female,
+                    true,
                     false,
                     null
                 ),

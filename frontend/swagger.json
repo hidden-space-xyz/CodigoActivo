@@ -6019,6 +6019,7 @@
           "UserChildBirthDateRequired",
           "UserContactInfoRequired",
           "UserNationalIdRequired",
+          "UserAdultDeclarationRequired",
           "UserEmailAlreadyInUse",
           "SecondaryPhoneSameAsPrimary",
           "UserPhoneInvalid",
@@ -7819,6 +7820,7 @@
       },
       "RegisterRequest": {
         "required": [
+          "declaresAdult",
           "email",
           "firstName",
           "gender",
@@ -7850,6 +7852,9 @@
           },
           "gender": {
             "$ref": "#/components/schemas/Gender"
+          },
+          "declaresAdult": {
+            "type": "boolean"
           },
           "newsConsent": {
             "type": "boolean"
