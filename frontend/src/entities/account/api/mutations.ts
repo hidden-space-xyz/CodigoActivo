@@ -1,5 +1,7 @@
 import { mutationOptions } from '@tanstack/vue-query'
 
+import type { Translate } from '@/shared/i18n'
+
 import type {
   ChangePasswordInput,
   DeleteAccountInput,
@@ -89,12 +91,12 @@ export const accountMutations = {
       mutationFn: (input: DeleteAccountInput) => deleteAccountRequest(input),
     }),
   /**
-   * Fetches the copy of the signed-in user's personal data as a JSON file. It runs on demand and
-   * is never cached, so the copy does not linger in the query cache.
+   * Fetches the copy of the signed-in user's personal data as a JSON file labelled with `t`. It runs
+   * on demand and is never cached, so the copy does not linger in the query cache.
    */
-  personalData: () =>
+  personalData: (t: Translate) =>
     mutationOptions({
-      mutationFn: () => getAccountPersonalDataRequest(),
+      mutationFn: () => getAccountPersonalDataRequest(t),
     }),
   rateEvent: () =>
     mutationOptions({

@@ -7,6 +7,7 @@ import {
   toAccountProfile,
   toAuthenticatorSetup,
   toMinorRequest,
+  toPersonalDataFile,
   toRegisterRequest,
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
@@ -18,8 +19,10 @@ import {
   buildDependentResponse,
   buildHistoryActivityResponse,
   buildHistoryResponse,
+  buildPersonalDataResponse,
   buildUserResponse,
 } from '../../../../support/builders'
+import { t } from '../../../../support/render'
 
 const MINOR = {
   firstName: 'Byron',
@@ -162,5 +165,101 @@ describe('account mapper', () => {
       declaresAdult: true,
       minors: [{ ...MINOR, declaresGuardianship: true }],
     })
+  })
+})
+
+describe('toPersonalDataFile', () => {
+  it('names every field in Spanish and labels the codes as the site does', () => {
+    const file = toPersonalDataFile(buildPersonalDataResponse(), t)
+
+    expect(file.generadoEl).toBe('2026-10-18T10:00:00Z')
+    expect(file.cuenta).toEqual({
+      id: 'user-1',
+      nombre: 'Ada',
+      apellidos: 'Lovelace',
+      email: 'ada@example.test',
+      emailNuevoSinConfirmar: 'ada@new.test',
+      telefono: '600000000',
+      segundoTelefono: null,
+      dniNie: '12345678Z',
+      genero: t('entities.user.gender.Female'),
+      aceptaNovedades: true,
+      relacionConLaAsociacion: 'Socio',
+      estado: 'Activa',
+      administraLaWeb: false,
+      verificacionEnDosPasos: t('pages.account.twoFactor.methods.Authenticator'),
+      altaEl: '2026-01-01T00:00:00Z',
+      modificadaEl: null,
+      ultimoAccesoEl: '2026-10-18T09:00:00Z',
+      declaraSerMayorDeEdadEl: '2026-01-01T00:00:00Z',
+    })
+    expect(file.cambiosDeLaPreferenciaSobreNovedades).toEqual([
+      {
+        acepta: true,
+        medio: t('pages.account.personalData.sources.Registration'),
+        fecha: '2026-01-01T00:00:00Z',
+      },
+      { acepta: false, medio: 'Imported', fecha: '2026-02-01T00:00:00Z' },
+    ])
+    expect(file.menores).toEqual([
+      {
+        id: 'child-1',
+        nombre: 'Byron',
+        apellidos: 'Lovelace',
+        fechaDeNacimiento: '2015-03-02',
+        genero: t('entities.user.gender.Male'),
+        relacionConLaAsociacion: 'Participante',
+        altaEl: '2026-01-01T00:00:00Z',
+        modificadoEl: null,
+        declarasSerSuPadreMadreOTutorEl: '2026-01-01T00:00:00Z',
+      },
+    ])
+    expect(file.inscripciones).toEqual([
+      {
+        personaId: 'child-1',
+        persona: 'Byron Lovelace',
+        evento: 'Hackatón',
+        actividad: 'Taller',
+        inicioDeLaActividad: '2026-06-01T10:00:00Z',
+        rol: 'Participante',
+        estado: 'Confirmada',
+        inscritaEl: '2026-05-01T00:00:00Z',
+      },
+    ])
+    expect(file.decisionesSobreDocumentos).toEqual([
+      {
+        evento: 'Hackatón',
+        documento: 'Uso de imágenes',
+        aceptado: true,
+        fecha: '2026-05-01T00:00:00Z',
+        firmaPngBase64: 'iVBORw0KGgo=',
+      },
+    ])
+    expect(file.sesionesAbiertas).toEqual([
+      { abiertaEl: '2026-10-18T09:00:00Z', caducaEl: '2026-10-18T21:00:00Z' },
+    ])
+    expect(file.registroDeSeguridad).toEqual([
+      {
+        fecha: '2026-10-18T08:59:00Z',
+        operacion: t('pages.admin.audit.actions.Login'),
+        resultado: t('pages.admin.audit.outcomes.Succeeded'),
+        quien: t('pages.account.personalData.actors.Anonymous'),
+        ip: '203.0.113.1',
+      },
+      {
+        fecha: '2026-10-18T09:05:00Z',
+        operacion: t('pages.admin.audit.actions.ChangePassword'),
+        resultado: t('pages.admin.audit.outcomes.Rejected'),
+        quien: t('pages.account.personalData.actors.self'),
+        ip: '203.0.113.1',
+      },
+      {
+        fecha: '2026-10-18T09:10:00Z',
+        operacion: t('pages.admin.audit.actions.ChangeUserType'),
+        resultado: t('pages.admin.audit.outcomes.Succeeded'),
+        quien: t('pages.account.personalData.actors.User'),
+        ip: null,
+      },
+    ])
   })
 })

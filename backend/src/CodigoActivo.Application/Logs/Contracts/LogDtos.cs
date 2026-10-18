@@ -119,16 +119,21 @@ public sealed record AuditLogEntryResponse(
 public sealed record AuditRelatedEntityResponse(AuditEntityType Type, Guid Id, string? Name);
 
 /// <summary>
-/// Represents an operation an account ran, as its holder reads it: when, what, from which address
-/// and how it ended, without the people or things it touched.
+/// Represents an audit log entry about an account as its holder reads it: when, what, who ran it
+/// and how it ended, without the other people or things it touched. The address of the caller is
+/// left out when another user ran it, since it is that user's.
 /// </summary>
 /// <param name="OccurredAt">When it ran.</param>
 /// <param name="Action">Command that ran.</param>
 /// <param name="Outcome">How it ended.</param>
-/// <param name="ClientIp">Address of the caller, if it came through a request.</param>
-public sealed record OwnAuditEntryResponse(
+/// <param name="ActorType">Who ran it: a signed-in user, someone not signed in or the system.</param>
+/// <param name="RanBySelf">Whether the holder ran it signed in.</param>
+/// <param name="ClientIp">Address of the caller, unless another user ran it.</param>
+public sealed record AccountAuditEntryResponse(
     DateTimeOffset OccurredAt,
     AuditAction Action,
     AuditOutcome Outcome,
+    AuditActorType ActorType,
+    bool RanBySelf,
     string? ClientIp
 );

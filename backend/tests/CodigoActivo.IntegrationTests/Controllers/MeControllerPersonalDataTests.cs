@@ -25,11 +25,40 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
     private static readonly Guid ActivityId = new("dddddddd-0000-0000-0000-000000000002");
     private static readonly Guid ThumbnailId = new("dddddddd-0000-0000-0000-000000000003");
     private static readonly Guid TermsDocumentId = new("dddddddd-0000-0000-0000-000000000004");
+    private static readonly Guid OtherChildId = new("dddddddd-0000-0000-0000-000000000005");
 
     private Task SeedParticipationAsync()
     {
-        return Factory.SeedAsync(db =>
+        return Factory.SeedAsync(async db =>
         {
+            var member = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
+            Persisted.Overwrite(
+                member!,
+                new
+                {
+                    EmailChange = new EmailChange(
+                        EmailAddress.FromStored("nueva@codigoactivo.test"),
+                        "hash",
+                        SeededAt.AddDays(1)
+                    ),
+                }
+            );
+            db.Users.Add(
+                Persisted.As<User>(
+                    new
+                    {
+                        Id = OtherChildId,
+                        FirstName = "Olga",
+                        LastName = "Bloqueado",
+                        BirthDate = new DateOnly(2016, 6, 6),
+                        Gender = Gender.Female,
+                        ParentId = TestSeedData.Users.BlockedId,
+                        Status = UserStatus.Dependent,
+                        UserType = UserType.Participant,
+                        CreatedAt = SeededAt,
+                    }
+                )
+            );
             db.Files.Add(
                 Persisted.As<StoredFile>(
                     new
@@ -91,7 +120,8 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
             db.Assignments.AddRange(
                 Assignment(TestSeedData.Users.MemberId, ActivityRole.Volunteer),
                 Assignment(TestSeedData.Users.MemberChildId, ActivityRole.Participant),
-                Assignment(TestSeedData.Users.BlockedId, ActivityRole.Participant)
+                Assignment(TestSeedData.Users.BlockedId, ActivityRole.Participant),
+                Assignment(OtherChildId, ActivityRole.Participant)
             );
             db.EventTermsAcceptances.AddRange(
                 Decision(
@@ -105,11 +135,40 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
                 ConsentChange(TestSeedData.Users.BlockedId, false)
             );
             db.AddRange(
-                Audit("User", TestSeedData.Users.MemberId, TestSeedData.Users.MemberId),
-                Audit("User", TestSeedData.Users.BlockedId, TestSeedData.Users.BlockedId),
-                Audit("Anonymous", null, TestSeedData.Users.MemberId)
+                Audit(0, AuditAction.Login, null, TestSeedData.Users.MemberId),
+                Audit(
+                    1,
+                    AuditAction.ChangePassword,
+                    TestSeedData.Users.MemberId,
+                    TestSeedData.Users.MemberId
+                ),
+                Audit(
+                    2,
+                    AuditAction.ChangeUserType,
+                    TestSeedData.Users.AdminId,
+                    TestSeedData.Users.MemberId
+                ),
+                Audit(
+                    3,
+                    AuditAction.ChangeAssignmentStatus,
+                    TestSeedData.Users.AdminId,
+                    null,
+                    TestSeedData.Users.MemberChildId
+                ),
+                Audit(
+                    4,
+                    AuditAction.ChangePassword,
+                    TestSeedData.Users.BlockedId,
+                    TestSeedData.Users.BlockedId
+                ),
+                Audit(
+                    5,
+                    AuditAction.ChangeAssignmentStatus,
+                    TestSeedData.Users.AdminId,
+                    null,
+                    OtherChildId
+                )
             );
-            return Task.CompletedTask;
         });
     }
 
@@ -142,18 +201,30 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
         );
     }
 
-    private static AuditLogEntry Audit(string actorType, Guid? actor, Guid entity)
+    private static AuditLogEntry Audit(
+        int hour,
+        AuditAction action,
+        Guid? actor,
+        Guid? user,
+        Guid? relatedUser = null
+    )
     {
+        var occurredAt = Morning.AddHours(hour);
         return new AuditLogEntry
         {
-            Id = Guid.CreateVersion7(Morning),
-            OccurredAt = Morning,
-            ActorType = actorType,
+            Id = Guid.CreateVersion7(occurredAt),
+            OccurredAt = occurredAt,
+            ActorType = actor is null ? "Anonymous" : "User",
             ActorId = actor,
-            ClientIp = IPAddress.Parse("203.0.113.7"),
-            Action = nameof(AuditAction.ChangePassword),
-            EntityType = nameof(AuditEntityType.User),
-            EntityId = entity,
+            ClientIp = IPAddress.Parse($"203.0.113.{hour + 1}"),
+            Action = action.ToString(),
+            EntityType = user is null
+                ? nameof(AuditEntityType.Activity)
+                : nameof(AuditEntityType.User),
+            EntityId = user ?? ActivityId,
+            Related = relatedUser is null
+                ? null
+                : $$"""[{"type": "User", "id": "{{relatedUser}}"}]""",
             Outcome = nameof(AuditOutcome.Succeeded),
         };
     }
@@ -187,6 +258,7 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
         data.Account.Email.Should().Be(TestSeedData.MemberEmail);
         data.Account.NationalId.Should().Be(TestSeedData.MemberNationalId);
         data.Account.NewsConsent.Should().BeTrue();
+        data.Account.PendingEmail.Should().Be("nueva@codigoactivo.test");
         data.Account.AdultDeclaredAt.Should().Be(SeededAt);
         data.NewsConsentChanges.Should()
             .Equal(new PersonalDataConsentChangeResponse(true, "Registration", SeededAt));
@@ -194,6 +266,7 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
         dependent.Id.Should().Be(TestSeedData.Users.MemberChildId);
         dependent.BirthDate.Should().Be(new DateOnly(2015, 5, 5));
         dependent.GuardianshipDeclaredAt.Should().Be(SeededAt);
+        dependent.UserType.Should().Be("Participante");
         data.Signups.Select(signup => signup.PersonId)
             .Should()
             .BeEquivalentTo([TestSeedData.Users.MemberId, TestSeedData.Users.MemberChildId]);
@@ -209,13 +282,39 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
         decision.Accepted.Should().BeTrue();
         decision.Signature.Should().Equal(TestSeedData.ValidPng());
         data.Sessions.Should().ContainSingle();
-        data.Operations.Should()
+        data.SecurityLog.Should()
             .Equal(
-                new OwnAuditEntryResponse(
+                new AccountAuditEntryResponse(
                     Morning,
+                    AuditAction.Login,
+                    AuditOutcome.Succeeded,
+                    AuditActorType.Anonymous,
+                    false,
+                    "203.0.113.1"
+                ),
+                new AccountAuditEntryResponse(
+                    Morning.AddHours(1),
                     AuditAction.ChangePassword,
                     AuditOutcome.Succeeded,
-                    "203.0.113.7"
+                    AuditActorType.User,
+                    true,
+                    "203.0.113.2"
+                ),
+                new AccountAuditEntryResponse(
+                    Morning.AddHours(2),
+                    AuditAction.ChangeUserType,
+                    AuditOutcome.Succeeded,
+                    AuditActorType.User,
+                    false,
+                    null
+                ),
+                new AccountAuditEntryResponse(
+                    Morning.AddHours(3),
+                    AuditAction.ChangeAssignmentStatus,
+                    AuditOutcome.Succeeded,
+                    AuditActorType.User,
+                    false,
+                    null
                 )
             );
     }

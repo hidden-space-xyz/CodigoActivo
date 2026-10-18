@@ -4,7 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { OwnAuditEntryResponse } from './ownAuditEntryResponse';
+import type { AccountAuditEntryResponse } from './accountAuditEntryResponse';
 import type { PersonalDataAccountResponse } from './personalDataAccountResponse';
 import type { PersonalDataConsentChangeResponse } from './personalDataConsentChangeResponse';
 import type { PersonalDataDependentResponse } from './personalDataDependentResponse';
@@ -20,5 +20,5 @@ export interface PersonalDataResponse {
   signups: PersonalDataSignupResponse[];
   termsDecisions: PersonalDataTermsDecisionResponse[];
   sessions: PersonalDataSessionResponse[];
-  operations: OwnAuditEntryResponse[];
+  securityLog: AccountAuditEntryResponse[];
 }

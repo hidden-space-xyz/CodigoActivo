@@ -77,3 +77,76 @@ export interface AccountHistoryEntry {
   readonly canRate: boolean
   readonly activities: readonly AccountHistoryActivity[]
 }
+
+/**
+ * Copy of the personal data kept about the signed-in user and the minors in their care, as the
+ * file they download: Spanish names and labels, so they can read it as well as take it elsewhere.
+ * Dates are ISO 8601 instants and the signatures base64 PNG images.
+ */
+export interface PersonalDataFile {
+  readonly generadoEl: string
+  readonly cuenta: {
+    readonly id: string
+    readonly nombre: string
+    readonly apellidos: string
+    readonly email: string | null
+    readonly emailNuevoSinConfirmar: string | null
+    readonly telefono: string | null
+    readonly segundoTelefono: string | null
+    readonly dniNie: string | null
+    readonly genero: string
+    readonly aceptaNovedades: boolean
+    readonly relacionConLaAsociacion: string
+    readonly estado: string
+    readonly administraLaWeb: boolean
+    readonly verificacionEnDosPasos: string
+    readonly altaEl: string
+    readonly modificadaEl: string | null
+    readonly ultimoAccesoEl: string | null
+    readonly declaraSerMayorDeEdadEl: string | null
+  }
+  readonly cambiosDeLaPreferenciaSobreNovedades: readonly {
+    readonly acepta: boolean
+    readonly medio: string
+    readonly fecha: string
+  }[]
+  readonly menores: readonly {
+    readonly id: string
+    readonly nombre: string
+    readonly apellidos: string
+    readonly fechaDeNacimiento: string | null
+    readonly genero: string
+    readonly relacionConLaAsociacion: string
+    readonly altaEl: string
+    readonly modificadoEl: string | null
+    readonly declarasSerSuPadreMadreOTutorEl: string | null
+  }[]
+  readonly inscripciones: readonly {
+    readonly personaId: string
+    readonly persona: string
+    readonly evento: string
+    readonly actividad: string
+    readonly inicioDeLaActividad: string
+    readonly rol: string
+    readonly estado: string
+    readonly inscritaEl: string
+  }[]
+  readonly decisionesSobreDocumentos: readonly {
+    readonly evento: string
+    readonly documento: string
+    readonly aceptado: boolean
+    readonly fecha: string
+    readonly firmaPngBase64: string | null
+  }[]
+  readonly sesionesAbiertas: readonly {
+    readonly abiertaEl: string
+    readonly caducaEl: string
+  }[]
+  readonly registroDeSeguridad: readonly {
+    readonly fecha: string
+    readonly operacion: string
+    readonly resultado: string
+    readonly quien: string
+    readonly ip: string | null
+  }[]
+}

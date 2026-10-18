@@ -1,14 +1,17 @@
 import type {
+  AccountAuditEntryResponse,
   AuthenticatorSetupResponse,
   EventCertificateResponse,
   EventHistoryActivityResponse,
   EventHistoryResponse,
+  PersonalDataResponse,
   RegisterMinorRequest,
   RegisterRequest,
   SaveEventRatingRequest,
   UpdateUserRequest,
   UserResponse,
 } from '@/shared/api/generated/models'
+import type { Translate, TranslationKey } from '@/shared/i18n'
 
 import type {
   EventRatingInput,
@@ -23,6 +26,7 @@ import type {
   AccountHistoryEntry,
   AccountProfile,
   AuthenticatorSetup,
+  PersonalDataFile,
 } from '../model/types'
 
 /** Maps the signed-in user to their profile; missing contact details become empty text. */
@@ -170,5 +174,92 @@ export function toRegisterRequest(input: RegistrationInput): RegisterRequest {
     password: input.password,
     declaresAdult: input.declaresAdult,
     minors: input.minors.map(toMinorRequest),
+  }
+}
+
+const CONSENT_SOURCES: Readonly<Record<string, TranslationKey>> = {
+  Registration: 'pages.account.personalData.sources.Registration',
+  Profile: 'pages.account.personalData.sources.Profile',
+  UnsubscribeLink: 'pages.account.personalData.sources.UnsubscribeLink',
+  OneClickUnsubscribe: 'pages.account.personalData.sources.OneClickUnsubscribe',
+}
+
+function securityLogActor(entry: AccountAuditEntryResponse, t: Translate): string {
+  if (entry.ranBySelf) return t('pages.account.personalData.actors.self')
+  return t(`pages.account.personalData.actors.${entry.actorType}`)
+}
+
+/**
+ * Turns the copy of the personal data into the file the user downloads, with Spanish names and the
+ * labels the site shows instead of the codes the API answers with.
+ */
+export function toPersonalDataFile(data: PersonalDataResponse, t: Translate): PersonalDataFile {
+  const { account } = data
+  return {
+    generadoEl: data.generatedAt,
+    cuenta: {
+      id: account.id,
+      nombre: account.firstName,
+      apellidos: account.lastName,
+      email: account.email ?? null,
+      emailNuevoSinConfirmar: account.pendingEmail ?? null,
+      telefono: account.phone ?? null,
+      segundoTelefono: account.secondaryPhone ?? null,
+      dniNie: account.nationalId ?? null,
+      genero: t(`entities.user.gender.${account.gender}`),
+      aceptaNovedades: account.newsConsent,
+      relacionConLaAsociacion: account.userType,
+      estado: account.status,
+      administraLaWeb: account.isAdmin,
+      verificacionEnDosPasos: t(`pages.account.twoFactor.methods.${account.twoFactorMethod}`),
+      altaEl: account.createdAt,
+      modificadaEl: account.updatedAt ?? null,
+      ultimoAccesoEl: account.lastLoginAt ?? null,
+      declaraSerMayorDeEdadEl: account.adultDeclaredAt ?? null,
+    },
+    cambiosDeLaPreferenciaSobreNovedades: data.newsConsentChanges.map((change) => ({
+      acepta: change.granted,
+      medio: change.source in CONSENT_SOURCES ? t(CONSENT_SOURCES[change.source]!) : change.source,
+      fecha: change.changedAt,
+    })),
+    menores: data.dependents.map((dependent) => ({
+      id: dependent.id,
+      nombre: dependent.firstName,
+      apellidos: dependent.lastName,
+      fechaDeNacimiento: dependent.birthDate ?? null,
+      genero: t(`entities.user.gender.${dependent.gender}`),
+      relacionConLaAsociacion: dependent.userType,
+      altaEl: dependent.createdAt,
+      modificadoEl: dependent.updatedAt ?? null,
+      declarasSerSuPadreMadreOTutorEl: dependent.guardianshipDeclaredAt ?? null,
+    })),
+    inscripciones: data.signups.map((signup) => ({
+      personaId: signup.personId,
+      persona: signup.personName,
+      evento: signup.eventTitle,
+      actividad: signup.activityTitle,
+      inicioDeLaActividad: signup.activityStartsAt,
+      rol: signup.role,
+      estado: signup.status,
+      inscritaEl: signup.signedUpAt,
+    })),
+    decisionesSobreDocumentos: data.termsDecisions.map((decision) => ({
+      evento: decision.eventTitle,
+      documento: decision.documentName,
+      aceptado: decision.accepted,
+      fecha: decision.decidedAt,
+      firmaPngBase64: decision.signature ?? null,
+    })),
+    sesionesAbiertas: data.sessions.map((session) => ({
+      abiertaEl: session.createdAt,
+      caducaEl: session.expiresAt,
+    })),
+    registroDeSeguridad: data.securityLog.map((entry) => ({
+      fecha: entry.occurredAt,
+      operacion: t(`pages.admin.audit.actions.${entry.action}`),
+      resultado: t(`pages.admin.audit.outcomes.${entry.outcome}`),
+      quien: securityLogActor(entry, t),
+      ip: entry.clientIp ?? null,
+    })),
   }
 }

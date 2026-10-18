@@ -27,6 +27,7 @@ import {
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
 import { toPage, unwrapOrNull } from '@/shared/api'
+import type { Translate } from '@/shared/i18n'
 
 import type {
   ChangePasswordInput,
@@ -52,6 +53,7 @@ import {
   toAccountProfile,
   toAuthenticatorSetup,
   toMinorRequest,
+  toPersonalDataFile,
   toRegisterRequest,
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
@@ -110,11 +112,14 @@ export async function deleteAccountRequest(input: DeleteAccountInput): Promise<v
 
 /**
  * Loads the copy of the personal data kept about the signed-in user and the minors in their care
- * (`GET /api/me/personal-data`) as an indented JSON file, readable as it is and importable elsewhere.
+ * (`GET /api/me/personal-data`) as an indented JSON file in Spanish, readable as it is and
+ * importable elsewhere.
  */
-export async function getAccountPersonalDataRequest(): Promise<Blob> {
+export async function getAccountPersonalDataRequest(t: Translate): Promise<Blob> {
   const { data } = await getApiMePersonalData()
-  return new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  return new Blob([JSON.stringify(toPersonalDataFile(data, t), null, 2)], {
+    type: 'application/json',
+  })
 }
 
 /** Changes the password; the API verifies `currentPassword` before applying the new one. */

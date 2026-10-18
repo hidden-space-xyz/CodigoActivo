@@ -7,7 +7,7 @@ namespace CodigoActivo.Application.Accounts.Contracts;
 /// Represents a copy of the personal data kept about the signed-in user and the minors in their
 /// care, in a structured format they can read or take elsewhere (articles 15 and 20 GDPR).
 /// Ratings are left out because nothing links them to an account, and so are the security
-/// secrets of the account and the people and things the user's operations touched.
+/// secrets of the account and the other people and things the audit entries touched.
 /// </summary>
 /// <param name="GeneratedAt">When the copy was made.</param>
 /// <param name="Account">The signed-in user's account.</param>
@@ -16,7 +16,9 @@ namespace CodigoActivo.Application.Accounts.Contracts;
 /// <param name="Signups">The signups of the user and of the minors in their care.</param>
 /// <param name="TermsDecisions">The user's decisions on the documents of the events.</param>
 /// <param name="Sessions">The user's open sessions.</param>
-/// <param name="Operations">The operations the user ran that the audit log still holds.</param>
+/// <param name="SecurityLog">
+/// The audit entries about the user and the minors in their care that the log still holds.
+/// </param>
 public sealed record PersonalDataResponse(
     DateTimeOffset GeneratedAt,
     PersonalDataAccountResponse Account,
@@ -25,7 +27,7 @@ public sealed record PersonalDataResponse(
     IReadOnlyList<PersonalDataSignupResponse> Signups,
     IReadOnlyList<PersonalDataTermsDecisionResponse> TermsDecisions,
     IReadOnlyList<PersonalDataSessionResponse> Sessions,
-    IReadOnlyList<OwnAuditEntryResponse> Operations
+    IReadOnlyList<AccountAuditEntryResponse> SecurityLog
 );
 
 /// <summary>
@@ -90,6 +92,7 @@ public sealed record PersonalDataConsentChangeResponse(
 /// <param name="LastName">Family name.</param>
 /// <param name="BirthDate">Date of birth.</param>
 /// <param name="Gender">Gender.</param>
+/// <param name="UserType">Name of the relationship with the association.</param>
 /// <param name="CreatedAt">When the minor was added.</param>
 /// <param name="UpdatedAt">When the minor was last updated.</param>
 /// <param name="GuardianshipDeclaredAt">
@@ -101,6 +104,7 @@ public sealed record PersonalDataDependentResponse(
     string LastName,
     DateOnly? BirthDate,
     Gender Gender,
+    string UserType,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
     DateTimeOffset? GuardianshipDeclaredAt
