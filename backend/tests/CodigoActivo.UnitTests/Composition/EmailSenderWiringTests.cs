@@ -4,6 +4,7 @@ using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Composition;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Communication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -102,61 +103,6 @@ public sealed class EmailSenderWiringTests
             .ContainSingle(service => service is EmailOutboxProcessor);
     }
 
-    [Fact]
-    public void AddCodigoActivoAppliesTheDefaultQueuePolicy()
-    {
-        using var provider = BuildProvider();
-
-        var options = provider.GetRequiredService<EmailQueueOptions>();
-
-        options.Capacity.Should().Be(EmailQueueOptions.DefaultCapacity);
-        options.Workers.Should().Be(EmailQueueOptions.DefaultWorkers);
-        options.BatchSize.Should().Be(EmailQueueOptions.DefaultBatchSize);
-        options.PollInterval.Should().Be(EmailQueueOptions.DefaultPollInterval);
-        options.SendTimeout.Should().Be(EmailQueueOptions.DefaultSendTimeout);
-        options.ShutdownDrain.Should().Be(EmailQueueOptions.DefaultShutdownDrain);
-    }
-
-    [Fact]
-    public void AddCodigoActivoQueueSettingsAreRead()
-    {
-        using var provider = BuildProvider(
-            new Dictionary<string, string?>(StringComparer.Ordinal)
-            {
-                ["EmailQueue:Capacity"] = "25",
-                ["EmailQueue:Workers"] = "3",
-                ["EmailQueue:BatchSize"] = "50",
-                ["EmailQueue:PollIntervalSeconds"] = "2",
-                ["EmailQueue:SendTimeoutSeconds"] = "90",
-                ["EmailQueue:ShutdownDrainSeconds"] = "30",
-            }
-        );
-
-        var options = provider.GetRequiredService<EmailQueueOptions>();
-
-        options.Capacity.Should().Be(25);
-        options.Workers.Should().Be(3);
-        options.BatchSize.Should().Be(50);
-        options.PollInterval.Should().Be(TimeSpan.FromSeconds(2));
-        options.SendTimeout.Should().Be(TimeSpan.FromSeconds(90));
-        options.ShutdownDrain.Should().Be(TimeSpan.FromSeconds(30));
-    }
-
-    [Theory]
-    [InlineData("EmailQueue:Workers", "999")]
-    [InlineData("EmailQueue:BatchSize", "9999")]
-    [InlineData("EmailQueue:SendTimeoutSeconds", "99999")]
-    public void AddCodigoActivoQueueSettingAboveItsLimitStopsTheStart(string key, string value)
-    {
-        using var provider = BuildProvider(
-            new Dictionary<string, string?>(StringComparer.Ordinal) { [key] = value }
-        );
-
-        var act = () => provider.GetRequiredService<EmailQueueOptions>();
-
-        act.Should().Throw<OptionsValidationException>().WithMessage("*EmailQueue*limits*");
-    }
-
     [Theory]
     [InlineData(null, null, SmtpSecurityMode.StartTls)]
     [InlineData("465", null, SmtpSecurityMode.SslOnConnect)]
@@ -180,18 +126,33 @@ public sealed class EmailSenderWiringTests
         provider.GetRequiredService<SmtpOptions>().Security.Should().Be(expected);
     }
 
+    [Fact]
+    public void AddCodigoActivoSmtpSenderNameDefaultsToTheAssociation()
+    {
+        using var provider = BuildProvider();
+
+        provider.GetRequiredService<SmtpOptions>().FromName.Should().Be(Organization.Name);
+    }
+
     [Theory]
-    [InlineData("EmailQueue:Capacity", "zero")]
-    [InlineData("EmailQueue:ShutdownDrainSeconds", "0")]
-    public void AddCodigoActivoUnusableQueueSettingStopsTheStart(string key, string value)
+    [InlineData(null, "no-reply@example.test")]
+    [InlineData("smtp.example.test", null)]
+    [InlineData(null, null)]
+    public void AddCodigoActivoSmtpUnconfiguredStopsTheStart(string? host, string? from)
     {
         using var provider = BuildProvider(
-            new Dictionary<string, string?>(StringComparer.Ordinal) { [key] = value }
+            new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["SMTP_HOST"] = host,
+                ["SMTP_FROM_ADDRESS"] = from,
+            }
         );
 
-        var act = () => provider.GetRequiredService<EmailQueueOptions>();
+        var act = () => provider.GetRequiredService<SmtpOptions>();
 
-        act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
+        act.Should()
+            .Throw<OptionsValidationException>()
+            .WithMessage("*SMTP is not configured*Login codes are delivered by email*");
     }
 
     private static ServiceProvider BuildProvider(Dictionary<string, string?>? settings = null)

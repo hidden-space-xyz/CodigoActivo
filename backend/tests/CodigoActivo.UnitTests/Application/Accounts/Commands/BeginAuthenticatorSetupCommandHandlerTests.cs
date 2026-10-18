@@ -22,7 +22,7 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
-    private readonly TwoFactorOptions options = new() { Issuer = "Código Activo" };
+    private readonly TwoFactorOptions options = new();
     private readonly TestCurrentUser currentUser = new();
     private readonly BeginAuthenticatorSetupCommandHandler sut;
 

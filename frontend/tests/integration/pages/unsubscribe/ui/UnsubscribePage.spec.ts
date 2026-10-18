@@ -1,9 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { CONTACT } from '@/shared/config'
-
 import { renderApp, t } from '../../../../support/render'
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import {
+  apiError,
+  http,
+  HttpResponse,
+  noContent,
+  server,
+  TEST_LEGAL_ENTITY,
+} from '../../../../support/server'
 
 function serveUnsubscribe(response: () => Response | Promise<Response> = noContent) {
   const bodies: unknown[] = []
@@ -50,7 +55,11 @@ describe('unsubscribe page', () => {
 
     expect(wrapper.text()).toContain(t('pages.unsubscribe.errorTitle'))
     expect(wrapper.get('[role="alert"]').text()).toBe(t('pages.unsubscribe.incompleteLink'))
-    expect(wrapper.text()).toContain(t('pages.unsubscribe.hint', { email: CONTACT.email }))
+    await vi.waitFor(() =>
+      expect(wrapper.text()).toContain(
+        t('pages.unsubscribe.hint', { email: TEST_LEGAL_ENTITY.email }),
+      ),
+    )
     expect(bodies).toHaveLength(0)
   })
 

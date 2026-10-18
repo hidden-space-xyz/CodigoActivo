@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { CONTACT } from '@/shared/config'
+import { useQuery } from '@tanstack/vue-query'
+
+import { legalEntityQueries } from '@/entities/legal-entity'
+import { ORGANIZATION } from '@/shared/config'
 import { AppIcon } from '@/shared/ui/app-icon'
 import { BrandLogo } from '@/shared/ui/brand-logo'
+
+const { data: legalEntity } = useQuery(legalEntityQueries.detail())
 </script>
 
 <template>
@@ -18,13 +23,21 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
         <div class="footer__group">
           <div class="footer__heading">{{ $t('widgets.siteFooter.contact') }}</div>
           <div class="footer__links">
-            <a :href="`mailto:${CONTACT.email}`" class="footer__link footer__link--icon">
+            <a
+              v-if="legalEntity?.email"
+              :href="`mailto:${legalEntity.email}`"
+              class="footer__link footer__link--icon"
+            >
               <AppIcon name="envelope" />
-              {{ CONTACT.email }}
+              {{ legalEntity.email }}
             </a>
-            <a :href="`tel:${CONTACT.phoneHref}`" class="footer__link footer__link--icon">
+            <a
+              v-if="legalEntity?.phone"
+              :href="`tel:${legalEntity.phone.dialable}`"
+              class="footer__link footer__link--icon"
+            >
               <AppIcon name="phone" />
-              {{ CONTACT.phone }}
+              {{ legalEntity.phone.text }}
             </a>
           </div>
         </div>
@@ -33,7 +46,7 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
           <div class="footer__heading">{{ $t('widgets.siteFooter.follow') }}</div>
           <div class="footer__channels">
             <a
-              :href="CONTACT.social.instagram"
+              :href="ORGANIZATION.social.instagram"
               target="_blank"
               rel="noopener"
               class="footer__channel-link"
@@ -42,7 +55,7 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
               {{ $t('widgets.siteFooter.social.instagram') }}
             </a>
             <a
-              :href="CONTACT.social.facebook"
+              :href="ORGANIZATION.social.facebook"
               target="_blank"
               rel="noopener"
               class="footer__channel-link"
@@ -51,7 +64,7 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
               {{ $t('widgets.siteFooter.social.facebook') }}
             </a>
             <a
-              :href="CONTACT.social.linkedin"
+              :href="ORGANIZATION.social.linkedin"
               target="_blank"
               rel="noopener"
               class="footer__channel-link"
@@ -60,7 +73,7 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
               {{ $t('widgets.siteFooter.social.linkedIn') }}
             </a>
             <a
-              :href="CONTACT.social.youtube"
+              :href="ORGANIZATION.social.youtube"
               target="_blank"
               rel="noopener"
               class="footer__channel-link"

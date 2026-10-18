@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { PROCESSING_ACTIVITIES } from '@/pages/privacy-policy/config/processing'
-import { CONTACT } from '@/shared/config'
 
 import { renderApp, t } from '../../../../support/render'
 import { http, HttpResponse, server, TEST_LEGAL_ENTITY } from '../../../../support/server'
@@ -19,17 +18,24 @@ describe('privacy policy page', () => {
         TEST_LEGAL_ENTITY.taxId,
         TEST_LEGAL_ENTITY.address,
         TEST_LEGAL_ENTITY.registry,
-        CONTACT.email,
-        CONTACT.phone,
+        TEST_LEGAL_ENTITY.email,
+        TEST_LEGAL_ENTITY.phone,
       ]),
     )
-    expect(controller.get('p a').attributes('href')).toBe(`mailto:${CONTACT.email}`)
+    expect(controller.get('p a').attributes('href')).toBe(`mailto:${TEST_LEGAL_ENTITY.email}`)
   })
 
   it('shows a dash for each legal detail the deployment left empty', async () => {
     server.use(
       http.get('/api/legal-entity', () =>
-        HttpResponse.json({ name: '', taxId: '', address: '', registry: '' }),
+        HttpResponse.json({
+          name: '',
+          taxId: '',
+          address: '',
+          registry: '',
+          email: '',
+          phone: null,
+        }),
       ),
     )
 
@@ -39,7 +45,7 @@ describe('privacy policy page', () => {
       .get('[aria-labelledby="privacy-controller"]')
       .findAll('.legal-entry__value')
       .map((value) => value.text())
-    expect(values.slice(0, 4)).toEqual(['—', '—', '—', '—'])
+    expect(values).toEqual(['—', '—', '—', '—', '—', '—'])
   })
 
   it('states the data, purpose, legal basis and retention of every processing activity', async () => {
@@ -69,7 +75,7 @@ describe('privacy policy page', () => {
     const hrefs = rights.findAll('a').map((link) => link.attributes('href'))
     expect(hrefs).toEqual([
       router.resolve({ name: 'account' }).href,
-      `mailto:${CONTACT.email}`,
+      `mailto:${TEST_LEGAL_ENTITY.email}`,
       'https://www.aepd.es',
     ])
     for (const link of wrapper.get('main').findAll('a[target="_blank"]')) {

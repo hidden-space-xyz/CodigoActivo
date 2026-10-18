@@ -59,67 +59,6 @@ internal sealed class Settings(IConfiguration configuration)
     }
 
     /// <summary>
-    /// Reads a positive whole number that may be large.
-    /// </summary>
-    /// <param name="key">Configuration key.</param>
-    /// <param name="fallback">Value when the setting is missing or blank.</param>
-    /// <returns>The value.</returns>
-    /// <exception cref="InvalidOperationException">The setting is not a positive whole number.</exception>
-    public long PositiveLong(string key, long fallback)
-    {
-        return Read(
-            key,
-            fallback,
-            value =>
-                long.TryParse(
-                    value,
-                    NumberStyles.Integer,
-                    CultureInfo.InvariantCulture,
-                    out var parsed
-                )
-                && parsed > 0
-                    ? parsed
-                    : (long?)null,
-            "a positive whole number"
-        );
-    }
-
-    /// <summary>
-    /// Reads a positive duration written as a number of units.
-    /// </summary>
-    /// <param name="key">Configuration key.</param>
-    /// <param name="unit">Converts the number to a duration, such as <see cref="TimeSpan.FromMinutes(double)"/>.</param>
-    /// <param name="fallback">Value when the setting is missing or blank.</param>
-    /// <returns>The value.</returns>
-    /// <exception cref="InvalidOperationException">The setting is not a positive duration.</exception>
-    public TimeSpan Duration(string key, Func<double, TimeSpan> unit, TimeSpan fallback)
-    {
-        ArgumentNullException.ThrowIfNull(unit);
-        return Read(key, fallback, value => ParseDuration(value, unit), "a positive number");
-    }
-
-    /// <summary>
-    /// Reads an absolute HTTPS address.
-    /// </summary>
-    /// <param name="key">Configuration key.</param>
-    /// <param name="fallback">Value when the setting is missing or blank.</param>
-    /// <returns>The value.</returns>
-    /// <exception cref="InvalidOperationException">The setting is not an absolute HTTPS address.</exception>
-    public Uri HttpsUri(string key, Uri fallback)
-    {
-        return Read(
-            key,
-            fallback,
-            value =>
-                Uri.TryCreate(value, UriKind.Absolute, out var parsed)
-                && string.Equals(parsed.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
-                    ? parsed
-                    : null,
-            "an absolute https address"
-        );
-    }
-
-    /// <summary>
     /// Reads a member of an enumeration by name, ignoring case.
     /// </summary>
     /// <typeparam name="TEnum">Enumeration read.</typeparam>
@@ -182,32 +121,6 @@ internal sealed class Settings(IConfiguration configuration)
     private static InvalidOperationException Invalid(string key, string expected)
     {
         return new InvalidOperationException($"The setting {key} must be {expected}.");
-    }
-
-    private static TimeSpan? ParseDuration(string value, Func<double, TimeSpan> unit)
-    {
-        if (
-            !double.TryParse(
-                value,
-                NumberStyles.Float,
-                CultureInfo.InvariantCulture,
-                out var parsed
-            )
-            || !double.IsFinite(parsed)
-            || parsed <= 0
-        )
-        {
-            return null;
-        }
-
-        try
-        {
-            return unit(parsed);
-        }
-        catch (OverflowException)
-        {
-            return null;
-        }
     }
 
     private static TimeZoneInfo? FindIanaTimeZone(string id)

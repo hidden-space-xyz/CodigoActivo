@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 
 import { accountMutations } from '@/entities/account'
+import { RESEND_COOLDOWN_SECONDS } from '@/shared/config'
 import { useCountdown } from '@/shared/lib/countdown'
 import { useCrudFeedback } from '@/shared/lib/feedback'
 import { scrollToTop } from '@/shared/lib/navigation'
@@ -15,8 +16,6 @@ import {
 
 /** Screen of the registration flow: adult confirmation, data entry, or the result. */
 export type RegistrationStep = 'age-gate' | 'form' | 'success'
-
-const RESEND_COOLDOWN_SECONDS = 60
 
 /**
  * Drives the registration flow through its steps, scrolling to the top on each change. The API

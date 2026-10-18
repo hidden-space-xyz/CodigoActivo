@@ -16,17 +16,6 @@ public sealed class LogRetentionOptions
     public static readonly TimeSpan DefaultAudit = TimeSpan.FromDays(60);
 
     /// <summary>
-    /// Stores the shared min retention value, so the hourly maintenance never removes the entries
-    /// of the current day.
-    /// </summary>
-    public static readonly TimeSpan MinRetention = TimeSpan.FromDays(1);
-
-    /// <summary>
-    /// Stores the shared max retention value, which bounds the number of daily partitions.
-    /// </summary>
-    public static readonly TimeSpan MaxRetention = TimeSpan.FromDays(730);
-
-    /// <summary>
     /// Gets or sets the age after which a diagnostic entry is removed.
     /// </summary>
     public TimeSpan Diagnostics { get; set; } = DefaultDiagnostics;
@@ -53,20 +42,5 @@ public sealed class LogRetentionOptions
                 table.Name,
                 "Unknown log table."
             );
-    }
-
-    /// <summary>
-    /// Tells whether both retentions lie between <see cref="MinRetention"/> and
-    /// <see cref="MaxRetention"/>.
-    /// </summary>
-    /// <returns><see langword="true"/> when both retentions are usable.</returns>
-    public bool IsWithinLimits()
-    {
-        return IsWithinLimits(Diagnostics) && IsWithinLimits(Audit);
-    }
-
-    private static bool IsWithinLimits(TimeSpan retention)
-    {
-        return retention >= MinRetention && retention <= MaxRetention;
     }
 }

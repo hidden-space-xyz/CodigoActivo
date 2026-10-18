@@ -31,23 +31,7 @@ public static class LogsRegistration
         var settings = new Settings(configuration);
         var connectionString = PersistenceRegistration.BuildConnectionString(settings);
         services.AddSingleton(_ => new LogDatabase(connectionString));
-        services.AddValidatedOptions<LogRetentionOptions>(
-            options =>
-            {
-                options.Diagnostics = settings.Duration(
-                    "DIAGNOSTIC_LOG_RETENTION_DAYS",
-                    TimeSpan.FromDays,
-                    LogRetentionOptions.DefaultDiagnostics
-                );
-                options.Audit = settings.Duration(
-                    "AUDIT_LOG_RETENTION_DAYS",
-                    TimeSpan.FromDays,
-                    LogRetentionOptions.DefaultAudit
-                );
-            },
-            options => options.IsWithinLimits(),
-            $"DIAGNOSTIC_LOG_RETENTION_DAYS and AUDIT_LOG_RETENTION_DAYS must be between {LogRetentionOptions.MinRetention.TotalDays} and {LogRetentionOptions.MaxRetention.TotalDays} days."
-        );
+        services.AddFixedOptions<LogRetentionOptions>();
         services.AddSingleton<LogPartitionMaintainer>();
         services.AddSingleton<IAuditTrail, SerilogAuditTrail>();
         services.AddScoped<ILogEntryReader, LogEntryReader>();

@@ -50,7 +50,7 @@ public static class DependencyInjection
             .AddAccounts(configuration)
             .AddUsers()
             .AddEvents()
-            .AddContent(configuration)
+            .AddContent()
             .AddEmails(configuration)
             .AddUseCases();
     }

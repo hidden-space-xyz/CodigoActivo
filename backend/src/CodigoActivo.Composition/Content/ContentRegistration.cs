@@ -13,7 +13,6 @@ using CodigoActivo.Infrastructure.News;
 using CodigoActivo.Infrastructure.Partners;
 using CodigoActivo.Infrastructure.Reports;
 using CodigoActivo.Infrastructure.Resources;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodigoActivo.Composition.Content;
@@ -28,29 +27,17 @@ internal static class ContentRegistration
     /// Adds the content services.
     /// </summary>
     /// <param name="services">Service collection to add to.</param>
-    /// <param name="configuration">Configuration of the application.</param>
     /// <returns>The same service collection.</returns>
-    public static IServiceCollection AddContent(
-        this IServiceCollection services,
-        IConfiguration configuration
-    )
+    public static IServiceCollection AddContent(this IServiceCollection services)
     {
-        var settings = new Settings(configuration);
         services.AddScoped<INewsItemRepository, NewsItemRepository>();
         services.AddScoped<IPartnerRepository, PartnerRepository>();
         services.AddScoped<IResourceRepository, ResourceRepository>();
         services.AddScoped<IDashboardCountsReader, DashboardCountsReader>();
 
         services.AddScoped<IStoredFileRepository, StoredFileRepository>();
-        services.AddValidatedOptions<FileUploadOptions>(options =>
-            options.MaxSizeBytes = settings.PositiveLong(
-                "FileStorage:MaxSizeBytes",
-                FileUploadOptions.DefaultMaxSizeBytes
-            )
-        );
-        services.AddValidatedOptions<FileStorageOptions>(options =>
-            options.RootPath = settings.Text("FileStorage:RootPath", "/app/files")
-        );
+        services.AddFixedOptions<FileUploadOptions>();
+        services.AddFixedOptions<FileStorageOptions>();
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddScoped<FileUploadValidator>();
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();

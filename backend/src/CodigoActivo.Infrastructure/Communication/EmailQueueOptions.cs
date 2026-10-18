@@ -39,19 +39,9 @@ public sealed class EmailQueueOptions
     public const int DefaultWorkers = 4;
 
     /// <summary>
-    /// Identifies the max workers configuration or policy value.
-    /// </summary>
-    public const int MaxWorkers = 16;
-
-    /// <summary>
     /// Identifies the default batch size configuration or policy value.
     /// </summary>
     public const int DefaultBatchSize = 10;
-
-    /// <summary>
-    /// Identifies the max batch size configuration or policy value.
-    /// </summary>
-    public const int MaxBatchSize = 100;
 
     /// <summary>
     /// Identifies how many times a message is attempted in total before it is discarded.
@@ -69,24 +59,9 @@ public sealed class EmailQueueOptions
     public static readonly TimeSpan DefaultSendTimeout = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// Stores the shared max shutdown drain value.
-    /// </summary>
-    public static readonly TimeSpan MaxShutdownDrain = TimeSpan.FromMinutes(5);
-
-    /// <summary>
-    /// Stores the shared max send timeout value.
-    /// </summary>
-    public static readonly TimeSpan MaxSendTimeout = TimeSpan.FromMinutes(10);
-
-    /// <summary>
     /// Stores the shared default poll interval value.
     /// </summary>
     public static readonly TimeSpan DefaultPollInterval = TimeSpan.FromSeconds(5);
-
-    /// <summary>
-    /// Stores the shared max poll interval value.
-    /// </summary>
-    public static readonly TimeSpan MaxPollInterval = TimeSpan.FromMinutes(5);
 
     /// <summary>
     /// Stores the extra time added to a lease on top of the worst case of the claimed batch, which
@@ -149,9 +124,7 @@ public sealed class EmailQueueOptions
     /// <see cref="DeliveryWaves"/> rounds before it, each of which may spend a full
     /// <see cref="SendTimeout"/>. The lease covers that worst case plus <see cref="LeaseMargin"/>: no
     /// row becomes claimable again by another instance while the worker that claimed it may still be
-    /// delivering it. It grows with the configured batch and shrinks with the workers, and the
-    /// configuration bounds of <see cref="MaxBatchSize"/> messages, one worker and
-    /// <see cref="MaxSendTimeout"/> keep it under 17 hours.
+    /// delivering it. It grows with the batch and shrinks with the workers.
     /// </summary>
     public TimeSpan Lease => (DeliveryWaves * PositiveSendTimeout) + LeaseMargin;
 

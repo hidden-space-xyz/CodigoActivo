@@ -2,7 +2,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import type { JsonBodyType } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 
-import { FOUNDING_YEAR } from '@/shared/config'
+import { ORGANIZATION } from '@/shared/config'
 
 import { renderApp, t } from '../../../../support/render'
 import { http, HttpResponse, paged, server } from '../../../../support/server'
@@ -38,7 +38,7 @@ describe('home page', () => {
     const hero = wrapper.get('.hero')
 
     expect(hero.get('h1').text()).toContain(t('pages.home.hero.titleLine1'))
-    expect(hero.text()).toContain(t('pages.home.hero.badge', { year: FOUNDING_YEAR }))
+    expect(hero.text()).toContain(t('pages.home.hero.badge', { year: ORGANIZATION.foundingYear }))
     expect(hero.text()).toContain(t('pages.home.hero.stats.free'))
     expect(hero.findAll('.hero__actions a').map((link) => link.attributes('href'))).toEqual([
       router.resolve({ name: 'register' }).href,

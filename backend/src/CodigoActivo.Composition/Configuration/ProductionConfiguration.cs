@@ -76,11 +76,18 @@ internal static class ProductionConfiguration
             errors.Add("SMTP_FROM_ADDRESS must be a single valid email address");
         }
 
-        string[] legalSettings = ["LEGAL_NAME", "LEGAL_TAX_ID", "LEGAL_ADDRESS", "LEGAL_REGISTRY"];
+        string[] legalSettings =
+        [
+            "LEGAL_NAME",
+            "LEGAL_TAX_ID",
+            "LEGAL_ADDRESS",
+            "LEGAL_REGISTRY",
+            "LEGAL_EMAIL",
+        ];
         if (legalSettings.Any(key => string.IsNullOrWhiteSpace(config[key])))
         {
             errors.Add(
-                "LEGAL_NAME, LEGAL_TAX_ID, LEGAL_ADDRESS and LEGAL_REGISTRY must identify the association"
+                "LEGAL_NAME, LEGAL_TAX_ID, LEGAL_ADDRESS, LEGAL_REGISTRY and LEGAL_EMAIL must identify the association"
             );
         }
 

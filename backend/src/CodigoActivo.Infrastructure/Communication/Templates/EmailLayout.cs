@@ -1,6 +1,7 @@
 using System.Net;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common.Localization;
+using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
@@ -31,9 +32,9 @@ public sealed record EmailContent(
 /// <param name="RecipientName">Name the message greets; a null or empty name greets nobody.</param>
 /// <param name="SiteUrl">The site url value.</param>
 /// <param name="Accent">The accent value.</param>
-/// <param name="Promotional">
-/// Whether the email is a commercial communication, whose footer carries the contact address and
-/// leaves a place for the unsubscribe link of each recipient.
+/// <param name="PromotionalContact">
+/// Contact address of a commercial communication, whose footer carries it and leaves a place for the
+/// unsubscribe link of each recipient; <see langword="null"/> for any other email.
 /// </param>
 public sealed record EmailDocument(
     string Heading,
@@ -41,7 +42,7 @@ public sealed record EmailDocument(
     string? RecipientName,
     string SiteUrl,
     EmailAccent Accent,
-    bool Promotional = false
+    string? PromotionalContact = null
 );
 
 /// <summary>
@@ -81,7 +82,7 @@ public static class EmailLayout
     {
         var sections = new List<string>(blocks.Count + 3)
         {
-            $"{AppStrings.EmailsSharedBrandName}\n{document.Heading}\n{TextRule}",
+            $"{Organization.Name}\n{document.Heading}\n{TextRule}",
         };
 
         if (!string.IsNullOrEmpty(document.RecipientName))
@@ -92,8 +93,8 @@ public static class EmailLayout
         sections.AddRange(blocks.Select(block => block.Text.Trim()));
         var footer = $"{AppStrings.EmailsFooterTagline}\n{document.SiteUrl}";
         sections.Add(
-            document.Promotional
-                ? $"{TextRule}\n{PromotionalNoticeText()}{BlockSeparator}{footer}"
+            document.PromotionalContact is { } contact
+                ? $"{TextRule}\n{PromotionalNoticeText(contact)}{BlockSeparator}{footer}"
                 : $"{TextRule}\n{footer}"
         );
 
@@ -125,11 +126,11 @@ public static class EmailLayout
         );
     }
 
-    private static string PromotionalNoticeText()
+    private static string PromotionalNoticeText(string contact)
     {
         return $"{AppStrings.EmailsFooterPromotionalNotice}\n"
             + $"{AppStrings.EmailsFooterUnsubscribeText(UnsubscribeSlot)}\n"
-            + AppStrings.EmailsFooterContact(EmailBranding.ContactAddress);
+            + AppStrings.EmailsFooterContact(contact);
     }
 
     private static string Html(EmailDocument document, List<EmailBlock> blocks)
@@ -229,7 +230,7 @@ public static class EmailLayout
     private static string Header()
     {
         var logoAlt = WebUtility.HtmlEncode(AppStrings.EmailsSharedLogoAlt);
-        var brand = WebUtility.HtmlEncode(AppStrings.EmailsSharedBrandName);
+        var brand = WebUtility.HtmlEncode(Organization.Name);
         var logo = $"cid:{EmailBranding.LogoContentId}";
 
         return $"""
@@ -248,7 +249,7 @@ public static class EmailLayout
 
     private static string Footer(EmailDocument document)
     {
-        var brand = WebUtility.HtmlEncode(AppStrings.EmailsSharedBrandName);
+        var brand = WebUtility.HtmlEncode(Organization.Name);
         var tagline = WebUtility.HtmlEncode(AppStrings.EmailsFooterTagline);
         var website = WebUtility.HtmlEncode(AppStrings.EmailsFooterWebsiteLabel);
         var siteUrl = WebUtility.HtmlEncode(document.SiteUrl);
@@ -259,15 +260,19 @@ public static class EmailLayout
             <p style="{EmailStyles.FooterLinkWrap}">
             <a class="ca-link" href="{siteUrl}" style="{EmailStyles.FooterLink}">{website}</a>
             </p>
-            {(document.Promotional ? PromotionalNoticeHtml() : string.Empty)}
+            {(
+                document.PromotionalContact is { } contact
+                    ? PromotionalNoticeHtml(contact)
+                    : string.Empty
+            )}
             """;
     }
 
-    private static string PromotionalNoticeHtml()
+    private static string PromotionalNoticeHtml(string contactAddress)
     {
         var notice = WebUtility.HtmlEncode(AppStrings.EmailsFooterPromotionalNotice);
         var unsubscribe = WebUtility.HtmlEncode(AppStrings.EmailsFooterUnsubscribeLabel);
-        var address = WebUtility.HtmlEncode(EmailBranding.ContactAddress);
+        var address = WebUtility.HtmlEncode(contactAddress);
         var contact = AppStrings.EmailsFooterContact(
             $"<a class=\"ca-link\" href=\"mailto:{address}\" style=\"{EmailStyles.FooterLink}\">{address}</a>"
         );

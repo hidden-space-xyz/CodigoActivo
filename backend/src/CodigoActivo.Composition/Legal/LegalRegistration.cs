@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Legal;
 using CodigoActivo.Composition.Configuration;
+using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,6 +31,8 @@ internal static class LegalRegistration
                 options.TaxId = settings.Text("LEGAL_TAX_ID", string.Empty);
                 options.Address = settings.Text("LEGAL_ADDRESS", string.Empty);
                 options.Registry = settings.Text("LEGAL_REGISTRY", string.Empty);
+                options.Email = settings.Text("LEGAL_EMAIL", string.Empty);
+                options.Phone = settings.Text("LEGAL_PHONE", string.Empty);
             },
             options =>
                 new[] { options.Name, options.TaxId, options.Address, options.Registry }.All(
@@ -37,6 +40,17 @@ internal static class LegalRegistration
                 ),
             $"LEGAL_NAME, LEGAL_TAX_ID, LEGAL_ADDRESS and LEGAL_REGISTRY must not exceed {LegalEntityOptions.MaxLength} characters."
         );
+        services
+            .AddOptions<LegalEntityOptions>()
+            .Validate(
+                options =>
+                    options.Email.Length == 0 || EmailAddress.Create(options.Email).IsSuccess,
+                "LEGAL_EMAIL must be a single email address."
+            )
+            .Validate(
+                options => options.Phone.Length == 0 || PhoneNumber.Create(options.Phone).IsSuccess,
+                $"LEGAL_PHONE must be a phone number of {PhoneNumber.MinDigits} to {PhoneNumber.MaxDigits} digits."
+            );
         return services;
     }
 }

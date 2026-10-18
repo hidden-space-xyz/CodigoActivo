@@ -2,6 +2,7 @@ using System.Net;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common.Localization;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
@@ -75,16 +76,13 @@ public sealed class EmailLayoutContractTests
 
         message
             .TextBody.Should()
-            .Contain(AppStrings.EmailsSharedBrandName, $"{name} must be branded")
+            .Contain(Organization.Name, $"{name} must be branded")
             .And.Contain(AppStrings.EmailsFooterTagline)
             .And.Contain(Site);
 
         message
             .HtmlBody.Should()
-            .Contain(
-                WebUtility.HtmlEncode(AppStrings.EmailsSharedBrandName),
-                $"{name} must be branded"
-            )
+            .Contain(WebUtility.HtmlEncode(Organization.Name), $"{name} must be branded")
             .And.Contain(WebUtility.HtmlEncode(AppStrings.EmailsFooterTagline))
             .And.Contain($"href=\"{Site}\"");
     }
@@ -158,7 +156,12 @@ public sealed class EmailLayoutContractTests
                 .ToMessages()[0],
             "promotional" => ManualEmail
                 .Create(
-                    ManualEmail.Render("Taller", "Nuevo taller.", Site, promotional: true),
+                    ManualEmail.Render(
+                        "Taller",
+                        "Nuevo taller.",
+                        Site,
+                        promotionalContact: "contacto@asociacion.test"
+                    ),
                     [new EmailRecipient("ada@test.com", "Ada", $"{Site}/unsubscribe#token=t")],
                     []
                 )

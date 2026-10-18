@@ -2,6 +2,7 @@ using System.Collections.Frozen;
 using System.Text;
 using System.Text.RegularExpressions;
 using CodigoActivo.Application.Accounts.EmailAddresses;
+using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Infrastructure.Accounts;
 
@@ -91,9 +92,9 @@ public static partial class DisposableEmailDomainList
     public const int MinDomains = 1000;
 
     /// <summary>
-    /// Domains of widely used mailbox providers that no genuine list refuses. A list that would
-    /// refuse any of them, directly or through a parent domain, is treated as corrupted or
-    /// tampered with.
+    /// Domains of widely used mailbox providers and of the association itself, which no genuine
+    /// list refuses. A list that would refuse any of them, directly or through a parent domain, is
+    /// treated as corrupted or tampered with.
     /// </summary>
     public static readonly FrozenSet<string> ProtectedDomains = new[]
     {
@@ -107,7 +108,7 @@ public static partial class DisposableEmailDomainList
         "protonmail.com",
         "yahoo.com",
         "yahoo.es",
-        "codigoactivo.es",
+        Organization.WebDomain,
     }.ToFrozenSet(StringComparer.Ordinal);
 
     private const int MaxDomainLength = 253;

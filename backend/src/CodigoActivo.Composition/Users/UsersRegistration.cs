@@ -24,9 +24,9 @@ internal static class UsersRegistration
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IDeletedAccountRepository, DeletedAccountRepository>();
         services.AddScoped<ActingUserPolicy>();
-        services.AddValidatedOptions<DeletedAccountPurgeOptions>(_ => { });
+        services.AddFixedOptions<DeletedAccountPurgeOptions>();
         services.AddHostedService<DeletedAccountPurger>();
-        services.AddValidatedOptions<UnverifiedAccountPurgeOptions>(_ => { });
+        services.AddFixedOptions<UnverifiedAccountPurgeOptions>();
         services.AddHostedService<UnverifiedAccountPurger>();
         return services;
     }

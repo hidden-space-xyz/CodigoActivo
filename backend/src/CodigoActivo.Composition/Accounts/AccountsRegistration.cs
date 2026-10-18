@@ -70,89 +70,13 @@ internal static class AccountsRegistration
 
     private static void AddOptions(IServiceCollection services, Settings settings)
     {
-        services.AddValidatedOptions<AccountVerificationOptions>(options =>
-        {
-            options.OtpLifetime = settings.Duration(
-                "AccountVerification:OtpLifetimeMinutes",
-                TimeSpan.FromMinutes,
-                AccountVerificationOptions.DefaultOtpLifetime
-            );
-            options.ResendCooldown = settings.Duration(
-                "AccountVerification:ResendCooldownSeconds",
-                TimeSpan.FromSeconds,
-                AccountVerificationOptions.DefaultResendCooldown
-            );
-        });
-        services.AddValidatedOptions<PasswordResetOptions>(options =>
-        {
-            options.CodeLifetime = settings.Duration(
-                "PasswordReset:CodeLifetimeMinutes",
-                TimeSpan.FromMinutes,
-                PasswordResetOptions.DefaultCodeLifetime
-            );
-            options.ResendCooldown = settings.Duration(
-                "PasswordReset:ResendCooldownSeconds",
-                TimeSpan.FromSeconds,
-                PasswordResetOptions.DefaultResendCooldown
-            );
-        });
-        services.AddValidatedOptions<PasswordLockoutOptions>(options =>
-            options.MaxFailedAttempts = settings.PositiveInt(
-                "PasswordLockout:MaxFailedAttempts",
-                PasswordLockoutOptions.DefaultMaxFailedAttempts
-            )
-        );
-        services.AddValidatedOptions<TwoFactorOptions>(options =>
-        {
-            options.ChallengeLifetime = settings.Duration(
-                "TwoFactor:ChallengeLifetimeMinutes",
-                TimeSpan.FromMinutes,
-                TwoFactorOptions.DefaultChallengeLifetime
-            );
-            options.ResendCooldown = settings.Duration(
-                "TwoFactor:ResendCooldownSeconds",
-                TimeSpan.FromSeconds,
-                TwoFactorOptions.DefaultResendCooldown
-            );
-            options.SetupLifetime = settings.Duration(
-                "TwoFactor:AuthenticatorSetupLifetimeMinutes",
-                TimeSpan.FromMinutes,
-                TwoFactorOptions.DefaultSetupLifetime
-            );
-            options.MaxFailedAttempts = settings.PositiveInt(
-                "TwoFactor:MaxFailedAttempts",
-                TwoFactorOptions.DefaultMaxFailedAttempts
-            );
-            options.LockoutDuration = settings.Duration(
-                "TwoFactor:LockoutMinutes",
-                TimeSpan.FromMinutes,
-                TwoFactorOptions.DefaultLockoutDuration
-            );
-            options.Issuer = settings.Text("TwoFactor:Issuer", TwoFactorOptions.DefaultIssuer);
-        });
-        services.AddValidatedOptions<SessionLifetimeOptions>(options =>
-            options.Lifetime = settings.Duration(
-                "Auth:ExpireHours",
-                TimeSpan.FromHours,
-                SessionLifetimeOptions.DefaultLifetime
-            )
-        );
-        services.AddValidatedOptions<SessionCleanupOptions>(
-            options =>
-                options.Interval = settings.Duration(
-                    "SessionCleanup:IntervalMinutes",
-                    TimeSpan.FromMinutes,
-                    SessionCleanupOptions.DefaultInterval
-                ),
-            options => options.Interval <= SessionCleanupOptions.MaxInterval,
-            $"SessionCleanup:IntervalMinutes must be at most {SessionCleanupOptions.MaxInterval.TotalMinutes} minutes."
-        );
-        services.AddValidatedOptions<DisposableEmailDomainOptions>(options =>
-            options.SourceUrl = settings.HttpsUri(
-                "DisposableEmailDomains:SourceUrl",
-                DisposableEmailDomainOptions.DefaultSourceUrl
-            )
-        );
+        services.AddFixedOptions<AccountVerificationOptions>();
+        services.AddFixedOptions<PasswordResetOptions>();
+        services.AddFixedOptions<PasswordLockoutOptions>();
+        services.AddFixedOptions<TwoFactorOptions>();
+        services.AddFixedOptions<SessionLifetimeOptions>();
+        services.AddFixedOptions<SessionCleanupOptions>();
+        services.AddFixedOptions<DisposableEmailDomainOptions>();
         services.AddValidatedOptions<InitialAdministratorOptions>(options =>
             options.Email = settings.Text("BOOTSTRAP_ADMIN_EMAIL", string.Empty)
         );

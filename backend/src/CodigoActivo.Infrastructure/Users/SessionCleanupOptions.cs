@@ -11,11 +11,6 @@ public sealed class SessionCleanupOptions
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromHours(1);
 
     /// <summary>
-    /// Stores the shared max interval value.
-    /// </summary>
-    public static readonly TimeSpan MaxInterval = TimeSpan.FromDays(1);
-
-    /// <summary>
     /// Stores the shared default startup delay value.
     /// </summary>
     public static readonly TimeSpan DefaultStartupDelay = TimeSpan.FromSeconds(30);

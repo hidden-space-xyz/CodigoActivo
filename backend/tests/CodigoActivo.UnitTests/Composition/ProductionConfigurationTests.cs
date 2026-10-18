@@ -60,6 +60,7 @@ public sealed class ProductionConfigurationTests
     [InlineData("LEGAL_TAX_ID", "", "LEGAL_TAX_ID")]
     [InlineData("LEGAL_ADDRESS", " ", "LEGAL_ADDRESS")]
     [InlineData("LEGAL_REGISTRY", "", "LEGAL_REGISTRY")]
+    [InlineData("LEGAL_EMAIL", " ", "LEGAL_EMAIL")]
     public void ValidateUnsafeConfigurationThrows(string key, string value, string expectedMessage)
     {
         var config = BuildConfiguration(new KeyValuePair<string, string?>(key, value));
@@ -100,6 +101,7 @@ public sealed class ProductionConfigurationTests
             ["LEGAL_TAX_ID"] = "G24000000",
             ["LEGAL_ADDRESS"] = "Calle Ejemplo 1, 24001 León",
             ["LEGAL_REGISTRY"] = "Registro de Asociaciones de Castilla y León, n.º 0000",
+            ["LEGAL_EMAIL"] = "contacto@codigoactivo.es",
         };
         if (replacement is { } item)
         {

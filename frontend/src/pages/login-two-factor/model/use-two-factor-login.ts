@@ -11,11 +11,10 @@ import {
   verifyTwoFactorLoginRequest,
 } from '@/entities/session'
 import { hasErrorCode } from '@/shared/api'
+import { RESEND_COOLDOWN_SECONDS } from '@/shared/config'
 import { useCountdown } from '@/shared/lib/countdown'
 import { getErrorMessage, useCrudFeedback } from '@/shared/lib/feedback'
 import { toLocalRedirect } from '@/shared/lib/navigation'
-
-const RESEND_COOLDOWN_SECONDS = 60
 
 function isChallengeExpired(error: unknown): boolean {
   return hasErrorCode(error, 'TwoFactorChallengeExpired')

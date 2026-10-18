@@ -1,5 +1,6 @@
 import type { AccountCertificate } from '@/entities/account'
 import { logoMarkLarge } from '@/shared/branding'
+import { LOCALE, ORGANIZATION } from '@/shared/config'
 import type { Translate } from '@/shared/i18n'
 import { fullName } from '@/entities/user'
 import { parseDateOnly } from '@/shared/lib/date'
@@ -46,7 +47,7 @@ const SEAL_X = AXIS
 const SEAL_Y = 169.5
 const SEAL_R = 14.5
 
-const longDateFormatter = new Intl.DateTimeFormat('es-ES', {
+const longDateFormatter = new Intl.DateTimeFormat(LOCALE, {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
@@ -319,7 +320,7 @@ function drawMicrotext(ctx: CanvasRenderingContext2D, texts: SheetTexts): void {
   const span = MICROTEXT_INSET
   const width = SHEET_WIDTH_MM - span * 2
   const height = SHEET_HEIGHT_MM - span * 2
-  const unit = `${texts.microtext.toLocaleUpperCase('es-ES')}  ·  `
+  const unit = `${texts.microtext.toLocaleUpperCase(LOCALE)}  ·  `
 
   ctx.save()
   ctx.font = font(500, 3.1, MONO_FAMILY)
@@ -381,7 +382,7 @@ function latheBand(
 }
 
 const SOURCE = [
-  '# codigoactivo.es',
+  `# ${ORGANIZATION.webDomain}`,
   '# learning to code is learning to create',
   '',
   'class Certificate:',
@@ -566,7 +567,7 @@ function drawCrest(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null)
 }
 
 function drawEyebrow(ctx: CanvasRenderingContext2D, texts: SheetTexts): void {
-  const text = `// ${texts.eyebrow}`.toLocaleUpperCase('es-ES')
+  const text = `// ${texts.eyebrow}`.toLocaleUpperCase(LOCALE)
   const gap = tracking(9.5, 0.14)
 
   ctx.font = font(600, 9.5, MONO_FAMILY)
@@ -761,8 +762,8 @@ function drawSeal(ctx: CanvasRenderingContext2D, texts: SheetTexts): void {
 
   ctx.fillStyle = ENGRAVE
   ctx.font = font(500, 5.6, MONO_FAMILY)
-  arcText(ctx, texts.sealTop.toLocaleUpperCase('es-ES'), 11.1, -Math.PI / 2, 0.32, true)
-  arcText(ctx, texts.sealBottom.toLocaleUpperCase('es-ES'), 11.1, Math.PI / 2, 0.32, false)
+  arcText(ctx, texts.sealTop.toLocaleUpperCase(LOCALE), 11.1, -Math.PI / 2, 0.32, true)
+  arcText(ctx, texts.sealBottom.toLocaleUpperCase(LOCALE), 11.1, Math.PI / 2, 0.32, false)
 
   ctx.font = font(600, 16, MONO_FAMILY)
   ctx.textAlign = 'center'
@@ -798,8 +799,8 @@ function drawFooter(
 
   ctx.font = font(500, 6.5, MONO_FAMILY)
   ctx.fillStyle = INK_META
-  fillTracked(ctx, texts.issuerLabel.toLocaleUpperCase('es-ES'), 30, 166, labelGap, 'left')
-  fillTracked(ctx, texts.registryLabel.toLocaleUpperCase('es-ES'), 267, 166, labelGap, 'right')
+  fillTracked(ctx, texts.issuerLabel.toLocaleUpperCase(LOCALE), 30, 166, labelGap, 'left')
+  fillTracked(ctx, texts.registryLabel.toLocaleUpperCase(LOCALE), 267, 166, labelGap, 'right')
 
   ctx.font = font(500, 9, MONO_FAMILY)
   ctx.textAlign = 'left'
@@ -875,7 +876,7 @@ function drawBody(
   ctx.fillStyle = INK_BODY
   fillTracked(
     ctx,
-    ceremonialDate(certificate).toLocaleUpperCase('es-ES'),
+    ceremonialDate(certificate).toLocaleUpperCase(LOCALE),
     AXIS,
     dateBaseline,
     tracking(9, 0.1),

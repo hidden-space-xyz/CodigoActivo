@@ -132,7 +132,7 @@ public sealed class EmailOutboxProtectorTests
                     "Taller",
                     "Nuevo taller.",
                     "https://app.test",
-                    promotional: true
+                    promotionalContact: "contacto@asociacion.test"
                 ),
                 [new EmailRecipient("ana@example.test", "Ana", AnaLink)],
                 []
@@ -165,7 +165,7 @@ public sealed class EmailOutboxProtectorTests
                     "Taller",
                     "Nuevo taller.",
                     "https://app.test",
-                    promotional: true
+                    promotionalContact: "contacto@asociacion.test"
                 ),
                 [new EmailRecipient("ana@example.test", "Ana", "https://app.test/x", OneClick)],
                 []

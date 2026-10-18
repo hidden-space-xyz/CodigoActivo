@@ -33,15 +33,16 @@ public static class ManualEmail
     /// <param name="subject">The subject value.</param>
     /// <param name="body">The body value.</param>
     /// <param name="siteUrl">The site url value.</param>
-    /// <param name="promotional">
-    /// Whether the email is a commercial communication, which carries the promotional footer.
+    /// <param name="promotionalContact">
+    /// Contact address of a commercial communication, which carries the promotional footer;
+    /// <see langword="null"/> for an informational email.
     /// </param>
     /// <returns>The resulting manual email content value.</returns>
     public static ManualEmailContent Render(
         string subject,
         string body,
         string siteUrl,
-        bool promotional = false
+        string? promotionalContact = null
     )
     {
         var paragraphs = Paragraphs(body);
@@ -53,7 +54,7 @@ public static class ManualEmail
                 null,
                 siteUrl,
                 EmailBranding.Brand,
-                promotional
+                promotionalContact
             ),
             [.. paragraphs.Select(paragraph => EmailBlocks.Prose(ToHtml(paragraph), paragraph))]
         );

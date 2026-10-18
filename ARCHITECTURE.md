@@ -304,10 +304,14 @@ attributes. Request records live in `API/<Feature>/Contracts/`, response records
 `Application/Common/Querying`; day filters turn a local day into UTC instants with `LocalDayRange` (Domain).
 Mapping is handwritten.
 
-Configuration is read once, in the composition root (`AddCodigoActivo`), into options registered with
-`IOptions<T>` and `ValidateOnStart`: a missing setting takes its default, and a setting that is present but
-unusable (not a positive number, not an HTTPS address, above its limit) stops the application at start with a
-message naming the key, instead of silently falling back. Data protection is registered there once, with the
+Each kind of value has one home. Deployment configuration (addresses, credentials, SMTP, the demo choice and
+the association's legal identity and contact details, which stay out of the public repository) is the flat
+uppercase variables of `.env` and `secrets/`, read once in the composition root (`AddCodigoActivo`) into
+options registered with `AddValidatedOptions` and `ValidateOnStart`: a missing setting takes its default, and
+a setting that is present but unusable stops the application at start with a message naming the key. Security,
+abuse and retention values are fixed in their `*Options` classes, registered with `AddFixedOptions` so no
+setting reaches them (tests replace the instance). The association's public identity is `Organization`
+(Domain) and `shared/config/organization.ts` (frontend); user-facing text is in the i18n resources. Data protection is registered there once, with the
 keys protected at rest in production. User-facing backend text comes from `Application/Common/Localization/AppStrings.resx`; logs and
 seeded content are not UI localization resources.
 

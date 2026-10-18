@@ -7503,6 +7503,7 @@
       "LegalEntityResponse": {
         "required": [
           "address",
+          "email",
           "name",
           "registry",
           "taxId"
@@ -7520,6 +7521,13 @@
           },
           "registry": {
             "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

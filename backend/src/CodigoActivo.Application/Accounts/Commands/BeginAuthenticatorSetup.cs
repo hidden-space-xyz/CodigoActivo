@@ -80,7 +80,7 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
         var account = user.Email?.Value ?? user.Id.ToString();
         return new AuthenticatorSetup(
             AuthenticatorKeys.Format(secret),
-            AuthenticatorKeys.BuildUri(options.Issuer, account, secret)
+            AuthenticatorKeys.BuildUri(Organization.Name, account, secret)
         );
     }
 }

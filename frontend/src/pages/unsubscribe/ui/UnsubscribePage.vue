@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 
 import { useUnsubscribe } from '../model/use-unsubscribe'
-import { CONTACT } from '@/shared/config'
+import { legalEntityQueries } from '@/entities/legal-entity'
 import { useLinkFragment } from '@/shared/lib/navigation'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
@@ -10,6 +11,7 @@ import { StatusPanel } from '@/shared/ui/status-panel'
 
 const linkParam = useLinkFragment()
 const { state, errorMessage, unsubscribe } = useUnsubscribe()
+const { data: legalEntity } = useQuery(legalEntityQueries.detail())
 
 onMounted(() => {
   unsubscribe(linkParam('token'))
@@ -46,7 +48,7 @@ onMounted(() => {
           state="error"
           :title="$t('pages.unsubscribe.errorTitle')"
           :text="errorMessage"
-          :hint="$t('pages.unsubscribe.hint', { email: CONTACT.email })"
+          :hint="$t('pages.unsubscribe.hint', { email: legalEntity?.email || '—' })"
         >
           <template #actions>
             <BrandButton :to="{ name: 'home' }" variant="ghost">

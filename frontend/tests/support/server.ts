@@ -12,6 +12,8 @@ export const TEST_LEGAL_ENTITY: LegalEntityResponse = {
   taxId: 'G24000000',
   address: 'Calle Ejemplo 1, 24001 León',
   registry: 'Registro de Asociaciones de Castilla y León, n.º 0000',
+  email: 'contacto@codigoactivo.test',
+  phone: '987 00 00 00',
 }
 
 /**
