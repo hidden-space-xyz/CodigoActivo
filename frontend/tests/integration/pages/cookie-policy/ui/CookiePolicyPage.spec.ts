@@ -50,21 +50,17 @@ describe('cookie policy page', () => {
     expect(listed).toEqual(expect.arrayContaining(written))
   })
 
-  it('links to the cookie guide of the authority and browser help', async () => {
+  it('links to browser help and explains the opt-in persistent session', async () => {
     const { wrapper } = await renderApp('/cookies')
 
     const main = wrapper.get('main')
     const hrefs = main.findAll('a').map((link) => link.attributes('href'))
-    expect(hrefs).toEqual(
-      expect.arrayContaining([
-        'https://www.aepd.es/guias/guia-cookies.pdf',
-        'https://support.google.com/chrome/answer/95647?hl=es',
-      ]),
-    )
+    expect(hrefs).toContain('https://support.google.com/chrome/answer/95647?hl=es')
     expect(main.findAll('.cookie-policy__guides a')).toHaveLength(5)
     for (const link of main.findAll('a[target="_blank"]')) {
       expect(link.attributes('rel')).toBe('noopener')
     }
+    expect(main.text()).toContain(t('pages.cookiePolicy.consent.necessary'))
     expect(main.text()).toContain(t('pages.cookiePolicy.consent.keepSignedIn'))
   })
 

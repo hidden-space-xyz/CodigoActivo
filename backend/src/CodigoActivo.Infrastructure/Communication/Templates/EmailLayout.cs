@@ -33,7 +33,7 @@ public sealed record EmailContent(
 /// <param name="SiteUrl">The site url value.</param>
 /// <param name="Accent">The accent value.</param>
 /// <param name="PromotionalContact">
-/// Contact address of a commercial communication, whose footer carries it and leaves a place for the
+/// Contact address of a promotional email, whose footer carries it and leaves a place for the
 /// unsubscribe link of each recipient; <see langword="null"/> for any other email.
 /// </param>
 public sealed record EmailDocument(

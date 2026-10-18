@@ -34,7 +34,7 @@ public static class ManualEmail
     /// <param name="body">The body value.</param>
     /// <param name="siteUrl">The site url value.</param>
     /// <param name="promotionalContact">
-    /// Contact address of a commercial communication, which carries the promotional footer;
+    /// Contact address of a promotional email, which carries the promotional footer;
     /// <see langword="null"/> for an informational email.
     /// </param>
     /// <returns>The resulting manual email content value.</returns>

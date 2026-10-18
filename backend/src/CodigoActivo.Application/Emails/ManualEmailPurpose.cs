@@ -12,8 +12,9 @@ public enum ManualEmailPurpose
     Informational,
 
     /// <summary>
-    /// A commercial communication (article 21 of the Spanish LSSI). It reaches only those who gave
-    /// their promotional consent and carries the contact address and an unsubscribe link.
+    /// News and promotion of the association, sent on the consent of each recipient (article 6.1.a
+    /// GDPR). It reaches only those who gave their promotional consent and carries the contact
+    /// address and an unsubscribe link.
     /// </summary>
     Promotional,
 }

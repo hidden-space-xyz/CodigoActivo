@@ -430,9 +430,8 @@
       },
       "consent": {
         "title": "¿Cuándo te pedimos permiso?",
-        "exemption": "El artículo 22.2 de la Ley 34/2002, de 11 de julio, de servicios de la sociedad de la información y de comercio electrónico (LSSI), no exige consentimiento para las cookies estrictamente necesarias para prestar un servicio que solicitas expresamente. Según la {guide} de la Agencia Española de Protección de Datos, lo son, entre otras, las de autenticación mientras dura la sesión del navegador, las de seguridad y las que recuerdan una preferencia de presentación que eliges tú, como el tema de colores. Por eso no te mostramos un aviso de cookies: la única que necesita tu consentimiento es la que mantiene la sesión iniciada durante 30 días, y solo la guardamos si lo pides.",
-        "guide": "Guía sobre el uso de las cookies",
-        "keepSignedIn": "La cookie de sesión solo se conserva 30 días si al iniciar sesión marcas «Mantener la sesión iniciada en este dispositivo (guarda una cookie durante 30 días)». Esa casilla nunca aparece marcada, y marcarla es tu consentimiento para guardarla (art. 22.2 LSSI). Puedes retirarlo en cualquier momento cerrando sesión o borrando las cookies de este sitio; sin ella, la sesión termina al cerrar el navegador."
+        "necessary": "Solo guardamos lo necesario para que la web funcione, inicies sesión y protejamos tu cuenta, y una preferencia de presentación que eliges tú, el tema de colores. No usamos cookies de análisis, de publicidad ni de terceros, así que no te mostramos un aviso de cookies: la única que dura más que la sesión del navegador es la que mantiene la sesión iniciada durante 30 días, y solo la guardamos si lo pides.",
+        "keepSignedIn": "La cookie de sesión solo se conserva 30 días si al iniciar sesión marcas «Mantener la sesión iniciada en este dispositivo (guarda una cookie durante 30 días)». Esa casilla nunca aparece marcada. Puedes borrarla en cualquier momento cerrando sesión o borrando las cookies de este sitio; sin ella, la sesión termina al cerrar el navegador."
       },
       "manage": {
         "title": "¿Cómo puedes eliminarlas?",
@@ -520,7 +519,7 @@
             "title": "Comunicaciones por email",
             "data": "Tu nombre, tu email y tu preferencia sobre recibir novedades, con la fecha y el medio de cada cambio: el registro, «Mi cuenta», el enlace para darte de baja o el botón de baja de tu programa de correo.",
             "purpose": "Enviarte los correos que el servicio necesita (verificación del email, códigos de acceso, avisos de seguridad, el estado de tus inscripciones e información práctica de los eventos en los que participas) y, solo si lo aceptas, novedades sobre las actividades de la asociación.",
-            "legalBasis": "Para los correos del servicio, su prestación (art. 6.1.b RGPD); para las novedades, tu consentimiento (art. 6.1.a RGPD y art. 21 LSSI), que puedes retirar gratis cuando quieras con el enlace para darte de baja que incluye cada novedad o con el botón de baja que muestre tu programa de correo, sin iniciar sesión, desde «Mi cuenta» o escribiéndonos a la dirección que también figura en cada novedad.",
+            "legalBasis": "Para los correos del servicio, su prestación (art. 6.1.b RGPD); para las novedades, tu consentimiento (art. 6.1.a RGPD), que puedes retirar gratis cuando quieras con el enlace para darte de baja que incluye cada novedad o con el botón de baja que muestre tu programa de correo, sin iniciar sesión, desde «Mi cuenta» o escribiéndonos a la dirección que también figura en cada novedad.",
             "retention": "Cada correo espera en la cola de envío, con el asunto y el contenido cifrados, solo hasta que se entrega o se descarta tras cinco intentos fallidos. Tu preferencia, hasta que la cambies o elimines la cuenta, y la fecha y el medio de cada cambio, mientras mantengas la cuenta, para poder demostrar tu consentimiento; si la eliminas, pasan a la copia bloqueada."
           },
           "ratings": {
