@@ -124,7 +124,7 @@ public static class ApiClientExtensions
         string? body = "Cuerpo de prueba",
         IReadOnlyList<(string FileName, string ContentType, byte[] Bytes)>? attachments = null,
         bool withCsrf = true,
-        string? purpose = "Informational"
+        string? purpose = "Notice"
     )
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, url);

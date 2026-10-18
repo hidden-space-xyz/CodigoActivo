@@ -99,12 +99,12 @@ authentication are not supported.
   (`UserEmailAlreadyInUse`). The stored account,
   never the request, decides the rest: an account that is not already a dependent is refused a guardian
   (`UserParentNotAllowedForAdult`) and any birth date (`UserBirthDateNotAllowedForAdult`), must supply a
-  DNI/NIE (`UserNationalIdRequired`) and may set `promotionalConsent`,
+  DNI/NIE (`UserNationalIdRequired`) and may set `newsConsent`,
   so no request can demote an account into somebody's dependent; a dependent only accepts its own guardian
   repeated or omitted (`UserParentReassignmentForbidden` otherwise) and is never reassigned, must supply a
   birth date (`UserChildBirthDateRequired`) that stays a minor's only when it changes from the stored value
   (`UserChildBirthDateNotMinor`), so a dependent who already turned 18 stays editable with their stored
-  birth date, and never stores a DNI/NIE or promotional consent; turning 18 changes nothing about the
+  birth date, and never stores a DNI/NIE or news consent; turning 18 changes nothing about the
   account itself, which keeps the `Dependent` status and no password, so a login with its email answers
   `InvalidCredentials` and `forgot-password` ignores it. Dependents are created by a registration (its
   `minors` list, at most 20, `RequestValidationFailed` beyond) or through `POST /api/users/{id}/children`
@@ -184,7 +184,7 @@ account and each dependent, the guardian's identification when
 a dependent is deleted alone, every signup of the household with activity, event, role, status and signup
 time, every terms decision (accepted or rejected, with its handwritten signature as base64 PNG) of the
 household — or the guardian's for the dependent's events — with each document's text as it stood at
-deletion (documents are not versioned), every change of each person's promotional consent with its instant
+deletion (documents are not versioned), every change of each person's news consent with its instant
 and source, and who asked
 for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
 secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
@@ -333,9 +333,9 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   the data, purpose, legal basis and retention, plus the processors, transfers and rights; the registration
   form shows its first layer (`PrivacyNotice`). Change them with any new personal field, processor, recipient
   or retention.
-- Promotional consent (articles 6.1.a and 7 GDPR) is changed only by its holder: at
-  registration, in «Mi cuenta», or through the unsubscribe link of a promotional email or its mail client's
-  unsubscribe button. `User` appends every change to `promotional_consent_changes` with its instant and source
+- News consent (articles 6.1.a and 7 GDPR) is changed only by its holder: at
+  registration, in «Mi cuenta», or through the unsubscribe link of a news email or its mail client's
+  unsubscribe button. `User` appends every change to `news_consent_changes` with its instant and source
   (`Registration`, `Profile`, `UnsubscribeLink`, `OneClickUnsubscribe`) and the blocked copy keeps them. Consents stored before that table existed have no
   recorded change.
 - Terms-document consent is recorded for the acting user, not the person signed up: signing up a household
@@ -581,8 +581,8 @@ discarded on their next delivery attempt.
 Only administrators may send through `/api/emails/...`; recipients are resolved on the server from the same
 filters as user/attendee lists, never client-supplied addresses. Each recipient gets a separate message,
 dependents without their own address are skipped, and attachments remain transient. Every send carries a
-required `purpose`: `Informational` reaches every addressable recipient; `Promotional` reaches only those with
-promotional consent, enforced by the server (`ManualEmailAudience.ReachedBy`; a single recipient without it
+required `purpose`: `Notice` reaches every addressable recipient; `News` reaches only those with
+news consent, enforced by the server (`ManualEmailAudience.ReachedBy`; a single recipient without it
 is refused with `EmailRecipientWithoutConsent`), and its footer carries the contact address
 (`LEGAL_EMAIL`, the same one the site shows) and the recipient's own unsubscribe
 link, `/unsubscribe#token=…`. The token is the user id protected with Data Protection (purpose
@@ -591,7 +591,7 @@ recreating the ring invalidates the links already sent. The stored content is sh
 outbox row holds its recipient's link in clear (`unsubscribe_url`), put in place at delivery. The SPA page
 posts the token to the anonymous `POST /api/emails/unsubscribe` (credential rate limit), which withdraws the
 consent and answers 204 again for a withdrawn consent or an erased account, or `EmailUnsubscribeLinkInvalid`
-for an altered token. Each promotional message also carries the one-click unsubscribe of RFC 8058:
+for an altered token. Each news message also carries the one-click unsubscribe of RFC 8058:
 `List-Unsubscribe: <…/api/emails/unsubscribe/one-click?token=…>` with the same token (stored per row in
 `one_click_unsubscribe_url`) and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. The mail client posts
 that pair as `application/x-www-form-urlencoded` or `multipart/form-data`, without cookies or an antiforgery
@@ -609,8 +609,8 @@ the five-minute nginx upstream timeout.
 administrator preview a send before committing to it: given the same filters as `POST /api/emails/users` or
 `POST /api/emails/events/{eventId}/attendees`, they return `{ recipients, withoutConsent }` computed by the
 same shared selection (`ManualEmailAudience`) the send commands use, so the preview always matches what a
-send would reach — distinct addressable recipients deduplicated case-insensitively, which an informational
-send reaches, and how many of them a promotional send leaves out for lack of consent. These preview endpoints carry none of the send limits above, only
+send would reach — distinct addressable recipients deduplicated case-insensitively, which a notice
+reaches, and how many of them a news send leaves out for lack of consent. These preview endpoints carry none of the send limits above, only
 the general API limits of nginx and the API.
 
 ## Demo mode

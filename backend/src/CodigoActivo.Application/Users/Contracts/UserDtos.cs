@@ -13,7 +13,7 @@ namespace CodigoActivo.Application.Users.Contracts;
 /// <param name="SecondaryPhone">Optional second contact phone; dependents never have one.</param>
 /// <param name="BirthDate">User's date of birth; only dependents have one.</param>
 /// <param name="NationalId">Normalized DNI or NIE; only independent accounts have one.</param>
-/// <param name="PromotionalConsent">Whether the user agreed to receive promotional content.</param>
+/// <param name="NewsConsent">Whether the user agreed to receive news by email.</param>
 /// <param name="Gender">The gender value.</param>
 /// <param name="LastLoginAt">UTC timestamp of the user's most recent login.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
@@ -41,7 +41,7 @@ public record UserResponse(
     string? SecondaryPhone,
     DateOnly? BirthDate,
     string? NationalId,
-    bool PromotionalConsent,
+    bool NewsConsent,
     Gender Gender,
     DateTimeOffset? LastLoginAt,
     DateTimeOffset CreatedAt,

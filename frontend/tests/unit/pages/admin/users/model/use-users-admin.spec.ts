@@ -80,7 +80,7 @@ describe('useUsersAdmin', () => {
     result.table.columnFilter('phone').value = '600'
     result.table.columnFilter('nationalId').value = 'x123'
     result.table.columnFilter('isAdmin').value = false
-    result.table.columnFilter('promotionalConsent').value = true
+    result.table.columnFilter('newsConsent').value = true
     result.table.columnFilter('type').value = 'type-member'
     result.table.onSortChange({ prop: 'email', order: 'descending' })
     await flushPromises()
@@ -233,17 +233,17 @@ describe('useUsersAdmin', () => {
     expect(router.currentRoute.value.name).toBe('admin-users')
   })
 
-  it('filters the table by promotional consent and DNI/NIE', async () => {
+  it('filters the table by news consent and DNI/NIE', async () => {
     const urls = serveUserPages([[buildUserResponse()]])
     const { result } = await mountComposable(() => useUsersAdmin())
     await vi.waitFor(() => expect(result.table.items.value).toHaveLength(1))
 
-    result.table.columnFilter('promotionalConsent').value = false
+    result.table.columnFilter('newsConsent').value = false
     result.table.columnFilter('nationalId').value = 'x123'
     await flushPromises()
 
     expect(queryOf(urls.at(-1) ?? '')).toMatchObject({
-      promotionalConsent: 'false',
+      newsConsent: 'false',
       nationalId: 'x123',
     })
   })

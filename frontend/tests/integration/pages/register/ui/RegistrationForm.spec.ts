@@ -72,7 +72,7 @@ describe('RegistrationForm', () => {
       'reg-email',
       'reg-password',
       'reg-password-confirm',
-      'reg-promotional-consent',
+      'reg-news-consent',
       'reg-privacy-title',
     ])
     expect(wrapper.find('#reg-national-id-confirm').exists()).toBe(false)
@@ -216,16 +216,16 @@ describe('RegistrationForm', () => {
     expect(errors(wrapper)).toEqual([t('validation.nationalIdLetter')])
   })
 
-  it('offers an unchecked promotional consent box that updates the form', async () => {
+  it('offers an unchecked news consent box that updates the form', async () => {
     const { form, wrapper } = await renderForm()
-    const consent = wrapper.get('#reg-promotional-consent')
+    const consent = wrapper.get('#reg-news-consent')
 
-    expect(wrapper.text()).toContain(t('common.promotionalConsentOption'))
+    expect(wrapper.text()).toContain(t('common.newsConsentOption'))
     expect((consent.element as HTMLInputElement).checked).toBe(false)
 
     await consent.setValue(true)
 
-    expect(form.promotionalConsent).toBe(true)
+    expect(form.newsConsent).toBe(true)
   })
 
   it('emits submit once every adult field is valid, keeping the data in the shared form', async () => {
@@ -245,7 +245,7 @@ describe('RegistrationForm', () => {
       confirmPassword: 'correct-horse-battery',
       nationalId: 'x-1234567-l',
       gender: 'Female',
-      promotionalConsent: false,
+      newsConsent: false,
       minors: [],
     })
   })

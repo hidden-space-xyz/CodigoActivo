@@ -187,7 +187,7 @@ public sealed class AddChildCommandHandlerTests
         result.Value.Should().Be(child.Id);
         child.BirthDate.Should().Be(MinorDob);
         child.NationalId.Should().BeNull();
-        child.PromotionalConsent.Should().BeFalse();
+        child.NewsConsent.Should().BeFalse();
         await users
             .Received(1)
             .AddAsync(

@@ -122,7 +122,7 @@ public sealed class EmailOutboxProtectorTests
     }
 
     [Fact]
-    public void ToMessageGivesEachRecipientOfAPromotionalEmailTheirOwnUnsubscribeLink()
+    public void ToMessageGivesEachRecipientOfANewsEmailTheirOwnUnsubscribeLink()
     {
         const string AnaLink = "https://app.test/unsubscribe#token=ana";
         const string BertoLink = "https://app.test/unsubscribe#token=berto&x";
@@ -132,7 +132,7 @@ public sealed class EmailOutboxProtectorTests
                     "Taller",
                     "Nuevo taller.",
                     "https://app.test",
-                    promotionalContact: "contacto@asociacion.test"
+                    newsContact: "contacto@asociacion.test"
                 ),
                 [new EmailRecipient("ana@example.test", "Ana", AnaLink)],
                 []
@@ -165,7 +165,7 @@ public sealed class EmailOutboxProtectorTests
                     "Taller",
                     "Nuevo taller.",
                     "https://app.test",
-                    promotionalContact: "contacto@asociacion.test"
+                    newsContact: "contacto@asociacion.test"
                 ),
                 [new EmailRecipient("ana@example.test", "Ana", "https://app.test/x", OneClick)],
                 []
@@ -174,7 +174,7 @@ public sealed class EmailOutboxProtectorTests
         );
         var payload = sut.Unprotect(content);
 
-        var promotional = EmailOutboxProtector.ToMessage(
+        var news = EmailOutboxProtector.ToMessage(
             new EmailOutboxMessage { Content = content, OneClickUnsubscribeUrl = OneClick },
             payload
         );
@@ -183,7 +183,7 @@ public sealed class EmailOutboxProtectorTests
             payload
         );
 
-        promotional.OneClickUnsubscribeUrl.Should().Be(OneClick);
+        news.OneClickUnsubscribeUrl.Should().Be(OneClick);
         other.OneClickUnsubscribeUrl.Should().BeNull();
     }
 

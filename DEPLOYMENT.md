@@ -143,10 +143,10 @@ or missing.
 | `LEGAL_TAX_ID`                  | NIF of the association                                                        | Required in Production                      | Empty                                          |
 | `LEGAL_ADDRESS`                 | Registered postal address of the association                                  | Required in Production                      | Empty                                          |
 | `LEGAL_REGISTRY`                | Register of associations and entry number                                     | Required in Production                      | Empty                                          |
-| `LEGAL_EMAIL`                   | Contact mailbox on the site and in the footer of promotional email            | Required in Production                      | Empty                                          |
+| `LEGAL_EMAIL`                   | Contact mailbox on the site and in the footer of news email                   | Required in Production                      | Empty                                          |
 | `LEGAL_PHONE`                   | Contact phone published in the footer, the about page and the privacy policy  | Not published                               | Empty                                          |
 
-The site and promotional email read the association's legal identity and contact details from the `LEGAL_*`
+The site and news email read the association's legal identity and contact details from the `LEGAL_*`
 variables (the site through `GET /api/legal-entity`); a `LEGAL_EMAIL` that is not a single address or a
 `LEGAL_PHONE` that is not a phone number of 7 to 15 digits stops the start. They are deployment settings
 rather than code so that personal details, such as a home address or a private phone, never reach the public
@@ -259,7 +259,7 @@ failed removal of spent messages repeat while their cause lasts, so each is logg
 minutes. Recipient throttling, a low global budget and an incomplete shutdown drain
 are not logged. See [SECURITY.md](SECURITY.md#logging) for where these events are written.
 
-Promotional email carries the one-click unsubscribe of RFC 8058 (`List-Unsubscribe` pointing at
+News email carries the one-click unsubscribe of RFC 8058 (`List-Unsubscribe` pointing at
 `APP_BASE_URL/api/emails/unsubscribe/one-click?token=…`, and `List-Unsubscribe-Post`), which Gmail and Yahoo
 require from bulk senders. The API does not sign mail: mail clients only offer the button when the relay
 behind `SMTP_HOST` signs it with DKIM for the domain of `SMTP_FROM_ADDRESS` and the signature covers both
@@ -385,7 +385,7 @@ Back up `db-data`, `api-files`, `api-dataprotection` and `api-state`, and test r
 `secrets/data_protection_certificate_password` makes
 the protected key ring unusable and invalidates sessions. That password also derives the key-wrapping key of
 every stored key element, so it cannot be rotated on its own: a new password requires recreating the volume,
-which invalidates all sessions, stored authenticator secrets, the unsubscribe links of promotional email
+which invalidates all sessions, stored authenticator secrets, the unsubscribe links of news email
 already sent, and pending one-time codes and links, whose
 hashing key is derived from the certificate in that volume (see
 [SECURITY.md](SECURITY.md#data-protection-and-containers)). The email outbox lives in `db-data`, so a

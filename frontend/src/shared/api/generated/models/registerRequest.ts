@@ -15,7 +15,7 @@ export interface RegisterRequest {
   password: string;
   nationalId: string;
   gender: Gender;
-  promotionalConsent: boolean;
+  newsConsent: boolean;
   /** @nullable */
   minors?: RegisterMinorRequest[] | null;
   /** @nullable */

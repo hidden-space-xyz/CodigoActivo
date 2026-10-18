@@ -27,7 +27,7 @@ nationalId?: string;
 userTypeId?: string;
 userStatusTypeId?: string;
 isAdmin?: boolean;
-promotionalConsent?: boolean;
+newsConsent?: boolean;
 parentId?: string;
 scope?: UserScope;
 birthDateFrom?: string;

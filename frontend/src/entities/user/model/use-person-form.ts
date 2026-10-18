@@ -43,7 +43,7 @@ const DRAFT_FIELDS = [
   'phone',
   'secondaryPhone',
   'nationalId',
-  'promotionalConsent',
+  'newsConsent',
   'birthDate',
 ] as const satisfies readonly (keyof PersonDraft)[]
 
@@ -56,7 +56,7 @@ function emptyDraft(): PersonDraft {
     phone: '',
     secondaryPhone: '',
     nationalId: '',
-    promotionalConsent: false,
+    newsConsent: false,
     birthDate: '',
   }
 }

@@ -63,7 +63,7 @@ internal static class DeletedAccountSnapshot
                 u.NationalId,
                 u.BirthDate,
                 u.Gender,
-                u.PromotionalConsent,
+                u.NewsConsent,
                 u.UserType,
                 TypeName = type.Name,
                 u.Status,
@@ -79,11 +79,11 @@ internal static class DeletedAccountSnapshot
         var householdIds = people.ConvertAll(row => row.Id);
         var consentChanges = (
             await context
-                .PromotionalConsentChanges.AsNoTracking()
+                .NewsConsentChanges.AsNoTracking()
                 .Where(change => householdIds.Contains(change.UserId))
                 .OrderBy(change => change.ChangedAt)
                 .ThenBy(change =>
-                    EF.Property<long>(change, PromotionalConsentChangeConfiguration.Sequence)
+                    EF.Property<long>(change, NewsConsentChangeConfiguration.Sequence)
                 )
                 .ToListAsync(ct)
         ).ToLookup(change => change.UserId);
@@ -97,7 +97,7 @@ internal static class DeletedAccountSnapshot
             row.NationalId?.Value,
             row.BirthDate,
             row.Gender,
-            row.PromotionalConsent,
+            row.NewsConsent,
             [
                 .. consentChanges[row.Id]
                     .Select(change => new LegalCopyConsentChange(

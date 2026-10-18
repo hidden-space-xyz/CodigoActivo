@@ -33,7 +33,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         string firstName = "Nadia",
         string nationalId = NewAdultNationalId,
         ContractGender gender = ContractGender.Female,
-        bool promotionalConsent = false,
+        bool newsConsent = false,
         IReadOnlyList<RegisterMinorRequest>? minors = null,
         string? secondaryPhone = null
     )
@@ -46,7 +46,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             password,
             nationalId,
             gender,
-            promotionalConsent,
+            newsConsent,
             minors,
             secondaryPhone
         );
@@ -493,7 +493,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
                 password = "Str0ngPass!23",
                 nationalId = " 87654321-x ",
                 gender = "Female",
-                promotionalConsent = true,
+                newsConsent = true,
                 birthDate = "2020-01-15",
             },
             Ct
@@ -502,7 +502,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var stored = await FindByEmailAsync(NewAdultEmail);
         stored!.NationalId!.Value.Should().Be(NewAdultNationalId);
-        stored.PromotionalConsent.Should().BeTrue();
+        stored.NewsConsent.Should().BeTrue();
         stored.BirthDate.Should().BeNull();
     }
 

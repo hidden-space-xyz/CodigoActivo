@@ -22,7 +22,7 @@ namespace CodigoActivo.Application.Users.Commands;
 /// <param name="Phone">Phone; required for an independent account, ignored for a dependent.</param>
 /// <param name="BirthDate">Date of birth; required for a dependent, unset for an independent account.</param>
 /// <param name="NationalId">DNI or NIE; required for an independent account, ignored for a dependent.</param>
-/// <param name="PromotionalConsent">Whether the holder agrees to receive promotional content.</param>
+/// <param name="NewsConsent">Whether the holder agrees to receive news by email.</param>
 /// <param name="Gender">Gender.</param>
 /// <param name="ParentId">Guardian of a dependent, repeating the one it has.</param>
 /// <param name="CurrentPassword">Password of the signed-in user, required to replace the email or the phones.</param>
@@ -35,7 +35,7 @@ public sealed record UpdateUserCommand(
     [property: MaxLength(40)] string? Phone,
     [property: NotDefaultOrFutureDate] DateOnly? BirthDate,
     [property: MaxLength(12), SpanishNationalId] string? NationalId,
-    bool PromotionalConsent,
+    bool NewsConsent,
     [property: EnumDataType(typeof(Gender))] Gender Gender,
     UserId? ParentId,
     [property: MaxLength(128)] string? CurrentPassword,
@@ -94,7 +94,7 @@ public sealed class UpdateUserCommandHandler(
                 command.Phone,
                 command.SecondaryPhone,
                 command.NationalId,
-                command.PromotionalConsent,
+                command.NewsConsent,
                 command.BirthDate
             ),
             command.ParentId,

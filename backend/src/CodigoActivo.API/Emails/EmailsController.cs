@@ -212,7 +212,7 @@ public class EmailsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Withdraws the promotional consent of the account the unsubscribe link of a promotional
+    /// Withdraws the news consent of the account the unsubscribe link of a news
     /// email names. It needs no session, so the link works wherever the email is read, and it
     /// answers 204 again when the link is followed once more.
     /// </summary>
@@ -233,8 +233,8 @@ public class EmailsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Withdraws the promotional consent of the account named by the address in the
-    /// <c>List-Unsubscribe</c> header of a promotional email, which the mail client of the holder
+    /// Withdraws the news consent of the account named by the address in the
+    /// <c>List-Unsubscribe</c> header of a news email, which the mail client of the holder
     /// posts to when they press its unsubscribe button (RFC 8058). The mail client sends no
     /// cookie and no antiforgery token, so neither is asked for: the token is the only proof, as
     /// in <see cref="UnsubscribeAsync"/>. It answers without redirecting, and 204 again when the
@@ -266,7 +266,7 @@ public class EmailsController : ApiControllerBase
     {
         return ToNoContent(
             await handler.HandleAsync(
-                new UnsubscribeCommand(token, PromotionalConsentSource.OneClickUnsubscribe),
+                new UnsubscribeCommand(token, NewsConsentSource.OneClickUnsubscribe),
                 ct
             )
         );

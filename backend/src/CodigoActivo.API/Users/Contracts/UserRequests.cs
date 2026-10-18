@@ -66,8 +66,8 @@ public record ResetTwoFactorRequest([Required] [MaxLength(128)] string CurrentPa
 /// DNI or NIE. Required for an independent account, never checked for uniqueness; ignored for a
 /// dependent.
 /// </param>
-/// <param name="PromotionalConsent">
-/// Whether the user agrees to receive promotional content; ignored for a dependent.
+/// <param name="NewsConsent">
+/// Whether the user agrees to receive news by email; ignored for a dependent.
 /// </param>
 /// <param name="Gender">The gender value.</param>
 /// <param name="ParentId">
@@ -89,7 +89,7 @@ public record UpdateUserRequest(
     [MaxLength(40)] string? Phone,
     DateOnly? BirthDate,
     [MaxLength(12)] string? NationalId,
-    bool PromotionalConsent,
+    bool NewsConsent,
     [EnumDataType(typeof(Gender))] Gender Gender,
     Guid? ParentId,
     [MaxLength(128)] string? CurrentPassword,
@@ -111,7 +111,7 @@ public record UpdateUserRequest(
             Phone,
             BirthDate,
             NationalId,
-            PromotionalConsent,
+            NewsConsent,
             Gender.ToDomain(),
             ParentId is { } parentId ? UserId.From(parentId) : null,
             CurrentPassword,

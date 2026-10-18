@@ -37,7 +37,7 @@ public sealed class ListUsersQueryHandler(
         .Add("type", u => u.UserType.Name)
         .Add("isAdmin", u => u.IsAdmin)
         .Add("nationalId", u => u.NationalId)
-        .Add("promotionalConsent", u => u.PromotionalConsent)
+        .Add("newsConsent", u => u.NewsConsent)
         .Add("parentName", u => u.Parent!.FirstName)
         .Add("dependents", u => u.Children.Count)
         .Default("firstName")

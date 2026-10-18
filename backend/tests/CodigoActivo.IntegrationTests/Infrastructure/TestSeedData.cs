@@ -77,7 +77,7 @@ public static class TestSeedData
                 Phone = "+34600000002",
                 PasswordHash = PasswordHash,
                 NationalId = MemberNationalId,
-                PromotionalConsent = true,
+                NewsConsent = true,
                 Gender = Gender.Female,
                 Status = UserStatus.Active,
                 UserType = UserType.Member,

@@ -101,7 +101,7 @@ describe('ProfileSection', () => {
       [t('common.phone'), '600000000'],
       [t('common.secondaryPhone'), '622222222'],
       [t('common.email'), 'ada@example.test'],
-      [t('common.promotionalConsent'), t('common.no')],
+      [t('common.newsConsent'), t('common.no')],
     ])
   })
 
@@ -158,16 +158,16 @@ describe('ProfileSection', () => {
       'p-phone',
       'p-secondary-phone',
       'p-email',
-      'p-promotional-consent',
+      'p-news-consent',
     ])
-    expect(dialog.querySelector<HTMLInputElement>('#p-promotional-consent')?.checked).toBe(false)
+    expect(dialog.querySelector<HTMLInputElement>('#p-news-consent')?.checked).toBe(false)
     await typeInto('#p-firstname', '  Augusta ', dialog)
     await typeInto('#p-lastname', ' King ', dialog)
     await typeInto('#p-email', ' augusta@example.test ', dialog)
     await typeInto('#p-phone', ' 611111111 ', dialog)
     await typeInto('#p-secondary-phone', ' 622222222 ', dialog)
     await typeInto('#p-national-id', 'x-1234567-l', dialog)
-    await click(dialog.querySelector('#p-promotional-consent') as Element)
+    await click(dialog.querySelector('#p-news-consent') as Element)
     await selectGender(wrapper, 'Other')
     await typeInto('#p-current', 'old-password', dialog)
     await click(findButton(t('common.save'), dialog))
@@ -183,7 +183,7 @@ describe('ProfileSection', () => {
         secondaryPhone: '622222222',
         birthDate: null,
         nationalId: 'X1234567L',
-        promotionalConsent: true,
+        newsConsent: true,
         gender: 'Other',
         parentId: null,
         currentPassword: 'old-password',
@@ -368,12 +368,12 @@ describe('ProfileSection', () => {
     expect(bodies[0]).toMatchObject({ nationalId: 'X1234567L' })
   })
 
-  it('shows the promotional consent the user gave', async () => {
-    serveProfile(buildUserResponse({ promotionalConsent: true }))
+  it('shows the news consent the user gave', async () => {
+    serveProfile(buildUserResponse({ newsConsent: true }))
 
     await renderSection()
 
-    expect(infoRows()[t('common.promotionalConsent')]).toBe(t('common.yes'))
+    expect(infoRows()[t('common.newsConsent')]).toBe(t('common.yes'))
   })
 
   it('opens an empty edit form when the profile is unavailable', async () => {

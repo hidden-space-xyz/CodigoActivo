@@ -9,6 +9,6 @@ export type ManualEmailPurpose = typeof ManualEmailPurpose[keyof typeof ManualEm
 
 
 export const ManualEmailPurpose = {
-  Informational: 'Informational',
-  Promotional: 'Promotional',
+  Notice: 'Notice',
+  News: 'News',
 } as const;

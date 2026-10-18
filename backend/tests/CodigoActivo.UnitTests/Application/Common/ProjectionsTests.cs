@@ -228,7 +228,7 @@ public sealed class ProjectionsTests
             Phone = "+34",
             BirthDate = new DateOnly(1990, 3, 4),
             NationalId = "12345678Z",
-            PromotionalConsent = true,
+            NewsConsent = true,
             Gender = Gender.Other,
             LastLoginAt = Updated,
             CreatedAt = Created,
@@ -286,7 +286,7 @@ public sealed class ProjectionsTests
         response.Phone.Should().Be("+34");
         response.BirthDate.Should().Be(new DateOnly(1990, 3, 4));
         response.NationalId.Should().Be("12345678Z");
-        response.PromotionalConsent.Should().BeTrue();
+        response.NewsConsent.Should().BeTrue();
         response.Gender.Should().Be(Gender.Other);
         response.LastLoginAt.Should().Be(Updated);
         response.CreatedAt.Should().Be(Created);
@@ -316,7 +316,7 @@ public sealed class ProjectionsTests
         response.Phone.Should().Be("+34");
         response.BirthDate.Should().Be(new DateOnly(1990, 3, 4));
         response.NationalId.Should().Be("12345678Z");
-        response.PromotionalConsent.Should().BeTrue();
+        response.NewsConsent.Should().BeTrue();
         response.Gender.Should().Be(Gender.Other);
         response.LastLoginAt.Should().Be(Updated);
         response.CreatedAt.Should().Be(Created);

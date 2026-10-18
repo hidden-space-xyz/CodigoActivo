@@ -17,7 +17,7 @@ export interface LegalEntity {
   readonly address: string
   /** Register of associations and the entry number in it. */
   readonly registry: string
-  /** Contact mailbox, also the address promotional email gives to unsubscribe. */
+  /** Contact mailbox, also the address news email gives to unsubscribe. */
   readonly email: string
   /** `null` when the association publishes no phone. */
   readonly phone: ContactPhone | null

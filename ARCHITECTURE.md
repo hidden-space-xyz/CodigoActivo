@@ -31,6 +31,8 @@ participant user type.
 | Dependent | A person created as a minor and cared for by a guardian, who never signs in            | `User` with `ParentId`, `UserStatus.Dependent` | menor           |
 | Household | A guardian and their dependents                                                        | `Household`                                    | unidad familiar |
 | Account   | The credentials, second factor and sessions of a person who signs in                   | `Accounts` feature                             | cuenta          |
+| Notice    | A manual email about the recipient's account, signups or activities; reaches everyone  | `ManualEmailPurpose.Notice`                    | aviso           |
+| News      | A manual email about upcoming events and news; reaches only those with news consent    | `ManualEmailPurpose.News`, `User.NewsConsent`  | novedades       |
 
 ## Backend
 
@@ -328,8 +330,8 @@ a PostgreSQL outbox, in a unit of work of its own committed before the call retu
 (`SmtpEmailSender`), with retries and an attempt limit. The send commands (`SendEmailToUsers`,
 `SendEmailToEventAttendees`) and the audience-preview queries in `Application/Emails/Queries` share recipient
 selection through `ManualEmailAudience`, so a preview always matches what the corresponding send would reach;
-the send's `ManualEmailPurpose` decides whether recipients without promotional consent are left out. A
-promotional batch keeps one shared content whose footer leaves a slot for the unsubscribe link:
+the send's `ManualEmailPurpose` decides whether recipients without news consent are left out. A
+news batch keeps one shared content whose footer leaves a slot for the unsubscribe link:
 `ManualEmailComposer` gives each `EmailRecipient` its own link (a token from `IUnsubscribeTokens`), the outbox
 row stores it, and `EmailLayout.LinkUnsubscribe` puts it in place at delivery. The same token also forms the
 recipient's one-click unsubscribe address (RFC 8058), which travels on the outbox row to

@@ -32,7 +32,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.FirstName).IsRequired();
         builder.Property(u => u.LastName).IsRequired();
         builder.Property(u => u.NationalId).HasMaxLength(9);
-        builder.Property(u => u.PromotionalConsent).IsRequired();
+        builder.Property(u => u.NewsConsent).IsRequired();
         builder.Property(u => u.Gender).HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.Property(u => u.CreatedAt).IsRequired();
         builder

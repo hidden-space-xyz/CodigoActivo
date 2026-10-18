@@ -27,7 +27,7 @@ const DEFAULT_SORT_FIELD = 'firstName'
 
 const HIDDEN_FIELDS: Record<UserListScope, readonly string[]> = {
   independent: ['birthDate'],
-  dependent: ['email', 'phone', 'nationalId', 'status', 'isAdmin', 'promotionalConsent'],
+  dependent: ['email', 'phone', 'nationalId', 'status', 'isAdmin', 'newsConsent'],
   all: [],
 }
 
@@ -45,7 +45,7 @@ export interface UserRelationFilter {
  * moves to the scope of the people it shows and is dropped when the scope changes. Each scope hides
  * the fields its people never have (`showsField`) and drops their filters and their sort: the
  * birth date of independent accounts, and the contact details, DNI/NIE, status, admin role and
- * promotional consent of dependents.
+ * news consent of dependents.
  *
  * It also opens the dialogs that change a user's type, grant the admin role or return their second
  * factor to email; personal data and consents are only changed by their holder or guardian from
@@ -76,7 +76,7 @@ export function useUsersAdmin() {
       status: { param: 'userStatusTypeId' },
       type: { param: 'userTypeId' },
       isAdmin: { param: 'isAdmin' },
-      promotionalConsent: { param: 'promotionalConsent' },
+      newsConsent: { param: 'newsConsent' },
     },
     extraParams: () => ({ ...SCOPE_PARAMS[scope.value], ...relationFilter.value?.params }),
   })

@@ -465,7 +465,7 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.NationalId!.Value.Should().Be("X1234567L");
-        user.PromotionalConsent.Should().BeTrue();
+        user.NewsConsent.Should().BeTrue();
         user.BirthDate.Should().BeNull();
         await AssertActingUserNotLoadedAsync();
     }
@@ -508,7 +508,7 @@ public sealed class UpdateUserCommandHandlerTests
         dependent.Phone.Should().BeNull();
         dependent.SecondaryPhone.Should().BeNull();
         dependent.NationalId.Should().BeNull("a dependent never stores a DNI or NIE");
-        dependent.PromotionalConsent.Should().BeFalse();
+        dependent.NewsConsent.Should().BeFalse();
         await AssertActingUserNotLoadedAsync();
     }
 

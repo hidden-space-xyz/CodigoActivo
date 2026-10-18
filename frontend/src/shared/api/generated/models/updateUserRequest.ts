@@ -17,7 +17,7 @@ export interface UpdateUserRequest {
   birthDate?: string | null;
   /** @nullable */
   nationalId?: string | null;
-  promotionalConsent: boolean;
+  newsConsent: boolean;
   gender: Gender;
   /** @nullable */
   parentId?: string | null;

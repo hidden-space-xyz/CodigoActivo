@@ -16,7 +16,7 @@ export function buildUserResponse(overrides: Partial<UserResponse> = {}): UserRe
     secondaryPhone: null,
     birthDate: null,
     nationalId: '12345678Z',
-    promotionalConsent: false,
+    newsConsent: false,
     gender: 'Female',
     lastLoginAt: null,
     createdAt: '2025-01-01T10:00:00Z',

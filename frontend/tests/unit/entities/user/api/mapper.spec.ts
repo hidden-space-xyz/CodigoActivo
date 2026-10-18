@@ -20,7 +20,7 @@ describe('toUser', () => {
       secondaryPhone: '611111111',
       birthDate: '',
       nationalId: '12345678Z',
-      promotionalConsent: false,
+      newsConsent: false,
       gender: 'Female',
       isAdmin: true,
       isInitialAdmin: false,

@@ -37,10 +37,10 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
         string first,
         string? email,
         Guid statusId,
-        bool promotionalConsent = false
+        bool newsConsent = false
     )
     {
-        var user = NewUserRow(first, email, promotionalConsent: promotionalConsent);
+        var user = NewUserRow(first, email, newsConsent: newsConsent);
         user.Assignments.Add(
             new AssignmentRow
             {
@@ -74,7 +74,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
                 global::CodigoActivo.Domain.Events.EventId.From(EventId),
                 new EventAttendeeListQuery { StatusId = KnownIds.AssignmentStatusTypes.Confirmed },
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -85,14 +85,14 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncPromotionalOnlyMailsAttendeesWithConsent()
+    public async Task HandleAsyncNewsOnlyMailsAttendeesWithConsent()
     {
         store.Users.AddRange([
             NewAttendee(
                 "Ana",
                 "ana@test.local",
                 KnownIds.AssignmentStatusTypes.Confirmed,
-                promotionalConsent: true
+                newsConsent: true
             ),
             NewAttendee("Berto", "berto@test.local", KnownIds.AssignmentStatusTypes.Confirmed),
         ]);
@@ -102,7 +102,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
                 global::CodigoActivo.Domain.Events.EventId.From(EventId),
                 new EventAttendeeListQuery(),
                 Request(),
-                ManualEmailPurpose.Promotional,
+                ManualEmailPurpose.News,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -122,7 +122,7 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
                 global::CodigoActivo.Domain.Events.EventId.From(EventId),
                 new EventAttendeeListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken

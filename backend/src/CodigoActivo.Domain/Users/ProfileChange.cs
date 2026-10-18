@@ -22,7 +22,7 @@ public sealed class ProfileChange
         Gender = details.Gender;
         Contact = contact;
         NationalId = nationalId;
-        PromotionalConsent = contact is not null && details.PromotionalConsent;
+        NewsConsent = contact is not null && details.NewsConsent;
         BirthDate = birthDate;
         NewEmail = contact is not null && contact.Email != account.Email ? contact.Email : null;
         ReplacesPhones =
@@ -66,7 +66,7 @@ public sealed class ProfileChange
 
     internal SpanishNationalId? NationalId { get; }
 
-    internal bool PromotionalConsent { get; }
+    internal bool NewsConsent { get; }
 
     internal DateOnly? BirthDate { get; }
 }

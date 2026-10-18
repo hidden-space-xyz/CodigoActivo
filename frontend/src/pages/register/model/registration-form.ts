@@ -33,8 +33,8 @@ export interface RegistrationForm {
   confirmPassword: string
   nationalId: string
   gender: Gender | null
-  /** Optional agreement to receive promotional content; unchecked by default. */
-  promotionalConsent: boolean
+  /** Optional agreement to receive news by email; unchecked by default. */
+  newsConsent: boolean
   minors: MinorForm[]
 }
 
@@ -61,7 +61,7 @@ export function createEmptyRegistrationForm(): RegistrationForm {
     confirmPassword: '',
     nationalId: '',
     gender: null,
-    promotionalConsent: false,
+    newsConsent: false,
     minors: [],
   }
 }

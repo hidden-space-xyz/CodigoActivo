@@ -20,7 +20,7 @@ function adult(overrides: Partial<IndependentDraft> = {}): IndependentDraft {
     phone: ' 600000000 ',
     secondaryPhone: '   ',
     nationalId: ' x-1234567-l ',
-    promotionalConsent: true,
+    newsConsent: true,
     ...overrides,
   }
 }
@@ -47,7 +47,7 @@ describe('parseIndependentPerson', () => {
         phone: '600000000',
         secondaryPhone: null,
         nationalId: 'X1234567L',
-        promotionalConsent: true,
+        newsConsent: true,
       },
     })
   })

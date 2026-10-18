@@ -381,11 +381,11 @@ function removeMinor(index: number): void {
       <div class="reg__footer">
         <div class="reg__consent">
           <el-checkbox
-            id="reg-promotional-consent"
-            v-model="model.promotionalConsent"
+            id="reg-news-consent"
+            v-model="model.newsConsent"
             class="ca-checkbox-text reg__consent-label"
           >
-            {{ $t('common.promotionalConsentOption') }}
+            {{ $t('common.newsConsentOption') }}
           </el-checkbox>
         </div>
         <PrivacyNotice />

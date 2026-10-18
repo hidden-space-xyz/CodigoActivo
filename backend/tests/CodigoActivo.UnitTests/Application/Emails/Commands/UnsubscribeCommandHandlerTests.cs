@@ -40,17 +40,17 @@ public sealed class UnsubscribeCommandHandlerTests
                 "600111222",
                 null,
                 "12345678Z",
-                PromotionalConsent: true
+                NewsConsent: true
             ),
             new DateTimeOffset(2025, 1, 1, 9, 0, 0, TimeSpan.Zero)
         ).Value;
     }
 
     [Theory]
-    [InlineData(PromotionalConsentSource.UnsubscribeLink)]
-    [InlineData(PromotionalConsentSource.OneClickUnsubscribe)]
+    [InlineData(NewsConsentSource.UnsubscribeLink)]
+    [InlineData(NewsConsentSource.OneClickUnsubscribe)]
     public async Task HandleAsyncLinkOfAnAccountWithdrawsItsConsentFromTheGivenSource(
-        PromotionalConsentSource source
+        NewsConsentSource source
     )
     {
         var account = Account();
@@ -62,8 +62,8 @@ public sealed class UnsubscribeCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        account.PromotionalConsent.Should().BeFalse();
-        var withdrawal = account.PromotionalConsentChanges.Last();
+        account.NewsConsent.Should().BeFalse();
+        var withdrawal = account.NewsConsentChanges.Last();
         withdrawal.Source.Should().Be(source);
         withdrawal.ChangedAt.Should().Be(clock.UtcNow);
         auditSubject.Entity.Should().Be(AuditEntity.Of(account.Id));
@@ -76,10 +76,7 @@ public sealed class UnsubscribeCommandHandlerTests
         users.Finds(null);
 
         var result = await sut.HandleAsync(
-            new UnsubscribeCommand(
-                tokens.Issue(UserId.New()),
-                PromotionalConsentSource.UnsubscribeLink
-            ),
+            new UnsubscribeCommand(tokens.Issue(UserId.New()), NewsConsentSource.UnsubscribeLink),
             TestContext.Current.CancellationToken
         );
 
@@ -92,7 +89,7 @@ public sealed class UnsubscribeCommandHandlerTests
         var token = tokens.Issue(UserId.New());
 
         var result = await sut.HandleAsync(
-            new UnsubscribeCommand(token[..^4], PromotionalConsentSource.OneClickUnsubscribe),
+            new UnsubscribeCommand(token[..^4], NewsConsentSource.OneClickUnsubscribe),
             TestContext.Current.CancellationToken
         );
 

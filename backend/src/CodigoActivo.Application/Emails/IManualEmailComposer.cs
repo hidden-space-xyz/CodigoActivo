@@ -17,7 +17,7 @@ public sealed record ManualEmailRecipient(UserId UserId, string Address, string 
 public interface IManualEmailComposer
 {
     /// <summary>
-    /// Renders the subject and body into the site layout and addresses the batch. A promotional
+    /// Renders the subject and body into the site layout and addresses the batch. A news
     /// email also carries the contact address and, for each recipient, their own unsubscribe link.
     /// </summary>
     /// <param name="subject">Subject written by the administrator.</param>

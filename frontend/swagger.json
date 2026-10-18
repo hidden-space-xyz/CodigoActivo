@@ -1122,7 +1122,7 @@
             }
           },
           {
-            "name": "promotionalConsent",
+            "name": "newsConsent",
             "in": "query",
             "schema": {
               "type": "boolean"
@@ -1465,7 +1465,7 @@
             }
           },
           {
-            "name": "promotionalConsent",
+            "name": "newsConsent",
             "in": "query",
             "schema": {
               "type": "boolean"
@@ -4066,7 +4066,7 @@
             }
           },
           {
-            "name": "promotionalConsent",
+            "name": "newsConsent",
             "in": "query",
             "schema": {
               "type": "boolean"
@@ -7570,8 +7570,8 @@
       },
       "ManualEmailPurpose": {
         "enum": [
-          "Informational",
-          "Promotional"
+          "Notice",
+          "News"
         ],
         "type": "string"
       },
@@ -7824,9 +7824,9 @@
           "gender",
           "lastName",
           "nationalId",
+          "newsConsent",
           "password",
-          "phone",
-          "promotionalConsent"
+          "phone"
         ],
         "type": "object",
         "properties": {
@@ -7851,7 +7851,7 @@
           "gender": {
             "$ref": "#/components/schemas/Gender"
           },
-          "promotionalConsent": {
+          "newsConsent": {
             "type": "boolean"
           },
           "minors": {
@@ -8503,7 +8503,7 @@
           "firstName",
           "gender",
           "lastName",
-          "promotionalConsent"
+          "newsConsent"
         ],
         "type": "object",
         "properties": {
@@ -8530,7 +8530,7 @@
             "type": "string",
             "nullable": true
           },
-          "promotionalConsent": {
+          "newsConsent": {
             "type": "boolean"
           },
           "gender": {
@@ -8562,7 +8562,7 @@
           "isAdmin",
           "isInitialAdmin",
           "lastName",
-          "promotionalConsent",
+          "newsConsent",
           "status",
           "twoFactorMethod"
         ],
@@ -8599,7 +8599,7 @@
             "type": "string",
             "nullable": true
           },
-          "promotionalConsent": {
+          "newsConsent": {
             "type": "boolean"
           },
           "gender": {

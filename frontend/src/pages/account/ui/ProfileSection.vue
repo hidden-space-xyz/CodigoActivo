@@ -77,8 +77,8 @@ const {
         <dd>{{ user.email || '—' }}</dd>
       </div>
       <div class="acc-info__row">
-        <dt>{{ $t('common.promotionalConsent') }}</dt>
-        <dd>{{ user.promotionalConsent ? $t('common.yes') : $t('common.no') }}</dd>
+        <dt>{{ $t('common.newsConsent') }}</dt>
+        <dd>{{ user.newsConsent ? $t('common.yes') : $t('common.no') }}</dd>
       </div>
     </dl>
 
@@ -175,11 +175,11 @@ const {
           </div>
           <div class="acc-form__consent acc-form__field--wide">
             <el-checkbox
-              id="p-promotional-consent"
-              v-model="draft.promotionalConsent"
+              id="p-news-consent"
+              v-model="draft.newsConsent"
               class="ca-checkbox-text acc-form__consent-label"
             >
-              {{ $t('common.promotionalConsentOption') }}
+              {{ $t('common.newsConsentOption') }}
             </el-checkbox>
           </div>
           <div v-if="requiresPassword" class="acc-form__field acc-form__field--wide">

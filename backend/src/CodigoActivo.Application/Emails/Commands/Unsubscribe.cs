@@ -10,7 +10,7 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Emails.Commands;
 
 /// <summary>
-/// Carries the token of the unsubscribe link of a promotional email.
+/// Carries the token of the unsubscribe link of a news email.
 /// </summary>
 /// <param name="Token">Token taken from the link.</param>
 /// <param name="Source">
@@ -20,10 +20,10 @@ namespace CodigoActivo.Application.Emails.Commands;
 public sealed record UnsubscribeCommand(
     [property: Required, MaxLength(UnsubscribeCommand.TokenMaxLength), NotBlank] string Token,
     [property: AllowedValues(
-        PromotionalConsentSource.UnsubscribeLink,
-        PromotionalConsentSource.OneClickUnsubscribe
+        NewsConsentSource.UnsubscribeLink,
+        NewsConsentSource.OneClickUnsubscribe
     )]
-        PromotionalConsentSource Source
+        NewsConsentSource Source
 ) : ICommand<Result>
 {
     /// <summary>
@@ -33,7 +33,7 @@ public sealed record UnsubscribeCommand(
 }
 
 /// <summary>
-/// Withdraws the promotional consent of the account an unsubscribe link names, without a session:
+/// Withdraws the news consent of the account an unsubscribe link names, without a session:
 /// the link is the proof that whoever follows it reads that account's email.
 /// </summary>
 /// <param name="tokens">Reads the token of the link.</param>
@@ -66,7 +66,7 @@ public sealed class UnsubscribeCommandHandler(
 
         auditSubject.Name(userId);
         var user = await users.GetByIdAsync(userId, ct);
-        user?.WithdrawPromotionalConsent(command.Source, clock.UtcNow);
+        user?.WithdrawNewsConsent(command.Source, clock.UtcNow);
         return Result.Success();
     }
 }

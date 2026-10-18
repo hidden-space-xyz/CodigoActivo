@@ -5,7 +5,7 @@ namespace CodigoActivo.Domain.Users;
 /// <see cref="DeletedAccount.RetentionYears"/> years: the account and its dependents, the guardian
 /// of a dependent, every activity signup of the household and the terms decisions behind them,
 /// with the signatures drawn to accept them, grouped by event because terms are decided per event
-/// and recorded for the acting guardian, and every change of the promotional consent.
+/// and recorded for the acting guardian, and every change of the news consent.
 /// Catalog values, titles and document texts are copied by value, since the rows they come from
 /// may change or disappear later. Credentials, one-time codes, unconfirmed email changes,
 /// authenticator secrets and lockout counters are never copied.

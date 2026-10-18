@@ -54,14 +54,14 @@ public class EmailOutboxMessage
     public string ToName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the unsubscribe link of the recipient of a promotional email, which delivery
+    /// Gets or sets the unsubscribe link of the recipient of a news email, which delivery
     /// puts in the place its shared content leaves for it. It is stored as plain text because it
-    /// only withdraws the promotional consent of that recipient.
+    /// only withdraws the news consent of that recipient.
     /// </summary>
     public string? UnsubscribeUrl { get; set; }
 
     /// <summary>
-    /// Gets or sets the address the mail client of the recipient of a promotional email posts to
+    /// Gets or sets the address the mail client of the recipient of a news email posts to
     /// when they press its unsubscribe button, which delivery sends in the
     /// <c>List-Unsubscribe</c> header. It is stored as plain text for the same reason as
     /// <see cref="UnsubscribeUrl"/>.

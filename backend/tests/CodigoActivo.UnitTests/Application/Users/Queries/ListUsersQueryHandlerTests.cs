@@ -195,19 +195,19 @@ public sealed class ListUsersQueryHandlerTests
     [Theory]
     [InlineData(true, "Acepta")]
     [InlineData(false, "Rechaza")]
-    public async Task HandleAsyncPromotionalConsentFilterReturnsOnlyMatchingUsers(
+    public async Task HandleAsyncNewsConsentFilterReturnsOnlyMatchingUsers(
         bool consent,
         string expected
     )
     {
-        var accepts = NewUserRow(first: "Acepta", promotionalConsent: true);
+        var accepts = NewUserRow(first: "Acepta", newsConsent: true);
         store.Users.AddRange([accepts, NewUserRow(first: "Rechaza")]);
 
-        var result = await ListAsAdminAsync(new UserListQuery { PromotionalConsent = consent });
+        var result = await ListAsAdminAsync(new UserListQuery { NewsConsent = consent });
 
         var match = result.Items.Should().ContainSingle().Subject;
         match.FirstName.Should().Be(expected);
-        match.PromotionalConsent.Should().Be(consent);
+        match.NewsConsent.Should().Be(consent);
     }
 
     [Fact]
@@ -265,15 +265,11 @@ public sealed class ListUsersQueryHandlerTests
     public async Task HandleAsyncSortByNationalIdAndConsentOrdersByThoseColumns()
     {
         var first = NewUserRow(first: "Primero", nationalId: "00000000T");
-        var second = NewUserRow(
-            first: "Segundo",
-            nationalId: "12345678Z",
-            promotionalConsent: true
-        );
+        var second = NewUserRow(first: "Segundo", nationalId: "12345678Z", newsConsent: true);
         store.Users.AddRange([second, first]);
 
         var byId = await ListAsAdminAsync(new UserListQuery { Sort = "nationalId" });
-        var byConsent = await ListAsAdminAsync(new UserListQuery { Sort = "-promotionalConsent" });
+        var byConsent = await ListAsAdminAsync(new UserListQuery { Sort = "-newsConsent" });
 
         byId.Items.Select(u => u.FirstName).Should().ContainInOrder("Primero", "Segundo");
         byConsent.Items.Select(u => u.FirstName).Should().ContainInOrder("Segundo", "Primero");

@@ -15,7 +15,7 @@ const storedAdult = {
   phone: '600000000',
   secondaryPhone: '611111111',
   nationalId: '12345678Z',
-  promotionalConsent: false,
+  newsConsent: false,
   birthDate: '',
   isAdmin: true,
 } as const
@@ -43,7 +43,7 @@ describe('usePersonForm', () => {
       phone: '600000000',
       secondaryPhone: '611111111',
       nationalId: '12345678Z',
-      promotionalConsent: false,
+      newsConsent: false,
       birthDate: '',
     })
     expect(form.currentPassword.value).toBe('')
@@ -99,7 +99,7 @@ describe('usePersonForm', () => {
         phone: '600000000',
         secondaryPhone: '611111111',
         nationalId: '12345678Z',
-        promotionalConsent: false,
+        newsConsent: false,
       },
       currentPassword: 'secret',
     })

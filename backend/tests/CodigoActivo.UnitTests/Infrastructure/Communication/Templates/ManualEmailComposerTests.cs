@@ -54,7 +54,7 @@ public sealed class ManualEmailComposerTests
         var batch = sut.Compose(
             "Asunto",
             "Nos vemos el sábado",
-            ManualEmailPurpose.Informational,
+            ManualEmailPurpose.Notice,
             [Ana, Berto],
             attachments
         );
@@ -72,17 +72,17 @@ public sealed class ManualEmailComposerTests
     }
 
     [Fact]
-    public void ComposeInformationalCarriesNeitherTheUnsubscribeLinkNorTheContactAddress()
+    public void ComposeNoticeCarriesNeitherTheUnsubscribeLinkNorTheContactAddress()
     {
         var batch = sut.Compose(
             "Aviso",
             "Cambiamos de aula.",
-            ManualEmailPurpose.Informational,
+            ManualEmailPurpose.Notice,
             [Ana],
             []
         );
 
-        batch.TextBody.Should().NotContain(AppStrings.EmailsFooterPromotionalNotice);
+        batch.TextBody.Should().NotContain(AppStrings.EmailsFooterNewsNotice);
         batch.HtmlBody.Should().NotContain(Contact);
         batch
             .Recipients.Should()
@@ -92,12 +92,12 @@ public sealed class ManualEmailComposerTests
     }
 
     [Fact]
-    public void ComposePromotionalGivesEveryRecipientTheirOwnSignedUnsubscribeLink()
+    public void ComposeNewsGivesEveryRecipientTheirOwnSignedUnsubscribeLink()
     {
         var batch = sut.Compose(
             "Taller",
             "Nuevo taller.",
-            ManualEmailPurpose.Promotional,
+            ManualEmailPurpose.News,
             [Ana, Berto],
             []
         );
@@ -110,12 +110,12 @@ public sealed class ManualEmailComposerTests
     }
 
     [Fact]
-    public void ComposePromotionalGivesEveryRecipientTheirOwnOneClickAddressWithTheLinkToken()
+    public void ComposeNewsGivesEveryRecipientTheirOwnOneClickAddressWithTheLinkToken()
     {
         var batch = sut.Compose(
             "Taller",
             "Nuevo taller.",
-            ManualEmailPurpose.Promotional,
+            ManualEmailPurpose.News,
             [Ana, Berto],
             []
         );
@@ -134,22 +134,16 @@ public sealed class ManualEmailComposerTests
     }
 
     [Fact]
-    public void ComposePromotionalFooterCarriesTheContactAddressAndTheRecipientsLinkOnceDelivered()
+    public void ComposeNewsFooterCarriesTheContactAddressAndTheRecipientsLinkOnceDelivered()
     {
-        var batch = sut.Compose(
-            "Taller",
-            "Nuevo taller.",
-            ManualEmailPurpose.Promotional,
-            [Ana],
-            []
-        );
+        var batch = sut.Compose("Taller", "Nuevo taller.", ManualEmailPurpose.News, [Ana], []);
         var link = batch.Recipients[0].UnsubscribeUrl!;
 
         var text = EmailLayout.LinkUnsubscribe(batch.TextBody, link, html: false);
         var html = EmailLayout.LinkUnsubscribe(batch.HtmlBody, link, html: true);
 
         text.Should()
-            .Contain(AppStrings.EmailsFooterPromotionalNotice)
+            .Contain(AppStrings.EmailsFooterNewsNotice)
             .And.Contain(AppStrings.EmailsFooterUnsubscribeText(link))
             .And.Contain(AppStrings.EmailsFooterContact(Contact))
             .And.EndWith($"\n{Site}");

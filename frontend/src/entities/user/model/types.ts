@@ -23,8 +23,8 @@ export interface User {
   readonly birthDate: string
   /** Normalized DNI or NIE of an independent account. */
   readonly nationalId: string
-  /** Whether the user agreed to receive promotional content; always `false` for dependents. */
-  readonly promotionalConsent: boolean
+  /** Whether the user agreed to receive news by email; always `false` for dependents. */
+  readonly newsConsent: boolean
   readonly gender: Gender
   readonly isAdmin: boolean
   /** The generic administrator created on first start: it can be neither deleted nor demoted. */
@@ -48,7 +48,7 @@ export interface UserListParams {
   readonly userTypeId?: string
   readonly userStatusTypeId?: string
   readonly isAdmin?: boolean
-  readonly promotionalConsent?: boolean
+  readonly newsConsent?: boolean
   readonly parentId?: string
   /** Independent accounts or dependents only; omitted for both. */
   readonly scope?: 'Independent' | 'Dependent'

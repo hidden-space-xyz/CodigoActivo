@@ -1,18 +1,18 @@
 namespace CodigoActivo.Domain.Users;
 
 /// <summary>
-/// One change of the promotional consent of an account: what the holder decided, when and where.
-/// The account keeps every change, so the consent behind each promotional email can be proven;
+/// One change of the news consent of an account: what the holder decided, when and where.
+/// The account keeps every change, so the consent behind each news email can be proven;
 /// part of the user aggregate.
 /// </summary>
-public class PromotionalConsentChange
+public class NewsConsentChange
 {
-    private PromotionalConsentChange() { }
+    private NewsConsentChange() { }
 
-    internal PromotionalConsentChange(
+    internal NewsConsentChange(
         UserId userId,
         bool granted,
-        PromotionalConsentSource source,
+        NewsConsentSource source,
         DateTimeOffset changedAt
     )
     {
@@ -35,7 +35,7 @@ public class PromotionalConsentChange
     /// <summary>
     /// Gets where the holder decided.
     /// </summary>
-    public PromotionalConsentSource Source { get; private set; }
+    public NewsConsentSource Source { get; private set; }
 
     /// <summary>
     /// Gets when the holder decided.

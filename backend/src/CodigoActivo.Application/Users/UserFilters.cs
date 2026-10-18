@@ -50,9 +50,9 @@ public static class UserFilters
             source = source.Where(u => u.IsAdmin == admin);
         }
 
-        if (query.PromotionalConsent is { } consent)
+        if (query.NewsConsent is { } consent)
         {
-            source = source.Where(u => u.PromotionalConsent == consent);
+            source = source.Where(u => u.NewsConsent == consent);
         }
 
         if (query.BirthDateFrom is { } birthDateFrom)

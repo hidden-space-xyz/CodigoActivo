@@ -12,8 +12,8 @@ export interface UpdateProfileInput {
   /** Optional second contact phone, different from `phone`; `null` removes it. */
   secondaryPhone: string | null
   nationalId: string
-  /** Agreement to receive promotional content. */
-  promotionalConsent: boolean
+  /** Agreement to receive news by email. */
+  newsConsent: boolean
   gender: Gender
   /**
    * Current password, required by the API only when the email, the phone or the secondary phone
@@ -74,7 +74,7 @@ interface RegistrantInput {
   /** Optional second contact phone; `null` when none was given. */
   readonly secondaryPhone: string | null
   readonly nationalId: string
-  readonly promotionalConsent: boolean
+  readonly newsConsent: boolean
 }
 
 /** Everything a registration sends: the adult, the password and the minors registered with them. */

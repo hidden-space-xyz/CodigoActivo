@@ -18,7 +18,7 @@ internal static class EmailTestData
         string first,
         string? email,
         UserRow? parent = null,
-        bool promotionalConsent = false
+        bool newsConsent = false
     )
     {
         return new()
@@ -28,7 +28,7 @@ internal static class EmailTestData
             LastName = first + " Apellido",
             Email = email,
             BirthDate = parent is null ? null : Birth,
-            PromotionalConsent = promotionalConsent,
+            NewsConsent = newsConsent,
             Gender = Gender.Other,
             ParentId = parent?.Id,
             Parent = parent,

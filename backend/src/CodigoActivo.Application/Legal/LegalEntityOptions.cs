@@ -34,7 +34,7 @@ public sealed class LegalEntityOptions
     public string Registry { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the contact mailbox, which also signs the footer of promotional email.
+    /// Gets or sets the contact mailbox, which also signs the footer of news email.
     /// </summary>
     public string Email { get; set; } = string.Empty;
 

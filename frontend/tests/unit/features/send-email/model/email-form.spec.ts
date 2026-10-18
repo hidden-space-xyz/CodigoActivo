@@ -26,9 +26,9 @@ describe('toEmailDraft', () => {
 describe('reachedBy', () => {
   const audience = { recipients: 5, withoutConsent: 2 }
 
-  it('leaves out the recipients without consent only from a promotional email', () => {
-    expect(reachedBy(audience, 'Promotional')).toBe(3)
-    expect(reachedBy(audience, 'Informational')).toBe(5)
+  it('leaves out the recipients without consent only from a news email', () => {
+    expect(reachedBy(audience, 'News')).toBe(3)
+    expect(reachedBy(audience, 'Notice')).toBe(5)
     expect(reachedBy(audience, null)).toBe(5)
   })
 })
@@ -38,14 +38,14 @@ describe('readEmailDraft', () => {
     const attachments = files(2)
 
     const reading = readEmailDraft({
-      purpose: 'Promotional',
+      purpose: 'News',
       subject: ' Welcome ',
       body: 'Hello\nthere',
       attachments,
     })
 
     expect(reading.problems).toEqual({})
-    expect(reading.value?.purpose).toBe('Promotional')
+    expect(reading.value?.purpose).toBe('News')
     expect(reading.value?.subject).toBe(' Welcome ')
     expect(reading.value?.body).toBe('Hello\nthere')
     expect(reading.value?.attachments.map((file) => file.name)).toEqual([
@@ -55,7 +55,7 @@ describe('readEmailDraft', () => {
     expect(reading.value?.attachments).not.toBe(attachments)
   })
 
-  it('requires choosing whether the email is informational or promotional', () => {
+  it('requires choosing whether the email is notice or news', () => {
     expect(
       readEmailDraft({ purpose: null, subject: 'Hi', body: 'Hello', attachments: [] }),
     ).toEqual({
@@ -66,7 +66,7 @@ describe('readEmailDraft', () => {
 
   it('requires a subject and a body that are not blank', () => {
     expect(
-      readEmailDraft({ purpose: 'Informational', subject: '  ', body: '\n', attachments: [] }),
+      readEmailDraft({ purpose: 'Notice', subject: '  ', body: '\n', attachments: [] }),
     ).toEqual({
       problems: {
         subject: 'features.sendEmail.form.problems.subjectRequired',
@@ -75,7 +75,7 @@ describe('readEmailDraft', () => {
       value: null,
     })
     expect(
-      readEmailDraft({ purpose: 'Informational', subject: 'Hi', body: '', attachments: files(1) }),
+      readEmailDraft({ purpose: 'Notice', subject: 'Hi', body: '', attachments: files(1) }),
     ).toEqual({
       problems: { body: 'features.sendEmail.form.problems.bodyRequired' },
       value: null,
@@ -85,7 +85,7 @@ describe('readEmailDraft', () => {
   it('refuses a subject holding a tab or a line break', () => {
     for (const subject of ['Hola\tequipo', 'Hola\nequipo']) {
       expect(
-        readEmailDraft({ purpose: 'Informational', subject, body: 'Hello', attachments: [] }),
+        readEmailDraft({ purpose: 'Notice', subject, body: 'Hello', attachments: [] }),
       ).toEqual({
         problems: { subject: 'features.sendEmail.form.problems.subjectSingleLine' },
         value: null,

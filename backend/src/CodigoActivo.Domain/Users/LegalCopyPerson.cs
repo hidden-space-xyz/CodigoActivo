@@ -13,8 +13,8 @@ namespace CodigoActivo.Domain.Users;
 /// <param name="NationalId">DNI or NIE.</param>
 /// <param name="BirthDate">Birth date.</param>
 /// <param name="Gender">Gender.</param>
-/// <param name="PromotionalConsent">Whether promotional content was accepted.</param>
-/// <param name="PromotionalConsentChanges">Every change of the promotional consent, oldest first.</param>
+/// <param name="NewsConsent">Whether news was accepted.</param>
+/// <param name="NewsConsentChanges">Every change of the news consent, oldest first.</param>
 /// <param name="UserTypeId">Identifier of the user type.</param>
 /// <param name="UserTypeName">Name of the user type.</param>
 /// <param name="UserStatusTypeId">Identifier of the account status.</param>
@@ -35,8 +35,8 @@ public sealed record LegalCopyPerson(
     string? NationalId,
     DateOnly? BirthDate,
     Gender Gender,
-    bool PromotionalConsent,
-    IReadOnlyList<LegalCopyConsentChange> PromotionalConsentChanges,
+    bool NewsConsent,
+    IReadOnlyList<LegalCopyConsentChange> NewsConsentChanges,
     Guid UserTypeId,
     string UserTypeName,
     Guid UserStatusTypeId,

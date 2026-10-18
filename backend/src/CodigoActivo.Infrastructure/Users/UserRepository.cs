@@ -19,7 +19,7 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     : AggregateRepository<User>(context),
         IUserRepository
 {
-    private IQueryable<User> Accounts => Set.Include(user => user.PromotionalConsentChanges);
+    private IQueryable<User> Accounts => Set.Include(user => user.NewsConsentChanges);
 
     /// <inheritdoc />
     public Task<User?> GetByIdAsync(UserId id, CancellationToken ct = default)

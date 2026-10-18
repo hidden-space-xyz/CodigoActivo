@@ -149,13 +149,13 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         );
     }
 
-    private static PromotionalConsentChange ConsentChange(
+    private static NewsConsentChange ConsentChange(
         bool granted,
-        PromotionalConsentSource source,
+        NewsConsentSource source,
         DateTimeOffset changedAt
     )
     {
-        return Persisted.As<PromotionalConsentChange>(
+        return Persisted.As<NewsConsentChange>(
             new
             {
                 UserId = UserId.From(TestSeedData.Users.MemberId),
@@ -186,10 +186,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     LastLoginAt = SeededAt.AddDays(5),
                 }
             );
-            db.PromotionalConsentChanges.AddRange(
-                ConsentChange(true, PromotionalConsentSource.Registration, SeededAt),
-                ConsentChange(false, PromotionalConsentSource.UnsubscribeLink, SeededAt.AddDays(2)),
-                ConsentChange(true, PromotionalConsentSource.Profile, SeededAt.AddDays(3))
+            db.NewsConsentChanges.AddRange(
+                ConsentChange(true, NewsConsentSource.Registration, SeededAt),
+                ConsentChange(false, NewsConsentSource.UnsubscribeLink, SeededAt.AddDays(2)),
+                ConsentChange(true, NewsConsentSource.Profile, SeededAt.AddDays(3))
             );
 
             db.Files.Add(
@@ -466,7 +466,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             (await db.EventTermsAcceptances.Select(a => a.UserId).ToListAsync(Ct))
                 .Should()
                 .Equal(UserId.From(TestSeedData.Users.BlockedId));
-            (await db.PromotionalConsentChanges.AnyAsync(Ct)).Should().BeFalse();
+            (await db.NewsConsentChanges.AnyAsync(Ct)).Should().BeFalse();
             return true;
         });
 
@@ -489,8 +489,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         account.GetProperty("secondaryPhone").ValueKind.Should().Be(JsonValueKind.Null);
         account.GetProperty("nationalId").GetString().Should().Be(TestSeedData.MemberNationalId);
         account.GetProperty("gender").GetString().Should().Be("Female");
-        account.GetProperty("promotionalConsent").GetBoolean().Should().BeTrue();
-        Items(account.GetProperty("promotionalConsentChanges"))
+        account.GetProperty("newsConsent").GetBoolean().Should().BeTrue();
+        Items(account.GetProperty("newsConsentChanges"))
             .Select(change =>
                 (
                     change.GetProperty("granted").GetBoolean(),

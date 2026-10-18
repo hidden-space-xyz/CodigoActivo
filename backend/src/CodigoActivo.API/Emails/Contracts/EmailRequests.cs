@@ -5,7 +5,7 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.API.Emails.Contracts;
 
 /// <summary>
-/// Contains the token of the unsubscribe link of a promotional email.
+/// Contains the token of the unsubscribe link of a news email.
 /// </summary>
 /// <param name="Token">Token taken from the link.</param>
 public record UnsubscribeRequest(
@@ -13,11 +13,11 @@ public record UnsubscribeRequest(
 )
 {
     /// <summary>
-    /// Builds the command that withdraws the promotional consent.
+    /// Builds the command that withdraws the news consent.
     /// </summary>
     /// <returns>The command.</returns>
     public UnsubscribeCommand ToCommand()
     {
-        return new UnsubscribeCommand(Token, PromotionalConsentSource.UnsubscribeLink);
+        return new UnsubscribeCommand(Token, NewsConsentSource.UnsubscribeLink);
     }
 }

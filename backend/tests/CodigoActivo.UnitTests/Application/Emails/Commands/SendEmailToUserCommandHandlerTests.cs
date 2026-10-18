@@ -38,7 +38,7 @@ public sealed class SendEmailToUserCommandHandlerTests
             new SendEmailToUserCommand(
                 UserId.From(child.Id),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -54,12 +54,7 @@ public sealed class SendEmailToUserCommandHandlerTests
         store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         var result = await sut.HandleAsync(
-            new SendEmailToUserCommand(
-                UserId.New(),
-                Request(),
-                ManualEmailPurpose.Informational,
-                []
-            ),
+            new SendEmailToUserCommand(UserId.New(), Request(), ManualEmailPurpose.Notice, []),
             TestContext.Current.CancellationToken
         );
 
@@ -76,7 +71,7 @@ public sealed class SendEmailToUserCommandHandlerTests
             new SendEmailToUserCommand(
                 UserId.From(ana.Id),
                 Request(body: "Nos vemos el sábado"),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -87,7 +82,7 @@ public sealed class SendEmailToUserCommandHandlerTests
         var email = composer.Composed.Should().ContainSingle().Subject;
         email.Subject.Should().Be("Asunto");
         email.Body.Should().Be("Nos vemos el sábado");
-        email.Purpose.Should().Be(ManualEmailPurpose.Informational);
+        email.Purpose.Should().Be(ManualEmailPurpose.Notice);
         email
             .Recipients.Should()
             .Equal(new ManualEmailRecipient(UserId.From(ana.Id), "ana@test.local", "Ana"));
@@ -97,18 +92,13 @@ public sealed class SendEmailToUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncPromotionalToUserWithoutConsentReturnsRecipientWithoutConsent()
+    public async Task HandleAsyncNewsToUserWithoutConsentReturnsRecipientWithoutConsent()
     {
         var ana = NewUserRow("Ana", "ana@test.local");
         store.Users.Add(ana);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUserCommand(
-                UserId.From(ana.Id),
-                Request(),
-                ManualEmailPurpose.Promotional,
-                []
-            ),
+            new SendEmailToUserCommand(UserId.From(ana.Id), Request(), ManualEmailPurpose.News, []),
             TestContext.Current.CancellationToken
         );
 
@@ -117,18 +107,13 @@ public sealed class SendEmailToUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncPromotionalToUserWithConsentComposesItAsPromotional()
+    public async Task HandleAsyncNewsToUserWithConsentComposesItAsNews()
     {
-        var ana = NewUserRow("Ana", "ana@test.local", promotionalConsent: true);
+        var ana = NewUserRow("Ana", "ana@test.local", newsConsent: true);
         store.Users.Add(ana);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUserCommand(
-                UserId.From(ana.Id),
-                Request(),
-                ManualEmailPurpose.Promotional,
-                []
-            ),
+            new SendEmailToUserCommand(UserId.From(ana.Id), Request(), ManualEmailPurpose.News, []),
             TestContext.Current.CancellationToken
         );
 
@@ -137,6 +122,6 @@ public sealed class SendEmailToUserCommandHandlerTests
             .Composed.Should()
             .ContainSingle()
             .Which.Purpose.Should()
-            .Be(ManualEmailPurpose.Promotional);
+            .Be(ManualEmailPurpose.News);
     }
 }

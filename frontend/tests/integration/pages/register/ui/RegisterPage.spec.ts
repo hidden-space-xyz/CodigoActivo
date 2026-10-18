@@ -37,7 +37,7 @@ async function fillAdult(wrapper: VueWrapper): Promise<void> {
   await wrapper.find('#reg-password').setValue('correct-horse-battery')
   await wrapper.find('#reg-password-confirm').setValue('correct-horse-battery')
   await wrapper.find('#reg-national-id').setValue('x1234567l')
-  await wrapper.find('#reg-promotional-consent').setValue(true)
+  await wrapper.find('#reg-news-consent').setValue(true)
   await selectGender(wrapper, 0, 'Female')
 }
 
@@ -102,7 +102,7 @@ describe('register page', () => {
           password: 'correct-horse-battery',
           nationalId: 'X1234567L',
           gender: 'Female',
-          promotionalConsent: true,
+          newsConsent: true,
           minors: [
             { firstName: 'Byron', lastName: 'King', birthDate: '2016-02-03', gender: 'Male' },
           ],
