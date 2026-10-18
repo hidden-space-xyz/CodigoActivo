@@ -59,10 +59,8 @@ export function buildAuditEntry(
     entityId: 'user-2',
     entityName: 'Marta Miembro',
     related: [{ type: 'Activity', id: 'aaaaaaaa-1111-1111-1111-111111111111' }],
-    details: [{ name: 'IsAdmin', value: 'true' }],
     outcome: 'Succeeded',
     errorCode: null,
-    itemCount: null,
     traceId: TRACE_ID,
     ...overrides,
   }

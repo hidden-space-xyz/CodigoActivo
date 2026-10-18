@@ -65,7 +65,7 @@ public sealed class AuditCommandDecoratorTests
     }
 
     [Fact]
-    public async Task HandleAsyncSucceededCommandRecordsActorAddressEntityAndDetails()
+    public async Task HandleAsyncSucceededCommandRecordsActorAddressAndEntity()
     {
         var target = UserId.New();
 
@@ -86,10 +86,8 @@ public sealed class AuditCommandDecoratorTests
                     Address,
                     new AuditEntity(AuditEntityType.User, target.Value),
                     [],
-                    [new AuditDetail(nameof(SetAdminCommand.IsAdmin), true)],
                     AuditOutcome.Succeeded,
-                    ErrorCode: null,
-                    ItemCount: null
+                    ErrorCode: null
                 )
             );
         record.ToString().Should().NotContain("secret-password");
@@ -180,7 +178,6 @@ public sealed class AuditCommandDecoratorTests
                 new AuditEntity(AuditEntityType.User, second.Value),
                 new AuditEntity(AuditEntityType.TermsDocument, document.Value)
             );
-        record.Details.Should().BeEmpty();
     }
 
     [Fact]
@@ -196,25 +193,6 @@ public sealed class AuditCommandDecoratorTests
         var record = trail.Records.Should().ContainSingle().Subject;
         record.Entity.Should().Be(new AuditEntity(AuditEntityType.User, account.Value));
         record.Related.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task HandleAsyncEnumChoicesAreRecordedByName()
-    {
-        await HandleAsync<ChangeAssignmentStatusCommand, Result>(
-            new ChangeAssignmentStatusCommand(
-                ActivityId.New(),
-                UserId.New(),
-                AssignmentStatus.Confirmed
-            ),
-            _ => Result.Success()
-        );
-
-        trail
-            .Records.Should()
-            .ContainSingle()
-            .Which.Details.Should()
-            .Equal(new AuditDetail(nameof(ChangeAssignmentStatusCommand.Status), "Confirmed"));
     }
 
     [Fact]
@@ -292,7 +270,6 @@ public sealed class AuditCommandDecoratorTests
 
         var record = trail.Records.Should().ContainSingle().Subject;
         record.ActorType.Should().Be(AuditActorType.System);
-        record.ItemCount.Should().Be(3);
         record.Entity.Should().BeNull();
     }
 

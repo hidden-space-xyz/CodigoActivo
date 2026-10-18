@@ -230,6 +230,5 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         audit.Property(r => r.Outcome).HasConversion<string>();
         audit.Property(r => r.ClientIp).HasColumnType("inet");
         audit.Property(r => r.Related).HasColumnType("jsonb");
-        audit.Property(r => r.Details).HasColumnType("jsonb");
     }
 }

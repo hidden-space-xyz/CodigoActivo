@@ -444,15 +444,13 @@ batching pipeline and failure guarantees as the diagnostic log: a failure to rec
 command's result. An entry keeps the instant, who ran it (a user with their account id, an anonymous caller or
 the system), the caller's IP as the trusted proxy forwarded it (the address the rate limits use, see
 [Transport and proxy trust](#transport-and-proxy-trust)), the command, the main entity and the other entities
-it named by type and GUID, its `bool` and enum parameters (`AuditConventionTests` pins the list; a person's
-gender is never recorded), how it ended (succeeded, rejected with the error code, or failed) with the number
-of items a purge removed, and the trace id that error responses show as their reference. It never stores
-anything typed by the client: names, emails, passwords, one-time codes, signatures, secrets and free text stay
-out, and so does the requested path. Login, password reset and verification requests record the account the
-email belongs to, so failed logins are attributed to their account. Saving an event rating is never
-recorded, and the scheduled purges are recorded only when they removed something. The account ids have no
-foreign key, so an erased account's entries remain until their 60-day retention ends; they are not part of
-its legal copy.
+it named by type and GUID, how it ended (succeeded, rejected with the error code, or failed) and the trace id
+that error responses show as their reference. It never stores anything typed by the client: names, emails,
+passwords, one-time codes, signatures, secrets and free text stay out, and so does the requested path. Login,
+password reset and verification requests record the account the email belongs to, so failed logins are
+attributed to their account. Saving an event rating is never recorded, and the scheduled purges are recorded
+only when they removed something. The account ids have no foreign key, so an erased account's entries remain
+until their 60-day retention ends; they are not part of its legal copy.
 
 Only administrators read either log: `GET /api/logs/diagnostics`, `/api/logs/diagnostics/{id}` and
 `/api/logs/audit` require the administrator role and share the report rate limit.

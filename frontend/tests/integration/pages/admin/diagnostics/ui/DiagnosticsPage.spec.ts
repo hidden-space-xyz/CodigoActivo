@@ -14,14 +14,7 @@ import {
   buildDiagnosticEntry,
   TRACE_ID,
 } from '../../../../../support/builders'
-import {
-  click,
-  findButton,
-  findDialog,
-  openRowMenu,
-  rowMenuItem,
-  textOf,
-} from '../../../../../support/dom'
+import { click, findButton, findDialog, textOf } from '../../../../../support/dom'
 
 async function renderPage(entries: DiagnosticLogEntryResponse[], urls: URL[] = []) {
   server.use(
@@ -59,7 +52,8 @@ describe('DiagnosticsPage', () => {
     expect(failure?.find('.table-primary-cell__title').text()).toBe('UnhandledRequestException')
     expect(failure?.text()).toContain('CodigoActivo.API.Middlewares.GlobalExceptionHandler')
     expect(failure?.text()).toContain(t('pages.admin.diagnostics.exception'))
-    expect(failure?.find('.trace').text()).toBe(TRACE_ID)
+    expect(failure?.find('.trace').text()).toBe(TRACE_ID.slice(0, 8))
+    expect(failure?.find('.trace').attributes('title')).toBe(TRACE_ID)
     expect(slow?.find('.table-primary-cell__title').text()).toBe(
       'CodigoActivo.Application.Common.Messaging.LoggingQueryDecorator',
     )
@@ -160,14 +154,10 @@ describe('DiagnosticsPage', () => {
     await vi.waitFor(() => expect(wrapper.findAll('.el-table__body tr')).toHaveLength(2))
     const [plain, traced] = wrapper.findAll('.el-table__body tr')
 
-    const plainMenu = await openRowMenu(plain!.element)
-    expect(rowMenuItem(plainMenu, t('pages.admin.diagnostics.openAudit')).className).toContain(
-      'is-disabled',
-    )
-    await click(document.body)
+    expect(findButton(t('pages.admin.diagnostics.openAudit'), plain?.element).disabled).toBe(true)
+    expect(plain?.find('.el-dropdown').exists()).toBe(false)
 
-    const tracedMenu = await openRowMenu(traced!.element)
-    await click(rowMenuItem(tracedMenu, t('pages.admin.diagnostics.openAudit')))
+    await click(findButton(t('pages.admin.diagnostics.openAudit'), traced?.element))
 
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('admin-audit'))
     expect(router.currentRoute.value.query).toEqual({ traceId: TRACE_ID })

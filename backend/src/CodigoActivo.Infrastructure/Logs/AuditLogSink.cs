@@ -14,7 +14,7 @@ public sealed class AuditLogSink(LogDatabase database, LogPartitionMaintainer pa
 {
     /// <inheritdoc />
     protected override string CopyStatement =>
-        "COPY audit_log_entries (id, occurred_at, actor_type, actor_id, client_ip, action, entity_type, entity_id, related, details, outcome, error_code, item_count, trace_id) FROM STDIN (FORMAT BINARY)";
+        "COPY audit_log_entries (id, occurred_at, actor_type, actor_id, client_ip, action, entity_type, entity_id, related, outcome, error_code, trace_id) FROM STDIN (FORMAT BINARY)";
 
     /// <inheritdoc />
     protected override AuditLogEntry ToRow(LogEvent logEvent)
@@ -45,10 +45,8 @@ public sealed class AuditLogSink(LogDatabase database, LogPartitionMaintainer pa
         await WriteAsync(importer, row.EntityType, NpgsqlDbType.Varchar);
         await WriteAsync(importer, row.EntityId, NpgsqlDbType.Uuid);
         await WriteAsync(importer, row.Related, NpgsqlDbType.Jsonb);
-        await WriteAsync(importer, row.Details, NpgsqlDbType.Jsonb);
         await importer.WriteAsync(row.Outcome, NpgsqlDbType.Varchar);
         await WriteAsync(importer, row.ErrorCode, NpgsqlDbType.Varchar);
-        await WriteAsync(importer, row.ItemCount, NpgsqlDbType.Integer);
         await WriteAsync(importer, row.TraceId, NpgsqlDbType.Varchar);
     }
 }

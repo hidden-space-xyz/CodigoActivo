@@ -9,6 +9,7 @@ import { RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { DIAGNOSTIC_LEVELS, levelLabelKey, levelTagType } from '../lib/levels'
+import { shortTrace } from '../lib/trace'
 import type { DiagnosticEntry } from '../model/types'
 import { useDiagnostics } from '../model/use-diagnostics'
 import DiagnosticDetailDialog from './DiagnosticDetailDialog.vue'
@@ -36,6 +37,7 @@ function entryActions(entry: DiagnosticEntry): RowAction[] {
       key: 'audit',
       label: t('pages.admin.diagnostics.openAudit'),
       icon: 'check-square',
+      inline: true,
       disabled: entry.traceId === '',
       ...(entry.traceId === '' ? { reason: t('pages.admin.diagnostics.noTrace') } : {}),
       run: () => {
@@ -123,7 +125,7 @@ function entryActions(entry: DiagnosticEntry): RowAction[] {
           </TablePrimaryCell>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('pages.admin.diagnostics.columns.trace')" width="150">
+      <el-table-column :label="$t('pages.admin.diagnostics.columns.trace')" width="110">
         <template #default="{ row }">
           <button
             v-if="row.traceId"
@@ -133,17 +135,14 @@ function entryActions(entry: DiagnosticEntry): RowAction[] {
             :aria-label="$t('pages.admin.diagnostics.filterTrace', { trace: row.traceId })"
             @click="filterByTrace(row.traceId)"
           >
-            {{ row.traceId }}
+            {{ shortTrace(row.traceId) }}
           </button>
           <span v-else class="none">—</span>
         </template>
       </el-table-column>
       <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
         <template #default="{ row }">
-          <RowActions
-            :actions="entryActions(row)"
-            :menu-label="$t('pages.admin.diagnostics.moreActions')"
-          />
+          <RowActions :actions="entryActions(row)" />
         </template>
       </el-table-column>
     </DataTable>

@@ -94,8 +94,8 @@ public sealed class UnitOfWorkCommandDecorator<TCommand, TResult>(
 }
 
 /// <summary>
-/// Records every command in the audit log: who ran it and from where, what it acted on, its flags
-/// and choices and how it ended. The main thing is the one the handler named through
+/// Records every command in the audit log: who ran it and from where, what it acted on and how it
+/// ended. The main thing is the one the handler named through
 /// <see cref="IAuditSubject"/>, else the one a successful result created, else the first typed
 /// identifier of the command; every other identifier it names is related. Auditing never changes
 /// the outcome of a command: a failure to record is logged, and the result or exception of the
@@ -193,8 +193,7 @@ public sealed class AuditCommandDecorator<TCommand, TResult>(
         try
         {
             var value = result is { IsSuccess: true } ? ResultValue?.GetValue(result) : null;
-            var count = value as int?;
-            if (Scheduled && count is 0)
+            if (Scheduled && value is 0)
             {
                 return;
             }
@@ -215,10 +214,8 @@ public sealed class AuditCommandDecorator<TCommand, TResult>(
                     origin.ClientAddress,
                     entity,
                     [.. named.Where(related => related != entity)],
-                    CommandAudit.DetailsOf(command),
                     outcome,
-                    errorCode,
-                    count
+                    errorCode
                 )
             );
         }

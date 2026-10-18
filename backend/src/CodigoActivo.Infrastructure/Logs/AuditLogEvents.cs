@@ -79,10 +79,8 @@ public static class AuditLogEvents
             EntityType = record.Entity?.Type.ToString(),
             EntityId = record.Entity?.Id,
             Related = record.Related.Count is 0 ? null : RelatedJson(record.Related),
-            Details = record.Details.Count is 0 ? null : DetailsJson(record.Details),
             Outcome = record.Outcome.ToString(),
             ErrorCode = LogText.CleanOrNull(record.ErrorCode, AuditLogEntry.NameMaxLength),
-            ItemCount = record.ItemCount,
             TraceId =
                 logEvent.TraceId is { } trace && trace != default ? trace.ToHexString() : null,
         };
@@ -102,33 +100,6 @@ public static class AuditLogEvents
             }
 
             writer.WriteEndArray();
-        });
-    }
-
-    private static string DetailsJson(IReadOnlyList<AuditDetail> details)
-    {
-        return Json(writer =>
-        {
-            writer.WriteStartObject();
-            foreach (var detail in details)
-            {
-                writer.WritePropertyName(detail.Name);
-                if (detail.Value is bool flag)
-                {
-                    writer.WriteBooleanValue(flag);
-                }
-                else
-                {
-                    writer.WriteStringValue(
-                        LogText.Clean(
-                            detail.Value.ToString() ?? string.Empty,
-                            AuditLogEntry.NameMaxLength
-                        )
-                    );
-                }
-            }
-
-            writer.WriteEndObject();
         });
     }
 

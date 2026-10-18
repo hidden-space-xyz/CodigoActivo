@@ -99,7 +99,6 @@ public sealed class DemoLogSeeder(
                 assignment.ActivityId,
                 assignment.Activity.EventId,
                 assignment.UserId,
-                assignment.ActivityRoleTypeId,
                 assignment.AssignmentStatusId,
                 assignment.CreatedAt,
             })
@@ -148,7 +147,6 @@ public sealed class DemoLogSeeder(
                     signup.ActivityId,
                     signup.EventId,
                     signup.UserId,
-                    CatalogIds.ActivityRoles.ValueOf(signup.ActivityRoleTypeId),
                     CatalogIds.AssignmentStatuses.ValueOf(signup.AssignmentStatusId),
                     signup.CreatedAt
                 )),

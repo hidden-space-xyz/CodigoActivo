@@ -67,7 +67,6 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
             EntityType = entity is null ? null : "User",
             EntityId = entity,
             Related = related,
-            Details = action is AuditAction.SetAdmin ? """{"IsAdmin": true}""" : null,
             Outcome = outcome,
             ErrorCode = outcome == "Rejected" ? "InvalidCredentials" : null,
             TraceId = traceId,
@@ -268,10 +267,8 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
                     TestSeedData.Users.MemberId,
                     "Marta Miembro",
                     [new AuditRelatedEntityResponse(AuditEntityType.Activity, Activity)],
-                    [new AuditDetailResponse("IsAdmin", "true")],
                     AuditOutcome.Succeeded,
                     ErrorCode: null,
-                    ItemCount: null,
                     Trace
                 )
             );

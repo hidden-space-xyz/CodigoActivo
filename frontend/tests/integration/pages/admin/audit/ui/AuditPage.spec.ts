@@ -36,8 +36,6 @@ const purge = omit(
     entityId: null,
     entityName: null,
     related: [],
-    details: [],
-    itemCount: 2,
     traceId: null,
   }),
   'entityType',
@@ -52,7 +50,6 @@ const refusedLogin = buildAuditEntry({
   action: 'Login',
   entityName: null,
   related: [],
-  details: [],
   outcome: 'Rejected',
   errorCode: 'InvalidCredentials',
 })
@@ -78,10 +75,10 @@ describe('AuditPage', () => {
     expect(setAdmin?.text()).toContain(t('pages.admin.audit.actions.SetAdmin'))
     expect(setAdmin?.text()).toContain('Marta Miembro')
     expect(setAdmin?.text()).toContain(`${t('pages.admin.audit.entityTypes.Activity')} aaaaaaaa`)
-    expect(setAdmin?.text()).toContain('Administrador: Sí')
     expect(setAdmin?.text()).toContain(t('pages.admin.audit.outcomes.Succeeded'))
+    expect(setAdmin?.find('.trace').text()).toBe(TRACE_ID.slice(0, 8))
+    expect(setAdmin?.find('.trace').attributes('title')).toBe(TRACE_ID)
     expect(system?.text()).toContain(t('pages.admin.audit.actorTypes.System'))
-    expect(system?.text()).toContain(t('pages.admin.audit.itemCount', { count: 2 }))
     expect(system?.findAll('button.pin')).toHaveLength(0)
     expect(login?.text()).toContain(t('pages.admin.audit.actorTypes.Anonymous'))
     expect(login?.text()).toContain(t('pages.admin.audit.outcomes.Rejected'))

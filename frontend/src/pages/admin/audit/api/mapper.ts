@@ -18,10 +18,8 @@ export function toAuditEntry(dto: AuditLogEntryResponse): AuditEntry {
         ? { type: dto.entityType, id: dto.entityId, name: dto.entityName ?? '' }
         : null,
     related: dto.related.map((related) => ({ type: related.type, id: related.id })),
-    details: dto.details.map((detail) => ({ name: detail.name, value: detail.value })),
     outcome: dto.outcome,
     errorCode: dto.errorCode ?? '',
-    itemCount: dto.itemCount ?? null,
     traceId: dto.traceId ?? '',
   }
 }

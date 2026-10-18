@@ -1328,10 +1328,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("inet")
                         .HasColumnName("client_ip");
 
-                    b.Property<string>("Details")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("details");
-
                     b.Property<Guid?>("EntityId")
                         .HasColumnType("uuid")
                         .HasColumnName("entity_id");
@@ -1345,10 +1341,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("error_code");
-
-                    b.Property<int?>("ItemCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("item_count");
 
                     b.Property<string>("Outcome")
                         .IsRequired()

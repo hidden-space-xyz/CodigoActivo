@@ -88,12 +88,6 @@ export interface AuditMainEntity extends AuditEntityRef {
   readonly name: string
 }
 
-/** One flag or choice of a command: `true`, `false` or the name of an enum member. */
-export interface AuditDetail {
-  readonly name: string
-  readonly value: string
-}
-
 /**
  * One audited command. Text fields are empty when unknown: an actor with an id but no name is an
  * account erased since.
@@ -109,10 +103,8 @@ export interface AuditEntry {
   readonly action: AuditAction
   readonly entity: AuditMainEntity | null
   readonly related: readonly AuditEntityRef[]
-  readonly details: readonly AuditDetail[]
   readonly outcome: AuditOutcome
   readonly errorCode: string
-  readonly itemCount: number | null
   readonly traceId: string
 }
 

@@ -3,7 +3,6 @@ import type { TranslationKey, Translate } from '@/shared/i18n'
 import type {
   AuditAction,
   AuditActorType,
-  AuditDetail,
   AuditEntityType,
   AuditEntry,
   AuditMainEntity,
@@ -158,13 +157,4 @@ export function errorCodeLabel(code: string, t: Translate, has: HasMessage): str
     if (has(key)) return t(key as TranslationKey)
   }
   return code
-}
-
-/** A flag or choice as «name: value», with the known names and values translated. */
-export function detailLabel(detail: AuditDetail, t: Translate, has: HasMessage): string {
-  const nameKey = `pages.admin.audit.detailNames.${detail.name}`
-  const valueKey = `pages.admin.audit.detailValues.${detail.value}`
-  const name = has(nameKey) ? t(nameKey as TranslationKey) : detail.name
-  const value = has(valueKey) ? t(valueKey as TranslationKey) : detail.value
-  return `${name}: ${value}`
 }

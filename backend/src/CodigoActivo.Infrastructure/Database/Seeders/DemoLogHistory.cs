@@ -5,7 +5,6 @@ using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts;
-using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Messaging;
@@ -13,7 +12,6 @@ using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Reports.Queries;
-using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -163,15 +161,13 @@ internal sealed class DemoLogHistory : IDisposable
             var guardian = users.TryGetValue(signup.UserId, out var user) ? user.ParentId : null;
             var caller = SignedIn(guardian ?? signup.UserId, signup.CreatedAt);
             AuditEntity[] related = [UserEntity(signup.UserId)];
-            AuditDetail[] role = [new(nameof(AssignActivityCommand.Role), signup.Role.ToString())];
             var activity = ActivityEntity(signup.ActivityId);
             Record(
                 signup.CreatedAt,
                 caller,
                 AuditAction.AssignActivity,
                 activity,
-                related: related,
-                details: role
+                related: related
             );
             if (index++ % 9 is 4)
             {
@@ -182,8 +178,7 @@ internal sealed class DemoLogHistory : IDisposable
                     activity,
                     AuditOutcome.Rejected,
                     nameof(DomainErrorCode.ActivityAssignmentAlreadyExists),
-                    related,
-                    role
+                    related
                 );
             }
         }
@@ -274,11 +269,7 @@ internal sealed class DemoLogHistory : IDisposable
                     caller,
                     AuditAction.ChangeAssignmentStatus,
                     ActivityEntity(signup.ActivityId),
-                    related: [UserEntity(signup.UserId)],
-                    details:
-                    [
-                        new(nameof(ChangeAssignmentStatusCommand.Status), signup.Status.ToString()),
-                    ]
+                    related: [UserEntity(signup.UserId)]
                 );
                 at = at.AddSeconds(35);
             }
@@ -343,13 +334,7 @@ internal sealed class DemoLogHistory : IDisposable
     private void AddProfileUpdate(DemoLogUser adult)
     {
         var at = Local(Today.AddDays(-1), 19, 20);
-        Record(
-            at,
-            SignedIn(adult.Id, at),
-            AuditAction.UpdateUser,
-            UserEntity(adult.Id),
-            details: [new(nameof(UpdateUserCommand.PromotionalConsent), false)]
-        );
+        Record(at, SignedIn(adult.Id, at), AuditAction.UpdateUser, UserEntity(adult.Id));
     }
 
     private void AddClosedSignup(DemoLogUser adult)
@@ -368,8 +353,7 @@ internal sealed class DemoLogHistory : IDisposable
             ActivityEntity(closed.ActivityId),
             AuditOutcome.Rejected,
             nameof(DomainErrorCode.ActivitySignupClosed),
-            [UserEntity(adult.Id)],
-            [new(nameof(AssignActivityCommand.Role), nameof(ActivityRole.Participant))]
+            [UserEntity(adult.Id)]
         );
     }
 
@@ -479,13 +463,7 @@ internal sealed class DemoLogHistory : IDisposable
         }
 
         var at = Local(Today.AddDays(-8), 10, 15);
-        Record(
-            at,
-            SignedIn(Administrator, at),
-            AuditAction.ChangeUserType,
-            UserEntity(sponsor.Id),
-            details: [new(nameof(ChangeUserTypeCommand.UserType), nameof(UserType.Sponsor))]
-        );
+        Record(at, SignedIn(Administrator, at), AuditAction.ChangeUserType, UserEntity(sponsor.Id));
     }
 
     private void AddSecondFactorLockout(DemoLogUser adult, int maxFailedCodes)
@@ -634,13 +612,7 @@ internal sealed class DemoLogHistory : IDisposable
     {
         foreach (var day in Days())
         {
-            Record(
-                Local(day, 3, 30),
-                Caller.Scheduled,
-                AuditAction.RemoveExpiredSessions,
-                null,
-                itemCount: 1 + (day.DayNumber * 7 % 5)
-            );
+            Record(Local(day, 3, 30), Caller.Scheduled, AuditAction.RemoveExpiredSessions, null);
         }
     }
 
@@ -688,9 +660,7 @@ internal sealed class DemoLogHistory : IDisposable
         AuditEntity? entity,
         AuditOutcome outcome = AuditOutcome.Succeeded,
         string? errorCode = null,
-        IReadOnlyList<AuditEntity>? related = null,
-        IReadOnlyList<AuditDetail>? details = null,
-        int? itemCount = null
+        IReadOnlyList<AuditEntity>? related = null
     )
     {
         var trace = caller.Type is AuditActorType.System ? default : ActivityTraceId.CreateRandom();
@@ -703,10 +673,8 @@ internal sealed class DemoLogHistory : IDisposable
                 caller.Address,
                 entity,
                 related ?? [],
-                details ?? [],
                 outcome,
-                errorCode,
-                itemCount
+                errorCode
             );
             audit.Add(Dated(AuditLogEvents.ToEvent(record, at, activity: null), at, trace));
         }
@@ -917,14 +885,12 @@ internal sealed record DemoLogUser(
 /// <param name="ActivityId">Activity.</param>
 /// <param name="EventId">Event of the activity.</param>
 /// <param name="UserId">Assigned account.</param>
-/// <param name="Role">Role requested.</param>
 /// <param name="Status">Current status.</param>
 /// <param name="CreatedAt">When it was requested.</param>
 internal sealed record DemoLogSignup(
     Guid ActivityId,
     Guid EventId,
     Guid UserId,
-    ActivityRole Role,
     AssignmentStatus Status,
     DateTimeOffset CreatedAt
 );

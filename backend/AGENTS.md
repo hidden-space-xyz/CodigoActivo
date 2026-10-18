@@ -60,9 +60,7 @@ Domain + Application + Infrastructure <- Composition <- API
 - Every command is audited. A new command needs its `AuditAction` member, named after it without `Command`,
   and its translation in the frontend, or `IUnaudited` when recording it would break a promise such as rating
   anonymity; `AuditConventionTests` checks both. `AuditAction` and `AuditEntityType` are stored as text, so
-  their members are only ever added. A new `bool` or enum parameter of a command becomes an audit detail and
-  must be added to the reviewed list in `AuditConventionTests`; never let one carry personal data. A handler
-  that finds its main entity itself, such as an account by email, names it through `IAuditSubject`.
+  their members are only ever added. A handler that finds its main entity itself, such as an account by email, names it through `IAuditSubject`.
   `audit_log_entries` keeps user GUIDs without a foreign key on purpose: its entries outlive an erased account
   until their retention ends, so the table is neither copied into `LegalCopy` nor handed over.
 - A new `StoredFileId` or `RichText` column must be checked by `StoredFileRepository.GetInUseAsync`, and a

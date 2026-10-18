@@ -24,7 +24,6 @@ export * from './assignmentStatusTypeResponse';
 export * from './assignRequest';
 export * from './auditAction';
 export * from './auditActorType';
-export * from './auditDetailResponse';
 export * from './auditEntityType';
 export * from './auditLogEntryResponse';
 export * from './auditLogEntryResponsePagedResult';

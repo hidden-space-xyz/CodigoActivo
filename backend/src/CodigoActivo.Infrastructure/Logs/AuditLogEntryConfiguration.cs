@@ -32,7 +32,6 @@ public sealed class AuditLogEntryConfiguration : IEntityTypeConfiguration<AuditL
             .IsRequired();
         builder.Property(entry => entry.EntityType).HasMaxLength(AuditLogEntry.NameMaxLength);
         builder.Property(entry => entry.Related).HasColumnType("jsonb");
-        builder.Property(entry => entry.Details).HasColumnType("jsonb");
         builder
             .Property(entry => entry.Outcome)
             .HasMaxLength(AuditLogEntry.NameMaxLength)

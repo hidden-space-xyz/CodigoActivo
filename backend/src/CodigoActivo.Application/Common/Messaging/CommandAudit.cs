@@ -9,8 +9,8 @@ namespace CodigoActivo.Application.Common.Messaging;
 
 /// <summary>
 /// Reads what the audit log keeps of a command and of its result, and nothing else: the typed
-/// identifiers it names and its flags and choices. Texts, numbers, dates, streams and every other
-/// value are never read, so emails, passwords, codes, signatures and secrets never reach the log.
+/// identifiers it names. Texts, flags, numbers, dates, streams and every other value are never
+/// read, so emails, passwords, codes, signatures and secrets never reach the log.
 /// </summary>
 public static class CommandAudit
 {
@@ -55,40 +55,6 @@ public static class CommandAudit
                 .SelectMany(property => EntitiesIn(property.GetValue(command), nested: true))
                 .Distinct(),
         ];
-    }
-
-    /// <summary>
-    /// Lists the flags and choices of a command: its own <see cref="bool"/> and enum parameters,
-    /// except <see cref="Gender"/>, which describes a person.
-    /// </summary>
-    /// <param name="command">Command that ran.</param>
-    /// <returns>The details, missing optional values left out.</returns>
-    public static IReadOnlyList<AuditDetail> DetailsOf(object command)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-
-        return
-        [
-            .. DetailPropertiesOf(command.GetType())
-                .Select(property => (property.Name, Value: property.GetValue(command)))
-                .Where(detail => detail.Value is not null)
-                .Select(detail => new AuditDetail(
-                    detail.Name,
-                    detail.Value is bool flag ? flag : detail.Value!.ToString()!
-                )),
-        ];
-    }
-
-    /// <summary>
-    /// Lists the parameters of a command type that <see cref="DetailsOf"/> records.
-    /// </summary>
-    /// <param name="command">Command type.</param>
-    /// <returns>The parameters, in declaration order.</returns>
-    public static IReadOnlyList<PropertyInfo> DetailPropertiesOf(Type command)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-
-        return [.. PropertiesOf(command).Where(property => IsDetail(property.PropertyType))];
     }
 
     /// <summary>
@@ -194,12 +160,6 @@ public static class CommandAudit
                     ? candidate.GetProperty(nameof(UserId.Value))
                     : null
         );
-    }
-
-    private static bool IsDetail(Type type)
-    {
-        var value = Nullable.GetUnderlyingType(type) ?? type;
-        return (value == typeof(bool) || value.IsEnum) && value != typeof(Gender);
     }
 
     private static bool IsApplicationRecord(Type type)

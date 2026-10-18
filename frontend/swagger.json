@@ -4881,22 +4881,6 @@
         ],
         "type": "string"
       },
-      "AuditDetailResponse": {
-        "required": [
-          "name",
-          "value"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
       "AuditEntityType": {
         "enum": [
           "Activity",
@@ -4915,7 +4899,6 @@
         "required": [
           "action",
           "actorType",
-          "details",
           "id",
           "occurredAt",
           "outcome",
@@ -4972,22 +4955,11 @@
               "$ref": "#/components/schemas/AuditRelatedEntityResponse"
             }
           },
-          "details": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AuditDetailResponse"
-            }
-          },
           "outcome": {
             "$ref": "#/components/schemas/AuditOutcome"
           },
           "errorCode": {
             "type": "string",
-            "nullable": true
-          },
-          "itemCount": {
-            "type": "integer",
-            "format": "int32",
             "nullable": true
           },
           "traceId": {

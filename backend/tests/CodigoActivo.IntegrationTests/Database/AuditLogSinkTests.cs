@@ -36,10 +36,8 @@ public sealed class AuditLogSinkTests(PostgresContainerFixture postgres) : IAsyn
             IPAddress.Parse("203.0.113.9"),
             new AuditEntity(AuditEntityType.User, target),
             [new AuditEntity(AuditEntityType.Activity, related)],
-            [new AuditDetail("IsAdmin", true), new AuditDetail("Status", "Confirmed")],
             AuditOutcome.Rejected,
-            "UserCurrentPasswordIncorrect",
-            ItemCount: 2
+            "UserCurrentPasswordIncorrect"
         );
     }
 
@@ -65,10 +63,8 @@ public sealed class AuditLogSinkTests(PostgresContainerFixture postgres) : IAsyn
         entry.EntityType.Should().Be("User");
         entry.EntityId.Should().Be(target);
         entry.Related.Should().Be($$"""[{"id": "{{related}}", "type": "Activity"}]""");
-        entry.Details.Should().Be("""{"Status": "Confirmed", "IsAdmin": true}""");
         entry.Outcome.Should().Be("Rejected");
         entry.ErrorCode.Should().Be("UserCurrentPasswordIncorrect");
-        entry.ItemCount.Should().Be(2);
         entry.TraceId.Should().Be(activity.TraceId.ToHexString());
     }
 
@@ -93,10 +89,8 @@ public sealed class AuditLogSinkTests(PostgresContainerFixture postgres) : IAsyn
                     ClientAddress: null,
                     new AuditEntity(AuditEntityType.User, target),
                     [],
-                    [],
                     AuditOutcome.Succeeded,
-                    ErrorCode: null,
-                    ItemCount: null
+                    ErrorCode: null
                 )
             );
         }
@@ -108,7 +102,6 @@ public sealed class AuditLogSinkTests(PostgresContainerFixture postgres) : IAsyn
         entry.ClientIp.Should().BeNull();
         entry.EntityId.Should().Be(target);
         entry.Related.Should().BeNull();
-        entry.Details.Should().BeNull();
         entry.TraceId.Should().BeNull();
     }
 }

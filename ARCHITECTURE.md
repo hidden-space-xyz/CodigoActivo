@@ -230,8 +230,7 @@ the guardianship `ActingUserPolicy` checks.
 (`IRequestOrigin`, implemented by `HttpRequestOrigin` in the API), the `AuditAction` named after the command,
 the main entity (the one the handler named through `IAuditSubject`, as login does with the account it found by
 email, else the typed ID a `Result<TId>` created, else the first typed ID of the command), the other typed IDs
-as related entities, the `bool` and enum parameters as details and the outcome. `CommandAudit` reads only those
-values, never text. `IUnaudited` keeps a command out (only `SaveEventRating`), a scheduled command is recorded
+as related entities and the outcome. `CommandAudit` reads only the typed IDs, never another value. `IUnaudited` keeps a command out (only `SaveEventRating`), a scheduled command is recorded
 only when it changed something, and a failure to record never changes the command's result.
 `SerilogAuditTrail` (Infrastructure) queues the record to `audit_log_entries`.
 

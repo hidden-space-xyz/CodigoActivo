@@ -263,10 +263,8 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
             entry.EntityId,
             view.EntityName,
             RelatedOf(entry.Related),
-            DetailsOf(entry.Details),
             entry.Outcome,
             entry.ErrorCode,
-            entry.ItemCount,
             entry.TraceId
         );
     }
@@ -295,31 +293,6 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
                 )
                 .Where(related => related.Valid)
                 .Select(related => new AuditRelatedEntityResponse(related.Type, related.Id)),
-        ];
-    }
-
-    private static List<AuditDetailResponse> DetailsOf(string? json)
-    {
-        if (json is null)
-        {
-            return [];
-        }
-
-        using var document = JsonDocument.Parse(json);
-        return
-        [
-            .. document
-                .RootElement.EnumerateObject()
-                .Select(property => new AuditDetailResponse(
-                    property.Name,
-                    property.Value.ValueKind switch
-                    {
-                        JsonValueKind.True => "true",
-                        JsonValueKind.False => "false",
-                        _ => property.Value.ToString(),
-                    }
-                ))
-                .OrderBy(detail => detail.Name, StringComparer.Ordinal),
         ];
     }
 
