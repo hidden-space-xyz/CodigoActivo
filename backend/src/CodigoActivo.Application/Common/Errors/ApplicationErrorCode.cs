@@ -278,6 +278,11 @@ public enum ApplicationErrorCode
     EmailRecipientWithoutAddress,
 
     /// <summary>
+    /// An email was written to an account that has not confirmed its email address.
+    /// </summary>
+    EmailRecipientNotVerified,
+
+    /// <summary>
     /// A news email was written to someone without news consent.
     /// </summary>
     EmailRecipientWithoutConsent,

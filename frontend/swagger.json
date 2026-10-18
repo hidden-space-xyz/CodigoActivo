@@ -6042,6 +6042,7 @@
           "AuthenticatorAlreadyEnabled",
           "EmailNoRecipients",
           "EmailRecipientWithoutAddress",
+          "EmailRecipientNotVerified",
           "EmailRecipientWithoutConsent",
           "EmailUnsubscribeLinkInvalid",
           "EmailTooManyRecipients",

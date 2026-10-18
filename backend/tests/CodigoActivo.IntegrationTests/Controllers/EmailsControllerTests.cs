@@ -95,7 +95,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
                     KnownIds.AssignmentStatusTypes.Confirmed
                 ),
                 NewAssignment(
-                    TestSeedData.Users.PendingId,
+                    TestSeedData.Users.BlockedId,
                     KnownIds.AssignmentStatusTypes.Requested
                 )
             );
@@ -125,7 +125,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsersAsAdminMailsEveryUserWithAnAddressOneMessageEach()
+    public async Task SendToUsersAsAdminMailsEveryUserWithAConfirmedAddressOneMessageEach()
     {
         var client = await LoginAsAdminAsync();
 
@@ -136,8 +136,10 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         var result = await ReadResultAsync(response);
-        result.Queued.Should().Be(4);
-        result.Skipped.Should().Be(1, "the dependent minor has no address of their own");
+        result.Queued.Should().Be(3);
+        result
+            .Skipped.Should()
+            .Be(2, "the minor has no address and the pending account has not confirmed theirs");
 
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
@@ -145,7 +147,6 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             .BeEquivalentTo(
                 TestSeedData.AdminEmail,
                 TestSeedData.MemberEmail,
-                TestSeedData.PendingEmail,
                 TestSeedData.BlockedEmail
             );
         Factory.EmailSender.Sent.Should().OnlyContain(m => m.Subject == "Asamblea general");
@@ -180,17 +181,17 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     public async Task SendToUsersSomeRecipientsRejectedStillReportsThemAsQueuedAndKeepsThemStored()
     {
         var client = await LoginAsAdminAsync();
-        Factory.EmailSender.FailFor(TestSeedData.PendingEmail, TestSeedData.BlockedEmail);
+        Factory.EmailSender.FailFor(TestSeedData.MemberEmail, TestSeedData.BlockedEmail);
 
         using var response = await client.SendEmailFormAsync(UsersUrl);
 
         var result = await ReadResultAsync(response);
-        result.Queued.Should().Be(4, "the response reports acceptance, not delivery");
-        result.Skipped.Should().Be(1);
+        result.Queued.Should().Be(3, "the response reports acceptance, not delivery");
+        result.Skipped.Should().Be(2);
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo(TestSeedData.AdminEmail, TestSeedData.MemberEmail);
+            .BeEquivalentTo(TestSeedData.AdminEmail);
 
         var pending = await Factory.QueryAsync(db =>
             db.EmailOutboxMessages.Select(m => m.ToAddress).ToListAsync(Ct)
@@ -198,7 +199,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         pending
             .Should()
             .BeEquivalentTo(
-                [TestSeedData.PendingEmail, TestSeedData.BlockedEmail],
+                [TestSeedData.MemberEmail, TestSeedData.BlockedEmail],
                 "a rejected recipient stays queued for the scheduled retry"
             );
     }
@@ -214,7 +215,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         using var response = await client.SendEmailFormAsync(UsersUrl);
 
         var result = await ReadResultAsync(response);
-        result.Queued.Should().Be(4);
+        result.Queued.Should().Be(3);
         Factory.EmailSender.Sent.Should().BeEmpty();
 
         var stored = await Factory.QueryAsync(db =>
@@ -222,8 +223,8 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
                 (Messages: db.EmailOutboxMessages.Count(), Contents: db.EmailOutboxContents.Count())
             )
         );
-        stored.Messages.Should().Be(4);
-        stored.Contents.Should().Be(1, "the four recipients share one stored copy of the email");
+        stored.Messages.Should().Be(3);
+        stored.Contents.Should().Be(1, "the three recipients share one stored copy of the email");
     }
 
     [Fact]
@@ -232,7 +233,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         using var response = await client.SendEmailFormAsync(
-            $"{UsersUrl}?userStatusTypeId={KnownIds.UserStatusTypes.Pending}"
+            $"{UsersUrl}?userStatusTypeId={KnownIds.UserStatusTypes.Blocked}"
         );
 
         var result = await ReadResultAsync(response);
@@ -241,7 +242,23 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             .EmailSender.Sent.Should()
             .ContainSingle()
             .Which.ToAddress.Should()
-            .Be(TestSeedData.PendingEmail);
+            .Be(TestSeedData.BlockedEmail);
+    }
+
+    [Theory]
+    [InlineData("Notice")]
+    [InlineData("News")]
+    public async Task SendToUsersPendingVerificationOnlyReturnsNoRecipients(string purpose)
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.SendEmailFormAsync(
+            $"{UsersUrl}?userStatusTypeId={KnownIds.UserStatusTypes.Pending}",
+            purpose: purpose
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EmailNoRecipients);
+        Factory.EmailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]
@@ -575,11 +592,24 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         using var response = await client.SendEmailFormAsync(
-            $"{UsersUrl}/{TestSeedData.Users.PendingId}",
+            $"{UsersUrl}/{TestSeedData.Users.BlockedId}",
             purpose: "News"
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.EmailRecipientWithoutConsent);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SendToUserPendingVerificationReturnsRecipientNotVerified()
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.SendEmailFormAsync(
+            $"{UsersUrl}/{TestSeedData.Users.PendingId}"
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EmailRecipientNotVerified);
         Factory.EmailSender.Sent.Should().BeEmpty();
     }
 
@@ -639,7 +669,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo(TestSeedData.MemberEmail, TestSeedData.PendingEmail);
+            .BeEquivalentTo(TestSeedData.MemberEmail, TestSeedData.BlockedEmail);
     }
 
     [Fact]
@@ -658,7 +688,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             .EmailSender.Sent.Should()
             .ContainSingle()
             .Which.ToAddress.Should()
-            .Be(TestSeedData.PendingEmail);
+            .Be(TestSeedData.BlockedEmail);
     }
 
     [Fact]
@@ -686,11 +716,12 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Theory]
-    [InlineData("", 4, 3)]
+    [InlineData("", 3, 2)]
     [InlineData("?newsConsent=true", 1, 0)]
-    [InlineData("?newsConsent=false", 3, 3)]
+    [InlineData("?newsConsent=false", 2, 2)]
     [InlineData("?id=22222222-2222-2222-2222-222222222222", 1, 0)]
     [InlineData("?id=33333333-3333-3333-3333-333333333333", 0, 0)]
+    [InlineData("?id=44444444-4444-4444-4444-444444444444", 0, 0)]
     public async Task UsersAudienceAsAdminCountsTheRecipientsOfTheSameFilters(
         string queryString,
         int recipients,

@@ -46,6 +46,37 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData(ManualEmailPurpose.Notice)]
+    [InlineData(ManualEmailPurpose.News)]
+    public async Task HandleAsyncLeavesAccountsPendingVerificationOutAsSkipped(
+        ManualEmailPurpose purpose
+    )
+    {
+        var pending = NewUserRow(
+            "Pedro",
+            "pedro@test.local",
+            newsConsent: true,
+            statusId: KnownIds.UserStatusTypes.Pending
+        );
+        store.Users.AddRange([NewUserRow("Ana", "ana@test.local", newsConsent: true), pending]);
+
+        var result = await sut.HandleAsync(
+            new SendEmailToUsersCommand(new UserListQuery(), Request(), purpose, []),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Queued.Should().Be(1);
+        result.Value.Skipped.Should().Be(1);
+        outbox
+            .Batches.Should()
+            .ContainSingle()
+            .Which.Recipients.Select(r => r.Address)
+            .Should()
+            .Equal("ana@test.local");
+    }
+
     [Fact]
     public async Task HandleAsyncSeveralRecipientsQueuesOneMessagePerRecipientInOneBatch()
     {

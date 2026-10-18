@@ -18,7 +18,8 @@ internal static class EmailTestData
         string first,
         string? email,
         UserRow? parent = null,
-        bool newsConsent = false
+        bool newsConsent = false,
+        Guid? statusId = null
     )
     {
         return new()
@@ -32,7 +33,7 @@ internal static class EmailTestData
             Gender = Gender.Other,
             ParentId = parent?.Id,
             Parent = parent,
-            UserStatusTypeId = KnownIds.UserStatusTypes.Active,
+            UserStatusTypeId = statusId ?? KnownIds.UserStatusTypes.Active,
             UserTypeId = KnownIds.UserTypes.Member,
         };
     }

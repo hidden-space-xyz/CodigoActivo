@@ -106,6 +106,7 @@ export const ErrorCode = {
   AuthenticatorAlreadyEnabled: 'AuthenticatorAlreadyEnabled',
   EmailNoRecipients: 'EmailNoRecipients',
   EmailRecipientWithoutAddress: 'EmailRecipientWithoutAddress',
+  EmailRecipientNotVerified: 'EmailRecipientNotVerified',
   EmailRecipientWithoutConsent: 'EmailRecipientWithoutConsent',
   EmailUnsubscribeLinkInvalid: 'EmailUnsubscribeLinkInvalid',
   EmailTooManyRecipients: 'EmailTooManyRecipients',
