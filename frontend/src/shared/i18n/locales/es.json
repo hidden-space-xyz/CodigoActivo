@@ -518,9 +518,9 @@
           },
           "emails": {
             "title": "Comunicaciones por email",
-            "data": "Tu nombre, tu email y tu preferencia sobre recibir novedades, con la fecha y el medio de cada cambio: el registro, «Mi cuenta» o el enlace para darte de baja.",
+            "data": "Tu nombre, tu email y tu preferencia sobre recibir novedades, con la fecha y el medio de cada cambio: el registro, «Mi cuenta», el enlace para darte de baja o el botón de baja de tu programa de correo.",
             "purpose": "Enviarte los correos que el servicio necesita (verificación del email, códigos de acceso, avisos de seguridad, el estado de tus inscripciones e información práctica de los eventos en los que participas) y, solo si lo aceptas, novedades sobre las actividades de la asociación.",
-            "legalBasis": "Para los correos del servicio, su prestación (art. 6.1.b RGPD); para las novedades, tu consentimiento (art. 6.1.a RGPD y art. 21 LSSI), que puedes retirar gratis cuando quieras con el enlace para darte de baja que incluye cada novedad, sin iniciar sesión, desde «Mi cuenta» o escribiéndonos a la dirección que también figura en cada novedad.",
+            "legalBasis": "Para los correos del servicio, su prestación (art. 6.1.b RGPD); para las novedades, tu consentimiento (art. 6.1.a RGPD y art. 21 LSSI), que puedes retirar gratis cuando quieras con el enlace para darte de baja que incluye cada novedad o con el botón de baja que muestre tu programa de correo, sin iniciar sesión, desde «Mi cuenta» o escribiéndonos a la dirección que también figura en cada novedad.",
             "retention": "Cada correo espera en la cola de envío, con el asunto y el contenido cifrados, solo hasta que se entrega o se descarta tras cinco intentos fallidos. Tu preferencia, hasta que la cambies o elimines la cuenta, y la fecha y el medio de cada cambio, mientras mantengas la cuenta, para poder demostrar tu consentimiento; si la eliminas, pasan a la copia bloqueada."
           },
           "ratings": {

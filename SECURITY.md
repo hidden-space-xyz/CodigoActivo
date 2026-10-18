@@ -207,7 +207,10 @@ need the same administrator reset.
 `CsrfValidationMiddleware` validates every unsafe HTTP method with ASP.NET antiforgery. The client obtains a
 token from `GET /api/auth/csrf`, which also sets the `HttpOnly`, `SameSite=Lax` CSRF cookie
 (`__Host-CodigoActivo.Csrf` in Production), and returns it in `X-CSRF-TOKEN`; the SPA client handles this
-automatically. A missing or invalid token answers 400 `InvalidCsrfToken` and is not logged.
+automatically. A missing or invalid token answers 400 `InvalidCsrfToken` and is not logged. The only
+exception is `POST /api/emails/unsubscribe/one-click` (`[RequireAntiforgeryToken(false)]`), which mail clients
+call without cookies; it uses no session or other ambient credential, only the unforgeable token in its own
+URL, so a forged cross-site request can do nothing that the token's holder could not already do.
 
 ### Passwords and credential endpoints
 
@@ -331,9 +334,9 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   form shows its first layer (`PrivacyNotice`). Change them with any new personal field, processor, recipient
   or retention.
 - Promotional consent (article 21 of the Spanish LSSI, article 7.1 GDPR) is changed only by its holder: at
-  registration, in «Mi cuenta» or through the unsubscribe link of a promotional email. `User` appends every
-  change to `promotional_consent_changes` with its instant and source (`Registration`, `Profile`,
-  `UnsubscribeLink`) and the blocked copy keeps them. Consents stored before that table existed have no
+  registration, in «Mi cuenta», or through the unsubscribe link of a promotional email or its mail client's
+  unsubscribe button. `User` appends every change to `promotional_consent_changes` with its instant and source
+  (`Registration`, `Profile`, `UnsubscribeLink`, `OneClickUnsubscribe`) and the blocked copy keeps them. Consents stored before that table existed have no
   recorded change.
 - Terms-document consent is recorded for the acting user, not the person signed up: signing up a household
   dependent stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
@@ -566,8 +569,8 @@ Both automatic and administrator-written mail are stored in a PostgreSQL outbox 
 and delivered in the background by `EmailOutboxProcessor`, so a request that queues email returns once the
 row is committed, not once SMTP accepts it: see [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) for the
 delivery schedule, capacity and monitoring. The stored subject, bodies and attachments are protected with
-Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, unsubscribe link, kind and
-attachment names are stored in clear. Recreating the Data Protection key ring makes pending rows unreadable and they are
+Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, unsubscribe link and one-click
+unsubscribe address, kind and attachment names are stored in clear. Recreating the Data Protection key ring makes pending rows unreadable and they are
 discarded on their next delivery attempt.
 
 Only administrators may send through `/api/emails/...`; recipients are resolved on the server from the same
@@ -583,7 +586,14 @@ recreating the ring invalidates the links already sent. The stored content is sh
 outbox row holds its recipient's link in clear (`unsubscribe_url`), put in place at delivery. The SPA page
 posts the token to the anonymous `POST /api/emails/unsubscribe` (credential rate limit), which withdraws the
 consent and answers 204 again for a withdrawn consent or an erased account, or `EmailUnsubscribeLinkInvalid`
-for an altered token. This mail bypasses the
+for an altered token. Each promotional message also carries the one-click unsubscribe of RFC 8058:
+`List-Unsubscribe: <…/api/emails/unsubscribe/one-click?token=…>` with the same token (stored per row in
+`one_click_unsubscribe_url`) and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. The mail client posts
+that pair as `application/x-www-form-urlencoded` or `multipart/form-data`, without cookies or an antiforgery
+token; the endpoint is anonymous, kept out of the OpenAPI document, shares the credential rate limit, answers
+204 without redirecting, and records the withdrawal as `OneClickUnsubscribe`. The token in that URL never
+reaches a log: nginx keeps no access log, and the API keeps nothing below `Warning`, the level of ASP.NET's
+request lines. This mail bypasses the
 automatic-message limiter; the endpoint reports how many messages were queued and how many recipients were
 skipped, not what SMTP later did with them. Single-recipient messages allow 30 requests/minute
 per administrator (10 executing, 10 waiting); bulk messages allow 5 requests/minute (2 active, no waiting

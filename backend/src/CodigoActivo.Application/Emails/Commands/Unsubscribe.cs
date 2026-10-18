@@ -13,8 +13,17 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// Carries the token of the unsubscribe link of a promotional email.
 /// </summary>
 /// <param name="Token">Token taken from the link.</param>
+/// <param name="Source">
+/// Whether the holder followed the link in the email or pressed the unsubscribe button of their
+/// mail client, recorded with the withdrawal.
+/// </param>
 public sealed record UnsubscribeCommand(
-    [property: Required, MaxLength(UnsubscribeCommand.TokenMaxLength), NotBlank] string Token
+    [property: Required, MaxLength(UnsubscribeCommand.TokenMaxLength), NotBlank] string Token,
+    [property: AllowedValues(
+        PromotionalConsentSource.UnsubscribeLink,
+        PromotionalConsentSource.OneClickUnsubscribe
+    )]
+        PromotionalConsentSource Source
 ) : ICommand<Result>
 {
     /// <summary>
@@ -57,7 +66,7 @@ public sealed class UnsubscribeCommandHandler(
 
         auditSubject.Name(userId);
         var user = await users.GetByIdAsync(userId, ct);
-        user?.WithdrawPromotionalConsent(clock.UtcNow);
+        user?.WithdrawPromotionalConsent(command.Source, clock.UtcNow);
         return Result.Success();
     }
 }

@@ -276,6 +276,14 @@ failed removal of spent messages repeat while their cause lasts, so each is logg
 `EmailGuard:AlertIntervalMinutes`. Recipient throttling, a low global budget and an incomplete shutdown drain
 are not logged. See [SECURITY.md](SECURITY.md#logging) for where these events are written.
 
+Promotional email carries the one-click unsubscribe of RFC 8058 (`List-Unsubscribe` pointing at
+`APP_BASE_URL/api/emails/unsubscribe/one-click?token=…`, and `List-Unsubscribe-Post`), which Gmail and Yahoo
+require from bulk senders. The API does not sign mail: mail clients only offer the button when the relay
+behind `SMTP_HOST` signs it with DKIM for the domain of `SMTP_FROM_ADDRESS` and the signature covers both
+headers, so check that in the provider's DKIM settings. The proxy in front of nginx must pass that `POST`
+through to `APP_BASE_URL` as it is, without a redirect (RFC 8058 forbids them), a login wall or a bot
+challenge, since the mail provider's servers send it without cookies.
+
 ## Disposable email domains
 
 The API downloads the disposable email domain list over HTTPS from `raw.githubusercontent.com` 30 seconds

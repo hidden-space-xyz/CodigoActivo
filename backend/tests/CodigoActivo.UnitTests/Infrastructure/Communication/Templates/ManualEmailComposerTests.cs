@@ -77,7 +77,11 @@ public sealed class ManualEmailComposerTests
 
         batch.TextBody.Should().NotContain(AppStrings.EmailsFooterPromotionalNotice);
         batch.HtmlBody.Should().NotContain(EmailBranding.ContactAddress);
-        batch.Recipients.Should().OnlyContain(recipient => recipient.UnsubscribeUrl == null);
+        batch
+            .Recipients.Should()
+            .OnlyContain(recipient =>
+                recipient.UnsubscribeUrl == null && recipient.OneClickUnsubscribeUrl == null
+            );
     }
 
     [Fact]
@@ -94,8 +98,32 @@ public sealed class ManualEmailComposerTests
         var links = batch.Recipients.Select(recipient => recipient.UnsubscribeUrl!).ToList();
         links.Should().AllSatisfy(link => link.Should().StartWith($"{Site}/unsubscribe#token="));
         links.Should().OnlyHaveUniqueItems();
-        TokenOf(links[0]).Should().Be(Ana.UserId);
-        TokenOf(links[1]).Should().Be(Berto.UserId);
+        TokenOf(links[0], "#token=").Should().Be(Ana.UserId);
+        TokenOf(links[1], "#token=").Should().Be(Berto.UserId);
+    }
+
+    [Fact]
+    public void ComposePromotionalGivesEveryRecipientTheirOwnOneClickAddressWithTheLinkToken()
+    {
+        var batch = sut.Compose(
+            "Taller",
+            "Nuevo taller.",
+            ManualEmailPurpose.Promotional,
+            [Ana, Berto],
+            []
+        );
+
+        batch
+            .Recipients.Should()
+            .AllSatisfy(recipient =>
+                recipient
+                    .OneClickUnsubscribeUrl.Should()
+                    .Be(
+                        $"{Site}/api/emails/unsubscribe/one-click?token={TokenIn(recipient.UnsubscribeUrl!, "#token=")}"
+                    )
+            );
+        TokenOf(batch.Recipients[0].OneClickUnsubscribeUrl!, "?token=").Should().Be(Ana.UserId);
+        TokenOf(batch.Recipients[1].OneClickUnsubscribeUrl!, "?token=").Should().Be(Berto.UserId);
     }
 
     [Fact]
@@ -125,15 +153,14 @@ public sealed class ManualEmailComposerTests
         batch.HtmlBody.Should().NotContain(link, "the shared content names no recipient");
     }
 
-    private UserId TokenOf(string link)
+    private UserId TokenOf(string link, string marker)
     {
-        tokens
-            .TryRead(
-                link[(link.IndexOf("#token=", StringComparison.Ordinal) + 7)..],
-                out var userId
-            )
-            .Should()
-            .BeTrue();
+        tokens.TryRead(TokenIn(link, marker), out var userId).Should().BeTrue();
         return userId;
+    }
+
+    private static string TokenIn(string link, string marker)
+    {
+        return link[(link.IndexOf(marker, StringComparison.Ordinal) + marker.Length)..];
     }
 }

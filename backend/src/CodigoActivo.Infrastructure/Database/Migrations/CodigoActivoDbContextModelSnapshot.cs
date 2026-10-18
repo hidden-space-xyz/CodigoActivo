@@ -1126,6 +1126,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("next_attempt_at");
 
+                    b.Property<string>("OneClickUnsubscribeUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("one_click_unsubscribe_url");
+
                     b.Property<int>("Priority")
                         .HasColumnType("integer")
                         .HasColumnName("priority");

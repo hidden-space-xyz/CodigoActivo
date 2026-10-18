@@ -12,6 +12,7 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -404,6 +405,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             .Contain("/unsubscribe#token=")
             .And.Contain("contacto@codigoactivo.es");
         message.HtmlBody.Should().Contain("/unsubscribe#token=").And.NotContain("{{");
+        message.OneClickUnsubscribeUrl.Should().Contain("/api/emails/unsubscribe/one-click?token=");
     }
 
     [Fact]
@@ -417,7 +419,11 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         Factory
             .EmailSender.Sent.Should()
             .NotBeEmpty()
-            .And.AllSatisfy(m => m.TextBody.Should().NotContain("/unsubscribe"));
+            .And.AllSatisfy(m =>
+            {
+                m.TextBody.Should().NotContain("/unsubscribe");
+                m.OneClickUnsubscribeUrl.Should().BeNull();
+            });
     }
 
     [Theory]
@@ -474,6 +480,93 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             .PostJsonAsync("/api/emails/unsubscribe", new UnsubscribeRequest("not-a-token"), Ct);
 
         await response.ShouldBeBadRequestAsync(ErrorCode.EmailUnsubscribeLinkInvalid);
+    }
+
+    [Fact]
+    public async Task UnsubscribeWithOneClickWithdrawsTheConsentWithoutCookiesOrAntiforgeryToken()
+    {
+        var address = await SendPromotionalAndReadOneClickAddressAsync();
+        var mailClient = MailClient();
+
+        using var response = await mailClient.PostAsync(address, OneClickForm(), Ct);
+        using var multipart = new MultipartFormDataContent
+        {
+            { new StringContent("One-Click"), "List-Unsubscribe" },
+        };
+        using var again = await mailClient.PostAsync(address, multipart, Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        response.Headers.Location.Should().BeNull();
+        again.StatusCode.Should().Be(HttpStatusCode.NoContent, "the button can be pressed again");
+        var member = await Factory.QueryAsync(db =>
+            db.Users.Include(u => u.PromotionalConsentChanges)
+                .SingleAsync(u => u.Id == UserId.From(TestSeedData.Users.MemberId), Ct)
+        );
+        member.PromotionalConsent.Should().BeFalse();
+        var withdrawal = member.PromotionalConsentChanges.Should().ContainSingle().Subject;
+        withdrawal.Granted.Should().BeFalse();
+        withdrawal.Source.Should().Be(PromotionalConsentSource.OneClickUnsubscribe);
+        withdrawal.ChangedAt.Should().Be(Factory.Clock.UtcNow);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Yes")]
+    public async Task UnsubscribeWithOneClickWithoutTheOneClickPairReturnsBadRequestValidationFailed(
+        string? value
+    )
+    {
+        var address = await SendPromotionalAndReadOneClickAddressAsync();
+        using var form = new FormUrlEncodedContent(
+            value is null ? [] : [new KeyValuePair<string, string>("List-Unsubscribe", value)]
+        );
+
+        using var response = await MailClient().PostAsync(address, form, Ct);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        var member = await Factory.QueryAsync(db =>
+            db.Users.SingleAsync(u => u.Id == UserId.From(TestSeedData.Users.MemberId), Ct)
+        );
+        member.PromotionalConsent.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UnsubscribeWithOneClickAlteredTokenReturnsBadRequestUnsubscribeLinkInvalid()
+    {
+        using var response = await MailClient()
+            .PostAsync("/api/emails/unsubscribe/one-click?token=not-a-token", OneClickForm(), Ct);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EmailUnsubscribeLinkInvalid);
+    }
+
+    private async Task<string> SendPromotionalAndReadOneClickAddressAsync()
+    {
+        var admin = await LoginAsAdminAsync();
+        using var sent = await admin.SendEmailFormAsync(UsersUrl, purpose: "Promotional");
+        await ReadResultAsync(sent);
+        var address = Factory
+            .EmailSender.Sent.Should()
+            .ContainSingle()
+            .Subject.OneClickUnsubscribeUrl;
+        return new Uri(address!).PathAndQuery;
+    }
+
+    private HttpClient MailClient()
+    {
+        return Factory.CreateClient(
+            new WebApplicationFactoryClientOptions
+            {
+                HandleCookies = false,
+                AllowAutoRedirect = false,
+            }
+        );
+    }
+
+    private static FormUrlEncodedContent OneClickForm()
+    {
+        return new FormUrlEncodedContent([
+            new KeyValuePair<string, string>("List-Unsubscribe", "One-Click"),
+        ]);
     }
 
     [Fact]

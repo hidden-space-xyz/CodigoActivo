@@ -7,11 +7,15 @@ namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
 /// Sends email through the configured smtp transport. Failures leave as exceptions: the outbox
-/// delivery worker decides whether they are retried and records them.
+/// delivery worker decides whether they are retried and records them. A message with a one-click
+/// unsubscribe address carries the <c>List-Unsubscribe</c> and <c>List-Unsubscribe-Post</c>
+/// headers of RFC 8058, which the DKIM signature of the relay must cover.
 /// </summary>
 /// <param name="options">Configuration values used by the component.</param>
 public sealed class SmtpEmailSender(SmtpOptions options) : IEmailTransport
 {
+    private const string OneClickUnsubscribePost = "List-Unsubscribe=One-Click";
+
     private static readonly string[] CompositeMediaTypes = ["message", "multipart"];
 
     /// <summary>
@@ -79,6 +83,7 @@ public sealed class SmtpEmailSender(SmtpOptions options) : IEmailTransport
         mime.From.Add(new MailboxAddress(options.FromName, options.FromAddress));
         mime.To.Add(new MailboxAddress(message.ToName, message.ToAddress));
         mime.Subject = message.Subject;
+        AddOneClickUnsubscribe(mime, message.OneClickUnsubscribeUrl);
 
         var builder = new BodyBuilder { HtmlBody = message.HtmlBody, TextBody = message.TextBody };
 
@@ -107,6 +112,17 @@ public sealed class SmtpEmailSender(SmtpOptions options) : IEmailTransport
 
         mime.Body = builder.ToMessageBody();
         return mime;
+    }
+
+    private static void AddOneClickUnsubscribe(MimeMessage mime, string? url)
+    {
+        if (url is null)
+        {
+            return;
+        }
+
+        mime.Headers.Add(HeaderId.ListUnsubscribe, $"<{url}>");
+        mime.Headers.Add(HeaderId.ListUnsubscribePost, OneClickUnsubscribePost);
     }
 
     private static ContentType ParseContentType(string value)

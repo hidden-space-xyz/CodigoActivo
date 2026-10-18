@@ -61,6 +61,14 @@ public class EmailOutboxMessage
     public string? UnsubscribeUrl { get; set; }
 
     /// <summary>
+    /// Gets or sets the address the mail client of the recipient of a promotional email posts to
+    /// when they press its unsubscribe button, which delivery sends in the
+    /// <c>List-Unsubscribe</c> header. It is stored as plain text for the same reason as
+    /// <see cref="UnsubscribeUrl"/>.
+    /// </summary>
+    public string? OneClickUnsubscribeUrl { get; set; }
+
+    /// <summary>
     /// Gets or sets the UTC timestamp when the message was accepted.
     /// </summary>
     public DateTimeOffset CreatedAt { get; set; }

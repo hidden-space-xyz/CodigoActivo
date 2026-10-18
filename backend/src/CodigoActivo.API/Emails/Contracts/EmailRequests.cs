@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Emails.Commands;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.API.Emails.Contracts;
 
@@ -17,6 +18,6 @@ public record UnsubscribeRequest(
     /// <returns>The command.</returns>
     public UnsubscribeCommand ToCommand()
     {
-        return new UnsubscribeCommand(Token);
+        return new UnsubscribeCommand(Token, PromotionalConsentSource.UnsubscribeLink);
     }
 }

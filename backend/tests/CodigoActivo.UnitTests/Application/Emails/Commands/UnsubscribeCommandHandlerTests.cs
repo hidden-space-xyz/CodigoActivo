@@ -46,21 +46,25 @@ public sealed class UnsubscribeCommandHandlerTests
         ).Value;
     }
 
-    [Fact]
-    public async Task HandleAsyncLinkOfAnAccountWithdrawsItsConsentThroughTheLink()
+    [Theory]
+    [InlineData(PromotionalConsentSource.UnsubscribeLink)]
+    [InlineData(PromotionalConsentSource.OneClickUnsubscribe)]
+    public async Task HandleAsyncLinkOfAnAccountWithdrawsItsConsentFromTheGivenSource(
+        PromotionalConsentSource source
+    )
     {
         var account = Account();
         users.Finds(account);
 
         var result = await sut.HandleAsync(
-            new UnsubscribeCommand(tokens.Issue(account.Id)),
+            new UnsubscribeCommand(tokens.Issue(account.Id), source),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         account.PromotionalConsent.Should().BeFalse();
         var withdrawal = account.PromotionalConsentChanges.Last();
-        withdrawal.Source.Should().Be(PromotionalConsentSource.UnsubscribeLink);
+        withdrawal.Source.Should().Be(source);
         withdrawal.ChangedAt.Should().Be(clock.UtcNow);
         auditSubject.Entity.Should().Be(AuditEntity.Of(account.Id));
         await users.Received(1).GetByIdAsync(account.Id, Arg.Any<CancellationToken>());
@@ -72,7 +76,10 @@ public sealed class UnsubscribeCommandHandlerTests
         users.Finds(null);
 
         var result = await sut.HandleAsync(
-            new UnsubscribeCommand(tokens.Issue(UserId.New())),
+            new UnsubscribeCommand(
+                tokens.Issue(UserId.New()),
+                PromotionalConsentSource.UnsubscribeLink
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -85,7 +92,7 @@ public sealed class UnsubscribeCommandHandlerTests
         var token = tokens.Issue(UserId.New());
 
         var result = await sut.HandleAsync(
-            new UnsubscribeCommand(token[..^4]),
+            new UnsubscribeCommand(token[..^4], PromotionalConsentSource.OneClickUnsubscribe),
             TestContext.Current.CancellationToken
         );
 
