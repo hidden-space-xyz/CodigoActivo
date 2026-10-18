@@ -56,6 +56,10 @@ public sealed class ProductionConfigurationTests
     [InlineData("SMTP_HOST", "bad host", "SMTP_HOST")]
     [InlineData("SMTP_FROM_ADDRESS", "Sender <sender@app.test>", "SMTP_FROM_ADDRESS")]
     [InlineData("SMTP_USERNAME", "mailer", "SMTP_USERNAME")]
+    [InlineData("LEGAL_NAME", " ", "LEGAL_NAME")]
+    [InlineData("LEGAL_TAX_ID", "", "LEGAL_TAX_ID")]
+    [InlineData("LEGAL_ADDRESS", " ", "LEGAL_ADDRESS")]
+    [InlineData("LEGAL_REGISTRY", "", "LEGAL_REGISTRY")]
     public void ValidateUnsafeConfigurationThrows(string key, string value, string expectedMessage)
     {
         var config = BuildConfiguration(new KeyValuePair<string, string?>(key, value));
@@ -92,6 +96,10 @@ public sealed class ProductionConfigurationTests
             ["SMTP_FROM_ADDRESS"] = "sender@app.test",
             ["SMTP_USERNAME"] = string.Empty,
             ["SMTP_PASSWORD"] = string.Empty,
+            ["LEGAL_NAME"] = "Asociación Código Activo",
+            ["LEGAL_TAX_ID"] = "G24000000",
+            ["LEGAL_ADDRESS"] = "Calle Ejemplo 1, 24001 León",
+            ["LEGAL_REGISTRY"] = "Registro de Asociaciones de Castilla y León, n.º 0000",
         };
         if (replacement is { } item)
         {

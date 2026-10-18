@@ -19,6 +19,10 @@ services:
       SMTP_USERNAME: ""
       SMTP_FROM_ADDRESS: no-reply@codigoactivo.local
       SMTP_FROM_NAME: Código Activo (desarrollo)
+      LEGAL_NAME: Código Activo (desarrollo)
+      LEGAL_TAX_ID: G00000000
+      LEGAL_ADDRESS: León (desarrollo)
+      LEGAL_REGISTRY: Sin inscripción (desarrollo)
     ports:
       - "5150:8080"
     read_only: false

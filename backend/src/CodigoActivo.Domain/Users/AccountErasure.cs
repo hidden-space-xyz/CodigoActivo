@@ -43,4 +43,18 @@ public sealed record AccountErasure(
     {
         return new AccountErasure(AccountDeletionOrigin.EmailClaimed, claimantId, now);
     }
+
+    /// <summary>
+    /// Describes the scheduled deletion of an account nobody verified in time. Nobody asks for it,
+    /// so the account itself stands as the actor.
+    /// </summary>
+    /// <param name="account">Account whose verification expired.</param>
+    /// <param name="now">Current time.</param>
+    /// <returns>The description of the deletion.</returns>
+    public static AccountErasure ForExpiredVerification(User account, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(account);
+
+        return new AccountErasure(AccountDeletionOrigin.VerificationExpired, account.Id, now);
+    }
 }

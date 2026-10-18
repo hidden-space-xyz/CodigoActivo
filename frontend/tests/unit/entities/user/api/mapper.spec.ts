@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { toUpdateUserRequest, toUser, toUserCatalogRef } from '@/entities/user/api/mapper'
+import { toUser, toUserCatalogRef } from '@/entities/user/api/mapper'
 
 import {
   buildDependentResponse,
@@ -62,25 +62,5 @@ describe('toUserCatalogRef', () => {
       { id: 'type-participant', name: 'Participant', color: '#00AA00' },
       { id: 'type-member', name: 'Member', color: '#0000AA' },
     ])
-  })
-})
-
-describe('toUpdateUserRequest', () => {
-  it('sends every field of the update', () => {
-    const input = {
-      firstName: 'Ada',
-      lastName: 'King',
-      email: null,
-      phone: null,
-      secondaryPhone: null,
-      birthDate: '2015-03-02',
-      nationalId: null,
-      promotionalConsent: false,
-      gender: 'Female',
-      parentId: 'user-1',
-      currentPassword: null,
-    } as const
-
-    expect(toUpdateUserRequest(input)).toEqual(input)
   })
 })

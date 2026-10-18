@@ -123,11 +123,19 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         builder.UseSetting("BOOTSTRAP_ADMIN_EMAIL", "bootstrap@codigoactivo.test");
         builder.UseSetting("SMTP_HOST", "smtp.test");
         builder.UseSetting("SMTP_FROM_ADDRESS", "no-reply@codigoactivo.test");
+        builder.UseSetting("LEGAL_NAME", "Asociación Código Activo");
+        builder.UseSetting("LEGAL_TAX_ID", "G24000000");
+        builder.UseSetting("LEGAL_ADDRESS", "Calle Ejemplo 1, 24001 León");
+        builder.UseSetting(
+            "LEGAL_REGISTRY",
+            "Registro de Asociaciones de Castilla y León, n.º 0000"
+        );
 
         builder.ConfigureTestServices(services =>
         {
             RemoveHostedService<ExpiredSessionCleaner>(services);
             RemoveHostedService<DeletedAccountPurger>(services);
+            RemoveHostedService<UnverifiedAccountPurger>(services);
             RemoveHostedService<EmailOutboxProcessor>(services);
             RemoveHostedService<DisposableEmailDomainRefresher>(services);
             RemoveHostedService<LogRetentionWorker>(services);

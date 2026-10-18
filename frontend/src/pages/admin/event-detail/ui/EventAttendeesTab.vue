@@ -6,8 +6,7 @@ import { fullName, GENDERS, genderLabelKey } from '@/entities/user'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import { MAX_SEARCH_LENGTH } from '@/shared/config'
 import { normalizeHexColor } from '@/shared/lib/color'
-import { ageFrom, formatDateTime, todayIso } from '@/shared/lib/date'
-import { type CsvValue, useCsvExport } from '@/shared/lib/download'
+import { ageFrom, formatDateTime } from '@/shared/lib/date'
 import { useCrudFeedback } from '@/shared/lib/feedback'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AppIcon } from '@/shared/ui/app-icon'
@@ -76,46 +75,6 @@ const activityOptions = computed(() =>
 const typeOptions = computed(() => toSelectOptions(userTypes.data.value))
 const roleOptions = computed(() => toSelectOptions(roles.data.value))
 const statusOptions = computed(() => toSelectOptions(statuses.data.value))
-
-const exportHeaders = [
-  t('pages.admin.eventDetail.attendees.export.columns.firstName'),
-  t('pages.admin.eventDetail.attendees.export.columns.lastName'),
-  t('pages.admin.eventDetail.attendees.export.columns.email'),
-  t('pages.admin.eventDetail.attendees.export.columns.phone'),
-  t('pages.admin.eventDetail.attendees.export.columns.secondaryPhone'),
-  t('pages.admin.eventDetail.attendees.export.columns.gender'),
-  t('pages.admin.eventDetail.attendees.export.columns.guardianFirstName'),
-  t('pages.admin.eventDetail.attendees.export.columns.guardianLastName'),
-  t('pages.admin.eventDetail.attendees.export.columns.guardianEmail'),
-  t('pages.admin.eventDetail.attendees.export.columns.guardianPhone'),
-  t('pages.admin.eventDetail.attendees.export.columns.guardianSecondaryPhone'),
-]
-
-function exportRow(attendee: EventAttendee): CsvValue[] {
-  return [
-    attendee.firstName,
-    attendee.lastName,
-    attendee.email,
-    attendee.phone,
-    attendee.secondaryPhone,
-    t(genderLabelKey(attendee.gender)),
-    attendee.guardian?.firstName,
-    attendee.guardian?.lastName,
-    attendee.guardian?.email,
-    attendee.guardian?.phone,
-    attendee.guardian?.secondaryPhone,
-  ]
-}
-
-const { exporting, exportCsv } = useCsvExport<EventAttendee>({
-  fetchRows: table.fetchAll,
-  headers: exportHeaders,
-  toRow: exportRow,
-  filename: () => t('pages.admin.eventDetail.attendees.export.filename', { date: todayIso() }),
-  onExported: (rows) =>
-    feedback.success(t('pages.admin.eventDetail.attendees.export.toast.exported', rows.length)),
-  onError: (error) => feedback.error(error),
-})
 
 const {
   visible: emailDialogVisible,
@@ -224,14 +183,6 @@ function hasConflicts(attendee: EventAttendee): boolean {
           :value="option.value"
         />
       </el-select>
-      <ActionButton
-        :label="$t('pages.admin.eventDetail.attendees.export.label')"
-        :tooltip="$t('pages.admin.eventDetail.attendees.export.tooltip')"
-        icon="download"
-        :loading="exporting"
-        :disabled="table.total.value === 0"
-        @click="exportCsv"
-      />
       <ActionButton
         :label="$t('pages.admin.eventDetail.attendees.email.bulkLabel')"
         :tooltip="$t('pages.admin.eventDetail.attendees.email.bulkTooltip')"

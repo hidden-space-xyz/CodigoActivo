@@ -21,7 +21,7 @@ describe('cookie policy page', () => {
     const { wrapper } = await renderApp('/cookies')
 
     expect(wrapper.get('h1').text()).toBe(t('pages.cookiePolicy.title'))
-    const entries = wrapper.findAll('.cookie-policy__entry')
+    const entries = wrapper.findAll('.legal-entry')
     expect(entries.map((entry) => entry.get('.cookie-policy__name').text())).toEqual([
       '__Host-CodigoActivo.Session',
       '__Host-CodigoActivo.TwoFactor',
@@ -30,7 +30,7 @@ describe('cookie policy page', () => {
       'ca:stale-build-reload',
     ])
     for (const entry of entries) {
-      const values = entry.findAll('.cookie-policy__fact-value').map((value) => value.text())
+      const values = entry.findAll('.legal-entry__value').map((value) => value.text())
       expect(values).toHaveLength(2)
       expect(values.every((value) => value.length > 0)).toBe(true)
     }
@@ -68,10 +68,21 @@ describe('cookie policy page', () => {
     expect(main.text()).toContain(t('pages.cookiePolicy.consent.keepSignedIn'))
   })
 
+  it('points to the privacy policy for the personal data the cookies carry', async () => {
+    const { wrapper, router } = await renderApp('/cookies')
+
+    const section = wrapper.get('[aria-labelledby="cookie-policy-privacy"]')
+    expect(section.get('h2').text()).toBe(t('pages.cookiePolicy.privacy.title'))
+    expect(section.get('a').attributes('href')).toBe(
+      router.resolve({ name: 'privacy-policy' }).href,
+    )
+  })
+
   it('opens from the footer link', async () => {
     const { wrapper, router } = await renderApp('/about')
 
-    await wrapper.get('.footer__legal a').trigger('click')
+    const href = router.resolve({ name: 'cookie-policy' }).href
+    await wrapper.get(`.footer__legal a[href="${href}"]`).trigger('click')
 
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('cookie-policy'), {
       timeout: 10_000,

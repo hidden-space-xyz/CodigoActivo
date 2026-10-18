@@ -22,6 +22,7 @@ export const AuditAction = {
   Login: 'Login',
   Register: 'Register',
   RemoveExpiredSessions: 'RemoveExpiredSessions',
+  PurgeUnverifiedAccounts: 'PurgeUnverifiedAccounts',
   RequestAccountDeletionCode: 'RequestAccountDeletionCode',
   ResendTwoFactorCode: 'ResendTwoFactorCode',
   ResendVerification: 'ResendVerification',

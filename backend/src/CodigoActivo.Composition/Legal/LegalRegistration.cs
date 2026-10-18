@@ -1,0 +1,42 @@
+using CodigoActivo.Application.Legal;
+using CodigoActivo.Composition.Configuration;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace CodigoActivo.Composition.Legal;
+
+/// <summary>
+/// Registers the legal identity of the association, read from the <c>LEGAL_*</c> settings.
+/// </summary>
+internal static class LegalRegistration
+{
+    /// <summary>
+    /// Adds the legal identity options; a value longer than
+    /// <see cref="LegalEntityOptions.MaxLength"/> stops the start.
+    /// </summary>
+    /// <param name="services">Service collection to add to.</param>
+    /// <param name="configuration">Configuration of the application.</param>
+    /// <returns>The same service collection.</returns>
+    public static IServiceCollection AddLegal(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        var settings = new Settings(configuration);
+        services.AddValidatedOptions<LegalEntityOptions>(
+            options =>
+            {
+                options.Name = settings.Text("LEGAL_NAME", string.Empty);
+                options.TaxId = settings.Text("LEGAL_TAX_ID", string.Empty);
+                options.Address = settings.Text("LEGAL_ADDRESS", string.Empty);
+                options.Registry = settings.Text("LEGAL_REGISTRY", string.Empty);
+            },
+            options =>
+                new[] { options.Name, options.TaxId, options.Address, options.Registry }.All(
+                    value => value.Length <= LegalEntityOptions.MaxLength
+                ),
+            $"LEGAL_NAME, LEGAL_TAX_ID, LEGAL_ADDRESS and LEGAL_REGISTRY must not exceed {LegalEntityOptions.MaxLength} characters."
+        );
+        return services;
+    }
+}

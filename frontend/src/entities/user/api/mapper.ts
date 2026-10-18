@@ -1,5 +1,4 @@
 import type {
-  UpdateUserRequest,
   UserResponse,
   UserStatusResponse,
   UserStatusTypeResponse,
@@ -7,7 +6,7 @@ import type {
   UserTypeSummaryResponse,
 } from '@/shared/api/generated/models'
 
-import type { UpdateUserInput, User, UserCatalogRef } from '../model/types'
+import type { User, UserCatalogRef } from '../model/types'
 
 /** Maps a user status or user type, as a user carries it or a catalog lists it. */
 export function toUserCatalogRef(
@@ -37,22 +36,5 @@ export function toUser(user: UserResponse): User {
     dependentCount: user.dependentCount ?? 0,
     status: toUserCatalogRef(user.status),
     type: user.type ? toUserCatalogRef(user.type) : null,
-  }
-}
-
-/** Builds the body that replaces a user. */
-export function toUpdateUserRequest(input: UpdateUserInput): UpdateUserRequest {
-  return {
-    firstName: input.firstName,
-    lastName: input.lastName,
-    email: input.email,
-    phone: input.phone,
-    secondaryPhone: input.secondaryPhone,
-    birthDate: input.birthDate,
-    nationalId: input.nationalId,
-    promotionalConsent: input.promotionalConsent,
-    gender: input.gender,
-    parentId: input.parentId,
-    currentPassword: input.currentPassword,
   }
 }

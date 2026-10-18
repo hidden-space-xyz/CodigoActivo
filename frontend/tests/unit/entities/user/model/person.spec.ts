@@ -6,7 +6,6 @@ import {
   parseDependentPerson,
   parseIndependentPerson,
   personProblemKey,
-  toUpdateUserInput,
 } from '@/entities/user'
 import type { DependentDraft, IndependentDraft } from '@/entities/user/model/person'
 
@@ -177,34 +176,5 @@ describe('personProblemKey', () => {
     ['birthDate', 'notMinor', 'entities.user.person.birthDateNotMinor'],
   ] as const)('explains %s %s', (field, problem, key) => {
     expect(personProblemKey(field, problem)).toBe(key)
-  })
-})
-
-describe('toUpdateUserInput', () => {
-  it('sends an independent account without a birth date', () => {
-    const person = parseIndependentPerson(adult()).person
-    if (!person) throw new Error('invalid fixture')
-
-    expect(
-      toUpdateUserInput({ kind: 'independent', person, currentPassword: 'secret' }, null),
-    ).toEqual({ ...person, birthDate: null, parentId: null, currentPassword: 'secret' })
-  })
-
-  it('sends a dependent with its guardian and nothing of its own to contact', () => {
-    const person = parseDependentPerson(child(), { today: TODAY }).person
-    if (!person) throw new Error('invalid fixture')
-
-    expect(
-      toUpdateUserInput({ kind: 'dependent', person, currentPassword: null }, 'guardian-1'),
-    ).toEqual({
-      ...person,
-      email: null,
-      phone: null,
-      secondaryPhone: null,
-      nationalId: null,
-      promotionalConsent: false,
-      parentId: 'guardian-1',
-      currentPassword: null,
-    })
   })
 })

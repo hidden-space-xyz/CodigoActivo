@@ -1,17 +1,9 @@
 import { computed, readonly, ref, type Ref } from 'vue'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
 import { useSession } from '@/entities/session'
-import {
-  fullName,
-  isSameEmail,
-  userList,
-  userMutations,
-  userQueries,
-  type UpdateUserInput,
-  type User,
-} from '@/entities/user'
+import { fullName, userList, userMutations, userQueries, type User } from '@/entities/user'
 import { hasErrorCode } from '@/shared/api'
 import { useCrudDialog } from '@/shared/lib/crud'
 import {
@@ -55,19 +47,17 @@ export interface UserRelationFilter {
  * birth date of independent accounts, and the contact details, DNI/NIE, status, admin role and
  * promotional consent of dependents.
  *
- * It also opens the dialogs that edit a user (loaded whole first), change their type, grant the
- * admin role or return their second factor to email. The last two, and any edit that replaces
- * contact details, need the signed-in admin's password: a refused one is shown in the dialog
- * instead of a toast. An admin's new email for their own account waits for the link emailed to it,
- * as the success toast says. Revoking the admin role and deleting ask for confirmation and then act
- * at once. The initial administrator can be neither demoted nor deleted, and the caller can neither
+ * It also opens the dialogs that change a user's type, grant the admin role or return their second
+ * factor to email; personal data and consents are only changed by their holder or guardian from
+ * «Mi cuenta». Granting the role and resetting the second factor need the signed-in admin's
+ * password: a refused one is shown in the dialog instead of a toast. Revoking the admin role and
+ * deleting ask for confirmation and then act at once. The initial administrator can be neither demoted nor deleted, and the caller can neither
  * change their own type or admin role nor delete their own account here; the block reasons explain
  * why. Call it in `setup`.
  */
 export function useUsersAdmin() {
   const { t } = useI18n()
   const session = useSession()
-  const queryClient = useQueryClient()
   const feedback = useCrudFeedback()
   const { confirmDelete } = useDeleteConfirm()
   const { confirmAction } = useActionConfirm()
@@ -93,20 +83,14 @@ export function useUsersAdmin() {
   const types = useQuery(userQueries.types())
   const statuses = useQuery(userQueries.statuses())
 
-  const update = useMutation(userMutations.update())
   const remove = useMutation(userMutations.remove())
   const changeType = useMutation(userMutations.changeType())
   const setAdmin = useMutation(userMutations.setAdmin())
   const resetTwoFactor = useMutation(userMutations.resetTwoFactor())
 
-  const editDialog = useCrudDialog<User>({
-    load: (row) =>
-      queryClient.fetchQuery({ ...userQueries.detail(row.id), staleTime: 0 }).catch(() => row),
-  })
   const typeDialog = useCrudDialog<User>()
   const grantDialog = useCrudDialog<User>()
   const resetDialog = useCrudDialog<User>()
-  const editError = ref('')
   const grantError = ref('')
   const resetError = ref('')
 
@@ -192,25 +176,6 @@ export function useUsersAdmin() {
     return undefined
   }
 
-  function openEdit(user: User): Promise<void> {
-    editError.value = ''
-    return editDialog.openEdit(user)
-  }
-
-  function saveUser(input: UpdateUserInput): void {
-    const user = editDialog.editing.value
-    if (!user) return
-    editError.value = ''
-    const ownEmailChange = isOwnAccount(user) && !isSameEmail(input.email, user.email)
-    const successMessage = ownEmailChange
-      ? t('pages.admin.users.toasts.emailChangeSent', { email: input.email })
-      : t('pages.admin.users.toasts.updated')
-    update.mutate(
-      { id: user.id, input },
-      passwordAware(editError, successMessage, editDialog.close),
-    )
-  }
-
   function saveType(userTypeId: string): void {
     const user = typeDialog.editing.value
     if (!user) return
@@ -288,11 +253,6 @@ export function useUsersAdmin() {
     typeBlockReason,
     adminBlockReason,
     deleteBlockReason,
-    editDialog,
-    editError,
-    openEdit,
-    saveUser,
-    saving: update.isPending,
     typeDialog,
     saveType,
     changingType: changeType.isPending,

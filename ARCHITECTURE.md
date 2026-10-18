@@ -154,8 +154,9 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
   `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, is the safety
   net that refuses any other user deletion, any deletion of the initial administrator and any change to a
   stored copy. The
-  `PurgeDeletedAccounts` and `RemoveExpiredSessions` commands delete legal copies past their retention and
-  expired sessions; hosted services in Infrastructure only run them on a schedule. What the copy holds and how
+  `PurgeDeletedAccounts`, `PurgeUnverifiedAccounts` and `RemoveExpiredSessions` commands delete legal copies
+  past their retention, accounts nobody verified within 30 days (through `AccountEraser`) and expired
+  sessions; hosted services in Infrastructure only run them on a schedule. What the copy holds and how
   long it is kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
 - Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
   `IFileStorage`, `IAuditTrail`, `IRequestOrigin`, the email, persistence and read ports) live in
@@ -240,8 +241,10 @@ it, never from their input. `GetAccountQuery` is the one query that reads the ca
 email verification and two-factor login completion answer before the session exists. `ActingUserPolicy` lets
 the signed-in user act for themselves or one of their dependents, and an administrator for anyone, reading the guardianship from the read side so commands and queries share it, and
 answers anything else with `ActingForAnotherUserForbidden` (403
-`AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda, adding a dependent and
-updating or deleting a user check it. Changing a password is narrower: only the holder may do it. Signing up a household is the exception: it only
+`AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda and deleting a user
+check it. Personal data is narrower: updating a user and adding a dependent accept only the holder or their
+guardian, administrators included (`EnsureMayManagePersonalDataAsync`), and changing a password only the
+holder. Signing up a household is the exception: it only
 takes the signed-in user and their own dependents (`Household.Includes`), administrators included, and answers
 anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]` attributes
 refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.

@@ -19,30 +19,12 @@ function cachedUsers() {
 describe('userMutations', () => {
   it('refreshes every user query, but not their catalogs, after each change', async () => {
     server.use(
-      http.put('/api/users/:id', () => HttpResponse.json(buildUserResponse())),
       http.delete('/api/users/:id', () => noContent()),
       http.patch('/api/users/:id/change-type', () => HttpResponse.json(buildUserResponse())),
       http.patch('/api/users/:id/admin', () => noContent()),
       http.post('/api/users/:id/two-factor/reset', () => noContent()),
     )
     const runs = [
-      (client: ReturnType<typeof createTestQueryClient>) =>
-        new MutationObserver(client, userMutations.update()).mutate({
-          id: 'u1',
-          input: {
-            firstName: 'Ada',
-            lastName: 'Lovelace',
-            email: 'ada@example.test',
-            phone: '600000000',
-            secondaryPhone: null,
-            birthDate: null,
-            nationalId: '12345678Z',
-            promotionalConsent: false,
-            gender: 'Female',
-            parentId: null,
-            currentPassword: null,
-          },
-        }),
       (client: ReturnType<typeof createTestQueryClient>) =>
         new MutationObserver(client, userMutations.remove()).mutate('u1'),
       (client: ReturnType<typeof createTestQueryClient>) =>

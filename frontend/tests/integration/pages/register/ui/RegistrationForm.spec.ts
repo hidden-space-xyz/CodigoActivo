@@ -11,6 +11,7 @@ import {
 import type { Gender } from '@/shared/api/generated/models'
 
 import { renderWithProviders, t } from '../../../../support/render'
+import { TEST_LEGAL_ENTITY } from '../../../../support/server'
 
 async function renderForm(isSubmitting = false) {
   const form = reactive<RegistrationFormModel>(createEmptyRegistrationForm())
@@ -59,6 +60,7 @@ describe('RegistrationForm', () => {
       t('pages.register.form.contactTitle'),
       t('pages.register.form.accessTitle'),
       t('pages.register.form.minorsTitle'),
+      t('pages.register.form.privacy.title'),
     ])
     expect(wrapper.findAll('[id^="reg-"]').map((field) => field.attributes('id'))).toEqual([
       'reg-firstname',
@@ -71,8 +73,30 @@ describe('RegistrationForm', () => {
       'reg-password',
       'reg-password-confirm',
       'reg-promotional-consent',
+      'reg-privacy-title',
     ])
     expect(wrapper.find('#reg-national-id-confirm').exists()).toBe(false)
+  })
+
+  it('gives the basic data protection information before submitting, linking to the full policy', async () => {
+    const { wrapper } = await renderForm()
+
+    const notice = wrapper.get('.reg-privacy')
+    expect(notice.attributes('aria-labelledby')).toBe('reg-privacy-title')
+    expect(notice.findAll('dt').map((term) => term.text())).toEqual([
+      t('pages.register.form.privacy.controller'),
+      t('pages.register.form.privacy.purpose'),
+      t('pages.register.form.privacy.legalBasis'),
+      t('pages.register.form.privacy.recipients'),
+      t('pages.register.form.privacy.rights'),
+      t('pages.register.form.privacy.more'),
+    ])
+    await vi.waitFor(() => expect(notice.text()).toContain(TEST_LEGAL_ENTITY.name))
+    const link = notice.get('a')
+    expect(link.attributes('href')).toBe('/privacy')
+    expect(link.attributes('target')).toBe('_blank')
+    expect(link.attributes('rel')).toBe('noopener')
+    expect(wrapper.get('.reg__footer').element.contains(notice.element)).toBe(true)
   })
 
   it('shows every validation error on an empty submit and does not emit', async () => {

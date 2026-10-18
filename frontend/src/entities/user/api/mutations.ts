@@ -1,23 +1,15 @@
 import { mutationOptions } from '@tanstack/vue-query'
 
-import type { UpdateUserInput } from '../model/types'
 import { userKeys } from './queries'
 import {
   changeUserTypeRequest,
   deleteUserRequest,
   resetUserTwoFactorRequest,
   setUserAdminRequest,
-  updateUserRequest,
 } from './requests'
 
 /** Mutation options of users; each one refreshes every user query once it succeeds. */
 export const userMutations = {
-  update: () =>
-    mutationOptions({
-      mutationFn: ({ id, input }: { id: string; input: UpdateUserInput }) =>
-        updateUserRequest(id, input),
-      meta: { invalidates: [userKeys.all] },
-    }),
   remove: () =>
     mutationOptions({
       mutationFn: (id: string) => deleteUserRequest(id),

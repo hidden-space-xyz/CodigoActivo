@@ -36,7 +36,8 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly FakeDisposableEmailDomainStore disposableDomains = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly User actingUser;
-    private readonly TestCurrentUser currentUser = new(isAdmin: true);
+    private readonly TestCurrentUser currentUser = new();
+    private readonly FakeReadStore readStore = new();
     private readonly AccountSecurityNotifications notifications;
     private readonly UpdateUserCommandHandler sut;
 
@@ -51,8 +52,7 @@ public sealed class UpdateUserCommandHandlerTests
         );
         sut = new UpdateUserCommandHandler(
             users,
-            ActingUsers.Policy(currentUser),
-            currentUser,
+            ActingUsers.Policy(currentUser, readStore),
             PasswordGuards.Create(hasher, uow, clock, users: users, currentUser: currentUser),
             clock,
             new DisposableEmailChecker(disposableDomains),
@@ -149,73 +149,72 @@ public sealed class UpdateUserCommandHandlerTests
     public async Task HandleAsyncUserMissingReturnsNotFound()
     {
         users.FindReturns(null);
-        var request = new UpdateUserRequest(
-            "First",
-            "Last",
-            "a@test.com",
-            "555",
-            null,
-            AdultNationalId,
-            false,
-            Gender.Female,
-            null,
-            null
-        );
 
-        var result = await HandleAsync(Guid.NewGuid(), request);
+        var result = await HandleAsync(actingUser.Id.Value, ContactChange("acting@test.com"));
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncAdultEmailAlreadyInUseReturnsConflict()
+    public async Task HandleAsyncAdministratorEditingAnotherAccountIsForbidden()
     {
-        users.FindReturns(NewUser(), actingUser);
-        users
-            .EmailExistsAsync(
-                Arg.Any<EmailAddress>(),
-                Arg.Any<UserId?>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(true);
-        var request = new UpdateUserRequest(
-            "F",
-            "L",
-            "dup@test.com",
-            "555-0199",
-            null,
-            AdultNationalId,
-            false,
-            Gender.Female,
-            null,
-            ActingPassword
+        currentUser.IsAdmin = true;
+        var user = NewUser(email: "ana@test.com");
+        users.FindReturns(user, actingUser);
+
+        var result = await HandleAsync(
+            user.Id.Value,
+            ContactChange("ana@test.com", firstName: "X")
         );
 
-        var result = await HandleAsync(Guid.NewGuid(), request);
-
-        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.UserEmailAlreadyInUse);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
+        user.FirstName.Should().Be("Ana");
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .GetByIdAsync(default, TestContext.Current.CancellationToken);
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncValidAdultUpdateNormalizesContactPersistsAndInvalidatesCache()
+    public async Task HandleAsyncAdministratorAddingDataToAnotherGuardiansDependentIsForbidden()
     {
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id);
-        users.FindReturns(user, actingUser);
-        users
-            .EmailExistsAsync(
-                Arg.Any<EmailAddress>(),
-                Arg.Any<UserId?>(),
-                Arg.Any<CancellationToken>()
+        currentUser.IsAdmin = true;
+        var guardianId = Guid.NewGuid();
+        var dependent = NewUser(parentId: guardianId, email: null, phone: null);
+        readStore.AddDependent(dependent.Id.Value, guardianId);
+        users.FindReturns(dependent);
+
+        var result = await HandleAsync(
+            dependent.Id.Value,
+            new UpdateUserRequest(
+                "Kid",
+                "Doe",
+                null,
+                null,
+                MinorDob,
+                null,
+                false,
+                Gender.Female,
+                guardianId,
+                null
             )
-            .Returns(false);
+        );
+
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
+        dependent.FirstName.Should().Be("Ana");
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncValidOwnUpdateNormalizesContactAndPersists()
+    {
+        EditOwnAccount();
         clock.UtcNow = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
         var request = new UpdateUserRequest(
             "  New  ",
             "  Name  ",
-            "  NEW@test.com  ",
+            "  ACTING@test.com  ",
             "  600 999 999  ",
             null,
             AdultNationalId,
@@ -225,136 +224,47 @@ public sealed class UpdateUserCommandHandlerTests
             ActingPassword
         );
 
-        var result = await HandleAsync(id, request);
+        var result = await HandleAsync(actingUser.Id.Value, request);
 
         result.IsSuccess.Should().BeTrue();
-        user.FirstName.Should().Be("New");
-        user.LastName.Should().Be("Name");
-        user.Email!.Value.Should().Be("new@test.com");
-        user.Phone!.Value.Should().Be("600 999 999");
-        user.Gender.Should().Be(CodigoActivo.Domain.Users.Gender.Female);
-        user.ParentId.Should().BeNull();
-        user.UpdatedAt.Should().Be(clock.UtcNow);
-    }
-
-    [Fact]
-    public async Task HandleAsyncChangedIdentifiersWarnsThePreviousAddressWithTheNewOneMasked()
-    {
-        var id = Guid.NewGuid();
-        var user = NewUser(first: "Berta", id: id, email: "old@test.com");
-        users.FindReturns(user, actingUser);
-        users
-            .EmailExistsAsync(
-                Arg.Any<EmailAddress>(),
-                Arg.Any<UserId?>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
-        var request = new UpdateUserRequest(
-            "Berta",
-            "Lopez",
-            "brandnew@test.com",
-            "555-0100",
-            null,
-            AdultNationalId,
-            false,
-            Gender.Female,
-            null,
-            ActingPassword
-        );
-
-        var result = await HandleAsync(id, request);
-        await PublishAsync(user);
-
-        result.IsSuccess.Should().BeTrue();
-        composer
-            .Composed.Should()
-            .Equal(
-                Alert("old@test.com", "Berta", AccountSecurityChange.EmailChanged, "b***@test.com")
-            );
-        var message = emailSender.Sent.Should().ContainSingle().Subject;
-        message.Subject.Should().Be(nameof(IAccountEmailComposer.SecurityAlert));
-        message.ToAddress.Should().Be("old@test.com");
+        actingUser.FirstName.Should().Be("New");
+        actingUser.LastName.Should().Be("Name");
+        actingUser.Email!.Value.Should().Be("acting@test.com");
+        actingUser.Phone!.Value.Should().Be("600 999 999");
+        actingUser.Gender.Should().Be(CodigoActivo.Domain.Users.Gender.Female);
+        actingUser.ParentId.Should().BeNull();
+        actingUser.UpdatedAt.Should().Be(clock.UtcNow);
     }
 
     [Fact]
     public async Task HandleAsyncOnlyThePhoneChangedWarnsWithoutQuotingTheUnchangedEmail()
     {
-        var id = Guid.NewGuid();
-        var user = NewUser(first: "Berta", id: id, email: "ana@test.com", phone: "555-0100");
-        users.FindReturns(user, actingUser);
-        var request = new UpdateUserRequest(
-            "Berta",
-            "Lopez",
-            "ana@test.com",
-            "555-0199",
-            null,
-            AdultNationalId,
-            false,
-            Gender.Female,
-            null,
-            ActingPassword
-        );
+        EditOwnAccount();
 
-        var result = await HandleAsync(id, request);
-        await PublishAsync(user);
+        var result = await HandleAsync(
+            actingUser.Id.Value,
+            ContactChange("acting@test.com", phone: "555-0199")
+        );
+        await PublishAsync(actingUser);
 
         result.IsSuccess.Should().BeTrue();
         composer
             .Composed.Should()
-            .Equal(Alert("ana@test.com", "Berta", AccountSecurityChange.PhoneChanged));
-        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
+            .Equal(Alert("acting@test.com", "Ana", AccountSecurityChange.PhoneChanged));
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("acting@test.com");
     }
 
     [Fact]
-    public async Task HandleAsyncAccountGainingIdentifiersLogsTheChangeWithoutNotifying()
+    public async Task HandleAsyncPhoneNoticeRefusedByTheLimiterIsLoggedWithoutFailingTheUpdate()
     {
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: null, phone: null);
-        users.FindReturns(user, actingUser);
-        var request = new UpdateUserRequest(
-            "Ana",
-            "Lopez",
-            "ana@test.com",
-            "555-0100",
-            null,
-            AdultNationalId,
-            false,
-            Gender.Female,
-            null,
-            ActingPassword
-        );
-
-        var result = await HandleAsync(id, request);
-        await PublishAsync(user);
-
-        result.IsSuccess.Should().BeTrue();
-        user.Email!.Value.Should().Be("ana@test.com");
-        emailSender.Sent.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task HandleAsyncIdentifierNoticeRefusedByTheLimiterIsLoggedWithoutFailingTheUpdate()
-    {
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "old@test.com");
-        users.FindReturns(user, actingUser);
+        EditOwnAccount();
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
-        var request = new UpdateUserRequest(
-            "Ana",
-            "Lopez",
-            "brandnew@test.com",
-            "555-0100",
-            null,
-            AdultNationalId,
-            false,
-            Gender.Female,
-            null,
-            ActingPassword
-        );
 
-        var result = await HandleAsync(id, request);
-        await PublishAsync(user);
+        var result = await HandleAsync(
+            actingUser.Id.Value,
+            ContactChange("acting@test.com", phone: "555-0199")
+        );
+        await PublishAsync(actingUser);
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
@@ -362,16 +272,16 @@ public sealed class UpdateUserCommandHandlerTests
         entry.Level.Should().Be(LogLevel.Warning);
         entry
             .Message.Should()
-            .Be("A EmailChanged security notification was dropped by the email limiter")
-            .And.NotContain(id.ToString());
+            .Be("A PhoneChanged security notification was dropped by the email limiter")
+            .And.NotContain(actingUser.Id.Value.ToString());
     }
 
     [Fact]
     public async Task HandleAsyncAdultUnchangedContactSavesWithoutPassword()
     {
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        var user = NewUser(email: "ana@test.com", phone: "555-0100");
         Persisted.Overwrite(user, new { SecondaryPhone = "555-0200" });
+        currentUser.Id = user.Id;
         users.FindReturns(user);
         var request = new UpdateUserRequest(
             "Ana",
@@ -387,7 +297,7 @@ public sealed class UpdateUserCommandHandlerTests
             "  555-0200  "
         );
 
-        var result = await HandleAsync(id, request);
+        var result = await HandleAsync(user.Id.Value, request);
 
         result.IsSuccess.Should().BeTrue();
         user.Email!.Value.Should().Be("ana@test.com");
@@ -405,9 +315,7 @@ public sealed class UpdateUserCommandHandlerTests
         int countedFailures
     )
     {
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
-        users.FindReturns(user, actingUser);
+        EditOwnAccount();
         var request = new UpdateUserRequest(
             "Ana",
             "Lopez",
@@ -421,13 +329,13 @@ public sealed class UpdateUserCommandHandlerTests
             currentPassword
         );
 
-        var result = await HandleAsync(id, request);
+        var result = await HandleAsync(actingUser.Id.Value, request);
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
-        user.Email!.Value.Should().Be("ana@test.com");
+        actingUser.Email!.Value.Should().Be("acting@test.com");
+        actingUser.EmailChange.NewEmail.Should().BeNull();
         actingUser.PasswordLockout.FailedAttempts.Should().Be(countedFailures);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AssertNotSavedAsync();
     }
 
     [Theory]
@@ -438,13 +346,11 @@ public sealed class UpdateUserCommandHandlerTests
         string secondaryPhone
     )
     {
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
-        users.FindReturns(user, actingUser);
+        EditOwnAccount();
         var request = new UpdateUserRequest(
             "Ana",
             "Lopez",
-            "ana@test.com",
+            "acting@test.com",
             phone,
             null,
             AdultNationalId,
@@ -455,11 +361,11 @@ public sealed class UpdateUserCommandHandlerTests
             secondaryPhone
         );
 
-        var result = await HandleAsync(id, request);
+        var result = await HandleAsync(actingUser.Id.Value, request);
 
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.SecondaryPhoneSameAsPrimary);
-        user.Phone!.Value.Should().Be("555-0100");
-        user.SecondaryPhone.Should().BeNull();
+        actingUser.Phone!.Value.Should().Be("555-0100");
+        actingUser.SecondaryPhone.Should().BeNull();
         actingUser.PasswordLockout.FailedAttempts.Should().Be(0);
         await AssertNotSavedAsync();
     }
@@ -472,9 +378,7 @@ public sealed class UpdateUserCommandHandlerTests
     )
     {
         disposableDomains.Add("mailinator.com");
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "ana@test.com");
-        users.FindReturns(user, actingUser);
+        EditOwnAccount();
         var request = new UpdateUserRequest(
             "Ana",
             "Lopez",
@@ -488,10 +392,10 @@ public sealed class UpdateUserCommandHandlerTests
             currentPassword
         );
 
-        var result = await HandleAsync(id, request);
+        var result = await HandleAsync(actingUser.Id.Value, request);
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.DisposableEmailNotAllowed);
-        user.Email!.Value.Should().Be("ana@test.com");
+        actingUser.Email!.Value.Should().Be("acting@test.com");
         actingUser.PasswordLockout.FailedAttempts.Should().Be(0);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
@@ -501,16 +405,9 @@ public sealed class UpdateUserCommandHandlerTests
     public async Task HandleAsyncUnchangedEmailOfALaterListedDomainIsKept()
     {
         disposableDomains.Add("mailinator.com");
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "ana@mailinator.com");
-        users.FindReturns(user, actingUser);
-        users
-            .EmailExistsAsync(
-                Arg.Any<EmailAddress>(),
-                Arg.Any<UserId?>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(false);
+        var user = NewUser(email: "ana@mailinator.com");
+        currentUser.Id = user.Id;
+        users.FindReturns(user);
         var request = new UpdateUserRequest(
             "Anabel",
             "Lopez",
@@ -524,7 +421,7 @@ public sealed class UpdateUserCommandHandlerTests
             null
         );
 
-        var result = await HandleAsync(id, request);
+        var result = await HandleAsync(user.Id.Value, request);
 
         result.IsSuccess.Should().BeTrue();
         user.FirstName.Should().Be("Anabel");
@@ -533,37 +430,23 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAdultChangedEmailWithActingUserWithoutPasswordReturnsBadRequest()
+    public async Task HandleAsyncAdultChangedEmailWithoutAStoredPasswordReturnsBadRequest()
     {
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
         Persisted.Overwrite(actingUser, new { PasswordHash = default(string?) });
-        users.FindReturns(user, actingUser);
-        var request = new UpdateUserRequest(
-            "Ana",
-            "Lopez",
-            "other@test.com",
-            "555-0100",
-            null,
-            AdultNationalId,
-            false,
-            Gender.Female,
-            null,
-            ActingPassword
-        );
+        EditOwnAccount();
 
-        var result = await HandleAsync(id, request);
+        var result = await HandleAsync(actingUser.Id.Value, ContactChange("other@test.com"));
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
-        user.Email!.Value.Should().Be("ana@test.com");
+        actingUser.Email!.Value.Should().Be("acting@test.com");
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task HandleAsyncStandaloneAccountStoresNormalizedNationalIdAndConsentWithoutPassword()
+    public async Task HandleAsyncOwnAccountStoresNormalizedNationalIdAndConsentWithoutPassword()
     {
-        var id = Guid.NewGuid();
-        var user = NewUser(id: id, email: "ana@test.com", phone: "555-0100");
+        var user = NewUser(email: "ana@test.com", phone: "555-0100");
+        currentUser.Id = user.Id;
         users.FindReturns(user);
         var request = new UpdateUserRequest(
             "Ana",
@@ -578,7 +461,7 @@ public sealed class UpdateUserCommandHandlerTests
             null
         );
 
-        var result = await HandleAsync(id, request);
+        var result = await HandleAsync(user.Id.Value, request);
 
         result.IsSuccess.Should().BeTrue();
         user.NationalId!.Value.Should().Be("X1234567L");
@@ -588,12 +471,16 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncDependentKeepsItsGuardianContactAndCredentialsWhileStillAMinor()
+    public async Task HandleAsyncGuardianEditsTheirDependentKeepingItsGuardianContactAndCredentials()
     {
-        var id = Guid.NewGuid();
-        var parentId = Guid.NewGuid();
-        var user = NewUser(id: id, parentId: parentId, email: null, phone: null, dob: MinorDob);
-        users.FindReturns(user);
+        var dependent = NewUser(
+            parentId: actingUser.Id.Value,
+            email: null,
+            phone: null,
+            dob: MinorDob
+        );
+        readStore.AddDependent(dependent.Id.Value, actingUser.Id.Value);
+        users.FindReturns(dependent);
         var request = new UpdateUserRequest(
             "Kid",
             "Doe",
@@ -608,19 +495,20 @@ public sealed class UpdateUserCommandHandlerTests
             "333"
         );
 
-        var result = await HandleAsync(id, request);
+        var result = await HandleAsync(dependent.Id.Value, request);
 
         result.IsSuccess.Should().BeTrue();
-        user.FirstName.Should().Be("Kid");
-        user.BirthDate.Should().Be(MinorDob.AddDays(1));
-        user.Gender.Should().Be(CodigoActivo.Domain.Users.Gender.Female);
-        user.ParentId.Should().Be(UserId.From(parentId));
-        user.Email.Should()
+        dependent.FirstName.Should().Be("Kid");
+        dependent.BirthDate.Should().Be(MinorDob.AddDays(1));
+        dependent.Gender.Should().Be(CodigoActivo.Domain.Users.Gender.Female);
+        dependent.ParentId.Should().Be(actingUser.Id);
+        dependent
+            .Email.Should()
             .BeNull("a dependent's contact details are never taken from the request");
-        user.Phone.Should().BeNull();
-        user.SecondaryPhone.Should().BeNull();
-        user.NationalId.Should().BeNull("a dependent never stores a DNI or NIE");
-        user.PromotionalConsent.Should().BeFalse();
+        dependent.Phone.Should().BeNull();
+        dependent.SecondaryPhone.Should().BeNull();
+        dependent.NationalId.Should().BeNull("a dependent never stores a DNI or NIE");
+        dependent.PromotionalConsent.Should().BeFalse();
         await AssertActingUserNotLoadedAsync();
     }
 

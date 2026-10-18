@@ -127,6 +127,7 @@ export * from './leaderRosterDependentResponse';
 export * from './leaderRosterGuardianResponse';
 export * from './leaderRosterRoleResponse';
 export * from './leaderRosterUserResponse';
+export * from './legalEntityResponse';
 export * from './loginChallengeResponse';
 export * from './loginRequest';
 export * from './newsItemResponse';

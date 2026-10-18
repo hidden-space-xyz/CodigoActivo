@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.EmailAddresses;
 using CodigoActivo.Application.Accounts.Passwords;
@@ -44,14 +43,13 @@ public sealed record UpdateUserCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to update the user. The signed-in user may update themselves or one of
-/// their dependents; an administrator may update anyone. Replacing the email or the phones needs
-/// the password of the signed-in user, and a new email of their own account only applies once
-/// they confirm it.
+/// Executes the command to update the user. Only the holder or the guardian of a dependent may
+/// update a person; an administrator cannot change anyone else's personal data or consent.
+/// Replacing the email or the phones needs the password of the signed-in user, and a new email
+/// only applies once its holder confirms it.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="actingUser">Policy that decides whose personal data the signed-in user manages.</param>
 /// <param name="passwordAttempts">Guard that verifies the password of the signed-in user.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="disposableEmails">Checker of disposable email domains.</param>
@@ -59,7 +57,6 @@ public sealed record UpdateUserCommand(
 public sealed class UpdateUserCommandHandler(
     IUserRepository users,
     ActingUserPolicy actingUser,
-    ICurrentUser currentUser,
     PasswordAttemptGuard passwordAttempts,
     IClock clock,
     DisposableEmailChecker disposableEmails,
@@ -76,7 +73,7 @@ public sealed class UpdateUserCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var allowed = await actingUser.EnsureMayActForAsync(command.UserId, ct);
+        var allowed = await actingUser.EnsureMayManagePersonalDataAsync(command.UserId, ct);
         if (allowed.IsFailure)
         {
             return allowed;
@@ -125,18 +122,7 @@ public sealed class UpdateUserCommandHandler(
             return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        var ownEmailChange =
-            change.NewEmail is not null && command.UserId == currentUser.RequiredId();
-        if (
-            !ownEmailChange
-            && change.Email is { } email
-            && await users.EmailExistsAsync(email, command.UserId, ct)
-        )
-        {
-            return Error.Conflict(ApplicationErrorCode.UserEmailAlreadyInUse);
-        }
-
-        if (ownEmailChange)
+        if (change.NewEmail is not null)
         {
             return await emailChangeLinks.IssueAsync(user, change, clock.UtcNow, ct);
         }

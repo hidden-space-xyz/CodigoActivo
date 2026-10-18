@@ -77,6 +77,10 @@ services:
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
       DIAGNOSTIC_LOG_RETENTION_DAYS: ${DIAGNOSTIC_LOG_RETENTION_DAYS:-}
       AUDIT_LOG_RETENTION_DAYS: ${AUDIT_LOG_RETENTION_DAYS:-}
+      LEGAL_NAME: ${LEGAL_NAME}
+      LEGAL_TAX_ID: ${LEGAL_TAX_ID}
+      LEGAL_ADDRESS: ${LEGAL_ADDRESS}
+      LEGAL_REGISTRY: ${LEGAL_REGISTRY}
     secrets: [postgres_password, data_protection_certificate_password, smtp_password]
     volumes:
       - api-files:/app/files

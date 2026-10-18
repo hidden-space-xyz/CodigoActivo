@@ -5,9 +5,9 @@ using Microsoft.Extensions.Configuration;
 namespace CodigoActivo.Composition.Configuration;
 
 /// <summary>
-/// Refuses to start a production process whose secrets are weak or whose public address and mail
-/// delivery are not safe for the internet. The rules that hold in every environment belong to the
-/// validated options instead.
+/// Refuses to start a production process whose secrets are weak, whose public address and mail
+/// delivery are not safe for the internet or whose privacy policy would not identify the
+/// association. The rules that hold in every environment belong to the validated options instead.
 /// </summary>
 internal static class ProductionConfiguration
 {
@@ -74,6 +74,14 @@ internal static class ProductionConfiguration
         if (!IsSingleEmailAddress(smtpFromAddress))
         {
             errors.Add("SMTP_FROM_ADDRESS must be a single valid email address");
+        }
+
+        string[] legalSettings = ["LEGAL_NAME", "LEGAL_TAX_ID", "LEGAL_ADDRESS", "LEGAL_REGISTRY"];
+        if (legalSettings.Any(key => string.IsNullOrWhiteSpace(config[key])))
+        {
+            errors.Add(
+                "LEGAL_NAME, LEGAL_TAX_ID, LEGAL_ADDRESS and LEGAL_REGISTRY must identify the association"
+            );
         }
 
         var smtpUsernameMissing = string.IsNullOrWhiteSpace(config["SMTP_USERNAME"]);

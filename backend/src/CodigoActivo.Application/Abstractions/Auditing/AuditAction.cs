@@ -46,6 +46,9 @@ public enum AuditAction
     /// <summary>Removed the expired sessions.</summary>
     RemoveExpiredSessions,
 
+    /// <summary>Erased the accounts nobody verified in time.</summary>
+    PurgeUnverifiedAccounts,
+
     /// <summary>Asked for the code that confirms deleting the own account.</summary>
     RequestAccountDeletionCode,
 

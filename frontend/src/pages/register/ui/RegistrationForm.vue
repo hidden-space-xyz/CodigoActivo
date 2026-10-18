@@ -18,6 +18,7 @@ import { toDateOnly } from '@/shared/lib/date'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 import { canAddMinor, createEmptyMinor, type RegistrationForm } from '../model/registration-form'
+import PrivacyNotice from './PrivacyNotice.vue'
 
 const props = defineProps<{
   /** Reactive form state owned by the parent; the component edits it in place. */
@@ -387,6 +388,7 @@ function removeMinor(index: number): void {
             {{ $t('common.promotionalConsentOption') }}
           </el-checkbox>
         </div>
+        <PrivacyNotice />
 
         <BrandButton
           type="submit"

@@ -39,7 +39,9 @@ authentication are not supported.
   authorization policy).
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
   administration endpoints; `[AllowOnlySelf]` accepts the target user, that user's guardian or an
-  administrator. Catalog values
+  administrator, except on `PUT /api/users/{id}` and `POST /api/users/{id}/children`
+  (`AdministratorsAllowed = false`): personal data, consents and dependents change only through their
+  holder or guardian, never an administrator. Catalog values
   such as `UserType` are not authorization roles. Activity leadership grants one read, decided on every
   request from the session user's own signups: `GET /api/events/{eventId}/leader-roster` returns only
   the event's activities that have not ended and in which the caller holds a confirmed leader signup,
@@ -63,7 +65,9 @@ authentication are not supported.
   verification mail it replaces. `POST /api/auth/resend-verification` (by email) and `forgot-password` also
   answer 204 alike. Registration refuses a disposable domain first (`DisposableEmailNotAllowed`), which depends
   only on the domain, and then hashes the password before looking the address up, so every other outcome costs
-  the same Argon2 work. Unverified accounts are never purged on a schedule.
+  the same Argon2 work. An account still unverified 30 days after registering is erased with its
+  dependents and blocked copy by `PurgeUnverifiedAccounts`, which `UnverifiedAccountPurger` runs 30 seconds
+  after startup and then hourly; each account is locked and checked again before its erasure.
 - Only someone who knows an account's password learns its state: after a correct password, the password step
   answers a blocked account with `UserAccountBlocked`, an unverified one with `UserAccountPendingVerification`
   and a locked second factor with `TwoFactorLocked`.
@@ -82,19 +86,18 @@ authentication are not supported.
   /api/users/{id}/admin` returns `UserSelfAdminChangeForbidden` before any password is checked, and `PATCH
   /api/users/{id}/change-type` returns `UserSelfTypeChangeForbidden`. Another administrator must make the
   change; the SPA disables both actions on the caller's row.
-- `PUT /api/users/{id}` asks the caller (the user, their guardian or an administrator) for their own
+- `PUT /api/users/{id}` asks the caller (the user or their guardian) for their own
   password whenever the update would replace the account's email, phone or secondary phone. A missing or
   wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three
   untouched need none.
-  Changing the DNI/NIE needs no password. Holders who change their own email, administrators included, keep
+  Changing the DNI/NIE needs no password. Holders who change their own email keep
   the current one until they open the link emailed to the new address (`PATCH /api/auth/{id}/confirm-email`,
   no session needed): the rest of the edit applies at once, nothing changes when the mail cannot be queued
   (`OtpResendCooldownActive`, `EmailSendFailed`), and a newer request replaces the pending one. When the new
   address belongs to a verified account, its holder gets the same notice as registration instead of the link,
   so the answer never tells whether the address is in use; an account nobody verified that holds it is
   erased, with its blocked copy, when the link is confirmed, and one verified in the meantime keeps it
-  (`UserEmailAlreadyInUse`). An administrator who changes someone else's email replaces it at once, drops any
-  pending change and is told when the address is in use (`UserEmailAlreadyInUse`). The stored account,
+  (`UserEmailAlreadyInUse`). The stored account,
   never the request, decides the rest: an account that is not already a dependent is refused a guardian
   (`UserParentNotAllowedForAdult`) and any birth date (`UserBirthDateNotAllowedForAdult`), must supply a
   DNI/NIE (`UserNationalIdRequired`) and may set `promotionalConsent`,
@@ -171,7 +174,8 @@ initial administrator instead of the household as author, last editor or uploade
 partners, resources and files, in the same transaction; the original credit is not kept anywhere.
 
 **Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's,
-a guardian's, or that of an unverified account whose email another account claims — first stores one JSON
+a guardian's, that of an unverified account whose email another account claims, or that of one nobody
+verified within 30 days — first stores one JSON
 copy in `deleted_accounts` (`id` is the former user id with no foreign key, `deleted_at`, `data` as
 `jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
 their dependents and the household's signups and terms decisions, and then deletes them; a failed deletion
@@ -190,7 +194,7 @@ each copy two years after `deleted_at`, 30 seconds after startup and then hourly
 through `AccountEraser`, and `DeletedAccountGuard` refuses any commit that deletes the initial administrator,
 deletes a user without its copy or changes a stored copy.
 The SPA only tells users that they and their dependents lose access and cannot recover the account; the
-application has no privacy policy page, so the operator's privacy policy states the two-year retention.
+privacy policy (`/privacy`) states the two-year retention.
 
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also clears any
@@ -321,6 +325,10 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   requests to external sites, and `X-DNS-Prefetch-Control: off` stops browsers from pre-resolving link
   destinations. API responses whose body is `application/json` or `application/problem+json` also carry
   `X-Robots-Tag: noindex, nofollow`, so search engines do not index API payloads.
+- The `/privacy` page (`frontend/src/pages/privacy-policy`) states, for each processing of personal data,
+  the data, purpose, legal basis and retention, plus the processors, transfers and rights; the registration
+  form shows its first layer (`PrivacyNotice`). Change them with any new personal field, processor, recipient
+  or retention.
 - Terms-document consent is recorded for the acting user, not the person signed up: signing up a household
   dependent stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
   for that event covers later dependent signups without a new prompt (`TermsGate`). An acceptance is immutable

@@ -97,8 +97,9 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Updates the selected user with the validated request. Replacing the email or the phone
-    /// requires the caller's password, so the endpoint shares the credential rate limits.
+    /// Updates the selected user with the validated request. Only the user or their guardian may,
+    /// never an administrator. Replacing the email or the phone requires the caller's password, so
+    /// the endpoint shares the credential rate limits.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
@@ -107,7 +108,7 @@ public class UsersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPut("{userId:guid}")]
-    [AllowOnlySelf]
+    [AllowOnlySelf(AdministratorsAllowed = false)]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult<UserResponse>> UpdateAsync(
         Guid userId,
@@ -191,7 +192,7 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Adds a child to the current unit of work.
+    /// Adds a minor to the household of the selected user, who must be the caller.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
@@ -200,7 +201,7 @@ public class UsersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpPost("{userId:guid}/children")]
-    [AllowOnlySelf]
+    [AllowOnlySelf(AdministratorsAllowed = false)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<UserResponse>> AddChildAsync(
         Guid userId,

@@ -2,7 +2,6 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { ElDialog, ElPagination, ElSelect } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
-import { genderLabelKey } from '@/entities/user'
 import SendEmailDialog from '@/features/send-email/ui/SendEmailDialog.vue'
 import EventAttendeesTab from '@/pages/admin/event-detail/ui/EventAttendeesTab.vue'
 import type { EventAttendeeResponse } from '@/shared/api/generated/models'
@@ -174,7 +173,6 @@ describe('EventAttendeesTab', () => {
     await vi.waitFor(() =>
       expect(wrapper.text()).toContain(t('pages.admin.eventDetail.attendees.empty.none')),
     )
-    expect(button(t('pages.admin.eventDetail.attendees.export.label')).disabled).toBe(true)
 
     await wrapper.find('.toolbar__search input').setValue('zzz')
     expect(wrapper.text()).toContain(t('pages.admin.eventDetail.attendees.empty.noMatches'))
@@ -261,56 +259,6 @@ describe('EventAttendeesTab', () => {
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('page')).toBe('3'))
     pagination.vm.$emit('update:page-size', 50)
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('pageSize')).toBe('50'))
-  })
-
-  it('exports the filtered attendees as CSV', async () => {
-    const urls: URL[] = []
-    const { wrapper } = await renderTab({ urls })
-    let csv: Blob | undefined
-    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
-      csv = blob as Blob
-      return 'blob:csv'
-    })
-    const downloads: string[] = []
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
-      this: HTMLAnchorElement,
-    ) {
-      downloads.push(this.download)
-    })
-    selectByPlaceholder(wrapper, t('common.gender')).vm.$emit('update:modelValue', 'Male')
-    await flushPromises()
-
-    button(t('pages.admin.eventDetail.attendees.export.label')).click()
-
-    await vi.waitFor(() =>
-      expect(notificationTexts().join('\n')).toContain(
-        tc('pages.admin.eventDetail.attendees.export.toast.exported', 2),
-      ),
-    )
-    expect(downloads).toHaveLength(1)
-    expect(downloads[0]).toMatch(/^asistentes-\d{4}-\d{2}-\d{2}\.csv$/)
-    const exportUrl = urls.find((url) => url.searchParams.get('pageSize') === '100')
-    expect(exportUrl?.searchParams.get('gender')).toBe('Male')
-    const content = (await csv?.text()) ?? ''
-    const lines = content.replace('﻿', '').split('\r\n')
-    expect(lines[0]).toBe(
-      'Nombre;Apellidos;Email;Numero;NumeroSecundario;Genero;NombreDelTutor;ApellidosDelTutor;EmailDelTutor;NumeroDelTutor;NumeroSecundarioDelTutor',
-    )
-    expect(lines[1]).toBe(
-      `Ada;Lovelace;ada@example.test;600000001;600000011;${t(genderLabelKey('Female'))};;;;;`,
-    )
-    expect(lines[2]).toBe(`Tim;Berners;;;;${t(genderLabelKey('Male'))};Mary;Berners;;;611111112`)
-  })
-
-  it('reports export failures', async () => {
-    const { wrapper } = await renderTab()
-    server.use(http.get('/api/reports/events/:eventId/attendees', () => apiError(500)))
-    await flushPromises()
-    expect(wrapper.text()).toContain('Ada Lovelace')
-
-    button(t('pages.admin.eventDetail.attendees.export.label')).click()
-
-    await vi.waitFor(() => expect(notificationTexts().join('\n')).toContain(t('errors.generic')))
   })
 
   it('queues email for the filtered attendees and for a single attendee', async () => {

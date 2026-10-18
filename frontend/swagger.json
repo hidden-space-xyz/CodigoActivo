@@ -2600,6 +2600,25 @@
         }
       }
     },
+    "/api/legal-entity": {
+      "get": {
+        "tags": [
+          "Legal"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalEntityResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/logs/diagnostics": {
       "get": {
         "tags": [
@@ -4825,6 +4844,7 @@
           "Login",
           "Register",
           "RemoveExpiredSessions",
+          "PurgeUnverifiedAccounts",
           "RequestAccountDeletionCode",
           "ResendTwoFactorCode",
           "ResendVerification",
@@ -7435,6 +7455,30 @@
         },
         "additionalProperties": false
       },
+      "LegalEntityResponse": {
+        "required": [
+          "address",
+          "name",
+          "registry",
+          "taxId"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "taxId": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "registry": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "LoginChallengeResponse": {
         "required": [
           "method"
@@ -8844,6 +8888,9 @@
     },
     {
       "name": "Files"
+    },
+    {
+      "name": "Legal"
     },
     {
       "name": "Logs"

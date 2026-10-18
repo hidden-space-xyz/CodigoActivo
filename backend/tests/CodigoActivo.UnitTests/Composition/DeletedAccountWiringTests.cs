@@ -39,6 +39,20 @@ public sealed class DeletedAccountWiringTests
     }
 
     [Fact]
+    public void AddCodigoActivoErasesUnverifiedAccountsHourlyAfterTheStartupDelay()
+    {
+        using var provider = Build().BuildServiceProvider();
+        var options = provider.GetRequiredService<UnverifiedAccountPurgeOptions>();
+
+        provider
+            .GetServices<IHostedService>()
+            .Should()
+            .ContainSingle(service => service is UnverifiedAccountPurger);
+        options.Interval.Should().Be(TimeSpan.FromHours(1));
+        options.StartupDelay.Should().Be(TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
     public void AddCodigoActivoRegistersTheRepositoryPerScope()
     {
         Build()

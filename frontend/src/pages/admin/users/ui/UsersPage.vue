@@ -2,10 +2,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { fullName, genderLabelKey, type User } from '@/entities/user'
+import { fullName, type User } from '@/entities/user'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
-import { ageFrom, formatDate, todayIso } from '@/shared/lib/date'
-import { type CsvValue, useCsvExport } from '@/shared/lib/download'
+import { ageFrom, formatDate } from '@/shared/lib/date'
 import { useCrudFeedback } from '@/shared/lib/feedback'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
@@ -22,7 +21,6 @@ import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { useUsersAdmin } from '../model/use-users-admin'
 import AdminPasswordDialog from './AdminPasswordDialog.vue'
-import UserFormDialog from './UserFormDialog.vue'
 import UserTypeDialog from './UserTypeDialog.vue'
 
 const { t } = useI18n()
@@ -41,11 +39,6 @@ const {
   typeBlockReason,
   adminBlockReason,
   deleteBlockReason,
-  editDialog,
-  editError,
-  openEdit,
-  saveUser,
-  saving,
   typeDialog,
   saveType,
   changingType,
@@ -63,9 +56,6 @@ const {
 } = useUsersAdmin()
 const { sendToUsers, usersAudience } = useSendEmail()
 
-const editVisible = editDialog.visible
-const editedUser = editDialog.editing
-const loadingUser = editDialog.loading
 const typeVisible = typeDialog.visible
 const typedUser = typeDialog.editing
 const grantVisible = grantDialog.visible
@@ -105,49 +95,6 @@ function dependentsLabel(count: number): string {
   return t('pages.admin.users.dependentsLabel', { count })
 }
 
-const exportHeaders = [
-  t('common.firstName'),
-  t('common.lastName'),
-  t('common.email'),
-  t('common.phone'),
-  t('common.secondaryPhone'),
-  t('common.nationalId'),
-  t('common.birthDate'),
-  t('common.gender'),
-  t('common.status'),
-  t('pages.admin.users.columns.type'),
-  t('pages.admin.users.columns.admin'),
-  t('common.promotionalConsent'),
-  t('pages.admin.users.export.columns.guardian'),
-]
-
-function exportRow(user: User): CsvValue[] {
-  return [
-    user.firstName,
-    user.lastName,
-    user.email,
-    user.phone,
-    user.secondaryPhone,
-    user.nationalId,
-    formatDate(user.birthDate),
-    t(genderLabelKey(user.gender)),
-    user.status.name,
-    user.type?.name,
-    user.isAdmin ? t('common.yes') : t('common.no'),
-    user.promotionalConsent ? t('common.yes') : t('common.no'),
-    user.parentName,
-  ]
-}
-
-const { exporting, exportCsv } = useCsvExport<User>({
-  fetchRows: table.fetchAll,
-  headers: exportHeaders,
-  toRow: exportRow,
-  filename: () => t('pages.admin.users.export.filename', { date: todayIso() }),
-  onExported: (rows) => feedback.success(t('pages.admin.users.export.toast.exported', rows.length)),
-  onError: (error) => feedback.error(error),
-})
-
 const {
   visible: emailDialogVisible,
   target: emailTarget,
@@ -176,16 +123,6 @@ function blockedBy(
 
 function userActions(user: User): RowAction[] {
   const actions: RowAction[] = [
-    {
-      key: 'edit',
-      label: t('common.edit'),
-      icon: 'pencil',
-      inline: true,
-      disabled: loadingUser.value,
-      run: () => {
-        void openEdit(user)
-      },
-    },
     {
       key: 'changeType',
       label: t('pages.admin.users.actions.changeType'),
@@ -291,15 +228,6 @@ function userActions(user: User): RowAction[] {
         />
       </template>
       <template #actions>
-        <ActionButton
-          :label="$t('pages.admin.users.export.label')"
-          :tooltip="$t('pages.admin.users.export.tooltip')"
-          icon="download"
-          size="small"
-          :loading="exporting"
-          :disabled="table.total.value === 0"
-          @click="exportCsv"
-        />
         <ActionButton
           :label="$t('pages.admin.users.email.bulkLabel')"
           :tooltip="$t('pages.admin.users.email.bulkTooltip')"
@@ -472,14 +400,6 @@ function userActions(user: User): RowAction[] {
         </template>
       </el-table-column>
     </DataTable>
-
-    <UserFormDialog
-      v-model:visible="editVisible"
-      :user="editedUser"
-      :saving="saving"
-      :error="editError"
-      @submit="saveUser"
-    />
 
     <AdminPasswordDialog
       v-model:visible="grantVisible"

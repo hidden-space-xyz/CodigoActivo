@@ -24,4 +24,10 @@ public enum AccountDeletionOrigin
     /// Another account claimed the email of this account, which nobody had verified.
     /// </summary>
     EmailClaimed = 4,
+
+    /// <summary>
+    /// Nobody verified the account within <see cref="User.UnverifiedRetentionDays"/> of its
+    /// registration, so it was erased on schedule.
+    /// </summary>
+    VerificationExpired = 5,
 }

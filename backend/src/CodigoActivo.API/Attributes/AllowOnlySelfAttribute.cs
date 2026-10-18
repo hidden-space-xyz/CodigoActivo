@@ -8,12 +8,19 @@ namespace CodigoActivo.API.Attributes;
 
 /// <summary>
 /// Refuses early a request on a user the signed-in user may not act for: administrators pass, and
-/// anyone else needs <see cref="ActingUserPolicy"/> to accept the user named by the route.
+/// anyone else needs <see cref="ActingUserPolicy"/> to accept the user named by the route. With
+/// <see cref="AdministratorsAllowed"/> off, as for personal data, only the user and their guardian
+/// pass.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilter
 {
     private const string RouteKey = "userId";
+
+    /// <summary>
+    /// Gets or sets whether administrators pass for any user. Defaults to <see langword="true"/>.
+    /// </summary>
+    public bool AdministratorsAllowed { get; set; } = true;
 
     /// <summary>
     /// Authorizes the current request against the attribute requirements.
@@ -30,7 +37,7 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
             return;
         }
 
-        if (user.IsAdmin())
+        if (AdministratorsAllowed && user.IsAdmin())
         {
             return;
         }
@@ -44,9 +51,14 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
             return;
         }
 
-        var allowed = await context
-            .HttpContext.RequestServices.GetRequiredService<ActingUserPolicy>()
-            .EnsureMayActForAsync(UserId.From(targetUserId), context.HttpContext.RequestAborted);
+        var policy = context.HttpContext.RequestServices.GetRequiredService<ActingUserPolicy>();
+        var target = UserId.From(targetUserId);
+        var allowed = AdministratorsAllowed
+            ? await policy.EnsureMayActForAsync(target, context.HttpContext.RequestAborted)
+            : await policy.EnsureMayManagePersonalDataAsync(
+                target,
+                context.HttpContext.RequestAborted
+            );
         if (allowed.IsFailure)
         {
             context.Result = new ForbidResult();

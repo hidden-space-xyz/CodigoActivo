@@ -12,6 +12,11 @@ namespace CodigoActivo.Domain.Users;
 /// </summary>
 public class User : AggregateRoot<UserId>
 {
+    /// <summary>
+    /// Days an account may wait for the verification of its email before it is erased.
+    /// </summary>
+    public const int UnverifiedRetentionDays = 30;
+
     private User() { }
 
     /// <summary>
@@ -831,6 +836,28 @@ public class User : AggregateRoot<UserId>
     /// Gets a value indicating whether the account still waits for the verification of its email.
     /// </summary>
     public bool IsPendingVerification => Status == UserStatus.Pending;
+
+    /// <summary>
+    /// Tells up to which registration moment an account nobody verified has waited longer than
+    /// <see cref="UnverifiedRetentionDays"/>, and is erased.
+    /// </summary>
+    /// <param name="now">Current time.</param>
+    /// <returns>The latest registration moment of an expired unverified account.</returns>
+    public static DateTimeOffset UnverifiedPurgeCutoff(DateTimeOffset now)
+    {
+        return now.AddDays(-UnverifiedRetentionDays);
+    }
+
+    /// <summary>
+    /// Tells whether nobody verified the account within <see cref="UnverifiedRetentionDays"/> of its
+    /// registration.
+    /// </summary>
+    /// <param name="now">Current time.</param>
+    /// <returns><see langword="true"/> when the account is still unverified and expired.</returns>
+    public bool HasVerificationExpired(DateTimeOffset now)
+    {
+        return IsPendingVerification && CreatedAt <= UnverifiedPurgeCutoff(now);
+    }
 
     /// <summary>
     /// Gets a value indicating whether the account keeps its email against anyone else who claims

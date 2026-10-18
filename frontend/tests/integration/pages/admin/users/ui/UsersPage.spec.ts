@@ -2,7 +2,6 @@ import { flushPromises } from '@vue/test-utils'
 import { ElSelect } from 'element-plus'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import UserFormDialog from '@/pages/admin/users/ui/UserFormDialog.vue'
 import { UsersPage } from '@/pages/admin/users'
 import type { UserResponse } from '@/shared/api/generated/models'
 import { formatDate } from '@/shared/lib/date'
@@ -37,7 +36,6 @@ import {
   typeInto,
 } from '../../../../../support/dom'
 
-const EDIT_TITLE = 'pages.admin.users.form.editHeader'
 const TYPE_TITLE = 'pages.admin.users.typeDialog.header'
 const EMAIL_TITLE = 'features.sendEmail.header'
 const GRANT_TITLE = 'pages.admin.users.grantAdmin.header'
@@ -107,15 +105,6 @@ function serveUsers(pages: UserResponse[][] | UserResponse[] = [ada, tim]): Reco
     ),
   )
   return recorded
-}
-
-/** Detail handler that leaves the catalog routes sharing the `/api/users/:userId` shape alone. */
-function userDetail(resolver: () => Response | Promise<Response>) {
-  return http.get('/api/users/:userId', ({ params }) => {
-    if (params.userId === 'types') return HttpResponse.json(userTypes)
-    if (params.userId === 'status-types') return HttpResponse.json(userStatusTypes)
-    return resolver()
-  })
 }
 
 function rows(wrapper: Awaited<ReturnType<typeof renderPage>>['wrapper']) {
@@ -244,7 +233,6 @@ describe('admin users page', () => {
     serveUsers([])
     const empty = await renderPage()
     expect(empty.wrapper.text()).toContain(t('pages.admin.users.empty.noIndependent'))
-    expect(findButton(t('pages.admin.users.export.label')).disabled).toBe(true)
     expect(findButton(t('pages.admin.users.email.bulkLabel')).disabled).toBe(true)
     await chooseScope(empty.wrapper, 'pages.admin.users.scope.dependent')
     await vi.waitFor(() =>
@@ -426,105 +414,9 @@ describe('admin users page', () => {
     expect(wrapper.find('.filter-chip').exists()).toBe(false)
   })
 
-  it('loads the user detail when editing and saves the changes', async () => {
+  it('closes the type and email dialogs without saving', async () => {
     serveUsers([ada])
-    const detailRequests: string[] = []
-    let updated: unknown
-    server.use(
-      userDetail(() => {
-        detailRequests.push('user-1')
-        return HttpResponse.json(ada)
-      }),
-      http.put('/api/users/:userId', async ({ request, params }) => {
-        updated = { id: params.userId, body: await request.json() }
-        return HttpResponse.json(buildUserResponse())
-      }),
-    )
-    await renderPage()
-
-    await click(findButton(t('common.edit')))
-    const dialog = openDialog(t(EDIT_TITLE))
-    await vi.waitFor(() => expect(detailRequests).toEqual(['user-1']))
-    expect(inputValue('#user-first-name')).toBe('Ada')
-    await typeInto('#user-last-name', 'King')
-    await click(findButton(t('common.save'), dialog))
-
-    await expectNotification(t('pages.admin.users.toasts.updated'))
-    expect(updated).toEqual({
-      id: 'user-1',
-      body: {
-        firstName: 'Ada',
-        lastName: 'King',
-        email: 'ada@example.test',
-        phone: '600000000',
-        secondaryPhone: '611111111',
-        birthDate: null,
-        nationalId: '12345678Z',
-        promotionalConsent: true,
-        gender: 'Female',
-        parentId: null,
-        currentPassword: null,
-      },
-    })
-    await vi.waitFor(() => expect(isDialogOpen(t(EDIT_TITLE))).toBe(false))
-  })
-
-  it('keeps the edit dialog open and explains a rejected password', async () => {
-    serveUsers([ada])
-    server.use(
-      userDetail(() => HttpResponse.json(buildUserResponse())),
-      http.put('/api/users/:userId', () => apiError(400, 'UserCurrentPasswordIncorrect')),
-    )
-    await renderPage()
-
-    await click(findButton(t('common.edit')))
-    const dialog = openDialog(t(EDIT_TITLE))
-    await typeInto('#user-email', 'augusta@example.test')
-    await typeInto('#user-current-password', 'wrong')
-    await click(findButton(t('common.save'), dialog))
-
-    await vi.waitFor(() =>
-      expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect')),
-    )
-    expect(isDialogOpen(t(EDIT_TITLE))).toBe(true)
-  })
-
-  it('shows the freshly loaded user detail in the edit form', async () => {
-    serveUsers([ada])
-    server.use(userDetail(() => HttpResponse.json(buildUserResponse({ firstName: 'Augusta Ada' }))))
-    await renderPage()
-
-    await click(findButton(t('common.edit')))
-
-    await vi.waitFor(() => expect(inputValue('#user-first-name')).toBe('Augusta Ada'))
-  })
-
-  it('edits with the row data when the detail cannot be loaded and reports save failures', async () => {
-    serveUsers([ada])
-    server.use(
-      userDetail(() => apiError(500)),
-      http.put('/api/users/:userId', () => apiError(422)),
-    )
     const { wrapper } = await renderPage()
-
-    await click(findButton(t('common.edit')))
-    const dialog = openDialog(t(EDIT_TITLE))
-    expect(inputValue('#user-first-name')).toBe('Ada')
-    expect(wrapper.findComponent(UserFormDialog).props('user')).toMatchObject({ id: 'user-1' })
-    await click(findButton(t('common.save'), dialog))
-
-    await expectNotification(t('common.error'))
-    expect(isDialogOpen(t(EDIT_TITLE))).toBe(true)
-  })
-
-  it('closes the edit, type and email dialogs without saving', async () => {
-    serveUsers([ada])
-    server.use(userDetail(() => HttpResponse.json(buildUserResponse())))
-    const { wrapper } = await renderPage()
-
-    await click(findButton(t('common.edit')))
-    await click(findButton(t('common.cancel'), openDialog(t(EDIT_TITLE))))
-    await vi.waitFor(() => expect(isDialogOpen(t(EDIT_TITLE))).toBe(false))
 
     await chooseRowAction(wrapper, 0, CHANGE_TYPE)
     await dismissDialog(wrapper, t(TYPE_TITLE))
@@ -790,105 +682,6 @@ describe('admin users page', () => {
     fail = true
     await chooseRowAction(wrapper, 0, 'common.delete')
     await acceptMessageBox()
-    await expectNotification(t('common.error'))
-  })
-
-  it('exports every filtered user to CSV', async () => {
-    const recorded = serveUsers([[ada], [tim]])
-    let blob: Blob | undefined
-    let filename = ''
-    vi.spyOn(URL, 'createObjectURL').mockImplementation((object) => {
-      blob = object as Blob
-      return 'blob:users'
-    })
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
-      this: HTMLAnchorElement,
-    ) {
-      filename = this.download
-    })
-    const { wrapper } = await renderPage()
-    selectFilter(wrapper, 'pages.admin.users.columns.type').vm.$emit(
-      'update:modelValue',
-      'type-participant',
-    )
-    await flushPromises()
-    expect(wrapper.find('.phone-cell__secondary').text()).toBe('611111111')
-
-    await click(findButton(t('pages.admin.users.export.label')))
-
-    await expectNotification(tp('pages.admin.users.export.toast.exported', 2, { n: 2 }))
-    const exportRequests = recorded.list.filter((url) => queryOf(url).pageSize === '100')
-    expect(exportRequests.map(queryOf)).toEqual([
-      {
-        scope: 'Independent',
-        userTypeId: 'type-participant',
-        sort: 'firstName',
-        page: '1',
-        pageSize: '100',
-      },
-      {
-        scope: 'Independent',
-        userTypeId: 'type-participant',
-        sort: 'firstName',
-        page: '2',
-        pageSize: '100',
-      },
-    ])
-    expect(filename).toBe(t('pages.admin.users.export.filename', { date: '2026-01-15' }))
-    const lines = (await blob?.text())?.replace(/^﻿/, '').split('\r\n') ?? []
-    expect(lines[0]).toBe(
-      [
-        t('common.firstName'),
-        t('common.lastName'),
-        t('common.email'),
-        t('common.phone'),
-        t('common.secondaryPhone'),
-        t('common.nationalId'),
-        t('common.birthDate'),
-        t('common.gender'),
-        t('common.status'),
-        t('pages.admin.users.columns.type'),
-        t('pages.admin.users.columns.admin'),
-        t('common.promotionalConsent'),
-        t('pages.admin.users.export.columns.guardian'),
-      ].join(';'),
-    )
-    expect(lines[1]).toMatch(
-      new RegExp(
-        `^Ada;Lovelace;ada@example.test;600000000;611111111;12345678Z;[^;]+;${t('entities.user.gender.Female')};Active;Participant;${t('common.no')};${t('common.yes')};$`,
-      ),
-    )
-    expect(lines[2]).toMatch(
-      new RegExp(
-        `^Tim;Lovelace;;;;;[^;]+;${t('entities.user.gender.Male')};Active;;${t('common.no')};${t('common.no')};Ada Lovelace$`,
-      ),
-    )
-  })
-
-  it('exports the filtered users and reports export failures', async () => {
-    serveUsers([ghost()])
-    let blob: Blob | undefined
-    vi.spyOn(URL, 'createObjectURL').mockImplementation((object) => {
-      blob = object as Blob
-      return 'blob:users'
-    })
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
-    await renderPage()
-
-    await click(findButton(t('pages.admin.users.export.label')))
-    await expectNotification(tp('pages.admin.users.export.toast.exported', 1, { n: 1 }))
-    expect((await blob?.text())?.split('\r\n')[1]).toMatch(
-      /^Ghost;User;ghost@example.test;600000000;;12345678Z;[^;]+;Mujer;Active;/,
-    )
-
-    server.use(
-      http.get('/api/users', ({ request }) =>
-        queryOf(request.url).pageSize === '100'
-          ? apiError(500)
-          : HttpResponse.json({ items: [ghost()], total: 1 }),
-      ),
-    )
-    await click(findButton(t('pages.admin.users.export.label')))
     await expectNotification(t('common.error'))
   })
 
