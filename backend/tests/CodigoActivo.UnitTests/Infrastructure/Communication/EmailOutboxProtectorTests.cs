@@ -156,6 +156,38 @@ public sealed class EmailOutboxProtectorTests
     }
 
     [Fact]
+    public void ToMessageCarriesTheOneClickUnsubscribeAddressOfTheRecipient()
+    {
+        const string OneClick = "https://app.test/api/emails/unsubscribe/one-click?token=ana";
+        var content = sut.ToContent(
+            ManualEmail.Create(
+                ManualEmail.Render(
+                    "Taller",
+                    "Nuevo taller.",
+                    "https://app.test",
+                    promotional: true
+                ),
+                [new EmailRecipient("ana@example.test", "Ana", "https://app.test/x", OneClick)],
+                []
+            ),
+            Now
+        );
+        var payload = sut.Unprotect(content);
+
+        var promotional = EmailOutboxProtector.ToMessage(
+            new EmailOutboxMessage { Content = content, OneClickUnsubscribeUrl = OneClick },
+            payload
+        );
+        var other = EmailOutboxProtector.ToMessage(
+            new EmailOutboxMessage { Content = content },
+            payload
+        );
+
+        promotional.OneClickUnsubscribeUrl.Should().Be(OneClick);
+        other.OneClickUnsubscribeUrl.Should().BeNull();
+    }
+
+    [Fact]
     public void ToContentWithoutBinaryPartsStoresOnlyTheText()
     {
         var content = sut.ToContent(

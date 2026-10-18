@@ -17,7 +17,8 @@ internal static class EmailBatchExtensions
                 EmailLayout.LinkUnsubscribe(batch.HtmlBody, recipient.UnsubscribeUrl, html: true),
                 EmailLayout.LinkUnsubscribe(batch.TextBody, recipient.UnsubscribeUrl, html: false),
                 batch.Attachments,
-                batch.InlineImages
+                batch.InlineImages,
+                recipient.OneClickUnsubscribeUrl
             )),
         ];
     }

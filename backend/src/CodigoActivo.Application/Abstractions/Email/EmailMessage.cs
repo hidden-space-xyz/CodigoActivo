@@ -70,6 +70,11 @@ public sealed record EmailInlineImage(
 /// <param name="TextBody">The text body value.</param>
 /// <param name="Attachments">The attachments value.</param>
 /// <param name="InlineImages">The inline images value.</param>
+/// <param name="OneClickUnsubscribeUrl">
+/// Address to which the mail client of the addressee posts to withdraw their promotional
+/// consent, sent in the <c>List-Unsubscribe</c> header (RFC 8058); <see langword="null"/> for
+/// email that is not promotional.
+/// </param>
 public sealed record EmailMessage(
     EmailKind Kind,
     string ToAddress,
@@ -78,7 +83,8 @@ public sealed record EmailMessage(
     string HtmlBody,
     string TextBody,
     IReadOnlyList<EmailAttachment>? Attachments = null,
-    IReadOnlyList<EmailInlineImage>? InlineImages = null
+    IReadOnlyList<EmailInlineImage>? InlineImages = null,
+    string? OneClickUnsubscribeUrl = null
 );
 
 /// <summary>
@@ -90,7 +96,17 @@ public sealed record EmailMessage(
 /// Link with which this addressee withdraws their promotional consent, shown in the place the
 /// shared content of a promotional email leaves for it; <see langword="null"/> for other email.
 /// </param>
-public sealed record EmailRecipient(string Address, string Name, string? UnsubscribeUrl = null);
+/// <param name="OneClickUnsubscribeUrl">
+/// Address to which the mail client of this addressee posts to withdraw their promotional
+/// consent, sent in the <c>List-Unsubscribe</c> header of a promotional email (RFC 8058);
+/// <see langword="null"/> for other email.
+/// </param>
+public sealed record EmailRecipient(
+    string Address,
+    string Name,
+    string? UnsubscribeUrl = null,
+    string? OneClickUnsubscribeUrl = null
+);
 
 /// <summary>
 /// Represents one email written once and delivered to every listed recipient, so the shared

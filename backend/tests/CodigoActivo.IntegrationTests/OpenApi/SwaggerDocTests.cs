@@ -32,6 +32,19 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task SwaggerDocumentLeavesOutTheOneClickUnsubscribeOfMailClients()
+    {
+        using var doc = await FetchSwaggerAsync(Ct);
+
+        var paths = doc.RootElement.GetProperty("paths").EnumerateObject().Select(p => p.Name);
+
+        paths
+            .Should()
+            .Contain("/api/emails/unsubscribe")
+            .And.NotContain("/api/emails/unsubscribe/one-click");
+    }
+
+    [Fact]
     public async Task SwaggerDocumentListEndpointsQueryParametersAreCamelCased()
     {
         using var doc = await FetchSwaggerAsync(Ct);

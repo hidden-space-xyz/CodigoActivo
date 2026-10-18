@@ -143,7 +143,8 @@ public sealed class EmailOutboxProtector
 
     /// <summary>
     /// Addresses the shared content of a batch to one recipient, with their own unsubscribe link
-    /// in the place a promotional email leaves for it.
+    /// in the place a promotional email leaves for it and the address of their one-click
+    /// unsubscribe.
     /// </summary>
     /// <param name="message">Stored message that carries the recipient and the kind.</param>
     /// <param name="payload">Content already read with <see cref="Unprotect"/>.</param>
@@ -161,7 +162,8 @@ public sealed class EmailOutboxProtector
             EmailLayout.LinkUnsubscribe(payload.HtmlBody, message.UnsubscribeUrl, html: true),
             EmailLayout.LinkUnsubscribe(payload.TextBody, message.UnsubscribeUrl, html: false),
             payload.Attachments,
-            payload.InlineImages
+            payload.InlineImages,
+            message.OneClickUnsubscribeUrl
         );
     }
 

@@ -135,18 +135,22 @@ public sealed class PromotionalConsentTests
             .Be(PromotionalConsentSource.Profile);
     }
 
-    [Fact]
-    public void WithdrawPromotionalConsentRecordsTheUnsubscribeLinkAndReportsTheChange()
+    [Theory]
+    [InlineData(PromotionalConsentSource.UnsubscribeLink)]
+    [InlineData(PromotionalConsentSource.OneClickUnsubscribe)]
+    public void WithdrawPromotionalConsentRecordsItsSourceAndReportsTheChange(
+        PromotionalConsentSource source
+    )
     {
         var account = Account(promotionalConsent: true);
 
-        account.WithdrawPromotionalConsent(Now);
+        account.WithdrawPromotionalConsent(source, Now);
 
         account.PromotionalConsent.Should().BeFalse();
         account.UpdatedAt.Should().Be(Now);
         var withdrawal = account.PromotionalConsentChanges.Last();
         withdrawal.Granted.Should().BeFalse();
-        withdrawal.Source.Should().Be(PromotionalConsentSource.UnsubscribeLink);
+        withdrawal.Source.Should().Be(source);
         withdrawal.ChangedAt.Should().Be(Now);
         DomainEvents
             .Raised<ProfileChanged>(account)
@@ -161,10 +165,25 @@ public sealed class PromotionalConsentTests
     {
         var account = Account(promotionalConsent: false);
 
-        account.WithdrawPromotionalConsent(Now);
+        account.WithdrawPromotionalConsent(PromotionalConsentSource.UnsubscribeLink, Now);
 
         account.PromotionalConsentChanges.Should().BeEmpty();
         account.UpdatedAt.Should().BeNull();
         account.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(PromotionalConsentSource.Registration)]
+    [InlineData(PromotionalConsentSource.Profile)]
+    public void WithdrawPromotionalConsentFromAnotherSourceThrowsArgumentOutOfRange(
+        PromotionalConsentSource source
+    )
+    {
+        var account = Account(promotionalConsent: true);
+
+        var withdraw = () => account.WithdrawPromotionalConsent(source, Now);
+
+        withdraw.Should().Throw<ArgumentOutOfRangeException>();
+        account.PromotionalConsent.Should().BeTrue();
     }
 }

@@ -327,7 +327,11 @@ selection through `ManualEmailAudience`, so a preview always matches what the co
 the send's `ManualEmailPurpose` decides whether recipients without promotional consent are left out. A
 promotional batch keeps one shared content whose footer leaves a slot for the unsubscribe link:
 `ManualEmailComposer` gives each `EmailRecipient` its own link (a token from `IUnsubscribeTokens`), the outbox
-row stores it, and `EmailLayout.LinkUnsubscribe` puts it in place at delivery. Operational values are in
+row stores it, and `EmailLayout.LinkUnsubscribe` puts it in place at delivery. The same token also forms the
+recipient's one-click unsubscribe address (RFC 8058), which travels on the outbox row to
+`EmailMessage.OneClickUnsubscribeUrl` and which `SmtpEmailSender` sends in the `List-Unsubscribe` and
+`List-Unsubscribe-Post` headers; both the SPA page and the mail client end in `UnsubscribeCommand`, which
+records which of them withdrew the consent. Operational values are in
 [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery); security properties are in
 [SECURITY.md](SECURITY.md#email-abuse-controls).
 

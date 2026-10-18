@@ -117,6 +117,44 @@ public sealed class SmtpEmailSenderTests
     }
 
     [Fact]
+    public async Task SendAsyncOneClickUnsubscribeAddressAddsTheListUnsubscribeHeaders()
+    {
+        await using var server = new FakeSmtpServer();
+        var sender = Create(Options(server));
+        var address =
+            $"https://app.test/api/emails/unsubscribe/one-click?token={new string('a', 300)}";
+
+        await sender.SendAsync(Message() with { OneClickUnsubscribeUrl = address }, Timeout());
+
+        var headers = server.Messages.Should().ContainSingle().Subject.Message.Headers;
+        headers
+            .Where(header => header.Id == HeaderId.ListUnsubscribe)
+            .Should()
+            .ContainSingle()
+            .Which.Value.Should()
+            .Be($"<{address}>");
+        headers
+            .Where(header => header.Id == HeaderId.ListUnsubscribePost)
+            .Should()
+            .ContainSingle()
+            .Which.Value.Should()
+            .Be("List-Unsubscribe=One-Click");
+    }
+
+    [Fact]
+    public async Task SendAsyncWithoutOneClickUnsubscribeAddressOmitsTheListUnsubscribeHeaders()
+    {
+        await using var server = new FakeSmtpServer();
+        var sender = Create(Options(server));
+
+        await sender.SendAsync(Message(), Timeout());
+
+        var headers = server.Messages.Should().ContainSingle().Subject.Message.Headers;
+        headers.Contains(HeaderId.ListUnsubscribe).Should().BeFalse();
+        headers.Contains(HeaderId.ListUnsubscribePost).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task SendAsyncWithoutHostThrowsInvalidOperation()
     {
         var sender = Create(new SmtpOptions { FromAddress = "no-reply@codigoactivo.test" });

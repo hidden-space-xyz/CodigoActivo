@@ -13,6 +13,7 @@ using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -229,6 +230,46 @@ public class EmailsController : ApiControllerBase
     )
     {
         return ToNoContent(await handler.HandleAsync(request.ToCommand(), ct));
+    }
+
+    /// <summary>
+    /// Withdraws the promotional consent of the account named by the address in the
+    /// <c>List-Unsubscribe</c> header of a promotional email, which the mail client of the holder
+    /// posts to when they press its unsubscribe button (RFC 8058). The mail client sends no
+    /// cookie and no antiforgery token, so neither is asked for: the token is the only proof, as
+    /// in <see cref="UnsubscribeAsync"/>. It answers without redirecting, and 204 again when the
+    /// button is pressed once more.
+    /// </summary>
+    /// <param name="token">Token taken from the address.</param>
+    /// <param name="listUnsubscribe">
+    /// The <c>List-Unsubscribe=One-Click</c> pair of the <c>List-Unsubscribe-Post</c> header,
+    /// which the mail client sends as the form.
+    /// </param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpPost("unsubscribe/one-click")]
+    [AllowAnonymous]
+    [RequireAntiforgeryToken(required: false)]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    [Consumes("application/x-www-form-urlencoded", "multipart/form-data")]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<ActionResult> UnsubscribeWithOneClickAsync(
+        [FromQuery] [Required] [MaxLength(UnsubscribeCommand.TokenMaxLength)] string token,
+        [FromForm(Name = "List-Unsubscribe")]
+        [Required]
+        [AllowedValues("One-Click")]
+            string listUnsubscribe,
+        [FromServices] ICommandHandler<UnsubscribeCommand, Result> handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(
+            await handler.HandleAsync(
+                new UnsubscribeCommand(token, PromotionalConsentSource.OneClickUnsubscribe),
+                ct
+            )
+        );
     }
 
     private static SendEmailResultResponse ToResponse(EmailDispatch dispatch)

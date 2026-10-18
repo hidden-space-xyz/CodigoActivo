@@ -476,13 +476,32 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Withdraws the promotional consent through the unsubscribe link of a promotional email. An
-    /// account without the consent stays as it is, so the link can be followed again.
+    /// Withdraws the promotional consent through the unsubscribe link of a promotional email or
+    /// the unsubscribe button of the mail client. An account without the consent stays as it is,
+    /// so the link can be followed again.
     /// </summary>
+    /// <param name="source">
+    /// <see cref="PromotionalConsentSource.UnsubscribeLink"/> or
+    /// <see cref="PromotionalConsentSource.OneClickUnsubscribe"/>.
+    /// </param>
     /// <param name="now">Current timestamp, stored as the time of the change.</param>
-    public void WithdrawPromotionalConsent(DateTimeOffset now)
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="source"/> is not one of the unsubscribe sources.
+    /// </exception>
+    public void WithdrawPromotionalConsent(PromotionalConsentSource source, DateTimeOffset now)
     {
-        if (!ChangePromotionalConsent(false, PromotionalConsentSource.UnsubscribeLink, now))
+        if (
+            source
+            is not (
+                PromotionalConsentSource.UnsubscribeLink
+                or PromotionalConsentSource.OneClickUnsubscribe
+            )
+        )
+        {
+            throw new ArgumentOutOfRangeException(nameof(source));
+        }
+
+        if (!ChangePromotionalConsent(false, source, now))
         {
             return;
         }
