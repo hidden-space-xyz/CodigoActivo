@@ -12,6 +12,8 @@ public sealed record ComposedAccountEmail(string Name, EmailRecipient Recipient)
 
     public TimeSpan? Lifetime { get; init; }
 
+    public bool? NewsConsent { get; init; }
+
     public AccountSecurityChange? Change { get; init; }
 
     public DateTimeOffset? OccurredAt { get; init; }
@@ -38,7 +40,8 @@ public sealed class FakeAccountEmailComposer : IAccountEmailComposer
         EmailRecipient recipient,
         UserId userId,
         string code,
-        TimeSpan lifetime
+        TimeSpan lifetime,
+        bool newsConsent
     )
     {
         return Compose(
@@ -48,6 +51,7 @@ public sealed class FakeAccountEmailComposer : IAccountEmailComposer
                 UserId = userId,
                 Code = code,
                 Lifetime = lifetime,
+                NewsConsent = newsConsent,
             }
         );
     }

@@ -33,7 +33,8 @@ public sealed class AccountEmails(
             Recipient(user),
             user.Id,
             otpCode,
-            verification.OtpLifetime
+            verification.OtpLifetime,
+            user.NewsConsent
         );
         return emailSender.SendAsync(message, ct);
     }

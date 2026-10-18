@@ -4,7 +4,8 @@ using CodigoActivo.Application.Common.Localization;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Builds the email content for verification.
+/// Builds the email content for verification. A registration that accepted news says so, so the
+/// owner of the address learns of it even if someone else registered it.
 /// </summary>
 public static class VerificationEmail
 {
@@ -16,13 +17,15 @@ public static class VerificationEmail
     /// <param name="verificationUrl">The verification url value.</param>
     /// <param name="siteUrl">The site url value.</param>
     /// <param name="lifetime">The lifetime value.</param>
+    /// <param name="newsConsent">Whether the registration accepted news by email.</param>
     /// <returns>The resulting email message value.</returns>
     public static EmailMessage Create(
         string toAddress,
         string toName,
         string verificationUrl,
         string siteUrl,
-        TimeSpan lifetime
+        TimeSpan lifetime,
+        bool newsConsent
     )
     {
         var minutes = Math.Max(1, (int)Math.Ceiling(lifetime.TotalMinutes));
@@ -44,6 +47,11 @@ public static class VerificationEmail
                 EmailBlocks.Prose(
                     AppStrings.EmailsVerificationExpiryHtml(minutes),
                     AppStrings.EmailsVerificationExpiryText(minutes)
+                ),
+                .. (
+                    newsConsent
+                        ? [EmailBlocks.Prose(AppStrings.EmailsVerificationNewsConsent)]
+                        : Array.Empty<EmailBlock>()
                 ),
                 EmailBlocks.Prose(
                     AppStrings.EmailsSharedSignoffHtml,

@@ -27,7 +27,8 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
         EmailRecipient recipient,
         UserId userId,
         string code,
-        TimeSpan lifetime
+        TimeSpan lifetime,
+        bool newsConsent
     )
     {
         ArgumentNullException.ThrowIfNull(recipient);
@@ -36,7 +37,8 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
             recipient.Name,
             BuildAccountUrl(VerificationPath, userId, code),
             SiteUrl,
-            lifetime
+            lifetime,
+            newsConsent
         );
     }
 

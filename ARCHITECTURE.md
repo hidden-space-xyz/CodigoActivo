@@ -20,19 +20,19 @@ differently: `Assignment*`, `ParentId`, the `assign` and `children` routes, the 
 `UserChild*` codes, and use cases such as `AssignActivity` and `AddChild`. A participant role is not the
 participant user type.
 
-| Term      | Meaning                                                                                | In code                                        | In the UI       |
-| --------- | -------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------- |
-| Event     | A dated gathering with categories, terms documents and activities                      | `Event`                                        | evento          |
-| Activity  | A scheduled session of an event with a desired number of people per role               | `Activity`                                     | actividad       |
-| Role      | What a person does in an activity: leader, volunteer or participant                    | `ActivityRole`                                 | rol             |
-| Signup    | A person's place in an activity with a role and a status: requested, confirmed, denied | `Assignment`                                   | inscripción     |
-| Attendee  | A person with a signup in an event; lists filter by status                             | `EventAttendee*` (read side)                   | asistente       |
-| Guardian  | An independent account that cares for dependents                                       | `User`                                         | tutor           |
-| Dependent | A person created as a minor and cared for by a guardian, who never signs in            | `User` with `ParentId`, `UserStatus.Dependent` | menor           |
-| Household | A guardian and their dependents                                                        | `Household`                                    | unidad familiar |
-| Account   | The credentials, second factor and sessions of a person who signs in                   | `Accounts` feature                             | cuenta          |
-| Notice    | A manual email about the recipient's account, signups or activities; reaches everyone  | `ManualEmailPurpose.Notice`                    | aviso           |
-| News      | A manual email about upcoming events and news; reaches only those with news consent    | `ManualEmailPurpose.News`, `User.NewsConsent`  | novedades       |
+| Term      | Meaning                                                                                              | In code                                        | In the UI       |
+| --------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------- |
+| Event     | A dated gathering with categories, terms documents and activities                                    | `Event`                                        | evento          |
+| Activity  | A scheduled session of an event with a desired number of people per role                             | `Activity`                                     | actividad       |
+| Role      | What a person does in an activity: leader, volunteer or participant                                  | `ActivityRole`                                 | rol             |
+| Signup    | A person's place in an activity with a role and a status: requested, confirmed, denied               | `Assignment`                                   | inscripción     |
+| Attendee  | A person with a signup in an event; lists filter by status                                           | `EventAttendee*` (read side)                   | asistente       |
+| Guardian  | An independent account that cares for dependents                                                     | `User`                                         | tutor           |
+| Dependent | A person created as a minor and cared for by a guardian, who never signs in                          | `User` with `ParentId`, `UserStatus.Dependent` | menor           |
+| Household | A guardian and their dependents                                                                      | `Household`                                    | unidad familiar |
+| Account   | The credentials, second factor and sessions of a person who signs in                                 | `Accounts` feature                             | cuenta          |
+| Notice    | A manual email about the recipient's account, signups or activities; reaches every confirmed address | `ManualEmailPurpose.Notice`                    | aviso           |
+| News      | A manual email about upcoming events and news; reaches only confirmed addresses with news consent    | `ManualEmailPurpose.News`, `User.NewsConsent`  | novedades       |
 
 ## Backend
 

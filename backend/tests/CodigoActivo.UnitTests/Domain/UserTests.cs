@@ -711,7 +711,7 @@ public sealed class UserTests
     [InlineData(false)]
     public void SetAdministratorDifferentValueChangesItAndStampsTheUpdate(bool isAdmin)
     {
-        var user = NewPendingUser();
+        var user = NewSignInUser();
         Persisted.Overwrite(user, new { IsAdmin = !isAdmin });
 
         user.SetAdministrator(isAdmin, Now).Value.Should().BeTrue();
@@ -725,7 +725,7 @@ public sealed class UserTests
     [InlineData(false)]
     public void SetAdministratorSameValueChangesNothing(bool isAdmin)
     {
-        var user = NewPendingUser();
+        var user = NewSignInUser();
         Persisted.Overwrite(user, new { IsAdmin = isAdmin });
 
         user.SetAdministrator(isAdmin, Now).Value.Should().BeFalse();
@@ -761,6 +761,21 @@ public sealed class UserTests
         dependent.IsAdmin.Should().BeFalse();
         dependent.UpdatedAt.Should().BeNull();
         dependent.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SetAdministratorGrantingAnAccountPendingVerificationIsRefused()
+    {
+        var pending = NewPendingUser();
+
+        var granted = pending.SetAdministrator(true, Now);
+
+        granted.ShouldFail(
+            ErrorKind.Validation,
+            DomainErrorCode.UserPendingVerificationCannotBeAdmin
+        );
+        pending.IsAdmin.Should().BeFalse();
+        pending.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]

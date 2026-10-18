@@ -17,7 +17,8 @@ public sealed class VerificationEmailTests
             "Ana",
             VerifyUrl,
             SiteUrl,
-            TimeSpan.FromMinutes(15)
+            TimeSpan.FromMinutes(15),
+            newsConsent: false
         );
 
         message.ToAddress.Should().Be("ana@test.com");
@@ -42,7 +43,8 @@ public sealed class VerificationEmailTests
             "Ana",
             VerifyUrl,
             SiteUrl,
-            TimeSpan.FromMinutes(15)
+            TimeSpan.FromMinutes(15),
+            newsConsent: false
         );
 
         message
@@ -59,7 +61,8 @@ public sealed class VerificationEmailTests
             "<script>alert(1)</script>",
             VerifyUrl,
             SiteUrl,
-            TimeSpan.FromMinutes(15)
+            TimeSpan.FromMinutes(15),
+            newsConsent: false
         );
 
         message.HtmlBody.Should().NotContain("<script>").And.Contain("&lt;script&gt;");

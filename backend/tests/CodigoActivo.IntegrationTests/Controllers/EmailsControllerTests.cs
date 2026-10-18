@@ -97,6 +97,10 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
                 NewAssignment(
                     TestSeedData.Users.BlockedId,
                     KnownIds.AssignmentStatusTypes.Requested
+                ),
+                NewAssignment(
+                    TestSeedData.Users.PendingId,
+                    KnownIds.AssignmentStatusTypes.Confirmed
                 )
             );
 
@@ -656,7 +660,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToEventAttendeesAsAdminMailsAttendeesAndSkipsTheDependent()
+    public async Task SendToEventAttendeesAsAdminSkipsTheDependentAndTheAccountPendingVerification()
     {
         await SeedEventGraphAsync();
         var client = await LoginAsAdminAsync();
@@ -665,7 +669,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
 
         var result = await ReadResultAsync(response);
         result.Queued.Should().Be(2);
-        result.Skipped.Should().Be(1);
+        result.Skipped.Should().Be(2);
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()

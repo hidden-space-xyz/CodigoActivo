@@ -595,11 +595,13 @@ discarded on their next delivery attempt.
 
 Only administrators may send through `/api/emails/...`; recipients are resolved on the server from the same
 filters as user/attendee lists, never client-supplied addresses. Each recipient gets a separate message,
-dependents without their own address and accounts still pending verification, whose address may be someone
-else's, are skipped (a single one is refused with `EmailRecipientNotVerified`), and attachments remain
-transient. Every send carries a required `purpose`: `Notice` reaches every addressable recipient; `News` reaches only those with
-news consent, enforced by the server (`ManualEmailAudience.ReachedBy`; a single recipient without it
-is refused with `EmailRecipientWithoutConsent`), and its footer carries the contact address
+dependents without their own address are skipped, and so are accounts still pending verification, whose
+address may be someone else's (a single one is refused with `EmailRecipientNotVerified`); attachments remain
+transient. Signup decision emails skip those addresses too, and administrator rights are refused to such an
+account (`UserPendingVerificationCannotBeAdmin`). The verification email of a registration that accepted news
+says so. Every send carries a required `purpose`: `Notice` reaches every addressable recipient; `News`
+reaches only those with news consent, enforced by the server (`ManualEmailAudience.ReachedBy`; a single
+recipient without it is refused with `EmailRecipientWithoutConsent`), and its footer carries the contact address
 (`LEGAL_EMAIL`, the same one the site shows) and the recipient's own unsubscribe
 link, `/unsubscribe#token=…`. The token is the user id protected with Data Protection (purpose
 `CodigoActivo.Unsubscribe.v1`), so it cannot be forged and never expires while its key stays in the ring;
