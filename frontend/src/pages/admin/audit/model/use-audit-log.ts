@@ -6,8 +6,8 @@ import { useServerTable } from '@/shared/lib/paging'
 import type { TableFilterChip } from '@/shared/ui/data-table'
 
 import { auditList } from '../api/queries'
-import { actorLabel, entityLabel, entityTypeLabelKey, shortId } from '../lib/labels'
-import type { AuditEntityRef, AuditEntry, AuditMainEntity } from './types'
+import { actorLabel, entityLabel } from '../lib/labels'
+import type { AuditEntityRef, AuditEntry } from './types'
 
 const TRACE_PATTERN = /^[0-9a-f]{32}$/iu
 
@@ -69,14 +69,8 @@ export function useAuditLog() {
   }
 
   /** Keeps only the entries about `target`, as their main or a related entity. */
-  function filterByEntity(target: AuditMainEntity | AuditEntityRef): void {
-    entity.value = {
-      value: target.id,
-      label:
-        'name' in target
-          ? entityLabel(target, t)
-          : `${t(entityTypeLabelKey(target.type))} ${shortId(target.id)}`,
-    }
+  function filterByEntity(target: AuditEntityRef): void {
+    entity.value = { value: target.id, label: entityLabel(target, t) }
   }
 
   /** Keeps only the commands that came from `address`. */

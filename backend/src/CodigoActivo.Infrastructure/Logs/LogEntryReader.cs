@@ -16,8 +16,8 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// Reads the log tables through the read context. Every filter lands on an index: the trigram
 /// index of the message for its text search, the containment index of the related entities and
 /// the B-tree indexes of the other columns; a period also prunes the daily partitions. Audit
-/// entries get the names of the users they mention from <c>users</c>, left out when the account
-/// no longer exists.
+/// entries get the names of the accounts and things they mention, one query per kind of thing on
+/// the page, left out for those that no longer exist.
 /// </summary>
 /// <param name="context">Read-side database context.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -180,8 +180,15 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
             criteria.PageSize,
             ct
         );
+        var related = page.Items.Select(view => RelatedOf(view.Entry.Related)).ToList();
+        var names = await NamesAsync(
+            page.Items.Select(view => MainEntityOf(view.Entry))
+                .OfType<AuditEntityKey>()
+                .Concat(related.SelectMany(entities => entities)),
+            ct
+        );
         return new PagedResult<AuditLogEntryResponse>(
-            [.. page.Items.Select(ToResponse)],
+            [.. page.Items.Select((view, index) => ToResponse(view, related[index], names))],
             page.Total,
             page.Page,
             page.PageSize
@@ -247,7 +254,71 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
         return source;
     }
 
-    private static AuditLogEntryResponse ToResponse(AuditLogView view)
+    private async Task<Dictionary<AuditEntityKey, string>> NamesAsync(
+        IEnumerable<AuditEntityKey> entities,
+        CancellationToken ct
+    )
+    {
+        var names = new Dictionary<AuditEntityKey, string>();
+        foreach (var kind in entities.GroupBy(entity => entity.Type, entity => entity.Id))
+        {
+            var ids = kind.Distinct().ToList();
+            foreach (var named in await executor.ToListAsync(NamesOf(kind.Key, ids), ct))
+            {
+                names[new AuditEntityKey(kind.Key, named.Id)] = named.Name;
+            }
+        }
+
+        return names;
+    }
+
+    private IQueryable<NamedEntity> NamesOf(AuditEntityType type, List<Guid> ids)
+    {
+        return type switch
+        {
+            AuditEntityType.Activity => context
+                .Activities.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Title)),
+            AuditEntityType.Event => context
+                .Events.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Title)),
+            AuditEntityType.EventCategoryType => context
+                .EventCategoryTypes.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Name)),
+            AuditEntityType.NewsItem => context
+                .News.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Title)),
+            AuditEntityType.Partner => context
+                .Partners.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Name)),
+            AuditEntityType.Resource => context
+                .Resources.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Title)),
+            AuditEntityType.StoredFile => context
+                .Files.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Name)),
+            AuditEntityType.TermsDocument => context
+                .TermsDocuments.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Name)),
+            AuditEntityType.User => context
+                .Users.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.FirstName + " " + row.LastName)),
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
+        };
+    }
+
+    private static AuditEntityKey? MainEntityOf(AuditLogRow entry)
+    {
+        return entry is { EntityType: { } type, EntityId: { } id }
+            ? new AuditEntityKey(type, id)
+            : null;
+    }
+
+    private static AuditLogEntryResponse ToResponse(
+        AuditLogView view,
+        List<AuditEntityKey> related,
+        Dictionary<AuditEntityKey, string> names
+    )
     {
         var entry = view.Entry;
         return new AuditLogEntryResponse(
@@ -261,15 +332,21 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
             entry.Action,
             entry.EntityType,
             entry.EntityId,
-            view.EntityName,
-            RelatedOf(entry.Related),
+            MainEntityOf(entry) is { } main ? names.GetValueOrDefault(main) : null,
+            [
+                .. related.Select(entity => new AuditRelatedEntityResponse(
+                    entity.Type,
+                    entity.Id,
+                    names.GetValueOrDefault(entity)
+                )),
+            ],
             entry.Outcome,
             entry.ErrorCode,
             entry.TraceId
         );
     }
 
-    private static List<AuditRelatedEntityResponse> RelatedOf(string? json)
+    private static List<AuditEntityKey> RelatedOf(string? json)
     {
         if (json is null)
         {
@@ -292,7 +369,7 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
                     )
                 )
                 .Where(related => related.Valid)
-                .Select(related => new AuditRelatedEntityResponse(related.Type, related.Id)),
+                .Select(related => new AuditEntityKey(related.Type, related.Id)),
         ];
     }
 
@@ -313,6 +390,10 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
         var milliseconds = (long)(BinaryPrimitives.ReadUInt64BigEndian(bytes) >> 16);
         return DateTimeOffset.FromUnixTimeMilliseconds(milliseconds);
     }
+
+    private readonly record struct AuditEntityKey(AuditEntityType Type, Guid Id);
+
+    private sealed record NamedEntity(Guid Id, string Name);
 
     private sealed class AuditLogView
     {

@@ -1381,7 +1381,6 @@
           "none": "No hay entradas en el registro de auditoría.",
           "error": "No se pudo cargar el registro de auditoría."
         },
-        "deletedAccount": "Cuenta eliminada",
         "openDiagnostics": "Ver el diagnóstico de esta traza",
         "noTrace": "Esta entrada no tiene traza",
         "filterActor": "Filtrar por {actor}",
@@ -1409,6 +1408,17 @@
           "StoredFile": "Archivo",
           "TermsDocument": "Términos y condiciones",
           "User": "Usuario"
+        },
+        "deletedEntities": {
+          "Activity": "Actividad eliminada",
+          "Event": "Evento eliminado",
+          "EventCategoryType": "Categoría eliminada",
+          "NewsItem": "Novedad eliminada",
+          "Partner": "Patrocinador eliminado",
+          "Resource": "Recurso eliminado",
+          "StoredFile": "Archivo eliminado",
+          "TermsDocument": "Términos y condiciones eliminados",
+          "User": "Cuenta eliminada"
         },
         "outcomes": {
           "Succeeded": "Correcto",

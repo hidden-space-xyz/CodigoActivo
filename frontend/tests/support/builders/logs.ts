@@ -58,7 +58,9 @@ export function buildAuditEntry(
     entityType: 'User',
     entityId: 'user-2',
     entityName: 'Marta Miembro',
-    related: [{ type: 'Activity', id: 'aaaaaaaa-1111-1111-1111-111111111111' }],
+    related: [
+      { type: 'Activity', id: 'aaaaaaaa-1111-1111-1111-111111111111', name: 'Taller de robótica' },
+    ],
     outcome: 'Succeeded',
     errorCode: null,
     traceId: TRACE_ID,

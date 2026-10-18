@@ -85,7 +85,8 @@ public sealed record DiagnosticLogEntryDetailResponse(
 /// <param name="Action">Command that ran.</param>
 /// <param name="EntityType">Kind of the main entity, if any.</param>
 /// <param name="EntityId">Identifier of the main entity, if any.</param>
-/// <param name="EntityName">Full name of the main entity when it is a user that still exists.</param>
+/// <param name="EntityName">Name of the main entity, a person's full name or a title, or null when it no
+/// longer exists.</param>
 /// <param name="Related">Other entities the command named.</param>
 /// <param name="Outcome">How it ended.</param>
 /// <param name="ErrorCode">Code of the error that rejected it, if any.</param>
@@ -113,4 +114,6 @@ public sealed record AuditLogEntryResponse(
 /// </summary>
 /// <param name="Type">Kind of the entity.</param>
 /// <param name="Id">Identifier of the entity.</param>
-public sealed record AuditRelatedEntityResponse(AuditEntityType Type, Guid Id);
+/// <param name="Name">Name of the entity, a person's full name or a title, or null when it no longer
+/// exists.</param>
+public sealed record AuditRelatedEntityResponse(AuditEntityType Type, Guid Id, string? Name);

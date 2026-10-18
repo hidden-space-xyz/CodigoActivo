@@ -14,6 +14,7 @@ import {
   errorCodeLabel,
   outcomeLabelKey,
   outcomeTagType,
+  relatedLabel,
   shortId,
 } from '@/pages/admin/audit/lib/labels'
 import { AuditAction } from '@/shared/api/generated/models'
@@ -59,14 +60,29 @@ describe('audit labels', () => {
     ).toBe('Anónimo')
   })
 
-  it('names an entity by its user or by its kind and short identifier', () => {
+  it('names an entity by its name, or as removed once it no longer exists', () => {
     expect(shortId('aaaaaaaa-1111-1111-1111-111111111111')).toBe('aaaaaaaa')
     expect(entityLabel({ type: 'User', id: 'user-2', name: 'Marta Miembro' }, t)).toBe(
       'Marta Miembro',
     )
     expect(
       entityLabel({ type: 'Event', id: 'bbbbbbbb-2222-2222-2222-222222222222', name: '' }, t),
-    ).toBe('Evento bbbbbbbb')
+    ).toBe('Evento eliminado')
+  })
+
+  it('names a related entity with its kind, or as removed once it no longer exists', () => {
+    expect(
+      relatedLabel({ type: 'StoredFile', id: 'file-1', name: 'evento-01-portada.jpg' }, t),
+    ).toBe('Archivo: evento-01-portada.jpg')
+    expect(relatedLabel({ type: 'Activity', id: 'activity-1', name: '' }, t)).toBe(
+      'Actividad eliminada',
+    )
+  })
+
+  it('has a removed label for every kind of entity', () => {
+    for (const entityType of AUDIT_ENTITY_TYPES) {
+      expect(entityLabel({ type: entityType, id: 'x', name: '' }, t)).not.toContain('pages.')
+    }
   })
 
   it('explains a refusal with the message the user saw, its own label or the bare code', () => {

@@ -16,7 +16,13 @@ describe('toAuditEntry', () => {
       clientIp: '203.0.113.9',
       action: 'SetAdmin',
       entity: { type: 'User', id: 'user-2', name: 'Marta Miembro' },
-      related: [{ type: 'Activity', id: 'aaaaaaaa-1111-1111-1111-111111111111' }],
+      related: [
+        {
+          type: 'Activity',
+          id: 'aaaaaaaa-1111-1111-1111-111111111111',
+          name: 'Taller de robótica',
+        },
+      ],
       outcome: 'Succeeded',
       errorCode: '',
       traceId: TRACE_ID,
@@ -49,6 +55,16 @@ describe('toAuditEntry', () => {
       errorCode: 'UniqueConstraintViolation',
       traceId: '',
     })
+  })
+
+  it('keeps a related entity that no longer exists without a name', () => {
+    expect(
+      toAuditEntry(
+        buildAuditEntry({
+          related: [{ type: 'Event', id: 'bbbbbbbb-2222-2222-2222-222222222222', name: null }],
+        }),
+      ).related,
+    ).toEqual([{ type: 'Event', id: 'bbbbbbbb-2222-2222-2222-222222222222', name: '' }])
   })
 
   it('keeps an entity whose user no longer exists without a name', () => {

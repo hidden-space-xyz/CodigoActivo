@@ -20,6 +20,7 @@ import {
   errorCodeLabel,
   outcomeLabelKey,
   outcomeTagType,
+  relatedLabel,
   shortId,
 } from '../lib/labels'
 import type { AuditEntry } from '../model/types'
@@ -176,7 +177,6 @@ function entryActions(entry: AuditEntry): RowAction[] {
               <button
                 type="button"
                 class="pin"
-                :title="row.entity.id"
                 :aria-label="
                   $t('pages.admin.audit.filterEntity', { entity: entityLabel(row.entity, t) })
                 "
@@ -195,10 +195,12 @@ function entryActions(entry: AuditEntry): RowAction[] {
                 :key="`${related.type}:${related.id}`"
                 type="button"
                 class="pin sub"
-                :title="related.id"
+                :aria-label="
+                  $t('pages.admin.audit.filterEntity', { entity: relatedLabel(related, t) })
+                "
                 @click="filterByEntity(related)"
               >
-                {{ $t(entityTypeLabelKey(related.type)) }} {{ shortId(related.id) }}
+                {{ relatedLabel(related, t) }}
               </button>
             </span>
           </div>
