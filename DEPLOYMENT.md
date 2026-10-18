@@ -299,7 +299,8 @@ outside a container (the API image declares `DOTNET_RUNNING_IN_CONTAINER=true`, 
 a local `dotnet run` still validates `DEMO_MODE` and writes nothing to the developer's filesystem, while the
 Compose development overlay still locks the mode in `api-state`.
 Demo mode seeds realistic content and invented accounts under `demo.codigoactivo.es` with random, discarded
-passwords, so they cannot log in, and gives the bootstrap administrator invented dependents. The demonstrator
+passwords, so they cannot log in, and gives the bootstrap administrator invented dependents, recorded like any
+minor as declared by their guardian, here that administrator. The demonstrator
 signs in with the bootstrap administrator, the only administrator, whose password reset and login codes arrive
 at `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding downloads its sample images from
 `picsum.photos` (three attempts each, at most five minutes in total), so `api` needs outbound HTTPS there on
