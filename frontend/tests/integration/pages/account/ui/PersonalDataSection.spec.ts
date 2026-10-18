@@ -6,6 +6,7 @@ import PersonalDataSection from '@/pages/account/ui/PersonalDataSection.vue'
 import { renderWithProviders, t } from '../../../../support/render'
 import { http, HttpResponse, server } from '../../../../support/server'
 import { click, findButton } from '../../../../support/dom'
+import { buildPersonalDataResponse } from '../../../../support/builders'
 
 describe('PersonalDataSection', () => {
   afterEach(() => {
@@ -17,7 +18,7 @@ describe('PersonalDataSection', () => {
     server.use(
       http.get('/api/me/personal-data', () => {
         requested = true
-        return HttpResponse.json({ account: { firstName: 'Ada' } })
+        return HttpResponse.json(buildPersonalDataResponse())
       }),
     )
     const clicked = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})

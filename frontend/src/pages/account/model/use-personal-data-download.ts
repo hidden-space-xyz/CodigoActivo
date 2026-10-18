@@ -15,7 +15,7 @@ export function usePersonalDataDownload() {
   const feedback = useCrudFeedback()
 
   const mutation = useMutation({
-    ...accountMutations.personalData(),
+    ...accountMutations.personalData(t),
     onSuccess: (file) => {
       downloadBlob(t('pages.account.personalData.fileName', { date: todayIso() }), file)
     },

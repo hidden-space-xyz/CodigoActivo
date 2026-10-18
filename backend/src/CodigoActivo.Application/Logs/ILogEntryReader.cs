@@ -48,13 +48,17 @@ public interface ILogEntryReader
     );
 
     /// <summary>
-    /// Lists every operation the account ran that the audit log still holds, oldest first.
+    /// Lists, oldest first, every entry the audit log still holds that the account ran signed in or
+    /// that names the account or one of the given people as its main or related entity, such as a
+    /// login, which runs before there is a session, or an administrator's change.
     /// </summary>
-    /// <param name="actorId">Identifier of the account.</param>
+    /// <param name="userId">Identifier of the account.</param>
+    /// <param name="subjectIds">The account and the people in its care.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the operations.</returns>
-    public Task<IReadOnlyList<OwnAuditEntryResponse>> ListOwnAuditAsync(
-        Guid actorId,
+    /// <returns>A task whose result contains the entries.</returns>
+    public Task<IReadOnlyList<AccountAuditEntryResponse>> ListAccountAuditAsync(
+        Guid userId,
+        IReadOnlyCollection<Guid> subjectIds,
         CancellationToken ct = default
     );
 }

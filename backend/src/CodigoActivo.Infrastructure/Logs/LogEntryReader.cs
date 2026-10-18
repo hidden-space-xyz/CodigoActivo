@@ -196,15 +196,37 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<OwnAuditEntryResponse>> ListOwnAuditAsync(
-        Guid actorId,
+    public async Task<IReadOnlyList<AccountAuditEntryResponse>> ListAccountAuditAsync(
+        Guid userId,
+        IReadOnlyCollection<Guid> subjectIds,
         CancellationToken ct = default
     )
     {
+        ArgumentNullException.ThrowIfNull(subjectIds);
+
+        var ids = subjectIds.ToList();
+        var source = context
+            .Set<AuditLogRow>()
+            .Where(entry =>
+                (entry.ActorType == AuditActorType.User && entry.ActorId == userId)
+                || (
+                    entry.EntityType == AuditEntityType.User
+                    && entry.EntityId != null
+                    && ids.Contains(entry.EntityId.Value)
+                )
+            );
+        foreach (var id in ids)
+        {
+            var related = JsonSerializer.Serialize(new[] { new { id } });
+            source = source.Union(
+                context
+                    .Set<AuditLogRow>()
+                    .Where(entry => EF.Functions.JsonContains(entry.Related!, related))
+            );
+        }
+
         var entries = await executor.ToListAsync(
-            context
-                .Set<AuditLogRow>()
-                .Where(entry => entry.ActorType == AuditActorType.User && entry.ActorId == actorId)
+            source
                 .OrderBy(entry => entry.OccurredAt)
                 .ThenBy(entry => entry.Id)
                 .Select(entry => new
@@ -212,18 +234,27 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
                     entry.OccurredAt,
                     entry.Action,
                     entry.Outcome,
+                    entry.ActorType,
+                    entry.ActorId,
                     entry.ClientIp,
                 }),
             ct
         );
         return
         [
-            .. entries.Select(entry => new OwnAuditEntryResponse(
-                entry.OccurredAt,
-                entry.Action,
-                entry.Outcome,
-                entry.ClientIp?.ToString()
-            )),
+            .. entries.Select(entry =>
+            {
+                var ranBySelf = entry.ActorType == AuditActorType.User && entry.ActorId == userId;
+                var ranByAnother = entry.ActorType == AuditActorType.User && !ranBySelf;
+                return new AccountAuditEntryResponse(
+                    entry.OccurredAt,
+                    entry.Action,
+                    entry.Outcome,
+                    entry.ActorType,
+                    ranBySelf,
+                    ranByAnother ? null : entry.ClientIp?.ToString()
+                );
+            }),
         ];
     }
 

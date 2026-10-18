@@ -5,12 +5,15 @@
  * OpenAPI spec version: 1.0
  */
 import type { AuditAction } from './auditAction';
+import type { AuditActorType } from './auditActorType';
 import type { AuditOutcome } from './auditOutcome';
 
-export interface OwnAuditEntryResponse {
+export interface AccountAuditEntryResponse {
   occurredAt: string;
   action: AuditAction;
   outcome: AuditOutcome;
+  actorType: AuditActorType;
+  ranBySelf: boolean;
   /** @nullable */
   clientIp?: string | null;
 }

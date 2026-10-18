@@ -34,6 +34,6 @@ public sealed class GetPersonalDataQueryHandlerTests
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await logs.DidNotReceiveWithAnyArgs()
-            .ListOwnAuditAsync(default, TestContext.Current.CancellationToken);
+            .ListAccountAuditAsync(default, default!, TestContext.Current.CancellationToken);
     }
 }

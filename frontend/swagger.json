@@ -4469,6 +4469,39 @@
   },
   "components": {
     "schemas": {
+      "AccountAuditEntryResponse": {
+        "required": [
+          "action",
+          "actorType",
+          "occurredAt",
+          "outcome",
+          "ranBySelf"
+        ],
+        "type": "object",
+        "properties": {
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "action": {
+            "$ref": "#/components/schemas/AuditAction"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AuditOutcome"
+          },
+          "actorType": {
+            "$ref": "#/components/schemas/AuditActorType"
+          },
+          "ranBySelf": {
+            "type": "boolean"
+          },
+          "clientIp": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "AccountDeletionCodeRequest": {
         "required": [
           "currentPassword"
@@ -7739,31 +7772,6 @@
         },
         "additionalProperties": false
       },
-      "OwnAuditEntryResponse": {
-        "required": [
-          "action",
-          "occurredAt",
-          "outcome"
-        ],
-        "type": "object",
-        "properties": {
-          "occurredAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "action": {
-            "$ref": "#/components/schemas/AuditAction"
-          },
-          "outcome": {
-            "$ref": "#/components/schemas/AuditOutcome"
-          },
-          "clientIp": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "PartnerResponse": {
         "required": [
           "createdAt",
@@ -7952,7 +7960,8 @@
           "firstName",
           "gender",
           "id",
-          "lastName"
+          "lastName",
+          "userType"
         ],
         "type": "object",
         "properties": {
@@ -7973,6 +7982,9 @@
           },
           "gender": {
             "$ref": "#/components/schemas/Gender"
+          },
+          "userType": {
+            "type": "string"
           },
           "createdAt": {
             "type": "string",
@@ -7997,7 +8009,7 @@
           "dependents",
           "generatedAt",
           "newsConsentChanges",
-          "operations",
+          "securityLog",
           "sessions",
           "signups",
           "termsDecisions"
@@ -8041,10 +8053,10 @@
               "$ref": "#/components/schemas/PersonalDataSessionResponse"
             }
           },
-          "operations": {
+          "securityLog": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/OwnAuditEntryResponse"
+              "$ref": "#/components/schemas/AccountAuditEntryResponse"
             }
           }
         },

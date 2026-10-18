@@ -25,6 +25,7 @@ import {
   resetPasswordRequest,
   verifyAccountRequest,
 } from '@/entities/account/api/requests'
+import { toPersonalDataFile } from '@/entities/account/api/mapper'
 import { ApiError } from '@/shared/api'
 
 import {
@@ -38,8 +39,10 @@ import {
 import {
   buildCertificateResponse,
   buildHistoryResponse,
+  buildPersonalDataResponse,
   buildUserResponse,
 } from '../../../../support/builders'
+import { t } from '../../../../support/render'
 
 describe('account requests', () => {
   describe('getAccountProfileRequest', () => {
@@ -221,14 +224,14 @@ describe('account requests', () => {
     await expect(getAccountDeletionAllowedRequest()).resolves.toBe(false)
   })
 
-  it('loads the copy of the personal data as an indented JSON file', async () => {
-    const copy = { account: { firstName: 'Ada' }, signups: [] }
+  it('loads the copy of the personal data as an indented Spanish JSON file', async () => {
+    const copy = buildPersonalDataResponse()
     server.use(http.get('/api/me/personal-data', () => HttpResponse.json(copy)))
 
-    const file = await getAccountPersonalDataRequest()
+    const file = await getAccountPersonalDataRequest(t)
 
     expect(file.type).toBe('application/json')
-    await expect(file.text()).resolves.toBe(JSON.stringify(copy, null, 2))
+    await expect(file.text()).resolves.toBe(JSON.stringify(toPersonalDataFile(copy, t), null, 2))
   })
 
   it('asks for the deletion code and deletes the own account with the password and the code', async () => {

@@ -13,6 +13,7 @@ export interface PersonalDataDependentResponse {
   /** @nullable */
   birthDate?: string | null;
   gender: Gender;
+  userType: string;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;

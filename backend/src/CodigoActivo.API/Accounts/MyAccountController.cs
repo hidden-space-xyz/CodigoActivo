@@ -43,12 +43,13 @@ public class MyAccountController : ApiControllerBase
 
     /// <summary>
     /// Returns a copy of the personal data kept about the signed-in user and the minors in their
-    /// care, which the SPA saves as a JSON file.
+    /// care, which the SPA saves as a JSON file. It shares the report rate limit.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the copy, or an error response.</returns>
     [HttpGet("personal-data")]
+    [EnableRateLimiting(SecurityPolicies.Reports)]
     public async Task<ActionResult<PersonalDataResponse>> PersonalDataAsync(
         [FromServices] IQueryHandler<GetPersonalDataQuery, Result<PersonalDataResponse>> handler,
         CancellationToken ct

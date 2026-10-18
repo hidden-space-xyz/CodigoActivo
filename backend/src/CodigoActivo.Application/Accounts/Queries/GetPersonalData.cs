@@ -19,11 +19,11 @@ public sealed record GetPersonalDataQuery : IQuery<Result<PersonalDataResponse>>
 /// Executes the query that copies the personal data kept about the signed-in user and the minors
 /// in their care: the account, the news consent history, the minors, the signups of the
 /// household, the user's decisions on event documents with their signatures, the open sessions
-/// and the operations the audit log still holds.
+/// and the audit entries about the household that the log still holds.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="logs">Reader of the operations the user ran.</param>
+/// <param name="logs">Reader of the audit entries about the household.</param>
 /// <param name="clock">Clock used to stamp the copy.</param>
 /// <param name="currentUser">Person the query runs for.</param>
 public sealed class GetPersonalDataQueryHandler(
@@ -102,6 +102,7 @@ public sealed class GetPersonalDataQueryHandler(
                     u.LastName,
                     u.BirthDate,
                     u.Gender,
+                    u.UserType.Name,
                     u.CreatedAt,
                     u.UpdatedAt,
                     u.GuardianshipDeclaredAt
@@ -148,7 +149,11 @@ public sealed class GetPersonalDataQueryHandler(
                 .Select(s => new PersonalDataSessionResponse(s.CreatedAt, s.ExpiresAt)),
             ct
         );
-        var operations = await logs.ListOwnAuditAsync(userId, ct);
+        var securityLog = await logs.ListAccountAuditAsync(
+            userId,
+            [userId, .. dependents.Select(dependent => dependent.Id)],
+            ct
+        );
 
         return new PersonalDataResponse(
             clock.UtcNow,
@@ -158,7 +163,7 @@ public sealed class GetPersonalDataQueryHandler(
             signups,
             decisions,
             sessions,
-            operations
+            securityLog
         );
     }
 }

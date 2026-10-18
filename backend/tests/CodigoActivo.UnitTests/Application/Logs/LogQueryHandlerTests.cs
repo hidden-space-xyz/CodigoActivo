@@ -142,12 +142,13 @@ public sealed class LogQueryHandlerTests
             return Task.FromResult(Audit);
         }
 
-        public Task<IReadOnlyList<OwnAuditEntryResponse>> ListOwnAuditAsync(
-            Guid actorId,
+        public Task<IReadOnlyList<AccountAuditEntryResponse>> ListAccountAuditAsync(
+            Guid userId,
+            IReadOnlyCollection<Guid> subjectIds,
             CancellationToken ct = default
         )
         {
-            return Task.FromResult<IReadOnlyList<OwnAuditEntryResponse>>([]);
+            return Task.FromResult<IReadOnlyList<AccountAuditEntryResponse>>([]);
         }
     }
 }

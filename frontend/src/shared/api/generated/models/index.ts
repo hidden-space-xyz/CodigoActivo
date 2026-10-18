@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 
+export * from './accountAuditEntryResponse';
 export * from './accountDeletionCodeRequest';
 export * from './accountDeletionStatusResponse';
 export * from './activityModalityTypeResponse';
@@ -135,7 +136,6 @@ export * from './newsItemResponse';
 export * from './newsListItemResponse';
 export * from './newsListItemResponsePagedResult';
 export * from './overlappingActivityResponse';
-export * from './ownAuditEntryResponse';
 export * from './partnerResponse';
 export * from './partnerResponsePagedResult';
 export * from './patchApiUsersUserIdChangeTypeParams';
