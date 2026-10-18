@@ -230,6 +230,7 @@
     "EventCategoryTypeNotFound": "La categoría del evento no es válida.",
     "EventCategoryTypeNameAlreadyExists": "Ya existe una categoría con ese nombre.",
     "EventCategoryTypeOnlyCategoryOfEvent": "No se puede eliminar: hay eventos cuya única categoría es esta. Asígnales otra categoría antes de eliminarla.",
+    "RichTextFileNotFound": "Una de las imágenes del texto ya no existe. Quítala y vuelve a insertarla antes de guardar.",
     "EventThumbnailNotFound": "No se encontró la imagen del evento.",
     "EventCategoriesRequired": "Debes seleccionar al menos una categoría para el evento.",
     "EventScheduleRequired": "Debes indicar un horario para el evento.",

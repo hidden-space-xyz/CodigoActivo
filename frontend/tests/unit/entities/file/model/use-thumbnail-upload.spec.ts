@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useThumbnailUpload } from '@/entities/file'
 
@@ -13,6 +13,10 @@ function image(): File {
 }
 
 describe('useThumbnailUpload', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('reports a missing thumbnail until a file is picked or an id exists', async () => {
     const existingId = ref<string | null>(null)
     const { result } = await mountComposable(() => useThumbnailUpload(existingId))
@@ -84,6 +88,31 @@ describe('useThumbnailUpload', () => {
     result.pickedFile.value = image()
     await expect(result.resolveThumbnailId()).resolves.toBe('file-2')
     expect(uploads).toBe(2)
+  })
+
+  it('uploads the same pick again after a day or a reset', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-18T10:00:00Z'))
+    let uploads = 0
+    server.use(
+      http.post('/api/files', () => {
+        uploads += 1
+        return HttpResponse.json({ id: `file-${uploads}` })
+      }),
+    )
+    const { result } = await mountComposable(() => useThumbnailUpload(null))
+    const pick = image()
+    result.pickedFile.value = pick
+
+    await expect(result.resolveThumbnailId()).resolves.toBe('file-1')
+    vi.setSystemTime(new Date('2026-10-19T09:59:00Z'))
+    await expect(result.resolveThumbnailId()).resolves.toBe('file-1')
+    vi.setSystemTime(new Date('2026-10-19T10:00:00Z'))
+    await expect(result.resolveThumbnailId()).resolves.toBe('file-2')
+
+    result.reset()
+    result.pickedFile.value = pick
+    await expect(result.resolveThumbnailId()).resolves.toBe('file-3')
   })
 
   it('translates a known API error code and returns null on failure', async () => {

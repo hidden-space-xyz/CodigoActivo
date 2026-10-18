@@ -6,6 +6,7 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Common.Validation;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
@@ -35,11 +36,13 @@ public sealed record UpdateNewsItemCommand(
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work that saves the item in the transaction that locks its files.</param>
 public sealed class UpdateNewsItemCommandHandler(
     INewsItemRepository news,
     IStoredFileRepository files,
     ICurrentUser currentUser,
-    IClock clock
+    IClock clock,
+    IUnitOfWork uow
 ) : ICommandHandler<UpdateNewsItemCommand, Result>
 {
     /// <summary>
@@ -61,21 +64,37 @@ public sealed class UpdateNewsItemCommandHandler(
             return Error.NotFound(ApplicationErrorCode.NewsItemNotFound);
         }
 
-        if (!await files.ExistsAsync(command.ThumbnailId, ct))
+        return await uow.ExecuteInTransactionAsync(
+            attempt => UpdateLockedAsync(newsItem, command, attempt),
+            ct
+        );
+    }
+
+    private async Task<Result> UpdateLockedAsync(
+        NewsItem newsItem,
+        UpdateNewsItemCommand command,
+        CancellationToken ct
+    )
+    {
+        var description = RichText.From(command.Description);
+        var available = await ContentFiles.EnsureAvailableAsync(
+            files,
+            command.ThumbnailId,
+            description,
+            ApplicationErrorCode.NewsItemThumbnailNotFound,
+            ct
+        );
+        if (available.IsFailure)
         {
-            return Error.Validation(ApplicationErrorCode.NewsItemThumbnailNotFound);
+            return available;
         }
 
         newsItem.Update(
-            new NewsItemContent(
-                command.Title,
-                command.Subtitle,
-                RichText.From(command.Description),
-                command.ThumbnailId
-            ),
+            new NewsItemContent(command.Title, command.Subtitle, description, command.ThumbnailId),
             currentUser.RequiredId(),
             clock.UtcNow
         );
+        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

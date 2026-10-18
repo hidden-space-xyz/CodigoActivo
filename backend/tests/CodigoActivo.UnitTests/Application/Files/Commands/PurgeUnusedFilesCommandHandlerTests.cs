@@ -26,7 +26,7 @@ public sealed class PurgeUnusedFilesCommandHandlerTests
         var ct = TestContext.Current.CancellationToken;
         IReadOnlyList<StoredFileId> old = [StoredFileId.New(), StoredFileId.New()];
         files.ListIdsUploadedUpToAsync(Arg.Any<DateTimeOffset>(), ct).Returns(old);
-        orphanCleaner.DeleteOrphanedAsync(old, ct).Returns(1);
+        orphanCleaner.PurgeOrphanedAsync(old, ct).Returns(1);
 
         var result = await sut.HandleAsync(new PurgeUnusedFilesCommand(), ct);
 

@@ -15,6 +15,7 @@ namespace CodigoActivo.UnitTests.Application.News.Commands;
 public sealed class UpdateNewsItemCommandHandlerTests
 {
     private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
@@ -22,7 +23,13 @@ public sealed class UpdateNewsItemCommandHandlerTests
 
     public UpdateNewsItemCommandHandlerTests()
     {
-        sut = new UpdateNewsItemCommandHandler(news, files, currentUser, clock);
+        sut = new UpdateNewsItemCommandHandler(
+            news,
+            files,
+            currentUser,
+            clock,
+            uow.RunsTransactions()
+        );
     }
 
     private static UpdateNewsItemCommand Command(

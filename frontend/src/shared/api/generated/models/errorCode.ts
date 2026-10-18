@@ -31,6 +31,7 @@ export const ErrorCode = {
   EventCategoryTypeNameAlreadyExists: 'EventCategoryTypeNameAlreadyExists',
   EventCategoryTypeOnlyCategoryOfEvent: 'EventCategoryTypeOnlyCategoryOfEvent',
   EventThumbnailNotFound: 'EventThumbnailNotFound',
+  RichTextFileNotFound: 'RichTextFileNotFound',
   EventCategoriesRequired: 'EventCategoriesRequired',
   EventScheduleRequired: 'EventScheduleRequired',
   EventScheduleInvalidRange: 'EventScheduleInvalidRange',

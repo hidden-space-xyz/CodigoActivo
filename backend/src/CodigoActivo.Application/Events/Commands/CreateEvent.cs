@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
@@ -26,13 +27,15 @@ public sealed record CreateEventCommand(EventDraft Event) : ICommand<Result<Even
 /// <param name="categoryChecker">The category checker value.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work that saves the event in the transaction that locks its files.</param>
 public sealed class CreateEventCommandHandler(
     IEventRepository events,
     IStoredFileRepository files,
     ITermsDocumentRepository termsDocuments,
     EventCategoryChecker categoryChecker,
     ICurrentUser currentUser,
-    IClock clock
+    IClock clock,
+    IUnitOfWork uow
 ) : ICommandHandler<CreateEventCommand, Result<EventId>>
 {
     /// <summary>
@@ -61,11 +64,6 @@ public sealed class CreateEventCommandHandler(
             return schedule.Error!;
         }
 
-        if (!await files.ExistsAsync(draft.ThumbnailId, ct))
-        {
-            return Error.Validation(ApplicationErrorCode.EventThumbnailNotFound);
-        }
-
         var categories = await categoryChecker.EnsureCategoriesAsync(draft.CategoryTypeIds, ct);
         if (categories.IsFailure)
         {
@@ -78,21 +76,45 @@ public sealed class CreateEventCommandHandler(
             return terms.Error!;
         }
 
+        return await uow.ExecuteInTransactionAsync(
+            attempt =>
+                CreateLockedAsync(draft, schedule.Value, categories.Value, terms.Value, attempt),
+            ct
+        );
+    }
+
+    private async Task<Result<EventId>> CreateLockedAsync(
+        EventDraft draft,
+        EventSchedule schedule,
+        EventCategorySelection categories,
+        EventTermsLinks terms,
+        CancellationToken ct
+    )
+    {
+        var description = RichText.From(draft.Description);
+        var available = await ContentFiles.EnsureAvailableAsync(
+            files,
+            draft.ThumbnailId,
+            description,
+            ApplicationErrorCode.EventThumbnailNotFound,
+            ct
+        );
+        if (available.IsFailure)
+        {
+            return available.Error!;
+        }
+
         var ev = Event.Create(
-            new EventContent(
-                draft.Title,
-                draft.Subtitle,
-                RichText.From(draft.Description),
-                draft.ThumbnailId
-            ),
-            schedule.Value,
-            categories.Value,
-            terms.Value,
+            new EventContent(draft.Title, draft.Subtitle, description, draft.ThumbnailId),
+            schedule,
+            categories,
+            terms,
             currentUser.RequiredId(),
             clock.UtcNow
         );
 
         await events.AddAsync(ev, ct);
+        await uow.SaveChangesAsync(ct);
         return ev.Id;
     }
 }

@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -21,8 +22,17 @@ public sealed class OrphanFileCleanerTests
         sut = new OrphanFileCleaner(
             files,
             uow.RunsTransactionsOf<IReadOnlyList<StoredFile>>(),
-            storage
+            storage,
+            NullLogger<OrphanFileCleaner>.Instance
         );
+        files
+            .LockForDeletionAsync(
+                Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(call =>
+                (IReadOnlyList<StoredFileId>)[.. call.Arg<IReadOnlyCollection<StoredFileId>>()]
+            );
     }
 
     private static StoredFile NewFile(string name = "photo.png", string extension = "png")
@@ -74,7 +84,7 @@ public sealed class OrphanFileCleanerTests
         InUseFilesAre(inUseFile.Id.Value);
         StoredFilesAre(inUseFile, orphanPng, orphanJpg);
 
-        var deleted = await sut.DeleteOrphanedAsync(
+        var deleted = await sut.PurgeOrphanedAsync(
             [inUseFile.Id, orphanPng.Id, orphanJpg.Id, orphanPng.Id],
             TestContext.Current.CancellationToken
         );
@@ -115,7 +125,7 @@ public sealed class OrphanFileCleanerTests
         var second = NewFile();
         InUseFilesAre(first.Id.Value, second.Id.Value);
 
-        var deleted = await sut.DeleteOrphanedAsync(
+        var deleted = await sut.PurgeOrphanedAsync(
             [first.Id, second.Id],
             TestContext.Current.CancellationToken
         );
@@ -124,6 +134,27 @@ public sealed class OrphanFileCleanerTests
         files.DidNotReceiveWithAnyArgs().Remove(NewFile());
         await AssertNotSavedAsync();
         storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
+    }
+
+    [Fact]
+    public async Task PurgeOrphanedAsyncRepositoryThrowsLetsTheFailureThrough()
+    {
+        files
+            .When(f =>
+                f.LockForDeletionAsync(
+                    Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                    Arg.Any<CancellationToken>()
+                )
+            )
+            .Do(_ => throw new InvalidOperationException("db down"));
+
+        var act = async () =>
+            await sut.PurgeOrphanedAsync(
+                [StoredFileId.From(Guid.NewGuid())],
+                TestContext.Current.CancellationToken
+            );
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 
     [Fact]

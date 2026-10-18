@@ -14,6 +14,7 @@ namespace CodigoActivo.UnitTests.Application.News.Commands;
 public sealed class CreateNewsItemCommandHandlerTests
 {
     private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
@@ -21,7 +22,13 @@ public sealed class CreateNewsItemCommandHandlerTests
 
     public CreateNewsItemCommandHandlerTests()
     {
-        sut = new CreateNewsItemCommandHandler(news, files, currentUser, clock);
+        sut = new CreateNewsItemCommandHandler(
+            news,
+            files,
+            currentUser,
+            clock,
+            uow.RunsTransactionsOf<Result<NewsItemId>>()
+        );
     }
 
     [Fact]
@@ -39,6 +46,30 @@ public sealed class CreateNewsItemCommandHandlerTests
         result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemThumbnailNotFound);
         await news.DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<NewsItem>(), TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task HandleAsyncEmbeddedImageNoLongerStoredFailsAndDoesNotPersist()
+    {
+        var thumbnailId = StoredFileId.New();
+        var removedImageId = StoredFileId.New();
+        files.OnlyFilesExist(thumbnailId);
+
+        var result = await sut.HandleAsync(
+            new CreateNewsItemCommand(
+                "Title",
+                "Subtitle",
+                $$"""{"img":"/api/files/{{removedImageId}}/content"}""",
+                thumbnailId
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.RichTextFileNotFound);
+        await news.DidNotReceiveWithAnyArgs()
+            .AddAsync(Arg.Any<NewsItem>(), TestContext.Current.CancellationToken);
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

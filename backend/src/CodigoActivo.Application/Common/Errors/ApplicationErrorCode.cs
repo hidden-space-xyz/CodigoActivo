@@ -61,6 +61,11 @@ public enum ApplicationErrorCode
     EventThumbnailNotFound,
 
     /// <summary>
+    /// A file embedded in the rich text of content no longer exists.
+    /// </summary>
+    RichTextFileNotFound,
+
+    /// <summary>
     /// Selects the event rating not finished option.
     /// </summary>
     EventRatingNotFinished,
