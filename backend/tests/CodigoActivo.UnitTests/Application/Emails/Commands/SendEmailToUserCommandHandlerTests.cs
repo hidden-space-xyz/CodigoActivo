@@ -48,6 +48,30 @@ public sealed class SendEmailToUserCommandHandlerTests
         outbox.Messages.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData(ManualEmailPurpose.Notice)]
+    [InlineData(ManualEmailPurpose.News)]
+    public async Task HandleAsyncAccountPendingVerificationReturnsRecipientNotVerified(
+        ManualEmailPurpose purpose
+    )
+    {
+        var pending = NewUserRow(
+            "Pedro",
+            "pedro@test.local",
+            newsConsent: true,
+            statusId: KnownIds.UserStatusTypes.Pending
+        );
+        store.Users.Add(pending);
+
+        var result = await sut.HandleAsync(
+            new SendEmailToUserCommand(UserId.From(pending.Id), Request(), purpose, []),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailRecipientNotVerified);
+        outbox.Messages.Should().BeEmpty();
+    }
+
     [Fact]
     public async Task HandleAsyncUnknownUserReturnsNotFound()
     {

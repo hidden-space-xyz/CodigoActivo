@@ -157,14 +157,13 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = (await response.ReadJsonAsync<SendEmailResultResponse>(Ct))!;
-        result.Queued.Should().Be(4);
+        result.Queued.Should().Be(3);
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
             .BeEquivalentTo(
                 TestSeedData.AdminEmail,
                 TestSeedData.MemberEmail,
-                TestSeedData.PendingEmail,
                 TestSeedData.BlockedEmail
             );
     }
@@ -181,7 +180,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
             response.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 
-        Factory.EmailSender.Sent.Should().HaveCount(12);
+        Factory.EmailSender.Sent.Should().HaveCount(9);
     }
 
     [Fact]

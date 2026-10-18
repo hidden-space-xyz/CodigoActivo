@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
@@ -19,7 +20,17 @@ namespace CodigoActivo.Application.Emails;
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="FirstName">User's given name.</param>
 /// <param name="NewsConsent">Whether the user agreed to receive news by email.</param>
-public sealed record Recipient(UserId UserId, string? Email, string FirstName, bool NewsConsent);
+/// <param name="EmailConfirmed">
+/// Whether the account confirmed its email address; one still pending verification may hold an
+/// address its holder never proved to own.
+/// </param>
+public sealed record Recipient(
+    UserId UserId,
+    string? Email,
+    string FirstName,
+    bool NewsConsent,
+    bool EmailConfirmed
+);
 
 /// <summary>
 /// Validates administrator-written email and stores it for delivery. The whole batch is queued at
@@ -38,10 +49,16 @@ public sealed class ManualEmailDispatcher(
 )
 {
     /// <summary>
-    /// Gets the to recipient value.
+    /// Gets the projection of a user onto a recipient.
     /// </summary>
     public static Expression<Func<UserRow, Recipient>> ToRecipient { get; } =
-        u => new Recipient(UserId.From(u.Id), u.Email, u.FirstName, u.NewsConsent);
+        u => new Recipient(
+            UserId.From(u.Id),
+            u.Email,
+            u.FirstName,
+            u.NewsConsent,
+            u.UserStatusTypeId != CatalogIds.UserStatuses.IdOf(UserStatus.Pending)
+        );
 
     /// <summary>
     /// Validates and queues the manual email for delivery.

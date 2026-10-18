@@ -6,12 +6,15 @@ namespace CodigoActivo.Application.Emails;
 
 /// <summary>
 /// Recipients a manual email reaches once the users matching its filters are known: only users
-/// with an email address, each address once regardless of letter case, and for a news email
-/// only those with news consent. The send commands and the audience queries share it so the
-/// preview always matches what is sent.
+/// with an email address they confirmed, each address once regardless of letter case, and for a
+/// news email only those with news consent. An account still pending verification is left out, since
+/// anyone may have registered it with someone else's address. The send commands and the audience
+/// queries share it so the preview always matches what is sent.
 /// </summary>
-/// <param name="Recipients">Distinct recipients that have an email address.</param>
-/// <param name="Skipped">Matching users left out because they have no email address.</param>
+/// <param name="Recipients">Distinct recipients that have a confirmed email address.</param>
+/// <param name="Skipped">
+/// Matching users left out because they have no email address or have not confirmed it.
+/// </param>
 public sealed record ManualEmailAudience(IReadOnlyList<Recipient> Recipients, int Skipped)
 {
     /// <summary>
@@ -31,7 +34,9 @@ public sealed record ManualEmailAudience(IReadOnlyList<Recipient> Recipients, in
             source.Select(ManualEmailDispatcher.ToRecipient),
             ct
         );
-        var addressable = matched.Where(r => !string.IsNullOrWhiteSpace(r.Email)).ToList();
+        var addressable = matched
+            .Where(r => r.EmailConfirmed && !string.IsNullOrWhiteSpace(r.Email))
+            .ToList();
         var recipients = addressable
             .DistinctBy(r => r.Email, StringComparer.OrdinalIgnoreCase)
             .ToList();

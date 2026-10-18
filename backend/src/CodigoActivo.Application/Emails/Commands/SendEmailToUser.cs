@@ -35,7 +35,8 @@ public sealed class SendEmailToUserCommandHandler(
 ) : ICommandHandler<SendEmailToUserCommand, Result<EmailDispatch>>
 {
     /// <summary>
-    /// Handles the request to send email to user.
+    /// Handles the request to send email to user. A user without an email address, an account that
+    /// has not confirmed its address and, for news, one without news consent are refused.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -56,6 +57,9 @@ public sealed class SendEmailToUserCommandHandler(
             null => Error.NotFound(ApplicationErrorCode.UserNotFound),
             { } found when string.IsNullOrWhiteSpace(found.Email) => Error.Validation(
                 ApplicationErrorCode.EmailRecipientWithoutAddress
+            ),
+            { EmailConfirmed: false } => Error.Validation(
+                ApplicationErrorCode.EmailRecipientNotVerified
             ),
             { NewsConsent: false } when command.Purpose is ManualEmailPurpose.News =>
                 Error.Validation(ApplicationErrorCode.EmailRecipientWithoutConsent),

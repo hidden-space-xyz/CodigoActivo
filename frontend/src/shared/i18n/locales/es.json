@@ -304,8 +304,9 @@
     "AuthenticatorSetupExpired": "La configuración de la aplicación ha caducado. Vuelve a empezar.",
     "AuthenticatorNotEnabled": "No tienes una aplicación de autenticación configurada.",
     "AuthenticatorAlreadyEnabled": "Ya usas una aplicación de autenticación. Para cambiarla, vuelve primero a la verificación por correo.",
-    "EmailNoRecipients": "Ningún destinatario con correo coincide con los filtros actuales.",
+    "EmailNoRecipients": "Ningún destinatario con el correo confirmado coincide con los filtros actuales.",
     "EmailRecipientWithoutAddress": "Esta persona no tiene correo electrónico, así que no se le puede escribir.",
+    "EmailRecipientNotVerified": "Esta persona aún no ha confirmado su correo electrónico, así que todavía no se le puede escribir.",
     "EmailRecipientWithoutConsent": "Esta persona no ha aceptado recibir novedades, así que solo puedes enviarle un aviso.",
     "EmailUnsubscribeLinkInvalid": "El enlace para darte de baja no es válido. Comprueba que lo has abierto entero desde el correo.",
     "EmailTooManyRecipients": "Hay demasiados destinatarios para un solo envío. Afina los filtros e inténtalo de nuevo.",
@@ -1953,13 +1954,13 @@
     "sendEmail": {
       "header": "Enviar correo",
       "target": "Destinatarios: {target}",
-      "recipients": "Nadie de esta selección tiene correo electrónico, así que no se puede enviar el mensaje. | El mensaje llegará a 1 dirección de correo. | El mensaje llegará a {count} direcciones de correo: quien no tiene correo electrónico, como los menores, no lo recibe.",
+      "recipients": "Nadie de esta selección tiene el correo electrónico confirmado, así que no se puede enviar el mensaje. | El mensaje llegará a 1 dirección de correo. | El mensaje llegará a {count} direcciones de correo: quien no tiene correo electrónico, como los menores, o aún no lo ha confirmado no lo recibe.",
       "newsRecipients": "Nadie de esta selección ha aceptado recibir novedades, así que no se puede enviar este correo. | El correo de novedades llegará a 1 dirección de correo. | El correo de novedades llegará a {count} direcciones de correo.",
       "withoutConsent": "1 destinatario no ha aceptado recibir novedades y no recibirá este correo. | {count} destinatarios no han aceptado recibir novedades y no recibirán este correo.",
       "purpose": {
         "label": "Tipo de correo",
         "notice": "Aviso",
-        "noticeHint": "Algo que afecta a quien lo recibe: su cuenta, sus inscripciones o una actividad en la que ya participa. Llega a todos los destinatarios. No lo uses para anunciar eventos o actividades nuevos.",
+        "noticeHint": "Algo que afecta a quien lo recibe: su cuenta, sus inscripciones o una actividad en la que ya participa. Llega a todos los destinatarios que han confirmado su correo. No lo uses para anunciar eventos o actividades nuevos.",
         "news": "Novedades",
         "newsHint": "Próximos eventos, actividades y noticias de la asociación. Solo llega a quien aceptó recibir novedades e incluye nuestro correo de contacto y un enlace para darse de baja."
       },
@@ -1985,7 +1986,7 @@
       },
       "toast": {
         "queued": "1 correo en cola de envío. Se entregará en unos instantes. | {count} correos en cola de envío. Se entregarán en unos instantes.",
-        "skipped": "1 persona sin correo electrónico se ha omitido. | {count} personas sin correo electrónico se han omitido."
+        "skipped": "1 persona sin correo electrónico confirmado se ha omitido. | {count} personas sin correo electrónico confirmado se han omitido."
       },
       "form": {
         "problems": {
