@@ -12,6 +12,9 @@ services:
         max-size: "5m"
         max-file: "2"
     environment:
+      APP_BASE_URL: http://localhost:8080/
+      APP_TIMEZONE: Europe/Madrid
+      DEMO_MODE: true
       ASPNETCORE_ENVIRONMENT: Development
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
