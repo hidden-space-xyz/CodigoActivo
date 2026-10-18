@@ -49,6 +49,9 @@ public enum AuditAction
     /// <summary>Erased the accounts nobody verified in time.</summary>
     PurgeUnverifiedAccounts,
 
+    /// <summary>Deleted the uploads no content used in time.</summary>
+    PurgeUnusedFiles,
+
     /// <summary>Asked for the code that confirms deleting the own account.</summary>
     RequestAccountDeletionCode,
 

@@ -9,6 +9,12 @@ namespace CodigoActivo.Domain.Files;
 /// </summary>
 public class StoredFile : AggregateRoot<StoredFileId>
 {
+    /// <summary>
+    /// Days an upload that no content references is kept, so a form or an edit left open for a
+    /// while can still save it; after that it is deleted.
+    /// </summary>
+    public const int UnusedRetentionDays = 7;
+
     private StoredFile() { }
 
     /// <summary>
@@ -59,6 +65,17 @@ public class StoredFile : AggregateRoot<StoredFileId>
             UploadedAt = now,
             UploadedBy = uploaderId,
         };
+    }
+
+    /// <summary>
+    /// Gets the last upload instant of a file that is old enough to delete when no content
+    /// references it.
+    /// </summary>
+    /// <param name="now">Current time.</param>
+    /// <returns><paramref name="now"/> minus <see cref="UnusedRetentionDays"/>.</returns>
+    public static DateTimeOffset UnusedPurgeCutoff(DateTimeOffset now)
+    {
+        return now.AddDays(-UnusedRetentionDays);
     }
 
     /// <summary>

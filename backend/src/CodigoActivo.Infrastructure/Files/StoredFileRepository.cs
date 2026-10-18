@@ -30,6 +30,17 @@ public class StoredFileRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<StoredFileId>> ListIdsUploadedUpToAsync(
+        DateTimeOffset cutoff,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Where(file => file.UploadedAt <= cutoff)
+            .Select(file => file.Id)
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
     public Task<bool> ExistsAsync(StoredFileId id, CancellationToken ct = default)
     {
         return Set.AnyAsync(file => file.Id == id, ct);

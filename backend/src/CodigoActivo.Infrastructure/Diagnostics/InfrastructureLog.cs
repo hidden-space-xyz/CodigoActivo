@@ -174,6 +174,17 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
+    /// Records that the periodic deletion of the uploads no content used in time failed.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure that ended the run.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "The unused upload purge run failed; the next run will retry"
+    )]
+    public static partial void UnusedFilePurgeFailed(this ILogger logger, Exception exception);
+
+    /// <summary>
     /// Records that the partitions of the log tables could not be prepared or purged, which leaves
     /// expired entries in place or the next days without a partition until the next run.
     /// </summary>

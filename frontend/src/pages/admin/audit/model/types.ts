@@ -17,6 +17,7 @@ export type AuditAction =
   | 'Register'
   | 'RemoveExpiredSessions'
   | 'PurgeUnverifiedAccounts'
+  | 'PurgeUnusedFiles'
   | 'RequestAccountDeletionCode'
   | 'ResendTwoFactorCode'
   | 'ResendVerification'

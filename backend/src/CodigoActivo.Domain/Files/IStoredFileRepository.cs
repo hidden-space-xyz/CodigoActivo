@@ -27,6 +27,17 @@ public interface IStoredFileRepository : IRepository<StoredFile>
     );
 
     /// <summary>
+    /// Lists the files uploaded at or before an instant, whether or not anything references them.
+    /// </summary>
+    /// <param name="cutoff">Latest upload instant to include.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the identifiers of the files.</returns>
+    public Task<IReadOnlyList<StoredFileId>> ListIdsUploadedUpToAsync(
+        DateTimeOffset cutoff,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Tells whether a file exists.
     /// </summary>
     /// <param name="id">Identifier of the file.</param>

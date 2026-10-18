@@ -41,6 +41,8 @@ internal static class ContentRegistration
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddScoped<FileUploadValidator>();
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
+        services.AddFixedOptions<UnusedFilePurgeOptions>();
+        services.AddHostedService<UnusedFilePurger>();
         return services;
     }
 }

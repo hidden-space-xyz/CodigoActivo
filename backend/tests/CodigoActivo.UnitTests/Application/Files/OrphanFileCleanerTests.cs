@@ -74,10 +74,12 @@ public sealed class OrphanFileCleanerTests
         InUseFilesAre(inUseFile.Id.Value);
         StoredFilesAre(inUseFile, orphanPng, orphanJpg);
 
-        await sut.DeleteOrphanedAsync(
+        var deleted = await sut.DeleteOrphanedAsync(
             [inUseFile.Id, orphanPng.Id, orphanJpg.Id, orphanPng.Id],
             TestContext.Current.CancellationToken
         );
+
+        deleted.Should().Be(2);
 
         await files
             .Received(1)
@@ -113,8 +115,12 @@ public sealed class OrphanFileCleanerTests
         var second = NewFile();
         InUseFilesAre(first.Id.Value, second.Id.Value);
 
-        await sut.DeleteOrphanedAsync([first.Id, second.Id], TestContext.Current.CancellationToken);
+        var deleted = await sut.DeleteOrphanedAsync(
+            [first.Id, second.Id],
+            TestContext.Current.CancellationToken
+        );
 
+        deleted.Should().Be(0);
         files.DidNotReceiveWithAnyArgs().Remove(NewFile());
         await AssertNotSavedAsync();
         storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);

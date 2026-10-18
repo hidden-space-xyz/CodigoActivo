@@ -4939,6 +4939,7 @@
           "Register",
           "RemoveExpiredSessions",
           "PurgeUnverifiedAccounts",
+          "PurgeUnusedFiles",
           "RequestAccountDeletionCode",
           "ResendTwoFactorCode",
           "ResendVerification",
