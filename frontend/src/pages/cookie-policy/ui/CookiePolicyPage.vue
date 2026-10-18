@@ -3,12 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { LegalDocument, LegalEntry, LegalEntryList, LegalSection } from '@/shared/ui/legal-document'
 
-import {
-  BROWSER_GUIDES,
-  COOKIE_GUIDE_URL,
-  STORAGE_ENTRIES,
-  type StorageEntry,
-} from '../config/storage'
+import { BROWSER_GUIDES, STORAGE_ENTRIES, type StorageEntry } from '../config/storage'
 
 const { t } = useI18n()
 
@@ -40,13 +35,7 @@ function facts(entry: StorageEntry) {
     </LegalSection>
 
     <LegalSection id="cookie-policy-consent" :title="$t('pages.cookiePolicy.consent.title')">
-      <i18n-t keypath="pages.cookiePolicy.consent.exemption" tag="p">
-        <template #guide>
-          <a :href="COOKIE_GUIDE_URL" target="_blank" rel="noopener">{{
-            $t('pages.cookiePolicy.consent.guide')
-          }}</a>
-        </template>
-      </i18n-t>
+      <p>{{ $t('pages.cookiePolicy.consent.necessary') }}</p>
       <p>{{ $t('pages.cookiePolicy.consent.keepSignedIn') }}</p>
     </LegalSection>
 

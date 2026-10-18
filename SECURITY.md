@@ -321,8 +321,9 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   checked against the local copy.
 - The only cookies are the session, two-factor challenge and CSRF cookies above; the theme choice stays in
   `localStorage` and is never sent to the server, and `sessionStorage` only holds the stale-build reload mark.
-  They are exempt from consent under article 22.2 of the Spanish LSSI, except the persistent session, whose
-  opt-in checkbox is the user's consent, so the site shows no cookie banner. The `/cookies` page
+  They are all needed to run the site or keep a preference the user picks, and only the persistent session,
+  behind its unticked checkbox, outlives the browser session, so the site shows no cookie banner. The
+  `/cookies` page
   (`frontend/src/pages/cookie-policy`) lists every cookie and storage key with its purpose and duration;
   change it with them. `Referrer-Policy: same-origin` keeps page URLs out of
   requests to external sites, and `X-DNS-Prefetch-Control: off` stops browsers from pre-resolving link
@@ -332,7 +333,7 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   the data, purpose, legal basis and retention, plus the processors, transfers and rights; the registration
   form shows its first layer (`PrivacyNotice`). Change them with any new personal field, processor, recipient
   or retention.
-- Promotional consent (article 21 of the Spanish LSSI, article 7.1 GDPR) is changed only by its holder: at
+- Promotional consent (articles 6.1.a and 7 GDPR) is changed only by its holder: at
   registration, in «Mi cuenta», or through the unsubscribe link of a promotional email or its mail client's
   unsubscribe button. `User` appends every change to `promotional_consent_changes` with its instant and source
   (`Registration`, `Profile`, `UnsubscribeLink`, `OneClickUnsubscribe`) and the blocked copy keeps them. Consents stored before that table existed have no

@@ -71,6 +71,3 @@ export const BROWSER_GUIDES: readonly BrowserGuide[] = [
     url: 'https://support.microsoft.com/es-es/microsoft-edge/eliminar-las-cookies-en-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09',
   },
 ]
-
-/** Guide of the Spanish data protection authority on the use of cookies. */
-export const COOKIE_GUIDE_URL = 'https://www.aepd.es/guias/guia-cookies.pdf'
