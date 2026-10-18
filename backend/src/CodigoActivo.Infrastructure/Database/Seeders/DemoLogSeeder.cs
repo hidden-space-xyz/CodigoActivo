@@ -7,6 +7,7 @@ using CodigoActivo.Infrastructure.Diagnostics;
 using CodigoActivo.Infrastructure.Logs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Serilog.Events;
 
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
@@ -14,12 +15,14 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// Writes an invented history of diagnostic and audit entries into the log tables of a demo
 /// deployment, so its log pages have something to show from the first start. A history is written
 /// when the audit log holds no entry of a demo account younger than the diagnostic retention, so a
-/// later start writes a new one once the previous history has expired. A failure is logged and
-/// does not stop the start, because nothing else depends on the log tables.
+/// later start writes a new one once the previous history has expired; entries already past the
+/// retention of their table are left out. A failure is logged and does not stop the start, because
+/// nothing else depends on the log tables.
 /// </summary>
 /// <param name="context">Read database context the demo data is read from.</param>
 /// <param name="database">Connections of the log tables.</param>
 /// <param name="partitions">Maintenance of the log partitions.</param>
+/// <param name="retention">How long the entries of each log table are kept.</param>
 /// <param name="passwordLockout">Password lockout configuration the invented attack follows.</param>
 /// <param name="twoFactor">Second-factor configuration the invented lockout follows.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
@@ -28,6 +31,7 @@ public sealed class DemoLogSeeder(
     CodigoActivoReadDbContext context,
     LogDatabase database,
     LogPartitionMaintainer partitions,
+    LogRetentionOptions retention,
     PasswordLockoutOptions passwordLockout,
     TwoFactorOptions twoFactor,
     IClock clock,
@@ -54,7 +58,8 @@ public sealed class DemoLogSeeder(
     private async Task WriteAsync(CancellationToken ct)
     {
         var accounts = DemoDataSeeder.UserIds.Select(id => id.Value).ToList();
-        var since = clock.UtcNow - LogTable.Diagnostics.Retention;
+        var now = clock.UtcNow;
+        var since = now - retention.Diagnostics;
         var written = await context
             .Set<AuditLogRow>()
             .AnyAsync(
@@ -75,8 +80,22 @@ public sealed class DemoLogSeeder(
             passwordLockout.MaxFailedAttempts,
             twoFactor.MaxFailedAttempts
         );
-        await new DiagnosticLogSink(database, partitions).EmitBatchAsync(history.Diagnostics);
-        await new AuditLogSink(database, partitions).EmitBatchAsync(history.Audit);
+        await new DiagnosticLogSink(database, partitions).EmitBatchAsync(
+            Retained(history.Diagnostics, LogTable.Diagnostics, now)
+        );
+        await new AuditLogSink(database, partitions).EmitBatchAsync(
+            Retained(history.Audit, LogTable.Audit, now)
+        );
+    }
+
+    private List<LogEvent> Retained(
+        IReadOnlyList<LogEvent> events,
+        LogTable table,
+        DateTimeOffset now
+    )
+    {
+        var cutoff = LogPartitions.CutoffOf(retention.Of(table), now);
+        return [.. events.Where(logEvent => logEvent.Timestamp >= cutoff)];
     }
 
     private async Task<DemoLogFacts> ReadFactsAsync(List<Guid> accounts, CancellationToken ct)

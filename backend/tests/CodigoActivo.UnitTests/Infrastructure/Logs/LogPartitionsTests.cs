@@ -61,11 +61,11 @@ public sealed class LogPartitionsTests
     public void CutoffOfIsOneMaintenanceIntervalYoungerThanTheRetention()
     {
         LogPartitions
-            .CutoffOf(LogTable.Diagnostics, Now)
+            .CutoffOf(TimeSpan.FromDays(30), Now)
             .Should()
             .Be(new DateTimeOffset(2026, 9, 17, 21, 30, 0, TimeSpan.Zero));
         LogPartitions
-            .CutoffOf(LogTable.Audit, Now)
+            .CutoffOf(TimeSpan.FromDays(60), Now)
             .Should()
             .Be(new DateTimeOffset(2026, 8, 18, 21, 30, 0, TimeSpan.Zero));
     }
@@ -100,23 +100,23 @@ public sealed class LogPartitionsTests
     public void IsWithinWindowFromTheCutoffDayToTheLastDayKeptReady()
     {
         LogPartitions
-            .IsWithinWindow(LogTable.Diagnostics, new DateOnly(2026, 9, 16), Now)
+            .IsWithinWindow(TimeSpan.FromDays(30), new DateOnly(2026, 9, 16), Now)
             .Should()
             .BeFalse();
         LogPartitions
-            .IsWithinWindow(LogTable.Diagnostics, new DateOnly(2026, 9, 17), Now)
+            .IsWithinWindow(TimeSpan.FromDays(30), new DateOnly(2026, 9, 17), Now)
             .Should()
             .BeTrue();
         LogPartitions
-            .IsWithinWindow(LogTable.Diagnostics, new DateOnly(2026, 10, 19), Now)
+            .IsWithinWindow(TimeSpan.FromDays(30), new DateOnly(2026, 10, 19), Now)
             .Should()
             .BeTrue();
         LogPartitions
-            .IsWithinWindow(LogTable.Diagnostics, new DateOnly(2026, 10, 20), Now)
+            .IsWithinWindow(TimeSpan.FromDays(30), new DateOnly(2026, 10, 20), Now)
             .Should()
             .BeFalse();
         LogPartitions
-            .IsWithinWindow(LogTable.Audit, new DateOnly(2026, 8, 18), Now)
+            .IsWithinWindow(TimeSpan.FromDays(60), new DateOnly(2026, 8, 18), Now)
             .Should()
             .BeTrue();
     }

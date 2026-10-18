@@ -367,10 +367,10 @@ author reference.
 
 The API keeps two logs, both read only by administrators: the diagnostic log and the
 [audit log](#audit-log). The diagnostic log follows GDPR data minimization: only failures and warnings an
-operator has to diagnose are recorded, so normal use writes nothing to it, and none of its entries survives
-more than 30 days. Never in the diagnostic log: names, emails, phone numbers, anything typed by the client,
-the requested path or query, client IP, user agent, cookies, tokens and one-time codes. Logged: counters,
-enum/kind values, error/SMTP/HTTP codes, the HTTP
+operator has to diagnose are recorded, so normal use writes nothing to it, and none of its entries outlives
+its retention (30 days by default). Never in the diagnostic log: names, emails, phone numbers, anything typed
+by the client, the requested path or query, client IP, user agent, cookies, tokens and one-time codes. Logged:
+counters, enum/kind values, error/SMTP/HTTP codes, the HTTP
 method, the matched endpoint's route template, and exception type/message/stack traces. No event template
 carries an id, but an exception message may quote the pseudonymous GUID of a row or stored file it failed on,
 such as the path of a file under `/app/files`; it is written as is.
@@ -425,8 +425,10 @@ such as the path of a file under `/app/files`; it is written as is.
   logging pipeline. The log tables are partitioned by UTC day (`<table>_pYYYYMMDD`). At startup, right after
   the migrations, and every hour (`LogRetentionWorker`) `LogPartitionMaintainer` creates the partitions of
   today and the next two days, drops the partitions whose whole day is older than the cutoff and deletes the
-  older rows of the partition the cutoff falls in. The cutoff is the retention minus one hour, so no diagnostic
-  entry survives more than 30 days and no audit entry more than 60. Each statement runs in a short transaction
+  older rows of the partition the cutoff falls in. The retention is `DIAGNOSTIC_LOG_RETENTION_DAYS` (default
+  30) for the diagnostic log and `AUDIT_LOG_RETENTION_DAYS` (default 60) for the audit log, each from 1 to 730
+  days; the cutoff is the retention minus one hour, so no entry outlives the retention of its table, and a
+  lowered retention removes the older entries when the API starts. Each statement runs in a short transaction
   with a 5-second lock timeout; a failed run is logged as `LogMaintenanceFailed` (`Error`) and never stops the
   API. Purging stops while the API is stopped, so the effective retention lengthens by however long it is
   down. PostgreSQL rotates its own files at midnight with `log_truncate_on_rotation=on`, emptying the file of
@@ -451,7 +453,7 @@ passwords, one-time codes, signatures, secrets and free text stay out, and so do
 password reset and verification requests record the account the email belongs to, so failed logins are
 attributed to their account. Saving an event rating is never recorded, and the scheduled purges are recorded
 only when they removed something. The account ids have no foreign key, so an erased account's entries remain
-until their 60-day retention ends; they are not part of its legal copy.
+until the audit retention ends; they are not part of its legal copy.
 
 Only administrators read either log: `GET /api/logs/diagnostics`, `/api/logs/diagnostics/{id}` and
 `/api/logs/audit` require the administrator role and share the report rate limit.

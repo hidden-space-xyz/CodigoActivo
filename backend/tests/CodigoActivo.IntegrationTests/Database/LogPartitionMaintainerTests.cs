@@ -15,7 +15,7 @@ public sealed class LogPartitionMaintainerTests(PostgresContainerFixture postgre
     private readonly LogDatabase database = new(postgres.ConnectionString);
     private readonly TestClock clock = new() { UtcNow = Now };
 
-    private LogPartitionMaintainer Maintainer => new(database, clock);
+    private LogPartitionMaintainer Maintainer => new(database, new LogRetentionOptions(), clock);
 
     public async ValueTask InitializeAsync()
     {
@@ -122,6 +122,49 @@ public sealed class LogPartitionMaintainerTests(PostgresContainerFixture postgre
     }
 
     [Fact]
+    public async Task MaintainAsyncConfiguredRetentionDecidesWhatIsDropped()
+    {
+        var maintainer = new LogPartitionMaintainer(
+            database,
+            new LogRetentionOptions
+            {
+                Diagnostics = TimeSpan.FromDays(7),
+                Audit = TimeSpan.FromDays(14),
+            },
+            clock
+        );
+        await LogTables.CreatePartitionAsync(
+            postgres,
+            LogTable.Diagnostics,
+            new DateOnly(2026, 3, 2)
+        );
+        await LogTables.CreatePartitionAsync(
+            postgres,
+            LogTable.Diagnostics,
+            new DateOnly(2026, 3, 3)
+        );
+        await LogTables.CreatePartitionAsync(postgres, LogTable.Audit, new DateOnly(2026, 2, 23));
+        await LogTables.CreatePartitionAsync(postgres, LogTable.Audit, new DateOnly(2026, 2, 24));
+        await InsertDiagnosticAsync(new DateTimeOffset(2026, 3, 3, 12, 59, 0, TimeSpan.Zero));
+        var kept = new DateTimeOffset(2026, 3, 3, 13, 1, 0, TimeSpan.Zero);
+        await InsertDiagnosticAsync(kept);
+
+        await maintainer.MaintainAsync(Ct);
+
+        var diagnostics = await LogTables.PartitionsAsync(postgres, LogTable.Diagnostics);
+        diagnostics.Should().NotContain("diagnostic_log_entries_p20260302");
+        diagnostics.Should().Contain("diagnostic_log_entries_p20260303");
+        var audit = await LogTables.PartitionsAsync(postgres, LogTable.Audit);
+        audit.Should().NotContain("audit_log_entries_p20260223");
+        audit.Should().Contain("audit_log_entries_p20260224");
+        (await LogTables.DiagnosticEntriesAsync(postgres))
+            .Should()
+            .ContainSingle()
+            .Which.OccurredAt.Should()
+            .Be(kept);
+    }
+
+    [Fact]
     public async Task EnsurePartitionsAsyncCreatesOnlyTheDaysInsideTheWindow()
     {
         await LogTables.DropPartitionAsync(
@@ -158,10 +201,11 @@ public sealed class LogPartitionMaintainerTests(PostgresContainerFixture postgre
         await using var unreachable = new LogDatabase("Host=127.0.0.1;Port=1;Database=unused");
         var logs = new LogRecorder();
 
-        await new LogPartitionMaintainer(unreachable, clock).TryMaintainAsync(
-            logs.CreateLogger("Maintenance"),
-            Ct
-        );
+        await new LogPartitionMaintainer(
+            unreachable,
+            new LogRetentionOptions(),
+            clock
+        ).TryMaintainAsync(logs.CreateLogger("Maintenance"), Ct);
 
         logs.Entries.Should()
             .Equal("Error Maintenance: The log table maintenance failed; the next run will retry");

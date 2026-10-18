@@ -14,8 +14,13 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// gives up after a short lock wait, so maintenance never holds the tables for long.
 /// </summary>
 /// <param name="database">Connections of the log tables.</param>
+/// <param name="retention">How long the entries of each log table are kept.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-public sealed class LogPartitionMaintainer(LogDatabase database, IClock clock)
+public sealed class LogPartitionMaintainer(
+    LogDatabase database,
+    LogRetentionOptions retention,
+    IClock clock
+)
 {
     private const string LockTimeout = "SET LOCAL lock_timeout = '5s'";
     private const string DuplicateTable = "42P07";
@@ -39,7 +44,7 @@ public sealed class LogPartitionMaintainer(LogDatabase database, IClock clock)
                 await CreateAsync(connection, table, day, ct);
             }
 
-            var cutoff = LogPartitions.CutoffOf(table, now);
+            var cutoff = LogPartitions.CutoffOf(retention.Of(table), now);
             foreach (var partition in await PartitionsAsync(connection, table, ct))
             {
                 if (
@@ -104,8 +109,9 @@ public sealed class LogPartitionMaintainer(LogDatabase database, IClock clock)
         ArgumentNullException.ThrowIfNull(days);
 
         var now = clock.UtcNow;
+        var tableRetention = retention.Of(table);
         var inWindow = days.Distinct()
-            .Where(day => LogPartitions.IsWithinWindow(table, day, now))
+            .Where(day => LogPartitions.IsWithinWindow(tableRetention, day, now))
             .Order()
             .ToList();
         if (inWindow.Count is 0)

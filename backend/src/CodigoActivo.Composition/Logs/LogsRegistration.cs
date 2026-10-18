@@ -12,8 +12,8 @@ using Serilog.Debugging;
 namespace CodigoActivo.Composition.Logs;
 
 /// <summary>
-/// Registers the log tables: their own connections, the partition maintenance, the audit log, the
-/// reader of both logs and the provider that stores the events of the host.
+/// Registers the log tables: their own connections, their retention, the partition maintenance,
+/// the audit log, the reader of both logs and the provider that stores the events of the host.
 /// </summary>
 public static class LogsRegistration
 {
@@ -28,10 +28,26 @@ public static class LogsRegistration
         IConfiguration configuration
     )
     {
-        var connectionString = PersistenceRegistration.BuildConnectionString(
-            new Settings(configuration)
-        );
+        var settings = new Settings(configuration);
+        var connectionString = PersistenceRegistration.BuildConnectionString(settings);
         services.AddSingleton(_ => new LogDatabase(connectionString));
+        services.AddValidatedOptions<LogRetentionOptions>(
+            options =>
+            {
+                options.Diagnostics = settings.Duration(
+                    "DIAGNOSTIC_LOG_RETENTION_DAYS",
+                    TimeSpan.FromDays,
+                    LogRetentionOptions.DefaultDiagnostics
+                );
+                options.Audit = settings.Duration(
+                    "AUDIT_LOG_RETENTION_DAYS",
+                    TimeSpan.FromDays,
+                    LogRetentionOptions.DefaultAudit
+                );
+            },
+            options => options.IsWithinLimits(),
+            $"DIAGNOSTIC_LOG_RETENTION_DAYS and AUDIT_LOG_RETENTION_DAYS must be between {LogRetentionOptions.MinRetention.TotalDays} and {LogRetentionOptions.MaxRetention.TotalDays} days."
+        );
         services.AddSingleton<LogPartitionMaintainer>();
         services.AddSingleton<IAuditTrail, SerilogAuditTrail>();
         services.AddScoped<ILogEntryReader, LogEntryReader>();

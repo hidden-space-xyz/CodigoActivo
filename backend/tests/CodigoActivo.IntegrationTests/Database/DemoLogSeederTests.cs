@@ -98,14 +98,54 @@ public sealed class DemoLogSeederTests(
         await SeedHistoryAsync();
         var first = await LogTables.AuditEntriesAsync(postgres);
 
-        AdvanceClock(LogTable.Diagnostics.Retention);
+        AdvanceClock(LogRetentionOptions.DefaultDiagnostics);
         await SeedHistoryAsync();
 
         var entries = await LogTables.AuditEntriesAsync(postgres);
         entries.Should().HaveCountGreaterThan(first.Count);
         entries[^1]
             .OccurredAt.Should()
-            .BeAfter(first[^1].OccurredAt.Add(LogTable.Diagnostics.Retention / 2));
+            .BeAfter(first[^1].OccurredAt.Add(LogRetentionOptions.DefaultDiagnostics / 2));
+    }
+
+    [Fact]
+    public async Task SeedAsyncLeavesOutTheEntriesPastTheRetention()
+    {
+        await SeedDemoAdultsAsync();
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var retention = new LogRetentionOptions
+        {
+            Diagnostics = TimeSpan.FromDays(5),
+            Audit = TimeSpan.FromDays(10),
+        };
+        var seeder = new DemoLogSeeder(
+            services.GetRequiredService<CodigoActivoReadDbContext>(),
+            services.GetRequiredService<LogDatabase>(),
+            services.GetRequiredService<LogPartitionMaintainer>(),
+            retention,
+            new PasswordLockoutOptions(),
+            new TwoFactorOptions(),
+            services.GetRequiredService<IClock>(),
+            services.GetRequiredService<ILogger<DemoLogSeeder>>()
+        );
+
+        await seeder.SeedAsync(Ct);
+
+        var now = Factory.Clock.UtcNow;
+        (await LogTables.DiagnosticEntriesAsync(postgres))
+            .Should()
+            .NotBeEmpty()
+            .And.OnlyContain(entry =>
+                entry.OccurredAt >= LogPartitions.CutoffOf(retention.Diagnostics, now)
+            );
+        (await LogTables.AuditEntriesAsync(postgres))
+            .Should()
+            .NotBeEmpty()
+            .And.OnlyContain(entry =>
+                entry.OccurredAt >= LogPartitions.CutoffOf(retention.Audit, now)
+            );
+        Factory.Logs.Entries.Should().BeEmpty();
     }
 
     [Fact]
@@ -127,10 +167,12 @@ public sealed class DemoLogSeederTests(
             "Host=127.0.0.1;Port=1;Database=none;Username=none;Password=none;Timeout=1"
         );
         var clock = services.GetRequiredService<IClock>();
+        var retention = new LogRetentionOptions();
         var seeder = new DemoLogSeeder(
             services.GetRequiredService<CodigoActivoReadDbContext>(),
             unreachable,
-            new LogPartitionMaintainer(unreachable, clock),
+            new LogPartitionMaintainer(unreachable, retention, clock),
+            retention,
             new PasswordLockoutOptions(),
             new TwoFactorOptions(),
             clock,

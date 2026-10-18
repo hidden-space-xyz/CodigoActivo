@@ -125,18 +125,20 @@ value to `.env` has no effect until the same variable is added under `api.enviro
 `codigoactivo`), so the API only reaches PostgreSQL over the internal `backend` network. Optional variables
 take the listed default when empty or missing.
 
-| Variable                | Meaning                                                                       | Default                                     | Template value                                 |
-| ----------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
-| `APP_BASE_URL`          | Public origin for links and SEO output                                        | Required                                    | `https://example.org` (invalid for Production) |
-| `APP_TIMEZONE`          | IANA time-zone ID used by the application clock                               | `Europe/Madrid`                             | `Europe/Madrid`                                |
-| `DEMO_MODE`             | `true` or `false`; locked on first start                                      | Required                                    | `false`                                        |
-| `BOOTSTRAP_ADMIN_EMAIL` | Initial administrator email for an empty database                             | Required on an empty database               | Empty                                          |
-| `SMTP_HOST`             | SMTP host; always required because login codes are emailed                    | Required                                    | Empty                                          |
-| `SMTP_PORT`             | SMTP port                                                                     | `587`                                       | `587`                                          |
-| `SMTP_SECURITY`         | `StartTls`, `SslOnConnect`, `None` or `Auto`; Production rejects the last two | `SslOnConnect` on port 465, else `StartTls` | Empty                                          |
-| `SMTP_USERNAME`         | SMTP username; set exactly when `secrets/smtp_password` is not empty          | No login                                    | Empty                                          |
-| `SMTP_FROM_ADDRESS`     | Single sender address                                                         | Required                                    | Empty                                          |
-| `SMTP_FROM_NAME`        | Sender display name                                                           | `Código Activo`                             | Empty                                          |
+| Variable                        | Meaning                                                                       | Default                                     | Template value                                 |
+| ------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
+| `APP_BASE_URL`                  | Public origin for links and SEO output                                        | Required                                    | `https://example.org` (invalid for Production) |
+| `APP_TIMEZONE`                  | IANA time-zone ID used by the application clock                               | `Europe/Madrid`                             | `Europe/Madrid`                                |
+| `DEMO_MODE`                     | `true` or `false`; locked on first start                                      | Required                                    | `false`                                        |
+| `BOOTSTRAP_ADMIN_EMAIL`         | Initial administrator email for an empty database                             | Required on an empty database               | Empty                                          |
+| `SMTP_HOST`                     | SMTP host; always required because login codes are emailed                    | Required                                    | Empty                                          |
+| `SMTP_PORT`                     | SMTP port                                                                     | `587`                                       | `587`                                          |
+| `SMTP_SECURITY`                 | `StartTls`, `SslOnConnect`, `None` or `Auto`; Production rejects the last two | `SslOnConnect` on port 465, else `StartTls` | Empty                                          |
+| `SMTP_USERNAME`                 | SMTP username; set exactly when `secrets/smtp_password` is not empty          | No login                                    | Empty                                          |
+| `SMTP_FROM_ADDRESS`             | Single sender address                                                         | Required                                    | Empty                                          |
+| `SMTP_FROM_NAME`                | Sender display name                                                           | `Código Activo`                             | Empty                                          |
+| `DIAGNOSTIC_LOG_RETENTION_DAYS` | Days a diagnostic log entry is kept, from 1 to 730                            | `30`                                        | `30`                                           |
+| `AUDIT_LOG_RETENTION_DAYS`      | Days an audit log entry is kept, from 1 to 730                                | `60`                                        | `60`                                           |
 
 Neither the template nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
 volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the PostgreSQL log files
@@ -304,8 +306,9 @@ at `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding downloads
 the start that seeds; a failed download stops that start.
 Demo mode also fills the diagnostic and audit logs with an invented three-week history that follows the demo
 data: logins, signups, published content, a password attack, email outages and slow requests. A later start
-writes a new one once the audit log holds no entry of a demo account from the last 30 days, the diagnostic
-retention. A failure to write it is logged as a warning and does not stop the start.
+writes a new one once the audit log holds no entry of a demo account younger than the diagnostic retention;
+entries already past the retention of their log are left out. A failure to write it is logged as a warning
+and does not stop the start.
 
 Changing mode requires destroying all named volumes and therefore all application data:
 
@@ -390,8 +393,8 @@ after it was taken, and its protected content depends on the Data Protection key
 queued. `db-data` also holds `deleted_accounts`, the blocked copies of erased accounts that the API purges two
 years after each deletion: a backup keeps a copy for as long as the backup itself is kept, so backup retention
 adds to those two years, and a restored backup brings expired copies back until the purge that runs 30 seconds
-after startup. The diagnostic and audit log tables live in `db-data` too: their 30 and 60 days of retention
-grow by the age of the backup, and a restored backup's expired entries are removed when the API starts.
+after startup. The diagnostic and audit log tables live in `db-data` too: their retention grows by the age of
+the backup, and a restored backup's expired entries are removed when the API starts.
 
 Before public exposure, verify TLS and forwarded headers, firewall access to port `8080`, SMTP delivery,
 database and volume recovery, registration and email verification, the two-step login, password reset,

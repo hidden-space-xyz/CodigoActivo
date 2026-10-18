@@ -48,7 +48,10 @@ public sealed class AuditLogSinkTests(PostgresContainerFixture postgres) : IAsyn
         var target = Guid.NewGuid();
         var related = Guid.NewGuid();
         using var activity = new Activity("request").Start();
-        var sink = new AuditLogSink(database, new LogPartitionMaintainer(database, clock));
+        var sink = new AuditLogSink(
+            database,
+            new LogPartitionMaintainer(database, new LogRetentionOptions(), clock)
+        );
 
         await sink.EmitBatchAsync([
             AuditLogEvents.ToEvent(Record(actor, target, related), Now, activity),
@@ -76,7 +79,7 @@ public sealed class AuditLogSinkTests(PostgresContainerFixture postgres) : IAsyn
         await using (
             var trail = new SerilogAuditTrail(
                 database,
-                new LogPartitionMaintainer(database, clock),
+                new LogPartitionMaintainer(database, new LogRetentionOptions(), clock),
                 clock
             )
         )

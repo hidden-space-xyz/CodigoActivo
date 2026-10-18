@@ -1321,7 +1321,7 @@
       "diagnostics": {
         "header": {
           "title": "Diagnóstico",
-          "subtitle": "Avisos y errores técnicos que ha registrado la aplicación en los últimos 30 días."
+          "subtitle": "Avisos y errores técnicos que ha registrado la aplicación."
         },
         "columns": {
           "occurredAt": "Fecha",
@@ -1365,7 +1365,7 @@
       "audit": {
         "header": {
           "title": "Auditoría",
-          "subtitle": "Quién hizo qué, cuándo, desde dónde y con qué resultado en los últimos 60 días."
+          "subtitle": "Quién hizo qué, cuándo, desde dónde y con qué resultado."
         },
         "columns": {
           "occurredAt": "Fecha",

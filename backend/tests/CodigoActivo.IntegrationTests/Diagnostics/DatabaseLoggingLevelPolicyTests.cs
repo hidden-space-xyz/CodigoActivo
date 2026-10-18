@@ -34,7 +34,11 @@ public sealed class DatabaseLoggingLevelPolicyTests(PostgresContainerFixture pos
         await LogTables.TruncateAsync(postgres);
         await using var database = new LogDatabase(postgres.ConnectionString);
         await using var connection = await database.OpenConnectionAsync(Ct);
-        await new LogPartitionMaintainer(database, clock).EnsurePartitionsAsync(
+        await new LogPartitionMaintainer(
+            database,
+            new LogRetentionOptions(),
+            clock
+        ).EnsurePartitionsAsync(
             connection,
             LogTable.Diagnostics,
             [LogPartitions.DayOf(clock.UtcNow), LogPartitions.DayOf(clock.UtcNow).AddDays(1)],
@@ -61,6 +65,7 @@ public sealed class DatabaseLoggingLevelPolicyTests(PostgresContainerFixture pos
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddSingleton(_ => new LogDatabase(postgres.ConnectionString));
         builder.Services.AddSingleton<IClock>(clock);
+        builder.Services.AddSingleton(new LogRetentionOptions());
         builder.Services.AddSingleton<LogPartitionMaintainer>();
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();

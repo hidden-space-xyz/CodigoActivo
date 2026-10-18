@@ -82,14 +82,12 @@ public static class LogPartitions
     /// <summary>
     /// Gets the instant before which the entries of a table are removed.
     /// </summary>
-    /// <param name="table">Log table.</param>
+    /// <param name="retention">Retention of the table.</param>
     /// <param name="now">Current instant.</param>
     /// <returns>The cutoff instant.</returns>
-    public static DateTimeOffset CutoffOf(LogTable table, DateTimeOffset now)
+    public static DateTimeOffset CutoffOf(TimeSpan retention, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(table);
-
-        return now.ToUniversalTime() - table.Retention + MaintenanceInterval;
+        return now.ToUniversalTime() - retention + MaintenanceInterval;
     }
 
     /// <summary>
@@ -107,13 +105,13 @@ public static class LogPartitions
     /// Tells whether a day may have a partition: it still holds entries younger than the cutoff
     /// and it is not further ahead than the days kept ready.
     /// </summary>
-    /// <param name="table">Log table.</param>
+    /// <param name="retention">Retention of the table.</param>
     /// <param name="day">UTC day.</param>
     /// <param name="now">Current instant.</param>
     /// <returns><see langword="true"/> when the day is inside the window of the table.</returns>
-    public static bool IsWithinWindow(LogTable table, DateOnly day, DateTimeOffset now)
+    public static bool IsWithinWindow(TimeSpan retention, DateOnly day, DateTimeOffset now)
     {
-        return !IsExpired(day, CutoffOf(table, now)) && day <= DayOf(now).AddDays(DaysAhead);
+        return !IsExpired(day, CutoffOf(retention, now)) && day <= DayOf(now).AddDays(DaysAhead);
     }
 
     /// <summary>

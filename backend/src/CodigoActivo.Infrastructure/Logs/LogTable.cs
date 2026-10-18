@@ -1,23 +1,22 @@
 namespace CodigoActivo.Infrastructure.Logs;
 
 /// <summary>
-/// Describes one of the log tables: its name and how long its entries are kept. Both are
-/// partitioned by UTC day of <c>occurred_at</c>, in partitions named <c>&lt;table&gt;_pYYYYMMDD</c>.
+/// Describes one of the log tables. Both are partitioned by UTC day of <c>occurred_at</c>, in
+/// partitions named <c>&lt;table&gt;_pYYYYMMDD</c>, and keep their entries for the retention
+/// <see cref="LogRetentionOptions"/> sets.
 /// </summary>
 /// <param name="Name">Name of the partitioned table.</param>
-/// <param name="Retention">Age after which an entry is removed.</param>
-public sealed record LogTable(string Name, TimeSpan Retention)
+public sealed record LogTable(string Name)
 {
     /// <summary>
-    /// Gets the table of technical events, kept for 30 days.
+    /// Gets the table of technical events.
     /// </summary>
-    public static LogTable Diagnostics { get; } =
-        new("diagnostic_log_entries", TimeSpan.FromDays(30));
+    public static LogTable Diagnostics { get; } = new("diagnostic_log_entries");
 
     /// <summary>
-    /// Gets the table of audited commands, kept for 60 days.
+    /// Gets the table of audited commands.
     /// </summary>
-    public static LogTable Audit { get; } = new("audit_log_entries", TimeSpan.FromDays(60));
+    public static LogTable Audit { get; } = new("audit_log_entries");
 
     /// <summary>
     /// Gets every log table.
