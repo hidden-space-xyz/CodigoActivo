@@ -396,7 +396,8 @@ Back up `db-data`, `api-files`, `api-dataprotection` and `api-state`, and test r
 `secrets/data_protection_certificate_password` makes
 the protected key ring unusable and invalidates sessions. That password also derives the key-wrapping key of
 every stored key element, so it cannot be rotated on its own: a new password requires recreating the volume,
-which invalidates all sessions, stored authenticator secrets and pending one-time codes and links, whose
+which invalidates all sessions, stored authenticator secrets, the unsubscribe links of promotional email
+already sent, and pending one-time codes and links, whose
 hashing key is derived from the certificate in that volume (see
 [SECURITY.md](SECURITY.md#data-protection-and-containers)). The email outbox lives in `db-data`, so a
 `db-data` backup includes pending mail; restoring an older backup can redeliver or drop messages queued

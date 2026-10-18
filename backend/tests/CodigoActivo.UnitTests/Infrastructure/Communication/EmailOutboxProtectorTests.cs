@@ -3,6 +3,7 @@ using System.Text;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Communication.Templates;
 using Microsoft.AspNetCore.DataProtection;
 using Xunit;
 
@@ -118,6 +119,40 @@ public sealed class EmailOutboxProtectorTests
         one.InlineImages![0].Content.Should().BeSameAs(other.InlineImages![0].Content);
         one.ToAddress.Should().Be("ana@example.test");
         other.ToAddress.Should().Be("berto@example.test");
+    }
+
+    [Fact]
+    public void ToMessageGivesEachRecipientOfAPromotionalEmailTheirOwnUnsubscribeLink()
+    {
+        const string AnaLink = "https://app.test/unsubscribe#token=ana";
+        const string BertoLink = "https://app.test/unsubscribe#token=berto&x";
+        var content = sut.ToContent(
+            ManualEmail.Create(
+                ManualEmail.Render(
+                    "Taller",
+                    "Nuevo taller.",
+                    "https://app.test",
+                    promotional: true
+                ),
+                [new EmailRecipient("ana@example.test", "Ana", AnaLink)],
+                []
+            ),
+            Now
+        );
+        var payload = sut.Unprotect(content);
+
+        var ana = EmailOutboxProtector.ToMessage(
+            new EmailOutboxMessage { Content = content, UnsubscribeUrl = AnaLink },
+            payload
+        );
+        var berto = EmailOutboxProtector.ToMessage(
+            new EmailOutboxMessage { Content = content, UnsubscribeUrl = BertoLink },
+            payload
+        );
+
+        ana.TextBody.Should().Contain(AnaLink).And.NotContain("{{");
+        ana.HtmlBody.Should().Contain($"href=\"{AnaLink}\"").And.NotContain(BertoLink);
+        berto.HtmlBody.Should().Contain("href=\"https://app.test/unsubscribe#token=berto&amp;x\"");
     }
 
     [Fact]

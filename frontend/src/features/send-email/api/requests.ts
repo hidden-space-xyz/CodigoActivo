@@ -29,9 +29,10 @@ function toSendEmailResult(result: SendEmailResultResponse): SendEmailResult {
 function toEmailBody(payload: SendEmailPayload): PostApiEmailsUsersBody {
   const subject = payload.subject.trim()
   const body = payload.body.trim()
+  const { purpose } = payload
   return payload.attachments.length > 0
-    ? { subject, body, attachments: [...payload.attachments] }
-    : { subject, body }
+    ? { subject, body, purpose, attachments: [...payload.attachments] }
+    : { subject, body, purpose }
 }
 
 /** Queues an email for a single user (`POST /api/emails/users/{userId}`). */
@@ -67,7 +68,8 @@ export async function sendEmailToEventAttendeesRequest(
 
 /**
  * Counts who an email to the users matching the admin user filters would reach, and how many of
- * them lack promotional consent (`GET /api/emails/users/audience`). `{ id }` targets one user.
+ * them a promotional email leaves out for lack of consent (`GET /api/emails/users/audience`).
+ * `{ id }` targets one user.
  */
 export async function getUsersEmailAudienceRequest(
   filters: RecipientFilters,
@@ -78,7 +80,8 @@ export async function getUsersEmailAudienceRequest(
 
 /**
  * Counts who an email to the event attendees matching the attendee report filters would reach, and
- * how many of them lack promotional consent (`GET /api/emails/events/{eventId}/attendees/audience`).
+ * how many of them a promotional email leaves out for lack of consent
+ * (`GET /api/emails/events/{eventId}/attendees/audience`).
  */
 export async function getEventAttendeesEmailAudienceRequest(
   eventId: string,

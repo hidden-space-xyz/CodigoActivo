@@ -486,6 +486,16 @@ public enum ErrorCode
     EmailRecipientWithoutAddress,
 
     /// <summary>
+    /// A promotional email was written to someone without promotional consent.
+    /// </summary>
+    EmailRecipientWithoutConsent,
+
+    /// <summary>
+    /// The unsubscribe link of a promotional email was altered or not issued here.
+    /// </summary>
+    EmailUnsubscribeLinkInvalid,
+
+    /// <summary>
     /// Selects the email too many recipients option.
     /// </summary>
     EmailTooManyRecipients,

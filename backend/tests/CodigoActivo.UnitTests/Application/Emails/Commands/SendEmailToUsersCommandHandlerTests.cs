@@ -5,6 +5,7 @@ using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Emails.EmailTestData;
@@ -54,7 +55,12 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         ]);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -72,13 +78,62 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task HandleAsyncPromotionalOnlyReachesRecipientsWithConsent()
+    {
+        var ana = NewUserRow("Ana", "ana@test.local", promotionalConsent: true);
+        store.Users.AddRange([ana, NewUserRow("Berto", "berto@test.local")]);
+
+        var result = await sut.HandleAsync(
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Promotional,
+                []
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Queued.Should().Be(1);
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Purpose.Should().Be(ManualEmailPurpose.Promotional);
+        email
+            .Recipients.Should()
+            .Equal(new ManualEmailRecipient(UserId.From(ana.Id), "ana@test.local", "Ana"));
+    }
+
+    [Fact]
+    public async Task HandleAsyncPromotionalWithoutAnyConsentReturnsNoRecipients()
+    {
+        store.Users.Add(NewUserRow("Berto", "berto@test.local"));
+
+        var result = await sut.HandleAsync(
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Promotional,
+                []
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailNoRecipients);
+        outbox.Messages.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task HandleAsyncDependentWithoutEmailSkipsItWithoutSending()
     {
         var parent = NewUserRow("Marta", "marta@test.local");
         store.Users.AddRange([parent, NewUserRow("Mateo", null, parent)]);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -95,7 +150,12 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         store.Users.AddRange([parent, NewUserRow("Mateo", null, parent)]);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery { ParentId = parent.Id }, Request(), []),
+            new SendEmailToUsersCommand(
+                new UserListQuery { ParentId = parent.Id },
+                Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -112,7 +172,12 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         ]);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery { Name = "berto" }, Request(), []),
+            new SendEmailToUsersCommand(
+                new UserListQuery { Name = "berto" },
+                Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -130,7 +195,12 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         ]);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -148,7 +218,12 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         outbox.RejectAll = true;
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -163,7 +238,12 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         outbox.ThrowOnEnqueue = new InvalidOperationException("database down");
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery(), Request(), []),
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -179,7 +259,12 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         ]);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery(), Request(), [Attachment(size: 6)]),
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Informational,
+                [Attachment(size: 6)]
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -204,6 +289,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
+                ManualEmailPurpose.Informational,
                 [Attachment(name: fileName)]
             ),
             TestContext.Current.CancellationToken
@@ -227,6 +313,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
+                ManualEmailPurpose.Informational,
                 [Attachment(name: fileName)]
             ),
             TestContext.Current.CancellationToken
@@ -242,7 +329,12 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery(), Request(), [Attachment(size: 5)]),
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Informational,
+                [Attachment(size: 5)]
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -260,6 +352,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
+                ManualEmailPurpose.Informational,
                 [Attachment(), Attachment("otro.pdf")]
             ),
             TestContext.Current.CancellationToken
@@ -274,7 +367,12 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         var result = await sut.HandleAsync(
-            new SendEmailToUsersCommand(new UserListQuery(), Request(), [Attachment(size: 0)]),
+            new SendEmailToUsersCommand(
+                new UserListQuery(),
+                Request(),
+                ManualEmailPurpose.Informational,
+                [Attachment(size: 0)]
+            ),
             TestContext.Current.CancellationToken
         );
 

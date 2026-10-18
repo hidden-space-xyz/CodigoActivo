@@ -692,6 +692,42 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("deleted_accounts", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Users.PromotionalConsentChange", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at");
+
+                    b.Property<bool>("Granted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("granted");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("source");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_promotional_consent_changes");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_promotional_consent_changes_user_id");
+
+                    b.ToTable("promotional_consent_changes", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1103,6 +1139,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("to_name");
+
+                    b.Property<string>("UnsubscribeUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("unsubscribe_url");
 
                     b.HasKey("Id")
                         .HasName("pk_email_outbox_messages");
@@ -1711,6 +1751,16 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_resources_users_updated_by");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Users.PromotionalConsentChange", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany("PromotionalConsentChanges")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_promotional_consent_changes_users_user_id");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
@@ -1780,6 +1830,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Categories");
 
                     b.Navigation("TermsDocuments");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
+                {
+                    b.Navigation("PromotionalConsentChanges");
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxContent", b =>

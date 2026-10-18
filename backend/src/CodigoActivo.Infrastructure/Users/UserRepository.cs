@@ -19,10 +19,12 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     : AggregateRepository<User>(context),
         IUserRepository
 {
+    private IQueryable<User> Accounts => Set.Include(user => user.PromotionalConsentChanges);
+
     /// <inheritdoc />
     public Task<User?> GetByIdAsync(UserId id, CancellationToken ct = default)
     {
-        return Set.FirstOrDefaultAsync(user => user.Id == id, ct);
+        return Accounts.FirstOrDefaultAsync(user => user.Id == id, ct);
     }
 
     /// <inheritdoc />
@@ -31,13 +33,13 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
         CancellationToken ct = default
     )
     {
-        return await Set.Where(user => ids.Contains(user.Id)).ToListAsync(ct);
+        return await Accounts.Where(user => ids.Contains(user.Id)).ToListAsync(ct);
     }
 
     /// <inheritdoc />
     public Task<User?> GetByEmailAsync(EmailAddress email, CancellationToken ct = default)
     {
-        return Set.FirstOrDefaultAsync(user => user.Email == email, ct);
+        return Accounts.FirstOrDefaultAsync(user => user.Email == email, ct);
     }
 
     /// <inheritdoc />
@@ -52,7 +54,7 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
         CancellationToken ct = default
     )
     {
-        return await Set.Where(user => user.ParentId == guardianId).ToListAsync(ct);
+        return await Accounts.Where(user => user.ParentId == guardianId).ToListAsync(ct);
     }
 
     /// <inheritdoc />
@@ -61,9 +63,8 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
         CancellationToken ct = default
     )
     {
-        return await Set.Where(user =>
-                user.Status == UserStatus.Pending && user.CreatedAt <= cutoff
-            )
+        return await Accounts
+            .Where(user => user.Status == UserStatus.Pending && user.CreatedAt <= cutoff)
             .OrderBy(user => user.CreatedAt)
             .ToListAsync(ct);
     }

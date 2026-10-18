@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Errors;
@@ -13,10 +14,12 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// </summary>
 /// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
 /// <param name="Content">Subject and body of the email.</param>
+/// <param name="Purpose">What the email is written for, which decides who it reaches.</param>
 /// <param name="Attachments">The attachments value.</param>
 public sealed record SendEmailToUsersCommand(
     UserListQuery Filters,
     ManualEmailText Content,
+    [property: EnumDataType(typeof(ManualEmailPurpose))] ManualEmailPurpose Purpose,
     IReadOnlyList<EmailAttachmentUpload> Attachments
 ) : ICommand<Result<EmailDispatch>>;
 
@@ -50,7 +53,7 @@ public sealed class SendEmailToUsersCommandHandler(
             executor,
             ct
         );
-        var recipients = audience.Recipients;
+        var recipients = audience.ReachedBy(command.Purpose);
 
         return recipients.Count switch
         {
@@ -62,6 +65,7 @@ public sealed class SendEmailToUsersCommandHandler(
                 recipients,
                 audience.Skipped,
                 command.Content,
+                command.Purpose,
                 command.Attachments,
                 ct
             ),

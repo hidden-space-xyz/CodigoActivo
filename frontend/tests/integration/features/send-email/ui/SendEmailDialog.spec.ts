@@ -3,7 +3,7 @@ import { ElDialog } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
 import { SendEmailDialog } from '@/features/send-email'
-import type { SendEmailPayload } from '@/features/send-email/model/types'
+import type { EmailPurpose, SendEmailPayload } from '@/features/send-email/model/types'
 import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES } from '@/features/send-email/model/email-form'
 
 import { renderWithProviders, t } from '../../../../support/render'
@@ -53,6 +53,18 @@ function fileInput(dialog: HTMLElement): HTMLInputElement {
   return input
 }
 
+async function choosePurpose(dialog: HTMLElement, purpose: EmailPurpose): Promise<void> {
+  const radio = dialog.querySelector<HTMLInputElement>(`input[type="radio"][value="${purpose}"]`)
+  if (!radio) throw new Error(`missing ${purpose} option`)
+  await click(radio)
+}
+
+async function compose(dialog: HTMLElement, purpose: EmailPurpose = 'Informational') {
+  await choosePurpose(dialog, purpose)
+  await typeInto('#send-email-subject', 'Asunto')
+  await typeInto('#send-email-body', 'Mensaje')
+}
+
 function files(count: number, size = 10): File[] {
   return Array.from(
     { length: count },
@@ -61,37 +73,63 @@ function files(count: number, size = 10): File[] {
 }
 
 describe('SendEmailDialog', () => {
-  it('warns in yellow, without blocking, when recipients lack promotional consent', async () => {
-    const { wrapper, dialog } = await renderDialog({ withoutConsent: 2 })
+  it('leaves the recipients without consent out of a promotional email and says how many', async () => {
+    const { wrapper, dialog } = await renderDialog({ recipients: 5, withoutConsent: 2 })
 
-    const alert = dialog.querySelector('.el-alert')
-    expect(alert?.classList).toContain('el-alert--warning')
-    expect(alert?.querySelector('.el-alert__close-btn')).toBeNull()
-    expect(alert?.querySelector('.el-alert__icon')).toBeNull()
-    expect(alert?.textContent).toContain(
-      tp('features.sendEmail.withoutConsentWarning', 2, { count: 2 }),
+    expect(dialog.textContent).toContain(tp('features.sendEmail.recipients', 5, { count: 5 }))
+    expect(dialog.querySelector('.el-alert')).toBeNull()
+
+    await compose(dialog, 'Promotional')
+
+    expect(dialog.textContent).toContain(
+      tp('features.sendEmail.promotionalRecipients', 3, { count: 3 }),
     )
+    expect(dialog.textContent).toContain(t('features.sendEmail.purpose.promotionalHint'))
+    const alert = dialog.querySelector('.el-alert')
+    expect(alert?.classList).toContain('el-alert--info')
+    expect(alert?.querySelector('.el-alert__close-btn')).toBeNull()
+    expect(alert?.textContent).toContain(tp('features.sendEmail.withoutConsent', 2, { count: 2 }))
 
-    await typeInto('#send-email-subject', 'Asunto')
-    await typeInto('#send-email-body', 'Mensaje')
     await click(findButton(t('features.sendEmail.send'), dialog))
+    expect(messageBox().textContent).toContain(
+      tp('features.sendEmail.confirm.messageCount', 3, { count: 3 }),
+    )
     await acceptMessageBox()
 
-    expect(wrapper.emitted('submit')).toHaveLength(1)
+    const emitted = wrapper.emitted('submit')?.[0]?.[0] as SendEmailPayload | undefined
+    expect(emitted?.purpose).toBe('Promotional')
   })
 
-  it('uses the singular warning for one recipient without consent', async () => {
-    const { dialog } = await renderDialog({ withoutConsent: 1 })
+  it('uses the singular note for one recipient without consent', async () => {
+    const { dialog } = await renderDialog({ recipients: 3, withoutConsent: 1 })
+
+    await choosePurpose(dialog, 'Promotional')
 
     expect(dialog.querySelector('.el-alert')?.textContent).toContain(
-      tp('features.sendEmail.withoutConsentWarning', 1, { count: 1 }),
+      tp('features.sendEmail.withoutConsent', 1, { count: 1 }),
     )
   })
 
-  it.each([0, null])('shows no consent warning when the count is %s', async (withoutConsent) => {
-    const { dialog } = await renderDialog({ withoutConsent })
+  it('reaches everyone with an informational email', async () => {
+    const { dialog } = await renderDialog({ recipients: 5, withoutConsent: 2 })
 
+    await choosePurpose(dialog, 'Informational')
+
+    expect(dialog.textContent).toContain(tp('features.sendEmail.recipients', 5, { count: 5 }))
+    expect(dialog.textContent).toContain(t('features.sendEmail.purpose.informationalHint'))
     expect(dialog.querySelector('.el-alert')).toBeNull()
+  })
+
+  it('blocks a promotional email when nobody accepted promotional communications', async () => {
+    const { wrapper, dialog } = await renderDialog({ recipients: 1, withoutConsent: 1 })
+
+    await compose(dialog, 'Promotional')
+
+    expect(dialog.textContent).toContain(
+      tp('features.sendEmail.promotionalRecipients', 0, { count: 0 }),
+    )
+    expect(findButton(t('features.sendEmail.send'), dialog).disabled).toBe(true)
+    expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
   it('shows the recipients and the plain-text hint', async () => {
@@ -103,10 +141,11 @@ describe('SendEmailDialog', () => {
     expect(dialog.textContent).toContain(t('features.sendEmail.bodyHint'))
   })
 
-  it('requires a subject and a body before asking for confirmation', async () => {
+  it('requires a purpose, a subject and a body before asking for confirmation', async () => {
     const { wrapper, dialog } = await renderDialog()
 
     await click(findButton(t('features.sendEmail.send'), dialog))
+    expect(dialog.textContent).toContain(t('features.sendEmail.form.problems.purposeRequired'))
     expect(dialog.textContent).toContain(t('features.sendEmail.form.problems.subjectRequired'))
     expect(dialog.textContent).toContain(t('features.sendEmail.form.problems.bodyRequired'))
 
@@ -121,6 +160,7 @@ describe('SendEmailDialog', () => {
   it('emits the composed email with attachments after confirmation', async () => {
     const { wrapper, dialog } = await renderDialog()
 
+    await choosePurpose(dialog, 'Informational')
     await typeInto('#send-email-subject', ' Welcome ')
     await typeInto('#send-email-body', 'Hello\nthere')
     const picked = files(2)
@@ -134,6 +174,7 @@ describe('SendEmailDialog', () => {
     await acceptMessageBox()
 
     const emitted = wrapper.emitted('submit')?.[0]?.[0] as SendEmailPayload | undefined
+    expect(emitted?.purpose).toBe('Informational')
     expect(emitted?.subject).toBe(' Welcome ')
     expect(emitted?.body).toBe('Hello\nthere')
     expect(emitted?.attachments.map((file) => file.name)).toEqual(['file-0.txt', 'file-1.txt'])
@@ -143,8 +184,7 @@ describe('SendEmailDialog', () => {
     const { wrapper, dialog } = await renderDialog({ target: 'los 28 usuarios', recipients: 22 })
 
     expect(dialog.textContent).toContain(tp('features.sendEmail.recipients', 22, { count: 22 }))
-    await typeInto('#send-email-subject', 'Hola')
-    await typeInto('#send-email-body', 'Texto')
+    await compose(dialog)
     await click(findButton(t('features.sendEmail.send'), dialog))
 
     expect(messageBox().textContent).toContain(
@@ -172,8 +212,7 @@ describe('SendEmailDialog', () => {
   it('does not emit when the confirmation is cancelled', async () => {
     const { wrapper, dialog } = await renderDialog()
 
-    await typeInto('#send-email-subject', 'Hi')
-    await typeInto('#send-email-body', 'Body')
+    await compose(dialog)
     await click(findButton(t('features.sendEmail.send'), dialog))
     await cancelMessageBox()
 
@@ -246,6 +285,7 @@ describe('SendEmailDialog', () => {
 
   it('clears the form each time it opens', async () => {
     const { wrapper, dialog } = await renderDialog()
+    await choosePurpose(dialog, 'Promotional')
     await typeInto('#send-email-subject', 'Draft')
     await pickFiles(fileInput(dialog), files(1))
 
@@ -254,6 +294,7 @@ describe('SendEmailDialog', () => {
     await flushPromises()
 
     expect(inputValue('#send-email-subject')).toBe('')
+    expect(openDialog(t(TITLE)).querySelector('input[type="radio"]:checked')).toBeNull()
     expect(openDialog(t(TITLE)).querySelectorAll('.attachments__name')).toHaveLength(0)
   })
 

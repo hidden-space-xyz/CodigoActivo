@@ -7,6 +7,7 @@ using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Emails;
@@ -14,10 +15,16 @@ namespace CodigoActivo.Application.Emails;
 /// <summary>
 /// Represents a recipient value used by the application.
 /// </summary>
+/// <param name="UserId">Identifier of the account.</param>
 /// <param name="Email">Email address to validate or locate.</param>
 /// <param name="FirstName">User's given name.</param>
 /// <param name="PromotionalConsent">Whether the user agreed to receive promotional content.</param>
-public sealed record Recipient(string? Email, string FirstName, bool PromotionalConsent);
+public sealed record Recipient(
+    UserId UserId,
+    string? Email,
+    string FirstName,
+    bool PromotionalConsent
+);
 
 /// <summary>
 /// Validates administrator-written email and stores it for delivery. The whole batch is queued at
@@ -39,7 +46,7 @@ public sealed class ManualEmailDispatcher(
     /// Gets the to recipient value.
     /// </summary>
     public static Expression<Func<UserRow, Recipient>> ToRecipient { get; } =
-        u => new Recipient(u.Email, u.FirstName, u.PromotionalConsent);
+        u => new Recipient(UserId.From(u.Id), u.Email, u.FirstName, u.PromotionalConsent);
 
     /// <summary>
     /// Validates and queues the manual email for delivery.
@@ -47,6 +54,7 @@ public sealed class ManualEmailDispatcher(
     /// <param name="recipients">The recipients value.</param>
     /// <param name="skipped">The skipped value.</param>
     /// <param name="request">Validated client request data.</param>
+    /// <param name="purpose">What the email is written for.</param>
     /// <param name="attachments">The attachments value.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the dispatch counts on success, or an application error on failure.</returns>
@@ -54,6 +62,7 @@ public sealed class ManualEmailDispatcher(
         IReadOnlyList<Recipient> recipients,
         int skipped,
         ManualEmailText request,
+        ManualEmailPurpose purpose,
         IReadOnlyList<EmailAttachmentUpload> attachments,
         CancellationToken ct
     )
@@ -67,7 +76,8 @@ public sealed class ManualEmailDispatcher(
         var batch = composer.Compose(
             request.Subject.Trim(),
             request.Body.Trim(),
-            [.. recipients.Select(r => new EmailRecipient(r.Email!, r.FirstName))],
+            purpose,
+            [.. recipients.Select(r => new ManualEmailRecipient(r.UserId, r.Email!, r.FirstName))],
             buffered.Value
         );
 

@@ -54,6 +54,7 @@ internal static class EmailsRegistration
         services.AddSingleton<EmailOutboxDeliverer>();
         services.AddHostedService<EmailOutboxProcessor>();
         services.AddSingleton<IEmailSender, ThrottledEmailSender>();
+        services.AddSingleton<IUnsubscribeTokens, DataProtectionUnsubscribeTokens>();
         services.AddSingleton<IManualEmailComposer, ManualEmailComposer>();
         services.AddScoped<ManualEmailDispatcher>();
         return services;

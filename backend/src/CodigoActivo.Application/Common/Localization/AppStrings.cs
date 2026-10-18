@@ -182,6 +182,16 @@ public static class AppStrings
     public static string EmailsFooterWebsiteLabel => Get("emails.footer.websiteLabel");
 
     /// <summary>
+    /// Gets why a promotional email reaches its recipient.
+    /// </summary>
+    public static string EmailsFooterPromotionalNotice => Get("emails.footer.promotionalNotice");
+
+    /// <summary>
+    /// Gets the label of the unsubscribe link of a promotional email.
+    /// </summary>
+    public static string EmailsFooterUnsubscribeLabel => Get("emails.footer.unsubscribeLabel");
+
+    /// <summary>
     /// Gets the emails login code heading value.
     /// </summary>
     public static string EmailsLoginCodeHeading => Get("emails.loginCode.heading");
@@ -556,6 +566,26 @@ public static class AppStrings
     public static string EmailsEmailChangeExpiryText(int minutes)
     {
         return Format("emails.emailChange.expiryText", minutes);
+    }
+
+    /// <summary>
+    /// Formats how a promotional email offers the contact address to unsubscribe.
+    /// </summary>
+    /// <param name="address">Contact address, or the markup that links it.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsFooterContact(string address)
+    {
+        return Format("emails.footer.contact", address);
+    }
+
+    /// <summary>
+    /// Formats how the text body of a promotional email offers its unsubscribe link.
+    /// </summary>
+    /// <param name="url">Unsubscribe link.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsFooterUnsubscribeText(string url)
+    {
+        return Format("emails.footer.unsubscribeText", url);
     }
 
     /// <summary>

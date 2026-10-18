@@ -175,6 +175,7 @@ public sealed class EmailOutboxStore(
                 Priority = priority,
                 ToAddress = recipient.Address,
                 ToName = recipient.Name,
+                UnsubscribeUrl = recipient.UnsubscribeUrl,
                 CreatedAt = now,
                 AttemptCount = 0,
                 NextAttemptAt = now,

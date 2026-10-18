@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
@@ -36,7 +35,12 @@ public sealed class SendEmailToUserCommandHandlerTests
         store.Users.AddRange([parent, child]);
 
         var result = await sut.HandleAsync(
-            new SendEmailToUserCommand(UserId.From(child.Id), Request(), []),
+            new SendEmailToUserCommand(
+                UserId.From(child.Id),
+                Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -50,7 +54,12 @@ public sealed class SendEmailToUserCommandHandlerTests
         store.Users.Add(NewUserRow("Ana", "ana@test.local"));
 
         var result = await sut.HandleAsync(
-            new SendEmailToUserCommand(UserId.New(), Request(), []),
+            new SendEmailToUserCommand(
+                UserId.New(),
+                Request(),
+                ManualEmailPurpose.Informational,
+                []
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -67,6 +76,7 @@ public sealed class SendEmailToUserCommandHandlerTests
             new SendEmailToUserCommand(
                 UserId.From(ana.Id),
                 Request(body: "Nos vemos el sábado"),
+                ManualEmailPurpose.Informational,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -77,9 +87,56 @@ public sealed class SendEmailToUserCommandHandlerTests
         var email = composer.Composed.Should().ContainSingle().Subject;
         email.Subject.Should().Be("Asunto");
         email.Body.Should().Be("Nos vemos el sábado");
-        email.Recipients.Should().Equal(new EmailRecipient("ana@test.local", "Ana"));
+        email.Purpose.Should().Be(ManualEmailPurpose.Informational);
+        email
+            .Recipients.Should()
+            .Equal(new ManualEmailRecipient(UserId.From(ana.Id), "ana@test.local", "Ana"));
         var message = outbox.Messages.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be("ana@test.local");
         message.ToName.Should().Be("Ana");
+    }
+
+    [Fact]
+    public async Task HandleAsyncPromotionalToUserWithoutConsentReturnsRecipientWithoutConsent()
+    {
+        var ana = NewUserRow("Ana", "ana@test.local");
+        store.Users.Add(ana);
+
+        var result = await sut.HandleAsync(
+            new SendEmailToUserCommand(
+                UserId.From(ana.Id),
+                Request(),
+                ManualEmailPurpose.Promotional,
+                []
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailRecipientWithoutConsent);
+        outbox.Messages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncPromotionalToUserWithConsentComposesItAsPromotional()
+    {
+        var ana = NewUserRow("Ana", "ana@test.local", promotionalConsent: true);
+        store.Users.Add(ana);
+
+        var result = await sut.HandleAsync(
+            new SendEmailToUserCommand(
+                UserId.From(ana.Id),
+                Request(),
+                ManualEmailPurpose.Promotional,
+                []
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        composer
+            .Composed.Should()
+            .ContainSingle()
+            .Which.Purpose.Should()
+            .Be(ManualEmailPurpose.Promotional);
     }
 }

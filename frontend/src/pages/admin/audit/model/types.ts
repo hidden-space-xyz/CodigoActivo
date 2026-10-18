@@ -33,6 +33,7 @@ export type AuditAction =
   | 'SendEmailToEventAttendees'
   | 'SendEmailToUser'
   | 'SendEmailToUsers'
+  | 'Unsubscribe'
   | 'CreateEventCategoryType'
   | 'DeleteEventCategoryType'
   | 'UpdateEventCategoryType'

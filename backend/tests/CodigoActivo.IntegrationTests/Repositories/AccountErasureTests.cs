@@ -149,6 +149,23 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         );
     }
 
+    private static PromotionalConsentChange ConsentChange(
+        bool granted,
+        PromotionalConsentSource source,
+        DateTimeOffset changedAt
+    )
+    {
+        return Persisted.As<PromotionalConsentChange>(
+            new
+            {
+                UserId = UserId.From(TestSeedData.Users.MemberId),
+                Granted = granted,
+                Source = source,
+                ChangedAt = changedAt,
+            }
+        );
+    }
+
     private Task SeedHouseholdAsync()
     {
         return Factory.SeedAsync(async db =>
@@ -168,6 +185,11 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     LoginChallenge = new { Id = LoginChallengeId },
                     LastLoginAt = SeededAt.AddDays(5),
                 }
+            );
+            db.PromotionalConsentChanges.AddRange(
+                ConsentChange(true, PromotionalConsentSource.Registration, SeededAt),
+                ConsentChange(false, PromotionalConsentSource.UnsubscribeLink, SeededAt.AddDays(2)),
+                ConsentChange(true, PromotionalConsentSource.Profile, SeededAt.AddDays(3))
             );
 
             db.Files.Add(
@@ -444,6 +466,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             (await db.EventTermsAcceptances.Select(a => a.UserId).ToListAsync(Ct))
                 .Should()
                 .Equal(UserId.From(TestSeedData.Users.BlockedId));
+            (await db.PromotionalConsentChanges.AnyAsync(Ct)).Should().BeFalse();
             return true;
         });
 
@@ -452,7 +475,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
 
         var copy = await CopyOfAsync(TestSeedData.Users.MemberId);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(1);
+        copy.GetProperty("schemaVersion").GetInt32().Should().Be(2);
         copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Self");
         IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.MemberId);
         copy.GetProperty("guardian").ValueKind.Should().Be(JsonValueKind.Null);
@@ -467,6 +490,20 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         account.GetProperty("nationalId").GetString().Should().Be(TestSeedData.MemberNationalId);
         account.GetProperty("gender").GetString().Should().Be("Female");
         account.GetProperty("promotionalConsent").GetBoolean().Should().BeTrue();
+        Items(account.GetProperty("promotionalConsentChanges"))
+            .Select(change =>
+                (
+                    change.GetProperty("granted").GetBoolean(),
+                    change.GetProperty("source").GetString(),
+                    change.GetProperty("changedAt").GetDateTimeOffset()
+                )
+            )
+            .Should()
+            .Equal(
+                (true, "Registration", SeededAt),
+                (false, "UnsubscribeLink", SeededAt.AddDays(2)),
+                (true, "Profile", SeededAt.AddDays(3))
+            );
         account.GetProperty("isAdmin").GetBoolean().Should().BeFalse();
         account.GetProperty("twoFactorMethod").GetString().Should().Be("Authenticator");
         account.GetProperty("userTypeName").GetString().Should().Be("Socio");

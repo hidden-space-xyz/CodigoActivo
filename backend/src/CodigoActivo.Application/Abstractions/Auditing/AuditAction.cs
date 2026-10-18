@@ -97,6 +97,9 @@ public enum AuditAction
     /// <summary>Emailed a selection of users.</summary>
     SendEmailToUsers,
 
+    /// <summary>Withdrew a promotional consent through the unsubscribe link of an email.</summary>
+    Unsubscribe,
+
     /// <summary>Created an event category.</summary>
     CreateEventCategoryType,
 

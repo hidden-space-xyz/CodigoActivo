@@ -49,6 +49,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'SendEmailToEventAttendees',
   'SendEmailToUser',
   'SendEmailToUsers',
+  'Unsubscribe',
   'CreateEventCategoryType',
   'DeleteEventCategoryType',
   'UpdateEventCategoryType',

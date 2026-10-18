@@ -99,6 +99,12 @@ public static class EmailStyles
     public const string FooterLinkWrap = Font + "margin:0;font-size:13px;line-height:1.6;";
 
     /// <summary>
+    /// Style of the notices under the site link of a promotional email.
+    /// </summary>
+    public const string FooterNotice =
+        Font + $"margin:14px 0 0 0;font-size:12px;line-height:1.6;color:{EmailBranding.TextMuted};";
+
+    /// <summary>
     /// Identifies the footer link configuration or policy value.
     /// </summary>
     public const string FooterLink =

@@ -17,6 +17,8 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     public const int UnverifiedRetentionDays = 30;
 
+    private readonly List<PromotionalConsentChange> promotionalConsentChanges = [];
+
     private User() { }
 
     /// <summary>
@@ -73,6 +75,13 @@ public class User : AggregateRoot<UserId>
     /// <see langword="false"/> for dependents.
     /// </summary>
     public bool PromotionalConsent { get; private set; }
+
+    /// <summary>
+    /// Gets every change of <see cref="PromotionalConsent"/>, each with when and where the holder
+    /// made it, which proves the consent behind each promotional email.
+    /// </summary>
+    public IReadOnlyCollection<PromotionalConsentChange> PromotionalConsentChanges =>
+        promotionalConsentChanges;
 
     /// <summary>
     /// Gets the associated gender.
@@ -186,7 +195,7 @@ public class User : AggregateRoot<UserId>
             return change.Error!;
         }
 
-        account.Apply(change.Value);
+        account.Apply(change.Value, PromotionalConsentSource.Registration, now);
         account.Raise(new AccountRegistered(account.Id));
         return account;
     }
@@ -233,7 +242,7 @@ public class User : AggregateRoot<UserId>
             return change.Error!;
         }
 
-        dependent.Apply(change.Value);
+        dependent.Apply(change.Value, PromotionalConsentSource.Registration, now);
         dependent.Raise(new DependentAdded(dependent.Id, guardian.Id));
         return dependent;
     }
@@ -267,6 +276,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Applies a change planned for this account by <see cref="PlanProfileChange"/>. A new email
     /// replaces the stored one at once and drops any email change still waiting for confirmation.
+    /// A new promotional consent is recorded as decided in the profile.
     /// </summary>
     /// <param name="change">Change planned for this account.</param>
     /// <param name="now">Current timestamp, stored as the update time.</param>
@@ -280,7 +290,7 @@ public class User : AggregateRoot<UserId>
             ClearEmailChange();
         }
 
-        Apply(change);
+        Apply(change, PromotionalConsentSource.Profile, now);
         UpdatedAt = now;
         Raise(new ProfileChanged(Id));
         if (change.ReplacesContact)
@@ -323,7 +333,7 @@ public class User : AggregateRoot<UserId>
             change.NewEmail
             ?? throw new ArgumentException("The profile change keeps the email.", nameof(change));
         EmailChange = EmailChange.Request(newEmail, codeHash, now, lifetime);
-        ApplyKeepingEmail(change);
+        ApplyKeepingEmail(change, PromotionalConsentSource.Profile, now);
         UpdatedAt = now;
         Raise(new ProfileChanged(Id));
         if (change.ReplacesPhones)
@@ -435,22 +445,26 @@ public class User : AggregateRoot<UserId>
         return new ProfileChange(this, details, contact: null, nationalId: null, birthDate);
     }
 
-    private void Apply(ProfileChange change)
+    private void Apply(ProfileChange change, PromotionalConsentSource source, DateTimeOffset now)
     {
-        ApplyKeepingEmail(change);
+        ApplyKeepingEmail(change, source, now);
         if (change.Contact is { } contact)
         {
             Email = contact.Email;
         }
     }
 
-    private void ApplyKeepingEmail(ProfileChange change)
+    private void ApplyKeepingEmail(
+        ProfileChange change,
+        PromotionalConsentSource source,
+        DateTimeOffset now
+    )
     {
         FirstName = change.FirstName;
         LastName = change.LastName;
         Gender = change.Gender;
         NationalId = change.NationalId;
-        PromotionalConsent = change.PromotionalConsent;
+        ChangePromotionalConsent(change.PromotionalConsent, source, now);
         if (change.Contact is { } contact)
         {
             Phone = contact.Phone;
@@ -459,6 +473,38 @@ public class User : AggregateRoot<UserId>
         }
 
         BirthDate = change.BirthDate;
+    }
+
+    /// <summary>
+    /// Withdraws the promotional consent through the unsubscribe link of a promotional email. An
+    /// account without the consent stays as it is, so the link can be followed again.
+    /// </summary>
+    /// <param name="now">Current timestamp, stored as the time of the change.</param>
+    public void WithdrawPromotionalConsent(DateTimeOffset now)
+    {
+        if (!ChangePromotionalConsent(false, PromotionalConsentSource.UnsubscribeLink, now))
+        {
+            return;
+        }
+
+        UpdatedAt = now;
+        Raise(new ProfileChanged(Id));
+    }
+
+    private bool ChangePromotionalConsent(
+        bool granted,
+        PromotionalConsentSource source,
+        DateTimeOffset now
+    )
+    {
+        if (granted == PromotionalConsent)
+        {
+            return false;
+        }
+
+        PromotionalConsent = granted;
+        promotionalConsentChanges.Add(new PromotionalConsentChange(Id, granted, source, now));
+        return true;
     }
 
     /// <summary>

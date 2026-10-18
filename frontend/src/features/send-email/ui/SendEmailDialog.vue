@@ -12,6 +12,7 @@ import {
   addAttachments,
   MAX_ATTACHMENTS,
   MAX_ATTACHMENTS_BYTES,
+  reachedBy,
   readEmailDraft,
   toEmailDraft,
 } from '../model/email-form'
@@ -28,13 +29,14 @@ const props = defineProps<{
   /** Disables sending and closing while an email is in flight. */
   sending: boolean
   /**
-   * Addresses the email will reach, shown and confirmed instead of the selection size; zero blocks
-   * sending. `null` while the audience is loading or when it could not be loaded.
+   * Addresses an informational email reaches; the dialog shows and confirms what the chosen purpose
+   * reaches instead of the selection size, and nobody reached blocks sending. `null` while the
+   * audience is loading or when it could not be loaded.
    */
   recipients?: number | null
   /**
-   * Recipients without promotional consent; above zero shows a non-blocking warning. `null` while
-   * the audience is loading or when it could not be loaded, which hides the warning.
+   * Recipients without promotional consent, whom a promotional email leaves out; the dialog says
+   * how many. `null` while the audience is loading or when it could not be loaded.
    */
   withoutConsent?: number | null
 }>()
@@ -63,9 +65,17 @@ watch(
   },
 )
 
-const recipientsWithoutConsent = computed(() => props.withoutConsent ?? 0)
-const knownRecipients = computed(() => props.recipients ?? null)
-const nobodyReachable = computed(() => knownRecipients.value === 0)
+const promotional = computed(() => draft.purpose === 'Promotional')
+const reach = computed(() =>
+  props.recipients == null
+    ? null
+    : reachedBy(
+        { recipients: props.recipients, withoutConsent: props.withoutConsent ?? 0 },
+        draft.purpose,
+      ),
+)
+const leftOut = computed(() => (promotional.value ? (props.withoutConsent ?? 0) : 0))
+const nobodyReachable = computed(() => reach.value === 0)
 
 const totalBytes = computed(() => draft.attachments.reduce((sum, file) => sum + file.size, 0))
 
@@ -111,7 +121,7 @@ function send(): void {
   const payload = form.submit()
   if (!payload) return
 
-  const count = knownRecipients.value
+  const count = reach.value
   confirmAction({
     header: t('features.sendEmail.confirm.header'),
     message:
@@ -135,25 +145,49 @@ function send(): void {
     @update:model-value="close"
   >
     <p class="target">{{ $t('features.sendEmail.target', { target }) }}</p>
-    <p v-if="knownRecipients !== null" class="target">
-      {{ $t('features.sendEmail.recipients', { count: knownRecipients }, knownRecipients) }}
+    <p v-if="reach !== null" class="target">
+      {{
+        promotional
+          ? $t('features.sendEmail.promotionalRecipients', { count: reach }, reach)
+          : $t('features.sendEmail.recipients', { count: reach }, reach)
+      }}
     </p>
 
     <el-alert
-      v-if="recipientsWithoutConsent > 0"
-      class="consent-warning"
-      type="warning"
+      v-if="leftOut > 0"
+      class="consent-note"
+      type="info"
       :closable="false"
-      :title="
-        $t(
-          'features.sendEmail.withoutConsentWarning',
-          { count: recipientsWithoutConsent },
-          recipientsWithoutConsent,
-        )
-      "
+      :title="$t('features.sendEmail.withoutConsent', { count: leftOut }, leftOut)"
     />
 
     <form class="form" @submit.prevent="send">
+      <div class="form__field">
+        <div id="send-email-purpose-label" class="form__label">
+          {{ $t('features.sendEmail.purpose.label') }}
+        </div>
+        <el-radio-group
+          v-model="draft.purpose"
+          :class="{ 'ca-invalid': invalid('purpose') }"
+          aria-labelledby="send-email-purpose-label"
+        >
+          <el-radio value="Informational">
+            {{ $t('features.sendEmail.purpose.informational') }}
+          </el-radio>
+          <el-radio value="Promotional">
+            {{ $t('features.sendEmail.purpose.promotional') }}
+          </el-radio>
+        </el-radio-group>
+        <small v-if="errors.purpose" class="form__error">{{ errors.purpose }}</small>
+        <small v-else-if="draft.purpose" class="form__hint">
+          {{
+            promotional
+              ? $t('features.sendEmail.purpose.promotionalHint')
+              : $t('features.sendEmail.purpose.informationalHint')
+          }}
+        </small>
+      </div>
+
       <div class="form__field">
         <label for="send-email-subject">{{ $t('features.sendEmail.subject') }}</label>
         <el-input
@@ -254,7 +288,7 @@ function send(): void {
   margin: 0 0 14px;
 }
 
-.consent-warning {
+.consent-note {
   margin: 0 0 14px;
 }
 

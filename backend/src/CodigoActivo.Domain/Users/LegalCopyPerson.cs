@@ -14,6 +14,7 @@ namespace CodigoActivo.Domain.Users;
 /// <param name="BirthDate">Birth date.</param>
 /// <param name="Gender">Gender.</param>
 /// <param name="PromotionalConsent">Whether promotional content was accepted.</param>
+/// <param name="PromotionalConsentChanges">Every change of the promotional consent, oldest first.</param>
 /// <param name="UserTypeId">Identifier of the user type.</param>
 /// <param name="UserTypeName">Name of the user type.</param>
 /// <param name="UserStatusTypeId">Identifier of the account status.</param>
@@ -35,6 +36,7 @@ public sealed record LegalCopyPerson(
     DateOnly? BirthDate,
     Gender Gender,
     bool PromotionalConsent,
+    IReadOnlyList<LegalCopyConsentChange> PromotionalConsentChanges,
     Guid UserTypeId,
     string UserTypeName,
     Guid UserStatusTypeId,
