@@ -223,14 +223,22 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncWithoutTheAdultDeclarationIsRefusedWithoutAddingAnyone()
+    public async Task HandleAsyncWithoutTheAdultDeclarationIsRefusedBeforeLookingTheAddressUp()
     {
+        HolderOfTheAddress(KnownIds.UserStatusTypes.Active);
+
         var result = await HandleAsync(NewRegister(declaresAdult: false));
 
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserAdultDeclarationRequired);
         await users
             .DidNotReceiveWithAnyArgs()
+            .GetByEmailAsync(default!, TestContext.Current.CancellationToken);
+        await users
+            .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
+        await AssertNotSavedAsync();
+        hasher.Hashes.Should().Be(0);
+        emailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]
