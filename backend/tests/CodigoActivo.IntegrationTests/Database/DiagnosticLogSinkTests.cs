@@ -20,7 +20,8 @@ public sealed class DiagnosticLogSinkTests(PostgresContainerFixture postgres) : 
     private readonly LogDatabase database = new(postgres.ConnectionString);
     private readonly TestClock clock = new() { UtcNow = Now };
 
-    private DiagnosticLogSink Sink => new(database, new LogPartitionMaintainer(database, clock));
+    private DiagnosticLogSink Sink =>
+        new(database, new LogPartitionMaintainer(database, new LogRetentionOptions(), clock));
 
     public async ValueTask InitializeAsync()
     {
@@ -115,7 +116,7 @@ public sealed class DiagnosticLogSinkTests(PostgresContainerFixture postgres) : 
         await using var unreachable = new LogDatabase("Host=127.0.0.1;Port=1;Database=unused");
         var sink = new DiagnosticLogSink(
             unreachable,
-            new LogPartitionMaintainer(unreachable, clock)
+            new LogPartitionMaintainer(unreachable, new LogRetentionOptions(), clock)
         );
 
         var emit = () => sink.EmitBatchAsync([Event(Now, "lost")]);
@@ -129,7 +130,11 @@ public sealed class DiagnosticLogSinkTests(PostgresContainerFixture postgres) : 
         var systemClock = new SystemClock(TimeZoneInfo.Utc);
         await using (var connection = await database.OpenConnectionAsync(Ct))
         {
-            await new LogPartitionMaintainer(database, systemClock).EnsurePartitionsAsync(
+            await new LogPartitionMaintainer(
+                database,
+                new LogRetentionOptions(),
+                systemClock
+            ).EnsurePartitionsAsync(
                 connection,
                 LogTable.Diagnostics,
                 [LogPartitions.DayOf(systemClock.UtcNow)],
@@ -141,7 +146,7 @@ public sealed class DiagnosticLogSinkTests(PostgresContainerFixture postgres) : 
         await using (
             var provider = new DatabaseLoggerProvider(
                 database,
-                new LogPartitionMaintainer(database, systemClock)
+                new LogPartitionMaintainer(database, new LogRetentionOptions(), systemClock)
             )
         )
         {

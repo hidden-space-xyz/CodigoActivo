@@ -73,6 +73,7 @@ public sealed class ApiLoggingTests
         var services = new ServiceCollection();
         services.AddSingleton(new LogDatabase("Host=127.0.0.1;Port=1;Database=unused"));
         services.AddSingleton(Substitute.For<IClock>());
+        services.AddSingleton(new LogRetentionOptions());
         services.AddSingleton<LogPartitionMaintainer>();
         services.AddLogging(logging =>
         {
