@@ -32,8 +32,8 @@ public sealed record EmailContent(
 /// <param name="RecipientName">Name the message greets; a null or empty name greets nobody.</param>
 /// <param name="SiteUrl">The site url value.</param>
 /// <param name="Accent">The accent value.</param>
-/// <param name="PromotionalContact">
-/// Contact address of a promotional email, whose footer carries it and leaves a place for the
+/// <param name="NewsContact">
+/// Contact address of a news email, whose footer carries it and leaves a place for the
 /// unsubscribe link of each recipient; <see langword="null"/> for any other email.
 /// </param>
 public sealed record EmailDocument(
@@ -42,7 +42,7 @@ public sealed record EmailDocument(
     string? RecipientName,
     string SiteUrl,
     EmailAccent Accent,
-    string? PromotionalContact = null
+    string? NewsContact = null
 );
 
 /// <summary>
@@ -93,8 +93,8 @@ public static class EmailLayout
         sections.AddRange(blocks.Select(block => block.Text.Trim()));
         var footer = $"{AppStrings.EmailsFooterTagline}\n{document.SiteUrl}";
         sections.Add(
-            document.PromotionalContact is { } contact
-                ? $"{TextRule}\n{PromotionalNoticeText(contact)}{BlockSeparator}{footer}"
+            document.NewsContact is { } contact
+                ? $"{TextRule}\n{NewsNoticeText(contact)}{BlockSeparator}{footer}"
                 : $"{TextRule}\n{footer}"
         );
 
@@ -102,7 +102,7 @@ public static class EmailLayout
     }
 
     /// <summary>
-    /// Puts the unsubscribe link of one recipient in the place the footer of a promotional email
+    /// Puts the unsubscribe link of one recipient in the place the footer of a news email
     /// leaves for it.
     /// </summary>
     /// <param name="body">Rendered body shared by every recipient of the email.</param>
@@ -126,9 +126,9 @@ public static class EmailLayout
         );
     }
 
-    private static string PromotionalNoticeText(string contact)
+    private static string NewsNoticeText(string contact)
     {
-        return $"{AppStrings.EmailsFooterPromotionalNotice}\n"
+        return $"{AppStrings.EmailsFooterNewsNotice}\n"
             + $"{AppStrings.EmailsFooterUnsubscribeText(UnsubscribeSlot)}\n"
             + AppStrings.EmailsFooterContact(contact);
     }
@@ -261,16 +261,16 @@ public static class EmailLayout
             <a class="ca-link" href="{siteUrl}" style="{EmailStyles.FooterLink}">{website}</a>
             </p>
             {(
-                document.PromotionalContact is { } contact
-                    ? PromotionalNoticeHtml(contact)
+                document.NewsContact is { } contact
+                    ? NewsNoticeHtml(contact)
                     : string.Empty
             )}
             """;
     }
 
-    private static string PromotionalNoticeHtml(string contactAddress)
+    private static string NewsNoticeHtml(string contactAddress)
     {
-        var notice = WebUtility.HtmlEncode(AppStrings.EmailsFooterPromotionalNotice);
+        var notice = WebUtility.HtmlEncode(AppStrings.EmailsFooterNewsNotice);
         var unsubscribe = WebUtility.HtmlEncode(AppStrings.EmailsFooterUnsubscribeLabel);
         var address = WebUtility.HtmlEncode(contactAddress);
         var contact = AppStrings.EmailsFooterContact(

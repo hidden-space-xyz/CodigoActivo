@@ -385,7 +385,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsersPromotionalOnlyMailsConsentingUsersWithTheirUnsubscribeLink()
+    public async Task SendToUsersNewsOnlyMailsConsentingUsersWithTheirUnsubscribeLink()
     {
         var client = await LoginAsAdminAsync();
 
@@ -393,11 +393,11 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             UsersUrl,
             "Nuevo taller",
             "Abrimos inscripciones.",
-            purpose: "Promotional"
+            purpose: "News"
         );
 
         var result = await ReadResultAsync(response);
-        result.Queued.Should().Be(1, "only the member gave their promotional consent");
+        result.Queued.Should().Be(1, "only the member gave their news consent");
         var message = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be(TestSeedData.MemberEmail);
         message
@@ -409,7 +409,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUsersInformationalCarriesNoUnsubscribeLink()
+    public async Task SendToUsersNoticeCarriesNoUnsubscribeLink()
     {
         var client = await LoginAsAdminAsync();
 
@@ -443,10 +443,10 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UnsubscribeLinkOfAPromotionalEmailWithdrawsTheConsentWithoutASession()
+    public async Task UnsubscribeLinkOfANewsEmailWithdrawsTheConsentWithoutASession()
     {
         var admin = await LoginAsAdminAsync();
-        using var sent = await admin.SendEmailFormAsync(UsersUrl, purpose: "Promotional");
+        using var sent = await admin.SendEmailFormAsync(UsersUrl, purpose: "News");
         await ReadResultAsync(sent);
         var text = Factory.EmailSender.Sent.Should().ContainSingle().Subject.TextBody;
         var token = text[(text.IndexOf("#token=", StringComparison.Ordinal) + 7)..].Split('\n')[0];
@@ -459,17 +459,17 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         again.StatusCode.Should().Be(HttpStatusCode.NoContent, "the link can be followed again");
         var member = await Factory.QueryAsync(db =>
-            db.Users.Include(u => u.PromotionalConsentChanges)
+            db.Users.Include(u => u.NewsConsentChanges)
                 .SingleAsync(u => u.Id == UserId.From(TestSeedData.Users.MemberId), Ct)
         );
-        member.PromotionalConsent.Should().BeFalse();
-        var withdrawal = member.PromotionalConsentChanges.Should().ContainSingle().Subject;
+        member.NewsConsent.Should().BeFalse();
+        var withdrawal = member.NewsConsentChanges.Should().ContainSingle().Subject;
         withdrawal.Granted.Should().BeFalse();
-        withdrawal.Source.Should().Be(PromotionalConsentSource.UnsubscribeLink);
+        withdrawal.Source.Should().Be(NewsConsentSource.UnsubscribeLink);
         withdrawal.ChangedAt.Should().Be(Factory.Clock.UtcNow);
 
         Factory.EmailSender.Clear();
-        using var next = await admin.SendEmailFormAsync(UsersUrl, purpose: "Promotional");
+        using var next = await admin.SendEmailFormAsync(UsersUrl, purpose: "News");
         await next.ShouldBeBadRequestAsync(ErrorCode.EmailNoRecipients);
     }
 
@@ -485,7 +485,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task UnsubscribeWithOneClickWithdrawsTheConsentWithoutCookiesOrAntiforgeryToken()
     {
-        var address = await SendPromotionalAndReadOneClickAddressAsync();
+        var address = await SendNewsAndReadOneClickAddressAsync();
         var mailClient = MailClient();
 
         using var response = await mailClient.PostAsync(address, OneClickForm(), Ct);
@@ -499,13 +499,13 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         response.Headers.Location.Should().BeNull();
         again.StatusCode.Should().Be(HttpStatusCode.NoContent, "the button can be pressed again");
         var member = await Factory.QueryAsync(db =>
-            db.Users.Include(u => u.PromotionalConsentChanges)
+            db.Users.Include(u => u.NewsConsentChanges)
                 .SingleAsync(u => u.Id == UserId.From(TestSeedData.Users.MemberId), Ct)
         );
-        member.PromotionalConsent.Should().BeFalse();
-        var withdrawal = member.PromotionalConsentChanges.Should().ContainSingle().Subject;
+        member.NewsConsent.Should().BeFalse();
+        var withdrawal = member.NewsConsentChanges.Should().ContainSingle().Subject;
         withdrawal.Granted.Should().BeFalse();
-        withdrawal.Source.Should().Be(PromotionalConsentSource.OneClickUnsubscribe);
+        withdrawal.Source.Should().Be(NewsConsentSource.OneClickUnsubscribe);
         withdrawal.ChangedAt.Should().Be(Factory.Clock.UtcNow);
     }
 
@@ -516,7 +516,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         string? value
     )
     {
-        var address = await SendPromotionalAndReadOneClickAddressAsync();
+        var address = await SendNewsAndReadOneClickAddressAsync();
         using var form = new FormUrlEncodedContent(
             value is null ? [] : [new KeyValuePair<string, string>("List-Unsubscribe", value)]
         );
@@ -527,7 +527,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         var member = await Factory.QueryAsync(db =>
             db.Users.SingleAsync(u => u.Id == UserId.From(TestSeedData.Users.MemberId), Ct)
         );
-        member.PromotionalConsent.Should().BeTrue();
+        member.NewsConsent.Should().BeTrue();
     }
 
     [Fact]
@@ -539,10 +539,10 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeBadRequestAsync(ErrorCode.EmailUnsubscribeLinkInvalid);
     }
 
-    private async Task<string> SendPromotionalAndReadOneClickAddressAsync()
+    private async Task<string> SendNewsAndReadOneClickAddressAsync()
     {
         var admin = await LoginAsAdminAsync();
-        using var sent = await admin.SendEmailFormAsync(UsersUrl, purpose: "Promotional");
+        using var sent = await admin.SendEmailFormAsync(UsersUrl, purpose: "News");
         await ReadResultAsync(sent);
         var address = Factory
             .EmailSender.Sent.Should()
@@ -570,13 +570,13 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SendToUserPromotionalWithoutConsentReturnsRecipientWithoutConsent()
+    public async Task SendToUserNewsWithoutConsentReturnsRecipientWithoutConsent()
     {
         var client = await LoginAsAdminAsync();
 
         using var response = await client.SendEmailFormAsync(
             $"{UsersUrl}/{TestSeedData.Users.PendingId}",
-            purpose: "Promotional"
+            purpose: "News"
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.EmailRecipientWithoutConsent);
@@ -687,8 +687,8 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
 
     [Theory]
     [InlineData("", 4, 3)]
-    [InlineData("?promotionalConsent=true", 1, 0)]
-    [InlineData("?promotionalConsent=false", 3, 3)]
+    [InlineData("?newsConsent=true", 1, 0)]
+    [InlineData("?newsConsent=false", 3, 3)]
     [InlineData("?id=22222222-2222-2222-2222-222222222222", 1, 0)]
     [InlineData("?id=33333333-3333-3333-3333-333333333333", 0, 0)]
     public async Task UsersAudienceAsAdminCountsTheRecipientsOfTheSameFilters(

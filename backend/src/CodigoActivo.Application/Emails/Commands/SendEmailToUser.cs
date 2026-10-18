@@ -57,7 +57,7 @@ public sealed class SendEmailToUserCommandHandler(
             { } found when string.IsNullOrWhiteSpace(found.Email) => Error.Validation(
                 ApplicationErrorCode.EmailRecipientWithoutAddress
             ),
-            { PromotionalConsent: false } when command.Purpose is ManualEmailPurpose.Promotional =>
+            { NewsConsent: false } when command.Purpose is ManualEmailPurpose.News =>
                 Error.Validation(ApplicationErrorCode.EmailRecipientWithoutConsent),
             { } found => await dispatcher.DispatchAsync(
                 [found],

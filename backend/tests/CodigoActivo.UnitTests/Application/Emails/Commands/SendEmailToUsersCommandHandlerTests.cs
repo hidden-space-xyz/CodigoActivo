@@ -58,7 +58,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -78,16 +78,16 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task HandleAsyncPromotionalOnlyReachesRecipientsWithConsent()
+    public async Task HandleAsyncNewsOnlyReachesRecipientsWithConsent()
     {
-        var ana = NewUserRow("Ana", "ana@test.local", promotionalConsent: true);
+        var ana = NewUserRow("Ana", "ana@test.local", newsConsent: true);
         store.Users.AddRange([ana, NewUserRow("Berto", "berto@test.local")]);
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Promotional,
+                ManualEmailPurpose.News,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -96,14 +96,14 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         result.IsSuccess.Should().BeTrue();
         result.Value.Queued.Should().Be(1);
         var email = composer.Composed.Should().ContainSingle().Subject;
-        email.Purpose.Should().Be(ManualEmailPurpose.Promotional);
+        email.Purpose.Should().Be(ManualEmailPurpose.News);
         email
             .Recipients.Should()
             .Equal(new ManualEmailRecipient(UserId.From(ana.Id), "ana@test.local", "Ana"));
     }
 
     [Fact]
-    public async Task HandleAsyncPromotionalWithoutAnyConsentReturnsNoRecipients()
+    public async Task HandleAsyncNewsWithoutAnyConsentReturnsNoRecipients()
     {
         store.Users.Add(NewUserRow("Berto", "berto@test.local"));
 
@@ -111,7 +111,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Promotional,
+                ManualEmailPurpose.News,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -131,7 +131,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -153,7 +153,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery { ParentId = parent.Id },
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -175,7 +175,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery { Name = "berto" },
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -198,7 +198,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -221,7 +221,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -241,7 +241,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 []
             ),
             TestContext.Current.CancellationToken
@@ -262,7 +262,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 [Attachment(size: 6)]
             ),
             TestContext.Current.CancellationToken
@@ -289,7 +289,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 [Attachment(name: fileName)]
             ),
             TestContext.Current.CancellationToken
@@ -313,7 +313,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 [Attachment(name: fileName)]
             ),
             TestContext.Current.CancellationToken
@@ -332,7 +332,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 [Attachment(size: 5)]
             ),
             TestContext.Current.CancellationToken
@@ -352,7 +352,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 [Attachment(), Attachment("otro.pdf")]
             ),
             TestContext.Current.CancellationToken
@@ -370,7 +370,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             new SendEmailToUsersCommand(
                 new UserListQuery(),
                 Request(),
-                ManualEmailPurpose.Informational,
+                ManualEmailPurpose.Notice,
                 [Attachment(size: 0)]
             ),
             TestContext.Current.CancellationToken

@@ -28,10 +28,9 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<User> Users => Set<User>();
 
     /// <summary>
-    /// Gets the changes of the promotional consent of the users.
+    /// Gets the changes of the news consent of the users.
     /// </summary>
-    public DbSet<PromotionalConsentChange> PromotionalConsentChanges =>
-        Set<PromotionalConsentChange>();
+    public DbSet<NewsConsentChange> NewsConsentChanges => Set<NewsConsentChange>();
 
     /// <summary>
     /// Gets the user status types value.

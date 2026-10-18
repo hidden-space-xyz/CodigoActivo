@@ -93,7 +93,7 @@ export interface SendEmailDialogOptions<T> {
 /**
  * State for `SendEmailDialog` on a list page. `open(row)` targets one recipient and `open(null)`
  * the whole filtered audience. Opening also loads that audience: `recipients` counts the addresses
- * an informational email reaches and `withoutConsent` those a promotional one leaves out; both stay `null`
+ * a notice reaches and `withoutConsent` those a news email leaves out; both stay `null`
  * while loading, after a failure or once a newer `open` superseded the request. After sending, toasts report the queued and skipped
  * counts, and the dialog closes only if at least one email was accepted for delivery.
  */

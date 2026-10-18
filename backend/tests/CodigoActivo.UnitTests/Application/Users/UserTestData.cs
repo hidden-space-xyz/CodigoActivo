@@ -69,7 +69,7 @@ internal static class UserTestData
         string statusName = "Active",
         string? passwordHash = null,
         string? nationalId = AdultNationalId,
-        bool promotionalConsent = false,
+        bool newsConsent = false,
         UserRow? parent = null
     )
     {
@@ -86,7 +86,7 @@ internal static class UserTestData
             PasswordHash = passwordHash,
             BirthDate = dob ?? (guardianId is null ? null : MinorDob),
             NationalId = guardianId is null ? nationalId : null,
-            PromotionalConsent = promotionalConsent,
+            NewsConsent = newsConsent,
             Gender = Gender.Male,
             ParentId = guardianId,
             Parent = parent,

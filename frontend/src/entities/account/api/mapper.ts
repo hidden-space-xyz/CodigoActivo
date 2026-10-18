@@ -35,7 +35,7 @@ export function toAccountProfile(user: UserResponse): AccountProfile {
     phone: user.phone ?? '',
     secondaryPhone: user.secondaryPhone ?? '',
     nationalId: user.nationalId ?? '',
-    promotionalConsent: user.promotionalConsent,
+    newsConsent: user.newsConsent,
     gender: user.gender,
     statusName: user.status.name,
     isAdmin: user.isAdmin,
@@ -71,7 +71,7 @@ export function toUpdateProfileRequest(input: UpdateProfileInput): UpdateUserReq
     secondaryPhone: input.secondaryPhone,
     birthDate: null,
     nationalId: input.nationalId,
-    promotionalConsent: input.promotionalConsent,
+    newsConsent: input.newsConsent,
     gender: input.gender,
     parentId: null,
     currentPassword: input.currentPassword,
@@ -95,7 +95,7 @@ export function toUpdateMinorRequest(input: MinorInput, parentId: string): Updat
     lastName: input.lastName,
     birthDate: input.birthDate,
     gender: input.gender,
-    promotionalConsent: false,
+    newsConsent: false,
     parentId,
   }
 }

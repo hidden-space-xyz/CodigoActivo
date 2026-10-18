@@ -33,7 +33,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         Guid? parentId = null,
         string? currentPassword = null,
         string? nationalId = TestSeedData.MemberNationalId,
-        bool promotionalConsent = true,
+        bool newsConsent = true,
         string? secondaryPhone = null
     )
     {
@@ -44,7 +44,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             phone,
             null,
             nationalId,
-            promotionalConsent,
+            newsConsent,
             gender,
             parentId,
             currentPassword,
@@ -275,22 +275,19 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     [Theory]
     [InlineData(true, 1)]
     [InlineData(false, 4)]
-    public async Task ListFilterByPromotionalConsentReturnsOnlyMatchingUsers(
-        bool consent,
-        int expected
-    )
+    public async Task ListFilterByNewsConsentReturnsOnlyMatchingUsers(bool consent, int expected)
     {
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            TestUri.Rel($"/api/users?promotionalConsent={(consent ? "true" : "false")}"),
+            TestUri.Rel($"/api/users?newsConsent={(consent ? "true" : "false")}"),
             Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
         page!.Total.Should().Be(expected);
-        page.Items.Should().OnlyContain(u => u.PromotionalConsent == consent);
+        page.Items.Should().OnlyContain(u => u.NewsConsent == consent);
         page.Items.Any(u => u.Id == TestSeedData.Users.MemberId).Should().Be(consent);
     }
 
@@ -306,7 +303,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var member = page!.Items.Should().ContainSingle().Subject;
         member.Id.Should().Be(TestSeedData.Users.MemberId);
         member.NationalId.Should().Be(TestSeedData.MemberNationalId);
-        member.PromotionalConsent.Should().BeTrue();
+        member.NewsConsent.Should().BeTrue();
         member.BirthDate.Should().BeNull();
     }
 
@@ -853,17 +850,17 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
-            AdultUpdate(nationalId: "x-1234567-l", promotionalConsent: false),
+            AdultUpdate(nationalId: "x-1234567-l", newsConsent: false),
             Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var updated = await response.ReadJsonAsync<UserResponse>(Ct);
         updated!.NationalId.Should().Be("X1234567L");
-        updated.PromotionalConsent.Should().BeFalse();
+        updated.NewsConsent.Should().BeFalse();
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.NationalId!.Value.Should().Be("X1234567L");
-        stored.PromotionalConsent.Should().BeFalse();
+        stored.NewsConsent.Should().BeFalse();
     }
 
     [Fact]
@@ -995,7 +992,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
                 Email = "mateo@codigoactivo.test",
                 Phone = "+34600000055",
                 NationalId = "X1234567L",
-                PromotionalConsent = true,
+                NewsConsent = true,
                 ParentId = TestSeedData.Users.MemberId,
             },
             Ct
@@ -1008,7 +1005,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         stored.Email.Should().BeNull("a dependent never takes login identifiers from the request");
         stored.Phone.Should().BeNull();
         stored.NationalId.Should().BeNull();
-        stored.PromotionalConsent.Should().BeFalse();
+        stored.NewsConsent.Should().BeFalse();
     }
 
     [Fact]

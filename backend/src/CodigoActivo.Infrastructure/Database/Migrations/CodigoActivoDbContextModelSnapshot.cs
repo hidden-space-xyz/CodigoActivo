@@ -692,7 +692,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("deleted_accounts", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Users.PromotionalConsentChange", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Users.NewsConsentChange", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -720,12 +720,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("pk_promotional_consent_changes");
+                        .HasName("pk_news_consent_changes");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_promotional_consent_changes_user_id");
+                        .HasDatabaseName("ix_news_consent_changes_user_id");
 
-                    b.ToTable("promotional_consent_changes", (string)null);
+                    b.ToTable("news_consent_changes", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
@@ -775,6 +775,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("character varying(9)")
                         .HasColumnName("national_id");
 
+                    b.Property<bool>("NewsConsent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("news_consent");
+
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid")
                         .HasColumnName("parent_id");
@@ -786,10 +790,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text")
                         .HasColumnName("phone");
-
-                    b.Property<bool>("PromotionalConsent")
-                        .HasColumnType("boolean")
-                        .HasColumnName("promotional_consent");
 
                     b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
@@ -1755,14 +1755,14 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_resources_users_updated_by");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Users.PromotionalConsentChange", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Users.NewsConsentChange", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
-                        .WithMany("PromotionalConsentChanges")
+                        .WithMany("NewsConsentChanges")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_promotional_consent_changes_users_user_id");
+                        .HasConstraintName("fk_news_consent_changes_users_user_id");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
@@ -1838,7 +1838,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
                 {
-                    b.Navigation("PromotionalConsentChanges");
+                    b.Navigation("NewsConsentChanges");
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxContent", b =>

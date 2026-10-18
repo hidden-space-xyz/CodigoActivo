@@ -38,7 +38,7 @@ describe('account mapper', () => {
       phone: '600000000',
       secondaryPhone: '',
       nationalId: '12345678Z',
-      promotionalConsent: false,
+      newsConsent: false,
       gender: 'Female',
       statusName: 'Active',
       isAdmin: true,
@@ -70,7 +70,7 @@ describe('account mapper', () => {
         phone: '600000000',
         secondaryPhone: null,
         nationalId: '12345678Z',
-        promotionalConsent: true,
+        newsConsent: true,
         gender: 'Female',
         currentPassword: null,
       }),
@@ -81,7 +81,7 @@ describe('account mapper', () => {
     expect(toMinorRequest(MINOR)).toEqual(MINOR)
     expect(toUpdateMinorRequest(MINOR, 'user-1')).toEqual({
       ...MINOR,
-      promotionalConsent: false,
+      newsConsent: false,
       parentId: 'user-1',
     })
   })
@@ -146,7 +146,7 @@ describe('account mapper', () => {
       phone: '600000000',
       secondaryPhone: null,
       nationalId: '12345678Z',
-      promotionalConsent: false,
+      newsConsent: false,
     } as const
 
     expect(toRegisterRequest({ adult, password: 'Str0ngPass!23', minors: [MINOR] })).toEqual({

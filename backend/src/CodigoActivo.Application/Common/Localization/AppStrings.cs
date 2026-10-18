@@ -182,12 +182,12 @@ public static class AppStrings
     public static string EmailsFooterWebsiteLabel => Get("emails.footer.websiteLabel");
 
     /// <summary>
-    /// Gets why a promotional email reaches its recipient.
+    /// Gets why a news email reaches its recipient.
     /// </summary>
-    public static string EmailsFooterPromotionalNotice => Get("emails.footer.promotionalNotice");
+    public static string EmailsFooterNewsNotice => Get("emails.footer.newsNotice");
 
     /// <summary>
-    /// Gets the label of the unsubscribe link of a promotional email.
+    /// Gets the label of the unsubscribe link of a news email.
     /// </summary>
     public static string EmailsFooterUnsubscribeLabel => Get("emails.footer.unsubscribeLabel");
 
@@ -564,7 +564,7 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats how a promotional email offers the contact address to unsubscribe.
+    /// Formats how a news email offers the contact address to unsubscribe.
     /// </summary>
     /// <param name="address">Contact address, or the markup that links it.</param>
     /// <returns>The generated text.</returns>
@@ -574,7 +574,7 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats how the text body of a promotional email offers its unsubscribe link.
+    /// Formats how the text body of a news email offers its unsubscribe link.
     /// </summary>
     /// <param name="url">Unsubscribe link.</param>
     /// <returns>The generated text.</returns>

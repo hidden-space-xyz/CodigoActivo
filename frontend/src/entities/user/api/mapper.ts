@@ -26,7 +26,7 @@ export function toUser(user: UserResponse): User {
     secondaryPhone: user.secondaryPhone ?? '',
     birthDate: user.birthDate ?? '',
     nationalId: user.nationalId ?? '',
-    promotionalConsent: user.promotionalConsent,
+    newsConsent: user.newsConsent,
     gender: user.gender,
     isAdmin: user.isAdmin,
     isInitialAdmin: user.isInitialAdmin,

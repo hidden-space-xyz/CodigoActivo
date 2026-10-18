@@ -54,11 +54,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
     {
         var confirmed = KnownIds.AssignmentStatusTypes.Confirmed;
         store.Users.AddRange([
-            NewAttendee(
-                NewUserRow("Ana", "ana@test.local", promotionalConsent: true),
-                EventId,
-                confirmed
-            ),
+            NewAttendee(NewUserRow("Ana", "ana@test.local", newsConsent: true), EventId, confirmed),
             NewAttendee(NewUserRow("Berto", "berto@test.local"), EventId, confirmed),
             NewAttendee(NewUserRow("Carla", "carla@test.local"), Guid.NewGuid(), confirmed),
             NewAttendee(NewUserRow("Sin correo", null), EventId, confirmed),
@@ -78,7 +74,7 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandlerTests
     {
         store.Users.AddRange([
             NewAttendee(
-                NewUserRow("Ana", "ana@test.local", promotionalConsent: true),
+                NewUserRow("Ana", "ana@test.local", newsConsent: true),
                 EventId,
                 KnownIds.AssignmentStatusTypes.Confirmed
             ),

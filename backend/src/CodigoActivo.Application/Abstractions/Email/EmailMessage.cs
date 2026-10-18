@@ -71,9 +71,9 @@ public sealed record EmailInlineImage(
 /// <param name="Attachments">The attachments value.</param>
 /// <param name="InlineImages">The inline images value.</param>
 /// <param name="OneClickUnsubscribeUrl">
-/// Address to which the mail client of the addressee posts to withdraw their promotional
+/// Address to which the mail client of the addressee posts to withdraw their news
 /// consent, sent in the <c>List-Unsubscribe</c> header (RFC 8058); <see langword="null"/> for
-/// email that is not promotional.
+/// email that is not news.
 /// </param>
 public sealed record EmailMessage(
     EmailKind Kind,
@@ -93,12 +93,12 @@ public sealed record EmailMessage(
 /// <param name="Address">The address value.</param>
 /// <param name="Name">The name value.</param>
 /// <param name="UnsubscribeUrl">
-/// Link with which this addressee withdraws their promotional consent, shown in the place the
-/// shared content of a promotional email leaves for it; <see langword="null"/> for other email.
+/// Link with which this addressee withdraws their news consent, shown in the place the
+/// shared content of a news email leaves for it; <see langword="null"/> for other email.
 /// </param>
 /// <param name="OneClickUnsubscribeUrl">
-/// Address to which the mail client of this addressee posts to withdraw their promotional
-/// consent, sent in the <c>List-Unsubscribe</c> header of a promotional email (RFC 8058);
+/// Address to which the mail client of this addressee posts to withdraw their news
+/// consent, sent in the <c>List-Unsubscribe</c> header of a news email (RFC 8058);
 /// <see langword="null"/> for other email.
 /// </param>
 public sealed record EmailRecipient(

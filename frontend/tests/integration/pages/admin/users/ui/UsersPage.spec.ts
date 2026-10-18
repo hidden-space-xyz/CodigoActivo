@@ -48,7 +48,7 @@ const REVOKE_ADMIN = 'pages.admin.users.actions.revokeAdmin'
 
 const ada = buildUserResponse({
   dependentCount: 2,
-  promotionalConsent: true,
+  newsConsent: true,
   secondaryPhone: '611111111',
 })
 const tim = omit(
@@ -271,7 +271,7 @@ describe('admin users page', () => {
     expect(birth.props('label')).toBe(t('pages.admin.users.columns.birth'))
     expect(birth.props('variant')).toBe('toolbar')
     birth.vm.$emit('update:modelValue', [new Date(1980, 0, 1), new Date(2000, 11, 31)])
-    const consent = selectFilter(wrapper, 'pages.admin.users.columns.promotionalConsent')
+    const consent = selectFilter(wrapper, 'pages.admin.users.columns.newsConsent')
     const status = selectFilter(wrapper, 'common.status')
     const type = selectFilter(wrapper, 'pages.admin.users.columns.type')
     const admin = selectFilter(wrapper, 'pages.admin.users.columns.admin')
@@ -295,7 +295,7 @@ describe('admin users page', () => {
       email: 'example',
       phone: '600',
       nationalId: 'x123',
-      promotionalConsent: 'true',
+      newsConsent: 'true',
       birthDateFrom: '1980-01-01',
       birthDateTo: '2000-12-31',
       userStatusTypeId: 'status-active',
@@ -314,7 +314,7 @@ describe('admin users page', () => {
     expect(chipLabels(wrapper)).toHaveLength(8)
     expect(chipLabels(wrapper)).toContain(
       t('table.filterChip', {
-        label: t('pages.admin.users.columns.promotionalConsent'),
+        label: t('pages.admin.users.columns.newsConsent'),
         value: t('common.yes'),
       }),
     )
@@ -710,7 +710,7 @@ describe('admin users page', () => {
       expect(dialog.textContent).toContain(tp('features.sendEmail.recipients', 2, { count: 2 })),
     )
     expect(audienceUrls.map(queryOf)).toEqual([{ scope: 'Dependent', parentId: 'user-1' }])
-    await click(dialog.querySelector('input[type="radio"][value="Promotional"]')!)
+    await click(dialog.querySelector('input[type="radio"][value="News"]')!)
     expect(dialog.querySelector('.el-alert--info')?.textContent).toContain(
       tp('features.sendEmail.withoutConsent', 1, { count: 1 }),
     )
@@ -721,7 +721,7 @@ describe('admin users page', () => {
 
     await expectNotification(tp('features.sendEmail.toast.queued', 2, { count: 2 }))
     expect(received?.subject).toBe('News')
-    expect(received?.purpose).toBe('Promotional')
+    expect(received?.purpose).toBe('News')
     expect(queryOf(received?.url ?? '')).toEqual({ scope: 'Dependent', parentId: 'user-1' })
     await vi.waitFor(() => expect(isDialogOpen(t(EMAIL_TITLE))).toBe(false))
     expect(chipLabels(wrapper)).toEqual([
@@ -753,7 +753,7 @@ describe('admin users page', () => {
     await vi.waitFor(() => expect(audienceUrls.map(queryOf)).toEqual([{ id: 'user-1' }]))
     await flushPromises()
     expect(dialog.querySelector('.el-alert')).toBeNull()
-    await click(dialog.querySelector('input[type="radio"][value="Informational"]')!)
+    await click(dialog.querySelector('input[type="radio"][value="Notice"]')!)
     await typeInto('#send-email-subject', 'Hi')
     await typeInto('#send-email-body', 'Personal note')
     await click(findButton(t('features.sendEmail.send'), dialog))
@@ -764,7 +764,7 @@ describe('admin users page', () => {
     fail = true
     await chooseRowAction(wrapper, 0, SEND_EMAIL)
     dialog = openDialog(t(EMAIL_TITLE))
-    await click(dialog.querySelector('input[type="radio"][value="Informational"]')!)
+    await click(dialog.querySelector('input[type="radio"][value="Notice"]')!)
     await typeInto('#send-email-subject', 'Hi')
     await typeInto('#send-email-body', 'Again')
     await click(findButton(t('features.sendEmail.send'), dialog))

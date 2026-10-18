@@ -43,7 +43,7 @@ public sealed class InitialAdministratorSeederTests(PostgresContainerFixture pos
         administrator.CreatedAt.Should().Be(CreatedAt);
         administrator.BirthDate.Should().BeNull();
         administrator.NationalId!.Value.Should().Be("00000000T");
-        administrator.PromotionalConsent.Should().BeFalse();
+        administrator.NewsConsent.Should().BeFalse();
     }
 
     [Fact]

@@ -17,7 +17,7 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     public const int UnverifiedRetentionDays = 30;
 
-    private readonly List<PromotionalConsentChange> promotionalConsentChanges = [];
+    private readonly List<NewsConsentChange> newsConsentChanges = [];
 
     private User() { }
 
@@ -71,17 +71,16 @@ public class User : AggregateRoot<UserId>
     public SpanishNationalId? NationalId { get; private set; }
 
     /// <summary>
-    /// Gets whether the user agreed to receive promotional content. Always
+    /// Gets whether the user agreed to receive news by email. Always
     /// <see langword="false"/> for dependents.
     /// </summary>
-    public bool PromotionalConsent { get; private set; }
+    public bool NewsConsent { get; private set; }
 
     /// <summary>
-    /// Gets every change of <see cref="PromotionalConsent"/>, each with when and where the holder
-    /// made it, which proves the consent behind each promotional email.
+    /// Gets every change of <see cref="NewsConsent"/>, each with when and where the holder
+    /// made it, which proves the consent behind each news email.
     /// </summary>
-    public IReadOnlyCollection<PromotionalConsentChange> PromotionalConsentChanges =>
-        promotionalConsentChanges;
+    public IReadOnlyCollection<NewsConsentChange> NewsConsentChanges => newsConsentChanges;
 
     /// <summary>
     /// Gets the associated gender.
@@ -195,7 +194,7 @@ public class User : AggregateRoot<UserId>
             return change.Error!;
         }
 
-        account.Apply(change.Value, PromotionalConsentSource.Registration, now);
+        account.Apply(change.Value, NewsConsentSource.Registration, now);
         account.Raise(new AccountRegistered(account.Id));
         return account;
     }
@@ -203,7 +202,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Creates a dependent of <paramref name="guardian"/> as a participant. It needs a birth date
     /// that is not in the future and makes it a minor on <paramref name="today"/>, and it has no
-    /// email, phones, DNI, NIE, password or promotional consent. A dependent cannot be a guardian.
+    /// email, phones, DNI, NIE, password or news consent. A dependent cannot be a guardian.
     /// </summary>
     /// <param name="guardian">Independent account the dependent is created under.</param>
     /// <param name="details">Details as supplied; only the names, gender and birth date apply.</param>
@@ -242,7 +241,7 @@ public class User : AggregateRoot<UserId>
             return change.Error!;
         }
 
-        dependent.Apply(change.Value, PromotionalConsentSource.Registration, now);
+        dependent.Apply(change.Value, NewsConsentSource.Registration, now);
         dependent.Raise(new DependentAdded(dependent.Id, guardian.Id));
         return dependent;
     }
@@ -276,7 +275,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Applies a change planned for this account by <see cref="PlanProfileChange"/>. A new email
     /// replaces the stored one at once and drops any email change still waiting for confirmation.
-    /// A new promotional consent is recorded as decided in the profile.
+    /// A changed news consent is recorded as decided in the profile.
     /// </summary>
     /// <param name="change">Change planned for this account.</param>
     /// <param name="now">Current timestamp, stored as the update time.</param>
@@ -290,7 +289,7 @@ public class User : AggregateRoot<UserId>
             ClearEmailChange();
         }
 
-        Apply(change, PromotionalConsentSource.Profile, now);
+        Apply(change, NewsConsentSource.Profile, now);
         UpdatedAt = now;
         Raise(new ProfileChanged(Id));
         if (change.ReplacesContact)
@@ -333,7 +332,7 @@ public class User : AggregateRoot<UserId>
             change.NewEmail
             ?? throw new ArgumentException("The profile change keeps the email.", nameof(change));
         EmailChange = EmailChange.Request(newEmail, codeHash, now, lifetime);
-        ApplyKeepingEmail(change, PromotionalConsentSource.Profile, now);
+        ApplyKeepingEmail(change, NewsConsentSource.Profile, now);
         UpdatedAt = now;
         Raise(new ProfileChanged(Id));
         if (change.ReplacesPhones)
@@ -445,7 +444,7 @@ public class User : AggregateRoot<UserId>
         return new ProfileChange(this, details, contact: null, nationalId: null, birthDate);
     }
 
-    private void Apply(ProfileChange change, PromotionalConsentSource source, DateTimeOffset now)
+    private void Apply(ProfileChange change, NewsConsentSource source, DateTimeOffset now)
     {
         ApplyKeepingEmail(change, source, now);
         if (change.Contact is { } contact)
@@ -456,7 +455,7 @@ public class User : AggregateRoot<UserId>
 
     private void ApplyKeepingEmail(
         ProfileChange change,
-        PromotionalConsentSource source,
+        NewsConsentSource source,
         DateTimeOffset now
     )
     {
@@ -464,7 +463,7 @@ public class User : AggregateRoot<UserId>
         LastName = change.LastName;
         Gender = change.Gender;
         NationalId = change.NationalId;
-        ChangePromotionalConsent(change.PromotionalConsent, source, now);
+        ChangeNewsConsent(change.NewsConsent, source, now);
         if (change.Contact is { } contact)
         {
             Phone = contact.Phone;
@@ -476,32 +475,29 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Withdraws the promotional consent through the unsubscribe link of a promotional email or
+    /// Withdraws the news consent through the unsubscribe link of a news email or
     /// the unsubscribe button of the mail client. An account without the consent stays as it is,
     /// so the link can be followed again.
     /// </summary>
     /// <param name="source">
-    /// <see cref="PromotionalConsentSource.UnsubscribeLink"/> or
-    /// <see cref="PromotionalConsentSource.OneClickUnsubscribe"/>.
+    /// <see cref="NewsConsentSource.UnsubscribeLink"/> or
+    /// <see cref="NewsConsentSource.OneClickUnsubscribe"/>.
     /// </param>
     /// <param name="now">Current timestamp, stored as the time of the change.</param>
     /// <exception cref="ArgumentOutOfRangeException">
     /// <paramref name="source"/> is not one of the unsubscribe sources.
     /// </exception>
-    public void WithdrawPromotionalConsent(PromotionalConsentSource source, DateTimeOffset now)
+    public void WithdrawNewsConsent(NewsConsentSource source, DateTimeOffset now)
     {
         if (
             source
-            is not (
-                PromotionalConsentSource.UnsubscribeLink
-                or PromotionalConsentSource.OneClickUnsubscribe
-            )
+            is not (NewsConsentSource.UnsubscribeLink or NewsConsentSource.OneClickUnsubscribe)
         )
         {
             throw new ArgumentOutOfRangeException(nameof(source));
         }
 
-        if (!ChangePromotionalConsent(false, source, now))
+        if (!ChangeNewsConsent(false, source, now))
         {
             return;
         }
@@ -510,19 +506,15 @@ public class User : AggregateRoot<UserId>
         Raise(new ProfileChanged(Id));
     }
 
-    private bool ChangePromotionalConsent(
-        bool granted,
-        PromotionalConsentSource source,
-        DateTimeOffset now
-    )
+    private bool ChangeNewsConsent(bool granted, NewsConsentSource source, DateTimeOffset now)
     {
-        if (granted == PromotionalConsent)
+        if (granted == NewsConsent)
         {
             return false;
         }
 
-        PromotionalConsent = granted;
-        promotionalConsentChanges.Add(new PromotionalConsentChange(Id, granted, source, now));
+        NewsConsent = granted;
+        newsConsentChanges.Add(new NewsConsentChange(Id, granted, source, now));
         return true;
     }
 

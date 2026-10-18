@@ -202,7 +202,7 @@ describe('MinorsSection', () => {
         lastName: 'Lovelace',
         birthDate: '2015-03-02',
         gender: 'Male',
-        promotionalConsent: false,
+        newsConsent: false,
         parentId: 'user-1',
       },
     })

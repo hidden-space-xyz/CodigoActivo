@@ -143,7 +143,7 @@ public sealed class EmailOutboxProtector
 
     /// <summary>
     /// Addresses the shared content of a batch to one recipient, with their own unsubscribe link
-    /// in the place a promotional email leaves for it and the address of their one-click
+    /// in the place a news email leaves for it and the address of their one-click
     /// unsubscribe.
     /// </summary>
     /// <param name="message">Stored message that carries the recipient and the kind.</param>

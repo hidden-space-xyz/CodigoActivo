@@ -4,15 +4,15 @@
  */
 export interface EmailAudience {
   readonly recipients: number
-  /** Recipients without promotional consent, whom a promotional email leaves out. */
+  /** Recipients without news consent, whom a news email leaves out. */
   readonly withoutConsent: number
 }
 
 /**
- * What an email is written for. An informational one reaches everyone selected; a promotional one
- * only those who accepted promotional communications, and carries their unsubscribe link.
+ * What an email is written for. A notice reaches everyone selected; a news email
+ * only those who accepted news, and carries their unsubscribe link.
  */
-export type EmailPurpose = 'Informational' | 'Promotional'
+export type EmailPurpose = 'Notice' | 'News'
 
 /** Outcome of sending an email: how many copies were queued and how many recipients skipped. */
 export interface SendEmailResult {

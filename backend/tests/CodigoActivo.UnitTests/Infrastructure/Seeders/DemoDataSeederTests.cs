@@ -380,8 +380,8 @@ public sealed class DemoDataSeederTests
                 SpanishNationalId.IsValid(adult.NationalId!.Value).Should().BeTrue();
             });
         adults.Select(u => u.NationalId).Should().OnlyHaveUniqueItems();
-        adults.Should().Contain(u => u.PromotionalConsent);
-        adults.Should().Contain(u => !u.PromotionalConsent);
+        adults.Should().Contain(u => u.NewsConsent);
+        adults.Should().Contain(u => !u.NewsConsent);
     }
 
     [Fact]
@@ -453,7 +453,7 @@ public sealed class DemoDataSeederTests
                 child.BirthDate.Should().NotBeNull();
                 child.BirthDate!.Value.Year.Should().BeGreaterThan(2008);
                 child.NationalId.Should().BeNull();
-                child.PromotionalConsent.Should().BeFalse();
+                child.NewsConsent.Should().BeFalse();
                 guardianIds.Should().Contain(child.ParentId!.Value);
             });
     }

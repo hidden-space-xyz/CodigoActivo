@@ -24,7 +24,7 @@ export interface PersonDraft {
   phone: string
   secondaryPhone: string
   nationalId: string
-  promotionalConsent: boolean
+  newsConsent: boolean
   birthDate: string
 }
 
@@ -35,7 +35,7 @@ export type IndependentDraft = Omit<PersonDraft, 'birthDate'>
 export type DependentDraft = Pick<PersonDraft, 'firstName' | 'lastName' | 'gender' | 'birthDate'>
 
 /** Field of a person that a rule can refuse. */
-export type PersonField = Exclude<keyof PersonDraft, 'promotionalConsent'>
+export type PersonField = Exclude<keyof PersonDraft, 'newsConsent'>
 
 /**
  * Why a field is refused: missing, a malformed email or phone, a secondary phone equal to the
@@ -67,7 +67,7 @@ export interface IndependentPerson {
   readonly phone: string
   readonly secondaryPhone: string | null
   readonly nationalId: string
-  readonly promotionalConsent: boolean
+  readonly newsConsent: boolean
 }
 
 /** Dependent ready to send, with trimmed names and a `YYYY-MM-DD` birth date. */
@@ -196,7 +196,7 @@ export function parseIndependentPerson(draft: IndependentDraft): ParsedPerson<In
       phone,
       secondaryPhone: secondaryPhone || null,
       nationalId: normalizeNationalId(draft.nationalId),
-      promotionalConsent: draft.promotionalConsent,
+      newsConsent: draft.newsConsent,
     },
   }
 }

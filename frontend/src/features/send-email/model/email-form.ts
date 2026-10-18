@@ -29,13 +29,11 @@ export function toEmailDraft(): EmailDraft {
 }
 
 /**
- * How many addresses an email reaches: a promotional one leaves out the recipients without
- * promotional consent, as the API does. Without a purpose it counts every recipient.
+ * How many addresses an email reaches: a news email leaves out the recipients without
+ * news consent, as the API does. Without a purpose it counts every recipient.
  */
 export function reachedBy(audience: EmailAudience, purpose: EmailPurpose | null): number {
-  return purpose === 'Promotional'
-    ? audience.recipients - audience.withoutConsent
-    : audience.recipients
+  return purpose === 'News' ? audience.recipients - audience.withoutConsent : audience.recipients
 }
 
 /**

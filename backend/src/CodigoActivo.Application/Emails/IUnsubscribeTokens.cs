@@ -3,9 +3,9 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Emails;
 
 /// <summary>
-/// Issues and reads the tokens of the unsubscribe links in promotional email. A token names its
+/// Issues and reads the tokens of the unsubscribe links in news email. A token names its
 /// account without a session and cannot be forged or altered, so following the link is enough to
-/// withdraw the promotional consent.
+/// withdraw the news consent.
 /// </summary>
 public interface IUnsubscribeTokens
 {

@@ -46,7 +46,7 @@ describe('useAccount', () => {
       phone: '600000000',
       secondaryPhone: '',
       nationalId: '12345678Z',
-      promotionalConsent: false,
+      newsConsent: false,
       gender: 'Female',
       statusName: 'Activo',
       isAdmin: false,
@@ -101,7 +101,7 @@ describe('useAccount', () => {
       phone: '611111111',
       secondaryPhone: '622222222',
       nationalId: 'X1234567L',
-      promotionalConsent: true,
+      newsConsent: true,
       gender: 'Female' as const,
       currentPassword: 'Str0ngPass!23',
     }
@@ -183,7 +183,7 @@ describe('useAccount', () => {
       {
         method: 'PUT',
         path: '/api/users/child-1',
-        body: { ...minor, promotionalConsent: false, parentId: 'user-1' },
+        body: { ...minor, newsConsent: false, parentId: 'user-1' },
       },
       { method: 'DELETE', path: '/api/users/child-1', body: null },
     ])

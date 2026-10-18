@@ -74,9 +74,9 @@ public sealed class UserListQuery : PageQuery
     public bool? IsAdmin { get; set; }
 
     /// <summary>
-    /// Gets or sets whether users must have given, or withheld, promotional consent.
+    /// Gets or sets whether users must have given, or withheld, news consent.
     /// </summary>
-    public bool? PromotionalConsent { get; set; }
+    public bool? NewsConsent { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier of the associated parent.

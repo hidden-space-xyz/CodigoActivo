@@ -9,8 +9,8 @@ import { getErrorMessage } from '@/shared/lib/feedback'
 export type UnsubscribeState = 'unsubscribing' | 'success' | 'error'
 
 /**
- * Unsubscribe page flow: `unsubscribe` sends the token of the link a promotional email carries,
- * which withdraws the promotional consent without a session. A link without token fails without
+ * Unsubscribe page flow: `unsubscribe` sends the token of the link a news email carries,
+ * which withdraws the news consent without a session. A link without token fails without
  * calling the API; following the link again succeeds again.
  */
 export function useUnsubscribe() {

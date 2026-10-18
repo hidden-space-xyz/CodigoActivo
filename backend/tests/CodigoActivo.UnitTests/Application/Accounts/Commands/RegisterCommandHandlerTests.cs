@@ -91,7 +91,7 @@ public sealed class RegisterCommandHandlerTests
         string password = "password123",
         string nationalId = "12345678Z",
         Gender gender = Gender.Female,
-        bool promotionalConsent = false,
+        bool newsConsent = false,
         IReadOnlyList<RegisterMinorRequest>? minors = null,
         string? secondaryPhone = null
     )
@@ -104,7 +104,7 @@ public sealed class RegisterCommandHandlerTests
             password,
             nationalId,
             gender,
-            promotionalConsent,
+            newsConsent,
             minors,
             secondaryPhone
         );
@@ -161,19 +161,19 @@ public sealed class RegisterCommandHandlerTests
         var added = await CaptureAddedUsersAsync();
 
         var result = await HandleAsync(
-            NewRegister(nationalId: " x-1234567-l ", promotionalConsent: true, minors: [NewMinor()])
+            NewRegister(nationalId: " x-1234567-l ", newsConsent: true, minors: [NewMinor()])
         );
 
         result.IsSuccess.Should().BeTrue();
         added.Should().HaveCount(2);
         var adult = added[0];
         adult.NationalId!.Value.Should().Be("X1234567L");
-        adult.PromotionalConsent.Should().BeTrue();
+        adult.NewsConsent.Should().BeTrue();
         adult.BirthDate.Should().BeNull();
         auditSubject.Entity.Should().Be(new AuditEntity(AuditEntityType.User, adult.Id.Value));
         var minor = added[1];
         minor.NationalId.Should().BeNull();
-        minor.PromotionalConsent.Should().BeFalse();
+        minor.NewsConsent.Should().BeFalse();
         minor.BirthDate.Should().Be(MinorBirthDate);
     }
 

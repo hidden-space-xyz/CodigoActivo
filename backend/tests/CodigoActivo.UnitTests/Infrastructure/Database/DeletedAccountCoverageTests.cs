@@ -30,7 +30,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     [
         "Assignment.UserId",
         "EventTermsAcceptance.UserId",
-        "PromotionalConsentChange.UserId",
+        "NewsConsentChange.UserId",
         "User.ParentId",
     ];
 
@@ -198,17 +198,17 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     }
 
     [Fact]
-    public void EveryPromotionalConsentChangePropertyIsCopied()
+    public void EveryNewsConsentChangePropertyIsCopied()
     {
-        PropertiesOf<PromotionalConsentChange>()
+        PropertiesOf<NewsConsentChange>()
             .Should()
             .BeEquivalentTo(
                 [
                     .. typeof(LegalCopyConsentChange)
                         .GetProperties(BindingFlags.Instance | BindingFlags.Public)
                         .Select(property => property.Name),
-                    nameof(PromotionalConsentChange.UserId),
-                    PromotionalConsentChangeConfiguration.Sequence,
+                    nameof(NewsConsentChange.UserId),
+                    NewsConsentChangeConfiguration.Sequence,
                 ],
                 Decide
             );

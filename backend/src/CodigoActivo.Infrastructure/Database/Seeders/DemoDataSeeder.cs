@@ -231,7 +231,7 @@ public sealed class DemoDataSeeder(
                 BuildEmail(seed),
                 BuildPhone(index),
                 NationalId: BuildNationalId(index),
-                PromotionalConsent: index % 3 is not 0
+                NewsConsent: index % 3 is not 0
             ),
             createdAt,
             DemoUser(index)

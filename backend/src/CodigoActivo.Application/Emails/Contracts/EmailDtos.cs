@@ -13,6 +13,6 @@ public record SendEmailResultResponse(int Queued, int Skipped);
 /// </summary>
 /// <param name="Recipients">Distinct email addresses the message would be sent to.</param>
 /// <param name="WithoutConsent">
-/// How many of those recipients have not agreed to receive promotional content.
+/// How many of those recipients have not agreed to receive news by email.
 /// </param>
 public record EmailAudienceResponse(int Recipients, int WithoutConsent);

@@ -68,7 +68,7 @@ export async function sendEmailToEventAttendeesRequest(
 
 /**
  * Counts who an email to the users matching the admin user filters would reach, and how many of
- * them a promotional email leaves out for lack of consent (`GET /api/emails/users/audience`).
+ * them a news email leaves out for lack of consent (`GET /api/emails/users/audience`).
  * `{ id }` targets one user.
  */
 export async function getUsersEmailAudienceRequest(
@@ -80,7 +80,7 @@ export async function getUsersEmailAudienceRequest(
 
 /**
  * Counts who an email to the event attendees matching the attendee report filters would reach, and
- * how many of them a promotional email leaves out for lack of consent
+ * how many of them a news email leaves out for lack of consent
  * (`GET /api/emails/events/{eventId}/attendees/audience`).
  */
 export async function getEventAttendeesEmailAudienceRequest(

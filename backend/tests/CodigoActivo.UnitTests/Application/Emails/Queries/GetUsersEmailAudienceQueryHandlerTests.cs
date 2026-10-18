@@ -31,11 +31,11 @@ public sealed class GetUsersEmailAudienceQueryHandlerTests
     [Fact]
     public async Task HandleAsyncMixedConsentCountsDistinctAddressesAndThoseWithoutConsent()
     {
-        var parent = NewUserRow("Ana", "ana@test.local", promotionalConsent: true);
+        var parent = NewUserRow("Ana", "ana@test.local", newsConsent: true);
         store.Users.AddRange([
             parent,
             NewUserRow("Berto", "berto@test.local"),
-            NewUserRow("Carla", "carla@test.local", promotionalConsent: true),
+            NewUserRow("Carla", "carla@test.local", newsConsent: true),
             NewUserRow("Duplicado", "BERTO@test.local"),
             NewUserRow("Hijo", null, parent),
             NewUserRow("Blanco", "   "),
@@ -50,8 +50,8 @@ public sealed class GetUsersEmailAudienceQueryHandlerTests
     public async Task HandleAsyncEveryoneConsentingReportsNoRecipientWithoutConsent()
     {
         store.Users.AddRange([
-            NewUserRow("Ana", "ana@test.local", promotionalConsent: true),
-            NewUserRow("Berto", "berto@test.local", promotionalConsent: true),
+            NewUserRow("Ana", "ana@test.local", newsConsent: true),
+            NewUserRow("Berto", "berto@test.local", newsConsent: true),
         ]);
 
         var audience = await AudienceAsync(new UserListQuery());
@@ -66,7 +66,7 @@ public sealed class GetUsersEmailAudienceQueryHandlerTests
         store.Users.AddRange([target, NewUserRow("Berto", "berto@test.local")]);
 
         var byId = await AudienceAsync(new UserListQuery { Id = target.Id });
-        var byConsent = await AudienceAsync(new UserListQuery { PromotionalConsent = true });
+        var byConsent = await AudienceAsync(new UserListQuery { NewsConsent = true });
 
         byId.Should().Be(new EmailAudienceResponse(1, 1));
         byConsent.Should().Be(new EmailAudienceResponse(0, 0));

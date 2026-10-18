@@ -7,13 +7,13 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
 /// Renders an administrator's email into the site layout and addresses the batch. Each recipient
-/// of a promotional email gets an unsubscribe link of their own, to the page of the web
-/// application that withdraws the promotional consent without a session, and the address their
+/// of a news email gets an unsubscribe link of their own, to the page of the web
+/// application that withdraws the news consent without a session, and the address their
 /// mail client posts to when they press its unsubscribe button (RFC 8058). Both carry the same
 /// token.
 /// </summary>
 /// <param name="application">Options that carry the public base URL of the site.</param>
-/// <param name="legalEntity">Options that carry the contact address of promotional email.</param>
+/// <param name="legalEntity">Options that carry the contact address of news email.</param>
 /// <param name="tokens">Issues the token that names the recipient in the unsubscribe link.</param>
 public sealed class ManualEmailComposer(
     ApplicationOptions application,
@@ -36,18 +36,13 @@ public sealed class ManualEmailComposer(
     {
         ArgumentNullException.ThrowIfNull(recipients);
         var siteUrl = application.BaseUrl.TrimEnd('/');
-        var promotional = purpose is ManualEmailPurpose.Promotional;
-        var content = ManualEmail.Render(
-            subject,
-            body,
-            siteUrl,
-            promotional ? legalEntity.Email : null
-        );
+        var news = purpose is ManualEmailPurpose.News;
+        var content = ManualEmail.Render(subject, body, siteUrl, news ? legalEntity.Email : null);
         return ManualEmail.Create(
             content,
             [
                 .. recipients.Select(recipient =>
-                    promotional
+                    news
                         ? Unsubscribable(siteUrl, recipient)
                         : new EmailRecipient(recipient.Address, recipient.Name)
                 ),

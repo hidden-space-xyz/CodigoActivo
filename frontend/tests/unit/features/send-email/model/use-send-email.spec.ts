@@ -34,7 +34,7 @@ async function capture(request: Request): Promise<CapturedEmail> {
 const payload: SendEmailPayload = {
   subject: '  Hello ',
   body: ' Body text  ',
-  purpose: 'Informational',
+  purpose: 'Notice',
   attachments: [],
 }
 
@@ -56,7 +56,7 @@ describe('useSendEmail', () => {
       url: 'http://localhost:3000/api/emails/users/user-7',
       subject: 'Hello',
       body: 'Body text',
-      purpose: 'Informational',
+      purpose: 'Notice',
       attachments: [],
     })
   })
@@ -75,13 +75,13 @@ describe('useSendEmail', () => {
       params: { name: 'ada', isAdmin: false },
       payload: {
         ...payload,
-        purpose: 'Promotional',
+        purpose: 'News',
         attachments: [new File(['a'], 'a.txt'), new File(['b'], 'b.pdf')],
       },
     })
 
     expect(queryOf(received?.url ?? '')).toEqual({ name: 'ada', isAdmin: 'false' })
-    expect(received?.purpose).toBe('Promotional')
+    expect(received?.purpose).toBe('News')
     expect(received?.attachments).toEqual(['a.txt', 'b.pdf'])
   })
 
@@ -118,7 +118,7 @@ describe('useSendEmail', () => {
     )
     const { result } = await mountComposable(() => useSendEmail())
 
-    await expect(result.usersAudience({ promotionalConsent: false })).resolves.toEqual({
+    await expect(result.usersAudience({ newsConsent: false })).resolves.toEqual({
       recipients: 5,
       withoutConsent: 2,
     })
@@ -127,7 +127,7 @@ describe('useSendEmail', () => {
       recipients: 0,
       withoutConsent: 0,
     })
-    expect(urls.map(queryOf)).toEqual([{ promotionalConsent: 'false' }, { id: 'user-7' }])
+    expect(urls.map(queryOf)).toEqual([{ newsConsent: 'false' }, { id: 'user-7' }])
   })
 
   it('loads the audience of the filtered event attendees', async () => {

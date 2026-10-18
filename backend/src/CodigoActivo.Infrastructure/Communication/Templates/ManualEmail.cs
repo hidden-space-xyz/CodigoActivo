@@ -33,16 +33,16 @@ public static class ManualEmail
     /// <param name="subject">The subject value.</param>
     /// <param name="body">The body value.</param>
     /// <param name="siteUrl">The site url value.</param>
-    /// <param name="promotionalContact">
-    /// Contact address of a promotional email, which carries the promotional footer;
-    /// <see langword="null"/> for an informational email.
+    /// <param name="newsContact">
+    /// Contact address of a news email, which carries the news footer;
+    /// <see langword="null"/> for a notice.
     /// </param>
     /// <returns>The resulting manual email content value.</returns>
     public static ManualEmailContent Render(
         string subject,
         string body,
         string siteUrl,
-        string? promotionalContact = null
+        string? newsContact = null
     )
     {
         var paragraphs = Paragraphs(body);
@@ -54,7 +54,7 @@ public static class ManualEmail
                 null,
                 siteUrl,
                 EmailBranding.Brand,
-                promotionalContact
+                newsContact
             ),
             [.. paragraphs.Select(paragraph => EmailBlocks.Prose(ToHtml(paragraph), paragraph))]
         );

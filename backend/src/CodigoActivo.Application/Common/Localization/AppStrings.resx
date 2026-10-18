@@ -34,8 +34,8 @@ Equipo de Código Activo</value>
   <data name="emails.footer.websiteLabel" xml:space="preserve">
     <value>Visitar nuestra web</value>
   </data>
-  <data name="emails.footer.promotionalNotice" xml:space="preserve">
-    <value>Recibes este correo porque aceptaste recibir comunicaciones promocionales de Código Activo.</value>
+  <data name="emails.footer.newsNotice" xml:space="preserve">
+    <value>Recibes este correo porque aceptaste recibir novedades de Código Activo.</value>
   </data>
   <data name="emails.footer.unsubscribeLabel" xml:space="preserve">
     <value>Darme de baja</value>

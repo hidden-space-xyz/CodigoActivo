@@ -6,15 +6,15 @@ namespace CodigoActivo.Application.Emails;
 public enum ManualEmailPurpose
 {
     /// <summary>
-    /// Information the recipients need about their account, their signups or the activities they
-    /// take part in. It reaches everyone selected.
+    /// Something that concerns the recipients: their account, their signups or an activity they
+    /// already take part in. It reaches everyone selected.
     /// </summary>
-    Informational,
+    Notice,
 
     /// <summary>
-    /// News and promotion of the association, sent on the consent of each recipient (article 6.1.a
-    /// GDPR). It reaches only those who gave their promotional consent and carries the contact
-    /// address and an unsubscribe link.
+    /// Upcoming events, activities and news of the association, sent on the consent of each
+    /// recipient (article 6.1.a GDPR). It reaches only those who gave their news consent and
+    /// carries the contact address and an unsubscribe link.
     /// </summary>
-    Promotional,
+    News,
 }

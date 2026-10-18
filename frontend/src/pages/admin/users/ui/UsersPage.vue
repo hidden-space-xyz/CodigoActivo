@@ -212,10 +212,10 @@ function userActions(user: User): RowAction[] {
           @apply="table.onFilter"
         />
         <ColumnFilterSelect
-          v-if="showsField('promotionalConsent')"
-          v-model="table.columnFilter('promotionalConsent').value"
+          v-if="showsField('newsConsent')"
+          v-model="table.columnFilter('newsConsent').value"
           variant="toolbar"
-          :label="$t('pages.admin.users.columns.promotionalConsent')"
+          :label="$t('pages.admin.users.columns.newsConsent')"
           :options="yesNoOptions"
           @apply="table.onFilter"
         />

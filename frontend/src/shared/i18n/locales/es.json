@@ -24,8 +24,8 @@
     "confirmPassword": "Repite la contraseña",
     "birthDate": "Fecha de nacimiento",
     "nationalId": "DNI/NIE",
-    "promotionalConsent": "Consentimiento promocional",
-    "promotionalConsentOption": "Opcional. Quiero recibir por email novedades sobre las actividades de Código Activo. Esta preferencia puede modificarse en cualquier momento desde «Mi cuenta» o con el enlace para darse de baja que incluye cada novedad.",
+    "newsConsent": "Acepta novedades",
+    "newsConsentOption": "Opcional. Quiero recibir por email novedades sobre las actividades de Código Activo. Esta preferencia puede modificarse en cualquier momento desde «Mi cuenta» o con el enlace para darse de baja que incluye cada novedad.",
     "gender": "Género",
     "image": "Imagen",
     "imageRequired": "La imagen es obligatoria.",
@@ -304,7 +304,7 @@
     "AuthenticatorAlreadyEnabled": "Ya usas una aplicación de autenticación. Para cambiarla, vuelve primero a la verificación por correo.",
     "EmailNoRecipients": "Ningún destinatario con correo coincide con los filtros actuales.",
     "EmailRecipientWithoutAddress": "Esta persona no tiene correo electrónico, así que no se le puede escribir.",
-    "EmailRecipientWithoutConsent": "Esta persona no ha aceptado recibir comunicaciones promocionales, así que solo puedes enviarle un correo informativo.",
+    "EmailRecipientWithoutConsent": "Esta persona no ha aceptado recibir novedades, así que solo puedes enviarle un aviso.",
     "EmailUnsubscribeLinkInvalid": "El enlace para darte de baja no es válido. Comprueba que lo has abierto entero desde el correo.",
     "EmailTooManyRecipients": "Hay demasiados destinatarios para un solo envío. Afina los filtros e inténtalo de nuevo.",
     "EmailTooManyAttachments": "Has adjuntado demasiados archivos.",
@@ -933,7 +933,7 @@
         "columns": {
           "birth": "Nacimiento",
           "nationalId": "DNI/NIE",
-          "promotionalConsent": "Promociones",
+          "newsConsent": "Novedades",
           "type": "Tipo",
           "admin": "Admin",
           "user": "Usuario"
@@ -1951,14 +1951,14 @@
       "header": "Enviar correo",
       "target": "Destinatarios: {target}",
       "recipients": "Nadie de esta selección tiene correo electrónico, así que no se puede enviar el mensaje. | El mensaje llegará a 1 dirección de correo. | El mensaje llegará a {count} direcciones de correo: quien no tiene correo electrónico, como los menores, no lo recibe.",
-      "promotionalRecipients": "Nadie de esta selección ha aceptado recibir comunicaciones promocionales, así que no se puede enviar este correo. | El correo promocional llegará a 1 dirección de correo. | El correo promocional llegará a {count} direcciones de correo.",
-      "withoutConsent": "1 destinatario no ha aceptado recibir comunicaciones promocionales y no recibirá este correo. | {count} destinatarios no han aceptado recibir comunicaciones promocionales y no recibirán este correo.",
+      "newsRecipients": "Nadie de esta selección ha aceptado recibir novedades, así que no se puede enviar este correo. | El correo de novedades llegará a 1 dirección de correo. | El correo de novedades llegará a {count} direcciones de correo.",
+      "withoutConsent": "1 destinatario no ha aceptado recibir novedades y no recibirá este correo. | {count} destinatarios no han aceptado recibir novedades y no recibirán este correo.",
       "purpose": {
         "label": "Tipo de correo",
-        "informational": "Informativo",
-        "informationalHint": "Información necesaria sobre la cuenta, las inscripciones o las actividades en las que se participa. Llega a todos los destinatarios y no puede incluir publicidad.",
-        "promotional": "Promocional",
-        "promotionalHint": "Novedades, eventos o campañas de la asociación. Solo llega a quien aceptó recibir comunicaciones promocionales e incluye nuestro correo de contacto y un enlace para darse de baja."
+        "notice": "Aviso",
+        "noticeHint": "Algo que afecta a quien lo recibe: su cuenta, sus inscripciones o una actividad en la que ya participa. Llega a todos los destinatarios. No lo uses para anunciar eventos o actividades nuevos.",
+        "news": "Novedades",
+        "newsHint": "Próximos eventos, actividades y noticias de la asociación. Solo llega a quien aceptó recibir novedades e incluye nuestro correo de contacto y un enlace para darse de baja."
       },
       "subject": "Asunto",
       "subjectPlaceholder": "Asunto del correo",
@@ -1989,7 +1989,7 @@
           "subjectRequired": "Escribe un asunto.",
           "subjectSingleLine": "El asunto no puede contener tabuladores ni saltos de línea.",
           "bodyRequired": "Escribe un mensaje.",
-          "purposeRequired": "Elige si el correo es informativo o promocional."
+          "purposeRequired": "Elige si el correo es un aviso o novedades."
         }
       }
     }

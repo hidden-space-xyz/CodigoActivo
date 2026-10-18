@@ -177,7 +177,7 @@ describe('account requests', () => {
       phone: '600000000',
       secondaryPhone: null,
       nationalId: '12345678Z',
-      promotionalConsent: true,
+      newsConsent: true,
       gender: 'Female',
       currentPassword: null,
     })
@@ -191,7 +191,7 @@ describe('account requests', () => {
       secondaryPhone: null,
       birthDate: null,
       nationalId: '12345678Z',
-      promotionalConsent: true,
+      newsConsent: true,
       gender: 'Female',
       parentId: null,
       currentPassword: null,
@@ -415,7 +415,7 @@ describe('account requests', () => {
       phone: '600000000',
       secondaryPhone: null,
       nationalId: '12345678Z',
-      promotionalConsent: true,
+      newsConsent: true,
     } as const
     const minor = {
       firstName: 'Byron',

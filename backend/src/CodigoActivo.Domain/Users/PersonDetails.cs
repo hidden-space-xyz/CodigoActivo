@@ -3,7 +3,7 @@ namespace CodigoActivo.Domain.Users;
 /// <summary>
 /// Details of a person exactly as a caller supplied them, before normalization. The kind of
 /// account decides which of them apply: an independent account uses the contact details, the DNI
-/// or NIE and the promotional consent and has no birth date, while a dependent uses only the birth
+/// or NIE and the news consent and has no birth date, while a dependent uses only the birth
 /// date and ignores the rest.
 /// </summary>
 /// <param name="FirstName">Given name; stored trimmed.</param>
@@ -16,8 +16,8 @@ namespace CodigoActivo.Domain.Users;
 /// <paramref name="Phone"/>.
 /// </param>
 /// <param name="NationalId">DNI or NIE of an independent account, in any spacing or casing.</param>
-/// <param name="PromotionalConsent">
-/// Whether an independent account agrees to receive promotional content.
+/// <param name="NewsConsent">
+/// Whether an independent account agrees to receive news by email.
 /// </param>
 /// <param name="BirthDate">Birth date of a dependent; an independent account has none.</param>
 public sealed record PersonDetails(
@@ -28,6 +28,6 @@ public sealed record PersonDetails(
     string? Phone = null,
     string? SecondaryPhone = null,
     string? NationalId = null,
-    bool PromotionalConsent = false,
+    bool NewsConsent = false,
     DateOnly? BirthDate = null
 );

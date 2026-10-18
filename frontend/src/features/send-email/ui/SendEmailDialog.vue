@@ -29,13 +29,13 @@ const props = defineProps<{
   /** Disables sending and closing while an email is in flight. */
   sending: boolean
   /**
-   * Addresses an informational email reaches; the dialog shows and confirms what the chosen purpose
+   * Addresses a notice reaches; the dialog shows and confirms what the chosen purpose
    * reaches instead of the selection size, and nobody reached blocks sending. `null` while the
    * audience is loading or when it could not be loaded.
    */
   recipients?: number | null
   /**
-   * Recipients without promotional consent, whom a promotional email leaves out; the dialog says
+   * Recipients without news consent, whom a news email leaves out; the dialog says
    * how many. `null` while the audience is loading or when it could not be loaded.
    */
   withoutConsent?: number | null
@@ -65,7 +65,7 @@ watch(
   },
 )
 
-const promotional = computed(() => draft.purpose === 'Promotional')
+const news = computed(() => draft.purpose === 'News')
 const reach = computed(() =>
   props.recipients == null
     ? null
@@ -74,7 +74,7 @@ const reach = computed(() =>
         draft.purpose,
       ),
 )
-const leftOut = computed(() => (promotional.value ? (props.withoutConsent ?? 0) : 0))
+const leftOut = computed(() => (news.value ? (props.withoutConsent ?? 0) : 0))
 const nobodyReachable = computed(() => reach.value === 0)
 
 const totalBytes = computed(() => draft.attachments.reduce((sum, file) => sum + file.size, 0))
@@ -147,8 +147,8 @@ function send(): void {
     <p class="target">{{ $t('features.sendEmail.target', { target }) }}</p>
     <p v-if="reach !== null" class="target">
       {{
-        promotional
-          ? $t('features.sendEmail.promotionalRecipients', { count: reach }, reach)
+        news
+          ? $t('features.sendEmail.newsRecipients', { count: reach }, reach)
           : $t('features.sendEmail.recipients', { count: reach }, reach)
       }}
     </p>
@@ -171,19 +171,19 @@ function send(): void {
           :class="{ 'ca-invalid': invalid('purpose') }"
           aria-labelledby="send-email-purpose-label"
         >
-          <el-radio value="Informational">
-            {{ $t('features.sendEmail.purpose.informational') }}
+          <el-radio value="Notice">
+            {{ $t('features.sendEmail.purpose.notice') }}
           </el-radio>
-          <el-radio value="Promotional">
-            {{ $t('features.sendEmail.purpose.promotional') }}
+          <el-radio value="News">
+            {{ $t('features.sendEmail.purpose.news') }}
           </el-radio>
         </el-radio-group>
         <small v-if="errors.purpose" class="form__error">{{ errors.purpose }}</small>
         <small v-else-if="draft.purpose" class="form__hint">
           {{
-            promotional
-              ? $t('features.sendEmail.purpose.promotionalHint')
-              : $t('features.sendEmail.purpose.informationalHint')
+            news
+              ? $t('features.sendEmail.purpose.newsHint')
+              : $t('features.sendEmail.purpose.noticeHint')
           }}
         </small>
       </div>

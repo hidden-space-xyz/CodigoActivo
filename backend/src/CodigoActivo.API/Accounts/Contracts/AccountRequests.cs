@@ -102,7 +102,7 @@ public record DisableAuthenticatorRequest(
 /// account already uses it.
 /// </param>
 /// <param name="Gender">The gender value.</param>
-/// <param name="PromotionalConsent">Whether the adult agrees to receive promotional content.</param>
+/// <param name="NewsConsent">Whether the adult agrees to receive news by email.</param>
 /// <param name="Minors">The minors value.</param>
 /// <param name="SecondaryPhone">
 /// Optional second contact phone of the adult; blank means none and it must differ from
@@ -116,7 +116,7 @@ public record RegisterRequest(
     [Required] [MinLength(12)] [MaxLength(128)] string Password,
     [Required] [MaxLength(12)] string NationalId,
     [EnumDataType(typeof(Gender))] Gender Gender,
-    bool PromotionalConsent,
+    bool NewsConsent,
     [MaxLength(Household.MaxDependents)] IReadOnlyList<RegisterMinorRequest>? Minors,
     [MaxLength(40)] string? SecondaryPhone = null
 )
@@ -135,7 +135,7 @@ public record RegisterRequest(
             Password,
             NationalId,
             Gender.ToDomain(),
-            PromotionalConsent,
+            NewsConsent,
             [.. (Minors ?? []).OfType<RegisterMinorRequest>().Select(minor => minor.ToDraft())],
             SecondaryPhone
         );

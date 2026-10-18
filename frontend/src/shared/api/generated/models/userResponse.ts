@@ -23,7 +23,7 @@ export interface UserResponse {
   birthDate?: string | null;
   /** @nullable */
   nationalId?: string | null;
-  promotionalConsent: boolean;
+  newsConsent: boolean;
   gender: Gender;
   /** @nullable */
   lastLoginAt?: string | null;

@@ -278,12 +278,12 @@ public enum ApplicationErrorCode
     EmailRecipientWithoutAddress,
 
     /// <summary>
-    /// A promotional email was written to someone without promotional consent.
+    /// A news email was written to someone without news consent.
     /// </summary>
     EmailRecipientWithoutConsent,
 
     /// <summary>
-    /// The unsubscribe link of a promotional email was altered or not issued here.
+    /// The unsubscribe link of a news email was altered or not issued here.
     /// </summary>
     EmailUnsubscribeLinkInvalid,
 

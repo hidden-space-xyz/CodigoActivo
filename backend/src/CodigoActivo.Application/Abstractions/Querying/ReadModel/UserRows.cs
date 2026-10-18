@@ -32,8 +32,8 @@ public sealed class UserRow
     /// <summary>Gets the DNI or NIE of an independent account.</summary>
     public string? NationalId { get; init; }
 
-    /// <summary>Gets a value indicating whether promotional email is accepted.</summary>
-    public bool PromotionalConsent { get; init; }
+    /// <summary>Gets a value indicating whether news email is accepted.</summary>
+    public bool NewsConsent { get; init; }
 
     /// <summary>Gets the gender.</summary>
     public Gender Gender { get; init; }

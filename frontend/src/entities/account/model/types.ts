@@ -11,8 +11,8 @@ export interface AccountProfile {
   readonly secondaryPhone: string
   /** Normalized DNI or NIE identifying the adult. */
   readonly nationalId: string
-  /** Whether the user agreed to receive promotional content. */
-  readonly promotionalConsent: boolean
+  /** Whether the user agreed to receive news by email. */
+  readonly newsConsent: boolean
   readonly gender: Gender
   readonly statusName: string
   readonly isAdmin: boolean

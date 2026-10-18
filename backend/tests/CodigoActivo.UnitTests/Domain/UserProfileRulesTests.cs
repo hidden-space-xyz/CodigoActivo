@@ -21,7 +21,7 @@ public sealed class UserProfileRulesTests
         string? phone = "600111222",
         string? secondaryPhone = "700111222",
         string? nationalId = "12345678Z",
-        bool promotionalConsent = false,
+        bool newsConsent = false,
         DateOnly? birthDate = null
     )
     {
@@ -33,7 +33,7 @@ public sealed class UserProfileRulesTests
             phone,
             secondaryPhone,
             nationalId,
-            promotionalConsent,
+            newsConsent,
             birthDate
         );
     }
@@ -93,7 +93,7 @@ public sealed class UserProfileRulesTests
         account.Phone!.Value.Should().Be("600111222");
         account.SecondaryPhone.Should().BeNull();
         account.NationalId!.Value.Should().Be("X1234567L");
-        account.PromotionalConsent.Should().BeTrue();
+        account.NewsConsent.Should().BeTrue();
         account.BirthDate.Should().BeNull();
         account.ParentId.Should().BeNull();
         account.PasswordHash.Should().BeNull();
@@ -178,7 +178,7 @@ public sealed class UserProfileRulesTests
         child.Phone.Should().BeNull();
         child.SecondaryPhone.Should().BeNull();
         child.NationalId.Should().BeNull();
-        child.PromotionalConsent.Should().BeFalse();
+        child.NewsConsent.Should().BeFalse();
         child.PasswordHash.Should().BeNull();
         child.Status.Should().Be(UserStatus.Dependent);
         child.UserType.Should().Be(UserType.Participant);
@@ -262,7 +262,7 @@ public sealed class UserProfileRulesTests
         account.Phone!.Value.Should().Be("600000000");
         account.SecondaryPhone.Should().BeNull();
         account.NationalId!.Value.Should().Be("Y1234567X");
-        account.PromotionalConsent.Should().BeTrue();
+        account.NewsConsent.Should().BeTrue();
         account.BirthDate.Should().BeNull();
         account.UpdatedAt.Should().Be(Now);
     }
@@ -356,7 +356,7 @@ public sealed class UserProfileRulesTests
         child.Phone.Should().BeNull();
         child.SecondaryPhone.Should().BeNull();
         child.NationalId.Should().BeNull();
-        child.PromotionalConsent.Should().BeFalse();
+        child.NewsConsent.Should().BeFalse();
         child.UpdatedAt.Should().Be(Now);
     }
 
