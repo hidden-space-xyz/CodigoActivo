@@ -209,10 +209,10 @@ port `IDashboardCountsReader` (`Application/Reports`, plain SQL in `Infrastructu
 whole tables in one round trip and creation times per chart bucket with `width_bucket`, and the log port
 `ILogEntryReader` (`Application/Logs`, `Infrastructure/Logs/LogEntryReader`), which reads the partitioned log
 tables through read rows of its own in the read context, filters them on their trigram, containment and B-tree
-indexes and joins the names of the users an audit entry mentions. A query that may be
-cached implements `ICachedQuery` (duration, tags and key) and `CachingQueryDecorator` keeps its result in
-`HybridCache`; only immutable catalogs and expensive non-personal aggregates do. Queries never mutate, commit or
-invalidate caches.
+indexes and looks up the names of the accounts and things an audit page mentions, one query per kind. A
+query that may be cached implements `ICachedQuery` (duration, tags and key) and `CachingQueryDecorator`
+keeps its result in `HybridCache`; only immutable catalogs and expensive non-personal aggregates do. Queries
+never mutate, commit or invalidate caches.
 
 Commands load aggregates through repositories, call the domain and stage the changes; the decorator commits them
 and the committed domain events evict caches and run the effects. A handler saves on its own only when it must

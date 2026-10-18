@@ -77,14 +77,13 @@ export type AuditEntityType =
 /** How an audited command ended. */
 export type AuditOutcome = 'Succeeded' | 'Rejected' | 'Failed'
 
-/** One thing an audited command named. */
+/**
+ * One thing an audited command named: a person's full name or a title, empty when it no longer
+ * exists.
+ */
 export interface AuditEntityRef {
   readonly type: AuditEntityType
   readonly id: string
-}
-
-/** The main thing of an entry; `name` is the full name of a user that still exists, else empty. */
-export interface AuditMainEntity extends AuditEntityRef {
   readonly name: string
 }
 
@@ -101,7 +100,7 @@ export interface AuditEntry {
   readonly actorEmail: string
   readonly clientIp: string
   readonly action: AuditAction
-  readonly entity: AuditMainEntity | null
+  readonly entity: AuditEntityRef | null
   readonly related: readonly AuditEntityRef[]
   readonly outcome: AuditOutcome
   readonly errorCode: string

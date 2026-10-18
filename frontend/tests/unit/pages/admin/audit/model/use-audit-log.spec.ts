@@ -60,7 +60,7 @@ describe('useAuditLog', () => {
 
     result.filterByEntity(entry.related[0]!)
     expect(result.extraFilters.value[1]?.label).toBe(
-      t('pages.admin.audit.filters.entity', { entity: 'Actividad aaaaaaaa' }),
+      t('pages.admin.audit.filters.entity', { entity: 'Taller de robótica' }),
     )
 
     for (const chip of result.extraFilters.value) chip.remove()

@@ -74,7 +74,10 @@ describe('AuditPage', () => {
     expect(setAdmin?.text()).toContain('203.0.113.9')
     expect(setAdmin?.text()).toContain(t('pages.admin.audit.actions.SetAdmin'))
     expect(setAdmin?.text()).toContain('Marta Miembro')
-    expect(setAdmin?.text()).toContain(`${t('pages.admin.audit.entityTypes.Activity')} aaaaaaaa`)
+    expect(setAdmin?.text()).toContain(
+      `${t('pages.admin.audit.entityTypes.Activity')}: Taller de robótica`,
+    )
+    expect(setAdmin?.text()).not.toContain('aaaaaaaa')
     expect(setAdmin?.text()).toContain(t('pages.admin.audit.outcomes.Succeeded'))
     expect(setAdmin?.find('.trace').text()).toBe(TRACE_ID.slice(0, 8))
     expect(setAdmin?.find('.trace').attributes('title')).toBe(TRACE_ID)
@@ -83,13 +86,16 @@ describe('AuditPage', () => {
     expect(login?.text()).toContain(t('pages.admin.audit.actorTypes.Anonymous'))
     expect(login?.text()).toContain(t('pages.admin.audit.outcomes.Rejected'))
     expect(login?.text()).toContain(t('errors.InvalidCredentials'))
-    expect(login?.text()).toContain(`${t('pages.admin.audit.entityTypes.User')} user-2`)
+    expect(login?.text()).toContain(t('pages.admin.audit.deletedEntities.User'))
+    expect(login?.text()).not.toContain('user-2')
   })
 
   it('names an erased account and searches people from the toolbar', async () => {
     const urls: URL[] = []
     const { wrapper } = await renderPage([buildAuditEntry({ actorName: null })], urls)
-    await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.admin.audit.deletedAccount')))
+    await vi.waitFor(() =>
+      expect(wrapper.text()).toContain(t('pages.admin.audit.deletedEntities.User')),
+    )
     expect(urls[0]?.searchParams.get('sort')).toBe('-occurredAt')
 
     wrapper.findComponent(SearchInput).vm.$emit('update:modelValue', 'marta')
@@ -147,9 +153,7 @@ describe('AuditPage', () => {
       ),
     )
     expect(wrapper.text()).toContain(
-      t('pages.admin.audit.filters.entity', {
-        entity: `${t('pages.admin.audit.entityTypes.Activity')} aaaaaaaa`,
-      }),
+      t('pages.admin.audit.filters.entity', { entity: 'Taller de robótica' }),
     )
   })
 

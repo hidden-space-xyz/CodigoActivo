@@ -4,6 +4,7 @@ using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Logs.Contracts;
+using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Infrastructure.Logs;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,6 +52,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
         Guid? actor,
         Guid? entity,
         string outcome = "Succeeded",
+        string entityType = "User",
         string? related = null,
         string? clientIp = null,
         string? traceId = null
@@ -64,7 +66,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
             ActorId = actor,
             ClientIp = clientIp is null ? null : IPAddress.Parse(clientIp),
             Action = action.ToString(),
-            EntityType = entity is null ? null : "User",
+            EntityType = entity is null ? null : entityType,
             EntityId = entity,
             Related = related,
             Outcome = outcome,
@@ -266,7 +268,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
                     AuditEntityType.User,
                     TestSeedData.Users.MemberId,
                     "Marta Miembro",
-                    [new AuditRelatedEntityResponse(AuditEntityType.Activity, Activity)],
+                    [new AuditRelatedEntityResponse(AuditEntityType.Activity, Activity, null)],
                     AuditOutcome.Succeeded,
                     ErrorCode: null,
                     Trace
@@ -275,6 +277,49 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
         page.Items[1].ActorName.Should().BeNull();
         page.Items[1].ActorEmail.Should().BeNull();
         page.Items[1].EntityName.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ListAuditNamesEveryKindOfThingAndLeavesOutTheRemovedOnes()
+    {
+        var category = Guid.NewGuid();
+        var removedEvent = Guid.NewGuid();
+        var renamed = Audit(
+            Morning,
+            AuditAction.UpdateEventCategoryType,
+            TestSeedData.Users.AdminId,
+            category,
+            entityType: "EventCategoryType",
+            related: $$"""[{"type": "User", "id": "{{TestSeedData.Users.MemberId}}"}, {"type": "Event", "id": "{{removedEvent}}"}]"""
+        );
+        await SeedAsync(
+            Persisted.As<EventCategoryType>(
+                new
+                {
+                    Id = category,
+                    Name = "Robótica",
+                    Color = "#112233",
+                }
+            ),
+            renamed
+        );
+        var admin = await LoginAsAdminAsync();
+
+        var page = await GetPageAsync<AuditLogEntryResponse>(admin, "/api/logs/audit");
+
+        var entry = page.Items.Should().ContainSingle().Subject;
+        entry.EntityType.Should().Be(AuditEntityType.EventCategoryType);
+        entry.EntityName.Should().Be("Robótica");
+        entry
+            .Related.Should()
+            .Equal(
+                new AuditRelatedEntityResponse(
+                    AuditEntityType.User,
+                    TestSeedData.Users.MemberId,
+                    "Marta Miembro"
+                ),
+                new AuditRelatedEntityResponse(AuditEntityType.Event, removedEvent, null)
+            );
     }
 
     [Theory]

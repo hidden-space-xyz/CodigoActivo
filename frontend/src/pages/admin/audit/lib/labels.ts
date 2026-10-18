@@ -3,9 +3,9 @@ import type { TranslationKey, Translate } from '@/shared/i18n'
 import type {
   AuditAction,
   AuditActorType,
+  AuditEntityRef,
   AuditEntityType,
   AuditEntry,
-  AuditMainEntity,
   AuditOutcome,
 } from '../model/types'
 
@@ -119,6 +119,11 @@ export function entityTypeLabelKey(entityType: AuditEntityType): TranslationKey 
   return `pages.admin.audit.entityTypes.${entityType}`
 }
 
+/** Translation key of the label of a kind of entity that no longer exists. */
+function deletedEntityLabelKey(entityType: AuditEntityType): TranslationKey {
+  return `pages.admin.audit.deletedEntities.${entityType}`
+}
+
 /** Translation key of the name of an outcome. */
 export function outcomeLabelKey(outcome: AuditOutcome): TranslationKey {
   return `pages.admin.audit.outcomes.${outcome}`
@@ -140,12 +145,19 @@ export function shortId(id: string): string {
  */
 export function actorLabel(entry: AuditEntry, t: Translate): string {
   if (entry.actorType !== 'User') return t(actorTypeLabelKey(entry.actorType))
-  return entry.actorName || t('pages.admin.audit.deletedAccount')
+  return entry.actorName || t(deletedEntityLabelKey('User'))
 }
 
-/** An entity by the name of its user, or by its kind and short identifier. */
-export function entityLabel(entity: AuditMainEntity, t: Translate): string {
-  return entity.name || `${t(entityTypeLabelKey(entity.type))} ${shortId(entity.id)}`
+/** An entity by its name, or as removed, such as «Evento eliminado», once it no longer exists. */
+export function entityLabel(entity: AuditEntityRef, t: Translate): string {
+  return entity.name || t(deletedEntityLabelKey(entity.type))
+}
+
+/** A related entity by its kind and name, such as «Usuario: Marta Miembro», or as removed. */
+export function relatedLabel(entity: AuditEntityRef, t: Translate): string {
+  return entity.name
+    ? `${t(entityTypeLabelKey(entity.type))}: ${entity.name}`
+    : t(deletedEntityLabelKey(entity.type))
 }
 
 /**

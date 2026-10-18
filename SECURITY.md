@@ -434,8 +434,9 @@ such as the path of a file under `/app/files`; it is written as is.
   is appended to its old file instead, which then keeps entries from a week earlier. See
   [DEPLOYMENT.md](DEPLOYMENT.md#production-topology).
 - **What administrators see**: the diagnostic log shows them trace ids, route templates, the GUIDs exception
-  messages quote and, in the audit log, client IPs and account ids. Raising a framework category such as
-  `Microsoft.AspNetCore` to `Information` would store requested paths and query strings there too.
+  messages quote and, in the audit log, client IPs and the names of the accounts and things each command
+  named, or that they were removed since. Raising a framework category such as `Microsoft.AspNetCore` to
+  `Information` would store requested paths and query strings there too.
 
 ### Audit log
 

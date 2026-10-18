@@ -9,4 +9,6 @@ import type { AuditEntityType } from './auditEntityType';
 export interface AuditRelatedEntityResponse {
   type: AuditEntityType;
   id: string;
+  /** @nullable */
+  name?: string | null;
 }
