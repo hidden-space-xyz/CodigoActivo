@@ -98,6 +98,7 @@ public static class TestSeedData
                 Status = UserStatus.Dependent,
                 UserType = UserType.Participant,
                 CreatedAt = SeededAt,
+                GuardianshipDeclaredAt = SeededAt,
             }
         );
 

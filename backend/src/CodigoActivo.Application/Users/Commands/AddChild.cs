@@ -59,6 +59,7 @@ public sealed class AddChildCommandHandler(
         var child = User.CreateDependent(
             parent,
             command.Child.ToDetails(),
+            command.Child.DeclaresGuardianship,
             clock.Today,
             clock.UtcNow
         );

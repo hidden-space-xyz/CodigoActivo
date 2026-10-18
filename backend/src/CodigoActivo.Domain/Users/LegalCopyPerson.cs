@@ -24,6 +24,9 @@ namespace CodigoActivo.Domain.Users;
 /// <param name="ParentId">Identifier of the guardian, for dependents.</param>
 /// <param name="CreatedAt">When the account was created.</param>
 /// <param name="AdultDeclaredAt">When the holder declared being of age while registering.</param>
+/// <param name="GuardianshipDeclaredAt">
+/// When the guardian declared being the dependent's parent or legal guardian while adding it.
+/// </param>
 /// <param name="UpdatedAt">When the account was last updated.</param>
 /// <param name="LastLoginAt">When the user last logged in.</param>
 public sealed record LegalCopyPerson(
@@ -47,6 +50,7 @@ public sealed record LegalCopyPerson(
     Guid? ParentId,
     DateTimeOffset CreatedAt,
     DateTimeOffset? AdultDeclaredAt,
+    DateTimeOffset? GuardianshipDeclaredAt,
     DateTimeOffset? UpdatedAt,
     DateTimeOffset? LastLoginAt
 )

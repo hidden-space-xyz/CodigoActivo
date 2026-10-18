@@ -114,10 +114,17 @@ public sealed class RegisterCommandHandlerTests
 
     private static RegisterMinorRequest NewMinor(
         DateOnly? birthDate = null,
-        Gender gender = Gender.Other
+        Gender gender = Gender.Other,
+        bool declaresGuardianship = true
     )
     {
-        return new("  Leo  ", "  Ruiz  ", birthDate ?? MinorBirthDate, gender);
+        return new(
+            "  Leo  ",
+            "  Ruiz  ",
+            birthDate ?? MinorBirthDate,
+            gender,
+            declaresGuardianship
+        );
     }
 
     private Task<int> AssertNotSavedAsync()
@@ -178,6 +185,26 @@ public sealed class RegisterCommandHandlerTests
         minor.NationalId.Should().BeNull();
         minor.NewsConsent.Should().BeFalse();
         minor.BirthDate.Should().Be(MinorBirthDate);
+        minor.GuardianshipDeclaredAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsyncMinorWithoutTheGuardianshipDeclarationIsRefusedWithoutAddingAnyone()
+    {
+        var result = await HandleAsync(
+            NewRegister(minors: [NewMinor(), NewMinor(declaresGuardianship: false)])
+        );
+
+        result.ShouldFail(
+            ErrorKind.Validation,
+            DomainErrorCode.UserGuardianshipDeclarationRequired
+        );
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .GetByEmailAsync(default!, TestContext.Current.CancellationToken);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]

@@ -60,7 +60,13 @@ public sealed class UserProfileRulesTests
 
     private static User StoredChild(User guardian, DateOnly birthDate)
     {
-        return User.CreateDependent(guardian, ChildDetails(birthDate), birthDate, Created).Value;
+        return User.CreateDependent(
+            guardian,
+            ChildDetails(birthDate),
+            declaresGuardianship: true,
+            birthDate,
+            Created
+        ).Value;
     }
 
     private static DateOnly? DateOrNull(string? value)
@@ -102,6 +108,7 @@ public sealed class UserProfileRulesTests
         account.UserType.Should().Be(UserType.Participant);
         account.CreatedAt.Should().Be(Now);
         account.AdultDeclaredAt.Should().Be(Now);
+        account.GuardianshipDeclaredAt.Should().BeNull();
         account.UpdatedAt.Should().BeNull();
     }
 
@@ -178,7 +185,13 @@ public sealed class UserProfileRulesTests
     {
         var guardian = StoredAdult();
 
-        var result = User.CreateDependent(guardian, ChildDetails(MinorDob), Today, Now);
+        var result = User.CreateDependent(
+            guardian,
+            ChildDetails(MinorDob),
+            declaresGuardianship: true,
+            Today,
+            Now
+        );
 
         result.IsSuccess.Should().BeTrue();
         var child = result.Value;
@@ -196,7 +209,26 @@ public sealed class UserProfileRulesTests
         child.Status.Should().Be(UserStatus.Dependent);
         child.UserType.Should().Be(UserType.Participant);
         child.CreatedAt.Should().Be(Now);
+        child.GuardianshipDeclaredAt.Should().Be(Now);
+        child.AdultDeclaredAt.Should().BeNull();
         child.UpdatedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateDependentWithoutTheGuardianshipDeclarationIsRefused()
+    {
+        var result = User.CreateDependent(
+            StoredAdult(),
+            ChildDetails(MinorDob),
+            declaresGuardianship: false,
+            Today,
+            Now
+        );
+
+        result.ShouldFail(
+            ErrorKind.Validation,
+            DomainErrorCode.UserGuardianshipDeclarationRequired
+        );
     }
 
     [Theory]
@@ -207,6 +239,7 @@ public sealed class UserProfileRulesTests
         var result = User.CreateDependent(
             StoredAdult(),
             ChildDetails(DateOrNull(birthDate)),
+            declaresGuardianship: true,
             Today,
             Now
         );
@@ -227,6 +260,7 @@ public sealed class UserProfileRulesTests
         var result = User.CreateDependent(
             StoredAdult(),
             ChildDetails(DateOrNull(birthDate)),
+            declaresGuardianship: true,
             Today,
             Now
         );
@@ -239,7 +273,13 @@ public sealed class UserProfileRulesTests
     {
         var dependent = StoredChild(StoredAdult(), MinorDob);
 
-        var result = User.CreateDependent(dependent, ChildDetails(MinorDob), Today, Now);
+        var result = User.CreateDependent(
+            dependent,
+            ChildDetails(MinorDob),
+            declaresGuardianship: true,
+            Today,
+            Now
+        );
 
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserParentIsMinor);
     }

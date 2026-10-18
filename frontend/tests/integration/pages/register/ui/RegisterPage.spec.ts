@@ -105,7 +105,13 @@ describe('register page', () => {
           newsConsent: true,
           declaresAdult: true,
           minors: [
-            { firstName: 'Byron', lastName: 'King', birthDate: '2016-02-03', gender: 'Male' },
+            {
+              firstName: 'Byron',
+              lastName: 'King',
+              birthDate: '2016-02-03',
+              gender: 'Male',
+              declaresGuardianship: true,
+            },
           ],
         },
       },

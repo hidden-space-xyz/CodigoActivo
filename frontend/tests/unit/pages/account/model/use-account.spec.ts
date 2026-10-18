@@ -179,7 +179,11 @@ describe('useAccount', () => {
     await result.deleteChild.mutateAsync('child-1')
 
     expect(requests).toEqual([
-      { method: 'POST', path: '/api/users/user-1/children', body: minor },
+      {
+        method: 'POST',
+        path: '/api/users/user-1/children',
+        body: { ...minor, declaresGuardianship: true },
+      },
       {
         method: 'PUT',
         path: '/api/users/child-1',

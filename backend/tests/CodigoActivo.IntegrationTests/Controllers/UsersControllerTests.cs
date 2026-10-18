@@ -593,7 +593,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         var response = await client.PostJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}/children",
-            new RegisterMinorRequest("Nueva", "Menor", MinorBirthDate, ContractGender.Female),
+            new RegisterMinorRequest("Nueva", "Menor", MinorBirthDate, ContractGender.Female, true),
             Ct
         );
 
@@ -1126,7 +1126,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             "Nino",
             "Miembro",
             MinorBirthDate,
-            ContractGender.Male
+            ContractGender.Male,
+            true
         );
 
         var response = await client.PostJsonAsync(
@@ -1148,6 +1149,31 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         stored!.Status.Should().Be(UserStatus.Dependent);
         stored.UserType.Should().Be(UserType.Participant);
         stored.ParentId.Should().Be(UserId.From(TestSeedData.Users.MemberId));
+        stored.GuardianshipDeclaredAt.Should().Be(Factory.Clock.UtcNow);
+    }
+
+    [Fact]
+    public async Task AddChildWithoutTheGuardianshipDeclarationIsRefused()
+    {
+        var client = await LoginAsMemberAsync();
+
+        var response = await client.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/children",
+            new
+            {
+                firstName = "Nino",
+                lastName = "Miembro",
+                birthDate = MinorBirthDate,
+                gender = "Male",
+            },
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserGuardianshipDeclarationRequired);
+        var children = await Factory.QueryAsync(db =>
+            db.Users.CountAsync(u => u.ParentId == UserId.From(TestSeedData.Users.MemberId), Ct)
+        );
+        children.Should().Be(1);
     }
 
     [Fact]
@@ -1158,7 +1184,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             "Nieto",
             "Miembro",
             MinorBirthDate,
-            ContractGender.Male
+            ContractGender.Male,
+            true
         );
 
         var response = await client.PostJsonAsync(
@@ -1195,7 +1222,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             "Otro",
             "Miembro",
             MinorBirthDate,
-            ContractGender.Male
+            ContractGender.Male,
+            true
         );
 
         var response = await client.PostJsonAsync(

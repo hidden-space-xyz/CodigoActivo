@@ -11,11 +11,15 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="LastName">Family name.</param>
 /// <param name="BirthDate">Date of birth; today at the latest.</param>
 /// <param name="Gender">Gender.</param>
+/// <param name="DeclaresGuardianship">
+/// Whether the adult adding the minor declared being its parent or legal guardian.
+/// </param>
 public sealed record MinorDraft(
     [property: Required, MaxLength(120), NotBlank] string FirstName,
     [property: Required, MaxLength(120), NotBlank] string LastName,
     [property: NotDefaultOrFutureDate] DateOnly BirthDate,
-    [property: EnumDataType(typeof(Gender))] Gender Gender
+    [property: EnumDataType(typeof(Gender))] Gender Gender,
+    bool DeclaresGuardianship
 )
 {
     /// <summary>

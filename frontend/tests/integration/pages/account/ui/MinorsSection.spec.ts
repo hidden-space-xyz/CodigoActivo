@@ -122,6 +122,7 @@ describe('MinorsSection', () => {
 
     await click(findButton(t('pages.account.minors.add'), document.body))
     const dialog = openDialog(t('pages.account.minors.addHeader'))
+    expect(dialog.textContent).toContain(t('pages.account.minors.declaration'))
     await typeInto('#m-firstname', '  Byron ', dialog)
     await typeInto('#m-lastname', ' Lovelace ', dialog)
     await typeInto('#m-dob', '2015-03-02', dialog)
@@ -131,7 +132,13 @@ describe('MinorsSection', () => {
     await vi.waitFor(() => expect(received).toBeDefined())
     expect(received).toEqual({
       path: '/api/users/user-1/children',
-      body: { firstName: 'Byron', lastName: 'Lovelace', birthDate: '2015-03-02', gender: 'Male' },
+      body: {
+        firstName: 'Byron',
+        lastName: 'Lovelace',
+        birthDate: '2015-03-02',
+        gender: 'Male',
+        declaresGuardianship: true,
+      },
     })
     await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
     expect(notificationTexts().join()).toContain(t('pages.account.minors.addedSummary'))
@@ -189,6 +196,7 @@ describe('MinorsSection', () => {
 
     await click(findButton(t('common.edit'), minorItem('Byron Lovelace')))
     const dialog = openDialog(t('pages.account.minors.editHeader'))
+    expect(dialog.textContent).not.toContain(t('pages.account.minors.declaration'))
     expect(dialog.querySelector<HTMLInputElement>('#m-firstname')?.value).toBe('Byron')
     expect(dialog.querySelector<HTMLInputElement>('#m-dob')?.value).toBe('2015-03-02')
     await typeInto('#m-firstname', 'Lord Byron', dialog)

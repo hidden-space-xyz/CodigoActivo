@@ -475,7 +475,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
 
         var copy = await CopyOfAsync(TestSeedData.Users.MemberId);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(3);
+        copy.GetProperty("schemaVersion").GetInt32().Should().Be(4);
         copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Self");
         IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.MemberId);
         copy.GetProperty("guardian").ValueKind.Should().Be(JsonValueKind.Null);
@@ -523,6 +523,12 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         dependent.GetProperty("birthDate").GetString().Should().Be("2015-05-05");
         IdOf(dependent, "parentId").Should().Be(TestSeedData.Users.MemberId);
         dependent.GetProperty("userStatusTypeName").GetString().Should().Be("Dependiente");
+        dependent
+            .GetProperty("guardianshipDeclaredAt")
+            .GetDateTimeOffset()
+            .Should()
+            .Be(dependent.GetProperty("createdAt").GetDateTimeOffset());
+        account.GetProperty("guardianshipDeclaredAt").ValueKind.Should().Be(JsonValueKind.Null);
 
         Items(copy.GetProperty("termsDocuments"))
             .Select(document => document.GetProperty("name").GetString())

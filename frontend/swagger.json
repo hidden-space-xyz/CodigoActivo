@@ -6020,6 +6020,7 @@
           "UserContactInfoRequired",
           "UserNationalIdRequired",
           "UserAdultDeclarationRequired",
+          "UserGuardianshipDeclarationRequired",
           "UserEmailAlreadyInUse",
           "SecondaryPhoneSameAsPrimary",
           "UserPhoneInvalid",
@@ -7796,6 +7797,7 @@
       "RegisterMinorRequest": {
         "required": [
           "birthDate",
+          "declaresGuardianship",
           "firstName",
           "gender",
           "lastName"
@@ -7814,6 +7816,9 @@
           },
           "gender": {
             "$ref": "#/components/schemas/Gender"
+          },
+          "declaresGuardianship": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

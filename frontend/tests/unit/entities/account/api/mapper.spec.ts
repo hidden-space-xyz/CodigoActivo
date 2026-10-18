@@ -78,7 +78,7 @@ describe('account mapper', () => {
   })
 
   it('builds the minor bodies, keeping an edited minor under its guardian', () => {
-    expect(toMinorRequest(MINOR)).toEqual(MINOR)
+    expect(toMinorRequest(MINOR)).toEqual({ ...MINOR, declaresGuardianship: true })
     expect(toUpdateMinorRequest(MINOR, 'user-1')).toEqual({
       ...MINOR,
       newsConsent: false,
@@ -160,7 +160,7 @@ describe('account mapper', () => {
       ...adult,
       password: 'Str0ngPass!23',
       declaresAdult: true,
-      minors: [MINOR],
+      minors: [{ ...MINOR, declaresGuardianship: true }],
     })
   })
 })
