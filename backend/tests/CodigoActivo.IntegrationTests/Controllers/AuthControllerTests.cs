@@ -511,8 +511,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         stored.AdultDeclaredAt.Should().NotBeNull();
     }
 
-    [Fact]
-    public async Task RegisterWithoutTheAdultDeclarationIsRefusedAndStoresNothing()
+    [Theory]
+    [InlineData(NewAdultEmail)]
+    [InlineData(TestSeedData.MemberEmail)]
+    public async Task RegisterWithoutTheAdultDeclarationIsRefusedAlikeAndSendsNothing(string email)
     {
         var client = CreateClient();
 
@@ -522,7 +524,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             {
                 firstName = "Nadia",
                 lastName = "Nueva",
-                email = NewAdultEmail,
+                email,
                 phone = "+34600000099",
                 password = "Str0ngPass!23",
                 nationalId = NewAdultNationalId,
@@ -533,6 +535,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeBadRequestAsync(ErrorCode.UserAdultDeclarationRequired);
         (await FindByEmailAsync(NewAdultEmail)).Should().BeNull();
+        Factory.EmailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]
