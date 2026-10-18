@@ -173,6 +173,7 @@ dist-ssr/
 logs/
 !backend/src/**/Logs/
 !backend/tests/**/Logs/
+!frontend/src/shared/api/generated/endpoints/logs/
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
