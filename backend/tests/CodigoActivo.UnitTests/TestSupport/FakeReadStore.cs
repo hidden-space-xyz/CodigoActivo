@@ -15,6 +15,8 @@ public sealed class FakeReadStore : IReadStore
 
     public List<UserSessionRow> UserSessions { get; } = [];
 
+    public List<NewsConsentChangeRow> NewsConsentChanges { get; } = [];
+
     public List<EventRow> Events { get; } = [];
 
     public List<EventRatingRow> EventRatings { get; } = [];
@@ -54,6 +56,8 @@ public sealed class FakeReadStore : IReadStore
     IQueryable<UserTypeRow> IReadStore.UserTypes => Read(UserTypes);
 
     IQueryable<UserSessionRow> IReadStore.UserSessions => Read(UserSessions);
+
+    IQueryable<NewsConsentChangeRow> IReadStore.NewsConsentChanges => Read(NewsConsentChanges);
 
     IQueryable<EventRow> IReadStore.Events => Read(Events);
 

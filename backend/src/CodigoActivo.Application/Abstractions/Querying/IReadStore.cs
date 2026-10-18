@@ -20,6 +20,9 @@ public interface IReadStore
     /// <summary>Gets the stored sessions.</summary>
     public IQueryable<UserSessionRow> UserSessions { get; }
 
+    /// <summary>Gets every change of the news consent of the accounts.</summary>
+    public IQueryable<NewsConsentChangeRow> NewsConsentChanges { get; }
+
     /// <summary>Gets the stored events.</summary>
     public IQueryable<EventRow> Events { get; }
 

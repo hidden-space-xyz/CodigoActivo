@@ -56,7 +56,8 @@ Domain + Application + Infrastructure <- Composition <- API
   into `LegalCopy` (and loaded in `DeletedAccountSnapshot`) or listed in `LegalCopy.ExcludedUserProperties`
   (a value object member as `Property.Member`), and a new author column must be handed over to the initial
   administrator in `AccountErasureStore`; `DeletedAccountCoverageTests` only checks that the decision was
-  recorded, not that the data is copied or handed over.
+  recorded, not that the data is copied or handed over. Personal data a user may see also goes into
+  `GetPersonalData`, the copy they download from «Mi cuenta».
 - Every command is audited. A new command needs its `AuditAction` member, named after it without `Command`,
   and its translation in the frontend, or `IUnaudited` when recording it would break a promise such as rating
   anonymity; `AuditConventionTests` checks both. `AuditAction` and `AuditEntityType` are stored as text, so

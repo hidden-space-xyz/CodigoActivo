@@ -15,6 +15,7 @@ import {
   getApiMeCertificates,
   getApiMeDeletion,
   getApiMeEventHistory,
+  getApiMePersonalData,
   postApiMeDeletion,
   postApiMeDeletionCode,
 } from '@/shared/api/generated/endpoints/me/me'
@@ -105,6 +106,15 @@ export async function requestAccountDeletionCodeRequest(currentPassword: string)
  */
 export async function deleteAccountRequest(input: DeleteAccountInput): Promise<void> {
   await postApiMeDeletion({ currentPassword: input.currentPassword, code: input.code })
+}
+
+/**
+ * Loads the copy of the personal data kept about the signed-in user and the minors in their care
+ * (`GET /api/me/personal-data`) as an indented JSON file, readable as it is and importable elsewhere.
+ */
+export async function getAccountPersonalDataRequest(): Promise<Blob> {
+  const { data } = await getApiMePersonalData()
+  return new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
 }
 
 /** Changes the password; the API verifies `currentPassword` before applying the new one. */

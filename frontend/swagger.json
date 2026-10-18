@@ -3025,6 +3025,25 @@
         }
       }
     },
+    "/api/me/personal-data": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalDataResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/deletion/code": {
       "post": {
         "tags": [
@@ -7719,6 +7738,31 @@
         },
         "additionalProperties": false
       },
+      "OwnAuditEntryResponse": {
+        "required": [
+          "action",
+          "occurredAt",
+          "outcome"
+        ],
+        "type": "object",
+        "properties": {
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "action": {
+            "$ref": "#/components/schemas/AuditAction"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AuditOutcome"
+          },
+          "clientIp": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "PartnerResponse": {
         "required": [
           "createdAt",
@@ -7791,6 +7835,307 @@
           "pageSize": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonalDataAccountResponse": {
+        "required": [
+          "createdAt",
+          "firstName",
+          "gender",
+          "id",
+          "isAdmin",
+          "lastName",
+          "newsConsent",
+          "status",
+          "twoFactorMethod",
+          "userType"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "pendingEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "nationalId": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "newsConsent": {
+            "type": "boolean"
+          },
+          "userType": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "isAdmin": {
+            "type": "boolean"
+          },
+          "twoFactorMethod": {
+            "$ref": "#/components/schemas/TwoFactorMethod"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "adultDeclaredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonalDataConsentChangeResponse": {
+        "required": [
+          "changedAt",
+          "granted",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "granted": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string"
+          },
+          "changedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonalDataDependentResponse": {
+        "required": [
+          "createdAt",
+          "firstName",
+          "gender",
+          "id",
+          "lastName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "guardianshipDeclaredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonalDataResponse": {
+        "required": [
+          "account",
+          "dependents",
+          "generatedAt",
+          "newsConsentChanges",
+          "operations",
+          "sessions",
+          "signups",
+          "termsDecisions"
+        ],
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "account": {
+            "$ref": "#/components/schemas/PersonalDataAccountResponse"
+          },
+          "newsConsentChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataConsentChangeResponse"
+            }
+          },
+          "dependents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataDependentResponse"
+            }
+          },
+          "signups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataSignupResponse"
+            }
+          },
+          "termsDecisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataTermsDecisionResponse"
+            }
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataSessionResponse"
+            }
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnAuditEntryResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonalDataSessionResponse": {
+        "required": [
+          "createdAt",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonalDataSignupResponse": {
+        "required": [
+          "activityStartsAt",
+          "activityTitle",
+          "eventTitle",
+          "personId",
+          "personName",
+          "role",
+          "signedUpAt",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personName": {
+            "type": "string"
+          },
+          "eventTitle": {
+            "type": "string"
+          },
+          "activityTitle": {
+            "type": "string"
+          },
+          "activityStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "role": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "signedUpAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonalDataTermsDecisionResponse": {
+        "required": [
+          "accepted",
+          "decidedAt",
+          "documentName",
+          "eventTitle"
+        ],
+        "type": "object",
+        "properties": {
+          "eventTitle": {
+            "type": "string"
+          },
+          "documentName": {
+            "type": "string"
+          },
+          "accepted": {
+            "type": "boolean"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "signature": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
           }
         },
         "additionalProperties": false

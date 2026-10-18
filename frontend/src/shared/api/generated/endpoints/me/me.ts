@@ -35,7 +35,8 @@ import type {
   DeleteAccountRequest,
   EventCertificateResponse,
   EventHistoryResponse,
-  GetApiMeAssignedActivitiesParams
+  GetApiMeAssignedActivitiesParams,
+  PersonalDataResponse
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
@@ -466,7 +467,86 @@ export function usePostApiMeDeletion<TData = Awaited<ReturnType<typeof postApiMe
 
 
 
-export type postApiMeDeletionCodeResponse200 = {
+export type getApiMePersonalDataResponse200 = {
+  data: PersonalDataResponse
+  status: 200
+}
+
+export type getApiMePersonalDataResponseSuccess = (getApiMePersonalDataResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiMePersonalDataResponse = (getApiMePersonalDataResponseSuccess)
+
+export const getGetApiMePersonalDataUrl = () => {
+
+
+
+
+  return `/api/me/personal-data`
+}
+
+export const getApiMePersonalData = async ( options?: Parameters<typeof httpClient>[1]): Promise<getApiMePersonalDataResponse> => {
+
+  return httpClient<getApiMePersonalDataResponse>(getGetApiMePersonalDataUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiMePersonalDataMutationKey = () => ['getApiMePersonalData'] as const;
+
+export const getGetApiMePersonalDataMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMePersonalData>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiMePersonalData>>, TError,void, TContext> => {
+
+const mutationKey = getGetApiMePersonalDataMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMePersonalData>>, void> = () => {
+
+
+          return  getApiMePersonalData(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiMePersonalDataMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMePersonalData>>>
+
+    export type GetApiMePersonalDataMutationError = unknown
+
+
+    export const useGetApiMePersonalData = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMePersonalData>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiMePersonalData>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiMePersonalDataMutationOptions(options), queryClient);
+    }
+    export type postApiMeDeletionCodeResponse200 = {
   data: void
   status: 200
 }

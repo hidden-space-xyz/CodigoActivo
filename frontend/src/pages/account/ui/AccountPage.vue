@@ -9,6 +9,7 @@ import CertificatesSection from './CertificatesSection.vue'
 import DeleteAccountSection from './DeleteAccountSection.vue'
 import HistorySection from './HistorySection.vue'
 import MinorsSection from './MinorsSection.vue'
+import PersonalDataSection from './PersonalDataSection.vue'
 import ProfileSection from './ProfileSection.vue'
 import TwoFactorSection from './TwoFactorSection.vue'
 
@@ -59,6 +60,8 @@ const tab = computed<AccountTab>({
               <TwoFactorSection />
               <hr class="account-divider" />
               <MinorsSection />
+              <hr class="account-divider" />
+              <PersonalDataSection />
               <hr class="account-divider" />
               <DeleteAccountSection />
             </el-tab-pane>

@@ -46,4 +46,15 @@ public interface ILogEntryReader
         LogPeriod period,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Lists every operation the account ran that the audit log still holds, oldest first.
+    /// </summary>
+    /// <param name="actorId">Identifier of the account.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the operations.</returns>
+    public Task<IReadOnlyList<OwnAuditEntryResponse>> ListOwnAuditAsync(
+        Guid actorId,
+        CancellationToken ct = default
+    );
 }
