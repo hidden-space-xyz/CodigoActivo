@@ -141,5 +141,13 @@ public sealed class LogQueryHandlerTests
             Period = period;
             return Task.FromResult(Audit);
         }
+
+        public Task<IReadOnlyList<OwnAuditEntryResponse>> ListOwnAuditAsync(
+            Guid actorId,
+            CancellationToken ct = default
+        )
+        {
+            return Task.FromResult<IReadOnlyList<OwnAuditEntryResponse>>([]);
+        }
     }
 }

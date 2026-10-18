@@ -21,6 +21,7 @@ import {
   deleteAccountRequest,
   disableAuthenticatorRequest,
   forgotPasswordRequest,
+  getAccountPersonalDataRequest,
   registerRequest,
   requestAccountDeletionCodeRequest,
   resendVerificationRequest,
@@ -86,6 +87,14 @@ export const accountMutations = {
   deleteAccount: () =>
     mutationOptions({
       mutationFn: (input: DeleteAccountInput) => deleteAccountRequest(input),
+    }),
+  /**
+   * Fetches the copy of the signed-in user's personal data as a JSON file. It runs on demand and
+   * is never cached, so the copy does not linger in the query cache.
+   */
+  personalData: () =>
+    mutationOptions({
+      mutationFn: () => getAccountPersonalDataRequest(),
     }),
   rateEvent: () =>
     mutationOptions({

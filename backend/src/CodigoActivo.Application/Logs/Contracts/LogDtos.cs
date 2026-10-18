@@ -117,3 +117,18 @@ public sealed record AuditLogEntryResponse(
 /// <param name="Name">Name of the entity, a person's full name or a title, or null when it no longer
 /// exists.</param>
 public sealed record AuditRelatedEntityResponse(AuditEntityType Type, Guid Id, string? Name);
+
+/// <summary>
+/// Represents an operation an account ran, as its holder reads it: when, what, from which address
+/// and how it ended, without the people or things it touched.
+/// </summary>
+/// <param name="OccurredAt">When it ran.</param>
+/// <param name="Action">Command that ran.</param>
+/// <param name="Outcome">How it ended.</param>
+/// <param name="ClientIp">Address of the caller, if it came through a request.</param>
+public sealed record OwnAuditEntryResponse(
+    DateTimeOffset OccurredAt,
+    AuditAction Action,
+    AuditOutcome Outcome,
+    string? ClientIp
+);

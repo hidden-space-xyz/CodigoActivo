@@ -28,6 +28,10 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
     public IQueryable<UserSessionRow> UserSessions => Set<UserSessionRow>().AsNoTracking();
 
     /// <inheritdoc />
+    public IQueryable<NewsConsentChangeRow> NewsConsentChanges =>
+        Set<NewsConsentChangeRow>().AsNoTracking();
+
+    /// <inheritdoc />
     public IQueryable<EventRow> Events => Set<EventRow>().AsNoTracking();
 
     /// <inheritdoc />
@@ -113,6 +117,7 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         Table<UserStatusTypeRow>(modelBuilder, "user_status_types").HasKey(s => s.Id);
         Table<UserTypeRow>(modelBuilder, "user_types").HasKey(t => t.Id);
         Table<UserSessionRow>(modelBuilder, "user_sessions").HasKey(s => s.Id);
+        Table<NewsConsentChangeRow>(modelBuilder, "news_consent_changes").HasKey(c => c.Id);
     }
 
     private static void ConfigureEvents(ModelBuilder modelBuilder)

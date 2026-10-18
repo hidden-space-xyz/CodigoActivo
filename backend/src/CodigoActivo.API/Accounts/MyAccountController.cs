@@ -15,7 +15,8 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace CodigoActivo.API.Accounts;
 
 /// <summary>
-/// Exposes HTTP endpoints for the signed-in user to delete their own account.
+/// Exposes HTTP endpoints for the signed-in user to copy their personal data and delete their own
+/// account.
 /// </summary>
 [ApiController]
 [Route("api/me")]
@@ -38,6 +39,22 @@ public class MyAccountController : ApiControllerBase
     )
     {
         return Ok(await handler.HandleAsync(new GetAccountDeletionStatusQuery(), ct));
+    }
+
+    /// <summary>
+    /// Returns a copy of the personal data kept about the signed-in user and the minors in their
+    /// care, which the SPA saves as a JSON file.
+    /// </summary>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing the copy, or an error response.</returns>
+    [HttpGet("personal-data")]
+    public async Task<ActionResult<PersonalDataResponse>> PersonalDataAsync(
+        [FromServices] IQueryHandler<GetPersonalDataQuery, Result<PersonalDataResponse>> handler,
+        CancellationToken ct
+    )
+    {
+        return ToOk(await handler.HandleAsync(new GetPersonalDataQuery(), ct));
     }
 
     /// <summary>

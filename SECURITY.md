@@ -333,6 +333,13 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   the data, purpose, legal basis and retention, plus the processors, transfers and rights; the registration
   form shows its first layer (`PrivacyNotice`). Change them with any new personal field, processor, recipient
   or retention.
+- `GET /api/me/personal-data` gives the signed-in user a copy of their own and their dependents' personal data
+  (articles 15 and 20 GDPR), which «Mi cuenta» saves as a JSON file: the account with any unconfirmed new
+  email, the news consent history, the dependents, the household's signups, the user's terms decisions with
+  their signatures, the open sessions and the audit entries the user ran (time, action, outcome and client IP,
+  never what they touched). It reads only the caller's household, never password or code hashes, authenticator
+  secrets, the login challenge or lockout counters, and leaves out ratings, which nothing links to an account.
+  Add a new personal field or table to it.
 - News consent (articles 6.1.a and 7 GDPR) is changed only by its holder: at
   registration, in «Mi cuenta», or through the unsubscribe link of a news email or its mail client's
   unsubscribe button. `User` appends every change to `news_consent_changes` with its instant and source

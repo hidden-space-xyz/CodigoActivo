@@ -535,7 +535,7 @@
           "security": {
             "title": "Seguridad y registro de actividad",
             "data": "Cada operación que cambia algo en la web, como registrarte, iniciar sesión, inscribirte o editar tu perfil, con su fecha y hora, la cuenta, la dirección IP desde la que se hace y su resultado; tus sesiones abiertas; los intentos fallidos y los bloqueos, y los errores técnicos, que no incluyen tus datos de contacto ni lo que escribes.",
-            "purpose": "Proteger la web y tu cuenta frente a accesos no autorizados y abusos, investigar incidentes y corregir errores. Solo la administración consulta estos registros.",
+            "purpose": "Proteger la web y tu cuenta frente a accesos no autorizados y abusos, investigar incidentes y corregir errores. Solo la administración consulta estos registros; tú puedes descargar desde «Mi cuenta» las operaciones que has hecho.",
             "legalBasis": "Nuestro interés legítimo en garantizar la seguridad de la red y de la información (art. 6.1.f y considerando 49 RGPD).",
             "retention": "El registro de actividad, 60 días; el de errores, 30 días; cada sesión, hasta que la cierras o caduca, como máximo a los 30 días. Si el servidor está detenido, el borrado se retrasa hasta que vuelve a funcionar, y las copias de seguridad los conservan hasta que se sustituyen."
           },
@@ -598,7 +598,7 @@
         "title": "¿Cuáles son tus derechos?",
         "list": "Puedes pedirnos, gratis salvo que la solicitud sea manifiestamente infundada o excesiva, acceder a tus datos, rectificarlos, suprimirlos, limitar su tratamiento o recibirlos en un formato estructurado para llevarlos a otro responsable (portabilidad). También puedes retirar los consentimientos que nos hayas dado, sin que ello afecte a lo hecho antes de retirarlos.",
         "objection": "Puedes oponerte en cualquier momento, por motivos relacionados con tu situación particular, a los tratamientos basados en nuestro interés legítimo, y dejaremos de hacerlos salvo que acreditemos motivos legítimos imperiosos que prevalezcan o los necesitemos para formular, ejercer o defender reclamaciones.",
-        "self": "Desde {account} puedes corregir tus datos y los de los menores a tu cargo, cambiar tu preferencia sobre las novedades y eliminar tu cuenta. Nadie más puede cambiar tus datos ni tus consentimientos, tampoco la administración.",
+        "self": "Desde {account} puedes corregir tus datos y los de los menores a tu cargo, descargar una copia de todos ellos, cambiar tu preferencia sobre las novedades y eliminar tu cuenta. Nadie más puede cambiar tus datos ni tus consentimientos, tampoco la administración.",
         "account": "Mi cuenta",
         "how": "Para lo demás, escríbenos a {email}, a ser posible desde el email de tu cuenta, o por correo postal al domicilio indicado arriba, diciendo qué derecho quieres ejercer. Solo te pediremos más datos si tenemos dudas razonables sobre tu identidad. Te responderemos en el plazo de un mes. Si la solicitud es compleja o recibimos muchas, podemos ampliarlo dos meses más; en ese caso te lo diremos dentro del primer mes, explicando por qué.",
         "complaint": "Si consideras que no hemos atendido bien tu solicitud o que tratamos tus datos incumpliendo la normativa, puedes reclamar ante la {authority} (C/ Jorge Juan 6, 28001 Madrid).",
@@ -653,6 +653,12 @@
           "issuerValue": "Código Activo · León",
           "registryLabel": "Registro"
         }
+      },
+      "personalData": {
+        "title": "Tus datos",
+        "lead": "Descarga una copia de los datos que guardamos sobre ti y los menores a tu cargo: tu perfil y el historial de tu preferencia sobre las novedades, los menores, las inscripciones, tus decisiones y firmas en los documentos de los eventos, tus sesiones abiertas y lo que has hecho en la web en los últimos 60 días. Es un fichero JSON que puedes leer o llevar a otro servicio.",
+        "download": "Descargar mis datos",
+        "fileName": "codigo-activo-mis-datos-{date}.json"
       },
       "deleteAccount": {
         "title": "Eliminar mi cuenta",

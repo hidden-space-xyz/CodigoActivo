@@ -195,6 +195,38 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
         );
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<OwnAuditEntryResponse>> ListOwnAuditAsync(
+        Guid actorId,
+        CancellationToken ct = default
+    )
+    {
+        var entries = await executor.ToListAsync(
+            context
+                .Set<AuditLogRow>()
+                .Where(entry => entry.ActorType == AuditActorType.User && entry.ActorId == actorId)
+                .OrderBy(entry => entry.OccurredAt)
+                .ThenBy(entry => entry.Id)
+                .Select(entry => new
+                {
+                    entry.OccurredAt,
+                    entry.Action,
+                    entry.Outcome,
+                    entry.ClientIp,
+                }),
+            ct
+        );
+        return
+        [
+            .. entries.Select(entry => new OwnAuditEntryResponse(
+                entry.OccurredAt,
+                entry.Action,
+                entry.Outcome,
+                entry.ClientIp?.ToString()
+            )),
+        ];
+    }
+
     private IQueryable<AuditLogRow> AuditEntries(AuditLogEntryListQuery criteria, LogPeriod period)
     {
         var source = context.Set<AuditLogRow>().AsQueryable();
