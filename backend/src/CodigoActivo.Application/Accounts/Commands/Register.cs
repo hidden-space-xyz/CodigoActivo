@@ -159,7 +159,13 @@ public sealed class RegisterCommandHandler(
         var adult = created.Value;
         var minors = new List<User>(minorRequests.Count);
         var children = minorRequests.Select(minor =>
-            User.CreateDependent(adult, minor.ToDetails(), clock.Today, now)
+            User.CreateDependent(
+                adult,
+                minor.ToDetails(),
+                minor.DeclaresGuardianship,
+                clock.Today,
+                now
+            )
         );
         foreach (var child in children)
         {

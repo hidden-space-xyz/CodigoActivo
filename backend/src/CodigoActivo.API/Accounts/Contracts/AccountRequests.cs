@@ -155,11 +155,16 @@ public record RegisterRequest(
 /// <param name="LastName">User's family name.</param>
 /// <param name="BirthDate">User's date of birth.</param>
 /// <param name="Gender">The gender value.</param>
+/// <param name="DeclaresGuardianship">
+/// Whether the adult adding the minor declares being its parent or legal guardian; a minor without it
+/// is refused (<c>UserGuardianshipDeclarationRequired</c>).
+/// </param>
 public record RegisterMinorRequest(
     [Required] [MaxLength(120)] string FirstName,
     [Required] [MaxLength(120)] string LastName,
     DateOnly BirthDate,
-    [EnumDataType(typeof(Gender))] Gender Gender
+    [EnumDataType(typeof(Gender))] Gender Gender,
+    bool DeclaresGuardianship
 )
 {
     /// <summary>
@@ -168,7 +173,13 @@ public record RegisterMinorRequest(
     /// <returns>The details.</returns>
     public MinorDraft ToDraft()
     {
-        return new MinorDraft(FirstName, LastName, BirthDate, Gender.ToDomain());
+        return new MinorDraft(
+            FirstName,
+            LastName,
+            BirthDate,
+            Gender.ToDomain(),
+            DeclaresGuardianship
+        );
     }
 }
 

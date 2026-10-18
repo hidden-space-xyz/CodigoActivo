@@ -188,6 +188,12 @@ public enum DomainErrorCode
     UserAdultDeclarationRequired,
 
     /// <summary>
+    /// Selects the option for a dependent added by someone who did not declare being its parent or
+    /// legal guardian.
+    /// </summary>
+    UserGuardianshipDeclarationRequired,
+
+    /// <summary>
     /// Selects the option for a secondary phone equal to the main phone of the same account.
     /// </summary>
     SecondaryPhoneSameAsPrimary,

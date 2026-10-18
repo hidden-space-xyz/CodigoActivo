@@ -38,7 +38,7 @@ public sealed class AddChildCommandHandlerTests
         return sut.HandleAsync(
             new AddChildCommand(
                 UserId.From(parentId),
-                new MinorDraft("Kid", "Doe", MinorDob, Gender.Male)
+                new MinorDraft("Kid", "Doe", MinorDob, Gender.Male, true)
             ),
             TestContext.Current.CancellationToken
         );
@@ -65,7 +65,10 @@ public sealed class AddChildCommandHandlerTests
         users.FindReturns(guardian);
 
         var result = await sut.HandleAsync(
-            new AddChildCommand(guardian.Id, new MinorDraft("Kid", "Doe", MinorDob, Gender.Male)),
+            new AddChildCommand(
+                guardian.Id,
+                new MinorDraft("Kid", "Doe", MinorDob, Gender.Male, true)
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -80,7 +83,7 @@ public sealed class AddChildCommandHandlerTests
     public async Task HandleAsyncParentMissingReturnsNotFound()
     {
         users.FindReturns(null);
-        var request = new MinorDraft("Kid", "Doe", MinorDob, Gender.Male);
+        var request = new MinorDraft("Kid", "Doe", MinorDob, Gender.Male, true);
         var parentId = UserId.New();
         currentUser.Id = parentId;
 
@@ -94,10 +97,33 @@ public sealed class AddChildCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncWithoutTheGuardianshipDeclarationIsRefused()
+    {
+        users.FindReturns(NewUser());
+        var request = new MinorDraft("Kid", "Doe", MinorDob, Gender.Male, false);
+        var parentId = UserId.New();
+        currentUser.Id = parentId;
+
+        var result = await sut.HandleAsync(
+            new AddChildCommand(parentId, request),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(
+            ErrorKind.Validation,
+            DomainErrorCode.UserGuardianshipDeclarationRequired
+        );
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
     public async Task HandleAsyncChildBirthDateNotMinorReturnsBadRequest()
     {
         users.FindReturns(NewUser());
-        var request = new MinorDraft("Grown", "Up", AdultDob, Gender.Male);
+        var request = new MinorDraft("Grown", "Up", AdultDob, Gender.Male, true);
         var parentId = UserId.New();
         currentUser.Id = parentId;
 
@@ -174,7 +200,7 @@ public sealed class AddChildCommandHandlerTests
         users.FindReturns(parent);
         var added = await CaptureAddedUsersAsync();
         clock.UtcNow = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero);
-        var request = new MinorDraft("  Kid  ", "  Doe  ", MinorDob, Gender.Female);
+        var request = new MinorDraft("  Kid  ", "  Doe  ", MinorDob, Gender.Female, true);
         currentUser.Id = UserId.From(parentId);
 
         var result = await sut.HandleAsync(
@@ -188,6 +214,7 @@ public sealed class AddChildCommandHandlerTests
         child.BirthDate.Should().Be(MinorDob);
         child.NationalId.Should().BeNull();
         child.NewsConsent.Should().BeFalse();
+        child.GuardianshipDeclaredAt.Should().Be(clock.UtcNow);
         await users
             .Received(1)
             .AddAsync(

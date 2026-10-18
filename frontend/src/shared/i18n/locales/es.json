@@ -284,6 +284,7 @@
     "UserContactInfoRequired": "Debes indicar al menos un dato de contacto.",
     "UserNationalIdRequired": "Debes indicar el DNI o NIE.",
     "UserAdultDeclarationRequired": "Para registrarte debes declarar que eres mayor de edad.",
+    "UserGuardianshipDeclarationRequired": "Para añadir a un menor debes declarar que eres su padre, madre o tutor legal.",
     "UserEmailAlreadyInUse": "Este correo electrónico ya está en uso.",
     "SecondaryPhoneSameAsPrimary": "El teléfono secundario debe ser distinto del principal.",
     "UserPhoneInvalid": "El teléfono no es válido. Usa solo números (entre 7 y 15), con espacios, guiones o un prefijo con +.",
@@ -490,8 +491,8 @@
           },
           "minors": {
             "title": "Menores a tu cargo",
-            "data": "Nombre, apellidos, fecha de nacimiento y género de cada menor, que nos facilita su padre, madre o tutor legal.",
-            "purpose": "Que puedas inscribirlos en actividades adecuadas a su edad y que sepamos a quién avisar sobre ellos.",
+            "data": "Nombre, apellidos, fecha de nacimiento y género de cada menor, que nos facilita su padre, madre o tutor legal, y la fecha en que declaró serlo al añadirlo.",
+            "purpose": "Que puedas inscribirlos en actividades adecuadas a su edad, que sepamos a quién avisar sobre ellos y poder demostrar que nos dio sus datos quien declaró ser su padre, madre o tutor legal.",
             "legalBasis": "La prestación del servicio que solicitas como su padre, madre o tutor legal (art. 6.1.b RGPD).",
             "retention": "Hasta que los quites de tu cuenta o la elimines; después, solo la copia bloqueada que se explica más abajo."
           },
@@ -569,7 +570,7 @@
       },
       "minors": {
         "title": "Menores de edad",
-        "text": "Solo las personas mayores de edad pueden crear una cuenta: al registrarte declaras serlo y guardamos la fecha de esa declaración. Los datos de un menor solo puede dárnoslos su padre, madre o tutor legal, que al añadirlo declara serlo y responde de que los datos sean correctos. Los menores no inician sesión y nunca les pedimos DNI, email ni teléfono.",
+        "text": "Solo las personas mayores de edad pueden crear una cuenta: al registrarte declaras serlo y guardamos la fecha de esa declaración. Los datos de un menor solo puede dárnoslos su padre, madre o tutor legal, que al añadirlo declara serlo (guardamos la fecha de esa declaración) y responde de que los datos sean correctos. Los menores no inician sesión y nunca les pedimos DNI, email ni teléfono.",
         "rights": "Los derechos de un menor de 14 años los ejerce en su nombre su padre, madre o tutor legal (art. 12.6 LOPDGDD). A partir de los 14 años puede ejercerlos el propio menor escribiéndonos, y es él quien da o retira el consentimiento en lo que se base en él (art. 7 LOPDGDD). Al cumplir 18 años puede escribirnos para ejercerlos directamente."
       },
       "required": {
@@ -704,6 +705,7 @@
         "empty": "No tienes menores a tu cargo. Puedes añadir los que quieras inscribir.",
         "addHeader": "Añadir menor",
         "editHeader": "Editar menor",
+        "declaration": "Al añadirlo declaras ser su padre, madre o tutor legal.",
         "deleteHeader": "Eliminar menor",
         "deleteConfirm": "¿Seguro que quieres eliminar a {name}? Esta acción no se puede deshacer.",
         "addedDetail": "El menor se ha registrado a tu cargo.",

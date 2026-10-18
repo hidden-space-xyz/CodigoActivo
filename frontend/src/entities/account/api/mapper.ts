@@ -78,13 +78,18 @@ export function toUpdateProfileRequest(input: UpdateProfileInput): UpdateUserReq
   }
 }
 
-/** Builds the body for registering a minor, alone or with its guardian. */
+/**
+ * Builds the body for registering a minor, alone or with its guardian. Adding a minor is the
+ * adult's declaration of being its parent or legal guardian, which every form that adds one states,
+ * so the body always carries it.
+ */
 export function toMinorRequest(input: MinorInput): RegisterMinorRequest {
   return {
     firstName: input.firstName,
     lastName: input.lastName,
     birthDate: input.birthDate,
     gender: input.gender,
+    declaresGuardianship: true,
   }
 }
 

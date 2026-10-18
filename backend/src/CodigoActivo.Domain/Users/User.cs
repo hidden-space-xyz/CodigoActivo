@@ -104,6 +104,12 @@ public class User : AggregateRoot<UserId>
     public DateTimeOffset? AdultDeclaredAt { get; private set; }
 
     /// <summary>
+    /// Gets when the guardian declared being the dependent's parent or legal guardian while adding
+    /// it; null for independent accounts and for dependents added before it was recorded.
+    /// </summary>
+    public DateTimeOffset? GuardianshipDeclaredAt { get; private set; }
+
+    /// <summary>
     /// Gets the UTC timestamp of the most recent update.
     /// </summary>
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -215,19 +221,25 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Creates a dependent of <paramref name="guardian"/> as a participant. It needs a birth date
-    /// that is not in the future and makes it a minor on <paramref name="today"/>, and it has no
-    /// email, phones, DNI, NIE, password or news consent. A dependent cannot be a guardian.
+    /// Creates a dependent of <paramref name="guardian"/> as a participant. Only a parent or legal
+    /// guardian may add a minor, so the guardian must declare being one, and the declaration is
+    /// kept with its time. It needs a birth date that is not in the future and makes it a minor on
+    /// <paramref name="today"/>, and it has no email, phones, DNI, NIE, password or news consent. A
+    /// dependent cannot be a guardian.
     /// </summary>
     /// <param name="guardian">Independent account the dependent is created under.</param>
     /// <param name="details">Details as supplied; only the names, gender and birth date apply.</param>
+    /// <param name="declaresGuardianship">
+    /// Whether the guardian declared being the minor's parent or legal guardian.
+    /// </param>
     /// <param name="today">Local day on which the age is evaluated.</param>
-    /// <param name="now">Current timestamp, stored as the creation time.</param>
+    /// <param name="now">Current timestamp, stored as the creation and declaration time.</param>
     /// <param name="id">Stable identifier for provisioned accounts; a new one otherwise.</param>
     /// <returns>The unsaved dependent, or the error of the first broken rule.</returns>
     public static Result<User> CreateDependent(
         User guardian,
         PersonDetails details,
+        bool declaresGuardianship,
         DateOnly today,
         DateTimeOffset now,
         UserId? id = null
@@ -240,6 +252,11 @@ public class User : AggregateRoot<UserId>
             return Error.Validation(DomainErrorCode.UserParentIsMinor);
         }
 
+        if (!declaresGuardianship)
+        {
+            return Error.Validation(DomainErrorCode.UserGuardianshipDeclarationRequired);
+        }
+
         var dependent = new User
         {
             Id = id ?? UserId.New(),
@@ -249,6 +266,7 @@ public class User : AggregateRoot<UserId>
             Status = UserStatus.Dependent,
             UserType = UserType.Participant,
             CreatedAt = now,
+            GuardianshipDeclaredAt = now,
         };
         var change = dependent.PlanDependentChange(details, guardianId: null, today);
         if (change.IsFailure)

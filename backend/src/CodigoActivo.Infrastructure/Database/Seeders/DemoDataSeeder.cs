@@ -260,6 +260,7 @@ public sealed class DemoDataSeeder(
                 seed.Gender,
                 BirthDate: BuildBirthDate(index, today.Year - seed.Age!.Value)
             ),
+            declaresGuardianship: true,
             today,
             createdAt,
             DemoUser(index)

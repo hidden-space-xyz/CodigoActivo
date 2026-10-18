@@ -11,4 +11,5 @@ export interface RegisterMinorRequest {
   lastName: string;
   birthDate: string;
   gender: Gender;
+  declaresGuardianship: boolean;
 }

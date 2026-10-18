@@ -761,6 +761,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("character varying(16)")
                         .HasColumnName("gender");
 
+                    b.Property<DateTimeOffset?>("GuardianshipDeclaredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("guardianship_declared_at");
+
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("boolean")
                         .HasColumnName("is_admin");

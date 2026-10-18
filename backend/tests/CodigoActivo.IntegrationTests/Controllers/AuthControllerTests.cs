@@ -165,7 +165,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
                         "Leo",
                         "Nueva",
                         new DateOnly(2016, 3, 10),
-                        ContractGender.Other
+                        ContractGender.Other,
+                        true
                     ),
                 ]
             ),
@@ -181,6 +182,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         );
         storedMinor.UserType.Should().Be(UserType.Participant);
         storedMinor.Gender.Should().Be(Gender.Other);
+        storedMinor.GuardianshipDeclaredAt.Should().NotBeNull();
     }
 
     [Fact]

@@ -314,6 +314,7 @@ describe('account requests', () => {
       lastName: 'King',
       birthDate: '2015-01-02',
       gender: 'Male',
+      declaresGuardianship: true,
     })
   })
 
@@ -436,7 +437,7 @@ describe('account requests', () => {
       ...adult,
       password: 'Str0ngPass!23',
       declaresAdult: true,
-      minors: [minor],
+      minors: [{ ...minor, declaresGuardianship: true }],
     })
     expect(resent).toEqual({ email: 'ada@example.test' })
   })

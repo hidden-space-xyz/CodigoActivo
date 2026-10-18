@@ -199,6 +199,9 @@ function confirmDelete(): void {
             <small v-if="errors.gender" class="acc-form__error">{{ errors.gender }}</small>
           </div>
         </div>
+        <p v-if="mode === 'add'" class="acc-form__declaration">
+          {{ $t('pages.account.minors.declaration') }}
+        </p>
         <div class="acc-form__actions">
           <BrandButton variant="link" type="button" @click="dialogVisible = false">
             {{ $t('common.cancel') }}
@@ -345,6 +348,13 @@ function confirmDelete(): void {
   font-family: inherit;
   font-size: 15px;
   outline: none;
+}
+
+.acc-form__declaration {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ca-text-muted);
 }
 
 .acc-form__actions {

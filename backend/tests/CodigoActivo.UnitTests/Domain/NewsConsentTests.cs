@@ -80,6 +80,7 @@ public sealed class NewsConsentTests
                 NationalId = null,
                 BirthDate = new DateOnly(2016, 7, 4),
             },
+            declaresGuardianship: true,
             Today,
             Created
         ).Value;

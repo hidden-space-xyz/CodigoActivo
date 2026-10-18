@@ -21,7 +21,7 @@ internal static class DeletedAccountSnapshot
     /// <summary>
     /// Version of the JSON layout, stored in every copy.
     /// </summary>
-    internal const int SchemaVersion = 3;
+    internal const int SchemaVersion = 4;
 
     private static readonly JsonSerializerOptions SerializerOptions = new(
         JsonSerializerDefaults.Web
@@ -73,6 +73,7 @@ internal static class DeletedAccountSnapshot
                 u.ParentId,
                 u.CreatedAt,
                 u.AdultDeclaredAt,
+                u.GuardianshipDeclaredAt,
                 u.UpdatedAt,
                 u.LastLoginAt,
             }
@@ -116,6 +117,7 @@ internal static class DeletedAccountSnapshot
             row.ParentId?.Value,
             row.CreatedAt,
             row.AdultDeclaredAt,
+            row.GuardianshipDeclaredAt,
             row.UpdatedAt,
             row.LastLoginAt
         ));

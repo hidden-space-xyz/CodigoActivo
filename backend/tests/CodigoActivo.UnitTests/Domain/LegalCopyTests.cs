@@ -54,6 +54,7 @@ public sealed class LegalCopyTests
             Created,
             null,
             null,
+            null,
             null
         );
     }

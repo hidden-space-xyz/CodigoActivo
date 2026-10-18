@@ -384,6 +384,12 @@ public enum ErrorCode
     UserAdultDeclarationRequired,
 
     /// <summary>
+    /// Selects the option for a dependent added by someone who did not declare being its parent or
+    /// legal guardian.
+    /// </summary>
+    UserGuardianshipDeclarationRequired,
+
+    /// <summary>
     /// Selects the option for an account registered or updated with an email another account
     /// already uses.
     /// </summary>
