@@ -2,6 +2,7 @@ using System.Net;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Composition.Configuration;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using Microsoft.Extensions.Configuration;
@@ -28,23 +29,9 @@ internal static class EmailsRegistration
     {
         var settings = new Settings(configuration);
         AddSmtp(services, settings);
-        AddQueue(services, settings);
-        AddGuard(services, settings);
-        services.AddValidatedOptions<ManualEmailOptions>(options =>
-        {
-            options.MaxRecipients = settings.PositiveInt(
-                "ManualEmail:MaxRecipients",
-                ManualEmailOptions.DefaultMaxRecipients
-            );
-            options.MaxAttachments = settings.PositiveInt(
-                "ManualEmail:MaxAttachments",
-                ManualEmailOptions.DefaultMaxAttachments
-            );
-            options.MaxAttachmentsBytes = settings.PositiveLong(
-                "ManualEmail:MaxAttachmentsBytes",
-                ManualEmailOptions.DefaultMaxAttachmentsBytes
-            );
-        });
+        services.AddFixedOptions<EmailQueueOptions>();
+        services.AddFixedOptions<EmailGuardOptions>();
+        services.AddFixedOptions<ManualEmailOptions>();
 
         services.AddSingleton<IEmailTransport, SmtpEmailSender>();
         services.AddSingleton<EmailOutboxSignal>();
@@ -74,7 +61,7 @@ internal static class EmailsRegistration
                 options.Username = settings.Verbatim("SMTP_USERNAME");
                 options.Password = settings.Verbatim("SMTP_PASSWORD");
                 options.FromAddress = settings.Text("SMTP_FROM_ADDRESS", string.Empty);
-                options.FromName = settings.Text("SMTP_FROM_NAME", "Código Activo");
+                options.FromName = settings.Text("SMTP_FROM_NAME", Organization.Name);
             },
             options =>
                 !string.IsNullOrWhiteSpace(options.Host)
@@ -89,97 +76,5 @@ internal static class EmailsRegistration
                 options => options.Port <= IPEndPoint.MaxPort,
                 $"SMTP_PORT must be between 1 and {IPEndPoint.MaxPort}."
             );
-    }
-
-    private static void AddQueue(IServiceCollection services, Settings settings)
-    {
-        services.AddValidatedOptions<EmailQueueOptions>(
-            options =>
-            {
-                options.Capacity = settings.PositiveInt(
-                    "EmailQueue:Capacity",
-                    EmailQueueOptions.DefaultCapacity
-                );
-                options.Workers = settings.PositiveInt(
-                    "EmailQueue:Workers",
-                    EmailQueueOptions.DefaultWorkers
-                );
-                options.BatchSize = settings.PositiveInt(
-                    "EmailQueue:BatchSize",
-                    EmailQueueOptions.DefaultBatchSize
-                );
-                options.ShutdownDrain = settings.Duration(
-                    "EmailQueue:ShutdownDrainSeconds",
-                    TimeSpan.FromSeconds,
-                    EmailQueueOptions.DefaultShutdownDrain
-                );
-                options.SendTimeout = settings.Duration(
-                    "EmailQueue:SendTimeoutSeconds",
-                    TimeSpan.FromSeconds,
-                    EmailQueueOptions.DefaultSendTimeout
-                );
-                options.PollInterval = settings.Duration(
-                    "EmailQueue:PollIntervalSeconds",
-                    TimeSpan.FromSeconds,
-                    EmailQueueOptions.DefaultPollInterval
-                );
-            },
-            options =>
-                options.Workers <= EmailQueueOptions.MaxWorkers
-                && options.BatchSize <= EmailQueueOptions.MaxBatchSize
-                && options.ShutdownDrain <= EmailQueueOptions.MaxShutdownDrain
-                && options.SendTimeout <= EmailQueueOptions.MaxSendTimeout
-                && options.PollInterval <= EmailQueueOptions.MaxPollInterval,
-            $"EmailQueue settings exceed their limits: at most {EmailQueueOptions.MaxWorkers} workers, "
-                + $"batches of {EmailQueueOptions.MaxBatchSize}, "
-                + $"{EmailQueueOptions.MaxShutdownDrain.TotalSeconds} seconds of shutdown drain, "
-                + $"{EmailQueueOptions.MaxSendTimeout.TotalSeconds} seconds of send timeout and "
-                + $"{EmailQueueOptions.MaxPollInterval.TotalSeconds} seconds of poll interval."
-        );
-    }
-
-    private static void AddGuard(IServiceCollection services, Settings settings)
-    {
-        services.AddValidatedOptions<EmailGuardOptions>(options =>
-        {
-            options.RecipientBurst = settings.PositiveInt(
-                "EmailGuard:RecipientBurst",
-                EmailGuardOptions.DefaultRecipientBurst
-            );
-            options.RecipientPerHour = settings.PositiveInt(
-                "EmailGuard:RecipientPerHour",
-                EmailGuardOptions.DefaultRecipientPerHour
-            );
-            options.RecipientPerDay = settings.PositiveInt(
-                "EmailGuard:RecipientPerDay",
-                EmailGuardOptions.DefaultRecipientPerDay
-            );
-            options.GlobalBurst = settings.PositiveInt(
-                "EmailGuard:GlobalBurst",
-                EmailGuardOptions.DefaultGlobalBurst
-            );
-            options.GlobalPerHour = settings.PositiveInt(
-                "EmailGuard:GlobalPerHour",
-                EmailGuardOptions.DefaultGlobalPerHour
-            );
-            options.GlobalCredentialReserve = settings.PositiveInt(
-                "EmailGuard:GlobalCredentialReserve",
-                EmailGuardOptions.DefaultGlobalCredentialReserve
-            );
-            options.MaxTrackedRecipients = settings.PositiveInt(
-                "EmailGuard:MaxTrackedRecipients",
-                EmailGuardOptions.DefaultMaxTrackedRecipients
-            );
-            options.SweepInterval = settings.Duration(
-                "EmailGuard:SweepIntervalMinutes",
-                TimeSpan.FromMinutes,
-                EmailGuardOptions.DefaultSweepInterval
-            );
-            options.AlertInterval = settings.Duration(
-                "EmailGuard:AlertIntervalMinutes",
-                TimeSpan.FromMinutes,
-                EmailGuardOptions.DefaultAlertInterval
-            );
-        });
     }
 }

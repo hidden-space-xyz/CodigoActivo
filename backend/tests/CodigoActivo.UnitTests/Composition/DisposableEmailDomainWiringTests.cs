@@ -10,62 +10,22 @@ namespace CodigoActivo.UnitTests.Composition;
 
 public sealed class DisposableEmailDomainWiringTests
 {
-    private static IServiceCollection Build(string? sourceUrl)
-    {
-        var settings = new Dictionary<string, string?>(StringComparer.Ordinal)
-        {
-            ["SMTP_HOST"] = "smtp.example.test",
-            ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
-        };
-        if (sourceUrl is not null)
-        {
-            settings["DisposableEmailDomains:SourceUrl"] = sourceUrl;
-        }
-
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
-        return new ServiceCollection().AddLogging().AddCodigoActivo(configuration);
-    }
-
-    private static DisposableEmailDomainOptions Options(string? sourceUrl)
-    {
-        using var provider = Build(sourceUrl).BuildServiceProvider();
-        return provider.GetRequiredService<DisposableEmailDomainOptions>();
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    public void SourceUrlMissingTakesTheDefault(string? value)
-    {
-        Options(value).SourceUrl.Should().Be(DisposableEmailDomainOptions.DefaultSourceUrl);
-    }
-
-    [Theory]
-    [InlineData("not a url")]
-    [InlineData("/relative/list.conf")]
-    [InlineData("http://mirror.example.test/list.conf")]
-    [InlineData("ftp://mirror.example.test/list.conf")]
-    public void SourceUrlInvalidOrInsecureStopsTheStart(string value)
-    {
-        var act = () => Options(value);
-
-        act.Should()
-            .Throw<InvalidOperationException>()
-            .WithMessage("*DisposableEmailDomains:SourceUrl*");
-    }
-
-    [Fact]
-    public void SourceUrlAbsoluteHttpsOverridesTheDefault()
-    {
-        Options("https://mirror.example.test/list.conf")
-            .SourceUrl.Should()
-            .Be(new Uri("https://mirror.example.test/list.conf"));
-    }
-
     [Fact]
     public void AddCodigoActivoSchedulesTheDailyRefreshAsAHostedService()
     {
-        using var provider = Build(null).BuildServiceProvider();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    ["SMTP_HOST"] = "smtp.example.test",
+                    ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
+                }
+            )
+            .Build();
+        using var provider = new ServiceCollection()
+            .AddLogging()
+            .AddCodigoActivo(configuration)
+            .BuildServiceProvider();
 
         var options = provider.GetRequiredService<DisposableEmailDomainOptions>();
 

@@ -403,7 +403,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         message
             .TextBody.Should()
             .Contain("/unsubscribe#token=")
-            .And.Contain("contacto@codigoactivo.es");
+            .And.Contain("contacto@codigoactivo.test");
         message.HtmlBody.Should().Contain("/unsubscribe#token=").And.NotContain("{{");
         message.OneClickUnsubscribeUrl.Should().Contain("/api/emails/unsubscribe/one-click?token=");
     }

@@ -75,8 +75,8 @@ docker compose exec db sh -c 'tail -n 100 /var/log/postgresql/postgresql-*.log'
 Set at least `APP_BASE_URL` (final public HTTPS origin, no path/query/fragment), `DEMO_MODE` (permanent for
 these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty), `SMTP_HOST` and
 `SMTP_FROM_ADDRESS`, the association's identity for the privacy policy (`LEGAL_NAME`, `LEGAL_TAX_ID`,
-`LEGAL_ADDRESS`, `LEGAL_REGISTRY`), plus `SMTP_USERNAME` and its password in `secrets/smtp_password` when the
-server needs a login. See [Secrets](#secrets) for the file rules.
+`LEGAL_ADDRESS`, `LEGAL_REGISTRY`, `LEGAL_EMAIL`), plus `SMTP_USERNAME` and its password in
+`secrets/smtp_password` when the server needs a login. See [Secrets](#secrets) for the file rules.
 
 `docker compose logs api` shows only a failed start (its fatal event) and failures of the logging pipeline;
 everything else the API logs is on the «Diagnóstico» page.
@@ -90,7 +90,7 @@ Production startup (`ProductionConfiguration`) also fails when:
   example/test domains are rejected);
 - the SMTP host or sender is invalid, `SMTP_SECURITY` is `None` or `Auto`, or only one of `SMTP_USERNAME` and
   `secrets/smtp_password` is set;
-- any of `LEGAL_NAME`, `LEGAL_TAX_ID`, `LEGAL_ADDRESS` or `LEGAL_REGISTRY` is blank.
+- any of `LEGAL_NAME`, `LEGAL_TAX_ID`, `LEGAL_ADDRESS`, `LEGAL_REGISTRY` or `LEGAL_EMAIL` is blank.
 
 These settings and every application setting are checked before anything is written to `api-state` or the
 database. `BOOTSTRAP_ADMIN_EMAIL` is checked once the database is migrated and the deployment mode is locked
@@ -121,11 +121,11 @@ must match the public origin.
 
 ## Environment variables
 
-The base Compose file forwards an explicit variable list to the API. Adding an arbitrary .NET `SECTION__KEY`
-value to `.env` has no effect until the same variable is added under `api.environment` in
-`docker-compose.yml`. Compose fixes the database connection itself (host `db`, port `5432`, database and user
-`codigoactivo`), so the API only reaches PostgreSQL over the internal `backend` network. Optional variables
-take the listed default when empty or missing.
+These variables are the whole deployment configuration: the base Compose file forwards exactly this list to
+the API, and every other value is fixed in code (see [Fixed settings](#fixed-settings)). Compose fixes the
+database connection itself (host `db`, port `5432`, database and user `codigoactivo`), so the API only
+reaches PostgreSQL over the internal `backend` network. Optional variables take the listed default when empty
+or missing.
 
 | Variable                        | Meaning                                                                       | Default                                     | Template value                                 |
 | ------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
@@ -139,16 +139,21 @@ take the listed default when empty or missing.
 | `SMTP_USERNAME`                 | SMTP username; set exactly when `secrets/smtp_password` is not empty          | No login                                    | Empty                                          |
 | `SMTP_FROM_ADDRESS`             | Single sender address                                                         | Required                                    | Empty                                          |
 | `SMTP_FROM_NAME`                | Sender display name                                                           | `Código Activo`                             | Empty                                          |
-| `DIAGNOSTIC_LOG_RETENTION_DAYS` | Days a diagnostic log entry is kept, from 1 to 730                            | `30`                                        | `30`                                           |
-| `AUDIT_LOG_RETENTION_DAYS`      | Days an audit log entry is kept, from 1 to 730                                | `60`                                        | `60`                                           |
 | `LEGAL_NAME`                    | Registered name of the association, shown as data controller                  | Required in Production                      | Empty                                          |
 | `LEGAL_TAX_ID`                  | NIF of the association                                                        | Required in Production                      | Empty                                          |
 | `LEGAL_ADDRESS`                 | Registered postal address of the association                                  | Required in Production                      | Empty                                          |
 | `LEGAL_REGISTRY`                | Register of associations and entry number                                     | Required in Production                      | Empty                                          |
+| `LEGAL_EMAIL`                   | Contact mailbox on the site and in the footer of promotional email            | Required in Production                      | Empty                                          |
+| `LEGAL_PHONE`                   | Contact phone published in the footer, the about page and the privacy policy  | Not published                               | Empty                                          |
 
-The privacy policy (`/privacy`) reads the association's identity from the `LEGAL_*` variables through
-`GET /api/legal-entity`, and its texts state both log retentions and the hosting, email and file storage
-providers; change those texts in the same release as any of them.
+The site and promotional email read the association's legal identity and contact details from the `LEGAL_*`
+variables (the site through `GET /api/legal-entity`); a `LEGAL_EMAIL` that is not a single address or a
+`LEGAL_PHONE` that is not a phone number of 7 to 15 digits stops the start. They are deployment settings
+rather than code so that personal details, such as a home address or a private phone, never reach the public
+repository; the association's public identity (name, domain, social profiles) is code, in `Organization`
+(backend) and `shared/config` (frontend). The privacy policy texts state
+the log retentions and the hosting, email and file storage providers; change those texts in the same release
+as any of them.
 
 Neither the template nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
 volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the PostgreSQL log files
@@ -181,41 +186,31 @@ zone. SMTP has no fallback: point `SMTP_HOST` at a
 mail catcher such as the development overlay's Mailpit (`localhost:1025`, security `None`), where login codes
 can also be read.
 
-### Application settings
+### Fixed settings
 
-Defaults in `backend/src/CodigoActivo.API/appsettings.json`, overridable with standard .NET environment
-syntax (for example `AUTH__EXPIREHOURS`; also add the uppercase variable to the Compose API environment list).
-A missing or blank setting takes its default; a setting that is present but unusable (not a positive number,
-not an absolute HTTPS address, above its limit) stops the API at start with a message naming the key, so a
-typo never runs silently with the default. `SessionCleanup:IntervalMinutes` accepts at most `1440`.
+Security, abuse and retention values are fixed in code, so no deployment can weaken them through
+configuration: lifetimes, lockouts and resend waits of passwords, sessions and one-time codes, upload and
+email limits, the email guard and queue, and the retention of logs and accounts. `appsettings.json` holds only
+the framework's log levels and host filter. Changing a fixed value is a code change, released like any other.
 
-| Setting                                       | Default             |
-| --------------------------------------------- | ------------------- |
-| `Auth:ExpireHours`                            | `720` (30 days)     |
-| `SessionCleanup:IntervalMinutes`              | `60`                |
-| `FileStorage:MaxSizeBytes`                    | `10485760` (10 MiB) |
-| `AccountVerification:OtpLifetimeMinutes`      | `15`                |
-| `AccountVerification:ResendCooldownSeconds`   | `60`                |
-| `PasswordReset:CodeLifetimeMinutes`           | `15`                |
-| `PasswordReset:ResendCooldownSeconds`         | `60`                |
-| `PasswordLockout:MaxFailedAttempts`           | `5`                 |
-| `TwoFactor:ChallengeLifetimeMinutes`          | `10`                |
-| `TwoFactor:ResendCooldownSeconds`             | `60`                |
-| `TwoFactor:AuthenticatorSetupLifetimeMinutes` | `15`                |
-| `TwoFactor:MaxFailedAttempts`                 | `5`                 |
-| `TwoFactor:LockoutMinutes`                    | `15`                |
-| `TwoFactor:Issuer`                            | `Código Activo`     |
-| `ManualEmail:MaxRecipients`                   | `500`               |
-| `ManualEmail:MaxAttachments`                  | `10`                |
-| `ManualEmail:MaxAttachmentsBytes`             | `8388608` (8 MiB)   |
+| Value                                                            | Fixed at                                    |
+| ---------------------------------------------------------------- | ------------------------------------------- |
+| Session lifetime                                                 | 30 days                                     |
+| Second-factor challenge, the emailed login code included         | 10 minutes                                  |
+| Verification code, password reset link and authenticator setup   | 15 minutes                                  |
+| Wait before another emailed code to the same account             | 60 seconds                                  |
+| Wrong passwords before the account locks until a password reset  | 5                                           |
+| Wrong second-factor codes before verification locks              | 5, for 15 minutes                           |
+| Uploaded image                                                   | 10 MiB                                      |
+| Administrator email                                              | 500 recipients, 10 attachments, 8 MiB total |
+| Diagnostic and audit log entries                                 | 30 and 60 days                              |
 
-Kestrel refuses request bodies above 2 MiB except on the upload and manual-email endpoints, which accept
-`FileStorage:MaxSizeBytes` plus 64 KiB of multipart overhead. nginx separately limits request bodies to `12m`;
-raising the application limit may also require changing `frontend/docker/default.conf`. Manual-email
+Kestrel refuses request bodies above 2 MiB except on the upload and manual-email endpoints, which accept the
+upload limit plus 64 KiB of multipart overhead; nginx separately limits request bodies to `12m`. Manual-email
 attachments are never stored in `api-files`.
 
-The cookie and privacy policies and the login checkbox (`pages.login.keepSignedIn`) state the default
-`Auth:ExpireHours` and `TwoFactor:ChallengeLifetimeMinutes`; overriding either requires updating them in
+The cookie and privacy policies and the login checkbox (`pages.login.keepSignedIn`) state the session and
+challenge lifetimes and the retentions; changing one requires updating them in
 `frontend/src/shared/i18n/locales/es.json`.
 
 ## Email delivery
@@ -227,53 +222,41 @@ is committed, not once SMTP accepts it. Automatic messages pass through a proces
 before reaching the outbox; administrator bulk email bypasses that budget but is queued the same way, so its
 response (`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
-The guard cannot be disabled; an unusable setting stops the API at start. Limits are per API process:
+The guard can be neither disabled nor configured (`EmailGuardOptions`). Limits are per API process:
 restarts refill them, replicas multiply them.
 
-| Setting                              | Purpose                                                                  | Default |
-| ------------------------------------ | ------------------------------------------------------------------------ | ------- |
-| `EmailGuard:RecipientBurst`          | Immediate messages allowed per normalized address                        | `20`    |
-| `EmailGuard:RecipientPerHour`        | Sustained hourly limit per address                                       | `10`    |
-| `EmailGuard:RecipientPerDay`         | Daily limit per address                                                  | `50`    |
-| `EmailGuard:GlobalBurst`             | Immediate process-wide budget                                            | `1000`  |
-| `EmailGuard:GlobalPerHour`           | Sustained process-wide hourly budget                                     | `1000`  |
-| `EmailGuard:GlobalCredentialReserve` | Global capacity reserved for verification, reset and second-factor codes | `200`   |
-| `EmailGuard:MaxTrackedRecipients`    | Maximum address budgets held in memory                                   | `50000` |
-| `EmailGuard:SweepIntervalMinutes`    | Idle-budget cleanup interval                                             | `5`     |
-| `EmailGuard:AlertIntervalMinutes`    | Minimum interval between repeated guard alerts or outbox failures        | `15`    |
+| Limit                                                                    | Value  |
+| ------------------------------------------------------------------------ | ------ |
+| Immediate messages allowed per normalized address                        | 20     |
+| Sustained hourly limit per address                                       | 10     |
+| Daily limit per address                                                  | 50     |
+| Immediate process-wide budget                                            | 1000   |
+| Sustained process-wide hourly budget                                     | 1000   |
+| Global capacity reserved for verification, reset and second-factor codes | 200    |
+| Maximum address budgets held in memory                                   | 50000  |
+| Idle-budget cleanup interval                                             | 5 min  |
+| Minimum interval between repeated guard alerts or outbox failures        | 15 min |
 
-Verification and reset mail cannot spend the last half of `GlobalCredentialReserve`, which stays for
+Verification and reset mail cannot spend the last half of the reserved capacity, which stays for
 second-factor codes, and second-factor codes have per-address budgets of their own.
 
 Pending mail survives a restart: rows are claimed with `FOR UPDATE SKIP LOCKED` and a lease, in priority
 order (2FA/verification/reset codes first, ordinary automatic mail next, administrator-written mail last), by
-a poll loop (`EmailQueue:PollIntervalSeconds`) also woken immediately by same-process enqueues. A message is
-attempted up to 5 times, retried after 1 minute, 5 minutes, 30 minutes and 2 hours on the first four
-failures; the 5th failure discards the row and logs an error. Delivery is at-least-once: a crash between a
-successful send and removing the row can resend it. `EmailQueue:Capacity` only bounds ordinary automatic and
-bulk mail; login, verification and password-reset codes are always accepted (and still bounded by the
-`ThrottledEmailSender` budgets above). Shutdown only waits for sends already in flight, up to
-`EmailQueue:ShutdownDrainSeconds`, which must stay below the API service's 30-second `stop_grace_period`;
-whatever is not delivered by then stays in the outbox for the next start. Raising `EmailQueue:BatchSize`
-without also raising `EmailQueue:Workers` lengthens the lease held on a claimed batch.
-
-| Setting                           | Purpose                                               | Default |
-| --------------------------------- | ------------------------------------------------------ | ------- |
-| `EmailQueue:Capacity`             | Approximate cap on pending non-critical messages      | `1000`  |
-| `EmailQueue:Workers`              | Concurrent SMTP sends per claimed batch, at most 16   | `4`     |
-| `EmailQueue:BatchSize`            | Due messages claimed at once, at most 100             | `10`    |
-| `EmailQueue:ShutdownDrainSeconds` | Graceful drain time, at most 300 seconds              | `20`    |
-| `EmailQueue:SendTimeoutSeconds`   | Per-message timeout, at most 600 seconds              | `60`    |
-| `EmailQueue:PollIntervalSeconds`  | Wait between poll passes, at most 300 seconds         | `5`     |
-
-None of the `EmailQueue:*` settings are forwarded by the base Compose file; changing one requires both the
-uppercase environment variable and adding it to `api.environment` in `docker-compose.yml`.
+a poll loop every 5 seconds, also woken immediately by same-process enqueues; each pass claims up to 10 due
+messages and sends 4 at a time, each within 60 seconds. A message is attempted up to 5 times, retried after
+1 minute, 5 minutes, 30 minutes and 2 hours on the first four failures; the 5th failure discards the row and
+logs an error. Delivery is at-least-once: a crash between a successful send and removing the row can resend
+it. The outbox accepts about 1000 pending ordinary automatic and bulk messages; login, verification and
+password-reset codes are always accepted (and still bounded by the `ThrottledEmailSender` budgets above).
+Shutdown only waits for sends already in flight, up to 20 seconds, below the API service's 30-second
+`stop_grace_period`; whatever is not delivered by then stays in the outbox for the next start. These values
+live in `EmailQueueOptions` and cannot be configured.
 
 Alert on every `Error` entry, among them a full outbox (`EmailOutboxFull`), an exhausted global budget
 (`GlobalEmailBudgetExhausted`) and exhausted attempts (`EmailDeliveryGaveUp`, with the last error), and watch
 the `Warning` event for delivery failures (`EmailDeliveryAttemptFailed`). That event, a failed outbox run and a
-failed removal of spent messages repeat while their cause lasts, so each is logged at most once per
-`EmailGuard:AlertIntervalMinutes`. Recipient throttling, a low global budget and an incomplete shutdown drain
+failed removal of spent messages repeat while their cause lasts, so each is logged at most once every 15
+minutes. Recipient throttling, a low global budget and an incomplete shutdown drain
 are not logged. See [SECURITY.md](SECURITY.md#logging) for where these events are written.
 
 Promotional email carries the one-click unsubscribe of RFC 8058 (`List-Unsubscribe` pointing at
@@ -292,9 +275,7 @@ site keeps working: the last valid list stays in `disposable_email_domains` (in 
 is accepted if none was ever stored. Restarting `api` forces a new download. Validation and matching rules
 are in [SECURITY.md](SECURITY.md#email-abuse-controls).
 
-`DisposableEmailDomains:SourceUrl` (default: the project's `disposable_email_blocklist.conf` on its `main`
-branch) can point to a mirror; it must be an absolute HTTPS URL or the API does not start. It is not forwarded by the base Compose file: add `DISPOSABLEEMAILDOMAINS__SOURCEURL` to `api.environment` to
-change it. Monitor `DisposableEmailDomainDownloadFailed` and `DisposableEmailDomainListRejected` (`Warning`,
+The source is fixed in code: the project's `disposable_email_blocklist.conf` on its `main` branch. Monitor `DisposableEmailDomainDownloadFailed` and `DisposableEmailDomainListRejected` (`Warning`,
 retried hourly) and `DisposableEmailDomainListNotStored` (`Error`); while they repeat, new disposable domains
 are not blocked.
 

@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useSession } from '@/entities/session'
 import { logoMarkLarge } from '@/shared/branding'
-import { FOUNDING_YEAR } from '@/shared/config'
+import { ORGANIZATION } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 const { t } = useI18n()
@@ -19,7 +19,9 @@ const stats = [
   <section class="hero">
     <div class="ca-container hero__grid">
       <div>
-        <div class="hero__badge">● {{ $t('pages.home.hero.badge', { year: FOUNDING_YEAR }) }}</div>
+        <div class="hero__badge">
+          ● {{ $t('pages.home.hero.badge', { year: ORGANIZATION.foundingYear }) }}
+        </div>
         <h1 class="hero__title">
           {{ $t('pages.home.hero.titleLine1') }}<br />{{ $t('pages.home.hero.titleLine2') }}
           <span style="color: var(--ca-orange)">{{ $t('pages.home.hero.titleHighlight') }}</span

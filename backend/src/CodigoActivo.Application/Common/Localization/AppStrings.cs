@@ -369,11 +369,6 @@ public static class AppStrings
     public static string EmailsSecurityAlertWarning => Get("emails.securityAlert.warning");
 
     /// <summary>
-    /// Gets the emails shared brand name value.
-    /// </summary>
-    public static string EmailsSharedBrandName => Get("emails.shared.brandName");
-
-    /// <summary>
     /// Gets the emails shared fallback link note value.
     /// </summary>
     public static string EmailsSharedFallbackLinkNote => Get("emails.shared.fallbackLinkNote");

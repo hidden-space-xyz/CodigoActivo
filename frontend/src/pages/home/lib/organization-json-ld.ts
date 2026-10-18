@@ -1,10 +1,10 @@
-import { CONTACT, FOUNDING_YEAR } from '@/shared/config'
+import { ORGANIZATION } from '@/shared/config'
 import type { Translate } from '@/shared/i18n'
 import { absoluteUrl } from '@/shared/lib/seo'
 
 /**
  * Schema.org `NGO` structured data for the home page: site name, absolute logo URL, founding year,
- * León address and social profiles.
+ * address and social profiles.
  */
 export function organizationJsonLd(t: Translate): Record<string, unknown> {
   return {
@@ -14,17 +14,17 @@ export function organizationJsonLd(t: Translate): Record<string, unknown> {
     url: absoluteUrl('/'),
     logo: absoluteUrl('/apple-touch-icon.png'),
     slogan: t('pages.home.jsonLd.slogan'),
-    foundingDate: String(FOUNDING_YEAR),
+    foundingDate: String(ORGANIZATION.foundingYear),
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'León',
-      addressCountry: 'ES',
+      addressLocality: ORGANIZATION.locality,
+      addressCountry: ORGANIZATION.countryCode,
     },
     sameAs: [
-      CONTACT.social.instagram,
-      CONTACT.social.facebook,
-      CONTACT.social.linkedin,
-      CONTACT.social.youtube,
+      ORGANIZATION.social.instagram,
+      ORGANIZATION.social.facebook,
+      ORGANIZATION.social.linkedin,
+      ORGANIZATION.social.youtube,
     ],
   }
 }

@@ -10,4 +10,7 @@ export interface LegalEntityResponse {
   taxId: string;
   address: string;
   registry: string;
+  email: string;
+  /** @nullable */
+  phone?: string | null;
 }

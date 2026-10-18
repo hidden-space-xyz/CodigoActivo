@@ -5,6 +5,7 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Emails;
+using CodigoActivo.Application.Legal;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Communication.Templates;
@@ -25,6 +26,8 @@ public sealed class ManualEmailComposerTests
         "Berto"
     );
 
+    private const string Contact = "contacto@asociacion.test";
+
     private readonly DataProtectionUnsubscribeTokens tokens = new(
         new EphemeralDataProtectionProvider()
     );
@@ -33,7 +36,11 @@ public sealed class ManualEmailComposerTests
 
     public ManualEmailComposerTests()
     {
-        sut = new ManualEmailComposer(new ApplicationOptions { BaseUrl = $"{Site}/" }, tokens);
+        sut = new ManualEmailComposer(
+            new ApplicationOptions { BaseUrl = $"{Site}/" },
+            new LegalEntityOptions { Email = Contact },
+            tokens
+        );
     }
 
     [Fact]
@@ -76,7 +83,7 @@ public sealed class ManualEmailComposerTests
         );
 
         batch.TextBody.Should().NotContain(AppStrings.EmailsFooterPromotionalNotice);
-        batch.HtmlBody.Should().NotContain(EmailBranding.ContactAddress);
+        batch.HtmlBody.Should().NotContain(Contact);
         batch
             .Recipients.Should()
             .OnlyContain(recipient =>
@@ -144,11 +151,11 @@ public sealed class ManualEmailComposerTests
         text.Should()
             .Contain(AppStrings.EmailsFooterPromotionalNotice)
             .And.Contain(AppStrings.EmailsFooterUnsubscribeText(link))
-            .And.Contain(AppStrings.EmailsFooterContact(EmailBranding.ContactAddress))
+            .And.Contain(AppStrings.EmailsFooterContact(Contact))
             .And.EndWith($"\n{Site}");
         html.Should()
             .Contain($"href=\"{WebUtility.HtmlEncode(link)}\"")
-            .And.Contain($"href=\"mailto:{EmailBranding.ContactAddress}\"")
+            .And.Contain($"href=\"mailto:{Contact}\"")
             .And.Contain(WebUtility.HtmlEncode(AppStrings.EmailsFooterUnsubscribeLabel));
         batch.HtmlBody.Should().NotContain(link, "the shared content names no recipient");
     }

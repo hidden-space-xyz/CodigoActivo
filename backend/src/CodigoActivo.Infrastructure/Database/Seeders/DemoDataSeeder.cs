@@ -793,7 +793,7 @@ public sealed class DemoDataSeeder(
     private static string BuildEmail(UserSeed seed)
     {
         var local = AsciiLower($"{seed.FirstName}.{seed.LastName}").Replace(' ', '.');
-        return $"{local}@demo.codigoactivo.es";
+        return $"{local}@demo.{Organization.WebDomain}";
     }
 
     private static string BuildPhone(int index)

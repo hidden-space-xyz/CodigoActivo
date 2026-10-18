@@ -23,6 +23,8 @@ services:
       LEGAL_TAX_ID: G00000000
       LEGAL_ADDRESS: León (desarrollo)
       LEGAL_REGISTRY: Sin inscripción (desarrollo)
+      LEGAL_EMAIL: contacto@codigoactivo.local
+      LEGAL_PHONE: 600 00 00 00
     ports:
       - "5150:8080"
     read_only: false

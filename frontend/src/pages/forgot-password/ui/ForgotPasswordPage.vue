@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useForgotPassword } from '../model/use-forgot-password'
+import { ONE_TIME_CODE_LIFETIME_MINUTES } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
 
@@ -50,7 +51,7 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
           <h2 class="forgot-sent__title">{{ $t('pages.forgotPassword.sentTitle') }}</h2>
           <p class="forgot-sent__text">
             {{ $t('pages.forgotPassword.sentBody') }}
-            {{ $t('pages.forgotPassword.sentExpiry', { minutes: 15 }) }}
+            {{ $t('pages.forgotPassword.sentExpiry', { minutes: ONE_TIME_CODE_LIFETIME_MINUTES }) }}
           </p>
         </div>
 

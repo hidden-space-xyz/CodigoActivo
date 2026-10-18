@@ -869,7 +869,7 @@ public class User : AggregateRoot<UserId>
         {
             Id = InitialAdministrator.Id,
             FirstName = "Administrador",
-            LastName = "Código Activo",
+            LastName = Organization.Name,
             Email = email,
             PasswordHash = passwordHash,
             NationalId = SpanishNationalId.FromDniNumber(0),

@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import { useQuery } from '@tanstack/vue-query'
 
 import { legalEntityQueries } from '@/entities/legal-entity'
-import { CONTACT } from '@/shared/config'
 import { LegalDocument, LegalEntry, LegalEntryList, LegalSection } from '@/shared/ui/legal-document'
 
 import { AUTHORITY_URL, PROCESSING_ACTIVITIES, type ProcessingActivity } from '../config/processing'
@@ -20,8 +19,8 @@ const controller = computed(() => {
     { label: t('pages.privacyPolicy.controller.taxId'), value: identity?.taxId || '—' },
     { label: t('pages.privacyPolicy.controller.address'), value: identity?.address || '—' },
     { label: t('pages.privacyPolicy.controller.registry'), value: identity?.registry || '—' },
-    { label: t('pages.privacyPolicy.controller.email'), value: CONTACT.email },
-    { label: t('pages.privacyPolicy.controller.phone'), value: CONTACT.phone },
+    { label: t('pages.privacyPolicy.controller.email'), value: identity?.email || '—' },
+    { label: t('pages.privacyPolicy.controller.phone'), value: identity?.phone?.text || '—' },
   ]
 })
 
@@ -54,7 +53,10 @@ function facts(activity: ProcessingActivity) {
       </LegalEntryList>
       <i18n-t keypath="pages.privacyPolicy.controller.dpo" tag="p">
         <template #email>
-          <a :href="`mailto:${CONTACT.email}`">{{ CONTACT.email }}</a>
+          <a v-if="legalEntity?.email" :href="`mailto:${legalEntity.email}`">{{
+            legalEntity.email
+          }}</a>
+          <template v-else>—</template>
         </template>
       </i18n-t>
     </LegalSection>
@@ -115,7 +117,10 @@ function facts(activity: ProcessingActivity) {
       </i18n-t>
       <i18n-t keypath="pages.privacyPolicy.rights.how" tag="p">
         <template #email>
-          <a :href="`mailto:${CONTACT.email}`">{{ CONTACT.email }}</a>
+          <a v-if="legalEntity?.email" :href="`mailto:${legalEntity.email}`">{{
+            legalEntity.email
+          }}</a>
+          <template v-else>—</template>
         </template>
       </i18n-t>
       <i18n-t keypath="pages.privacyPolicy.rights.complaint" tag="p">

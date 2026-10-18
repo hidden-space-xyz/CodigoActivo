@@ -27,7 +27,14 @@ public sealed class GetLegalEntityQueryHandler(LegalEntityOptions options)
     )
     {
         return Task.FromResult(
-            new LegalEntityResponse(options.Name, options.TaxId, options.Address, options.Registry)
+            new LegalEntityResponse(
+                options.Name,
+                options.TaxId,
+                options.Address,
+                options.Registry,
+                options.Email,
+                options.Phone.Length > 0 ? options.Phone : null
+            )
         );
     }
 }

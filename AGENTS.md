@@ -42,8 +42,12 @@ from a clone, use `docker compose -f docker-compose.yml ...` so the override is 
   password and sets the first one through password reset; there is no bootstrap password.
 - Production nginx is published on host port `8080` on all IPv4 interfaces, not only loopback; IPv6 is not
   supported.
-- Configuration names in checked-in examples are uppercase. .NET nested overrides use `SECTION__KEY` and
-  must also be forwarded explicitly by Compose.
+- A value belongs in `.env` only when a deployment must change it without a release (addresses, SMTP, the
+  demo choice) or when it must stay out of this public repository (credentials in `secrets/`, the
+  association's legal identity and contact details in `LEGAL_*`). Names are flat and uppercase, and Compose forwards
+  each one explicitly. Never make a security, abuse or retention value configurable: keep it in code, in its
+  `*Options` class registered with `AddFixedOptions`. The association's public identity is `Organization`
+  (backend) and `shared/config/organization.ts` (frontend).
 
 ## API changes
 

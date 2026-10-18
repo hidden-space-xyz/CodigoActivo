@@ -5,6 +5,7 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Composition;
+using CodigoActivo.Infrastructure.Files;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -49,7 +50,6 @@ public sealed class HandlerRegistrationTests
                 {
                     ["SMTP_HOST"] = "smtp.example.test",
                     ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
-                    ["FileStorage:RootPath"] = Path.GetTempPath(),
                 }
             )
             .Build();
@@ -60,6 +60,7 @@ public sealed class HandlerRegistrationTests
         services.AddSingleton(Substitute.For<ICurrentUser>());
         services.AddSingleton(Substitute.For<IRequestOrigin>());
         services.AddCodigoActivo(configuration);
+        services.AddSingleton(new FileStorageOptions { RootPath = Path.GetTempPath() });
         return services;
     }
 

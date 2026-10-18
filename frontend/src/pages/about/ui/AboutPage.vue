@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 
-import { CONTACT } from '@/shared/config'
+import { legalEntityQueries } from '@/entities/legal-entity'
 import { AppIcon } from '@/shared/ui/app-icon'
 import { BrandButton } from '@/shared/ui/brand-button'
 
@@ -10,6 +11,7 @@ import ActivityStep from './ActivityStep.vue'
 import ValueCard from './ValueCard.vue'
 
 const joinVisible = ref(false)
+const { data: legalEntity } = useQuery(legalEntityQueries.detail())
 </script>
 
 <template>
@@ -74,15 +76,17 @@ const joinVisible = ref(false)
       <p class="join__lead">{{ $t('pages.about.cta.dialog.lead') }}</p>
 
       <ul class="join__contact">
-        <li class="join__item">
+        <li v-if="legalEntity?.email" class="join__item">
           <AppIcon name="envelope" />
           <span class="join__label">{{ $t('common.emailLong') }}</span>
-          <a :href="`mailto:${CONTACT.email}`" class="join__value">{{ CONTACT.email }}</a>
+          <a :href="`mailto:${legalEntity.email}`" class="join__value">{{ legalEntity.email }}</a>
         </li>
-        <li class="join__item">
+        <li v-if="legalEntity?.phone" class="join__item">
           <AppIcon name="phone" />
           <span class="join__label">{{ $t('common.phone') }}</span>
-          <a :href="`tel:${CONTACT.phoneHref}`" class="join__value">{{ CONTACT.phone }}</a>
+          <a :href="`tel:${legalEntity.phone.dialable}`" class="join__value">
+            {{ legalEntity.phone.text }}
+          </a>
         </li>
       </ul>
 

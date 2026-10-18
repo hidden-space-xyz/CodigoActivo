@@ -25,7 +25,9 @@ public sealed class LegalControllerTests(CodigoActivoWebAppFactory factory)
                     "Asociación Código Activo",
                     "G24000000",
                     "Calle Ejemplo 1, 24001 León",
-                    "Registro de Asociaciones de Castilla y León, n.º 0000"
+                    "Registro de Asociaciones de Castilla y León, n.º 0000",
+                    "contacto@codigoactivo.test",
+                    "987 00 00 00"
                 )
             );
     }

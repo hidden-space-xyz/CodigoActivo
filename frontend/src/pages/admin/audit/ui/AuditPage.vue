@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { LOCALE } from '@/shared/config'
 import { formatDateTimeSeconds } from '@/shared/lib/date'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
 import { ColumnFilterDate, ColumnFilterSelect } from '@/shared/ui/column-filter'
@@ -42,7 +43,7 @@ const {
 const actionOptions = AUDIT_ACTIONS.map((action) => ({
   label: t(actionLabelKey(action)),
   value: action,
-})).sort((a, b) => a.label.localeCompare(b.label, 'es'))
+})).sort((a, b) => a.label.localeCompare(b.label, LOCALE))
 
 const actorTypeOptions = AUDIT_ACTOR_TYPES.map((actorType) => ({
   label: t(actorTypeLabelKey(actorType)),

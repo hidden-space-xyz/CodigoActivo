@@ -1,18 +1,20 @@
-const dateTimeFormatter = new Intl.DateTimeFormat('es-ES', {
+import { LOCALE } from '@/shared/config'
+
+const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
   dateStyle: 'medium',
   timeStyle: 'short',
 })
 
-const dateTimeSecondsFormatter = new Intl.DateTimeFormat('es-ES', {
+const dateTimeSecondsFormatter = new Intl.DateTimeFormat(LOCALE, {
   dateStyle: 'medium',
   timeStyle: 'medium',
 })
 
-const dateFormatter = new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' })
+const dateFormatter = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'medium' })
 
-const timeFormatter = new Intl.DateTimeFormat('es-ES', { timeStyle: 'short' })
+const timeFormatter = new Intl.DateTimeFormat(LOCALE, { timeStyle: 'short' })
 
-const dayMonthFormatter = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' })
+const dayMonthFormatter = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' })
 
 const RANGE_SEPARATOR = '–'
 

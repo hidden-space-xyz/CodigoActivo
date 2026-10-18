@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { SiteFooter } from '@/widgets/site-footer'
-import { CONTACT } from '@/shared/config'
+import { ORGANIZATION } from '@/shared/config'
 
 import { renderWithProviders, t } from '../../../../support/render'
+import { http, HttpResponse, server, TEST_LEGAL_ENTITY } from '../../../../support/server'
 
 describe('SiteFooter', () => {
   it('shows the brand, tagline and contact links', async () => {
@@ -16,11 +17,28 @@ describe('SiteFooter', () => {
       t('widgets.siteFooter.follow'),
       t('widgets.siteFooter.legal'),
     ])
-    const contact = wrapper.findAll('.footer__link')
-    expect(contact.map((link) => [link.text(), link.attributes('href')])).toEqual([
-      [CONTACT.email, `mailto:${CONTACT.email}`],
-      [CONTACT.phone, `tel:${CONTACT.phoneHref}`],
-    ])
+    await vi.waitFor(() =>
+      expect(
+        wrapper.findAll('.footer__link').map((link) => [link.text(), link.attributes('href')]),
+      ).toEqual([
+        [TEST_LEGAL_ENTITY.email, `mailto:${TEST_LEGAL_ENTITY.email}`],
+        [TEST_LEGAL_ENTITY.phone, 'tel:987000000'],
+      ]),
+    )
+  })
+
+  it('leaves the phone out when the association publishes none', async () => {
+    server.use(
+      http.get('/api/legal-entity', () => HttpResponse.json({ ...TEST_LEGAL_ENTITY, phone: null })),
+    )
+
+    const { wrapper } = await renderWithProviders(SiteFooter)
+
+    await vi.waitFor(() =>
+      expect(wrapper.findAll('.footer__link').map((link) => link.attributes('href'))).toEqual([
+        `mailto:${TEST_LEGAL_ENTITY.email}`,
+      ]),
+    )
   })
 
   it('links to the privacy and cookie policies from the legal navigation', async () => {
@@ -43,10 +61,10 @@ describe('SiteFooter', () => {
 
     const channels = wrapper.findAll('.footer__channel-link')
     expect(channels.map((link) => [link.text(), link.attributes('href')])).toEqual([
-      [t('widgets.siteFooter.social.instagram'), CONTACT.social.instagram],
-      [t('widgets.siteFooter.social.facebook'), CONTACT.social.facebook],
-      [t('widgets.siteFooter.social.linkedIn'), CONTACT.social.linkedin],
-      [t('widgets.siteFooter.social.youTube'), CONTACT.social.youtube],
+      [t('widgets.siteFooter.social.instagram'), ORGANIZATION.social.instagram],
+      [t('widgets.siteFooter.social.facebook'), ORGANIZATION.social.facebook],
+      [t('widgets.siteFooter.social.linkedIn'), ORGANIZATION.social.linkedin],
+      [t('widgets.siteFooter.social.youTube'), ORGANIZATION.social.youtube],
     ])
     for (const link of channels) {
       expect(link.attributes('target')).toBe('_blank')

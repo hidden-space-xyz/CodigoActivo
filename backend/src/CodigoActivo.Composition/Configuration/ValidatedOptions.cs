@@ -5,10 +5,26 @@ namespace CodigoActivo.Composition.Configuration;
 
 /// <summary>
 /// Registers options read from configuration and checked when the host starts, so a bad setting
-/// stops the application before it serves anything.
+/// stops the application before it serves anything, and options fixed in code that no setting can
+/// change.
 /// </summary>
 internal static class ValidatedOptions
 {
+    /// <summary>
+    /// Adds options that keep the values written in their class, out of reach of configuration,
+    /// and lets consumers take the options object itself as well as <see cref="IOptions{TOptions}"/>.
+    /// </summary>
+    /// <typeparam name="TOptions">Options added.</typeparam>
+    /// <param name="services">Service collection to add to.</param>
+    /// <returns>The same service collection.</returns>
+    public static IServiceCollection AddFixedOptions<TOptions>(this IServiceCollection services)
+        where TOptions : class
+    {
+        services.AddOptions<TOptions>();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TOptions>>().Value);
+        return services;
+    }
+
     /// <summary>
     /// Adds options built from configuration, checks them on start and lets consumers take the
     /// options object itself as well as <see cref="IOptions{TOptions}"/>.

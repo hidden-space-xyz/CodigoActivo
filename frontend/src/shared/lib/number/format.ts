@@ -1,8 +1,9 @@
+import { LOCALE } from '@/shared/config'
 import { i18n } from '@/shared/i18n'
 
-const numberFormatter = new Intl.NumberFormat('es-ES')
+const numberFormatter = new Intl.NumberFormat(LOCALE)
 
-const megabyteFormatter = new Intl.NumberFormat('es-ES', {
+const megabyteFormatter = new Intl.NumberFormat(LOCALE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 })

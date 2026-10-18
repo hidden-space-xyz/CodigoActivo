@@ -20,10 +20,9 @@ authentication are not supported.
   that choice to the second factor, and a claims refresh keeps it. The session, challenge and CSRF cookies are
   `Secure` in every environment except Development and use a `__Host-` name in Production. The ticket is not self-sufficient: completing the second factor also writes a
   `user_sessions` row whose id travels in the ticket's `sid` claim, dropping that user's already-expired rows;
-  a background worker additionally deletes every expired row on the `SessionCleanup:IntervalMinutes`
-  schedule. The row carries the expiry that decides access: refreshing the claims re-issues the cookie with a
-  later expiry, so a cookie can outlive its row, and the ticket is rejected as soon as the row is missing or
-  expired.
+  a background worker additionally deletes every expired row every hour. The row carries the expiry that
+  decides access: refreshing the claims re-issues the cookie with a later expiry, so a cookie can outlive its
+  row, and the ticket is rejected as soon as the row is missing or expired.
 - Every authenticated request revalidates account status, password lock, password fingerprint, administrator
   flag and the `sid` row in one query, and rejects the ticket when any of them is missing or expired.
   Blocking or demoting a user takes effect on existing sessions; changing or resetting the password
@@ -406,7 +405,7 @@ such as the path of a file under `/app/files`; it is written as is.
   signup that lost a unique-key race (409), a deadlock that a retry resolved, or a rejected CSRF token, which
   the client refreshes and sends again. A use case is logged as slow only above 5 seconds. A failure that
   repeats on every outbox run (`EmailOutboxRunFailed`, `ExhaustedEmailNotRemoved`, `EmailDeliveryAttemptFailed`)
-  is logged at most once per `EmailGuard:AlertIntervalMinutes`. `NormalUseLoggingTests` drives anonymous,
+  is logged at most once every 15 minutes. `NormalUseLoggingTests` drives anonymous,
   member and administrator flows and fails if any entry passes the policy. EF Core sensitive-data logging
   stays disabled; `SmtpEmailSender` strips the recipient and server reply out of SMTP exceptions before they
   are logged.
@@ -442,10 +441,10 @@ such as the path of a file under `/app/files`; it is written as is.
   logging pipeline. The log tables are partitioned by UTC day (`<table>_pYYYYMMDD`). At startup, right after
   the migrations, and every hour (`LogRetentionWorker`) `LogPartitionMaintainer` creates the partitions of
   today and the next two days, drops the partitions whose whole day is older than the cutoff and deletes the
-  older rows of the partition the cutoff falls in. The retention is `DIAGNOSTIC_LOG_RETENTION_DAYS` (default
-  30) for the diagnostic log and `AUDIT_LOG_RETENTION_DAYS` (default 60) for the audit log, each from 1 to 730
-  days; the cutoff is the retention minus one hour, so no entry outlives the retention of its table, and a
-  lowered retention removes the older entries when the API starts. Each statement runs in a short transaction
+  older rows of the partition the cutoff falls in. The retention is fixed in code (`LogRetentionOptions`): 30
+  days for the diagnostic log and 60 days for the audit log; the cutoff is the retention minus one hour, so no
+  entry outlives the retention of its table, and a release that lowers one removes the older entries when the
+  API starts. Each statement runs in a short transaction
   with a 5-second lock timeout; a failed run is logged as `LogMaintenanceFailed` (`Error`) and never stops the
   API. Purging stops while the API is stopped, so the effective retention lengthens by however long it is
   down. PostgreSQL rotates its own files at midnight with `log_truncate_on_rotation=on`, emptying the file of
@@ -518,7 +517,12 @@ Access to stored files goes through API authorization, not a direct static volum
 attachments never reach the `api-files` volume: they are read once
 per batch into the Data Protection-protected outbox content described above and removed once every message
 referencing them is delivered or discarded, with count, combined bytes and recipient count bounded by
-application settings.
+`ManualEmailOptions`.
+
+Every security, abuse and retention value (Argon2id cost, password policy, code and session lifetimes,
+lockouts, rate, concurrency and email limits, request sizes, retentions, nginx hardening) is fixed in code;
+the deployment configuration holds only addresses, credentials, identity and the demo choice
+([DEPLOYMENT.md](DEPLOYMENT.md#environment-variables)), so it cannot weaken any of them.
 
 ## Email abuse controls
 
@@ -543,7 +547,7 @@ keep working. `DisposableEmailDomainRefresher` downloads the list of the
 stored list only when it is at most 2 MiB of UTF-8 text with one valid domain name per line (blank and `#`
 lines ignored), holds at least 1,000 domains and would not refuse any domain in
 `DisposableEmailDomainList.ProtectedDomains` (Gmail, Outlook/Hotmail, Yahoo, iCloud and Proton, plus
-`codigoactivo.es`). An unreachable or slow source, an error status or a rejected body keeps the last valid
+`Organization.WebDomain`). An unreachable or slow source, an error status or a rejected body keeps the last valid
 list; until a first list is stored, every domain is accepted.
 
 Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
@@ -579,7 +583,7 @@ dependents without their own address are skipped, and attachments remain transie
 required `purpose`: `Informational` reaches every addressable recipient; `Promotional` reaches only those with
 promotional consent, enforced by the server (`ManualEmailAudience.ReachedBy`; a single recipient without it
 is refused with `EmailRecipientWithoutConsent`), and its footer carries the contact address
-(`EmailBranding.ContactAddress`, the same as the SPA's `CONTACT.email`) and the recipient's own unsubscribe
+(`LEGAL_EMAIL`, the same one the site shows) and the recipient's own unsubscribe
 link, `/unsubscribe#token=…`. The token is the user id protected with Data Protection (purpose
 `CodigoActivo.Unsubscribe.v1`), so it cannot be forged and never expires while its key stays in the ring;
 recreating the ring invalidates the links already sent. The stored content is shared by the batch and each

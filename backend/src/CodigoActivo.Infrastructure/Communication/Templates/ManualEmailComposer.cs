@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Emails;
+using CodigoActivo.Application.Legal;
 
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
@@ -12,9 +13,13 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 /// token.
 /// </summary>
 /// <param name="application">Options that carry the public base URL of the site.</param>
+/// <param name="legalEntity">Options that carry the contact address of promotional email.</param>
 /// <param name="tokens">Issues the token that names the recipient in the unsubscribe link.</param>
-public sealed class ManualEmailComposer(ApplicationOptions application, IUnsubscribeTokens tokens)
-    : IManualEmailComposer
+public sealed class ManualEmailComposer(
+    ApplicationOptions application,
+    LegalEntityOptions legalEntity,
+    IUnsubscribeTokens tokens
+) : IManualEmailComposer
 {
     private const string UnsubscribePath = "/unsubscribe";
 
@@ -32,7 +37,12 @@ public sealed class ManualEmailComposer(ApplicationOptions application, IUnsubsc
         ArgumentNullException.ThrowIfNull(recipients);
         var siteUrl = application.BaseUrl.TrimEnd('/');
         var promotional = purpose is ManualEmailPurpose.Promotional;
-        var content = ManualEmail.Render(subject, body, siteUrl, promotional);
+        var content = ManualEmail.Render(
+            subject,
+            body,
+            siteUrl,
+            promotional ? legalEntity.Email : null
+        );
         return ManualEmail.Create(
             content,
             [

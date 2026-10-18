@@ -2,7 +2,7 @@ import { ElDialog } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ORGANIZATION_ACTIVITIES, ORGANIZATION_VALUES } from '@/pages/about/config/organization'
-import { CONTACT } from '@/shared/config'
+import { TEST_LEGAL_ENTITY } from '../../../../support/server'
 
 import { renderApp, t } from '../../../../support/render'
 
@@ -35,7 +35,7 @@ describe('about page', () => {
     const dialog = document.body.querySelector('.el-dialog')
     expect(dialog?.textContent).toContain(t('pages.about.cta.dialog.lead'))
     const hrefs = Array.from(dialog?.querySelectorAll('a') ?? []).map((a) => a.getAttribute('href'))
-    expect(hrefs).toEqual([`mailto:${CONTACT.email}`, `tel:${CONTACT.phoneHref}`])
+    expect(hrefs).toEqual([`mailto:${TEST_LEGAL_ENTITY.email}`, 'tel:987000000'])
 
     const dialogComponent = wrapper.findComponent(ElDialog)
     dialogComponent.vm.$emit('update:modelValue', false)

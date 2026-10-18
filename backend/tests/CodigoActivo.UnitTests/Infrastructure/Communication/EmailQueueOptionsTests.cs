@@ -58,9 +58,9 @@ public sealed class EmailQueueOptionsTests
     [InlineData(EmailQueueOptions.DefaultBatchSize, EmailQueueOptions.DefaultWorkers, 60, 3, 210)]
     [InlineData(EmailQueueOptions.DefaultWorkers, EmailQueueOptions.DefaultWorkers, 60, 1, 90)]
     [InlineData(2, 8, 60, 1, 90)]
-    [InlineData(EmailQueueOptions.MaxBatchSize, EmailQueueOptions.DefaultWorkers, 60, 25, 1530)]
+    [InlineData(100, EmailQueueOptions.DefaultWorkers, 60, 25, 1530)]
     [InlineData(EmailQueueOptions.DefaultBatchSize, 1, 60, 10, 630)]
-    [InlineData(EmailQueueOptions.MaxBatchSize, 1, 600, 100, 60030)]
+    [InlineData(100, 1, 600, 100, 60030)]
     [InlineData(0, 0, 60, 1, 90)]
     [InlineData(EmailQueueOptions.DefaultBatchSize, EmailQueueOptions.DefaultWorkers, 0, 3, 30)]
     public void LeaseCoversEveryDeliveryWaveOfTheClaimedBatch(
@@ -86,19 +86,6 @@ public sealed class EmailQueueOptionsTests
                 expectedWaves * options.SendTimeout,
                 "a claimed row may not become claimable again while its own worker can still be sending it"
             );
-    }
-
-    [Fact]
-    public void LeaseWithTheSlowestConfigurationStaysUnderSeventeenHours()
-    {
-        var options = new EmailQueueOptions
-        {
-            BatchSize = EmailQueueOptions.MaxBatchSize,
-            Workers = 1,
-            SendTimeout = EmailQueueOptions.MaxSendTimeout,
-        };
-
-        options.Lease.Should().BeLessThan(TimeSpan.FromHours(17));
     }
 
     [Theory]

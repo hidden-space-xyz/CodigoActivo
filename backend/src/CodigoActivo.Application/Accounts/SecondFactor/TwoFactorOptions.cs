@@ -31,11 +31,6 @@ public sealed class TwoFactorOptions
     public const int DefaultMaxFailedAttempts = 5;
 
     /// <summary>
-    /// Stores the shared default issuer shown by authenticator applications.
-    /// </summary>
-    public const string DefaultIssuer = "Código Activo";
-
-    /// <summary>
     /// Gets or sets how long a password-verified login may wait for its second factor. Emailed
     /// codes share this lifetime.
     /// </summary>
@@ -60,9 +55,4 @@ public sealed class TwoFactorOptions
     /// Gets or sets how long second-factor verification stays locked after too many failures.
     /// </summary>
     public TimeSpan LockoutDuration { get; set; } = DefaultLockoutDuration;
-
-    /// <summary>
-    /// Gets or sets the issuer name embedded in authenticator enrollment URIs.
-    /// </summary>
-    public string Issuer { get; set; } = DefaultIssuer;
 }

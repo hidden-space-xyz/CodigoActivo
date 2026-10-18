@@ -34,22 +34,5 @@ public sealed class LogRetentionOptionsTests
 
         options.Diagnostics.Should().Be(TimeSpan.FromDays(30));
         options.Audit.Should().Be(TimeSpan.FromDays(60));
-        options.IsWithinLimits().Should().BeTrue();
-    }
-
-    [Theory]
-    [InlineData(1, 730, true)]
-    [InlineData(0.5, 60, false)]
-    [InlineData(30, 731, false)]
-    public void IsWithinLimitsFromOneDayToTwoYears(double diagnostics, double audit, bool expected)
-    {
-        new LogRetentionOptions
-        {
-            Diagnostics = TimeSpan.FromDays(diagnostics),
-            Audit = TimeSpan.FromDays(audit),
-        }
-            .IsWithinLimits()
-            .Should()
-            .Be(expected);
     }
 }

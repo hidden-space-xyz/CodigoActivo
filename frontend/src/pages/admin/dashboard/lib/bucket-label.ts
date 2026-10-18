@@ -1,8 +1,9 @@
+import { LOCALE } from '@/shared/config'
 import { parseDateOnly } from '@/shared/lib/date'
 
-const dayMonthFormatter = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' })
+const dayMonthFormatter = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short' })
 
-const monthYearFormatter = new Intl.DateTimeFormat('es-ES', { month: 'short', year: '2-digit' })
+const monthYearFormatter = new Intl.DateTimeFormat(LOCALE, { month: 'short', year: '2-digit' })
 
 /**
  * Chart axis label for a date bucket: short month and year when `granularity` is `'month'`,

@@ -7,6 +7,7 @@ import { useRoute } from 'vue-router'
 import { eventQueries, signupAccess, statusLabelKey } from '@/entities/event'
 import { useSession } from '@/entities/session'
 import { fileContentUrl } from '@/shared/api'
+import { ORGANIZATION } from '@/shared/config'
 import { formatDateRange, formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
 import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/rich-text'
 import { absoluteUrl, type SeoData, useSeo } from '@/shared/lib/seo'
@@ -96,8 +97,8 @@ const seo = computed<SeoData | undefined>(() => {
         name: t('seo.siteName'),
         address: {
           '@type': 'PostalAddress',
-          addressLocality: 'León',
-          addressCountry: 'ES',
+          addressLocality: ORGANIZATION.locality,
+          addressCountry: ORGANIZATION.countryCode,
         },
       },
     },
