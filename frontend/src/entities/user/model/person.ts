@@ -3,7 +3,6 @@ import { toDateOnly } from '@/shared/lib/date'
 
 import type { Gender } from './gender'
 import { nationalIdError, normalizeNationalId } from './national-id'
-import type { UpdateUserInput } from './types'
 
 const EMAIL_PATTERN =
   /^[^\s@()<>[\]:;,\\"\p{Cc}]+@[^\s@()<>[\]:;,\\"\p{Cc}]+\.[^\s@()<>[\]:;,\\"\p{Cc}]+$/u
@@ -258,32 +257,4 @@ export function personProblemKey(field: PersonField, problem: PersonProblem): Tr
   return problem === 'required'
     ? (REQUIRED_MESSAGES[field] ?? PROBLEM_MESSAGES.required)
     : PROBLEM_MESSAGES[problem]
-}
-
-/**
- * Builds the admin update of a user from a submission: a dependent keeps `parentId` and sends
- * `null` contact details, DNI/NIE and no consent, while an independent account sends no birth date.
- */
-export function toUpdateUserInput(
-  submission: PersonSubmission,
-  parentId: string | null,
-): UpdateUserInput {
-  if (submission.kind === 'dependent') {
-    return {
-      ...submission.person,
-      email: null,
-      phone: null,
-      secondaryPhone: null,
-      nationalId: null,
-      promotionalConsent: false,
-      parentId,
-      currentPassword: null,
-    }
-  }
-  return {
-    ...submission.person,
-    birthDate: null,
-    parentId,
-    currentPassword: submission.currentPassword,
-  }
 }

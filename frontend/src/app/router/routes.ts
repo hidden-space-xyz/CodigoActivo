@@ -109,6 +109,17 @@ export const routes: readonly RouteRecordRaw[] = [
     },
   },
   {
+    path: '/privacy',
+    name: 'privacy-policy',
+    component: () => import('@/pages/privacy-policy').then((m) => m.PrivacyPolicyPage),
+    meta: {
+      seo: {
+        titleKey: 'seo.routes.privacyPolicy.title',
+        descriptionKey: 'seo.routes.privacyPolicy.description',
+      },
+    },
+  },
+  {
     path: '/register',
     name: 'register',
     component: () => import('@/pages/register').then((m) => m.RegisterPage),

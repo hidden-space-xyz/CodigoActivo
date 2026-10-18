@@ -9,7 +9,6 @@ import {
   getUserTypesRequest,
   resetUserTwoFactorRequest,
   setUserAdminRequest,
-  updateUserRequest,
 } from '@/entities/user/api/requests'
 
 import { apiError, http, HttpResponse, noContent, paged, server } from '../../../../support/server'
@@ -62,7 +61,7 @@ describe('user requests', () => {
     ])
   })
 
-  it('updates, retypes and deletes users', async () => {
+  it('retypes and deletes users', async () => {
     const calls: { method: string; path: string; query: Record<string, string>; body: unknown }[] =
       []
     const record = async ({ request }: { request: Request }) => {
@@ -77,30 +76,13 @@ describe('user requests', () => {
       return request.method === 'DELETE' ? noContent() : HttpResponse.json(buildUserResponse())
     }
     server.use(
-      http.put('/api/users/u1', record),
       http.patch('/api/users/u1/change-type', record),
       http.delete('/api/users/u1', record),
     )
-    const input = {
-      firstName: 'Grace',
-      lastName: 'Hopper',
-      email: 'grace@example.test',
-      phone: '611111111',
-      secondaryPhone: '622222222',
-      birthDate: null,
-      nationalId: 'X1234567L',
-      promotionalConsent: true,
-      gender: 'Female',
-      parentId: null,
-      currentPassword: null,
-    } as const
-
-    await updateUserRequest('u1', input)
     await changeUserTypeRequest('u1', 'type-member')
     await deleteUserRequest('u1')
 
     expect(calls).toEqual([
-      { method: 'PUT', path: '/api/users/u1', query: {}, body: input },
       {
         method: 'PATCH',
         path: '/api/users/u1/change-type',

@@ -55,6 +55,18 @@ public interface IUserRepository : IRepository<User>
     );
 
     /// <summary>
+    /// Loads the accounts that still wait for the verification of their email and were registered
+    /// up to a moment.
+    /// </summary>
+    /// <param name="cutoff">Latest registration moment included.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the unverified accounts, oldest first.</returns>
+    public Task<IReadOnlyList<User>> ListUnverifiedRegisteredUpToAsync(
+        DateTimeOffset cutoff,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Tells whether an account already uses an email address.
     /// </summary>
     /// <param name="email">Normalized email address.</param>

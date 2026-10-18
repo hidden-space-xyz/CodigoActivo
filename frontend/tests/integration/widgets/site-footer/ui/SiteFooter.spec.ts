@@ -23,15 +23,19 @@ describe('SiteFooter', () => {
     ])
   })
 
-  it('links to the cookie policy from the legal navigation', async () => {
+  it('links to the privacy and cookie policies from the legal navigation', async () => {
     const { wrapper, router } = await renderWithProviders(SiteFooter)
 
     const legal = wrapper.get('nav.footer__legal')
     expect(legal.attributes('aria-label')).toBe(t('widgets.siteFooter.legal'))
-    const link = legal.get('a')
-    expect(link.text()).toBe(t('widgets.siteFooter.cookies'))
-    expect(link.attributes('href')).toBe(router.resolve({ name: 'cookie-policy' }).href)
-    expect(link.find('.app-icon').exists()).toBe(true)
+    const links = legal.findAll('a')
+    expect(links.map((link) => [link.text(), link.attributes('href')])).toEqual([
+      [t('widgets.siteFooter.privacy'), router.resolve({ name: 'privacy-policy' }).href],
+      [t('widgets.siteFooter.cookies'), router.resolve({ name: 'cookie-policy' }).href],
+    ])
+    for (const link of links) {
+      expect(link.find('.app-icon').exists()).toBe(true)
+    }
   })
 
   it('opens social profiles in a new tab', async () => {

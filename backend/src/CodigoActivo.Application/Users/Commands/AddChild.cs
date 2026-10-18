@@ -17,11 +17,11 @@ namespace CodigoActivo.Application.Users.Commands;
 public sealed record AddChildCommand(UserId ParentId, MinorDraft Child) : ICommand<Result<UserId>>;
 
 /// <summary>
-/// Executes the command to add a minor to a household. The signed-in user may add one to their
-/// own household; an administrator to anyone's.
+/// Executes the command to add a minor to a household. Only the guardian may add one to their own
+/// household; an administrator cannot add minors to anyone else's.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
+/// <param name="actingUser">Policy that decides whose personal data the signed-in user manages.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 public sealed class AddChildCommandHandler(
@@ -44,7 +44,7 @@ public sealed class AddChildCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var allowed = await actingUser.EnsureMayActForAsync(command.ParentId, ct);
+        var allowed = await actingUser.EnsureMayManagePersonalDataAsync(command.ParentId, ct);
         if (allowed.IsFailure)
         {
             return allowed.Error!;

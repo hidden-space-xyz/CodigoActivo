@@ -74,8 +74,9 @@ docker compose exec db sh -c 'tail -n 100 /var/log/postgresql/postgresql-*.log'
 
 Set at least `APP_BASE_URL` (final public HTTPS origin, no path/query/fragment), `DEMO_MODE` (permanent for
 these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty), `SMTP_HOST` and
-`SMTP_FROM_ADDRESS`, plus `SMTP_USERNAME` and its password in `secrets/smtp_password` when the server needs a
-login. See [Secrets](#secrets) for the file rules.
+`SMTP_FROM_ADDRESS`, the association's identity for the privacy policy (`LEGAL_NAME`, `LEGAL_TAX_ID`,
+`LEGAL_ADDRESS`, `LEGAL_REGISTRY`), plus `SMTP_USERNAME` and its password in `secrets/smtp_password` when the
+server needs a login. See [Secrets](#secrets) for the file rules.
 
 `docker compose logs api` shows only a failed start (its fatal event) and failures of the logging pipeline;
 everything else the API logs is on the «Diagnóstico» page.
@@ -88,7 +89,8 @@ Production startup (`ProductionConfiguration`) also fails when:
 - `APP_BASE_URL` is not a clean HTTPS origin on a public DNS name (IP addresses, localhost and reserved
   example/test domains are rejected);
 - the SMTP host or sender is invalid, `SMTP_SECURITY` is `None` or `Auto`, or only one of `SMTP_USERNAME` and
-  `secrets/smtp_password` is set.
+  `secrets/smtp_password` is set;
+- any of `LEGAL_NAME`, `LEGAL_TAX_ID`, `LEGAL_ADDRESS` or `LEGAL_REGISTRY` is blank.
 
 These settings and every application setting are checked before anything is written to `api-state` or the
 database. `BOOTSTRAP_ADMIN_EMAIL` is checked once the database is migrated and the deployment mode is locked
@@ -139,6 +141,14 @@ take the listed default when empty or missing.
 | `SMTP_FROM_NAME`                | Sender display name                                                           | `Código Activo`                             | Empty                                          |
 | `DIAGNOSTIC_LOG_RETENTION_DAYS` | Days a diagnostic log entry is kept, from 1 to 730                            | `30`                                        | `30`                                           |
 | `AUDIT_LOG_RETENTION_DAYS`      | Days an audit log entry is kept, from 1 to 730                                | `60`                                        | `60`                                           |
+| `LEGAL_NAME`                    | Registered name of the association, shown as data controller                  | Required in Production                      | Empty                                          |
+| `LEGAL_TAX_ID`                  | NIF of the association                                                        | Required in Production                      | Empty                                          |
+| `LEGAL_ADDRESS`                 | Registered postal address of the association                                  | Required in Production                      | Empty                                          |
+| `LEGAL_REGISTRY`                | Register of associations and entry number                                     | Required in Production                      | Empty                                          |
+
+The privacy policy (`/privacy`) reads the association's identity from the `LEGAL_*` variables through
+`GET /api/legal-entity`, and its texts state both log retentions and the hosting, email and file storage
+providers; change those texts in the same release as any of them.
 
 Neither the template nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
 volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the PostgreSQL log files
@@ -204,8 +214,9 @@ Kestrel refuses request bodies above 2 MiB except on the upload and manual-email
 raising the application limit may also require changing `frontend/docker/default.conf`. Manual-email
 attachments are never stored in `api-files`.
 
-The cookie policy page states the default `Auth:ExpireHours` and `TwoFactor:ChallengeLifetimeMinutes`;
-overriding either requires updating `pages.cookiePolicy` in `frontend/src/shared/i18n/locales/es.json`.
+The cookie and privacy policies and the login checkbox (`pages.login.keepSignedIn`) state the default
+`Auth:ExpireHours` and `TwoFactor:ChallengeLifetimeMinutes`; overriding either requires updating them in
+`frontend/src/shared/i18n/locales/es.json`.
 
 ## Email delivery
 

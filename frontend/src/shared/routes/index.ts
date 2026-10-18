@@ -24,6 +24,7 @@ interface RouteNamedMap {
   news: NamedRoute<'news', '/news'>
   'news-detail': NamedRoute<'news-detail', '/news/:newsItemId', 'newsItemId'>
   'cookie-policy': NamedRoute<'cookie-policy', '/cookies'>
+  'privacy-policy': NamedRoute<'privacy-policy', '/privacy'>
   register: NamedRoute<'register', '/register'>
   login: NamedRoute<'login', '/login'>
   'login-two-factor': NamedRoute<'login-two-factor', '/login/verify'>

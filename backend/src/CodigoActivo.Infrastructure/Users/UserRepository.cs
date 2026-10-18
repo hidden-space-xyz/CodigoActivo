@@ -56,6 +56,19 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<User>> ListUnverifiedRegisteredUpToAsync(
+        DateTimeOffset cutoff,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Where(user =>
+                user.Status == UserStatus.Pending && user.CreatedAt <= cutoff
+            )
+            .OrderBy(user => user.CreatedAt)
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
     public Task<bool> EmailExistsAsync(
         EmailAddress email,
         UserId? excludeUserId = null,

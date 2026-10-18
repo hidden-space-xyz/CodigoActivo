@@ -74,32 +74,6 @@ export interface ServerTablePage<T> {
   readonly total: number
 }
 
-const FETCH_ALL_PAGE_SIZE = 100
-const FETCH_ALL_PAGE_LIMIT = 200
-
-/**
- * Collects every row for the given filters in 100-row pages, e.g. for CSV export. Stops at
- * `total`, on an empty page or after 200 pages (20,000 rows), silently truncating larger results.
- */
-export async function fetchAllPages<T>(
-  fetchPage: (params: Record<string, unknown>) => Promise<ServerTablePage<T>>,
-  params: Record<string, unknown>,
-): Promise<T[]> {
-  const collected: T[] = []
-
-  for (let page = 1; page <= FETCH_ALL_PAGE_LIMIT; page += 1) {
-    const { items, total } = await fetchPage({
-      ...params,
-      page,
-      pageSize: FETCH_ALL_PAGE_SIZE,
-    })
-    collected.push(...items)
-    if (items.length === 0 || collected.length >= total) break
-  }
-
-  return collected
-}
-
 /**
  * A paginated collection a server table reads: the key its pages are cached under and how one page
  * is fetched for the table's params. Entities expose their admin lists as sources.
@@ -136,8 +110,7 @@ function initialFilters<TParams>(
  * `setSort` (a sort chosen by code) go back to the first page; an empty page beyond the end jumps
  * to the last one. Narrow viewports get a compact paginator. `hasActiveFilters` tells whether a
  * column filter, not `extraParams`, narrows the list; `showPagination` whether there is more than
- * the smallest page to browse. `fetchAll` collects every row matching the current filters and
- * sort, e.g. for CSV export.
+ * the smallest page to browse.
  */
 export function useServerTable<T, TParams = Record<string, unknown>>(
   options: UseServerTableOptions<T, TParams>,
@@ -277,13 +250,6 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     onFilter()
   }
 
-  function fetchAll(): Promise<T[]> {
-    return fetchAllPages((next) => options.fetchPage(next as unknown as TParams), {
-      ...filterParams.value,
-      sort: sortParam.value,
-    })
-  }
-
   function columnFilter(key: string): ServerTableFilter {
     const existing = filters.value[key]
     if (existing) return existing as ServerTableFilter
@@ -323,7 +289,6 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     columnFilter,
     filterValue,
     clearFilters,
-    fetchAll,
     refetch,
     setSort,
     onSortChange,

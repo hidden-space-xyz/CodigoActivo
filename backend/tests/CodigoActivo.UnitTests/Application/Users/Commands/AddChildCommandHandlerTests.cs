@@ -17,7 +17,7 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 public sealed class AddChildCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly TestCurrentUser currentUser = new(isAdmin: true);
+    private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new(today: Today);
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly AddChildCommandHandler sut;
@@ -34,6 +34,7 @@ public sealed class AddChildCommandHandlerTests
 
     private Task<Result<UserId>> AddAsync(Guid parentId)
     {
+        currentUser.Id = UserId.From(parentId);
         return sut.HandleAsync(
             new AddChildCommand(
                 UserId.From(parentId),
@@ -57,13 +58,34 @@ public sealed class AddChildCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncAdministratorAddingToAnotherHouseholdIsForbidden()
+    {
+        currentUser.IsAdmin = true;
+        var guardian = NewUser();
+        users.FindReturns(guardian);
+
+        var result = await sut.HandleAsync(
+            new AddChildCommand(guardian.Id, new MinorDraft("Kid", "Doe", MinorDob, Gender.Male)),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
     public async Task HandleAsyncParentMissingReturnsNotFound()
     {
         users.FindReturns(null);
         var request = new MinorDraft("Kid", "Doe", MinorDob, Gender.Male);
+        var parentId = UserId.New();
+        currentUser.Id = parentId;
 
         var result = await sut.HandleAsync(
-            new AddChildCommand(UserId.New(), request),
+            new AddChildCommand(parentId, request),
             TestContext.Current.CancellationToken
         );
 
@@ -76,9 +98,11 @@ public sealed class AddChildCommandHandlerTests
     {
         users.FindReturns(NewUser());
         var request = new MinorDraft("Grown", "Up", AdultDob, Gender.Male);
+        var parentId = UserId.New();
+        currentUser.Id = parentId;
 
         var result = await sut.HandleAsync(
-            new AddChildCommand(UserId.New(), request),
+            new AddChildCommand(parentId, request),
             TestContext.Current.CancellationToken
         );
 
@@ -151,6 +175,7 @@ public sealed class AddChildCommandHandlerTests
         var added = await CaptureAddedUsersAsync();
         clock.UtcNow = new DateTimeOffset(2026, 3, 3, 0, 0, 0, TimeSpan.Zero);
         var request = new MinorDraft("  Kid  ", "  Doe  ", MinorDob, Gender.Female);
+        currentUser.Id = UserId.From(parentId);
 
         var result = await sut.HandleAsync(
             new AddChildCommand(UserId.From(parentId), request),

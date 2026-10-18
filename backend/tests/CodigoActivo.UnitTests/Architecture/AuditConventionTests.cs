@@ -72,7 +72,11 @@ public sealed class AuditConventionTests
             .Where(typeof(IScheduledCommand).IsAssignableFrom)
             .Select(command => command.Name)
             .Should()
-            .BeEquivalentTo("RemoveExpiredSessionsCommand", "PurgeDeletedAccountsCommand");
+            .BeEquivalentTo(
+                "RemoveExpiredSessionsCommand",
+                "PurgeDeletedAccountsCommand",
+                "PurgeUnverifiedAccountsCommand"
+            );
     }
 
     [Fact]

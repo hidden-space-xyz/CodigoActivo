@@ -568,25 +568,45 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateAsAdminChangingAnotherUsersEmailAppliesItAtOnce()
+    public async Task UpdateAsAdminOfAnotherUserIsForbiddenAndChangesNothing()
     {
         var client = await LoginAsAdminAsync();
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
             AdultUpdate(
+                firstName: "Cambiado",
                 email: "marta.admin@codigoactivo.test",
                 currentPassword: TestSeedData.Password
             ),
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var updated = await response.ReadJsonAsync<UserResponse>(Ct);
-        updated!.Email.Should().Be("marta.admin@codigoactivo.test");
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .EmailChange.NewEmail.Should()
-            .BeNull();
+        await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.FirstName.Should().Be("Marta");
+        stored.Email!.Value.Should().Be(TestSeedData.MemberEmail);
+        stored.EmailChange.NewEmail.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task AddChildAsAdminToAnotherHouseholdIsForbidden()
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/children",
+            new RegisterMinorRequest("Nueva", "Menor", MinorBirthDate, ContractGender.Female),
+            Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+        var children = await Factory.QueryAsync(db =>
+            Task.FromResult(
+                db.Users.Count(u => u.ParentId == UserId.From(TestSeedData.Users.MemberId))
+            )
+        );
+        children.Should().Be(1);
     }
 
     [Fact]
@@ -643,7 +663,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task UpdateGivingAStandaloneAccountABirthDateIsRefusedAndKeepsItsCredentials()
     {
-        var client = await LoginAsAdminAsync();
+        var client = await LoginAsMemberAsync();
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
@@ -781,23 +801,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateAsAdminGivingAnotherUserAnEmailInUseReturnsConflict()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PutJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}",
-            AdultUpdate(email: TestSeedData.PendingEmail, currentPassword: TestSeedData.Password),
-            Ct
-        );
-
-        await response.ShouldBeConflictAsync(ErrorCode.UserEmailAlreadyInUse);
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .Email!.Value.Should()
-            .Be(TestSeedData.MemberEmail);
-    }
-
-    [Fact]
     public async Task UpdateChangingOwnEmailToAVerifiedAccountsAddressOnlyNotifiesItsHolder()
     {
         var client = await LoginAsMemberAsync();
@@ -866,7 +869,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task UpdateGivingAStandaloneAccountAGuardianReturnsBadRequest()
     {
-        var client = await LoginAsAdminAsync();
+        var client = await LoginAsMemberAsync();
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
@@ -884,7 +887,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task UpdateMovingADependentToAnotherGuardianReturnsForbidden()
     {
-        var client = await LoginAsAdminAsync();
+        var client = await LoginAsMemberAsync();
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberChildId}",
@@ -1011,7 +1014,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task UpdateAdultDependentMovedToAnotherGuardianReturnsForbidden()
     {
-        var client = await LoginAsAdminAsync();
+        var client = await LoginAsMemberAsync();
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberChildId}",
@@ -1153,7 +1156,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task AddChildToADependentReturnsBadRequest()
     {
-        var client = await LoginAsAdminAsync();
+        var client = await LoginAsMemberAsync();
         var request = new RegisterMinorRequest(
             "Nieto",
             "Miembro",

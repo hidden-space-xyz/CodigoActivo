@@ -7,13 +7,12 @@ import {
   patchApiUsersUserIdAdmin,
   patchApiUsersUserIdChangeType,
   postApiUsersUserIdTwoFactorReset,
-  putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
 import { toPage } from '@/shared/api'
 import type { ServerTablePage } from '@/shared/lib/paging'
 
-import type { UpdateUserInput, User, UserCatalogRef, UserListParams } from '../model/types'
-import { toUpdateUserRequest, toUser, toUserCatalogRef } from './mapper'
+import type { User, UserCatalogRef, UserListParams } from '../model/types'
+import { toUser, toUserCatalogRef } from './mapper'
 
 /** Fetches one page of the admin user list. */
 export async function getUserListPageRequest(
@@ -39,11 +38,6 @@ export async function getUserTypesRequest(): Promise<readonly UserCatalogRef[]> 
 export async function getUserStatusesRequest(): Promise<readonly UserCatalogRef[]> {
   const response = await getApiUsersStatusTypes()
   return response.data.map(toUserCatalogRef)
-}
-
-/** Replaces a user's data. */
-export async function updateUserRequest(id: string, input: UpdateUserInput): Promise<void> {
-  await putApiUsersUserId(id, toUpdateUserRequest(input))
 }
 
 /** Deletes a user. */

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { setMediaQueryMatches } from '../../../../support/media'
 import { mountComposable } from '../../../../support/render'
-import { fetchAllPages, type ServerTablePage, useServerTable } from '@/shared/lib/paging'
+import { type ServerTablePage, useServerTable } from '@/shared/lib/paging'
 
 interface Row {
   id: number
@@ -408,43 +408,5 @@ describe('useServerTable', () => {
     expect(result.paginationProps.value.layout).toBe('prev, pager, next')
     expect(result.paginationProps.value.pagerCount).toBe(5)
     expect(result.tableProps.value.scrollbarAlwaysOn).toBe(true)
-  })
-})
-
-describe('fetchAllPages', () => {
-  it('collects pages of 100 rows until the total is reached', async () => {
-    const fetchPage = vi.fn((params: Params) => {
-      const page = params.page as number
-      return Promise.resolve({ items: rows(page < 3 ? 100 : 50, (page - 1) * 100), total: 250 })
-    })
-
-    const result = await fetchAllPages(fetchPage, { search: 'x' })
-
-    expect(result).toHaveLength(250)
-    expect(fetchPage.mock.calls.map(([params]) => params)).toEqual([
-      { search: 'x', page: 1, pageSize: 100 },
-      { search: 'x', page: 2, pageSize: 100 },
-      { search: 'x', page: 3, pageSize: 100 },
-    ])
-  })
-
-  it('stops on an empty page', async () => {
-    const fetchPage = vi.fn((params: Params) =>
-      Promise.resolve({ items: params.page === 1 ? rows(100) : [], total: 1000 }),
-    )
-
-    const result = await fetchAllPages(fetchPage, {})
-
-    expect(result).toHaveLength(100)
-    expect(fetchPage).toHaveBeenCalledTimes(2)
-  })
-
-  it('stops after 200 pages', async () => {
-    const fetchPage = vi.fn(() => Promise.resolve({ items: [{ id: 1 }], total: 1_000_000 }))
-
-    const result = await fetchAllPages(fetchPage, {})
-
-    expect(fetchPage).toHaveBeenCalledTimes(200)
-    expect(result).toHaveLength(200)
   })
 })

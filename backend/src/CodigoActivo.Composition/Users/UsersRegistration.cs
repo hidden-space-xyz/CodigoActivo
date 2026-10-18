@@ -9,7 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace CodigoActivo.Composition.Users;
 
 /// <summary>
-/// Registers users: households, who may act for whom and the legal copies of erased accounts.
+/// Registers users: households, who may act for whom, the legal copies of erased accounts and the
+/// scheduled erasure of accounts nobody verified.
 /// </summary>
 internal static class UsersRegistration
 {
@@ -25,6 +26,8 @@ internal static class UsersRegistration
         services.AddScoped<ActingUserPolicy>();
         services.AddValidatedOptions<DeletedAccountPurgeOptions>(_ => { });
         services.AddHostedService<DeletedAccountPurger>();
+        services.AddValidatedOptions<UnverifiedAccountPurgeOptions>(_ => { });
+        services.AddHostedService<UnverifiedAccountPurger>();
         return services;
     }
 }

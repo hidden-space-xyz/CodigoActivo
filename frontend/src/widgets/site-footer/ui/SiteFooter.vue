@@ -74,6 +74,10 @@ import { BrandLogo } from '@/shared/ui/brand-logo'
         <nav class="footer__group footer__legal" :aria-label="$t('widgets.siteFooter.legal')">
           <div class="footer__heading">{{ $t('widgets.siteFooter.legal') }}</div>
           <div class="footer__links">
+            <RouterLink :to="{ name: 'privacy-policy' }" class="footer__legal-link">
+              <AppIcon name="lock" />
+              {{ $t('widgets.siteFooter.privacy') }}
+            </RouterLink>
             <RouterLink :to="{ name: 'cookie-policy' }" class="footer__legal-link">
               <AppIcon name="cookie" />
               {{ $t('widgets.siteFooter.cookies') }}

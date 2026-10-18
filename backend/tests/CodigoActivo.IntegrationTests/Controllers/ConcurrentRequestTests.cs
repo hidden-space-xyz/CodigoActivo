@@ -169,10 +169,10 @@ public sealed class ConcurrentRequestTests(CodigoActivoWebAppFactory factory)
     {
         var hasher = new InterleavingPasswordHasher();
         await using var host = HostWith<IPasswordHasher>(hasher);
-        using var admin = await LoginAsync(host, TestSeedData.AdminCredentials);
+        using var member = await LoginAsync(host, TestSeedData.MemberCredentials);
         hasher.RunOnceWhileVerifying(() => ChangeMemberType(host.Services));
 
-        using var response = await admin.PutJsonAsync(
+        using var response = await member.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
             new UpdateUserRequest(
                 "Marta",

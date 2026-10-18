@@ -248,26 +248,6 @@ describe('useUsersAdmin', () => {
     })
   })
 
-  it('fetches every page with the current filters and sort for exports', async () => {
-    const firstPage = Array.from({ length: 100 }, (_, index) =>
-      buildUserResponse({ id: `user-${String(index)}` }),
-    )
-    const urls = serveUserPages([firstPage, [buildUserResponse({ id: 'user-last' })]])
-    const { result } = await mountComposable(() => useUsersAdmin())
-    result.table.columnFilter('isAdmin').value = true
-    result.table.onSortChange({ prop: 'email', order: 'descending' })
-    await flushPromises()
-
-    const users = await result.table.fetchAll()
-
-    expect(users).toHaveLength(101)
-    expect(users.at(-1)?.id).toBe('user-last')
-    expect(urls.slice(-2).map(queryOf)).toEqual([
-      { scope: 'Independent', isAdmin: 'true', sort: '-email', page: '1', pageSize: '100' },
-      { scope: 'Independent', isAdmin: 'true', sort: '-email', page: '2', pageSize: '100' },
-    ])
-  })
-
   it('keeps a refused admin password in the dialog instead of a toast', async () => {
     serveUserPages([[]])
     let refuse = true
@@ -291,39 +271,5 @@ describe('useUsersAdmin', () => {
     result.grantAdmin('Str0ngPass!23')
     await expectNotification(t('pages.admin.users.toasts.adminGranted'))
     expect(result.grantDialog.visible.value).toBe(false)
-  })
-
-  it('tells an admin that a new email of their own account waits for its link', async () => {
-    serveUserPages([[]])
-    server.use(
-      http.get('/api/users/:userId', ({ params }) =>
-        HttpResponse.json(buildUserResponse({ id: String(params.userId) })),
-      ),
-      http.put('/api/users/:userId', () => HttpResponse.json(buildUserResponse())),
-    )
-    const { result } = await mountComposable(() => useUsersAdmin(), {
-      user: { id: 'user-1', isAdmin: true },
-    })
-    const input = {
-      firstName: 'Ada',
-      lastName: 'Lovelace',
-      email: ' Ada.New@example.test ',
-      phone: '600000000',
-      secondaryPhone: null,
-      birthDate: null,
-      nationalId: '12345678Z',
-      promotionalConsent: false,
-      gender: 'Female',
-      parentId: null,
-      currentPassword: 'Str0ngPass!23',
-    } as const
-
-    await result.openEdit(toUser(buildUserResponse()))
-    result.saveUser(input)
-    await expectNotification(t('pages.admin.users.toasts.emailChangeSent', { email: input.email }))
-
-    await result.openEdit(toUser(buildUserResponse({ id: 'user-2' })))
-    result.saveUser(input)
-    await expectNotification(t('pages.admin.users.toasts.updated'))
   })
 })
