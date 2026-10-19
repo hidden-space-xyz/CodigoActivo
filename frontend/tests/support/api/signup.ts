@@ -2,6 +2,8 @@ import type {
   ActivityResponse,
   AssignedActivityResponse,
   EventTermsDocumentStateResponse,
+  EventTermsPersonDecisionResponse,
+  EventTermsPersonStateResponse,
   HouseholdMemberAssignmentResponse,
   HouseholdSignupRolesResponse,
   TimeOverlapResponse,
@@ -37,26 +39,28 @@ export interface SignupApiState {
   household: HouseholdMemberAssignmentResponse[]
   signupRoles: HouseholdSignupRolesResponse[] | 'error'
   /**
-   * Whether the single default terms document (`TERMS_DOCUMENT`) is already accepted; ignored
-   * once `termsDocuments` is set explicitly.
+   * Whether every document is already accepted for every member of the household; ignored for a
+   * member whose decisions `termsDecisions` sets.
    */
   termsAccepted: boolean
-  /** Overrides the full documents list served by `/terms`; unset derives one from `termsAccepted`. */
+  /** Overrides the documents served by `/terms`; unset serves `TERMS_DOCUMENT` alone. */
   termsDocuments?: EventTermsDocumentStateResponse[]
+  /** Decisions taken for each member, by member id; unset members follow `termsAccepted`. */
+  termsDecisions?: Record<string, EventTermsPersonDecisionResponse[]>
+  /** Minors in the household who decide their own consents, being 14 or older. */
+  consentingChildren?: string[]
   overlap: TimeOverlapResponse | 'error'
   assignError: (() => Response) | null
   householdError: (() => Response) | null
   unassignError: (() => Response) | null
 }
 
-/**
- * The one terms document served by `/api/events/:eventId/terms` by default; its `accepted`/
- * `decidedAt` fields are filled in from `state.termsAccepted`.
- */
+/** The one terms document served by `/api/events/:eventId/terms` by default: required conditions. */
 export const TERMS_DOCUMENT = {
   termsDocumentId: 'terms-1',
   name: 'Normas del campamento',
   description: richText('Respeta a los demás.'),
+  kind: 'Conditions' as const,
   required: true,
   requiresSignature: false,
   displayOrder: 0,
@@ -67,9 +71,26 @@ export const OPTIONAL_TERMS_DOCUMENT = {
   termsDocumentId: 'terms-2',
   name: 'Boletín informativo',
   description: richText('Recibe noticias del evento por correo.'),
+  kind: 'Conditions' as const,
   required: false,
   requiresSignature: false,
   displayOrder: 1,
+}
+
+/** A consent, never required, that a minor decides from the age of 14. */
+export const IMAGE_CONSENT_DOCUMENT = {
+  termsDocumentId: 'terms-3',
+  name: 'Uso de imágenes',
+  description: richText('Publicaremos fotos de la actividad.'),
+  kind: 'Consent' as const,
+  required: false,
+  requiresSignature: false,
+  displayOrder: 2,
+}
+
+/** A decision taken on 1 January 2026 about `documentId`. */
+export function decided(documentId: string, accepted: boolean): EventTermsPersonDecisionResponse {
+  return { termsDocumentId: documentId, accepted, decidedAt: '2026-01-01T00:00:00Z' }
 }
 
 /** Request bodies and counters recorded by the fake signup API. */
@@ -151,17 +172,25 @@ export function serveSignupApi(overrides: Partial<SignupApiState> = {}) {
     }),
     http.get('/api/events/:eventId/terms', () => {
       count('terms')
-      const documents =
-        state.termsDocuments ??
-        ([
-          {
-            ...TERMS_DOCUMENT,
-            accepted: state.termsAccepted ? true : null,
-            decidedAt: state.termsAccepted ? '2026-01-01T00:00:00Z' : null,
-          },
-        ] satisfies EventTermsDocumentStateResponse[])
-      const signupBlocked = documents.some((document) => document.required && !document.accepted)
-      return HttpResponse.json({ documents, signupBlocked })
+      const documents: EventTermsDocumentStateResponse[] = state.termsDocuments ?? [TERMS_DOCUMENT]
+      const accepted = documents.map((document) => decided(document.termsDocumentId, true))
+      const person = (
+        member: UserResponse,
+        decidesOwnConsents: boolean,
+      ): EventTermsPersonStateResponse => ({
+        userId: member.id,
+        firstName: member.firstName,
+        lastName: member.lastName,
+        decidesOwnConsents,
+        decisions: state.termsDecisions?.[member.id] ?? (state.termsAccepted ? accepted : []),
+      })
+      const people = [
+        person(buildUserResponse(), true),
+        ...state.children.map((child) =>
+          person(child, state.consentingChildren?.includes(child.id) ?? false),
+        ),
+      ]
+      return HttpResponse.json({ documents, people })
     }),
     http.get('/api/activities/:activityId/overlaps/:userId', ({ params }) => {
       calls.overlapChecks.push(`${String(params.activityId)}/${String(params.userId)}`)

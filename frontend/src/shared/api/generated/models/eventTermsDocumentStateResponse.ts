@@ -4,16 +4,14 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { TermsDocumentKind } from './termsDocumentKind';
 
 export interface EventTermsDocumentStateResponse {
   termsDocumentId: string;
   name: string;
   description: string;
+  kind: TermsDocumentKind;
   required: boolean;
   requiresSignature: boolean;
   displayOrder: number;
-  /** @nullable */
-  accepted?: boolean | null;
-  /** @nullable */
-  decidedAt?: string | null;
 }

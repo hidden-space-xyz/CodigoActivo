@@ -76,7 +76,7 @@ describe('eventQueries', () => {
   it('loads the terms state and the roster of the activities a user leads', async () => {
     server.use(
       http.get('/api/events/e1/terms', () =>
-        HttpResponse.json({ documents: [buildTermsDocumentState()], signupBlocked: true }),
+        HttpResponse.json({ documents: [buildTermsDocumentState()], people: [] }),
       ),
       http.get('/api/events/e1/leader-roster', () =>
         HttpResponse.json([buildLeaderRosterActivity()]),
@@ -85,8 +85,8 @@ describe('eventQueries', () => {
     const client = createTestQueryClient()
 
     await expect(client.fetchQuery(eventQueries.terms('e1'))).resolves.toMatchObject({
-      signupBlocked: true,
       documents: [{ id: 'terms-1' }],
+      people: [],
     })
     await expect(client.fetchQuery(eventQueries.leaderRoster('e1', 'u1'))).resolves.toEqual([
       expect.objectContaining({ id: 'act-1' }),

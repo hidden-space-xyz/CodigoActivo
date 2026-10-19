@@ -42,6 +42,7 @@ export type AuditAction =
   | 'DeleteEvent'
   | 'SetEventFeatured'
   | 'UpdateEvent'
+  | 'WithdrawTermsConsent'
   | 'CreateFile'
   | 'DeleteFile'
   | 'CreateNewsItem'

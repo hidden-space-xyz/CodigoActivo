@@ -5,10 +5,13 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Domain.Events;
 
 /// <summary>
-/// Applies the terms decisions of a person to the documents of an event. Decisions about
-/// documents the event does not link are ignored, a declined document can be accepted later, and
-/// declining a required document is not recorded, so the person can still accept it and sign up.
-/// Accepting a document that asks for a signature needs one drawn; other documents keep none.
+/// Applies the terms decisions taken for one person to the documents of an event. Each document is
+/// decided by whoever <see cref="DeciderOf"/> names: the conditions by the account holder, so by
+/// the guardian for a dependent, and the consents by the person from the age of 14 and by their
+/// guardian before. Decisions about documents the event does not link are ignored, a declined
+/// document can be accepted later, and declining a required document is not recorded, so it can
+/// still be accepted to sign up; a consent is never required. Accepting a document that asks for a
+/// signature needs one drawn; other documents keep none.
 /// </summary>
 public static class TermsConsent
 {
@@ -17,11 +20,14 @@ public static class TermsConsent
     /// changes when a decision is refused.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
-    /// <param name="userId">Identifier of the person who decides.</param>
+    /// <param name="person">Person the decisions are about.</param>
     /// <param name="documents">Terms documents linked to the event.</param>
     /// <param name="signedDocumentIds">Linked documents whose acceptance asks for a signature.</param>
-    /// <param name="acceptances">Decisions the person already took about them.</param>
+    /// <param name="consentDocumentIds">Linked documents that hold a consent.</param>
+    /// <param name="acceptances">Decisions already taken about them for the person.</param>
     /// <param name="decisions">New decisions, if any.</param>
+    /// <param name="recordedById">Identifier of the account that records the decisions.</param>
+    /// <param name="today">Local day on which the age of the person is evaluated.</param>
     /// <param name="now">Current time.</param>
     /// <returns>
     /// The decisions to record and whether a required document is still not accepted, or
@@ -31,20 +37,28 @@ public static class TermsConsent
     /// </returns>
     public static Result<TermsConsentOutcome> Apply(
         EventId eventId,
-        UserId userId,
+        User person,
         IReadOnlyCollection<EventTermsDocument> documents,
         IReadOnlyCollection<TermsDocumentId> signedDocumentIds,
+        IReadOnlyCollection<TermsDocumentId> consentDocumentIds,
         IReadOnlyCollection<EventTermsAcceptance> acceptances,
         IReadOnlyList<TermsDecision>? decisions,
+        UserId recordedById,
+        DateOnly today,
         DateTimeOffset now
     )
     {
+        ArgumentNullException.ThrowIfNull(person);
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(signedDocumentIds);
+        ArgumentNullException.ThrowIfNull(consentDocumentIds);
         ArgumentNullException.ThrowIfNull(acceptances);
 
         var acceptanceByDocument = acceptances.ToDictionary(a => a.TermsDocumentId);
-        var requiredById = documents.ToDictionary(d => d.TermsDocumentId, d => d.IsRequired);
+        var requiredById = documents.ToDictionary(
+            d => d.TermsDocumentId,
+            d => IsRequired(d, consentDocumentIds)
+        );
         var linked = (decisions ?? [])
             .Where(decision => requiredById.ContainsKey(decision.TermsDocumentId))
             .ToList();
@@ -59,11 +73,16 @@ public static class TermsConsent
         {
             var decision = linked[index];
             var signature = signatures.Value[index];
+            var decidedById = DeciderOf(
+                person,
+                consentDocumentIds.Contains(decision.TermsDocumentId),
+                today
+            );
             if (acceptanceByDocument.TryGetValue(decision.TermsDocumentId, out var existing))
             {
                 if (!existing.Accepted && decision.Accepted)
                 {
-                    existing.Accept(signature, now);
+                    existing.Accept(decidedById, signature, recordedById, now);
                 }
 
                 continue;
@@ -76,10 +95,12 @@ public static class TermsConsent
 
             var acceptance = EventTermsAcceptance.Record(
                 eventId,
-                userId,
+                person.Id,
+                decidedById,
                 decision.TermsDocumentId,
                 decision.Accepted,
                 signature,
+                recordedById,
                 now
             );
             recorded.Add(acceptance);
@@ -87,13 +108,48 @@ public static class TermsConsent
         }
 
         var missingRequired = documents.Any(document =>
-            document.IsRequired
+            requiredById[document.TermsDocumentId]
             && (
                 !acceptanceByDocument.TryGetValue(document.TermsDocumentId, out var acceptance)
                 || !acceptance.Accepted
             )
         );
         return new TermsConsentOutcome(recorded, missingRequired);
+    }
+
+    /// <summary>
+    /// Names who decides a terms document for a person: the person, except for a dependent, whose
+    /// guardian decides the conditions and, before the age of 14, the consents.
+    /// </summary>
+    /// <param name="person">Person the decision is about.</param>
+    /// <param name="consent">Whether the document holds a consent.</param>
+    /// <param name="today">Local day on which the age of the person is evaluated.</param>
+    /// <returns>The identifier of whoever decides.</returns>
+    public static UserId DeciderOf(User person, bool consent, DateOnly today)
+    {
+        ArgumentNullException.ThrowIfNull(person);
+
+        return person.ParentId is { } guardianId && !(consent && person.GivesOwnConsent(today))
+            ? guardianId
+            : person.Id;
+    }
+
+    /// <summary>
+    /// Tells whether a document linked to an event must be accepted to sign up: the event requires
+    /// it and it is not a consent.
+    /// </summary>
+    /// <param name="document">Document linked to the event.</param>
+    /// <param name="consentDocumentIds">Linked documents that hold a consent.</param>
+    /// <returns><see langword="true"/> when the document must be accepted.</returns>
+    public static bool IsRequired(
+        EventTermsDocument document,
+        IReadOnlyCollection<TermsDocumentId> consentDocumentIds
+    )
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(consentDocumentIds);
+
+        return document.IsRequired && !consentDocumentIds.Contains(document.TermsDocumentId);
     }
 
     private static Result<HandwrittenSignature?[]> Signatures(

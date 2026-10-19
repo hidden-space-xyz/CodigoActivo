@@ -17,6 +17,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
@@ -986,6 +987,50 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task CreateLinkingAConsentAsRequiredIsRefusedAndAsOptionalIsAccepted()
+    {
+        var consentId = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.TermsDocuments.Add(
+                Persisted.As<TermsDocument>(
+                    new
+                    {
+                        Id = consentId,
+                        Name = "Uso de imágenes",
+                        Description = "{}",
+                        Kind = CodigoActivo.Domain.TermsDocuments.TermsDocumentKind.Consent,
+                    }
+                )
+            );
+            return Task.CompletedTask;
+        });
+        var thumbnailId = await SeedThumbnailAsync();
+        var categoryId = await SeedCategoryTypeAsync("Consentimientos");
+        var client = await LoginAsAdminAsync();
+
+        using var required = await client.PostJsonAsync(
+            "/api/events",
+            BuildCreate(thumbnailId, [categoryId]) with
+            {
+                TermsDocuments = [new EventTermsDocumentRequest(consentId, Required: true)],
+            },
+            Ct
+        );
+        using var optional = await client.PostJsonAsync(
+            "/api/events",
+            BuildCreate(thumbnailId, [categoryId], title: "Con consentimiento") with
+            {
+                TermsDocuments = [new EventTermsDocumentRequest(consentId, Required: false)],
+            },
+            Ct
+        );
+
+        await required.ShouldBeBadRequestAsync(ErrorCode.EventTermsConsentRequired);
+        optional.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
     public async Task TermsStateAnonymousReturnsUnauthorized()
     {
         var eventId = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 2));
@@ -997,7 +1042,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task TermsStateAsMemberReturnsOkWithUndecidedRequiredDocument()
+    public async Task TermsStateAsMemberReturnsTheRequiredDocumentAndTheUndecidedHousehold()
     {
         var termsDocumentId = await SeedTermsDocumentAsync("Reglamento");
         var eventId = await SeedEventAsync(
@@ -1013,12 +1058,13 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var state = await response.ReadJsonAsync<EventTermsStateResponse>(Ct);
         var document = state!.Documents.Should().ContainSingle().Subject;
         document.TermsDocumentId.Should().Be(termsDocumentId);
+        document.Kind.Should().Be(TermsDocumentKind.Conditions);
         document.Required.Should().BeTrue();
-        document.Accepted.Should().BeNull();
-        document.DecidedAt.Should().BeNull();
         state
-            .SignupBlocked.Should()
-            .BeTrue("the member has not yet decided on the event's only, required document");
+            .People.Select(person => (person.UserId, person.DecidesOwnConsents))
+            .Should()
+            .Equal((TestSeedData.Users.MemberId, true), (TestSeedData.Users.MemberChildId, false));
+        state.People.Should().OnlyContain(person => person.Decisions.Count == 0);
     }
 
     [Fact]
@@ -1044,12 +1090,20 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
 
         using var created = await admin.PostJsonAsync(
             "/api/events/termsDocument",
-            new CreateTermsDocumentRequest("Con imagen", ImageDocument),
+            new CreateTermsDocumentRequest(
+                "Con imagen",
+                ImageDocument,
+                TermsDocumentKind.Conditions
+            ),
             Ct
         );
         using var updated = await admin.PutJsonAsync(
             $"/api/events/termsDocument/{termsDocumentId}",
-            new UpdateTermsDocumentRequest("Reglamento", ImageDocument),
+            new UpdateTermsDocumentRequest(
+                "Reglamento",
+                ImageDocument,
+                TermsDocumentKind.Conditions
+            ),
             Ct
         );
 

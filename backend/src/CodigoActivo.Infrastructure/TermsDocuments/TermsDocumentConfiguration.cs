@@ -19,6 +19,7 @@ public sealed class TermsDocumentConfiguration : IEntityTypeConfiguration<TermsD
         builder.Property(x => x.Name).IsRequired();
         builder.Property(x => x.Description).HasColumnType("jsonb").IsRequired();
         builder.Property(x => x.RequiresSignature).IsRequired();
+        builder.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.HasIndex(x => x.Name).IsUnique();
     }
 }

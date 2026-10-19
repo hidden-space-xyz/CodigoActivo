@@ -157,6 +157,40 @@ public class EventsController : ApiControllerBase
     }
 
     /// <summary>
+    /// Withdraws a consent given about a terms document of the event for a person: the person
+    /// themselves or their guardian withdraws it, and an administrator records a withdrawal asked
+    /// for by email.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="userId">Identifier of the person the consent is about.</param>
+    /// <param name="termsDocumentId">Identifier of the terms document, which must hold a consent.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An empty HTTP response, or an error response.</returns>
+    [HttpPost("{eventId:guid}/terms/decisions/{userId:guid}/{termsDocumentId:guid}/withdraw")]
+    [AllowOnlySelf]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<ActionResult> WithdrawTermsConsentAsync(
+        Guid eventId,
+        Guid userId,
+        Guid termsDocumentId,
+        [FromServices] ICommandHandler<WithdrawTermsConsentCommand, Result> handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(
+            await handler.HandleAsync(
+                new WithdrawTermsConsentCommand(
+                    EventId.From(eventId),
+                    UserId.From(userId),
+                    TermsDocumentId.From(termsDocumentId)
+                ),
+                ct
+            )
+        );
+    }
+
+    /// <summary>
     /// Gets the PNG image of the signature a person drew to accept a terms document of the event.
     /// It sets no cache policy, so it is answered <c>no-store</c> like any other API response.
     /// </summary>

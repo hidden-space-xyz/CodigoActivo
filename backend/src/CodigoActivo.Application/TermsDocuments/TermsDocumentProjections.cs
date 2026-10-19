@@ -19,5 +19,6 @@ public static class TermsDocumentProjections
             Name = termsDocument.Name,
             Description = termsDocument.Description,
             RequiresSignature = termsDocument.RequiresSignature,
+            Kind = termsDocument.Kind,
         };
 }

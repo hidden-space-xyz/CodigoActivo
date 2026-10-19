@@ -26,6 +26,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
+using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
@@ -163,7 +164,11 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var admin = await LoginAsAdminAsync();
         using var renamed = await admin.PutJsonAsync(
             $"/api/events/termsDocument/{termsDocumentId}",
-            new UpdateTermsDocumentRequest("Términos corregidos", "{}"),
+            new UpdateTermsDocumentRequest(
+                "Términos corregidos",
+                "{}",
+                TermsDocumentKind.Conditions
+            ),
             Ct
         );
         renamed.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -184,7 +189,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var name = $"Términos {Guid.NewGuid():N}";
         using var created = await admin.PostJsonAsync(
             "/api/events/termsDocument",
-            new CreateTermsDocumentRequest(name, "{}"),
+            new CreateTermsDocumentRequest(name, "{}", TermsDocumentKind.Conditions),
             Ct
         );
         created.StatusCode.Should().Be(HttpStatusCode.Created);

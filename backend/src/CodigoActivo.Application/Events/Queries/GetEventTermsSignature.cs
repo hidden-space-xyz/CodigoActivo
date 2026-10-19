@@ -12,7 +12,7 @@ namespace CodigoActivo.Application.Events.Queries;
 /// Carries the criteria used to retrieve the signature drawn to accept a terms document of an event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-/// <param name="UserId">Identifier of the person who accepted the document.</param>
+/// <param name="UserId">Identifier of the person the decision is about.</param>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 public sealed record GetEventTermsSignatureQuery(
     EventId EventId,

@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Events.Contracts;
@@ -157,47 +158,82 @@ public record EventTermsDocumentResponse(
 }
 
 /// <summary>
-/// Contains the per-user state of a terms document linked to an event, returned by the API.
+/// Contains a terms document linked to an event as the signup shows it, returned by the API.
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 /// <param name="Name">The name value.</param>
 /// <param name="Description">The description value.</param>
-/// <param name="Required">Whether accepting the document is mandatory to complete the signup.</param>
+/// <param name="Kind">Whether the document holds conditions or a consent.</param>
+/// <param name="Required">Whether accepting the document is mandatory to complete the signup; never for a consent.</param>
 /// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
 /// <param name="DisplayOrder">The position in which the document is displayed.</param>
-/// <param name="Accepted">Whether the current user accepted the document, or <see langword="null"/> when undecided.</param>
-/// <param name="DecidedAt">When the current user decided, or <see langword="null"/> when undecided.</param>
 public record EventTermsDocumentStateResponse(
     Guid TermsDocumentId,
     string Name,
     string Description,
+    TermsDocumentKind Kind,
     bool Required,
     bool RequiresSignature,
-    int DisplayOrder,
-    bool? Accepted,
-    DateTimeOffset? DecidedAt
+    int DisplayOrder
 );
 
 /// <summary>
-/// Contains the current user's terms state for an event, returned by the API.
+/// Contains a decision taken about a terms document of an event for a person, returned by the API.
 /// </summary>
-/// <param name="Documents">The documents linked to the event, with the current user's decision.</param>
-/// <param name="SignupBlocked">Whether at least one required document is still undecided or rejected.</param>
+/// <param name="TermsDocumentId">Identifier of the terms document.</param>
+/// <param name="Accepted">Whether the document was accepted.</param>
+/// <param name="DecidedAt">When it was decided.</param>
+public record EventTermsPersonDecisionResponse(
+    Guid TermsDocumentId,
+    bool Accepted,
+    DateTimeOffset DecidedAt
+);
+
+/// <summary>
+/// Contains the terms decisions taken for a member of the current user's household, returned by
+/// the API.
+/// </summary>
+/// <param name="UserId">Identifier of the member: the current user or one of their dependents.</param>
+/// <param name="FirstName">First name of the member.</param>
+/// <param name="LastName">Last name of the member.</param>
+/// <param name="DecidesOwnConsents">
+/// Whether the member decides their own consents: the current user, and a dependent from the age
+/// of 14. The current user decides everything else for their dependents.
+/// </param>
+/// <param name="Decisions">Decisions taken for the member about the documents of the event.</param>
+public record EventTermsPersonStateResponse(
+    Guid UserId,
+    string FirstName,
+    string LastName,
+    bool DecidesOwnConsents,
+    IReadOnlyList<EventTermsPersonDecisionResponse> Decisions
+);
+
+/// <summary>
+/// Contains the terms state of an event for the current user's household, returned by the API.
+/// </summary>
+/// <param name="Documents">The documents linked to the event, in display order.</param>
+/// <param name="People">The current user first and then their dependents, with the decisions taken for each.</param>
 public record EventTermsStateResponse(
     IReadOnlyList<EventTermsDocumentStateResponse> Documents,
-    bool SignupBlocked
+    IReadOnlyList<EventTermsPersonStateResponse> People
 );
 
 /// <summary>
 /// Contains a decision someone took about a terms document of an event, as administrators list it.
 /// </summary>
-/// <param name="UserId">Identifier of the person who decided: the account that signed up, also for its dependents.</param>
+/// <param name="UserId">Identifier of the person the decision is about.</param>
 /// <param name="FirstName">First name of the person.</param>
 /// <param name="LastName">Last name of the person.</param>
 /// <param name="Email">Email of the person, if any.</param>
+/// <param name="DecidedById">Identifier of who decided: the person or their guardian.</param>
+/// <param name="DecidedByFirstName">First name of who decided.</param>
+/// <param name="DecidedByLastName">Last name of who decided.</param>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 /// <param name="DocumentName">Name of the terms document.</param>
-/// <param name="Accepted">Whether the document was accepted.</param>
+/// <param name="DocumentKind">Whether the document holds conditions or a consent.</param>
+/// <param name="Accepted">Whether the document is accepted now.</param>
+/// <param name="Withdrawn">Whether it was accepted and later withdrawn.</param>
 /// <param name="DecidedAt">When it was decided.</param>
 /// <param name="HasSignature">Whether a handwritten signature was drawn to accept it.</param>
 public record EventTermsDecisionResponse(
@@ -205,9 +241,14 @@ public record EventTermsDecisionResponse(
     string FirstName,
     string LastName,
     string? Email,
+    Guid DecidedById,
+    string DecidedByFirstName,
+    string DecidedByLastName,
     Guid TermsDocumentId,
     string DocumentName,
+    TermsDocumentKind DocumentKind,
     bool Accepted,
+    bool Withdrawn,
     DateTimeOffset DecidedAt,
     bool HasSignature
 )
@@ -223,6 +264,11 @@ public record EventTermsDecisionResponse(
             null,
             Guid.Empty,
             string.Empty,
+            string.Empty,
+            Guid.Empty,
+            string.Empty,
+            TermsDocumentKind.Conditions,
+            false,
             false,
             default,
             false

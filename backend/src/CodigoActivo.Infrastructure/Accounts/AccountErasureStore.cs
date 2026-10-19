@@ -79,6 +79,9 @@ public sealed class AccountErasureStore(CodigoActivoDbContext context) : IAccoun
         await context
             .Files.Where(f => household.Contains(f.UploadedBy))
             .ExecuteUpdateAsync(setters => setters.SetProperty(f => f.UploadedBy, heirId), ct);
+        await context
+            .TermsDecisionChanges.Where(c => household.Contains(c.RecordedById))
+            .ExecuteUpdateAsync(setters => setters.SetProperty(c => c.RecordedById, heirId), ct);
     }
 
     private static Task<int> HandOverAsync<TContent, TId>(

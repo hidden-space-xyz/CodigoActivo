@@ -64,11 +64,13 @@ describe('terms document requests', () => {
       name: 'Normas',
       description: 'Texto',
       requiresSignature: false,
+      kind: 'Conditions',
     })
     await updateTermsDocumentRequest('terms-1', {
       name: 'Normas',
       description: 'Otro',
       requiresSignature: true,
+      kind: 'Conditions',
     })
     await deleteTermsDocumentRequest('terms-1')
 
@@ -76,12 +78,17 @@ describe('terms document requests', () => {
       {
         method: 'POST',
         path: '/api/events/termsDocument',
-        body: { name: 'Normas', description: 'Texto', requiresSignature: false },
+        body: {
+          name: 'Normas',
+          description: 'Texto',
+          requiresSignature: false,
+          kind: 'Conditions',
+        },
       },
       {
         method: 'PUT',
         path: '/api/events/termsDocument/terms-1',
-        body: { name: 'Normas', description: 'Otro', requiresSignature: true },
+        body: { name: 'Normas', description: 'Otro', requiresSignature: true, kind: 'Conditions' },
       },
       { method: 'DELETE', path: '/api/events/termsDocument/terms-1', body: null },
     ])

@@ -161,10 +161,13 @@ public sealed class AuditCommandDecoratorTests
             new AssignHouseholdCommand(
                 activity,
                 [
-                    new HouseholdMemberSignup(first, ActivityRole.Volunteer),
+                    new HouseholdMemberSignup(
+                        first,
+                        ActivityRole.Volunteer,
+                        [new TermsDecision(document, Accepted: true, new byte[] { 1, 2, 3 })]
+                    ),
                     new HouseholdMemberSignup(second, ActivityRole.Participant),
-                ],
-                [new TermsDecision(document, Accepted: true, new byte[] { 1, 2, 3 })]
+                ]
             ),
             _ => Result.Success<IReadOnlyList<UserId>>([first, second])
         );
@@ -175,8 +178,8 @@ public sealed class AuditCommandDecoratorTests
             .Related.Should()
             .Equal(
                 new AuditEntity(AuditEntityType.User, first.Value),
-                new AuditEntity(AuditEntityType.User, second.Value),
-                new AuditEntity(AuditEntityType.TermsDocument, document.Value)
+                new AuditEntity(AuditEntityType.TermsDocument, document.Value),
+                new AuditEntity(AuditEntityType.User, second.Value)
             );
     }
 

@@ -4465,6 +4465,69 @@
           }
         }
       }
+    },
+    "/api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "termsDocumentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/me/consents": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MyConsentResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4741,13 +4804,6 @@
             "items": {
               "$ref": "#/components/schemas/HouseholdAssignmentRequest"
             }
-          },
-          "termsDecisions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TermsDecisionRequest"
-            },
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -4964,6 +5020,7 @@
           "DeleteEvent",
           "SetEventFeatured",
           "UpdateEvent",
+          "WithdrawTermsConsent",
           "CreateFile",
           "DeleteFile",
           "CreateNewsItem",
@@ -5449,6 +5506,7 @@
       "CreateTermsDocumentRequest": {
         "required": [
           "description",
+          "kind",
           "name",
           "requiresSignature"
         ],
@@ -5459,6 +5517,9 @@
           },
           "description": {
             "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TermsDocumentKind"
           },
           "requiresSignature": {
             "type": "boolean"
@@ -6034,7 +6095,11 @@
           "EventTermsAcceptanceRequired",
           "EventTermsSignatureRequired",
           "EventTermsSignatureNotFound",
+          "EventTermsDecisionNotFound",
           "EventTermsDocumentDuplicated",
+          "EventTermsConsentRequired",
+          "EventTermsConsentNotGiven",
+          "EventTermsWithdrawalNotAllowed",
           "TermsDocumentNotFound",
           "DiagnosticLogEntryNotFound",
           "TermsDocumentNameAlreadyExists",
@@ -7101,12 +7166,17 @@
         "required": [
           "accepted",
           "decidedAt",
+          "decidedByFirstName",
+          "decidedById",
+          "decidedByLastName",
+          "documentKind",
           "documentName",
           "firstName",
           "hasSignature",
           "lastName",
           "termsDocumentId",
-          "userId"
+          "userId",
+          "withdrawn"
         ],
         "type": "object",
         "properties": {
@@ -7124,6 +7194,16 @@
             "type": "string",
             "nullable": true
           },
+          "decidedById": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "decidedByFirstName": {
+            "type": "string"
+          },
+          "decidedByLastName": {
+            "type": "string"
+          },
           "termsDocumentId": {
             "type": "string",
             "format": "uuid"
@@ -7131,7 +7211,13 @@
           "documentName": {
             "type": "string"
           },
+          "documentKind": {
+            "$ref": "#/components/schemas/TermsDocumentKind"
+          },
           "accepted": {
+            "type": "boolean"
+          },
+          "withdrawn": {
             "type": "boolean"
           },
           "decidedAt": {
@@ -7221,6 +7307,7 @@
         "required": [
           "description",
           "displayOrder",
+          "kind",
           "name",
           "required",
           "requiresSignature",
@@ -7238,6 +7325,9 @@
           "description": {
             "type": "string"
           },
+          "kind": {
+            "$ref": "#/components/schemas/TermsDocumentKind"
+          },
           "required": {
             "type": "boolean"
           },
@@ -7247,15 +7337,6 @@
           "displayOrder": {
             "type": "integer",
             "format": "int32"
-          },
-          "accepted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "decidedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -7263,7 +7344,7 @@
       "EventTermsStateResponse": {
         "required": [
           "documents",
-          "signupBlocked"
+          "people"
         ],
         "type": "object",
         "properties": {
@@ -7273,8 +7354,11 @@
               "$ref": "#/components/schemas/EventTermsDocumentStateResponse"
             }
           },
-          "signupBlocked": {
-            "type": "boolean"
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTermsPersonStateResponse"
+            }
           }
         },
         "additionalProperties": false
@@ -7340,6 +7424,13 @@
           "activityRoleTypeId": {
             "type": "string",
             "format": "uuid"
+          },
+          "termsDecisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermsDecisionRequest"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8135,12 +8226,26 @@
       "PersonalDataTermsDecisionResponse": {
         "required": [
           "accepted",
+          "changes",
           "decidedAt",
+          "decidedByName",
           "documentName",
-          "eventTitle"
+          "eventTitle",
+          "personId",
+          "personName"
         ],
         "type": "object",
         "properties": {
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personName": {
+            "type": "string"
+          },
+          "decidedByName": {
+            "type": "string"
+          },
           "eventTitle": {
             "type": "string"
           },
@@ -8158,6 +8263,12 @@
             "type": "string",
             "format": "byte",
             "nullable": true
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataTermsDecisionChangeResponse"
+            }
           }
         },
         "additionalProperties": false
@@ -8537,6 +8648,7 @@
         "required": [
           "description",
           "id",
+          "kind",
           "name",
           "requiresSignature"
         ],
@@ -8554,6 +8666,9 @@
           },
           "requiresSignature": {
             "type": "boolean"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TermsDocumentKind"
           }
         },
         "additionalProperties": false
@@ -8859,6 +8974,7 @@
       "UpdateTermsDocumentRequest": {
         "required": [
           "description",
+          "kind",
           "name",
           "requiresSignature"
         ],
@@ -8869,6 +8985,9 @@
           },
           "description": {
             "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TermsDocumentKind"
           },
           "requiresSignature": {
             "type": "boolean"
@@ -9317,6 +9436,145 @@
             "items": {
               "$ref": "#/components/schemas/DashboardEventSatisfactionResponse"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventTermsPersonDecisionResponse": {
+        "required": [
+          "accepted",
+          "decidedAt",
+          "termsDocumentId"
+        ],
+        "type": "object",
+        "properties": {
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accepted": {
+            "type": "boolean"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventTermsPersonStateResponse": {
+        "required": [
+          "decidesOwnConsents",
+          "decisions",
+          "firstName",
+          "lastName",
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "decidesOwnConsents": {
+            "type": "boolean"
+          },
+          "decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTermsPersonDecisionResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "TermsDocumentKind": {
+        "enum": [
+          "Conditions",
+          "Consent"
+        ],
+        "type": "string"
+      },
+      "MyConsentResponse": {
+        "required": [
+          "accepted",
+          "decidedAt",
+          "decidedByName",
+          "documentName",
+          "eventId",
+          "eventStartsAt",
+          "eventTitle",
+          "personId",
+          "personName",
+          "termsDocumentId",
+          "withdrawn"
+        ],
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventTitle": {
+            "type": "string"
+          },
+          "eventStartsAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentName": {
+            "type": "string"
+          },
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personName": {
+            "type": "string"
+          },
+          "accepted": {
+            "type": "boolean"
+          },
+          "withdrawn": {
+            "type": "boolean"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedByName": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonalDataTermsDecisionChangeResponse": {
+        "required": [
+          "accepted",
+          "changedAt",
+          "decidedByName"
+        ],
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "changedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedByName": {
+            "type": "string"
           }
         },
         "additionalProperties": false

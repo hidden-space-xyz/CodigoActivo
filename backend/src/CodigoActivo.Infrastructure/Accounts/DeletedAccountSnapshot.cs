@@ -6,6 +6,7 @@ using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Context;
+using CodigoActivo.Infrastructure.Events;
 using CodigoActivo.Infrastructure.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,7 +22,7 @@ internal static class DeletedAccountSnapshot
     /// <summary>
     /// Version of the JSON layout, stored in every copy.
     /// </summary>
-    internal const int SchemaVersion = 5;
+    internal const int SchemaVersion = 7;
 
     private static readonly JsonSerializerOptions SerializerOptions = new(
         JsonSerializerDefaults.Web
@@ -204,9 +205,21 @@ internal static class DeletedAccountSnapshot
                 acceptance.Accepted,
                 acceptance.DecidedAt,
                 acceptance.UserId,
+                acceptance.DecidedById,
                 acceptance.Signature,
             }
         ).ToListAsync(ct);
+        var decidedPeople = decisionRows.Select(row => row.UserId).Distinct().ToList();
+        var changes = (
+            await context
+                .TermsDecisionChanges.AsNoTracking()
+                .Where(change => decidedPeople.Contains(change.UserId))
+                .OrderBy(change => change.ChangedAt)
+                .ThenBy(change =>
+                    EF.Property<long>(change, TermsDecisionChangeConfiguration.Sequence)
+                )
+                .ToListAsync(ct)
+        ).ToLookup(change => (change.EventId, change.UserId, change.TermsDocumentId));
         var decisions = decisionRows.ConvertAll(row => new EventDecision(
             row.EventId.Value,
             new LegalCopyDecision(
@@ -215,7 +228,18 @@ internal static class DeletedAccountSnapshot
                 row.Accepted,
                 row.DecidedAt,
                 row.UserId.Value,
-                row.Signature?.Png
+                row.DecidedById.Value,
+                row.Signature?.Png,
+                [
+                    .. changes[(row.EventId, row.UserId, row.TermsDocumentId)]
+                        .Select(change => new LegalCopyDecisionChange(
+                            change.Accepted,
+                            change.ChangedAt,
+                            change.DecidedById.Value,
+                            change.RecordedById.Value,
+                            change.Signature?.Png
+                        )),
+                ]
             )
         ));
 

@@ -177,9 +177,29 @@ public enum ErrorCode
     EventTermsSignatureNotFound,
 
     /// <summary>
+    /// No decision was taken about that document of the event for that person.
+    /// </summary>
+    EventTermsDecisionNotFound,
+
+    /// <summary>
     /// Selects the event terms document duplicated option.
     /// </summary>
     EventTermsDocumentDuplicated,
+
+    /// <summary>
+    /// An event links a consent as required, while declining a consent never stops a signup.
+    /// </summary>
+    EventTermsConsentRequired,
+
+    /// <summary>
+    /// A consent was to be withdrawn while it is not given now.
+    /// </summary>
+    EventTermsConsentNotGiven,
+
+    /// <summary>
+    /// A document that holds conditions was to be withdrawn; only a consent can be withdrawn.
+    /// </summary>
+    EventTermsWithdrawalNotAllowed,
 
     /// <summary>
     /// Selects the terms document not found option.

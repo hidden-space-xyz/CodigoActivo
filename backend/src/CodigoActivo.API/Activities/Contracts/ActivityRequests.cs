@@ -197,13 +197,11 @@ public record AssignRequest(
 /// <summary>
 /// Contains the client-supplied data used to assign household.
 /// </summary>
-/// <param name="Assignments">The assignments value.</param>
-/// <param name="TermsDecisions">The terms decisions supplied for the event's linked documents.</param>
+/// <param name="Assignments">Members to sign up, each with the terms decisions taken for them.</param>
 public record AssignHouseholdRequest(
     [Required]
     [MaxLength(Household.MaxMembers)]
-        IReadOnlyList<HouseholdAssignmentRequest> Assignments,
-    [MaxLength(50)] IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
+        IReadOnlyList<HouseholdAssignmentRequest> Assignments
 )
 {
     /// <summary>
@@ -220,10 +218,10 @@ public record AssignHouseholdRequest(
                     .OfType<HouseholdAssignmentRequest>()
                     .Select(assignment => new HouseholdMemberSignup(
                         UserId.From(assignment.UserId),
-                        CatalogIds.ActivityRoles.ValueOf(assignment.ActivityRoleTypeId)
+                        CatalogIds.ActivityRoles.ValueOf(assignment.ActivityRoleTypeId),
+                        ActivityRequestMapping.Decisions(assignment.TermsDecisions)
                     )),
-            ],
-            ActivityRequestMapping.Decisions(TermsDecisions)
+            ]
         );
     }
 }
@@ -233,8 +231,14 @@ public record AssignHouseholdRequest(
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-public record HouseholdAssignmentRequest([Required] Guid UserId, [Required] Guid ActivityRoleTypeId)
-    : IValidatableObject
+/// <param name="TermsDecisions">
+/// The terms decisions taken for this member about the event's linked documents.
+/// </param>
+public record HouseholdAssignmentRequest(
+    [Required] Guid UserId,
+    [Required] Guid ActivityRoleTypeId,
+    [MaxLength(50)] IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
+) : IValidatableObject
 {
     /// <inheritdoc />
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

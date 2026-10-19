@@ -18,7 +18,9 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="UserId">Identifier of the person signed up.</param>
 /// <param name="Role">Role requested.</param>
-/// <param name="TermsDecisions">Decisions on the terms documents of the event, if any were asked.</param>
+/// <param name="TermsDecisions">
+/// Decisions on the terms documents of the event for the person signed up, if any were asked.
+/// </param>
 public sealed record AssignActivityCommand(
     ActivityId ActivityId,
     UserId UserId,
@@ -104,13 +106,12 @@ public sealed class AssignActivityCommandHandler(
             return free;
         }
 
-        var actingUserId = currentUser.RequiredId();
-        if (!currentUser.IsAdmin || actingUserId == command.UserId)
+        if (!currentUser.IsAdmin || currentUser.RequiredId() == command.UserId)
         {
             var terms = await termsGate.EnsureDecidedAsync(
                 activity.EventId,
-                actingUserId,
-                command.TermsDecisions,
+                [new PersonTermsDecisions(user, command.TermsDecisions)],
+                currentUser.RequiredId(),
                 ct
             );
             if (terms.IsFailure)

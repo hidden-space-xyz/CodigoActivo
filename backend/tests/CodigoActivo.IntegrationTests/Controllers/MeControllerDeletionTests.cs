@@ -140,6 +140,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                     {
                         EventId = EventId,
                         UserId = TestSeedData.Users.MemberId,
+                        DecidedById = TestSeedData.Users.MemberId,
                         TermsDocumentId = TermsDocumentId,
                         Accepted = true,
                         DecidedAt = SeededAt,

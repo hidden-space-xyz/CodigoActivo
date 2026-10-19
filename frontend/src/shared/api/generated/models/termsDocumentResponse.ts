@@ -4,10 +4,12 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { TermsDocumentKind } from './termsDocumentKind';
 
 export interface TermsDocumentResponse {
   id: string;
   name: string;
   description: string;
   requiresSignature: boolean;
+  kind: TermsDocumentKind;
 }

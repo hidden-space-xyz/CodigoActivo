@@ -119,22 +119,31 @@ describe('event mapper', () => {
     })
   })
 
-  it('sorts the terms state by display order and keeps undecided documents as null', () => {
+  it('sorts the terms documents by display order and maps the decisions of each person', () => {
     const state = toEventTermsState({
       documents: [
         buildTermsDocumentState({
           termsDocumentId: 'terms-2',
           name: 'Imagen',
+          kind: 'Consent',
           required: false,
           displayOrder: 1,
           description: '<p>Fotos</p>',
           requiresSignature: true,
-          accepted: true,
-          decidedAt: '2026-09-01T10:00:00Z',
         }),
         buildTermsDocumentState({ termsDocumentId: 'terms-1', description: '<p>Normas</p>' }),
       ],
-      signupBlocked: true,
+      people: [
+        {
+          userId: 'child-1',
+          firstName: 'Bea',
+          lastName: 'King',
+          decidesOwnConsents: true,
+          decisions: [
+            { termsDocumentId: 'terms-2', accepted: false, decidedAt: '2026-09-01T10:00:00Z' },
+          ],
+        },
+      ],
     })
 
     expect(state).toEqual({
@@ -143,24 +152,32 @@ describe('event mapper', () => {
           id: 'terms-1',
           name: 'Normas del campamento',
           description: '<p>Normas</p>',
+          kind: 'Conditions',
           required: true,
           requiresSignature: false,
           displayOrder: 0,
-          accepted: null,
-          decidedAt: null,
         },
         {
           id: 'terms-2',
           name: 'Imagen',
           description: '<p>Fotos</p>',
+          kind: 'Consent',
           required: false,
           requiresSignature: true,
           displayOrder: 1,
-          accepted: true,
-          decidedAt: '2026-09-01T10:00:00Z',
         },
       ],
-      signupBlocked: true,
+      people: [
+        {
+          id: 'child-1',
+          firstName: 'Bea',
+          lastName: 'King',
+          decidesOwnConsents: true,
+          decisions: [
+            { documentId: 'terms-2', accepted: false, decidedAt: '2026-09-01T10:00:00Z' },
+          ],
+        },
+      ],
     })
   })
 

@@ -63,7 +63,18 @@ public sealed class ListEventTermsDecisionsQueryHandler(
             .EventTermsAcceptances.Where(a => a.EventId == eventId)
             .Where(a => termsDocumentId == null || a.TermsDocumentId == termsDocumentId)
             .WhereContains(
-                a => a.User.FirstName + " " + a.User.LastName + " " + (a.User.Email ?? ""),
+                a =>
+                    a.User.FirstName
+                    + " "
+                    + a.User.LastName
+                    + " "
+                    + (a.User.Email ?? "")
+                    + " "
+                    + a.DecidedBy.FirstName
+                    + " "
+                    + a.DecidedBy.LastName
+                    + " "
+                    + (a.DecidedBy.Email ?? ""),
                 filters.Search
             )
             .Select(a => new EventTermsDecisionResponse
@@ -72,9 +83,14 @@ public sealed class ListEventTermsDecisionsQueryHandler(
                 FirstName = a.User.FirstName,
                 LastName = a.User.LastName,
                 Email = a.User.Email,
+                DecidedById = a.DecidedById,
+                DecidedByFirstName = a.DecidedBy.FirstName,
+                DecidedByLastName = a.DecidedBy.LastName,
                 TermsDocumentId = a.TermsDocumentId,
                 DocumentName = a.TermsDocument.Name,
+                DocumentKind = a.TermsDocument.Kind,
                 Accepted = a.Accepted,
+                Withdrawn = !a.Accepted && a.Changes.Any(change => change.Accepted),
                 DecidedAt = a.DecidedAt,
                 HasSignature = a.Signature != null,
             });

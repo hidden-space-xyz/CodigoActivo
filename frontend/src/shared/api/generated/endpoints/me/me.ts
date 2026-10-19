@@ -36,6 +36,7 @@ import type {
   EventCertificateResponse,
   EventHistoryResponse,
   GetApiMeAssignedActivitiesParams,
+  MyConsentResponse,
   PersonalDataResponse
 } from '../../models';
 
@@ -644,3 +645,82 @@ export function usePostApiMeDeletionCode<TData = Awaited<ReturnType<typeof postA
 
 
 
+export type getApiMeConsentsResponse200 = {
+  data: MyConsentResponse[]
+  status: 200
+}
+
+export type getApiMeConsentsResponseSuccess = (getApiMeConsentsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiMeConsentsResponse = (getApiMeConsentsResponseSuccess)
+
+export const getGetApiMeConsentsUrl = () => {
+
+
+
+
+  return `/api/me/consents`
+}
+
+export const getApiMeConsents = async ( options?: Parameters<typeof httpClient>[1]): Promise<getApiMeConsentsResponse> => {
+
+  return httpClient<getApiMeConsentsResponse>(getGetApiMeConsentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiMeConsentsMutationKey = () => ['getApiMeConsents'] as const;
+
+export const getGetApiMeConsentsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext> => {
+
+const mutationKey = getGetApiMeConsentsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeConsents>>, void> = () => {
+
+
+          return  getApiMeConsents(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiMeConsentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeConsents>>>
+
+    export type GetApiMeConsentsMutationError = unknown
+
+
+    export const useGetApiMeConsents = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiMeConsents>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiMeConsentsMutationOptions(options), queryClient);
+    }

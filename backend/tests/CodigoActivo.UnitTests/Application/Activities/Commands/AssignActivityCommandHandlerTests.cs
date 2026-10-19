@@ -780,7 +780,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncTermsRequiredForChildTargetRecordsActingUserAcceptance()
+    public async Task HandleAsyncTermsRequiredForChildTargetRecordsTheChildAcceptanceTakenByTheGuardian()
     {
         var activityId = Guid.NewGuid();
         var parentId = Guid.NewGuid();
@@ -818,7 +818,8 @@ public sealed class AssignActivityCommandHandlerTests
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
                     && a.EventId == EventId.From(eventId)
-                    && a.UserId == UserId.From(parentId)
+                    && a.UserId == UserId.From(childId)
+                    && a.DecidedById == UserId.From(parentId)
                 ),
                 Arg.Any<CancellationToken>()
             );

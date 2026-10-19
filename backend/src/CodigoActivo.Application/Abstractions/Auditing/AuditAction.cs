@@ -124,6 +124,9 @@ public enum AuditAction
     /// <summary>Updated an event.</summary>
     UpdateEvent,
 
+    /// <summary>Withdrew a consent given about a terms document of an event.</summary>
+    WithdrawTermsConsent,
+
     /// <summary>Uploaded a file.</summary>
     CreateFile,
 

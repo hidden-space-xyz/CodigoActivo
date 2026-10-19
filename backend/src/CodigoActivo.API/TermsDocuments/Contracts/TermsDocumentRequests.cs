@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Common.Mapping;
 using CodigoActivo.Application.TermsDocuments.Commands;
 using CodigoActivo.Domain.TermsDocuments;
+using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.API.TermsDocuments.Contracts;
 
@@ -10,9 +12,11 @@ namespace CodigoActivo.API.TermsDocuments.Contracts;
 /// <param name="Name">The name value.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 /// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
+/// <param name="Kind">Whether the document holds conditions or a consent.</param>
 public record CreateTermsDocumentRequest(
     [Required] [MaxLength(120)] string Name,
     [Required] [MaxLength(262144)] string Description,
+    [EnumDataType(typeof(TermsDocumentKind))] TermsDocumentKind Kind,
     bool RequiresSignature = false
 )
 {
@@ -22,7 +26,12 @@ public record CreateTermsDocumentRequest(
     /// <returns>The command.</returns>
     public CreateTermsDocumentCommand ToCommand()
     {
-        return new CreateTermsDocumentCommand(Name, Description, RequiresSignature);
+        return new CreateTermsDocumentCommand(
+            Name,
+            Description,
+            RequiresSignature,
+            Kind.ToDomain()
+        );
     }
 }
 
@@ -32,9 +41,11 @@ public record CreateTermsDocumentRequest(
 /// <param name="Name">The name value.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 /// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
+/// <param name="Kind">Whether the document holds conditions or a consent.</param>
 public record UpdateTermsDocumentRequest(
     [Required] [MaxLength(120)] string Name,
     [Required] [MaxLength(262144)] string Description,
+    [EnumDataType(typeof(TermsDocumentKind))] TermsDocumentKind Kind,
     bool RequiresSignature = false
 )
 {
@@ -49,7 +60,8 @@ public record UpdateTermsDocumentRequest(
             termsDocumentId,
             Name,
             Description,
-            RequiresSignature
+            RequiresSignature,
+            Kind.ToDomain()
         );
     }
 }

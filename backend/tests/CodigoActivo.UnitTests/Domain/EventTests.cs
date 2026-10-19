@@ -54,12 +54,15 @@ public sealed class EventTests
     private static EventTermsLinks Terms(params (Guid TermsDocumentId, bool Required)[] links)
     {
         return EventTermsLinks
-            .Create([
-                .. links.Select(link => new EventTermsLink(
-                    TermsDocumentId.From(link.TermsDocumentId),
-                    link.Required
-                )),
-            ])
+            .Create(
+                [
+                    .. links.Select(link => new EventTermsLink(
+                        TermsDocumentId.From(link.TermsDocumentId),
+                        link.Required
+                    )),
+                ],
+                []
+            )
             .Value;
     }
 
@@ -248,10 +251,13 @@ public sealed class EventTests
     {
         var termsDocumentId = Guid.NewGuid();
 
-        var links = EventTermsLinks.Create([
-            new EventTermsLink(TermsDocumentId.From(termsDocumentId), true),
-            new EventTermsLink(TermsDocumentId.From(termsDocumentId), false),
-        ]);
+        var links = EventTermsLinks.Create(
+            [
+                new EventTermsLink(TermsDocumentId.From(termsDocumentId), true),
+                new EventTermsLink(TermsDocumentId.From(termsDocumentId), false),
+            ],
+            []
+        );
 
         links.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsDocumentDuplicated);
     }
@@ -259,8 +265,8 @@ public sealed class EventTests
     [Fact]
     public void TermsLinksCreateNoLinksReturnsNone()
     {
-        EventTermsLinks.Create(null).Value.Should().BeSameAs(EventTermsLinks.None);
-        EventTermsLinks.Create([]).Value.Should().BeSameAs(EventTermsLinks.None);
+        EventTermsLinks.Create(null, []).Value.Should().BeSameAs(EventTermsLinks.None);
+        EventTermsLinks.Create([], []).Value.Should().BeSameAs(EventTermsLinks.None);
         EventTermsLinks.None.Items.Should().BeEmpty();
     }
 
@@ -270,9 +276,19 @@ public sealed class EventTests
         var first = new EventTermsLink(TermsDocumentId.From(Guid.NewGuid()), false);
         var second = new EventTermsLink(TermsDocumentId.From(Guid.NewGuid()), true);
 
-        var links = EventTermsLinks.Create([first, second]);
+        var links = EventTermsLinks.Create([first, second], [first.TermsDocumentId]);
 
         links.Value.Items.Should().Equal(first, second);
+    }
+
+    [Fact]
+    public void TermsLinksCreateRequiredConsentReturnsEventTermsConsentRequired()
+    {
+        var consent = new EventTermsLink(TermsDocumentId.From(Guid.NewGuid()), true);
+
+        var links = EventTermsLinks.Create([consent], [consent.TermsDocumentId]);
+
+        links.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsConsentRequired);
     }
 
     [Fact]
@@ -707,9 +723,11 @@ public sealed class EventTests
         var acceptance = EventTermsAcceptance.Record(
             EventId.From(eventId),
             UserId.From(userId),
+            UserId.From(userId),
             TermsDocumentId.From(termsDocumentId),
             false,
             null,
+            UserId.From(userId),
             Now
         );
 
@@ -727,13 +745,15 @@ public sealed class EventTests
         var acceptance = EventTermsAcceptance.Record(
             EventId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(termsDocumentId),
             false,
             null,
+            UserId.From(Guid.NewGuid()),
             Now
         );
 
-        acceptance.Accept(null, Now.AddHours(3));
+        acceptance.Accept(acceptance.UserId, null, acceptance.UserId, Now.AddHours(3));
 
         acceptance.Accepted.Should().BeTrue();
         acceptance.DecidedAt.Should().Be(Now.AddHours(3));
@@ -748,17 +768,21 @@ public sealed class EventTests
         var accepted = EventTermsAcceptance.Record(
             EventId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(Guid.NewGuid()),
             true,
             signature,
+            UserId.From(Guid.NewGuid()),
             Now
         );
         var declined = EventTermsAcceptance.Record(
             EventId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(Guid.NewGuid()),
             false,
             signature,
+            UserId.From(Guid.NewGuid()),
             Now
         );
 
@@ -773,13 +797,15 @@ public sealed class EventTests
         var acceptance = EventTermsAcceptance.Record(
             EventId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(Guid.NewGuid()),
             false,
             null,
+            UserId.From(Guid.NewGuid()),
             Now
         );
 
-        acceptance.Accept(signature, Now.AddHours(1));
+        acceptance.Accept(acceptance.UserId, signature, acceptance.UserId, Now.AddHours(1));
 
         acceptance.Signature.Should().BeSameAs(signature);
     }

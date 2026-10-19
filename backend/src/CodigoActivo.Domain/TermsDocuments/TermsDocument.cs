@@ -4,8 +4,9 @@ using CodigoActivo.Domain.Files;
 namespace CodigoActivo.Domain.TermsDocuments;
 
 /// <summary>
-/// Terms that participants accept before signing up to the events that link them. Its name is
-/// unique across documents.
+/// Terms that participants accept or decline when signing up to the events that link them: the
+/// conditions of taking part or a consent, as its <see cref="Kind"/> tells. Its name is unique
+/// across documents.
 /// </summary>
 public class TermsDocument : AggregateRoot<TermsDocumentId>
 {
@@ -28,36 +29,49 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
     public bool RequiresSignature { get; private set; }
 
     /// <summary>
+    /// Gets whether the document holds conditions or a consent.
+    /// </summary>
+    public TermsDocumentKind Kind { get; private set; } = TermsDocumentKind.Conditions;
+
+    /// <summary>
     /// Creates a terms document.
     /// </summary>
     /// <param name="name">Name; surrounding spaces are removed.</param>
     /// <param name="description">Rich-text content.</param>
     /// <param name="requiresSignature">Whether accepting it asks for a handwritten signature.</param>
+    /// <param name="kind">Whether it holds conditions or a consent.</param>
     /// <param name="id">Stable identifier for seeded documents; a new one otherwise.</param>
     /// <returns>The new terms document.</returns>
     public static TermsDocument Create(
         string name,
         RichText description,
         bool requiresSignature,
+        TermsDocumentKind kind,
         TermsDocumentId? id = null
     )
     {
         var termsDocument = new TermsDocument { Id = id ?? TermsDocumentId.New() };
-        termsDocument.Apply(name, description, requiresSignature);
+        termsDocument.Apply(name, description, requiresSignature, kind);
         return termsDocument;
     }
 
     /// <summary>
-    /// Replaces the name and content of the document and whether accepting it asks for a
-    /// signature. Decisions already taken stay as they were.
+    /// Replaces the name and content of the document, whether accepting it asks for a signature and
+    /// its kind. Decisions already taken stay as they were.
     /// </summary>
     /// <param name="name">New name; surrounding spaces are removed.</param>
     /// <param name="description">New rich-text content.</param>
     /// <param name="requiresSignature">Whether accepting it asks for a handwritten signature.</param>
-    public void Rewrite(string name, RichText description, bool requiresSignature)
+    /// <param name="kind">Whether it holds conditions or a consent.</param>
+    public void Rewrite(
+        string name,
+        RichText description,
+        bool requiresSignature,
+        TermsDocumentKind kind
+    )
     {
         var previousDescription = Description;
-        Apply(name, description, requiresSignature);
+        Apply(name, description, requiresSignature, kind);
         Raise(
             new TermsDocumentRewritten(
                 Id,
@@ -74,7 +88,12 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
         Raise(new TermsDocumentDeleted(Id, RichTextFileReferences.Extract(Description)));
     }
 
-    private void Apply(string name, RichText description, bool requiresSignature)
+    private void Apply(
+        string name,
+        RichText description,
+        bool requiresSignature,
+        TermsDocumentKind kind
+    )
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(description);
@@ -82,5 +101,6 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
         Name = name.Trim();
         Description = description;
         RequiresSignature = requiresSignature;
+        Kind = kind;
     }
 }

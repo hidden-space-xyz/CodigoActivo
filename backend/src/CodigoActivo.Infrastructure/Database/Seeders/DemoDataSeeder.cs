@@ -48,6 +48,8 @@ public sealed class DemoDataSeeder(
     private const int FinishedEventCount = 15;
     private const int FeaturedEventIndex = 17;
     private const int FeaturedNewsItemIndex = 0;
+    private const int ConditionsDocumentIndex = 0;
+    private const int ImageConsentDocumentIndex = 1;
 
     private const string ModalityPresencial = "Presencial";
     private const string ModalityOnline = "Online";
@@ -301,6 +303,7 @@ public sealed class DemoDataSeeder(
                         seed.Name,
                         RichText.From(BuildRichText(seed.Description, null, null)),
                         seed.RequiresSignature,
+                        seed.Kind,
                         DemoTermsDocument(index)
                     )
             )
@@ -360,7 +363,13 @@ public sealed class DemoDataSeeder(
                     .Create(ResolveCategoryIds(seed.Categories, categoryIdByName))
                     .Value,
                 EventTermsLinks
-                    .Create([new EventTermsLink(ResolveTermsDocumentId(eventIndex), true)])
+                    .Create(
+                        [
+                            new EventTermsLink(DemoTermsDocument(ConditionsDocumentIndex), true),
+                            new EventTermsLink(DemoTermsDocument(ImageConsentDocumentIndex), false),
+                        ],
+                        [DemoTermsDocument(ImageConsentDocumentIndex)]
+                    )
                     .Value,
                 DemoAuthorId,
                 eventCreatedAt
@@ -763,11 +772,6 @@ public sealed class DemoDataSeeder(
         return TermsDocumentId.From(MakeId(4, index));
     }
 
-    private static TermsDocumentId ResolveTermsDocumentId(int eventIndex)
-    {
-        return DemoTermsDocument(eventIndex % DemoTermsDocuments.Length);
-    }
-
     private static UserType ResolveUserType(UserKind kind)
     {
         return kind is UserKind.Sponsor ? UserType.Sponsor : UserType.Member;
@@ -905,6 +909,7 @@ public sealed class DemoDataSeeder(
     private sealed record TermsDocumentSeed(
         string Name,
         string[] Description,
+        TermsDocumentKind Kind,
         bool RequiresSignature = false
     );
 
@@ -1030,27 +1035,28 @@ public sealed class DemoDataSeeder(
                     + "evento mientras la inscripción siga abierta o, si ya se ha cerrado, avísanos por los medios de contacto de la web. "
                     + "Las plazas son limitadas y una ausencia comunicada a tiempo permite que otra persona pueda aprovecharla. La "
                     + "inscripción podrá cancelarse en caso de ausencias reiteradas sin justificar.",
-                "Al inscribirte en la primera actividad de un evento aceptas estas normas para todas las actividades de ese evento. "
-                    + "La aceptación queda registrada junto a tu inscripción y puedes consultar el texto vigente en cualquier momento "
-                    + "desde la página del evento.",
-            ]
+                "Los menores de edad los inscribe su padre, madre o tutor legal desde su propia cuenta y estarán acompañados por el "
+                    + "equipo de voluntariado durante toda la sesión. La entrega y recogida de menores debe hacerse dentro del horario "
+                    + "de la actividad por la persona adulta responsable; si la recogida la realizará otra persona, es imprescindible "
+                    + "comunicarlo por adelantado al equipo de la actividad.",
+                "Al inscribir a una persona en la primera actividad de un evento aceptas estas normas para ella en todas las "
+                    + "actividades de ese evento. La aceptación queda registrada junto a la inscripción y puedes consultar el texto "
+                    + "vigente en cualquier momento desde la página del evento.",
+            ],
+            TermsDocumentKind.Conditions
         ),
         new(
-            "Autorización de imagen y normas para menores",
+            "Autorización de uso de imagen",
             [
-                "Durante las actividades el equipo de la asociación puede tomar fotografías y grabaciones en las que aparezcan las "
-                    + "personas participantes. Estas imágenes se utilizan exclusivamente para difundir la labor de la asociación en su "
-                    + "página web, redes sociales y memorias de actividad, siempre sin ánimo de lucro y sin asociarlas a datos "
-                    + "personales.",
-                "En el caso de menores de edad, la inscripción debe realizarla su padre, madre o tutor legal desde su propia cuenta, y "
-                    + "supone la autorización expresa para la participación del menor en la actividad y para el uso de imagen descrito en "
-                    + "el punto anterior. Los menores estarán acompañados por el equipo de voluntariado durante toda la sesión.",
-                "La entrega y recogida de menores debe hacerse dentro del horario de la actividad por la persona adulta responsable. Si "
-                    + "la recogida la realizará otra persona, es imprescindible comunicarlo por adelantado al equipo de la actividad.",
-                "Puedes revocar la autorización de imagen o ejercer los derechos de acceso, rectificación y supresión escribiendo a la "
-                    + "asociación desde el correo con el que estás registrado. La revocación no afectará a los materiales ya publicados "
-                    + "cuya retirada resulte técnicamente desproporcionada, que dejarán de utilizarse en nuevas publicaciones.",
+                "Durante las actividades el equipo de la asociación puede tomar fotografías y grabaciones. Con esta autorización "
+                    + "permites que publiquemos aquellas en las que aparezcas en nuestra página web, nuestras redes sociales y nuestras "
+                    + "memorias de actividad, siempre sin ánimo de lucro.",
+                "Autorizarlo es voluntario: si no lo haces, participas igual y procuraremos que no aparezcas en lo que publiquemos. "
+                    + "Por un menor de 14 años decide su padre, madre o tutor legal; a partir de los 14 años decide el propio menor.",
+                "Puedes retirar la autorización cuando quieras escribiendo a la asociación. La retirada no afecta a lo publicado "
+                    + "antes, pero quitaremos tus imágenes de esta web y de nuestros perfiles y no las usaremos en nuevas publicaciones.",
             ],
+            TermsDocumentKind.Consent,
             RequiresSignature: true
         ),
     ];

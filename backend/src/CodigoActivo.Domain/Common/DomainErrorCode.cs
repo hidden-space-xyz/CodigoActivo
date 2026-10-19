@@ -91,6 +91,21 @@ public enum DomainErrorCode
     EventTermsDocumentDuplicated,
 
     /// <summary>
+    /// An event links a consent as required, while declining a consent never stops a signup.
+    /// </summary>
+    EventTermsConsentRequired,
+
+    /// <summary>
+    /// A consent was to be withdrawn while it is not given now.
+    /// </summary>
+    EventTermsConsentNotGiven,
+
+    /// <summary>
+    /// A document that holds conditions was to be withdrawn; only a consent can be withdrawn.
+    /// </summary>
+    EventTermsWithdrawalNotAllowed,
+
+    /// <summary>
     /// A terms document that asks for a signature was accepted without one.
     /// </summary>
     EventTermsSignatureRequired,

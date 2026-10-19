@@ -22,10 +22,27 @@ public class EventTermsAcceptanceRepository(CodigoActivoDbContext context)
         CancellationToken ct = default
     )
     {
-        return await Set.Where(acceptance =>
-                acceptance.EventId == eventId && acceptance.UserId == userId
-            )
+        return await Set.Include(acceptance => acceptance.Changes)
+            .Where(acceptance => acceptance.EventId == eventId && acceptance.UserId == userId)
             .ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public Task<EventTermsAcceptance?> GetAsync(
+        EventId eventId,
+        UserId userId,
+        TermsDocumentId termsDocumentId,
+        CancellationToken ct = default
+    )
+    {
+        return Set.Include(acceptance => acceptance.Changes)
+            .FirstOrDefaultAsync(
+                acceptance =>
+                    acceptance.EventId == eventId
+                    && acceptance.UserId == userId
+                    && acceptance.TermsDocumentId == termsDocumentId,
+                ct
+            );
     }
 
     /// <inheritdoc />

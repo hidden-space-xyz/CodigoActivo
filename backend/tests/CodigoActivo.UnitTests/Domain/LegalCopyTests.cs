@@ -73,10 +73,20 @@ public sealed class LegalCopyTests
     private static LegalCopyDecision Decision(
         LegalCopyTermsDocument document,
         DateTimeOffset decidedAt,
-        Guid decidedBy
+        Guid personId,
+        Guid? decidedBy = null
     )
     {
-        return new LegalCopyDecision(document.Id, document.Name, true, decidedAt, decidedBy, null);
+        return new LegalCopyDecision(
+            document.Id,
+            document.Name,
+            true,
+            decidedAt,
+            personId,
+            decidedBy ?? personId,
+            null,
+            []
+        );
     }
 
     private static LegalCopyActivity Activity(
@@ -182,6 +192,24 @@ public sealed class LegalCopyTests
         ev.TermsDecisions.Should().Equal(byAccount, byChild);
         ev.Activities.Should().BeEmpty();
         copy.TermsDocuments.Should().Equal(consent);
+    }
+
+    [Fact]
+    public void ComposeKeepsTheDecisionsAboutADependentTakenByTheirGuardian()
+    {
+        var account = Person(AccountId, "Leo", "Ruiz", GuardianId);
+        var fair = Event(Id(10), "Feria", FirstDay);
+        var rules = Document(Id(20), "Normas");
+        var aboutDependent = Decision(rules, Now, AccountId, GuardianId);
+
+        var copy = Compose(
+            [account],
+            decisions: [(fair.Id, aboutDependent)],
+            documents: [rules],
+            events: [fair]
+        );
+
+        copy.Events.Should().ContainSingle().Which.TermsDecisions.Should().Equal(aboutDependent);
     }
 
     [Fact]

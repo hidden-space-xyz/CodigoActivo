@@ -12,6 +12,7 @@ export function toTermsDocument(termsDocument: TermsDocumentResponse): TermsDocu
     name: termsDocument.name,
     description: termsDocument.description,
     requiresSignature: termsDocument.requiresSignature,
+    kind: termsDocument.kind,
   }
 }
 
@@ -21,5 +22,6 @@ export function toTermsDocumentRequest(input: TermsDocumentInput): CreateTermsDo
     name: input.name,
     description: input.description,
     requiresSignature: input.requiresSignature,
+    kind: input.kind,
   }
 }

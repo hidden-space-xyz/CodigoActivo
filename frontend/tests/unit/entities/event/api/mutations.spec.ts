@@ -58,6 +58,29 @@ describe('eventMutations', () => {
     }
   })
 
+  it('withdraws a consent and refreshes every event query', async () => {
+    const posted: string[] = []
+    server.use(
+      http.post(
+        '/api/events/:eventId/terms/decisions/:userId/:termsDocumentId/withdraw',
+        ({ request }) => {
+          posted.push(new URL(request.url).pathname)
+          return noContent()
+        },
+      ),
+    )
+    const { client, invalidated } = cachedEvents()
+
+    await new MutationObserver(client, eventMutations.withdrawConsent()).mutate({
+      eventId: 'e1',
+      userId: 'child-1',
+      termsDocumentId: 'terms-1',
+    })
+
+    expect(posted).toEqual(['/api/events/e1/terms/decisions/child-1/terms-1/withdraw'])
+    expect(invalidated()).toEqual([true, true, true])
+  })
+
   it('leaves the event queries alone when the API refuses the change', async () => {
     server.use(http.delete('/api/events/:id', () => apiError(500)))
     const { client, invalidated } = cachedEvents()

@@ -2,6 +2,7 @@ import type {
   EventCertificateResponse,
   EventHistoryActivityResponse,
   EventHistoryResponse,
+  MyConsentResponse,
   PersonalDataResponse,
 } from '@/shared/api/generated/models'
 
@@ -20,6 +21,26 @@ export function buildCertificateResponse(
     eventSubtitle: 'Edición 2025',
     eventStartsAt: '2025-05-10',
     eventEndsAt: '2025-05-12',
+    ...overrides,
+  }
+}
+
+/** Wire consent of the household as returned by `/api/me/consents`. */
+export function buildConsentResponse(
+  overrides: Partial<MyConsentResponse> = {},
+): MyConsentResponse {
+  return {
+    eventId: 'event-1',
+    eventTitle: 'Hackathon de Primavera',
+    eventStartsAt: '2026-05-10',
+    termsDocumentId: 'terms-1',
+    documentName: 'Uso de imágenes',
+    personId: 'child-1',
+    personName: 'Byron Lovelace',
+    accepted: true,
+    withdrawn: false,
+    decidedAt: '2026-05-01T09:00:00Z',
+    decidedByName: 'Ada Lovelace',
     ...overrides,
   }
 }
@@ -121,11 +142,18 @@ export function buildPersonalDataResponse(
     ],
     termsDecisions: [
       {
+        personId: 'child-1',
+        personName: 'Byron Lovelace',
+        decidedByName: 'Ada Lovelace',
         eventTitle: 'Hackatón',
         documentName: 'Uso de imágenes',
         accepted: true,
         decidedAt: '2026-05-01T00:00:00Z',
         signature: 'iVBORw0KGgo=',
+        changes: [
+          { accepted: false, changedAt: '2026-04-01T00:00:00Z', decidedByName: 'Ada Lovelace' },
+          { accepted: true, changedAt: '2026-05-01T00:00:00Z', decidedByName: 'Ada Lovelace' },
+        ],
       },
     ],
     sessions: [{ createdAt: '2026-10-18T09:00:00Z', expiresAt: '2026-10-18T21:00:00Z' }],

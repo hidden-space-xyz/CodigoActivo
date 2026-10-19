@@ -11,6 +11,7 @@ import {
   disableAuthenticatorRequest,
   getAccountCertificatesRequest,
   getAccountChildrenRequest,
+  getAccountConsentsRequest,
   getAccountDeletionAllowedRequest,
   getAccountHistoryRequest,
   getAccountPersonalDataRequest,
@@ -38,6 +39,7 @@ import {
 } from '../../../../support/server'
 import {
   buildCertificateResponse,
+  buildConsentResponse,
   buildHistoryResponse,
   buildPersonalDataResponse,
   buildUserResponse,
@@ -368,6 +370,30 @@ describe('account requests', () => {
 
     await expect(getAccountCertificatesRequest()).resolves.toEqual([
       expect.objectContaining({ code: 'CA-1', participantId: 'user-1' }),
+    ])
+  })
+
+  it('maps the consents of the household', async () => {
+    server.use(
+      http.get('/api/me/consents', () =>
+        HttpResponse.json([buildConsentResponse({ accepted: false, withdrawn: true })]),
+      ),
+    )
+
+    await expect(getAccountConsentsRequest()).resolves.toEqual([
+      {
+        eventId: 'event-1',
+        eventTitle: 'Hackathon de Primavera',
+        eventStartsAt: '2026-05-10',
+        termsDocumentId: 'terms-1',
+        documentName: 'Uso de imágenes',
+        personId: 'child-1',
+        personName: 'Byron Lovelace',
+        accepted: false,
+        withdrawn: true,
+        decidedAt: '2026-05-01T09:00:00Z',
+        decidedByName: 'Ada Lovelace',
+      },
     ])
   })
 

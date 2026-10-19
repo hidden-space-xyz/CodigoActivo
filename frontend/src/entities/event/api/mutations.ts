@@ -1,12 +1,13 @@
 import { mutationOptions } from '@tanstack/vue-query'
 
-import type { EventInput } from '../model/types'
+import type { EventInput, TermsConsentTarget } from '../model/types'
 import { eventKeys } from './queries'
 import {
   createEventRequest,
   deleteEventRequest,
   featureEventRequest,
   updateEventRequest,
+  withdrawTermsConsentRequest,
 } from './requests'
 
 /** Mutation options of events; each one refreshes every event query once it succeeds. */
@@ -31,6 +32,16 @@ export const eventMutations = {
   feature: () =>
     mutationOptions({
       mutationFn: (id: string) => featureEventRequest(id),
+      meta: { invalidates: [eventKeys.all] },
+    }),
+  /**
+   * Withdraws a consent given for a person about a terms document of an event; the terms state of
+   * the event changes with it.
+   */
+  withdrawConsent: () =>
+    mutationOptions({
+      mutationFn: ({ eventId, userId, termsDocumentId }: TermsConsentTarget) =>
+        withdrawTermsConsentRequest(eventId, userId, termsDocumentId),
       meta: { invalidates: [eventKeys.all] },
     }),
 }

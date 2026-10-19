@@ -1,4 +1,5 @@
 using GenderContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using TermsDocumentKindContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 using TwoFactorMethodContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.Application.Common.Mapping;
@@ -37,5 +38,17 @@ public static class ContractEnums
     public static TwoFactorMethodContract ToContract(this Domain.Users.TwoFactorMethod method)
     {
         return (TwoFactorMethodContract)(int)method;
+    }
+
+    /// <summary>
+    /// Gets the domain kind of a terms document kind sent by a client.
+    /// </summary>
+    /// <param name="kind">Kind as clients send it.</param>
+    /// <returns>The domain kind.</returns>
+    public static Domain.TermsDocuments.TermsDocumentKind ToDomain(
+        this TermsDocumentKindContract kind
+    )
+    {
+        return (Domain.TermsDocuments.TermsDocumentKind)(int)kind;
     }
 }

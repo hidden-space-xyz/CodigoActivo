@@ -13,6 +13,7 @@ describe('toTermsDocumentDraft', () => {
       name: '',
       description: '',
       requiresSignature: false,
+      kind: 'Conditions',
     })
     expect(
       toTermsDocumentDraft({
@@ -20,15 +21,26 @@ describe('toTermsDocumentDraft', () => {
         name: 'Privacy',
         description: richText('Body'),
         requiresSignature: true,
+        kind: 'Conditions',
       }),
-    ).toEqual({ name: 'Privacy', description: richText('Body'), requiresSignature: true })
+    ).toEqual({
+      name: 'Privacy',
+      description: richText('Body'),
+      requiresSignature: true,
+      kind: 'Conditions',
+    })
   })
 })
 
 describe('readTermsDocumentDraft', () => {
   it('refuses a blank name without a message and asks for some content', () => {
     expect(
-      readTermsDocumentDraft({ name: ' ', description: '', requiresSignature: false }),
+      readTermsDocumentDraft({
+        name: ' ',
+        description: '',
+        requiresSignature: false,
+        kind: 'Conditions',
+      }),
     ).toEqual({
       problems: {
         name: true,
@@ -44,6 +56,7 @@ describe('readTermsDocumentDraft', () => {
         name: 'Cookies',
         description: richText('a'.repeat(262_144)),
         requiresSignature: false,
+        kind: 'Conditions',
       }),
     ).toEqual({ problems: { description: 'validation.richTextTooLong' }, value: null })
   })
@@ -54,10 +67,16 @@ describe('readTermsDocumentDraft', () => {
         name: ' Cookies ',
         description: richText('Body'),
         requiresSignature: true,
+        kind: 'Conditions',
       }),
     ).toEqual({
       problems: {},
-      value: { name: 'Cookies', description: richText('Body'), requiresSignature: true },
+      value: {
+        name: 'Cookies',
+        description: richText('Body'),
+        requiresSignature: true,
+        kind: 'Conditions',
+      },
     })
   })
 })

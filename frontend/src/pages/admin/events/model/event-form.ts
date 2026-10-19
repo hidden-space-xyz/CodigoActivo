@@ -12,7 +12,10 @@ export interface EventDraft {
   categoryIds: string[]
   /** Linked terms documents in the order the event shows them. */
   termsDocumentIds: string[]
-  /** Whether deciding on each linked document is required, by document id; `true` when unset. */
+  /**
+   * Whether deciding on each linked document is required, by document id; `true` when unset. A
+   * consent is never required, whatever this says.
+   */
   termsRequired: Record<string, boolean>
   startsAt: Date | null
   endsAt: Date | null
@@ -89,10 +92,15 @@ function readProblems(draft: EventDraft): Partial<Record<EventField, FormProblem
  * close after it opens and no later than the event's last day, and early signup must open before
  * the general signup. Event days are sent
  * as ISO days, signup moments as ISO instants and an empty description as an empty rich-text
- * document. The thumbnail is resolved separately when saving.
+ * document. A linked consent is never sent as required. The thumbnail is resolved separately when
+ * saving.
+ *
+ * @param draft - Values the dialog holds.
+ * @param consentIds - Ids of the terms documents that hold a consent.
  */
 export function readEventDraft(
   draft: EventDraft,
+  consentIds: ReadonlySet<string> = new Set(),
 ): FormReading<EventField, Omit<EventInput, 'thumbnailId'>> {
   const problems = readProblems(draft)
   const { startsAt, endsAt, earlySignupStartsAt, signupStartsAt, signupEndsAt } = draft
@@ -120,7 +128,7 @@ export function readEventDraft(
       categoryIds: [...draft.categoryIds],
       terms: draft.termsDocumentIds.map((documentId) => ({
         documentId,
-        required: draft.termsRequired[documentId] ?? true,
+        required: !consentIds.has(documentId) && (draft.termsRequired[documentId] ?? true),
       })),
     },
   }

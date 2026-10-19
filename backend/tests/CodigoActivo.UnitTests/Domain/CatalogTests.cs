@@ -9,20 +9,32 @@ namespace CodigoActivo.UnitTests.Domain;
 public sealed class CatalogTests
 {
     [Fact]
-    public void TermsDocumentCreateThenRewriteTrimsNameAndKeepsContentAndSignature()
+    public void TermsDocumentCreateThenRewriteTrimsNameAndKeepsContentSignatureAndKind()
     {
-        var document = TermsDocument.Create("  Condiciones ", RichText.From("{\"a\":1}"), true);
+        var document = TermsDocument.Create(
+            "  Condiciones ",
+            RichText.From("{\"a\":1}"),
+            true,
+            TermsDocumentKind.Conditions
+        );
 
         document.Id.Value.Should().NotBeEmpty();
         document.Name.Should().Be("Condiciones");
         document.Description!.Json.Should().Be("{\"a\":1}");
         document.RequiresSignature.Should().BeTrue();
+        document.Kind.Should().Be(TermsDocumentKind.Conditions);
 
-        document.Rewrite(" Privacidad ", RichText.From("{\"b\":2}"), false);
+        document.Rewrite(
+            " Privacidad ",
+            RichText.From("{\"b\":2}"),
+            false,
+            TermsDocumentKind.Consent
+        );
 
         document.Name.Should().Be("Privacidad");
         document.Description!.Json.Should().Be("{\"b\":2}");
         document.RequiresSignature.Should().BeFalse();
+        document.Kind.Should().Be(TermsDocumentKind.Consent);
     }
 
     [Fact]
@@ -31,7 +43,13 @@ public sealed class CatalogTests
         var id = Guid.NewGuid();
 
         TermsDocument
-            .Create("Condiciones", RichText.From("{}"), false, TermsDocumentId.From(id))
+            .Create(
+                "Condiciones",
+                RichText.From("{}"),
+                false,
+                TermsDocumentKind.Conditions,
+                TermsDocumentId.From(id)
+            )
             .Id.Value.Should()
             .Be(id);
     }

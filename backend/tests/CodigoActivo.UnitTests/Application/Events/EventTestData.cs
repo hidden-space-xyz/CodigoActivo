@@ -9,6 +9,7 @@ using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
+using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.UnitTests.Application.Events;
 
@@ -216,7 +217,8 @@ internal static class EventTestData
     public static TermsDocumentRow NewTermsDocumentRow(
         string name = "Términos generales",
         string description = "{}",
-        bool requiresSignature = false
+        bool requiresSignature = false,
+        TermsDocumentKind kind = TermsDocumentKind.Conditions
     )
     {
         return new()
@@ -225,6 +227,7 @@ internal static class EventTestData
             Name = name,
             Description = description,
             RequiresSignature = requiresSignature,
+            Kind = kind,
         };
     }
 

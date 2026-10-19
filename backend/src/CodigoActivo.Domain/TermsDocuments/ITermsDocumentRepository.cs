@@ -49,4 +49,15 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
         IReadOnlyCollection<TermsDocumentId> ids,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Lists which of the given documents hold a consent.
+    /// </summary>
+    /// <param name="ids">Identifiers of the documents to look at.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the identifiers of the consents.</returns>
+    public Task<IReadOnlyCollection<TermsDocumentId>> ListConsentsAsync(
+        IReadOnlyCollection<TermsDocumentId> ids,
+        CancellationToken ct = default
+    );
 }

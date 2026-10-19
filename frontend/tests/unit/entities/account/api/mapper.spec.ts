@@ -229,11 +229,18 @@ describe('toPersonalDataFile', () => {
     ])
     expect(file.decisionesSobreDocumentos).toEqual([
       {
+        personaId: 'child-1',
+        persona: 'Byron Lovelace',
+        decidioPor: 'Ada Lovelace',
         evento: 'Hackatón',
         documento: 'Uso de imágenes',
         aceptado: true,
         fecha: '2026-05-01T00:00:00Z',
         firmaPngBase64: 'iVBORw0KGgo=',
+        cambios: [
+          { aceptado: false, fecha: '2026-04-01T00:00:00Z', decidioPor: 'Ada Lovelace' },
+          { aceptado: true, fecha: '2026-05-01T00:00:00Z', decidioPor: 'Ada Lovelace' },
+        ],
       },
     ])
     expect(file.sesionesAbiertas).toEqual([

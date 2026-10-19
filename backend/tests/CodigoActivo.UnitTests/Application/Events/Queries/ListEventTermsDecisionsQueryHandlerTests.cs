@@ -49,7 +49,8 @@ public sealed class ListEventTermsDecisionsQueryHandlerTests
         DateTimeOffset decidedAt,
         bool accepted = true,
         byte[]? signature = null,
-        Guid? onEvent = null
+        Guid? onEvent = null,
+        UserRow? decidedBy = null
     )
     {
         var decision = new EventTermsAcceptanceRow
@@ -57,6 +58,8 @@ public sealed class ListEventTermsDecisionsQueryHandlerTests
             EventId = onEvent ?? eventId,
             UserId = user.Id,
             User = user,
+            DecidedById = (decidedBy ?? user).Id,
+            DecidedBy = decidedBy ?? user,
             TermsDocumentId = document.Id,
             TermsDocument = document,
             Accepted = accepted,
@@ -113,9 +116,14 @@ public sealed class ListEventTermsDecisionsQueryHandlerTests
                     "Luis",
                     "Mora",
                     null,
+                    luis.Id,
+                    "Luis",
+                    "Mora",
                     image.Id,
                     "Autorización de imagen",
+                    image.Kind,
                     true,
+                    false,
                     Now,
                     true
                 ),
@@ -124,9 +132,14 @@ public sealed class ListEventTermsDecisionsQueryHandlerTests
                     "Ana",
                     "Gil",
                     "ana@example.com",
+                    ana.Id,
+                    "Ana",
+                    "Gil",
                     image.Id,
                     "Autorización de imagen",
+                    image.Kind,
                     true,
+                    false,
                     Now.AddHours(-1),
                     true
                 ),
@@ -135,8 +148,13 @@ public sealed class ListEventTermsDecisionsQueryHandlerTests
                     "Ana",
                     "Gil",
                     "ana@example.com",
+                    ana.Id,
+                    "Ana",
+                    "Gil",
                     rules.Id,
                     "Normas",
+                    rules.Kind,
+                    false,
                     false,
                     Now.AddHours(-2),
                     false
@@ -167,6 +185,23 @@ public sealed class ListEventTermsDecisionsQueryHandlerTests
 
         byName.Items.Should().ContainSingle().Which.FirstName.Should().Be("Lucía");
         byEmail.Items.Should().ContainSingle().Which.FirstName.Should().Be("Ana");
+    }
+
+    [Fact]
+    public async Task HandleAsyncDecisionAboutADependentNamesTheGuardianWhoDecidedAndIsFoundByThem()
+    {
+        var marta = Person("Marta", "Ruiz", "marta@example.com");
+        var leo = Person("Leo", "Ruiz");
+        Decision(leo, rules, Now, decidedBy: marta);
+
+        var page = await ListAsync(new EventTermsDecisionListQuery { Search = "marta@" });
+
+        var decision = page.Items.Should().ContainSingle().Subject;
+        decision.UserId.Should().Be(leo.Id);
+        decision.FirstName.Should().Be("Leo");
+        decision.DecidedById.Should().Be(marta.Id);
+        decision.DecidedByFirstName.Should().Be("Marta");
+        decision.DecidedByLastName.Should().Be("Ruiz");
     }
 
     [Fact]

@@ -4,12 +4,17 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { PersonalDataTermsDecisionChangeResponse } from './personalDataTermsDecisionChangeResponse';
 
 export interface PersonalDataTermsDecisionResponse {
+  personId: string;
+  personName: string;
+  decidedByName: string;
   eventTitle: string;
   documentName: string;
   accepted: boolean;
   decidedAt: string;
   /** @nullable */
   signature?: string | null;
+  changes: PersonalDataTermsDecisionChangeResponse[];
 }

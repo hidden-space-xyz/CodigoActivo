@@ -142,13 +142,13 @@ describe('event requests', () => {
         buildTermsDocumentState({ termsDocumentId: 'terms-2', name: 'Segundo', displayOrder: 1 }),
         buildTermsDocumentState({ termsDocumentId: 'terms-1', name: 'Primero' }),
       ],
-      signupBlocked: true,
+      people: [],
     }
     server.use(http.get('/api/events/e1/terms', () => HttpResponse.json(state)))
 
     const result = await getEventTermsStateRequest('e1')
 
-    expect(result.signupBlocked).toBe(true)
+    expect(result.people).toEqual([])
     expect(result.documents.map((document) => [document.id, document.name])).toEqual([
       ['terms-1', 'Primero'],
       ['terms-2', 'Segundo'],

@@ -57,4 +57,17 @@ public class TermsDocumentRepository(CodigoActivoDbContext context)
             .Select(document => document.Id)
             .ToListAsync(ct);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyCollection<TermsDocumentId>> ListConsentsAsync(
+        IReadOnlyCollection<TermsDocumentId> ids,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Where(document =>
+                document.Kind == TermsDocumentKind.Consent && ids.Contains(document.Id)
+            )
+            .Select(document => document.Id)
+            .ToListAsync(ct);
+    }
 }

@@ -119,11 +119,13 @@ describe('useEventActivities for signed-in users', () => {
     expect(calls.counts.terms).toBeUndefined()
 
     hasTerms.value = true
-    await vi.waitFor(() => expect(result.termsState.data.value?.signupBlocked).toBe(true))
+    await vi.waitFor(() =>
+      expect(result.termsState.data.value?.people[0]?.decisions.length).toBe(0),
+    )
 
     state.termsAccepted = true
     await result.termsState.refetch()
-    expect(result.termsState.data.value?.signupBlocked).toBe(false)
+    expect(result.termsState.data.value?.people[0]?.decisions.length).toBe(1)
   })
 
   it('follows the event id getter', async () => {
@@ -172,7 +174,9 @@ describe('useEventActivities for signed-in users', () => {
   it('signs the user up and refreshes activities, assignments, household and terms', async () => {
     const { calls, state } = serveSignupApi()
     const { result } = await mountSignup({ hasTerms: true })
-    await vi.waitFor(() => expect(result.termsState.data.value?.signupBlocked).toBe(false))
+    await vi.waitFor(() =>
+      expect(result.termsState.data.value?.people[0]?.decisions.length).toBe(1),
+    )
     const before = { ...calls.counts }
     state.activities = [buildSignupActivity({ title: 'Actualizada' })]
 
@@ -226,21 +230,33 @@ describe('useEventActivities for signed-in users', () => {
   it('propagates terms decisions to the household signup request and refreshes the terms state', async () => {
     const { calls } = serveSignupApi({ children: [CHILD], termsAccepted: false })
     const { result } = await mountSignup({ hasTerms: true })
-    await vi.waitFor(() => expect(result.termsState.data.value?.signupBlocked).toBe(true))
+    await vi.waitFor(() =>
+      expect(result.termsState.data.value?.people[0]?.decisions.length).toBe(0),
+    )
     const before = { ...calls.counts }
 
     await result.assignHousehold.mutateAsync({
       activityId: 'activity-1',
-      assignments: [{ userId: 'child-1', roleId: 'role-volunteer' }],
-      termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+      assignments: [
+        {
+          userId: 'child-1',
+          roleId: 'role-volunteer',
+          termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+        },
+      ],
     })
 
     expect(calls.household).toEqual([
       {
         path: 'activity-1',
         body: {
-          assignments: [{ userId: 'child-1', activityRoleTypeId: 'role-volunteer' }],
-          termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+          assignments: [
+            {
+              userId: 'child-1',
+              activityRoleTypeId: 'role-volunteer',
+              termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+            },
+          ],
         },
       },
     ])
@@ -250,7 +266,9 @@ describe('useEventActivities for signed-in users', () => {
   it('withdraws a signup and refreshes the lists but not the terms state', async () => {
     const { calls } = serveSignupApi()
     const { result } = await mountSignup({ hasTerms: true })
-    await vi.waitFor(() => expect(result.termsState.data.value?.signupBlocked).toBe(false))
+    await vi.waitFor(() =>
+      expect(result.termsState.data.value?.people[0]?.decisions.length).toBe(1),
+    )
     await flushPromises()
     const before = { ...calls.counts }
 

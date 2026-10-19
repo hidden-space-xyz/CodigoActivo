@@ -151,7 +151,7 @@ public sealed class EventTermsDocumentRow
 }
 
 /// <summary>
-/// Stored decision of a user about a terms document of an event as the queries read it.
+/// Stored decision about a terms document of an event for a person as the queries read it.
 /// </summary>
 public sealed class EventTermsAcceptanceRow
 {
@@ -161,11 +161,17 @@ public sealed class EventTermsAcceptanceRow
     /// <summary>Gets the event.</summary>
     public EventRow Event { get; init; } = null!;
 
-    /// <summary>Gets the identifier of the user.</summary>
+    /// <summary>Gets the identifier of the person the decision is about.</summary>
     public Guid UserId { get; init; }
 
-    /// <summary>Gets the user.</summary>
+    /// <summary>Gets the person the decision is about.</summary>
     public UserRow User { get; init; } = null!;
+
+    /// <summary>Gets the identifier of the person who decided.</summary>
+    public Guid DecidedById { get; init; }
+
+    /// <summary>Gets the person who decided: the person or their guardian.</summary>
+    public UserRow DecidedBy { get; init; } = null!;
 
     /// <summary>Gets the identifier of the terms document.</summary>
     public Guid TermsDocumentId { get; init; }
@@ -181,6 +187,42 @@ public sealed class EventTermsAcceptanceRow
 
     /// <summary>Gets the PNG image of the signature drawn to accept the document, if any.</summary>
     public byte[]? Signature { get; init; }
+
+    /// <summary>Gets every change of the decision.</summary>
+    public ICollection<TermsDecisionChangeRow> Changes { get; init; } = [];
+}
+
+/// <summary>
+/// Stored change of a decision about a terms document of an event as the queries read it.
+/// </summary>
+public sealed class TermsDecisionChangeRow
+{
+    /// <summary>Gets the sequence of the change, which orders the changes made at once.</summary>
+    public long Id { get; init; }
+
+    /// <summary>Gets the identifier of the event.</summary>
+    public Guid EventId { get; init; }
+
+    /// <summary>Gets the identifier of the person the decision is about.</summary>
+    public Guid UserId { get; init; }
+
+    /// <summary>Gets the identifier of the terms document.</summary>
+    public Guid TermsDocumentId { get; init; }
+
+    /// <summary>Gets whether the document was accepted; false for a decline or a withdrawal.</summary>
+    public bool Accepted { get; init; }
+
+    /// <summary>Gets the identifier of the person who decided.</summary>
+    public Guid DecidedById { get; init; }
+
+    /// <summary>Gets the person who decided.</summary>
+    public UserRow DecidedBy { get; init; } = null!;
+
+    /// <summary>Gets the identifier of the account that recorded the change.</summary>
+    public Guid RecordedById { get; init; }
+
+    /// <summary>Gets when the change was made.</summary>
+    public DateTimeOffset ChangedAt { get; init; }
 }
 
 /// <summary>
@@ -199,4 +241,7 @@ public sealed class TermsDocumentRow
 
     /// <summary>Gets a value indicating whether accepting the document asks for a signature.</summary>
     public bool RequiresSignature { get; init; }
+
+    /// <summary>Gets whether the document holds conditions or a consent.</summary>
+    public TermsDocumentKind Kind { get; init; }
 }

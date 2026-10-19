@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import EventTermsDialog from '@/pages/event-detail/ui/EventTermsDialog.vue'
 import type { EventTermsDocumentState } from '@/entities/event'
+import type { TermsDialogSection } from '@/pages/event-detail/model/terms-decisions'
 
 import { renderWithProviders, t } from '../../../../support/render'
 import { richText } from '../../../../support/builders'
@@ -19,10 +20,9 @@ const REQUIRED_DOC: EventTermsDocumentState = {
   name: 'Normas del campamento',
   description: richText('Respeta a los demás.'),
   required: true,
+  kind: 'Conditions',
   requiresSignature: false,
   displayOrder: 0,
-  accepted: null,
-  decidedAt: null,
 }
 
 const OPTIONAL_DOC: EventTermsDocumentState = {
@@ -30,24 +30,34 @@ const OPTIONAL_DOC: EventTermsDocumentState = {
   name: 'Boletín informativo',
   description: richText('Recibe noticias del evento.'),
   required: false,
+  kind: 'Conditions',
   requiresSignature: false,
   displayOrder: 1,
-  accepted: null,
-  decidedAt: null,
 }
 
 /** Finds the checkbox input for a terms document row, however Element Plus placed the id. */
-function termsCheckbox(root: ParentNode, documentId: string): HTMLElement {
-  const checkbox = root.querySelector<HTMLElement>(
-    `#terms-${documentId} input, input#terms-${documentId}`,
-  )
+function termsCheckbox(root: ParentNode, documentId: string, personId = 'user-1'): HTMLElement {
+  const id = `terms-${personId}__${documentId}`
+  const checkbox = root.querySelector<HTMLElement>(`#${id} input, input#${id}`)
   if (!checkbox) throw new Error(`Terms checkbox not found: ${documentId}`)
   return checkbox
 }
 
-function renderDialog(documents: readonly EventTermsDocumentState[]) {
+function selfSection(documents: readonly EventTermsDocumentState[]): TermsDialogSection {
+  return {
+    personId: 'user-1',
+    name: 'Ada',
+    self: true,
+    items: documents.map((document) => ({ document, decider: 'user' })),
+  }
+}
+
+function renderDialog(
+  documents: readonly EventTermsDocumentState[],
+  sections: readonly TermsDialogSection[] = [selfSection(documents)],
+) {
   return renderWithProviders(EventTermsDialog, {
-    props: { visible: true, documents },
+    props: { visible: true, sections },
     attach: true,
   })
 }
@@ -170,10 +180,12 @@ describe('EventTermsDialog confirm decisions', () => {
 
     expect(wrapper.emitted('confirm')).toEqual([
       [
-        [
-          { termsDocumentId: REQUIRED_DOC.id, accepted: true },
-          { termsDocumentId: OPTIONAL_DOC.id, accepted: false },
-        ],
+        {
+          'user-1': [
+            { termsDocumentId: REQUIRED_DOC.id, accepted: true },
+            { termsDocumentId: OPTIONAL_DOC.id, accepted: false },
+          ],
+        },
       ],
     ])
   })
@@ -184,7 +196,7 @@ describe('EventTermsDialog confirm decisions', () => {
     await click(findButton(t('pages.eventDetail.terms.confirm')))
 
     expect(wrapper.emitted('confirm')).toEqual([
-      [[{ termsDocumentId: OPTIONAL_DOC.id, accepted: false }]],
+      [{ 'user-1': [{ termsDocumentId: OPTIONAL_DOC.id, accepted: false }] }],
     ])
   })
 })
@@ -195,10 +207,9 @@ describe('EventTermsDialog signatures', () => {
     name: 'Autorización de imagen',
     description: richText('Puedes revocarla cuando quieras.'),
     required: true,
+    kind: 'Conditions',
     requiresSignature: true,
     displayOrder: 2,
-    accepted: null,
-    decidedAt: null,
   }
 
   beforeEach(() => {
@@ -241,7 +252,11 @@ describe('EventTermsDialog signatures', () => {
     await click(findButton(t('pages.eventDetail.terms.confirm')))
 
     expect(wrapper.emitted('confirm')).toEqual([
-      [[{ termsDocumentId: SIGNED_DOC.id, accepted: true, signature: FAKE_SIGNATURE }]],
+      [
+        {
+          'user-1': [{ termsDocumentId: SIGNED_DOC.id, accepted: true, signature: FAKE_SIGNATURE }],
+        },
+      ],
     ])
   })
 
@@ -259,5 +274,79 @@ describe('EventTermsDialog signatures', () => {
     expect(textOf(document.body.querySelector('.terms-dialog__warning'))).toBe(
       t('pages.eventDetail.terms.signature.missing'),
     )
+  })
+})
+
+describe('EventTermsDialog household sections', () => {
+  const IMAGE_DOC: EventTermsDocumentState = {
+    id: 'terms-images',
+    name: 'Uso de imágenes',
+    description: richText('Publicaremos fotos.'),
+    kind: 'Consent',
+    required: false,
+    requiresSignature: false,
+    displayOrder: 3,
+  }
+
+  const teenager: TermsDialogSection = {
+    personId: 'child-1',
+    name: 'Bea',
+    self: false,
+    items: [
+      { document: REQUIRED_DOC, decider: 'user' },
+      { document: IMAGE_DOC, decider: 'person' },
+    ],
+  }
+
+  it('names each person and tells who decides each document of a minor', async () => {
+    await renderDialog([], [selfSection([REQUIRED_DOC]), teenager])
+
+    expect([...document.body.querySelectorAll('.terms-dialog__person-name')].map(textOf)).toEqual([
+      t('pages.eventDetail.terms.selfHeader'),
+      'Bea',
+    ])
+    expect([...document.body.querySelectorAll('.terms-dialog__decider')].map(textOf)).toEqual([
+      t('pages.eventDetail.terms.decidedByUser', { name: 'Bea' }),
+      t('pages.eventDetail.terms.decidedByPerson', { name: 'Bea' }),
+    ])
+    expect(textOf(document.body.querySelector('.terms-dialog__hint'))).toBe(
+      t('pages.eventDetail.terms.handOver', { name: 'Bea' }),
+    )
+    expect(
+      termsCheckbox(document.body, REQUIRED_DOC.id, 'child-1')
+        .closest('label')
+        ?.getAttribute('aria-label'),
+    ).toBe(
+      t('pages.eventDetail.terms.checkboxLabelFor', { name: REQUIRED_DOC.name, person: 'Bea' }),
+    )
+    expect(
+      termsCheckbox(document.body, IMAGE_DOC.id, 'child-1')
+        .closest('label')
+        ?.getAttribute('aria-label'),
+    ).toBe(t('pages.eventDetail.terms.checkboxLabel', { name: IMAGE_DOC.name }))
+  })
+
+  it('requires the required documents of every person and sends the decisions of each', async () => {
+    const { wrapper } = await renderDialog([], [selfSection([REQUIRED_DOC]), teenager])
+    await click(termsCheckbox(document.body, REQUIRED_DOC.id))
+    await click(findButton(t('pages.eventDetail.terms.confirm')))
+
+    expect(wrapper.emitted('confirm')).toBeUndefined()
+
+    await click(termsCheckbox(document.body, REQUIRED_DOC.id, 'child-1'))
+    await click(termsCheckbox(document.body, IMAGE_DOC.id, 'child-1'))
+    await click(findButton(t('pages.eventDetail.terms.confirm')))
+
+    expect(wrapper.emitted('confirm')).toEqual([
+      [
+        {
+          'user-1': [{ termsDocumentId: REQUIRED_DOC.id, accepted: true }],
+          'child-1': [
+            { termsDocumentId: REQUIRED_DOC.id, accepted: true },
+            { termsDocumentId: IMAGE_DOC.id, accepted: true },
+          ],
+        },
+      ],
+    ])
   })
 })

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { EventTermsSummary } from '@/entities/event'
 import { fullName } from '@/entities/user'
 import { formatDateTime } from '@/shared/lib/date'
 import { ColumnFilterSelect } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
+import { RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
+import type { EventTermsDecision } from '../model/types'
 import { useEventTermsDecisions } from '../model/use-event-terms-decisions'
 
 const props = defineProps<{
@@ -19,7 +22,8 @@ const props = defineProps<{
   active: boolean
 }>()
 
-const { table, signature, openSignature } = useEventTermsDecisions(
+const { t } = useI18n()
+const { table, signature, openSignature, withdraw } = useEventTermsDecisions(
   () => props.eventId,
   () => props.active,
 )
@@ -27,6 +31,22 @@ const { table, signature, openSignature } = useEventTermsDecisions(
 const documentOptions = computed(() =>
   props.documents.map((document) => ({ label: document.name, value: document.id })),
 )
+
+function decisionActions(decision: EventTermsDecision): RowAction[] {
+  return decision.consent && decision.accepted
+    ? [
+        {
+          key: 'withdraw',
+          label: t('pages.admin.eventDetail.terms.withdraw.action'),
+          icon: 'undo',
+          inline: true,
+          run: () => {
+            withdraw(decision)
+          },
+        },
+      ]
+    : []
+}
 </script>
 
 <template>
@@ -66,13 +86,30 @@ const documentOptions = computed(() =>
         </template>
         <template #default="{ row }">{{ row.documentName }}</template>
       </el-table-column>
+      <el-table-column
+        :label="$t('pages.admin.eventDetail.terms.columns.decidedBy')"
+        min-width="170"
+        show-overflow-tooltip
+      >
+        <template #default="{ row }">{{
+          row.decidedById === row.userId
+            ? $t('pages.admin.eventDetail.terms.decidedBySelf')
+            : row.decidedByName
+        }}</template>
+      </el-table-column>
       <el-table-column :label="$t('pages.admin.eventDetail.terms.columns.decision')" width="120">
         <template #default="{ row }">
-          <el-tag :type="row.accepted ? 'success' : 'danger'" size="small" disable-transitions>
+          <el-tag
+            :type="row.accepted ? 'success' : row.withdrawn ? 'warning' : 'danger'"
+            size="small"
+            disable-transitions
+          >
             {{
               row.accepted
                 ? $t('pages.admin.eventDetail.terms.accepted')
-                : $t('pages.admin.eventDetail.terms.rejected')
+                : row.withdrawn
+                  ? $t('pages.admin.eventDetail.terms.withdrawn')
+                  : $t('pages.admin.eventDetail.terms.rejected')
             }}
           </el-tag>
         </template>
@@ -108,6 +145,11 @@ const documentOptions = computed(() =>
           <span v-else class="no-signature">
             {{ $t('pages.admin.eventDetail.terms.noSignature') }}
           </span>
+        </template>
+      </el-table-column>
+      <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
+        <template #default="{ row }">
+          <RowActions :actions="decisionActions(row)" />
         </template>
       </el-table-column>
     </DataTable>

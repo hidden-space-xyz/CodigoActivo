@@ -22,6 +22,7 @@ export function buildTermsDocument(
     name: 'Privacy',
     description: richText('Terms body'),
     requiresSignature: false,
+    kind: 'Conditions',
     ...overrides,
   }
 }

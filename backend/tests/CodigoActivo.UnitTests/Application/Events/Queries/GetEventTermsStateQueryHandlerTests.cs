@@ -13,7 +13,10 @@ namespace CodigoActivo.UnitTests.Application.Events.Queries;
 
 public sealed class GetEventTermsStateQueryHandlerTests
 {
+    private static readonly DateTimeOffset DecidedAt = new(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
+
     private readonly FakeReadStore store = new();
+    private readonly TestClock clock = new();
     private readonly Guid userId = Guid.NewGuid();
     private readonly Guid eventId = Guid.NewGuid();
     private readonly GetEventTermsStateQueryHandler sut;
@@ -21,11 +24,30 @@ public sealed class GetEventTermsStateQueryHandlerTests
     public GetEventTermsStateQueryHandlerTests()
     {
         store.Events.Add(new EventRow { Id = eventId });
+        store.Users.Add(Person(userId, "Marta"));
         sut = new GetEventTermsStateQueryHandler(
             store,
             new FakeQueryExecutor(),
-            new TestCurrentUser(UserId.From(userId))
+            new TestCurrentUser(UserId.From(userId)),
+            clock
         );
+    }
+
+    private static UserRow Person(
+        Guid id,
+        string firstName,
+        Guid? parentId = null,
+        DateOnly? birthDate = null
+    )
+    {
+        return new UserRow
+        {
+            Id = id,
+            FirstName = firstName,
+            LastName = "Ruiz",
+            ParentId = parentId,
+            BirthDate = birthDate,
+        };
     }
 
     private static EventTermsDocumentRow NewDocument(
@@ -34,7 +56,8 @@ public sealed class GetEventTermsStateQueryHandlerTests
         bool required,
         int displayOrder,
         string name = "Documento",
-        bool requiresSignature = false
+        bool requiresSignature = false,
+        TermsDocumentKind kind = TermsDocumentKind.Conditions
     )
     {
         return new EventTermsDocumentRow
@@ -49,18 +72,31 @@ public sealed class GetEventTermsStateQueryHandlerTests
                 Name = name,
                 Description = "{}",
                 RequiresSignature = requiresSignature,
+                Kind = kind,
             },
+        };
+    }
+
+    private EventTermsAcceptanceRow Decision(
+        Guid personId,
+        Guid termsDocumentId,
+        bool accepted,
+        Guid? eventId = null
+    )
+    {
+        return new EventTermsAcceptanceRow
+        {
+            EventId = eventId ?? this.eventId,
+            UserId = personId,
+            TermsDocumentId = termsDocumentId,
+            Accepted = accepted,
+            DecidedAt = DecidedAt,
         };
     }
 
     private void HasDocuments(params EventTermsDocumentRow[] documents)
     {
         store.EventTermsDocuments.AddRange(documents);
-    }
-
-    private void HasAcceptances(params EventTermsAcceptanceRow[] acceptances)
-    {
-        store.EventTermsAcceptances.AddRange(acceptances);
     }
 
     private async Task<EventTermsStateResponse> StateAsync()
@@ -89,148 +125,102 @@ public sealed class GetEventTermsStateQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEventWithoutDocumentsReturnsEmptyListAndSignupOpen()
+    public async Task HandleAsyncEventWithoutDocumentsReturnsNothingToDecide()
     {
         HasDocuments();
 
         var result = await StateAsync();
 
         result.Documents.Should().BeEmpty();
-        result.SignupBlocked.Should().BeFalse();
+        result.People.Should().BeEmpty();
         store.ReadsOf<EventTermsAcceptanceRow>().Should().Be(0);
     }
 
     [Fact]
-    public async Task HandleAsyncRequiredAndOptionalUndecidedBlocksSignupForMissingRequired()
+    public async Task HandleAsyncConsentIsNeverRequired()
     {
-        var requiredId = Guid.NewGuid();
-        var optionalId = Guid.NewGuid();
+        var conditionsId = Guid.NewGuid();
+        var consentId = Guid.NewGuid();
         HasDocuments(
-            NewDocument(eventId, requiredId, required: true, displayOrder: 0, name: "Reglamento"),
-            NewDocument(eventId, optionalId, required: false, displayOrder: 1, name: "Boletín")
-        );
-        HasAcceptances();
-
-        var result = await StateAsync();
-
-        result.Documents.Should().HaveCount(2);
-        result.Documents.Should().OnlyContain(d => d.Accepted == null && d.DecidedAt == null);
-        result.SignupBlocked.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task HandleAsyncOnlyOptionalUndecidedDoesNotBlockSignup()
-    {
-        var optionalId = Guid.NewGuid();
-        HasDocuments(NewDocument(eventId, optionalId, required: false, displayOrder: 0));
-        HasAcceptances();
-
-        var result = await StateAsync();
-
-        result.Documents.Should().ContainSingle(d => d.Accepted == null);
-        result.SignupBlocked.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task HandleAsyncRequiredAcceptedWithOptionalUndecidedUnblocksSignup()
-    {
-        var requiredId = Guid.NewGuid();
-        var optionalId = Guid.NewGuid();
-        var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
-        HasDocuments(
-            NewDocument(eventId, requiredId, required: true, displayOrder: 0),
-            NewDocument(eventId, optionalId, required: false, displayOrder: 1)
-        );
-        HasAcceptances(
-            new EventTermsAcceptanceRow
-            {
-                EventId = eventId,
-                UserId = userId,
-                TermsDocumentId = requiredId,
-                Accepted = true,
-                DecidedAt = decidedAt,
-            }
+            NewDocument(eventId, conditionsId, required: true, displayOrder: 0),
+            NewDocument(
+                eventId,
+                consentId,
+                required: true,
+                displayOrder: 1,
+                kind: TermsDocumentKind.Consent
+            )
         );
 
         var result = await StateAsync();
 
-        var required = result
-            .Documents.Should()
-            .ContainSingle(d => d.TermsDocumentId == requiredId)
-            .Subject;
-        required.Accepted.Should().BeTrue();
-        required.DecidedAt.Should().Be(decidedAt);
-        var optional = result
-            .Documents.Should()
-            .ContainSingle(d => d.TermsDocumentId == optionalId)
-            .Subject;
-        optional.Accepted.Should().BeNull();
-        optional.DecidedAt.Should().BeNull();
         result
-            .SignupBlocked.Should()
-            .BeFalse(
-                "every required document is accepted, regardless of undecided optional documents"
+            .Documents.Select(d => (d.TermsDocumentId, d.Kind, d.Required))
+            .Should()
+            .Equal(
+                (conditionsId, TermsDocumentKind.Conditions, true),
+                (consentId, TermsDocumentKind.Consent, false)
             );
     }
 
     [Fact]
-    public async Task HandleAsyncOptionalRejectedDoesNotBlockSignup()
+    public async Task HandleAsyncListsTheUserFirstAndThenTheirDependentsWithWhoDecidesTheirConsents()
     {
-        var requiredId = Guid.NewGuid();
-        var optionalId = Guid.NewGuid();
-        var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
-        HasDocuments(
-            NewDocument(eventId, requiredId, required: true, displayOrder: 0),
-            NewDocument(eventId, optionalId, required: false, displayOrder: 1)
+        var teenagerId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        store.Users.AddRange(
+            Person(teenagerId, "Bea", userId, clock.Today.AddYears(-14)),
+            Person(childId, "Alba", userId, clock.Today.AddYears(-14).AddDays(1)),
+            Person(Guid.NewGuid(), "Ajena", Guid.NewGuid(), clock.Today.AddYears(-10))
         );
-        HasAcceptances(
-            new EventTermsAcceptanceRow
-            {
-                EventId = eventId,
-                UserId = userId,
-                TermsDocumentId = requiredId,
-                Accepted = true,
-                DecidedAt = decidedAt,
-            },
-            new EventTermsAcceptanceRow
-            {
-                EventId = eventId,
-                UserId = userId,
-                TermsDocumentId = optionalId,
-                Accepted = false,
-                DecidedAt = decidedAt,
-            }
-        );
+        HasDocuments(NewDocument(eventId, Guid.NewGuid(), required: true, displayOrder: 0));
 
         var result = await StateAsync();
 
         result
-            .Documents.Should()
-            .ContainSingle(d => d.TermsDocumentId == optionalId && d.Accepted == false);
-        result.SignupBlocked.Should().BeFalse();
+            .People.Select(person => (person.UserId, person.FirstName, person.DecidesOwnConsents))
+            .Should()
+            .Equal((userId, "Marta", true), (childId, "Alba", false), (teenagerId, "Bea", true));
     }
 
     [Fact]
-    public async Task HandleAsyncRequiredRejectedBlocksSignup()
+    public async Task HandleAsyncReturnsTheDecisionsTakenForEachPersonAboutThisEvent()
     {
-        var requiredId = Guid.NewGuid();
-        var decidedAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
-        HasDocuments(NewDocument(eventId, requiredId, required: true, displayOrder: 0));
-        HasAcceptances(
-            new EventTermsAcceptanceRow
-            {
-                EventId = eventId,
-                UserId = userId,
-                TermsDocumentId = requiredId,
-                Accepted = false,
-                DecidedAt = decidedAt,
-            }
+        var childId = Guid.NewGuid();
+        var conditionsId = Guid.NewGuid();
+        var consentId = Guid.NewGuid();
+        store.Users.Add(Person(childId, "Leo", userId, clock.Today.AddYears(-9)));
+        HasDocuments(
+            NewDocument(eventId, conditionsId, required: true, displayOrder: 0),
+            NewDocument(
+                eventId,
+                consentId,
+                required: false,
+                displayOrder: 1,
+                kind: TermsDocumentKind.Consent
+            )
+        );
+        store.EventTermsAcceptances.AddRange(
+            Decision(userId, conditionsId, true),
+            Decision(childId, conditionsId, true),
+            Decision(childId, consentId, false),
+            Decision(userId, consentId, true, Guid.NewGuid()),
+            Decision(Guid.NewGuid(), consentId, true)
         );
 
         var result = await StateAsync();
 
-        result.Documents.Should().ContainSingle(d => d.Accepted == false);
-        result.SignupBlocked.Should().BeTrue();
+        var self = result.People.Should().ContainSingle(person => person.UserId == userId).Subject;
+        self.Decisions.Should()
+            .Equal(new EventTermsPersonDecisionResponse(conditionsId, true, DecidedAt));
+        var child = result
+            .People.Should()
+            .ContainSingle(person => person.UserId == childId)
+            .Subject;
+        child
+            .Decisions.Select(decision => (decision.TermsDocumentId, decision.Accepted))
+            .Should()
+            .BeEquivalentTo([(conditionsId, true), (consentId, false)]);
     }
 
     [Fact]
@@ -244,7 +234,6 @@ public sealed class GetEventTermsStateQueryHandlerTests
             NewDocument(eventId, firstId, required: false, displayOrder: 0, name: "Primero"),
             NewDocument(eventId, secondId, required: false, displayOrder: 1, name: "Segundo")
         );
-        HasAcceptances();
 
         var result = await StateAsync();
 

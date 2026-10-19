@@ -13,6 +13,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
@@ -292,6 +293,7 @@ public sealed class EventTermsSignatureTests(CodigoActivoWebAppFactory factory)
             new CreateTermsDocumentRequest(
                 $"Firma {Guid.NewGuid():N}",
                 "{\"type\":\"doc\",\"content\":[]}",
+                TermsDocumentKind.Conditions,
                 RequiresSignature: true
             ),
             Ct

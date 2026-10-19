@@ -33,6 +33,7 @@ internal static class EventsRegistration
         services.AddScoped<IEventCategoryTypeRepository, EventCategoryTypeRepository>();
         services.AddScoped<ITermsDocumentRepository, TermsDocumentRepository>();
         services.AddScoped<EventCategoryChecker>();
+        services.AddSingleton<IConsentWithdrawalEmailComposer, ConsentWithdrawalEmailComposer>();
 
         services.AddScoped<IActivityRepository, ActivityRepository>();
         services.AddSingleton<ISignupEmailComposer, SignupEmailComposer>();

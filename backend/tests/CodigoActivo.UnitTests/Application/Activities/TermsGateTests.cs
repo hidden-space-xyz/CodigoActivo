@@ -32,6 +32,8 @@ public sealed class TermsGateTests
         Substitute.For<ITermsDocumentRepository>();
     private readonly IEventTermsAcceptanceRepository termsAcceptances =
         Substitute.For<IEventTermsAcceptanceRepository>();
+    private static readonly UserId RecorderId = UserId.From(Guid.NewGuid());
+
     private readonly TestClock clock = new();
     private readonly TermsGate sut;
 
@@ -55,12 +57,15 @@ public sealed class TermsGateTests
                 .Value,
             EventCategorySelection.Create([EventCategoryTypeId.From(Guid.NewGuid())]).Value,
             EventTermsLinks
-                .Create([
-                    .. documents.Select(d => new EventTermsLink(
-                        TermsDocumentId.From(d.TermsDocumentId),
-                        d.Required
-                    )),
-                ])
+                .Create(
+                    [
+                        .. documents.Select(d => new EventTermsLink(
+                            TermsDocumentId.From(d.TermsDocumentId),
+                            d.Required
+                        )),
+                    ],
+                    []
+                )
                 .Value,
             UserId.From(Guid.NewGuid()),
             clock.UtcNow
@@ -76,6 +81,30 @@ public sealed class TermsGateTests
             .Returns(acceptances);
     }
 
+    private static IReadOnlyList<PersonTermsDecisions> Signup(
+        Guid userId,
+        IReadOnlyList<TermsDecision>? decisions
+    )
+    {
+        return
+        [
+            new PersonTermsDecisions(
+                Persisted.As<User>(new { Id = userId, Status = UserStatus.Active }),
+                decisions
+            ),
+        ];
+    }
+
+    private void HoldConsents(params Guid[] termsDocumentIds)
+    {
+        termsDocuments
+            .ListConsentsAsync(
+                Arg.Any<IReadOnlyCollection<TermsDocumentId>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns([.. termsDocumentIds.Select(TermsDocumentId.From)]);
+    }
+
     [Fact]
     public async Task EnsureDecidedAsyncEventMissingSucceedsWithoutRecording()
     {
@@ -83,8 +112,8 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(Guid.NewGuid()),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.New(), true)],
+            Signup(Guid.NewGuid(), [new TermsDecision(TermsDocumentId.New(), true)]),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -101,8 +130,8 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.New(), true)],
+            Signup(Guid.NewGuid(), [new TermsDecision(TermsDocumentId.New(), true)]),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -125,8 +154,8 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.From(unlinkedId), true)],
+            Signup(Guid.NewGuid(), [new TermsDecision(TermsDocumentId.From(unlinkedId), true)]),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -147,8 +176,11 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.From(termsDocumentId), true)],
+            Signup(
+                Guid.NewGuid(),
+                [new TermsDecision(TermsDocumentId.From(termsDocumentId), true)]
+            ),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -175,8 +207,11 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.From(termsDocumentId), true)],
+            Signup(
+                Guid.NewGuid(),
+                [new TermsDecision(TermsDocumentId.From(termsDocumentId), true)]
+            ),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -204,8 +239,11 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
+            Signup(
+                Guid.NewGuid(),
+                [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)]
+            ),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -236,8 +274,11 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
+            Signup(
+                Guid.NewGuid(),
+                [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)]
+            ),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -265,8 +306,11 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
+            Signup(
+                Guid.NewGuid(),
+                [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)]
+            ),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -288,8 +332,11 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
+            Signup(
+                Guid.NewGuid(),
+                [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)]
+            ),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -309,8 +356,8 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            null,
+            Signup(Guid.NewGuid(), null),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -332,8 +379,8 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(userId),
-            [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)],
+            Signup(userId, [new TermsDecision(TermsDocumentId.From(termsDocumentId), false)]),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -367,11 +414,14 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(userId),
-            [
-                new TermsDecision(TermsDocumentId.From(requiredOne), true),
-                new TermsDecision(TermsDocumentId.From(requiredTwo), true),
-            ],
+            Signup(
+                userId,
+                [
+                    new TermsDecision(TermsDocumentId.From(requiredOne), true),
+                    new TermsDecision(TermsDocumentId.From(requiredTwo), true),
+                ]
+            ),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -421,8 +471,11 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.From(termsDocumentId), true, png)],
+            Signup(
+                Guid.NewGuid(),
+                [new TermsDecision(TermsDocumentId.From(termsDocumentId), true, png)]
+            ),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -455,8 +508,11 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [new TermsDecision(TermsDocumentId.From(termsDocumentId), true)],
+            Signup(
+                Guid.NewGuid(),
+                [new TermsDecision(TermsDocumentId.From(termsDocumentId), true)]
+            ),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -474,8 +530,8 @@ public sealed class TermsGateTests
 
         var result = await sut.EnsureDecidedAsync(
             EventId.From(eventId),
-            UserId.From(Guid.NewGuid()),
-            [],
+            Signup(Guid.NewGuid(), []),
+            RecorderId,
             TestContext.Current.CancellationToken
         );
 
@@ -483,5 +539,114 @@ public sealed class TermsGateTests
         await termsDocuments
             .DidNotReceiveWithAnyArgs()
             .ListRequiringSignatureAsync(default!, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncConsentLinkedAsRequiredNeverBlocks()
+    {
+        var consentId = Guid.NewGuid();
+        var eventId = HasDocuments((consentId, true));
+        HasAcceptances();
+        HoldConsents(consentId);
+
+        var result = await sut.EnsureDecidedAsync(
+            EventId.From(eventId),
+            Signup(Guid.NewGuid(), null),
+            RecorderId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncChecksEveryPersonAndRecordsWhoDecidedForEach()
+    {
+        var conditionsId = Guid.NewGuid();
+        var consentId = Guid.NewGuid();
+        var eventId = HasDocuments((conditionsId, true), (consentId, false));
+        HoldConsents(consentId);
+        var guardianId = Guid.NewGuid();
+        var guardian = Persisted.As<User>(new { Id = guardianId, Status = UserStatus.Active });
+        var teenager = Persisted.As<User>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Status = UserStatus.Dependent,
+                ParentId = guardianId,
+                BirthDate = clock.Today.AddYears(-15),
+            }
+        );
+        var child = Persisted.As<User>(
+            new
+            {
+                Id = Guid.NewGuid(),
+                Status = UserStatus.Dependent,
+                ParentId = guardianId,
+                BirthDate = clock.Today.AddYears(-9),
+            }
+        );
+        termsAcceptances
+            .ListAsync(Arg.Any<EventId>(), Arg.Any<UserId>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+        var recorded = new List<EventTermsAcceptance>();
+        await termsAcceptances.AddAsync(
+            Arg.Do<EventTermsAcceptance>(recorded.Add),
+            Arg.Any<CancellationToken>()
+        );
+        IReadOnlyList<TermsDecision> both =
+        [
+            new TermsDecision(TermsDocumentId.From(conditionsId), true),
+            new TermsDecision(TermsDocumentId.From(consentId), true),
+        ];
+
+        var result = await sut.EnsureDecidedAsync(
+            EventId.From(eventId),
+            [
+                new PersonTermsDecisions(guardian, both),
+                new PersonTermsDecisions(teenager, both),
+                new PersonTermsDecisions(child, both),
+            ],
+            RecorderId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        recorded
+            .Select(acceptance =>
+                (acceptance.UserId, acceptance.TermsDocumentId.Value, acceptance.DecidedById)
+            )
+            .Should()
+            .BeEquivalentTo([
+                (guardian.Id, conditionsId, guardian.Id),
+                (guardian.Id, consentId, guardian.Id),
+                (teenager.Id, conditionsId, guardian.Id),
+                (teenager.Id, consentId, teenager.Id),
+                (child.Id, conditionsId, guardian.Id),
+                (child.Id, consentId, guardian.Id),
+            ]);
+    }
+
+    [Fact]
+    public async Task EnsureDecidedAsyncOnePersonMissingARequiredDocumentBlocksTheSignup()
+    {
+        var conditionsId = Guid.NewGuid();
+        var eventId = HasDocuments((conditionsId, true));
+        HasAcceptances();
+
+        var result = await sut.EnsureDecidedAsync(
+            EventId.From(eventId),
+            [
+                .. Signup(
+                    Guid.NewGuid(),
+                    [new TermsDecision(TermsDocumentId.From(conditionsId), true)]
+                ),
+                .. Signup(Guid.NewGuid(), null),
+            ],
+            RecorderId,
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EventTermsAcceptanceRequired);
     }
 }

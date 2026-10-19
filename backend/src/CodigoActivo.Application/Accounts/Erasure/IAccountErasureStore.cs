@@ -31,7 +31,8 @@ public interface IAccountErasureStore
     );
 
     /// <summary>
-    /// Credits to another account the content the household created or last edited.
+    /// Credits to another account the content the household created or last edited and the terms
+    /// decision changes it recorded.
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
     /// <param name="heirId">Identifier of the account that inherits the content.</param>

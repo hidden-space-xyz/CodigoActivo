@@ -36,29 +36,58 @@ export interface EventTermsSummary {
   readonly displayOrder: number
 }
 
+/** A consent given for a person about a terms document of an event, as named to withdraw it. */
+export interface TermsConsentTarget {
+  readonly eventId: string
+  /** The person the consent is about. */
+  readonly userId: string
+  readonly termsDocumentId: string
+}
+
 /**
- * One event terms document from the signed-in user's perspective: its content plus whether (and
- * when) they already decided on it. `accepted` is `null` while undecided.
+ * Whether a terms document holds the conditions of taking part, which the account holder accepts for
+ * each person they sign up, or a consent, which a minor decides from the age of 14.
  */
+type EventTermsKind = 'Conditions' | 'Consent'
+
+/** One terms document of an event as the signup dialog shows it. */
 export interface EventTermsDocumentState {
   readonly id: string
   readonly name: string
   readonly description: string
+  readonly kind: EventTermsKind
+  /** Accepting it is needed to sign up; never for a consent. */
   readonly required: boolean
   /** Accepting it asks for a signature drawn on screen. */
   readonly requiresSignature: boolean
   readonly displayOrder: number
-  readonly accepted: boolean | null
-  readonly decidedAt: string | null
 }
 
-/**
- * The full terms state of an event for the signed-in user. `signupBlocked` is `true` while any
- * required document is not yet accepted.
- */
+/** A decision already taken about one of the event's documents for a person. */
+interface EventTermsDecision {
+  readonly documentId: string
+  readonly accepted: boolean
+  readonly decidedAt: string
+}
+
+/** A member of the signed-in user's household with the decisions taken for them. */
+export interface EventTermsPerson {
+  readonly id: string
+  readonly firstName: string
+  readonly lastName: string
+  /**
+   * The person decides their own consents: the signed-in user, and a minor from the age of 14. The
+   * signed-in user decides everything else for the minors in their care.
+   */
+  readonly decidesOwnConsents: boolean
+  readonly decisions: readonly EventTermsDecision[]
+}
+
+/** The terms documents of an event and the decisions taken about them for each household member. */
 export interface EventTermsState {
   readonly documents: readonly EventTermsDocumentState[]
-  readonly signupBlocked: boolean
+  /** The signed-in user first, then the minors in their care. */
+  readonly people: readonly EventTermsPerson[]
 }
 
 /** Confirmed attendee with an account of their own, whom the leader contacts directly. */

@@ -4,6 +4,7 @@ import type {
   EventCertificateResponse,
   EventHistoryActivityResponse,
   EventHistoryResponse,
+  MyConsentResponse,
   PersonalDataResponse,
   RegisterMinorRequest,
   RegisterRequest,
@@ -22,6 +23,7 @@ import type {
 import type {
   AccountCertificate,
   AccountChild,
+  AccountConsent,
   AccountHistoryActivity,
   AccountHistoryEntry,
   AccountProfile,
@@ -157,6 +159,23 @@ export function toAccountCertificate(certificate: EventCertificateResponse): Acc
   }
 }
 
+/** Maps a consent of the household as the API returns it. */
+export function toAccountConsent(consent: MyConsentResponse): AccountConsent {
+  return {
+    eventId: consent.eventId,
+    eventTitle: consent.eventTitle,
+    eventStartsAt: consent.eventStartsAt,
+    termsDocumentId: consent.termsDocumentId,
+    documentName: consent.documentName,
+    personId: consent.personId,
+    personName: consent.personName,
+    accepted: consent.accepted,
+    withdrawn: consent.withdrawn,
+    decidedAt: consent.decidedAt,
+    decidedByName: consent.decidedByName,
+  }
+}
+
 /** Builds the rating body, trimming comments and sending blank ones as `null`. */
 export function toSaveEventRatingRequest(input: EventRatingInput): SaveEventRatingRequest {
   return {
@@ -245,11 +264,19 @@ export function toPersonalDataFile(data: PersonalDataResponse, t: Translate): Pe
       inscritaEl: signup.signedUpAt,
     })),
     decisionesSobreDocumentos: data.termsDecisions.map((decision) => ({
+      personaId: decision.personId,
+      persona: decision.personName,
+      decidioPor: decision.decidedByName,
       evento: decision.eventTitle,
       documento: decision.documentName,
       aceptado: decision.accepted,
       fecha: decision.decidedAt,
       firmaPngBase64: decision.signature ?? null,
+      cambios: decision.changes.map((change) => ({
+        aceptado: change.accepted,
+        fecha: change.changedAt,
+        decidioPor: change.decidedByName,
+      })),
     })),
     sesionesAbiertas: data.sessions.map((session) => ({
       abiertaEl: session.createdAt,

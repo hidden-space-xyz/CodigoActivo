@@ -188,16 +188,15 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
 
     private static EventTermsAcceptance Decision(Guid userId, HandwrittenSignature? signature)
     {
-        return Persisted.As<EventTermsAcceptance>(
-            new
-            {
-                EventId = EventId,
-                UserId = userId,
-                TermsDocumentId = TermsDocumentId,
-                Accepted = true,
-                DecidedAt = SeededAt,
-                Signature = signature,
-            }
+        return EventTermsAcceptance.Record(
+            Domain.Events.EventId.From(EventId),
+            UserId.From(userId),
+            UserId.From(userId),
+            Domain.TermsDocuments.TermsDocumentId.From(TermsDocumentId),
+            true,
+            signature,
+            UserId.From(userId),
+            SeededAt
         );
     }
 
@@ -281,6 +280,9 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
         decision.DocumentName.Should().Be("Uso de imágenes");
         decision.Accepted.Should().BeTrue();
         decision.Signature.Should().Equal(TestSeedData.ValidPng());
+        decision
+            .Changes.Should()
+            .Equal(new PersonalDataTermsDecisionChangeResponse(true, SeededAt, "Marta Miembro"));
         data.Sessions.Should().ContainSingle();
         data.SecurityLog.Should()
             .Equal(

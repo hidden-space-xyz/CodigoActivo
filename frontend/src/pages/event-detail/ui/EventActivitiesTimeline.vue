@@ -42,7 +42,7 @@ const {
   overlapDialog,
   householdDialog,
   termsDialog,
-  pendingTermsDocuments,
+  termsDialogSections,
   householdSelectable,
   householdHighDemand,
   onSignup,
@@ -234,7 +234,7 @@ const clusters = computed(() => toTimeline(items.value))
 
     <EventTermsDialog
       v-model:visible="termsDialog.visible"
-      :documents="pendingTermsDocuments"
+      :sections="termsDialogSections"
       @confirm="confirmTerms"
     />
   </div>

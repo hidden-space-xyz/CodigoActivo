@@ -2011,3 +2011,97 @@ export function useDeleteApiEventsTermsDocumentTermsDocumentId<TData = Awaited<R
 
 
 
+export type postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawResponse204 = {
+  data: void
+  status: 204
+}
+
+export type postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawResponseSuccess = (postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawResponse204) & {
+  headers: Headers;
+};
+;
+
+export type postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawResponse = (postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawResponseSuccess)
+
+export const getPostApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawUrl = (eventId: string,
+    userId: string,
+    termsDocumentId: string,) => {
+
+
+
+
+  return `/api/events/${eventId}/terms/decisions/${userId}/${termsDocumentId}/withdraw`
+}
+
+export const postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw = async (eventId: string,
+    userId: string,
+    termsDocumentId: string, options?: Parameters<typeof httpClient>[1]): Promise<postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawResponse> => {
+
+  return httpClient<postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawResponse>(getPostApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawUrl(eventId,userId,termsDocumentId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPostApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawQueryKey = (eventId: MaybeRefOrGetter<string>,
+    userId: MaybeRefOrGetter<string>,
+    termsDocumentId: MaybeRefOrGetter<string>,) => {
+    return [
+    'POST', 'api','events',eventId,'terms','decisions',userId,termsDocumentId,'withdraw'
+    ] as const;
+    }
+
+
+export const getPostApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawQueryOptions = <TData = Awaited<ReturnType<typeof postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw>>, TError = unknown>(eventId: MaybeRefOrGetter<string>,
+    userId: MaybeRefOrGetter<string>,
+    termsDocumentId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawQueryKey(eventId,userId,termsDocumentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw>>> = ({ signal }) => postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw(toValue(eventId),toValue(userId),toValue(termsDocumentId), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => toValue(eventId) !== null && toValue(eventId) !== undefined && toValue(userId) !== null && toValue(userId) !== undefined && toValue(termsDocumentId) !== null && toValue(termsDocumentId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw>>, TError, TData>
+}
+
+export type PostApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw>>>
+export type PostApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawQueryError = unknown
+
+
+
+export function usePostApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw<TData = Awaited<ReturnType<typeof postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw>>, TError = unknown>(
+ eventId: MaybeRefOrGetter<string>,
+    userId: MaybeRefOrGetter<string>,
+    termsDocumentId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdrawQueryOptions(eventId,userId,termsDocumentId,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+

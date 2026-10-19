@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Users;
 
@@ -39,8 +40,15 @@ public sealed record RoleCapacityDraft(
 );
 
 /// <summary>
-/// A household member to sign up and the role they take.
+/// A household member to sign up, the role they take and the terms decisions taken for them.
 /// </summary>
 /// <param name="UserId">Identifier of the household member.</param>
 /// <param name="Role">Role the member takes.</param>
-public sealed record HouseholdMemberSignup(UserId UserId, ActivityRole Role);
+/// <param name="TermsDecisions">
+/// Decisions on the terms documents of the event for the member, if any were asked.
+/// </param>
+public sealed record HouseholdMemberSignup(
+    UserId UserId,
+    ActivityRole Role,
+    [property: MaxLength(50)] IReadOnlyList<TermsDecision>? TermsDecisions = null
+);

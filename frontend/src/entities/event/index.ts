@@ -6,6 +6,7 @@ export type {
   EventStatusKind,
   EventSummary,
   EventTermsDocumentState,
+  EventTermsPerson,
   EventTermsSummary,
   LeaderRosterActivity,
   LeaderRosterDependent,

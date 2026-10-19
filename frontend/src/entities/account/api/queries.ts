@@ -3,6 +3,7 @@ import { queryOptions } from '@tanstack/vue-query'
 import {
   getAccountCertificatesRequest,
   getAccountChildrenRequest,
+  getAccountConsentsRequest,
   getAccountDeletionAllowedRequest,
   getAccountHistoryRequest,
   getAccountProfileRequest,
@@ -15,6 +16,7 @@ export const accountKeys = {
   children: () => [...accountKeys.all, 'children'] as const,
   history: () => [...accountKeys.all, 'history'] as const,
   certificates: () => [...accountKeys.all, 'certificates'] as const,
+  consents: () => [...accountKeys.all, 'consents'] as const,
   deletionAllowed: () => [...accountKeys.all, 'deletion-allowed'] as const,
 }
 
@@ -43,6 +45,12 @@ export const accountQueries = {
     queryOptions({
       queryKey: accountKeys.certificates(),
       queryFn: () => getAccountCertificatesRequest(),
+    }),
+  /** The consents decided for the household, latest event first. */
+  consents: () =>
+    queryOptions({
+      queryKey: accountKeys.consents(),
+      queryFn: () => getAccountConsentsRequest(),
     }),
   /** Whether the user may delete the own account; only the initial administrator may not. */
   deletionAllowed: () =>

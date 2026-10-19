@@ -1,13 +1,22 @@
 import { MutationObserver } from '@tanstack/vue-query'
 import { describe, expect, it } from 'vitest'
 
-import { termsDocumentKeys, termsDocumentMutations } from '@/entities/terms-document'
+import {
+  termsDocumentKeys,
+  termsDocumentMutations,
+  type TermsDocumentInput,
+} from '@/entities/terms-document'
 
 import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildTermsDocument, richText } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
-const INPUT = { name: 'Cookies', description: richText('Body'), requiresSignature: false }
+const INPUT: TermsDocumentInput = {
+  name: 'Cookies',
+  description: richText('Body'),
+  requiresSignature: false,
+  kind: 'Conditions',
+}
 
 function cachedTerms() {
   const client = createTestQueryClient()

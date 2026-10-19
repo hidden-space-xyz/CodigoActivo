@@ -46,15 +46,16 @@ export const activityMutations = {
         assignActivityRequest(activityId, userId, roleId, termsDecisions),
       meta: { invalidates: signupKeys(eventId) },
     }),
-  /** Signs several household members up, each with a role. */
+  /** Signs several household members up, each with a role and the decisions taken for them. */
   signUpHousehold: (eventId: string) =>
     mutationOptions({
       mutationFn: ({
         activityId,
         assignments,
-        termsDecisions,
-      }: SignupVariables & { assignments: readonly HouseholdAssignmentInput[] }) =>
-        assignHouseholdRequest(activityId, assignments, termsDecisions),
+      }: {
+        readonly activityId: string
+        readonly assignments: readonly HouseholdAssignmentInput[]
+      }) => assignHouseholdRequest(activityId, assignments),
       meta: { invalidates: signupKeys(eventId) },
     }),
   /** Withdraws the signup of the user or one of their minors. */

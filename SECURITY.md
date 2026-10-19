@@ -174,7 +174,8 @@ whether they may delete their account, so the SPA hides the action from the init
 (`UserSelfDeleteRequiresVerification`); the SPA disables that action on both rows. An administrator can delete
 any other administrator without re-entering a password, as with any other user. Every deletion credits the
 initial administrator instead of the household as author, last editor or uploader of events, activities, news,
-partners, resources and files, in the same transaction; the original credit is not kept anywhere.
+partners, resources and files, and as the account that recorded a terms decision about someone else, in the same
+transaction; the original credit is not kept anywhere.
 
 **Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's,
 a guardian's, that of an unverified account whose email another account claims, that of one nobody
@@ -186,8 +187,9 @@ keeps no copy, a concurrent signup, status change or cancellation cannot slip in
 PostgreSQL aborts to resolve a deadlock is attempted up to three times in total. The copy holds the personal data of the
 account and each dependent, the guardian's identification when
 a dependent is deleted alone, every signup of the household with activity, event, role, status and signup
-time, every terms decision (accepted or rejected, with its handwritten signature as base64 PNG) of the
-household — or the guardian's for the dependent's events — with each document's text as it stood at
+time, every terms decision (accepted or rejected, with who decided and its handwritten signature as base64
+PNG, and its history: every acceptance, rejection and withdrawal with who decided it, who recorded it, when and
+the signature it was accepted with) about the household — or about the guardian for the dependent's events — with each document's text as it stood at
 deletion (documents are not versioned), every change of each person's news consent with its instant
 and source, and who asked
 for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
@@ -340,7 +342,7 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
 - `GET /api/me/personal-data` (report rate limit) gives the signed-in user a copy of their own and their
   dependents' personal data (articles 15 and 20 GDPR), which «Mi cuenta» saves as a JSON file with Spanish
   names and labels: the account with any unconfirmed new email, the news consent history, the dependents, the
-  household's signups, the user's terms decisions with their signatures, the open sessions and the audit
+  household's signups, the terms decisions about the household with who took them, their signatures and their history, the open sessions and the audit
   entries the user ran or that name a household member as main or related entity, logins before the session
   included (time, action, outcome, kind of actor and client IP, without the IP when an administrator ran it
   and never what else the entry touched). It reads only the caller's household and never holds password or
@@ -362,13 +364,36 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   blocked copy. The SPA sends the first once the visitor confirms being of age at its age gate and the second
   with every minor, since each form that adds one states that adding it is that declaration. Accounts and
   minors added before they were recorded have none.
-- Terms-document consent is recorded for the acting user, not the person signed up: signing up a household
-  dependent stores the guardian's decision in `event_terms_acceptances`, and the guardian's earlier acceptance
-  for that event covers later dependent signups without a new prompt (`TermsGate`). An acceptance is immutable
-  and never re-asked; a rejection is revisable and overwrites the stored row; a required document's
-  rejection is never persisted, so it blocks that signup without excluding the user for good. `AssignActivity` skips this consent step when an administrator signs up
-  someone else; `AssignHousehold` always runs it. The acceptance row cascades away when the acting user's
-  account is deleted, once the blocked copy of that account holds it.
+- A terms document holds either conditions or a consent (`terms_documents.kind`). Decisions are recorded per
+  person signed up, keyed by event, person and document, with who took them (`event_terms_acceptances.user_id`
+  and `decided_by_id`): an adult decides for themselves; for a dependent, the guardian decides the conditions
+  and, before the age of 14, the consents, and from the age of 14 the dependent decides their own consents
+  (article 7 LOPDGDD, article 3.1 LO 1/1982) on the guardian's screen; `TermsConsent.DeciderOf` names the
+  decider from the birth date, never from the request. A consent is never required: an event that links one
+  as required is refused (`EventTermsConsentRequired`), and `TermsGate` never blocks a signup on a consent.
+  An acceptance is never re-asked and holds until its consent is withdrawn; a rejection or a withdrawal is
+  revisable and the stored row takes who accepts it now; a required document's rejection is never persisted,
+  so it blocks that signup without excluding the person for good. The row is the current state: each change
+  of it (the first decision, a later acceptance, a withdrawal) also appends to `terms_decision_changes` whether
+  it accepts, who decided, the account that recorded it (the signed-in user, an administrator included), when and the
+  signature, so each earlier state can still be proven (article 7.1 GDPR). `AssignActivity` skips this step
+  when an administrator signs up someone else; `AssignHousehold` runs it for every member it signs up, each
+  with their own decisions. Decisions stored before they were per person name the deciding guardian as the
+  person; documents stored before they had a kind are conditions; decisions stored before the history began
+  with one change, their state then, recorded by who decided it. The rows and their history cascade away with
+  the person or the decider, once the blocked copy of that account holds them.
+- A consent is withdrawn (article 7.3 GDPR) through
+  `POST /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw` (`[AllowOnlySelf]`): by the
+  person, by their guardian, or by an administrator who records a withdrawal asked for by email. Conditions are
+  not withdrawn (`EventTermsWithdrawalNotAllowed`; leaving means cancelling the signup) and a consent not given
+  now answers `EventTermsConsentNotGiven`. The withdrawal is decided by whoever `TermsConsent.DeciderOf` names
+  and recorded by the caller; the acceptance it ends stays in the history with its signature, since withdrawing
+  does not make earlier processing unlawful. «Mi cuenta» lists the household's consents (`GET /api/me/consents`)
+  and withdraws a given one with one confirmation, as easily as it was given; the event's decisions tab shows it
+  as withdrawn and lets an administrator record one. Once committed, `ConsentWithdrawalNotification` emails the
+  legal contact (`LEGAL_EMAIL`; nothing without it) so what the consent covered stops being used and is removed
+  from the site and the social profiles; a failed delivery is logged without personal data and never undoes the
+  withdrawal.
 - A terms document can ask for a handwritten signature (`requires_signature`): accepting it then needs a PNG
   drawn on screen (`TermsConsent` refuses the acceptance without one), which `HandwrittenSignature` refuses above 128 KiB or 2000×1000 pixels and which is stored
   in `event_terms_acceptances.signature`, never in the public file storage. Only administrators read it
