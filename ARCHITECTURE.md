@@ -157,7 +157,7 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
   net that refuses any other user deletion, any deletion of the initial administrator and any change to a
   stored copy. The
   `PurgeDeletedAccounts`, `PurgeUnverifiedAccounts`, `PurgeUnusedFiles` and `RemoveExpiredSessions` commands
-  delete legal copies past their retention, accounts nobody verified within 30 days (through `AccountEraser`),
+  delete legal copies past their retention, accounts nobody verified within 24 hours (through `AccountEraser`),
   uploads no content used within 7 days (through `IOrphanFileCleaner`) and expired sessions; hosted services in
   Infrastructure only run them on a schedule. What the copy holds and how
   long it is kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).

@@ -34,7 +34,7 @@ public sealed class UnverifiedAccountPurgerTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task PurgeAsyncErasesAnAccountUnverifiedForThirtyDaysWithItsDependentsAndKeepsACopy()
+    public async Task PurgeAsyncErasesAnAccountUnverifiedForTwentyFourHoursWithItsDependentsAndKeepsACopy()
     {
         var recentId = Guid.NewGuid();
         var recentChildId = Guid.NewGuid();
@@ -54,7 +54,7 @@ public sealed class UnverifiedAccountPurgerTests(CodigoActivoWebAppFactory facto
                         Gender = Gender.Female,
                         Status = UserStatus.Pending,
                         UserType = UserType.Participant,
-                        CreatedAt = Factory.Clock.UtcNow.AddDays(-30).AddSeconds(1),
+                        CreatedAt = Factory.Clock.UtcNow.AddDays(-1).AddSeconds(1),
                     }
                 ),
                 Persisted.As<User>(
@@ -68,7 +68,7 @@ public sealed class UnverifiedAccountPurgerTests(CodigoActivoWebAppFactory facto
                         ParentId = recentId,
                         Status = UserStatus.Dependent,
                         UserType = UserType.Participant,
-                        CreatedAt = Factory.Clock.UtcNow.AddDays(-30).AddSeconds(1),
+                        CreatedAt = Factory.Clock.UtcNow.AddDays(-1).AddSeconds(1),
                     }
                 )
             );
