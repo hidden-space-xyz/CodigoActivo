@@ -113,6 +113,27 @@ public static class AppStrings
     public static string EmailsComingOfAgeSubject => Get("emails.comingOfAge.subject");
 
     /// <summary>
+    /// Gets the emails consent withdrawn action value.
+    /// </summary>
+    public static string EmailsConsentWithdrawnAction => Get("emails.consentWithdrawn.action");
+
+    /// <summary>
+    /// Gets the emails consent withdrawn heading value.
+    /// </summary>
+    public static string EmailsConsentWithdrawnHeading => Get("emails.consentWithdrawn.heading");
+
+    /// <summary>
+    /// Gets the emails consent withdrawn history note value.
+    /// </summary>
+    public static string EmailsConsentWithdrawnHistoryNote =>
+        Get("emails.consentWithdrawn.historyNote");
+
+    /// <summary>
+    /// Gets the emails consent withdrawn subject value.
+    /// </summary>
+    public static string EmailsConsentWithdrawnSubject => Get("emails.consentWithdrawn.subject");
+
+    /// <summary>
     /// Gets the emails details activity label value.
     /// </summary>
     public static string EmailsDetailsActivityLabel => Get("emails.details.activityLabel");
@@ -554,6 +575,49 @@ public static class AppStrings
     public static string EmailsComingOfAgeIntroText(string dependentName, string comingOfAgeOn)
     {
         return Format("emails.comingOfAge.introText", dependentName, comingOfAgeOn);
+    }
+
+    /// <summary>
+    /// Formats the localized emails consent withdrawn intro html text with the supplied values.
+    /// </summary>
+    /// <param name="personName">Name of the person, already HTML-encoded.</param>
+    /// <param name="documentName">Name of the document, already HTML-encoded.</param>
+    /// <param name="eventTitle">Title of the event, already HTML-encoded.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsConsentWithdrawnIntroHtml(
+        string personName,
+        string documentName,
+        string eventTitle
+    )
+    {
+        return Format("emails.consentWithdrawn.introHtml", personName, documentName, eventTitle);
+    }
+
+    /// <summary>
+    /// Formats the localized emails consent withdrawn intro text text with the supplied values.
+    /// </summary>
+    /// <param name="personName">Name of the person.</param>
+    /// <param name="documentName">Name of the document.</param>
+    /// <param name="eventTitle">Title of the event.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsConsentWithdrawnIntroText(
+        string personName,
+        string documentName,
+        string eventTitle
+    )
+    {
+        return Format("emails.consentWithdrawn.introText", personName, documentName, eventTitle);
+    }
+
+    /// <summary>
+    /// Formats the localized emails consent withdrawn recorded text with the supplied values.
+    /// </summary>
+    /// <param name="recordedByName">Name of the account that recorded the withdrawal.</param>
+    /// <param name="withdrawnAt">When it was withdrawn, already formatted.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsConsentWithdrawnRecorded(string recordedByName, string withdrawnAt)
+    {
+        return Format("emails.consentWithdrawn.recorded", recordedByName, withdrawnAt);
     }
 
     /// <summary>

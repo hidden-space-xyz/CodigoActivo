@@ -93,6 +93,18 @@ describe('readEventDraft', () => {
     })
   })
 
+  it('never sends a linked consent as required', () => {
+    const reading = readEventDraft(
+      validDraft({ termsRequired: { 'terms-1': true, 'terms-2': true } }),
+      new Set(['terms-1']),
+    )
+
+    expect(reading.value?.terms).toEqual([
+      { documentId: 'terms-2', required: true },
+      { documentId: 'terms-1', required: false },
+    ])
+  })
+
   it('saves an empty description as an empty document and keeps the early signup', () => {
     const early = new Date(2026, 7, 20, 8, 0)
 

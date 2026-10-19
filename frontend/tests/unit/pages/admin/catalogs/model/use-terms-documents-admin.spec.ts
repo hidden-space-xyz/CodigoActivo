@@ -30,7 +30,12 @@ describe('useTermsDocumentsAdmin', () => {
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'name' })
 
     result.dialog.openCreate()
-    result.save({ name: 'Cookies', description: richText('Body'), requiresSignature: false })
+    result.save({
+      name: 'Cookies',
+      description: richText('Body'),
+      requiresSignature: false,
+      kind: 'Conditions',
+    })
     await expectNotification(t('pages.admin.catalogs.termsDocuments.toasts.created'))
     expect(result.dialog.visible.value).toBe(false)
 
@@ -39,8 +44,14 @@ describe('useTermsDocumentsAdmin', () => {
       name: 'Privacy',
       description: richText('Body'),
       requiresSignature: false,
+      kind: 'Conditions',
     })
-    result.save({ name: 'Privacy', description: richText('New body'), requiresSignature: true })
+    result.save({
+      name: 'Privacy',
+      description: richText('New body'),
+      requiresSignature: true,
+      kind: 'Conditions',
+    })
     await expectNotification(t('pages.admin.catalogs.termsDocuments.toasts.updated'))
 
     expect(calls).toEqual(['POST', 'PUT terms-1'])

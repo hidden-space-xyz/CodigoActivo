@@ -40,8 +40,7 @@ public static class CommandAudit
 
     /// <summary>
     /// Lists, in declaration order and without repeats, the things a command names: its typed
-    /// identifiers, those of the records and lists it holds directly, and those of the records
-    /// in those lists.
+    /// identifiers and those of the records and lists it holds, at any depth.
     /// </summary>
     /// <param name="command">Command that ran.</param>
     /// <returns>The things named, the excluded identifier kinds left out.</returns>
@@ -111,7 +110,7 @@ public static class CommandAudit
                 {
                     foreach (var property in PropertiesOf(item.GetType()))
                     {
-                        foreach (var entity in EntitiesIn(property.GetValue(item), nested: false))
+                        foreach (var entity in EntitiesIn(property.GetValue(item), nested: true))
                         {
                             yield return entity;
                         }
@@ -123,7 +122,7 @@ public static class CommandAudit
         {
             foreach (var property in PropertiesOf(type))
             {
-                foreach (var entity in EntitiesIn(property.GetValue(value), nested: false))
+                foreach (var entity in EntitiesIn(property.GetValue(value), nested: true))
                 {
                     yield return entity;
                 }

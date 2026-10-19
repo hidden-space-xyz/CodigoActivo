@@ -5,8 +5,9 @@
  * OpenAPI spec version: 1.0
  */
 import type { EventTermsDocumentStateResponse } from './eventTermsDocumentStateResponse';
+import type { EventTermsPersonStateResponse } from './eventTermsPersonStateResponse';
 
 export interface EventTermsStateResponse {
   documents: EventTermsDocumentStateResponse[];
-  signupBlocked: boolean;
+  people: EventTermsPersonStateResponse[];
 }

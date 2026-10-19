@@ -7,7 +7,7 @@ namespace CodigoActivo.Application.Events;
 
 /// <summary>
 /// Turns the terms documents requested for an event into the links the event keeps, checking that
-/// each one is linked once and exists.
+/// each one is linked once, exists and, when required, is not a consent.
 /// </summary>
 internal static class EventTermsRequests
 {
@@ -17,7 +17,11 @@ internal static class EventTermsRequests
         CancellationToken ct
     )
     {
-        var links = EventTermsLinks.Create(requested);
+        var requestedIds = requested.Select(link => link.TermsDocumentId).Distinct().ToList();
+        var consentIds = requestedIds.Count is 0
+            ? []
+            : await termsDocuments.ListConsentsAsync(requestedIds, ct);
+        var links = EventTermsLinks.Create(requested, consentIds);
         if (links.IsFailure)
         {
             return links.Error!;

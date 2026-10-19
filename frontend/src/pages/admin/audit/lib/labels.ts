@@ -58,6 +58,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'DeleteEvent',
   'SetEventFeatured',
   'UpdateEvent',
+  'WithdrawTermsConsent',
   'CreateFile',
   'DeleteFile',
   'CreateNewsItem',

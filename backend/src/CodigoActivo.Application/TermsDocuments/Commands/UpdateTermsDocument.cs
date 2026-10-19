@@ -15,11 +15,13 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 /// <param name="Name">Name, unique among terms documents.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 /// <param name="RequiresSignature">Whether accepting it asks for a handwritten signature.</param>
+/// <param name="Kind">Whether it holds conditions or a consent.</param>
 public sealed record UpdateTermsDocumentCommand(
     TermsDocumentId TermsDocumentId,
     [property: Required, MaxLength(120), NotBlank] string Name,
     [property: Required, RichText(AllowImages = false), MaxLength(262144)] string Description,
-    bool RequiresSignature
+    bool RequiresSignature,
+    TermsDocumentKind Kind
 ) : ICommand<Result>;
 
 /// <summary>
@@ -54,7 +56,12 @@ public sealed class UpdateTermsDocumentCommandHandler(ITermsDocumentRepository t
             return Error.Conflict(ApplicationErrorCode.TermsDocumentNameAlreadyExists);
         }
 
-        termsDocument.Rewrite(name, RichText.From(command.Description), command.RequiresSignature);
+        termsDocument.Rewrite(
+            name,
+            RichText.From(command.Description),
+            command.RequiresSignature,
+            command.Kind
+        );
         return Result.Success();
     }
 }

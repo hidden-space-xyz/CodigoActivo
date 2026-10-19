@@ -89,9 +89,13 @@ export function toEventTermsDecision(
     firstName: decision.firstName,
     lastName: decision.lastName,
     email: decision.email ?? '',
+    decidedById: decision.decidedById,
+    decidedByName: `${decision.decidedByFirstName} ${decision.decidedByLastName}`,
     termsDocumentId: decision.termsDocumentId,
     documentName: decision.documentName,
+    consent: decision.documentKind === 'Consent',
     accepted: decision.accepted,
+    withdrawn: decision.withdrawn,
     decidedAt: decision.decidedAt,
     signatureUrl: decision.hasSignature
       ? getGetApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdSignatureUrl(

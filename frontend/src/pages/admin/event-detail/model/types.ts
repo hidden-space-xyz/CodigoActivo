@@ -95,14 +95,22 @@ export interface RatingListParams {
 
 /** A decision someone took about a terms document of the event; `email` is empty when unknown. */
 export interface EventTermsDecision {
-  /** The account that decided; for a minor's signup, their guardian. */
+  /** The person the decision is about. */
   readonly userId: string
   readonly firstName: string
   readonly lastName: string
   readonly email: string
+  /** Who decided: the person themselves or, for a minor, their guardian. */
+  readonly decidedById: string
+  /** Full name of who decided. */
+  readonly decidedByName: string
   readonly termsDocumentId: string
   readonly documentName: string
+  /** Whether the document holds a consent, which can be withdrawn, rather than conditions. */
+  readonly consent: boolean
   readonly accepted: boolean
+  /** Whether a consent given before was withdrawn, as opposed to never given. */
+  readonly withdrawn: boolean
   readonly decidedAt: string
   /** Same-origin URL of the PNG signature drawn to accept the document; empty when there is none. */
   readonly signatureUrl: string

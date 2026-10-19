@@ -242,8 +242,12 @@
     "EventRatingEmpty": "Puntúa el evento o responde al menos a una de las preguntas antes de enviar tu valoración.",
     "EventTermsAcceptanceRequired": "Debes aceptar los términos y condiciones del evento para apuntarte.",
     "EventTermsDocumentDuplicated": "No puedes vincular el mismo documento de términos y condiciones más de una vez.",
+    "EventTermsConsentRequired": "Un consentimiento nunca puede ser obligatorio. Quita la marca de obligatorio de los consentimientos del evento.",
     "EventTermsSignatureRequired": "Firma los documentos de términos y condiciones que lo requieren para apuntarte.",
     "EventTermsSignatureNotFound": "Esta decisión no tiene firma.",
+    "EventTermsConsentNotGiven": "Este consentimiento no está dado ahora, así que no hay nada que retirar.",
+    "EventTermsWithdrawalNotAllowed": "Solo se puede retirar un consentimiento. Las condiciones de participación no se retiran: para dejar de participar, anula la inscripción.",
+    "EventTermsDecisionNotFound": "No hay ninguna decisión sobre ese documento para esa persona en este evento.",
     "TermsDocumentNotFound": "No se encontraron los términos y condiciones.",
     "DiagnosticLogEntryNotFound": "Esta entrada del registro de diagnóstico ya no existe.",
     "TermsDocumentNameAlreadyExists": "Ya existen unos términos y condiciones con ese nombre.",
@@ -508,10 +512,10 @@
           },
           "terms": {
             "title": "Documentos y autorizaciones de los eventos",
-            "data": "Tu aceptación o rechazo de cada documento que pide un evento, con la fecha y, si el documento lo exige, la firma que dibujas en la pantalla. Si inscribes a menores, la decisión queda registrada a tu nombre, como su representante, y vale para los menores a tu cargo que inscribas en ese evento.",
+            "data": "La aceptación o el rechazo de cada documento que pide un evento, para ti y para cada menor que inscribas, con quién lo decidió, la fecha y, si el documento lo exige, la firma dibujada en la pantalla, y el historial de esa decisión: cada aceptación y cada retirada de un consentimiento, con quién la decidió, quién la registró y cuándo. Las condiciones de un menor las decides tú, como su representante, igual que sus consentimientos hasta los 14 años; desde los 14 años sus consentimientos los decide el propio menor.",
             "purpose": "Recoger las condiciones y autorizaciones necesarias para participar en cada evento y poder demostrarlas. Las firmas solo las ve la administración, y tú en la copia de tus datos.",
             "legalBasis": "Para los documentos que recogen las condiciones de participación, la prestación del servicio que solicitas (art. 6.1.b RGPD); para los que te piden un consentimiento, que nunca exigimos para inscribirte, ese consentimiento (art. 6.1.a RGPD), y para guardar tu decisión, la obligación de poder demostrarla (arts. 6.1.c y 7.1 RGPD).",
-            "retention": "Mientras exista el evento y mantengas la cuenta; si la eliminas, pasan a la copia bloqueada. Puedes retirar en cualquier momento un consentimiento que hayas dado en un documento escribiéndonos, sin que afecte a lo hecho antes de retirarlo."
+            "retention": "Mientras exista el evento y mantengas la cuenta; si la eliminas, pasan a la copia bloqueada. Puedes retirar en cualquier momento un consentimiento que hayas dado en un documento desde «Mi cuenta» o escribiéndonos, sin que afecte a lo hecho antes de retirarlo; la aceptación anterior se conserva en el historial para poder demostrarla."
           },
           "statistics": {
             "title": "Estadísticas de participación",
@@ -552,7 +556,7 @@
             "title": "Fotografías y vídeos de las actividades",
             "data": "Las fotografías y los vídeos de las actividades en los que se os reconozca a ti o a los menores a tu cargo y, cuando publicamos resultados o premios, el nombre de quien los obtiene.",
             "purpose": "Dar a conocer nuestras actividades en esta web y en nuestros perfiles de Instagram, Facebook, LinkedIn y YouTube. Solo publicamos la imagen o el nombre de quien lo ha consentido en el documento de uso de imágenes del evento.",
-            "legalBasis": "Tu consentimiento (art. 6.1.a RGPD y arts. 2.2 y 3 de la Ley Orgánica 1/1982). El de un menor de 14 años lo da su padre, madre o tutor legal; a partir de los 14 años, el propio menor (art. 7 LOPDGDD). Puedes retirarlo cuando quieras escribiéndonos, sin que afecte a lo publicado antes.",
+            "legalBasis": "Tu consentimiento (art. 6.1.a RGPD y arts. 2.2 y 3 de la Ley Orgánica 1/1982). El de un menor de 14 años lo da su padre, madre o tutor legal; a partir de los 14 años, el propio menor (art. 7 LOPDGDD). Puedes retirarlo cuando quieras desde «Mi cuenta» o escribiéndonos, sin que afecte a lo publicado antes.",
             "retention": "Lo publicado, hasta que se retire el consentimiento: entonces lo quitamos de esta web y de nuestros perfiles. El material que no publicamos lo guardamos en Google Drive para poder usarlo más adelante con el mismo fin, también hasta que se retire el consentimiento. Una imagen que subimos a esta web y no llegamos a usar se borra a los 7 días."
           },
           "inquiries": {
@@ -657,9 +661,27 @@
           "registryLabel": "Registro"
         }
       },
+      "consents": {
+        "title": "Consentimientos",
+        "lead": "Los consentimientos que se han decidido para ti y para los menores a tu cargo en los documentos de los eventos, como el de uso de imágenes. Puedes retirar los que estén dados cuando quieras: desde ese momento dejamos de usar lo que cubrían y quitamos lo publicado, sin que afecte a lo hecho antes. Desde los 14 años, los de un menor los decide él.",
+        "error": "No se pudieron cargar los consentimientos.",
+        "empty": "No hay consentimientos decididos para ti ni para los menores a tu cargo.",
+        "decided": "Decidió {name} el {date}",
+        "given": "Dado",
+        "withdrawn": "Retirado",
+        "notGiven": "No dado",
+        "withdraw": {
+          "action": "Retirar",
+          "header": "Retirar un consentimiento",
+          "messageSelf": "Vas a retirar tu consentimiento «{document}» para el evento «{event}». Desde ahora dejaremos de usar lo que cubría y quitaremos lo publicado; lo hecho antes sigue siendo válido.",
+          "messageMinor": "Vas a retirar el consentimiento «{document}» de {person} para el evento «{event}». Si {person} tiene 14 años o más, esta decisión es suya: retíralo solo si te lo pide. Desde ahora dejaremos de usar lo que cubría y quitaremos lo publicado; lo hecho antes sigue siendo válido.",
+          "confirm": "Retirar",
+          "done": "Consentimiento retirado."
+        }
+      },
       "personalData": {
         "title": "Tus datos",
-        "lead": "Descarga una copia de los datos de tu cuenta y de los menores a tu cargo: tu perfil y el historial de tu preferencia sobre las novedades, los menores, las inscripciones, tus decisiones y firmas en los documentos de los eventos, tus sesiones abiertas y el registro de seguridad de los últimos 60 días, con tus accesos y lo que la administración ha hecho sobre tu cuenta. Es un fichero JSON que puedes leer o llevar a otro servicio. Para el resto de tus datos, como las fotografías de las actividades, escríbenos.",
+        "lead": "Descarga una copia de los datos de tu cuenta y de los menores a tu cargo: tu perfil y el historial de tu preferencia sobre las novedades, los menores, las inscripciones, tus decisiones y firmas en los documentos de los eventos con su historial, tus sesiones abiertas y el registro de seguridad de los últimos 60 días, con tus accesos y lo que la administración ha hecho sobre tu cuenta. Es un fichero JSON que puedes leer o llevar a otro servicio. Para el resto de tus datos, como las fotografías de las actividades, escríbenos.",
         "download": "Descargar mis datos",
         "fileName": "codigo-activo-mis-datos-{date}.json",
         "sources": {
@@ -1107,9 +1129,10 @@
           },
           "termsPlaceholder": "Sin términos y condiciones",
           "termsRequired": "Obligatorio",
+          "termsConsentOptional": "Consentimiento: nunca obligatorio",
           "hints": {
             "earlySignupStart": "Si la indicas, socios y patrocinadores podrán inscribirse desde esa fecha, antes que el resto.",
-            "termsDocuments": "La persona que inscribe deberá decidir sobre estos documentos al apuntarse, o apuntar a los menores a su cargo, a su primera actividad del evento. Se añaden como obligatorios; desmarca los que sean opcionales, y siempre los que solo pidan un consentimiento, como el de uso de imágenes. El orden de la lista es el orden en que se mostrarán. Se gestionan en Configuración."
+            "termsDocuments": "Al inscribirse, o inscribir a los menores a su cargo, en la primera actividad del evento, se decide sobre estos documentos por cada persona. Las condiciones se añaden como obligatorias; desmarca las que sean opcionales. Los consentimientos, como el de uso de imágenes, nunca son obligatorios. El orden de la lista es el orden en que se mostrarán. Se gestionan en Configuración."
           },
           "problems": {
             "categoriesRequired": "Selecciona al menos una categoría.",
@@ -1197,6 +1220,11 @@
             },
             "requiresSignature": "Requiere firma",
             "requiresSignatureHint": "Al aceptarlo, cada persona tendrá que firmar en pantalla con el dedo o el ratón.",
+            "kind": "Tipo",
+            "kindHints": {
+              "Conditions": "Normas o condiciones para participar. Las acepta el titular de la cuenta por cada persona que inscribe, y un evento puede exigirlas.",
+              "Consent": "Un consentimiento, como el de uso de imágenes. Nunca es obligatorio: cada persona lo da o lo niega sin que afecte a su inscripción, y desde los 14 años lo decide el propio menor."
+            },
             "editHeader": "Editar términos y condiciones",
             "newHeader": "Nuevos términos y condiciones"
           },
@@ -1216,6 +1244,10 @@
           "newButton": "Nuevos términos",
           "title": "Términos y condiciones",
           "requiresSignature": "Requiere firma",
+          "kinds": {
+            "Conditions": "Condiciones",
+            "Consent": "Consentimiento"
+          },
           "search": {
             "name": "Buscar por nombre"
           }
@@ -1248,19 +1280,29 @@
           "noAnswers": "Sin comentarios."
         },
         "terms": {
-          "lead": "Decisiones que cada persona ha tomado sobre los términos y condiciones del evento. En las inscripciones de menores decide su tutor.",
+          "lead": "Decisiones tomadas para cada persona sobre los documentos del evento. Las condiciones de un menor las decide su padre, madre o tutor, igual que sus consentimientos hasta los 14 años; desde entonces, sus consentimientos los decide el propio menor.",
           "empty": "Nadie ha decidido todavía sobre los términos de este evento.",
           "error": "No se pudieron cargar las decisiones.",
           "columns": {
             "person": "Persona",
             "searchPerson": "Buscar por nombre o correo",
             "document": "Documento",
+            "decidedBy": "Decidido por",
             "decision": "Decisión",
             "decidedAt": "Fecha",
             "signature": "Firma"
           },
+          "decidedBySelf": "La propia persona",
           "accepted": "Aceptado",
           "rejected": "Rechazado",
+          "withdrawn": "Retirado",
+          "withdraw": {
+            "action": "Registrar retirada",
+            "header": "Registrar la retirada de un consentimiento",
+            "message": "Vas a registrar que se retira el consentimiento «{document}» de {name}. Hazlo solo si te lo ha pedido quien lo decide. Desde ahora no podréis usar lo que cubría; lo hecho antes sigue siendo válido y la aceptación queda en el historial. Se avisará por correo a la dirección legal de la asociación.",
+            "confirm": "Registrar retirada",
+            "done": "Retirada registrada."
+          },
           "noSignature": "Sin firma",
           "openSignature": "Ver la firma de {name}",
           "signatureOf": "Firma de {name}",
@@ -1631,6 +1673,7 @@
           "DeleteEvent": "Eliminar un evento",
           "SetEventFeatured": "Destacar un evento",
           "UpdateEvent": "Editar un evento",
+          "WithdrawTermsConsent": "Retirar un consentimiento",
           "CreateFile": "Subir un archivo",
           "DeleteFile": "Eliminar un archivo",
           "CreateNewsItem": "Crear una novedad",
@@ -1922,12 +1965,17 @@
       "selfMember": "Yo",
       "terms": {
         "header": "Términos y condiciones",
-        "lead": "Antes de completar la inscripción, indica si aceptas estos documentos. Tu decisión queda registrada a tu nombre y vale para ti y para los menores a tu cargo que inscribas en este evento, también más adelante. Los que solo piden un consentimiento, como el de uso de imágenes, son opcionales, y puedes retirarlo cuando quieras escribiéndonos.",
+        "lead": "Antes de completar la inscripción, indica qué documentos se aceptan para cada persona. Las condiciones de los menores a tu cargo las aceptas tú. Los consentimientos, como el de uso de imágenes, son opcionales y se deciden por cada persona: por un menor de 14 años decides tú y, desde los 14, decide el propio menor. Un consentimiento se puede retirar cuando se quiera desde «Mi cuenta» o escribiéndonos.",
+        "selfHeader": "Tú",
+        "decidedByUser": "Decides tú por {name}",
+        "decidedByPerson": "Decide {name}",
+        "handOver": "Deja que {name} lea estos documentos y decida: desde los 14 años es quien da o niega sus propios consentimientos.",
         "required": "Obligatorio",
         "optional": "Opcional",
         "openDocument": "Ver el contenido de {name}",
         "documentHeader": "Documento",
         "checkboxLabel": "Acepto {name}",
+        "checkboxLabelFor": "Acepto {name} para {person}",
         "accept": "Aceptar",
         "reject": "Rechazar",
         "confirm": "Confirmar inscripción",

@@ -143,6 +143,7 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         var termsDocuments = Table<TermsDocumentRow>(modelBuilder, "terms_documents");
         termsDocuments.HasKey(d => d.Id);
         termsDocuments.Property(d => d.Description).HasColumnType("jsonb");
+        termsDocuments.Property(d => d.Kind).HasConversion<string>();
 
         var links = Table<EventTermsDocumentRow>(modelBuilder, "event_terms_documents");
         links.HasKey(l => new { l.EventId, l.TermsDocumentId });
@@ -158,6 +159,20 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         });
         acceptances.HasOne(a => a.Event).WithMany().HasForeignKey(a => a.EventId);
         acceptances.HasOne(a => a.User).WithMany().HasForeignKey(a => a.UserId);
+        acceptances.HasOne(a => a.DecidedBy).WithMany().HasForeignKey(a => a.DecidedById);
+        acceptances
+            .HasMany(a => a.Changes)
+            .WithOne()
+            .HasForeignKey(c => new
+            {
+                c.EventId,
+                c.UserId,
+                c.TermsDocumentId,
+            });
+
+        var changes = Table<TermsDecisionChangeRow>(modelBuilder, "terms_decision_changes");
+        changes.HasKey(c => c.Id);
+        changes.HasOne(c => c.DecidedBy).WithMany().HasForeignKey(c => c.DecidedById);
         acceptances.HasOne(a => a.TermsDocument).WithMany().HasForeignKey(a => a.TermsDocumentId);
     }
 

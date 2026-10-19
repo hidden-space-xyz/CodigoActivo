@@ -13,6 +13,7 @@ using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
+using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.UnitTests.Application.TermsDocuments.Commands;
 
@@ -33,7 +34,9 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
         termsDocuments.TermsDocumentFound(null);
 
         var result = await sut.HandleAsync(
-            new UpdateTermsDocumentRequest("Normas", "{}").ToCommand(TermsDocumentId.New()),
+            new UpdateTermsDocumentRequest("Normas", "{}", TermsDocumentKind.Conditions).ToCommand(
+                TermsDocumentId.New()
+            ),
             TestContext.Current.CancellationToken
         );
 
@@ -48,7 +51,11 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
         termsDocuments.TermsDocumentExists(true);
 
         var result = await sut.HandleAsync(
-            new UpdateTermsDocumentRequest("Normas nuevas", "{}").ToCommand(TermsDocumentId.New()),
+            new UpdateTermsDocumentRequest(
+                "Normas nuevas",
+                "{}",
+                TermsDocumentKind.Conditions
+            ).ToCommand(TermsDocumentId.New()),
             TestContext.Current.CancellationToken
         );
 
@@ -71,6 +78,7 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
             new UpdateTermsDocumentRequest(
                 "  Normas nuevas  ",
                 "{\"type\":\"doc\"}",
+                TermsDocumentKind.Consent,
                 RequiresSignature: true
             ).ToCommand(termsDocument.Id),
             TestContext.Current.CancellationToken
@@ -80,6 +88,9 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
         termsDocument.Name.Should().Be("Normas nuevas");
         termsDocument.Description!.Json.Should().Be("{\"type\":\"doc\"}");
         termsDocument.RequiresSignature.Should().BeTrue();
+        termsDocument
+            .Kind.Should()
+            .Be(CodigoActivo.Domain.TermsDocuments.TermsDocumentKind.Consent);
         DomainEvents
             .ReleasedFiles(termsDocument)
             .Should()

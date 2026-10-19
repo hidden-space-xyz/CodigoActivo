@@ -10,15 +10,30 @@ namespace CodigoActivo.Domain.Events;
 public interface IEventTermsAcceptanceRepository : IRepository<EventTermsAcceptance>
 {
     /// <summary>
-    /// Loads the decisions a person took about the documents of an event.
+    /// Loads the decisions taken about the documents of an event for a person.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
-    /// <param name="userId">Identifier of the person.</param>
+    /// <param name="userId">Identifier of the person the decisions are about.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the decisions.</returns>
     public Task<IReadOnlyList<EventTermsAcceptance>> ListAsync(
         EventId eventId,
         UserId userId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// Loads the decision taken about one document of an event for a person, to change it.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="userId">Identifier of the person the decision is about.</param>
+    /// <param name="termsDocumentId">Identifier of the terms document.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is the decision, or <see langword="null"/> when none was taken.</returns>
+    public Task<EventTermsAcceptance?> GetAsync(
+        EventId eventId,
+        UserId userId,
+        TermsDocumentId termsDocumentId,
         CancellationToken ct = default
     );
 

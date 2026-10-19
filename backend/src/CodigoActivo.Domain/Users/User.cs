@@ -1014,6 +1014,18 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
+    /// Tells whether the person gives their own consents on <paramref name="today"/>: an
+    /// independent account always does, and a dependent from the age of 14; before, their
+    /// guardian gives them.
+    /// </summary>
+    /// <param name="today">Local day on which the age is evaluated.</param>
+    /// <returns><see langword="true"/> when the person decides their own consents.</returns>
+    public bool GivesOwnConsent(DateOnly today)
+    {
+        return ParentId is null || (BirthDate is { } birthDate && birthDate.MayConsent(today));
+    }
+
+    /// <summary>
     /// Gets a value indicating whether the account keeps its email against anyone else who claims
     /// it. An account nobody verified does not: a new registration with the address replaces it,
     /// and so does an account whose holder confirms the address as their new email.

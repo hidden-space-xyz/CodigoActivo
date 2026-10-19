@@ -7,6 +7,7 @@ import type {
   EventStage,
   EventTermsDocumentResponse,
   EventTermsDocumentStateResponse,
+  EventTermsPersonStateResponse,
   EventTermsStateResponse,
   LeaderRosterActivityResponse,
   LeaderRosterDependentResponse,
@@ -21,6 +22,7 @@ import type {
   EventStatusKind,
   EventSummary,
   EventTermsDocumentState,
+  EventTermsPerson,
   EventTermsState,
   EventTermsSummary,
   LeaderRosterActivity,
@@ -133,21 +135,37 @@ function toTermsDocumentState(document: EventTermsDocumentStateResponse): EventT
     id: document.termsDocumentId,
     name: document.name,
     description: document.description,
+    kind: document.kind,
     required: document.required,
     requiresSignature: document.requiresSignature,
     displayOrder: document.displayOrder,
-    accepted: document.accepted ?? null,
-    decidedAt: document.decidedAt ?? null,
   }
 }
 
-/** Maps the event's terms state for the signed-in user, sorted by the event's display order. */
+function toTermsPerson(person: EventTermsPersonStateResponse): EventTermsPerson {
+  return {
+    id: person.userId,
+    firstName: person.firstName,
+    lastName: person.lastName,
+    decidesOwnConsents: person.decidesOwnConsents,
+    decisions: person.decisions.map((decision) => ({
+      documentId: decision.termsDocumentId,
+      accepted: decision.accepted,
+      decidedAt: decision.decidedAt,
+    })),
+  }
+}
+
+/**
+ * Maps the event's terms state for the signed-in user's household, with the documents sorted by
+ * the event's display order.
+ */
 export function toEventTermsState(response: EventTermsStateResponse): EventTermsState {
   return {
     documents: response.documents
       .map(toTermsDocumentState)
       .sort((a, b) => a.displayOrder - b.displayOrder),
-    signupBlocked: response.signupBlocked,
+    people: response.people.map(toTermsPerson),
   }
 }
 

@@ -4,6 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { TermsDocumentKind } from './termsDocumentKind';
 
 export interface EventTermsDecisionResponse {
   userId: string;
@@ -11,9 +12,14 @@ export interface EventTermsDecisionResponse {
   lastName: string;
   /** @nullable */
   email?: string | null;
+  decidedById: string;
+  decidedByFirstName: string;
+  decidedByLastName: string;
   termsDocumentId: string;
   documentName: string;
+  documentKind: TermsDocumentKind;
   accepted: boolean;
+  withdrawn: boolean;
   decidedAt: string;
   hasSignature: boolean;
 }

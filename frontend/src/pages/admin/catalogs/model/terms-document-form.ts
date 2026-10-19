@@ -1,4 +1,8 @@
-import type { TermsDocument, TermsDocumentInput } from '@/entities/terms-document'
+import type {
+  TermsDocument,
+  TermsDocumentInput,
+  TermsDocumentKind,
+} from '@/entities/terms-document'
 import type { FormProblem, FormReading } from '@/shared/lib/form'
 import { isRichTextBlank, isRichTextTooLong } from '@/shared/lib/rich-text'
 
@@ -7,6 +11,7 @@ export interface TermsDocumentDraft {
   name: string
   description: string
   requiresSignature: boolean
+  kind: TermsDocumentKind
 }
 
 /** Field of the terms document form that can be refused. */
@@ -18,6 +23,7 @@ export function toTermsDocumentDraft(termsDocument: TermsDocument | null): Terms
     name: termsDocument?.name ?? '',
     description: termsDocument?.description ?? '',
     requiresSignature: termsDocument?.requiresSignature ?? false,
+    kind: termsDocument?.kind ?? 'Conditions',
   }
 }
 
@@ -39,6 +45,11 @@ export function readTermsDocumentDraft(
   if (Object.keys(problems).length > 0) return { problems, value: null }
   return {
     problems,
-    value: { name, description: draft.description, requiresSignature: draft.requiresSignature },
+    value: {
+      name,
+      description: draft.description,
+      requiresSignature: draft.requiresSignature,
+      kind: draft.kind,
+    },
   }
 }

@@ -14,7 +14,9 @@ namespace CodigoActivo.Application.Accounts.Contracts;
 /// <param name="NewsConsentChanges">Every change of the news consent, oldest first.</param>
 /// <param name="Dependents">The minors in the user's care.</param>
 /// <param name="Signups">The signups of the user and of the minors in their care.</param>
-/// <param name="TermsDecisions">The user's decisions on the documents of the events.</param>
+/// <param name="TermsDecisions">
+/// The decisions on the documents of the events about the user and the minors in their care.
+/// </param>
 /// <param name="Sessions">The user's open sessions.</param>
 /// <param name="SecurityLog">
 /// The audit entries about the user and the minors in their care that the log still holds.
@@ -139,17 +141,37 @@ public sealed record PersonalDataSignupResponse(
 /// <summary>
 /// Represents a decision on a document of an event in a copy of personal data.
 /// </summary>
+/// <param name="PersonId">Identifier of the person the decision is about.</param>
+/// <param name="PersonName">Full name of the person the decision is about.</param>
+/// <param name="DecidedByName">Full name of who decided: the person or their guardian.</param>
 /// <param name="EventTitle">Title of the event.</param>
 /// <param name="DocumentName">Name of the document.</param>
-/// <param name="Accepted">Whether the document was accepted.</param>
-/// <param name="DecidedAt">When it was decided.</param>
-/// <param name="Signature">Handwritten signature as a PNG image, when the document asked for one.</param>
+/// <param name="Accepted">Whether the document is accepted now.</param>
+/// <param name="DecidedAt">When it was last decided.</param>
+/// <param name="Signature">Handwritten signature as a PNG image, when the document asked for one and is accepted now.</param>
+/// <param name="Changes">Every acceptance, decline and withdrawal of the decision, oldest first.</param>
 public sealed record PersonalDataTermsDecisionResponse(
+    Guid PersonId,
+    string PersonName,
+    string DecidedByName,
     string EventTitle,
     string DocumentName,
     bool Accepted,
     DateTimeOffset DecidedAt,
-    byte[]? Signature
+    byte[]? Signature,
+    IReadOnlyList<PersonalDataTermsDecisionChangeResponse> Changes
+);
+
+/// <summary>
+/// Represents one change of a decision on a document of an event in a copy of personal data.
+/// </summary>
+/// <param name="Accepted">Whether the document was accepted; false for a decline or a withdrawal.</param>
+/// <param name="ChangedAt">When it changed.</param>
+/// <param name="DecidedByName">Full name of who decided: the person or their guardian.</param>
+public sealed record PersonalDataTermsDecisionChangeResponse(
+    bool Accepted,
+    DateTimeOffset ChangedAt,
+    string DecidedByName
 );
 
 /// <summary>

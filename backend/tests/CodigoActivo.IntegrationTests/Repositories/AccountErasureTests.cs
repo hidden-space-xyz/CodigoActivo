@@ -59,6 +59,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     private static readonly DateTimeOffset MemberSignedUpAt = SeededAt.AddDays(1);
     private static readonly DateTimeOffset ChildSignedUpAt = SeededAt.AddDays(2);
     private static readonly DateTimeOffset ConditionsDecidedAt = SeededAt.AddDays(3);
+    private static readonly DateTimeOffset ImageRightsAcceptedAt = SeededAt.AddDays(2);
     private static readonly DateTimeOffset ImageRightsDecidedAt = SeededAt.AddDays(4);
 
     private static Event NewEvent(Guid id, string title, DateOnly startsOn)
@@ -133,20 +134,38 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         Guid documentId,
         bool accepted,
         DateTimeOffset decidedAt,
-        HandwrittenSignature? signature = null
+        HandwrittenSignature? signature = null,
+        Guid? decidedById = null
     )
     {
-        return Persisted.As<EventTermsAcceptance>(
-            new
-            {
-                EventId = eventId,
-                UserId = userId,
-                TermsDocumentId = documentId,
-                Accepted = accepted,
-                DecidedAt = decidedAt,
-                Signature = signature,
-            }
+        var decider = UserId.From(decidedById ?? userId);
+        return EventTermsAcceptance.Record(
+            EventId.From(eventId),
+            UserId.From(userId),
+            decider,
+            TermsDocumentId.From(documentId),
+            accepted,
+            signature,
+            decider,
+            decidedAt
         );
+    }
+
+    private static EventTermsAcceptance ImageRightsWithdrawn()
+    {
+        var decision = NewDecision(
+            CampId,
+            TestSeedData.Users.MemberId,
+            ImageRightsId,
+            accepted: true,
+            ImageRightsAcceptedAt
+        );
+        decision.Withdraw(
+            UserId.From(TestSeedData.Users.MemberId),
+            UserId.From(TestSeedData.Users.AdminId),
+            ImageRightsDecidedAt
+        );
+        return decision;
     }
 
     private static NewsConsentChange ConsentChange(
@@ -297,13 +316,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     ConditionsDecidedAt,
                     HandwrittenSignature.FromStored(TestSeedData.ValidPng())
                 ),
-                NewDecision(
-                    CampId,
-                    TestSeedData.Users.MemberId,
-                    ImageRightsId,
-                    accepted: false,
-                    ImageRightsDecidedAt
-                ),
+                ImageRightsWithdrawn(),
                 NewDecision(
                     TripId,
                     TestSeedData.Users.MemberId,
@@ -475,7 +488,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
 
         var copy = await CopyOfAsync(TestSeedData.Users.MemberId);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(5);
+        copy.GetProperty("schemaVersion").GetInt32().Should().Be(7);
         copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Self");
         IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.MemberId);
         copy.GetProperty("guardian").ValueKind.Should().Be(JsonValueKind.Null);
@@ -569,11 +582,46 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .GetBytesFromBase64()
             .Should()
             .Equal(TestSeedData.ValidPng());
+        Items(campDecisions[0].GetProperty("changes"))
+            .Should()
+            .ContainSingle()
+            .Which.GetProperty("signature")
+            .GetBytesFromBase64()
+            .Should()
+            .Equal(TestSeedData.ValidPng());
         campDecisions[1].GetProperty("documentName").GetString().Should().Be("Derechos de imagen");
         campDecisions[1].GetProperty("accepted").GetBoolean().Should().BeFalse();
         campDecisions[1].GetProperty("signature").ValueKind.Should().Be(JsonValueKind.Null);
+        Items(campDecisions[1].GetProperty("changes"))
+            .Select(change =>
+                (
+                    change.GetProperty("accepted").GetBoolean(),
+                    change.GetProperty("changedAt").GetDateTimeOffset(),
+                    IdOf(change, "decidedBy"),
+                    IdOf(change, "recordedBy")
+                )
+            )
+            .Should()
+            .Equal(
+                (
+                    true,
+                    ImageRightsAcceptedAt,
+                    TestSeedData.Users.MemberId,
+                    TestSeedData.Users.MemberId
+                ),
+                (
+                    false,
+                    ImageRightsDecidedAt,
+                    TestSeedData.Users.MemberId,
+                    TestSeedData.Users.AdminId
+                )
+            );
         campDecisions
             .Select(d => IdOf(d, "decidedBy"))
+            .Should()
+            .AllBeEquivalentTo(TestSeedData.Users.MemberId);
+        campDecisions
+            .Select(d => IdOf(d, "personId"))
             .Should()
             .AllBeEquivalentTo(TestSeedData.Users.MemberId);
 
@@ -919,6 +967,18 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     }
                 )
             );
+            db.EventTermsAcceptances.Add(
+                EventTermsAcceptance.Record(
+                    EventId.From(ConferenceId),
+                    UserId.From(other),
+                    UserId.From(other),
+                    TermsDocumentId.From(ImageRightsId),
+                    true,
+                    null,
+                    UserId.From(member),
+                    SeededAt
+                )
+            );
             return Task.CompletedTask;
         });
 
@@ -941,6 +1001,15 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         resource.UpdatedBy.Should().Be(UserId.From(heir));
         (await FindAsync<StoredFile>(UploadId))!.UploadedBy.Value.Should().Be(heir);
         (await FindAsync<StoredFile>(OtherUploadId))!.UploadedBy.Value.Should().Be(other);
+        (
+            await Factory.QueryAsync(db =>
+                db.TermsDecisionChanges.Where(c => c.UserId == UserId.From(other))
+                    .Select(c => c.RecordedById)
+                    .SingleAsync(Ct)
+            )
+        )
+            .Value.Should()
+            .Be(heir);
         (await FindAsync<User>(member)).Should().BeNull();
         (await FindAsync<User>(child)).Should().BeNull();
     }
@@ -1175,7 +1244,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 RichText.From(
                     new string('[', ValidatedMaxDepth) + new string(']', ValidatedMaxDepth)
                 ),
-                conditions.RequiresSignature
+                conditions.RequiresSignature,
+                TermsDocumentKind.Conditions
             );
         });
 

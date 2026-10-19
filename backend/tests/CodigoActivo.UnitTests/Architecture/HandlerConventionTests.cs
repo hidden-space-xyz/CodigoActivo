@@ -11,6 +11,7 @@ using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Emails.Commands;
+using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Logs;
 using CodigoActivo.Application.Reports;
 using CodigoActivo.Domain.Common;
@@ -330,6 +331,7 @@ public sealed class HandlerConventionTests
                 typeof(SendEmailToUsersCommandHandler),
                 typeof(ActingUserPolicy),
                 typeof(ActivitySignupNotifier),
+                typeof(ConsentWithdrawalNotification),
             ]);
     }
 

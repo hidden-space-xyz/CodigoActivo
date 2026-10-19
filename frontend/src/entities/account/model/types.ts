@@ -65,6 +65,25 @@ export interface AccountCertificate {
   readonly endsAt: string
 }
 
+/**
+ * Consent decided for the user or a minor about a terms document of an event. `withdrawn` tells a
+ * consent given and withdrawn later from one never given.
+ */
+export interface AccountConsent {
+  readonly eventId: string
+  readonly eventTitle: string
+  readonly eventStartsAt: string
+  readonly termsDocumentId: string
+  readonly documentName: string
+  readonly personId: string
+  readonly personName: string
+  readonly accepted: boolean
+  readonly withdrawn: boolean
+  readonly decidedAt: string
+  /** Full name of who last decided: the person or their guardian. */
+  readonly decidedByName: string
+}
+
 /** Event in the account history, grouping the activities the household joined. */
 export interface AccountHistoryEntry {
   readonly eventId: string
@@ -133,11 +152,19 @@ export interface PersonalDataFile {
     readonly inscritaEl: string
   }[]
   readonly decisionesSobreDocumentos: readonly {
+    readonly personaId: string
+    readonly persona: string
+    readonly decidioPor: string
     readonly evento: string
     readonly documento: string
     readonly aceptado: boolean
     readonly fecha: string
     readonly firmaPngBase64: string | null
+    readonly cambios: readonly {
+      readonly aceptado: boolean
+      readonly fecha: string
+      readonly decidioPor: string
+    }[]
   }[]
   readonly sesionesAbiertas: readonly {
     readonly abiertaEl: string

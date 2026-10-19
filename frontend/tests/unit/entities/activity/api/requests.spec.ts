@@ -261,11 +261,13 @@ describe('activity requests', () => {
       { userId: 'child-1', roleId: 'role-participant' },
     ]
     await assignHouseholdRequest('activity-1', assignments)
-    await assignHouseholdRequest(
-      'activity-1',
-      [],
-      [{ termsDocumentId: 'terms-1', accepted: false }],
-    )
+    await assignHouseholdRequest('activity-1', [
+      {
+        userId: 'child-1',
+        roleId: 'role-participant',
+        termsDecisions: [{ termsDocumentId: 'terms-1', accepted: false }],
+      },
+    ])
 
     expect(bodies).toEqual([
       {
@@ -275,8 +277,13 @@ describe('activity requests', () => {
         ],
       },
       {
-        assignments: [],
-        termsDecisions: [{ termsDocumentId: 'terms-1', accepted: false }],
+        assignments: [
+          {
+            userId: 'child-1',
+            activityRoleTypeId: 'role-participant',
+            termsDecisions: [{ termsDocumentId: 'terms-1', accepted: false }],
+          },
+        ],
       },
     ])
   })

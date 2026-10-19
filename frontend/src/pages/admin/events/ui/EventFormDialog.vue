@@ -32,15 +32,26 @@ const emit = defineEmits<{
   submit: [input: EventInput]
 }>()
 
-const form = useForm({ initial: () => toEventDraft(null), read: readEventDraft })
+const termsDocuments = useQuery(termsDocumentQueries.options())
+const termsOptions = computed(() => termsDocuments.data.value ?? [])
+const consentIds = computed(
+  () =>
+    new Set(
+      termsOptions.value
+        .filter((document) => document.kind === 'Consent')
+        .map((document) => document.id),
+    ),
+)
+const form = useForm({
+  initial: () => toEventDraft(null),
+  read: (value) => readEventDraft(value, consentIds.value),
+})
 const { draft, submitted, errors, invalid } = form
 const thumbnail = useThumbnailUpload(() => props.event?.thumbnailId)
 const { pickedFile, uploading, uploadError, missingThumbnail } = thumbnail
 
 const categories = useQuery(eventCategoryQueries.options())
 const categoryOptions = computed(() => categories.data.value ?? [])
-const termsDocuments = useQuery(termsDocumentQueries.options())
-const termsOptions = computed(() => termsDocuments.data.value ?? [])
 const categoryDialogVisible = ref(false)
 
 watch(visible, (open) => {
@@ -154,7 +165,11 @@ async function save(): Promise<void> {
         <ul v-if="draft.termsDocumentIds.length" class="form__terms-list">
           <li v-for="id in draft.termsDocumentIds" :key="id" class="form__terms-row">
             <span class="form__terms-name">{{ termsName(id) }}</span>
+            <span v-if="consentIds.has(id)" class="form__terms-consent">{{
+              $t('pages.admin.events.form.termsConsentOptional')
+            }}</span>
             <el-switch
+              v-else
               :model-value="draft.termsRequired[id] ?? true"
               :active-text="$t('pages.admin.events.form.termsRequired')"
               @update:model-value="
@@ -364,6 +379,12 @@ async function save(): Promise<void> {
   color: var(--ca-text);
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form__terms-consent {
+  font-size: 12.5px;
+  color: var(--ca-text-muted);
   white-space: nowrap;
 }
 

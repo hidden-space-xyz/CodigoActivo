@@ -4,8 +4,8 @@ namespace CodigoActivo.Domain.Users;
 /// Copy of an erased account that the law requires to keep for
 /// <see cref="DeletedAccount.RetentionYears"/> years: the account and its dependents, the guardian
 /// of a dependent, every activity signup of the household and the terms decisions behind them,
-/// with the signatures drawn to accept them, grouped by event because terms are decided per event
-/// and recorded for the acting guardian, and every change of the news consent.
+/// with the signatures drawn to accept them and who decided each one, grouped by event because
+/// terms are decided per event, and every change of the news consent.
 /// Catalog values, titles and document texts are copied by value, since the rows they come from
 /// may change or disappear later. Credentials, one-time codes, unconfirmed email changes,
 /// authenticator secrets and lockout counters are never copied.
@@ -68,9 +68,10 @@ public sealed record LegalCopy(
     ];
 
     /// <summary>
-    /// Composes the copy of an account from what is stored about its household. Decisions of the
-    /// household are kept; decisions of the guardian of a dependent only for the events where the
-    /// household signed up. Only the documents and events those decisions and signups refer to
+    /// Composes the copy of an account from what is stored about its household. Decisions about the
+    /// household are kept; decisions about the guardian of a dependent, which covered their
+    /// dependents before decisions were taken per person, only for the events where the household
+    /// signed up. Only the documents and events those decisions and signups refer to
     /// are kept.
     /// </summary>
     /// <param name="accountId">Identifier of the erased account.</param>
@@ -78,7 +79,7 @@ public sealed record LegalCopy(
     /// <param name="household">The account and its dependents.</param>
     /// <param name="guardian">Guardian of the account when it is a dependent.</param>
     /// <param name="signups">Signups of the household, with the event of each activity.</param>
-    /// <param name="decisions">Terms decisions of the household and of its guardian, with their event.</param>
+    /// <param name="decisions">Terms decisions about the household and its guardian, with their event.</param>
     /// <param name="documents">Terms documents the decisions refer to.</param>
     /// <param name="events">Events the signups and decisions refer to, without decisions or signups.</param>
     /// <returns>The copy.</returns>
@@ -105,9 +106,9 @@ public sealed record LegalCopy(
         var signupEventIds = signups.Select(signup => signup.EventId).ToHashSet();
         var kept = decisions
             .Where(decision =>
-                householdIds.Contains(decision.Decision.DecidedBy)
+                householdIds.Contains(decision.Decision.PersonId)
                 || (
-                    decision.Decision.DecidedBy == account.ParentId
+                    decision.Decision.PersonId == account.ParentId
                     && signupEventIds.Contains(decision.EventId)
                 )
             )

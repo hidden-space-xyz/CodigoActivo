@@ -7,6 +7,7 @@ using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Events.EventTestData;
+using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.UnitTests.Application.TermsDocuments.Queries;
 
@@ -28,7 +29,8 @@ public sealed class GetTermsDocumentByIdQueryHandlerTests
         var termsDocument = NewTermsDocumentRow(
             "Normas del campamento",
             RichText,
-            requiresSignature: true
+            requiresSignature: true,
+            kind: TermsDocumentKind.Consent
         );
         store.TermsDocuments.AddRange([NewTermsDocumentRow("Otras normas"), termsDocument]);
 
@@ -41,7 +43,13 @@ public sealed class GetTermsDocumentByIdQueryHandlerTests
         result
             .Value.Should()
             .Be(
-                new TermsDocumentResponse(termsDocument.Id, "Normas del campamento", RichText, true)
+                new TermsDocumentResponse(
+                    termsDocument.Id,
+                    "Normas del campamento",
+                    RichText,
+                    true,
+                    TermsDocumentKind.Consent
+                )
             );
     }
 

@@ -5,10 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { HouseholdAssignmentRequest } from './householdAssignmentRequest';
-import type { TermsDecisionRequest } from './termsDecisionRequest';
 
 export interface AssignHouseholdRequest {
   assignments: HouseholdAssignmentRequest[];
-  /** @nullable */
-  termsDecisions?: TermsDecisionRequest[] | null;
 }

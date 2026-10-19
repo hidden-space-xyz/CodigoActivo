@@ -208,6 +208,27 @@ Equipo de Código Activo</value>
   <data name="emails.accountDeletionCode.ignoreNote" xml:space="preserve">
     <value>Si no has solicitado eliminar tu cuenta, no introduzcas este código y restablece tu contraseña cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
   </data>
+  <data name="emails.consentWithdrawn.subject" xml:space="preserve">
+    <value>Se ha retirado un consentimiento</value>
+  </data>
+  <data name="emails.consentWithdrawn.heading" xml:space="preserve">
+    <value>Consentimiento retirado</value>
+  </data>
+  <data name="emails.consentWithdrawn.introText" xml:space="preserve">
+    <value>Se ha retirado el consentimiento «{1}» de {0} para el evento «{2}».</value>
+  </data>
+  <data name="emails.consentWithdrawn.introHtml" xml:space="preserve">
+    <value>Se ha retirado el consentimiento &lt;b&gt;«{1}»&lt;/b&gt; de &lt;b&gt;{0}&lt;/b&gt; para el evento &lt;b&gt;«{2}»&lt;/b&gt;.</value>
+  </data>
+  <data name="emails.consentWithdrawn.recorded" xml:space="preserve">
+    <value>Lo registró {0} el {1} h.</value>
+  </data>
+  <data name="emails.consentWithdrawn.action" xml:space="preserve">
+    <value>Desde ahora no podéis usar lo que cubría ese consentimiento: quitad sus imágenes o su nombre de esta web y de los perfiles de la asociación y no los uséis en nuevas publicaciones.</value>
+  </data>
+  <data name="emails.consentWithdrawn.historyNote" xml:space="preserve">
+    <value>En la ficha del evento, en la administración de la web, la decisión figura como retirada. La aceptación anterior, con su firma si la tenía, se conserva en el historial de la decisión para poder demostrarla.</value>
+  </data>
   <data name="emails.comingOfAge.subject" xml:space="preserve">
     <value>Un menor a tu cargo va a cumplir 18 años</value>
   </data>

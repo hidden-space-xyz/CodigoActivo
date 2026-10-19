@@ -14,9 +14,31 @@ public sealed class TermsConsentTests
 {
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset Earlier = Now.AddDays(-2);
+    private static readonly DateOnly Today = new(2026, 7, 4);
 
     private readonly Guid eventId = Guid.NewGuid();
     private readonly Guid userId = Guid.NewGuid();
+    private readonly Guid guardianId = Guid.NewGuid();
+    private readonly List<TermsDocumentId> consents = [];
+    private User person;
+
+    public TermsConsentTests()
+    {
+        person = Persisted.As<User>(new { Id = userId, Status = UserStatus.Active });
+    }
+
+    private void DecideFor(DateOnly birthDate)
+    {
+        person = Persisted.As<User>(
+            new
+            {
+                Id = userId,
+                Status = UserStatus.Dependent,
+                ParentId = guardianId,
+                BirthDate = birthDate,
+            }
+        );
+    }
 
     private static IReadOnlyCollection<EventTermsDocument> Documents(
         params (Guid TermsDocumentId, bool Required)[] documents
@@ -41,12 +63,15 @@ public sealed class TermsConsentTests
                     .Value,
                 EventCategorySelection.Create([EventCategoryTypeId.From(Guid.NewGuid())]).Value,
                 EventTermsLinks
-                    .Create([
-                        .. documents.Select(document => new EventTermsLink(
-                            TermsDocumentId.From(document.TermsDocumentId),
-                            document.Required
-                        )),
-                    ])
+                    .Create(
+                        [
+                            .. documents.Select(document => new EventTermsLink(
+                                TermsDocumentId.From(document.TermsDocumentId),
+                                document.Required
+                            )),
+                        ],
+                        []
+                    )
                     .Value,
                 UserId.From(Guid.NewGuid()),
                 Earlier
@@ -59,9 +84,11 @@ public sealed class TermsConsentTests
         return EventTermsAcceptance.Record(
             EventId.From(eventId),
             UserId.From(userId),
+            UserId.From(userId),
             TermsDocumentId.From(termsDocumentId),
             accepted,
             null,
+            UserId.From(userId),
             Earlier
         );
     }
@@ -75,11 +102,14 @@ public sealed class TermsConsentTests
     {
         return TermsConsent.Apply(
             EventId.From(eventId),
-            UserId.From(userId),
+            person,
             documents,
             [.. signed.Select(TermsDocumentId.From)],
+            consents,
             acceptances,
             decisions,
+            UserId.From(userId),
+            Today,
             Now
         );
     }
@@ -404,5 +434,105 @@ public sealed class TermsConsentTests
         outcome.Recorded.Should().BeEmpty();
         outcome.MissingRequired.Should().BeFalse();
         stored.DecidedAt.Should().Be(Earlier);
+    }
+
+    [Fact]
+    public void ApplyConsentLinkedAsRequiredIsNeverRequiredAndRecordsItsDecline()
+    {
+        var consent = Guid.NewGuid();
+        consents.Add(TermsDocumentId.From(consent));
+        var documents = Documents((consent, true));
+
+        var undecided = Apply(documents, [], null);
+        var declined = Apply(
+            documents,
+            [],
+            [new TermsDecision(TermsDocumentId.From(consent), false)]
+        );
+
+        undecided.MissingRequired.Should().BeFalse();
+        declined.MissingRequired.Should().BeFalse();
+        declined.Recorded.Should().ContainSingle().Which.Accepted.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ApplyForAnAdultRecordsThemAsWhoDecided()
+    {
+        var conditions = Guid.NewGuid();
+
+        var outcome = Apply(
+            Documents((conditions, true)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(conditions), true)]
+        );
+
+        var recorded = outcome.Recorded.Should().ContainSingle().Which;
+        recorded.UserId.Value.Should().Be(userId);
+        recorded.DecidedById.Value.Should().Be(userId);
+    }
+
+    [Theory]
+    [InlineData(2016, 7, 4, false)]
+    [InlineData(2012, 7, 5, false)]
+    [InlineData(2012, 7, 4, true)]
+    [InlineData(2009, 1, 1, true)]
+    public void ApplyForADependentRecordsTheGuardianForConditionsAndTheMinorFromFourteenForConsents(
+        int year,
+        int month,
+        int day,
+        bool decidesOwnConsent
+    )
+    {
+        DecideFor(new DateOnly(year, month, day));
+        var conditions = Guid.NewGuid();
+        var consent = Guid.NewGuid();
+        consents.Add(TermsDocumentId.From(consent));
+
+        var outcome = Apply(
+            Documents((conditions, true), (consent, false)),
+            [],
+            [
+                new TermsDecision(TermsDocumentId.From(conditions), true),
+                new TermsDecision(TermsDocumentId.From(consent), true),
+            ]
+        );
+
+        outcome.Recorded.Should().OnlyContain(recorded => recorded.UserId.Value == userId);
+        outcome
+            .Recorded.Single(recorded => recorded.TermsDocumentId.Value == conditions)
+            .DecidedById.Value.Should()
+            .Be(guardianId);
+        outcome
+            .Recorded.Single(recorded => recorded.TermsDocumentId.Value == consent)
+            .DecidedById.Value.Should()
+            .Be(decidesOwnConsent ? userId : guardianId);
+    }
+
+    [Fact]
+    public void ApplyAcceptingAConsentDeclinedBeforeRecordsWhoAcceptsItNow()
+    {
+        DecideFor(new DateOnly(2012, 7, 4));
+        var consent = Guid.NewGuid();
+        consents.Add(TermsDocumentId.From(consent));
+        var stored = EventTermsAcceptance.Record(
+            EventId.From(eventId),
+            UserId.From(userId),
+            UserId.From(guardianId),
+            TermsDocumentId.From(consent),
+            false,
+            null,
+            UserId.From(guardianId),
+            Earlier
+        );
+
+        Apply(
+            Documents((consent, false)),
+            [stored],
+            [new TermsDecision(TermsDocumentId.From(consent), true)]
+        );
+
+        stored.Accepted.Should().BeTrue();
+        stored.DecidedById.Value.Should().Be(userId);
+        stored.DecidedAt.Should().Be(Now);
     }
 }

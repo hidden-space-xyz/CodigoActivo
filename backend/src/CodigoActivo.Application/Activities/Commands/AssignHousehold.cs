@@ -16,18 +16,17 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// Carries the input required to sign members of the signed-in user's household up to an activity.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="Assignments">Members to sign up with their roles.</param>
-/// <param name="TermsDecisions">Decisions on the terms documents of the event, if any were asked.</param>
+/// <param name="Assignments">Members to sign up with their roles and the terms decisions taken for them.</param>
 public sealed record AssignHouseholdCommand(
     ActivityId ActivityId,
-    [property: MaxLength(Household.MaxMembers)] IReadOnlyList<HouseholdMemberSignup> Assignments,
-    [property: MaxLength(50)] IReadOnlyList<TermsDecision>? TermsDecisions
+    [property: MaxLength(Household.MaxMembers)] IReadOnlyList<HouseholdMemberSignup> Assignments
 ) : ICommand<Result<IReadOnlyList<UserId>>>;
 
 /// <summary>
 /// Executes the command to sign members of the signed-in user's household up to an activity.
 /// Every member must belong to the household (<see cref="Household.Includes"/>) and may take the
 /// role asked for; members already signed up are left as they are, and the result lists those
+/// signed up now. The required terms documents of the event must end up accepted for each member
 /// signed up now.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
@@ -96,7 +95,6 @@ public sealed class AssignHouseholdCommandHandler(
             return Error.Forbidden(ApplicationErrorCode.ActivityHouseholdMemberNotAllowed);
         }
 
-        var signups = new List<(UserId UserId, ActivityRole Role)>(items.Count);
         foreach (var item in items)
         {
             var allowedRole = SignupEligibility.EnsureRoleAllowed(
@@ -107,14 +105,18 @@ public sealed class AssignHouseholdCommandHandler(
             {
                 return allowedRole.Error!;
             }
-
-            signups.Add((item.UserId, item.Role));
         }
 
+        var pending = items.FindAll(item => activity.EnsureMaySignUp(item.UserId).IsSuccess);
         var terms = await termsGate.EnsureDecidedAsync(
             activity.EventId,
+            [
+                .. pending.Select(item => new PersonTermsDecisions(
+                    memberById[item.UserId],
+                    item.TermsDecisions
+                )),
+            ],
             actingUserId,
-            command.TermsDecisions,
             ct
         );
         if (terms.IsFailure)
@@ -122,20 +124,16 @@ public sealed class AssignHouseholdCommandHandler(
             return terms.Error!;
         }
 
-        var created = new List<UserId>(signups.Count);
-        foreach (
-            var (userId, role) in signups.Where(signup =>
-                activity.EnsureMaySignUp(signup.UserId).IsSuccess
-            )
-        )
+        var created = new List<UserId>(pending.Count);
+        foreach (var item in pending)
         {
-            var assigned = activity.RequestAssignment(userId, role, clock.UtcNow);
+            var assigned = activity.RequestAssignment(item.UserId, item.Role, clock.UtcNow);
             if (assigned.IsFailure)
             {
                 return assigned.Error!;
             }
 
-            created.Add(userId);
+            created.Add(item.UserId);
         }
 
         try

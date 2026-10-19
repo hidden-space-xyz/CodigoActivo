@@ -18,7 +18,7 @@ public sealed record GetPersonalDataQuery : IQuery<Result<PersonalDataResponse>>
 /// <summary>
 /// Executes the query that copies the personal data kept about the signed-in user and the minors
 /// in their care: the account, the news consent history, the minors, the signups of the
-/// household, the user's decisions on event documents with their signatures, the open sessions
+/// household, the decisions on event documents about the household with their signatures, the open sessions
 /// and the audit entries about the household that the log still holds.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
@@ -131,15 +131,28 @@ public sealed class GetPersonalDataQueryHandler(
         );
         var decisions = await executor.ToListAsync(
             readStore
-                .EventTermsAcceptances.Where(a => a.UserId == userId)
+                .EventTermsAcceptances.Where(a => a.UserId == userId || a.User.ParentId == userId)
                 .OrderBy(a => a.DecidedAt)
                 .ThenBy(a => a.TermsDocument.Name)
+                .ThenBy(a => a.User.FirstName)
+                .ThenBy(a => a.UserId)
                 .Select(a => new PersonalDataTermsDecisionResponse(
+                    a.UserId,
+                    a.User.FirstName + " " + a.User.LastName,
+                    a.DecidedBy.FirstName + " " + a.DecidedBy.LastName,
                     a.Event.Title,
                     a.TermsDocument.Name,
                     a.Accepted,
                     a.DecidedAt,
-                    a.Signature
+                    a.Signature,
+                    a.Changes.OrderBy(c => c.ChangedAt)
+                        .ThenBy(c => c.Id)
+                        .Select(c => new PersonalDataTermsDecisionChangeResponse(
+                            c.Accepted,
+                            c.ChangedAt,
+                            c.DecidedBy.FirstName + " " + c.DecidedBy.LastName
+                        ))
+                        .ToList()
                 )),
             ct
         );

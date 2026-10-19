@@ -14,10 +14,12 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 /// <param name="Name">Name, unique among terms documents.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 /// <param name="RequiresSignature">Whether accepting it asks for a handwritten signature.</param>
+/// <param name="Kind">Whether it holds conditions or a consent.</param>
 public sealed record CreateTermsDocumentCommand(
     [property: Required, MaxLength(120), NotBlank] string Name,
     [property: Required, RichText(AllowImages = false), MaxLength(262144)] string Description,
-    bool RequiresSignature
+    bool RequiresSignature,
+    TermsDocumentKind Kind
 ) : ICommand<Result<TermsDocumentId>>;
 
 /// <summary>
@@ -49,7 +51,8 @@ public sealed class CreateTermsDocumentCommandHandler(ITermsDocumentRepository t
         var termsDocument = TermsDocument.Create(
             name,
             RichText.From(command.Description),
-            command.RequiresSignature
+            command.RequiresSignature,
+            command.Kind
         );
         await termsDocuments.AddAsync(termsDocument, ct);
         return termsDocument.Id;

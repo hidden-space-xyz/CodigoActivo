@@ -12,6 +12,7 @@ import { eventKeys } from '@/entities/event'
 import { hasErrorCode } from '@/shared/api'
 import { useActionConfirm, useCrudFeedback } from '@/shared/lib/feedback'
 
+import { termsSections, type TermsDialogSection } from './terms-decisions'
 import type { TimelineActivity } from './types'
 import type { useEventActivities } from './use-event-activities'
 
@@ -47,10 +48,11 @@ interface SignupFlowOptions {
 /**
  * Signup flow of an event's activities. Signing oneself up first checks for overlapping
  * activities and asks for confirmation when there are some; signing the household up asks for a
- * role per member. Either way, pending terms documents are offered before sending, and a signup
- * the API refuses for missing terms reopens them. Withdrawals ask for confirmation first, and
- * activities that already started accept neither. Only one activity is busy at a time. Call it in
- * `setup`.
+ * role per member. Either way, the terms documents still pending for each person signed up are
+ * offered before sending, each decided by the user or, for the consents of a minor from the age of
+ * 14, by the minor, and a signup the API refuses for missing terms reopens them. Withdrawals ask
+ * for confirmation first, and activities that already started accept neither. Only one activity is
+ * busy at a time. Call it in `setup`.
  */
 export function useSignupFlow(options: SignupFlowOptions) {
   const { t } = useI18n()
@@ -78,10 +80,26 @@ export function useSignupFlow(options: SignupFlowOptions) {
     action: null,
   })
 
-  const pendingTermsDocuments = computed(() =>
-    (termsState.data.value?.documents ?? []).filter((document) => document.accepted !== true),
+  /** Dialog sections of the people a signup includes, those with nothing left to decide left out. */
+  function sectionsFor(personIds: readonly string[]): TermsDialogSection[] {
+    return termsSections(
+      termsState.data.value?.documents ?? [],
+      termsState.data.value?.people ?? [],
+      personIds,
+      options.activities.userId.value ?? '',
+      (personId) => members.value.find((member) => member.id === personId)?.name ?? '',
+    )
+  }
+
+  function signedUpIds(action: PendingSignup): string[] {
+    return action.kind === 'self'
+      ? [options.activities.userId.value ?? '']
+      : action.assignments.map((assignment) => assignment.userId)
+  }
+
+  const termsDialogSections = computed(() =>
+    termsDialog.action ? sectionsFor(signedUpIds(termsDialog.action)) : [],
   )
-  const hasPendingTerms = computed(() => pendingTermsDocuments.value.length > 0)
   const householdSelectable = computed(() =>
     householdDialog.rows.filter((row) => !row.alreadyAssigned),
   )
@@ -146,11 +164,10 @@ export function useSignupFlow(options: SignupFlowOptions) {
   function signUpHousehold(
     activityId: string,
     assignments: readonly HouseholdAssignmentInput[],
-    termsDecisions?: readonly TermsDecisionInput[],
   ): void {
     busyId.value = activityId
     assignHousehold.mutate(
-      { activityId, assignments, termsDecisions },
+      { activityId, assignments },
       {
         onSuccess: () => {
           householdDialog.visible = false
@@ -170,7 +187,7 @@ export function useSignupFlow(options: SignupFlowOptions) {
   }
 
   function signUpOrAskTerms(activityId: string, roleId: string): void {
-    if (hasPendingTerms.value) {
+    if (sectionsFor([options.activities.userId.value ?? '']).length > 0) {
       askTerms({ kind: 'self', activityId, roleId })
       busyId.value = null
       return
@@ -204,13 +221,26 @@ export function useSignupFlow(options: SignupFlowOptions) {
     overlapDialog.visible = false
   }
 
-  function confirmTerms(decisions: TermsDecisionInput[]): void {
+  function confirmTerms(decisions: Readonly<Record<string, TermsDecisionInput[]>>): void {
     const action = termsDialog.action
     termsDialog.visible = false
     termsDialog.action = null
     if (!action) return
-    if (action.kind === 'self') signUp(action.activityId, action.roleId, decisions)
-    else signUpHousehold(action.activityId, action.assignments, decisions)
+    if (action.kind === 'self') {
+      signUp(
+        action.activityId,
+        action.roleId,
+        decisions[options.activities.userId.value ?? ''] ?? [],
+      )
+      return
+    }
+    signUpHousehold(
+      action.activityId,
+      action.assignments.map((assignment) => ({
+        ...assignment,
+        termsDecisions: decisions[assignment.userId] ?? [],
+      })),
+    )
   }
 
   function openHousehold(activity: TimelineActivity): void {
@@ -246,7 +276,7 @@ export function useSignupFlow(options: SignupFlowOptions) {
       householdDialog.visible = false
       return
     }
-    if (hasPendingTerms.value) {
+    if (sectionsFor(assignments.map((assignment) => assignment.userId)).length > 0) {
       askTerms({ kind: 'household', activityId: activity.id, assignments })
       return
     }
@@ -304,7 +334,7 @@ export function useSignupFlow(options: SignupFlowOptions) {
     overlapDialog,
     householdDialog,
     termsDialog,
-    pendingTermsDocuments,
+    termsDialogSections,
     householdSelectable,
     householdHighDemand,
     onSignup,

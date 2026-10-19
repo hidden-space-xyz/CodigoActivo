@@ -113,6 +113,11 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<EventTermsAcceptance> EventTermsAcceptances => Set<EventTermsAcceptance>();
 
     /// <summary>
+    /// Gets every change of the terms decisions.
+    /// </summary>
+    public DbSet<TermsDecisionChange> TermsDecisionChanges => Set<TermsDecisionChange>();
+
+    /// <summary>
     /// Gets the resources value.
     /// </summary>
     public DbSet<Resource> Resources => Set<Resource>();

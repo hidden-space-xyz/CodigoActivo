@@ -48,6 +48,7 @@ export const AuditAction = {
   DeleteEvent: 'DeleteEvent',
   SetEventFeatured: 'SetEventFeatured',
   UpdateEvent: 'UpdateEvent',
+  WithdrawTermsConsent: 'WithdrawTermsConsent',
   CreateFile: 'CreateFile',
   DeleteFile: 'DeleteFile',
   CreateNewsItem: 'CreateNewsItem',

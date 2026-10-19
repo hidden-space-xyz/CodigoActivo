@@ -58,22 +58,30 @@ describe('TermsDocumentsSection', () => {
     expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ name: 'priv' })
   })
 
-  it('tags the documents that ask for a signature', async () => {
+  it('tags each document with its kind and those that ask for a signature', async () => {
     serveTerms([
       buildTermsDocument(),
-      buildTermsDocument({ id: 'terms-2', name: 'Image', requiresSignature: true }),
+      buildTermsDocument({
+        id: 'terms-2',
+        name: 'Image',
+        requiresSignature: true,
+        kind: 'Consent',
+      }),
     ])
     const { wrapper } = await renderSection()
 
     const rows = wrapper.findAll('.el-table__body tr')
+    const badges = (index: number) =>
+      rows[index]?.findAll('.table-primary-cell__badges .el-tag').map((tag) => tag.text())
     expect(rows[0]?.find('.table-primary-cell__title').attributes('title')).toBe('Privacy')
-    expect(rows[0]?.find('.table-primary-cell__badges').exists()).toBe(false)
-    expect(rows[0]?.text()).not.toContain(
+    expect(badges(0)).toEqual([t('pages.admin.catalogs.termsDocuments.kinds.Conditions')])
+    expect(badges(1)).toEqual([
+      t('pages.admin.catalogs.termsDocuments.kinds.Consent'),
       t('pages.admin.catalogs.termsDocuments.requiresSignature'),
+    ])
+    expect(rows[1]?.find('.table-primary-cell__badges .el-tag').classes()).toContain(
+      'el-tag--small',
     )
-    const badge = rows[1]?.find('.table-primary-cell__badges .el-tag')
-    expect(badge?.text()).toBe(t('pages.admin.catalogs.termsDocuments.requiresSignature'))
-    expect(badge?.classes()).toContain('el-tag--small')
     expect(rows[1]?.findAll('.row-actions__button').map((b) => b.attributes('aria-label'))).toEqual(
       [t('common.edit'), t('common.delete')],
     )
@@ -123,6 +131,13 @@ describe('TermsDocumentsSection', () => {
     expect(created).toBeUndefined()
 
     wrapper.findComponent(RichTextEditor).vm.$emit('update:modelValue', richText('We use cookies'))
+    expect(dialog.textContent).toContain(
+      t('pages.admin.catalogs.termsDocuments.form.kindHints.Conditions'),
+    )
+    await click(dialog.querySelectorAll<HTMLElement>('.el-radio')[1] ?? dialog)
+    expect(dialog.textContent).toContain(
+      t('pages.admin.catalogs.termsDocuments.form.kindHints.Consent'),
+    )
     await click(findButton(t('common.save'), dialog))
 
     await expectNotification(t('pages.admin.catalogs.termsDocuments.toasts.created'))
@@ -130,6 +145,7 @@ describe('TermsDocumentsSection', () => {
       name: 'Cookies',
       description: richText('We use cookies'),
       requiresSignature: false,
+      kind: 'Consent',
     })
     await vi.waitFor(() => expect(isDialogOpen(t(NEW_TITLE))).toBe(false))
   })
@@ -159,6 +175,7 @@ describe('TermsDocumentsSection', () => {
         name: 'Privacy policy',
         description: richText('Terms body'),
         requiresSignature: true,
+        kind: 'Conditions',
       },
     })
   })

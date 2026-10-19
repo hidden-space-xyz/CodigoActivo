@@ -13,6 +13,7 @@ import {
 import { postApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
 import {
   getApiMeCertificates,
+  getApiMeConsents,
   getApiMeDeletion,
   getApiMeEventHistory,
   getApiMePersonalData,
@@ -42,6 +43,7 @@ import type {
 import type {
   AccountCertificate,
   AccountChild,
+  AccountConsent,
   AccountHistoryEntry,
   AccountProfile,
   AuthenticatorSetup,
@@ -49,6 +51,7 @@ import type {
 import {
   toAccountCertificate,
   toAccountChild,
+  toAccountConsent,
   toAccountHistoryEntry,
   toAccountProfile,
   toAuthenticatorSetup,
@@ -189,6 +192,15 @@ export async function getAccountHistoryRequest(): Promise<readonly AccountHistor
 export async function getAccountCertificatesRequest(): Promise<readonly AccountCertificate[]> {
   const { data } = await getApiMeCertificates()
   return data.map(toAccountCertificate)
+}
+
+/**
+ * Loads the consents decided for the user and their minors about the terms documents of the
+ * events (`GET /api/me/consents`), latest event first.
+ */
+export async function getAccountConsentsRequest(): Promise<readonly AccountConsent[]> {
+  const { data } = await getApiMeConsents()
+  return data.map(toAccountConsent)
 }
 
 /**

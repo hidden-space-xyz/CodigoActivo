@@ -86,6 +86,11 @@ public enum ApplicationErrorCode
     EventTermsSignatureNotFound,
 
     /// <summary>
+    /// No decision was taken about that document of the event for that person.
+    /// </summary>
+    EventTermsDecisionNotFound,
+
+    /// <summary>
     /// Selects the terms document not found option.
     /// </summary>
     TermsDocumentNotFound,

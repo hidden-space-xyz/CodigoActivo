@@ -249,10 +249,13 @@ public sealed class AssignHouseholdCommandHandlerTests
         var result = await AssignHouseholdAsync(
             activityId,
             actingUserId,
-            new AssignHouseholdRequest(
-                [new(childId, KnownIds.ActivityRoleTypes.Participant)],
-                TermsDecisions: [new TermsDecisionRequest(termsDocumentId, true)]
-            ),
+            new AssignHouseholdRequest([
+                new(
+                    childId,
+                    KnownIds.ActivityRoleTypes.Participant,
+                    [new TermsDecisionRequest(termsDocumentId, true)]
+                ),
+            ]),
             isAdmin: false
         );
 
@@ -264,7 +267,8 @@ public sealed class AssignHouseholdCommandHandlerTests
                 Arg.Is<EventTermsAcceptance>(a =>
                     a != null
                     && a.EventId == EventId.From(eventId)
-                    && a.UserId == UserId.From(actingUserId)
+                    && a.UserId == UserId.From(childId)
+                    && a.DecidedById == UserId.From(actingUserId)
                     && a.TermsDocumentId == TermsDocumentId.From(termsDocumentId)
                     && a.Accepted
                     && a.DecidedAt == Now

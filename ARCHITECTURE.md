@@ -151,7 +151,7 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
 - Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
   which replaces an unverified account whose email a registration or a confirmed email change takes. In one
   such transaction it locks the household, stores the legal copy (composed by `LegalCopy` and serialized by
-  Infrastructure as JSON with `SchemaVersion` 5), hands the content credited to the household over to the
+  Infrastructure as JSON with `SchemaVersion` 7), hands the content credited to the household over to the
   initial administrator and removes the account; any other change staged in the unit of work commits with it.
   `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, is the safety
   net that refuses any other user deletion, any deletion of the initial administrator and any change to a
@@ -253,13 +253,20 @@ takes the signed-in user and their own dependents (`Household.Includes`), admini
 anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]` attributes
 refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
 
-An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`), and a
-document may ask for a handwritten signature (`requires_signature`). The signup wire contract
-(`AssignRequest`/`AssignHouseholdRequest`) carries a `TermsDecisions` list of `{TermsDocumentId, Accepted,
-Signature}`, the signature a base64 PNG drawn in the SPA with `signature_pad`. `TermsGate` applies `TermsConsent`
-and records each decision as an `EventTermsAcceptance`; `GET /api/events/{eventId}/terms` returns every linked
-document with the caller's current decision, and administrators list the decisions of an event under
-`/api/events/{eventId}/terms/decisions`. Consent rules are in [SECURITY.md](SECURITY.md#privacy-and-third-parties).
+An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); a
+document holds conditions or a consent (`kind`, and a consent is never required) and may ask for a handwritten
+signature (`requires_signature`). The signup wire contract carries `TermsDecisions` lists of
+`{TermsDocumentId, Accepted, Signature}`, the signature a base64 PNG drawn in the SPA with `signature_pad`: one
+for the person in `AssignRequest`, one per member in each `AssignHouseholdRequest` assignment. `TermsGate`
+applies `TermsConsent` person by person and records each decision as an `EventTermsAcceptance` about that person
+with who decided, which keeps every change of it as a `TermsDecisionChange` with the account that recorded it;
+`GET /api/events/{eventId}/terms` returns every linked document and, for the caller and each dependent, the
+decisions taken and whether they decide their own consents, and administrators list the decisions of an event
+under `/api/events/{eventId}/terms/decisions`. A given consent is withdrawn with
+`POST /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw` (`WithdrawTermsConsent`), whose
+`TermsConsentWithdrawn` domain event `ConsentWithdrawalNotification` turns into an email to the legal contact;
+«Mi cuenta» lists the household's consents from `GET /api/me/consents`. Consent rules are in
+[SECURITY.md](SECURITY.md#privacy-and-third-parties).
 
 ### Caching
 

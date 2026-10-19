@@ -353,9 +353,11 @@ internal static class ActivityTestData
         return EventTermsAcceptance.Record(
             EventId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(termsDocumentId),
             accepted,
             null,
+            UserId.From(Guid.NewGuid()),
             decidedAt
         );
     }

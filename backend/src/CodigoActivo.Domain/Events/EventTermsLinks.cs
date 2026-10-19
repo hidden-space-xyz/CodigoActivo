@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.TermsDocuments;
 
 namespace CodigoActivo.Domain.Events;
 
@@ -23,19 +24,32 @@ public sealed class EventTermsLinks
     public IReadOnlyList<EventTermsLink> Items { get; }
 
     /// <summary>
-    /// Builds the list from the links supplied.
+    /// Builds the list from the links supplied. A consent is never required, so declining it never
+    /// stops a signup.
     /// </summary>
     /// <param name="links">Links in display order; <see langword="null"/> means none.</param>
-    /// <returns>The list, or a validation error when a document is linked twice.</returns>
-    public static Result<EventTermsLinks> Create(IReadOnlyList<EventTermsLink>? links)
+    /// <param name="consentDocumentIds">Linked documents that hold a consent.</param>
+    /// <returns>
+    /// The list, or a validation error when a document is linked twice or a consent is required.
+    /// </returns>
+    public static Result<EventTermsLinks> Create(
+        IReadOnlyList<EventTermsLink>? links,
+        IReadOnlyCollection<TermsDocumentId> consentDocumentIds
+    )
     {
+        ArgumentNullException.ThrowIfNull(consentDocumentIds);
         if (links is null || links.Count is 0)
         {
             return None;
         }
 
-        return links.Select(link => link.TermsDocumentId).Distinct().Count() != links.Count
-            ? Error.Validation(DomainErrorCode.EventTermsDocumentDuplicated)
+        if (links.Select(link => link.TermsDocumentId).Distinct().Count() != links.Count)
+        {
+            return Error.Validation(DomainErrorCode.EventTermsDocumentDuplicated);
+        }
+
+        return links.Any(link => link.Required && consentDocumentIds.Contains(link.TermsDocumentId))
+            ? Error.Validation(DomainErrorCode.EventTermsConsentRequired)
             : new EventTermsLinks([.. links]);
     }
 }

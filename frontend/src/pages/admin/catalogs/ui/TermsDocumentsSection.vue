@@ -57,8 +57,13 @@ function rowActions(termsDocument: TermsDocument): RowAction[] {
       >
         <template #default="{ row }">
           <TablePrimaryCell :title="row.name">
-            <template v-if="row.requiresSignature" #badges>
-              <el-tag type="info" size="small" disable-transitions>{{
+            <template #badges>
+              <el-tag size="small" disable-transitions>{{
+                row.kind === 'Consent'
+                  ? $t('pages.admin.catalogs.termsDocuments.kinds.Consent')
+                  : $t('pages.admin.catalogs.termsDocuments.kinds.Conditions')
+              }}</el-tag>
+              <el-tag v-if="row.requiresSignature" type="info" size="small" disable-transitions>{{
                 $t('pages.admin.catalogs.termsDocuments.requiresSignature')
               }}</el-tag>
             </template>

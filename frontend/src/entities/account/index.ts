@@ -7,6 +7,7 @@ export type {
 export type {
   AccountCertificate,
   AccountChild,
+  AccountConsent,
   AccountHistoryEntry,
   AccountProfile,
   AuthenticatorSetup,

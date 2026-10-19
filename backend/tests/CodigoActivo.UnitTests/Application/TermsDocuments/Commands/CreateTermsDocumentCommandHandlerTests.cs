@@ -9,6 +9,7 @@ using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.UnitTests.Application.Events;
 using NSubstitute;
 using Xunit;
+using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.UnitTests.Application.TermsDocuments.Commands;
 
@@ -29,7 +30,11 @@ public sealed class CreateTermsDocumentCommandHandlerTests
         termsDocuments.TermsDocumentExists(true);
 
         var result = await sut.HandleAsync(
-            new CreateTermsDocumentRequest("  Normas de campamento  ", "{}").ToCommand(),
+            new CreateTermsDocumentRequest(
+                "  Normas de campamento  ",
+                "{}",
+                TermsDocumentKind.Conditions
+            ).ToCommand(),
             TestContext.Current.CancellationToken
         );
 
@@ -54,6 +59,7 @@ public sealed class CreateTermsDocumentCommandHandlerTests
             new CreateTermsDocumentRequest(
                 "  Normas de campamento  ",
                 "{\"type\":\"doc\"}",
+                TermsDocumentKind.Consent,
                 RequiresSignature: true
             ).ToCommand(),
             TestContext.Current.CancellationToken
@@ -65,5 +71,6 @@ public sealed class CreateTermsDocumentCommandHandlerTests
         created.Name.Should().Be("Normas de campamento");
         created.Description!.Json.Should().Be("{\"type\":\"doc\"}");
         created.RequiresSignature.Should().BeTrue();
+        created.Kind.Should().Be(CodigoActivo.Domain.TermsDocuments.TermsDocumentKind.Consent);
     }
 }

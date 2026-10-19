@@ -138,20 +138,19 @@ export async function assignActivityRequest(
 }
 
 /**
- * Signs several household members up for an activity in one request; `termsDecisions` works as in
- * `assignActivityRequest`.
+ * Signs several household members up for an activity in one request; each assignment carries the
+ * decisions taken for that member, which work as `termsDecisions` in `assignActivityRequest`.
  */
 export async function assignHouseholdRequest(
   activityId: string,
   assignments: readonly HouseholdAssignmentInput[],
-  termsDecisions?: readonly TermsDecisionInput[],
 ): Promise<void> {
   await postApiActivitiesActivityIdAssignHousehold(activityId, {
     assignments: assignments.map((assignment) => ({
       userId: assignment.userId,
       activityRoleTypeId: assignment.roleId,
+      ...toTermsDecisions(assignment.termsDecisions),
     })),
-    ...toTermsDecisions(termsDecisions),
   })
 }
 

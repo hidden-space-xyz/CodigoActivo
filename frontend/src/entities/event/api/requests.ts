@@ -8,6 +8,7 @@ import {
   getApiEventsPastYears,
   patchApiEventsEventIdFeature,
   postApiEvents,
+  postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw,
   putApiEventsEventId,
 } from '@/shared/api/generated/endpoints/events/events'
 import { toPage, unwrapOrNull } from '@/shared/api'
@@ -144,4 +145,20 @@ export async function deleteEventRequest(id: string): Promise<void> {
 /** Makes the event the only featured one; featuring the featured event again changes nothing. */
 export async function featureEventRequest(id: string): Promise<void> {
   await patchApiEventsEventIdFeature(id)
+}
+
+/**
+ * Withdraws the consent given for `userId` about a terms document of the event. The acceptance it
+ * ends stays in the history of the decision, and the association is told by email.
+ */
+export async function withdrawTermsConsentRequest(
+  eventId: string,
+  userId: string,
+  termsDocumentId: string,
+): Promise<void> {
+  await postApiEventsEventIdTermsDecisionsUserIdTermsDocumentIdWithdraw(
+    eventId,
+    userId,
+    termsDocumentId,
+  )
 }

@@ -9,6 +9,7 @@ using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
+using CodigoActivo.Infrastructure.Events;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.EntityFrameworkCore;
@@ -29,8 +30,10 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     private static readonly string[] CopiedReferences =
     [
         "Assignment.UserId",
+        "EventTermsAcceptance.DecidedById",
         "EventTermsAcceptance.UserId",
         "NewsConsentChange.UserId",
+        "TermsDecisionChange.DecidedById",
         "User.ParentId",
     ];
 
@@ -51,6 +54,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         "Partner.UpdatedBy",
         "Resource.CreatedBy",
         "Resource.UpdatedBy",
+        "TermsDecisionChange.RecordedById",
     ];
 
     private static readonly string[] CopiedAssignmentProperties =
@@ -66,10 +70,12 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     [
         nameof(EventTermsAcceptance.EventId),
         nameof(EventTermsAcceptance.UserId),
+        nameof(EventTermsAcceptance.DecidedById),
         nameof(EventTermsAcceptance.TermsDocumentId),
         nameof(EventTermsAcceptance.Accepted),
         nameof(EventTermsAcceptance.DecidedAt),
         nameof(EventTermsAcceptance.Signature),
+        nameof(EventTermsAcceptance.Changes),
     ];
 
     private readonly CodigoActivoDbContext context = new(
@@ -209,6 +215,27 @@ public sealed class DeletedAccountCoverageTests : IDisposable
                         .Select(property => property.Name),
                     nameof(NewsConsentChange.UserId),
                     NewsConsentChangeConfiguration.Sequence,
+                ],
+                Decide
+            );
+    }
+
+    [Fact]
+    public void EveryTermsDecisionChangePropertyIsCopied()
+    {
+        PropertiesOf<TermsDecisionChange>()
+            .Should()
+            .BeEquivalentTo(
+                [
+                    nameof(TermsDecisionChange.EventId),
+                    nameof(TermsDecisionChange.UserId),
+                    nameof(TermsDecisionChange.TermsDocumentId),
+                    nameof(TermsDecisionChange.Accepted),
+                    nameof(TermsDecisionChange.DecidedById),
+                    nameof(TermsDecisionChange.RecordedById),
+                    nameof(TermsDecisionChange.ChangedAt),
+                    nameof(TermsDecisionChange.Signature),
+                    TermsDecisionChangeConfiguration.Sequence,
                 ],
                 Decide
             );

@@ -67,6 +67,26 @@ function save(): void {
         <small v-if="errors.description" class="form__error">{{ errors.description }}</small>
       </div>
       <div class="form__field">
+        <div id="terms-document-kind-label" class="form__label">
+          {{ $t('pages.admin.catalogs.termsDocuments.form.kind') }}
+        </div>
+        <el-radio-group v-model="draft.kind" aria-labelledby="terms-document-kind-label">
+          <el-radio value="Conditions">
+            {{ $t('pages.admin.catalogs.termsDocuments.kinds.Conditions') }}
+          </el-radio>
+          <el-radio value="Consent">
+            {{ $t('pages.admin.catalogs.termsDocuments.kinds.Consent') }}
+          </el-radio>
+        </el-radio-group>
+        <small class="form__hint">
+          {{
+            draft.kind === 'Consent'
+              ? $t('pages.admin.catalogs.termsDocuments.form.kindHints.Consent')
+              : $t('pages.admin.catalogs.termsDocuments.form.kindHints.Conditions')
+          }}
+        </small>
+      </div>
+      <div class="form__field">
         <el-switch
           id="terms-document-requires-signature"
           v-model="draft.requiresSignature"

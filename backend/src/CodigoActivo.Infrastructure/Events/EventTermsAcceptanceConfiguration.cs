@@ -38,6 +38,12 @@ public sealed class EventTermsAcceptanceConfiguration
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(x => x.DecidedById)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
             .HasOne<TermsDocument>()
             .WithMany()
             .HasForeignKey(x => x.TermsDocumentId)

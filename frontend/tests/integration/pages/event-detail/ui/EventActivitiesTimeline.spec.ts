@@ -10,6 +10,8 @@ import { apiError, http, server } from '../../../../support/server'
 import {
   buildSignupActivity,
   CHILD,
+  decided,
+  IMAGE_CONSENT_DOCUMENT,
   OPTIONAL_TERMS_DOCUMENT,
   serveSignupApi,
   TERMS_DOCUMENT,
@@ -60,10 +62,9 @@ const TERMS_WITH_OPTIONAL = [
 const OPTIONAL_ONLY_TERMS = [toTermsSummary(OPTIONAL_TERMS_DOCUMENT)]
 
 /** Finds the checkbox input for a terms document row, however Element Plus placed the id. */
-function termsCheckbox(root: ParentNode, documentId: string): HTMLElement {
-  const checkbox = root.querySelector<HTMLElement>(
-    `#terms-${documentId} input, input#terms-${documentId}`,
-  )
+function termsCheckbox(root: ParentNode, documentId: string, personId = 'user-1'): HTMLElement {
+  const id = `terms-${personId}__${documentId}`
+  const checkbox = root.querySelector<HTMLElement>(`#${id} input, input#${id}`)
   if (!checkbox) throw new Error(`Terms checkbox not found: ${documentId}`)
   return checkbox
 }
@@ -404,7 +405,8 @@ describe('activities timeline self signup', () => {
 
   it('opens the terms dialog for an event with only optional documents', async () => {
     const { calls } = serveSignupApi({
-      termsDocuments: [{ ...OPTIONAL_TERMS_DOCUMENT, accepted: null, decidedAt: null }],
+      termsDocuments: [OPTIONAL_TERMS_DOCUMENT],
+      termsAccepted: false,
     })
 
     await renderTimeline({ terms: OPTIONAL_ONLY_TERMS })
@@ -434,10 +436,8 @@ describe('activities timeline self signup', () => {
 
   it('only asks again about a new optional document once the required one is already accepted', async () => {
     const { calls } = serveSignupApi({
-      termsDocuments: [
-        { ...TERMS_DOCUMENT, accepted: true, decidedAt: '2026-01-01T00:00:00Z' },
-        { ...OPTIONAL_TERMS_DOCUMENT, accepted: null, decidedAt: null },
-      ],
+      termsDocuments: [TERMS_DOCUMENT, OPTIONAL_TERMS_DOCUMENT],
+      termsDecisions: { 'user-1': [decided(TERMS_DOCUMENT.termsDocumentId, true)] },
     })
 
     await renderTimeline({ terms: TERMS_WITH_OPTIONAL })
@@ -467,7 +467,7 @@ describe('activities timeline self signup', () => {
 
   it('shows a previously rejected document as pending and unchecked, and lets the user accept it', async () => {
     const { calls } = serveSignupApi({
-      termsDocuments: [{ ...TERMS_DOCUMENT, accepted: false, decidedAt: '2026-01-01T00:00:00Z' }],
+      termsDecisions: { 'user-1': [decided(TERMS_DOCUMENT.termsDocumentId, false)] },
     })
 
     await renderTimeline({ terms: TERMS })
@@ -496,7 +496,7 @@ describe('activities timeline self signup', () => {
 
   it('does not ask again about an already accepted document', async () => {
     const { calls } = serveSignupApi({
-      termsDocuments: [{ ...TERMS_DOCUMENT, accepted: true, decidedAt: '2026-01-01T00:00:00Z' }],
+      termsDecisions: { 'user-1': [decided(TERMS_DOCUMENT.termsDocumentId, true)] },
     })
 
     await renderTimeline({ terms: TERMS })
@@ -925,8 +925,64 @@ describe('activities timeline household signup', () => {
 
     await vi.waitFor(() => expect(calls.household).toHaveLength(1))
     expect(calls.household[0]?.body).toEqual({
-      assignments: [{ userId: 'user-1', activityRoleTypeId: 'role-participant' }],
-      termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+      assignments: [
+        {
+          userId: 'user-1',
+          activityRoleTypeId: 'role-participant',
+          termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+        },
+      ],
+    })
+  })
+
+  it('lets a minor from 14 decide their own consent and sends the decisions of each member', async () => {
+    const { calls } = serveSignupApi({
+      children: [CHILD],
+      consentingChildren: [CHILD.id],
+      termsDocuments: [TERMS_DOCUMENT, IMAGE_CONSENT_DOCUMENT],
+      termsAccepted: false,
+    })
+
+    const { wrapper, dialog } = await openHousehold({ terms: TERMS })
+    await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
+    wrapper.findAllComponents(ElSelect)[1]?.vm.$emit('update:modelValue', 'role-volunteer')
+    await flushPromises()
+    await click(findButton(t('pages.eventDetail.household.enroll'), dialog))
+
+    const terms = await vi.waitFor(() => {
+      const found = findDialog(t('pages.eventDetail.terms.header'))
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
+    expect([...terms.querySelectorAll('.terms-dialog__decider')].map(textOf)).toEqual([
+      t('pages.eventDetail.terms.decidedByUser', { name: CHILD.firstName }),
+      t('pages.eventDetail.terms.decidedByPerson', { name: CHILD.firstName }),
+    ])
+    await click(termsCheckbox(terms, TERMS_DOCUMENT.termsDocumentId))
+    await click(termsCheckbox(terms, TERMS_DOCUMENT.termsDocumentId, CHILD.id))
+    await click(termsCheckbox(terms, IMAGE_CONSENT_DOCUMENT.termsDocumentId, CHILD.id))
+    await click(findButton(t('pages.eventDetail.terms.confirm'), terms))
+
+    await vi.waitFor(() => expect(calls.household).toHaveLength(1))
+    expect(calls.household[0]?.body).toEqual({
+      assignments: [
+        {
+          userId: 'user-1',
+          activityRoleTypeId: 'role-participant',
+          termsDecisions: [
+            { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true },
+            { termsDocumentId: IMAGE_CONSENT_DOCUMENT.termsDocumentId, accepted: false },
+          ],
+        },
+        {
+          userId: CHILD.id,
+          activityRoleTypeId: 'role-volunteer',
+          termsDecisions: [
+            { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true },
+            { termsDocumentId: IMAGE_CONSENT_DOCUMENT.termsDocumentId, accepted: true },
+          ],
+        },
+      ],
     })
   })
 
@@ -958,8 +1014,9 @@ describe('activities timeline household signup', () => {
         assignments: [{ userId: 'user-1', activityRoleTypeId: 'role-participant' }],
       },
       {
-        assignments: [{ userId: 'user-1', activityRoleTypeId: 'role-participant' }],
-        termsDecisions: [],
+        assignments: [
+          { userId: 'user-1', activityRoleTypeId: 'role-participant', termsDecisions: [] },
+        ],
       },
     ])
   })

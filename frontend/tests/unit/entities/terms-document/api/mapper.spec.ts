@@ -11,6 +11,7 @@ describe('terms document mapper', () => {
       name: 'Privacy',
       description: richText('Terms body'),
       requiresSignature: false,
+      kind: 'Conditions',
     })
   })
 
@@ -20,7 +21,13 @@ describe('terms document mapper', () => {
         name: 'Cookies',
         description: richText('Body'),
         requiresSignature: true,
+        kind: 'Conditions',
       }),
-    ).toEqual({ name: 'Cookies', description: richText('Body'), requiresSignature: true })
+    ).toEqual({
+      name: 'Cookies',
+      description: richText('Body'),
+      requiresSignature: true,
+      kind: 'Conditions',
+    })
   })
 })

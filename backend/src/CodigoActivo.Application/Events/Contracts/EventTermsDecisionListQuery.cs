@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.Events.Contracts;
 public sealed class EventTermsDecisionListQuery : PageQuery
 {
     /// <summary>
-    /// Gets or sets the text matched against the name and email of the person who decided.
+    /// Gets or sets the text matched against the name and email of the person and of who decided.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]

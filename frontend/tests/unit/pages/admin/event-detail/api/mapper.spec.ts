@@ -116,12 +116,25 @@ describe('event detail mapper', () => {
       firstName: 'Ada',
       lastName: 'Lovelace',
       email: 'ada@example.com',
+      decidedById: 'user-1',
+      decidedByName: 'Ada Lovelace',
       termsDocumentId: 'terms-1',
       documentName: 'Autorización de imagen',
+      consent: true,
       accepted: true,
+      withdrawn: false,
       decidedAt: '2026-09-01T10:00:00Z',
       signatureUrl: '/api/events/e1/terms/decisions/user-1/terms-1/signature',
     })
+  })
+
+  it('tells a withdrawn consent and a decision about conditions', () => {
+    expect(
+      toEventTermsDecision('e1', buildTermsDecision({ accepted: false, withdrawn: true })),
+    ).toMatchObject({ consent: true, accepted: false, withdrawn: true })
+    expect(
+      toEventTermsDecision('e1', buildTermsDecision({ documentKind: 'Conditions' })),
+    ).toMatchObject({ consent: false })
   })
 
   it('maps a decision without signature or email to empty strings', () => {

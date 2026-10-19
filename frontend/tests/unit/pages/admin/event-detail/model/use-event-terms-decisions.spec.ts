@@ -15,9 +15,13 @@ const DECISION: EventTermsDecision = {
   firstName: 'Ada',
   lastName: 'Lovelace',
   email: '',
+  decidedById: 'user-1',
+  decidedByName: 'Ada Lovelace',
   termsDocumentId: 'terms-1',
   documentName: 'Autorización',
+  consent: true,
   accepted: true,
+  withdrawn: false,
   decidedAt: '2026-09-01T10:00:00Z',
   signatureUrl: '/api/events/event-1/terms/decisions/user-1/terms-1/signature',
 }

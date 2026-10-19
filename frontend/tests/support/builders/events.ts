@@ -93,16 +93,21 @@ export function buildTermsDecision(
     firstName: 'Ada',
     lastName: 'Lovelace',
     email: 'ada@example.com',
+    decidedById: 'user-1',
+    decidedByFirstName: 'Ada',
+    decidedByLastName: 'Lovelace',
     termsDocumentId: 'terms-1',
     documentName: 'Autorización de imagen',
+    documentKind: 'Consent',
     accepted: true,
+    withdrawn: false,
     decidedAt: '2026-09-01T10:00:00Z',
     hasSignature: true,
     ...overrides,
   }
 }
 
-/** Required terms document served by `/api/events/:eventId/terms`, still undecided. */
+/** Required conditions document served by `/api/events/:eventId/terms`. */
 export function buildTermsDocumentState(
   overrides: Partial<EventTermsDocumentStateResponse> = {},
 ): EventTermsDocumentStateResponse {
@@ -110,11 +115,10 @@ export function buildTermsDocumentState(
     termsDocumentId: 'terms-1',
     name: 'Normas del campamento',
     description: richText('Respeta a los demás.'),
+    kind: 'Conditions',
     required: true,
     requiresSignature: false,
     displayOrder: 0,
-    accepted: null,
-    decidedAt: null,
     ...overrides,
   }
 }

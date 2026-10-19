@@ -4,8 +4,11 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { TermsDecisionRequest } from './termsDecisionRequest';
 
 export interface HouseholdAssignmentRequest {
   userId: string;
   activityRoleTypeId: string;
+  /** @nullable */
+  termsDecisions?: TermsDecisionRequest[] | null;
 }

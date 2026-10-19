@@ -6,6 +6,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.UnitTests.TestSupport;
@@ -185,8 +186,20 @@ public sealed class DemoDataSeederTests
             .Select(d => d.EventId)
             .ToHashSet()
             .Should()
-            .BeEquivalentTo(eventIds, "every event links exactly one seeded terms document");
-        EventTermsDocuments.Should().OnlyContain(d => d.IsRequired);
+            .BeEquivalentTo(eventIds, "every event links the seeded terms documents");
+        EventTermsDocuments
+            .Should()
+            .OnlyContain(d =>
+                d.IsRequired
+                == (
+                    graph.TermsDocuments.Single(t => t.Id == d.TermsDocumentId).Kind
+                    == TermsDocumentKind.Conditions
+                )
+            );
+        graph
+            .TermsDocuments.Select(t => t.Kind)
+            .Should()
+            .BeEquivalentTo([TermsDocumentKind.Conditions, TermsDocumentKind.Consent]);
         referencedIds.Should().BeEquivalentTo(termsDocumentIds);
     }
 

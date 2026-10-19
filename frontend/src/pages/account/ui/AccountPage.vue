@@ -6,6 +6,7 @@ import { AppIcon } from '@/shared/ui/app-icon'
 import { PageHeading } from '@/shared/ui/page-heading'
 
 import CertificatesSection from './CertificatesSection.vue'
+import ConsentsSection from './ConsentsSection.vue'
 import DeleteAccountSection from './DeleteAccountSection.vue'
 import HistorySection from './HistorySection.vue'
 import MinorsSection from './MinorsSection.vue'
@@ -60,6 +61,8 @@ const tab = computed<AccountTab>({
               <TwoFactorSection />
               <hr class="account-divider" />
               <MinorsSection />
+              <hr class="account-divider" />
+              <ConsentsSection />
               <hr class="account-divider" />
               <PersonalDataSection />
               <hr class="account-divider" />
