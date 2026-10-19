@@ -167,6 +167,7 @@ public record EventTermsDocumentResponse(
 /// <param name="Required">Whether accepting the document is mandatory to complete the signup; never for a consent.</param>
 /// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
 /// <param name="DisplayOrder">The position in which the document is displayed.</param>
+/// <param name="Version">Version of the document shown, which the decisions about it send back.</param>
 public record EventTermsDocumentStateResponse(
     Guid TermsDocumentId,
     string Name,
@@ -174,7 +175,8 @@ public record EventTermsDocumentStateResponse(
     TermsDocumentKind Kind,
     bool Required,
     bool RequiresSignature,
-    int DisplayOrder
+    int DisplayOrder,
+    int Version
 );
 
 /// <summary>

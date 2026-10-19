@@ -139,6 +139,7 @@ function toTermsDocumentState(document: EventTermsDocumentStateResponse): EventT
     required: document.required,
     requiresSignature: document.requiresSignature,
     displayOrder: document.displayOrder,
+    version: document.version,
   }
 }
 

@@ -399,8 +399,45 @@ describe('activities timeline self signup', () => {
     await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
     expect(calls.assign[0]?.body).toEqual({
       activityRoleTypeId: 'role-participant',
-      termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+      termsDecisions: [
+        { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+      ],
     })
+  })
+
+  it('reloads the terms and asks again when a document changed while it was read', async () => {
+    const { calls, state } = serveSignupApi({
+      termsAccepted: false,
+      assignError: () => apiError(409, 'EventTermsDocumentChanged'),
+    })
+
+    await renderTimeline({ terms: TERMS })
+    await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
+    await click(findButton(t('pages.eventDetail.card.enrollSelf')))
+    const dialog = await vi.waitFor(() => {
+      const found = findDialog(t('pages.eventDetail.terms.header'))
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
+    await click(termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId))
+    await click(findButton(t('pages.eventDetail.terms.confirm'), dialog))
+
+    const toast = await waitForNotification(t('pages.eventDetail.toast.termsChangedSummary'))
+    expect(toast?.message).toBe(t('pages.eventDetail.toast.termsChanged'))
+    await vi.waitFor(() => expect(calls.counts.terms).toBe(2))
+    const reopened = await vi.waitFor(() => {
+      const found = findDialog(t('pages.eventDetail.terms.header'))
+      expect(found).toBeDefined()
+      return found as HTMLElement
+    })
+    expect(
+      (termsCheckbox(reopened, TERMS_DOCUMENT.termsDocumentId) as HTMLInputElement).checked,
+    ).toBe(false)
+
+    state.assignError = null
+    await click(termsCheckbox(reopened, TERMS_DOCUMENT.termsDocumentId))
+    await click(findButton(t('pages.eventDetail.terms.confirm'), reopened))
+    await vi.waitFor(() => expect(calls.assign).toHaveLength(2))
   })
 
   it('opens the terms dialog for an event with only optional documents', async () => {
@@ -429,7 +466,7 @@ describe('activities timeline self signup', () => {
     expect(calls.assign[0]?.body).toEqual({
       activityRoleTypeId: 'role-participant',
       termsDecisions: [
-        { termsDocumentId: OPTIONAL_TERMS_DOCUMENT.termsDocumentId, accepted: true },
+        { termsDocumentId: OPTIONAL_TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
       ],
     })
   })
@@ -460,7 +497,7 @@ describe('activities timeline self signup', () => {
     expect(calls.assign[0]?.body).toEqual({
       activityRoleTypeId: 'role-participant',
       termsDecisions: [
-        { termsDocumentId: OPTIONAL_TERMS_DOCUMENT.termsDocumentId, accepted: true },
+        { termsDocumentId: OPTIONAL_TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
       ],
     })
   })
@@ -490,7 +527,9 @@ describe('activities timeline self signup', () => {
     await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
     expect(calls.assign[0]?.body).toEqual({
       activityRoleTypeId: 'role-participant',
-      termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+      termsDecisions: [
+        { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+      ],
     })
   })
 
@@ -929,7 +968,9 @@ describe('activities timeline household signup', () => {
         {
           userId: 'user-1',
           activityRoleTypeId: 'role-participant',
-          termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+          termsDecisions: [
+            { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+          ],
         },
       ],
     })
@@ -970,16 +1011,20 @@ describe('activities timeline household signup', () => {
           userId: 'user-1',
           activityRoleTypeId: 'role-participant',
           termsDecisions: [
-            { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true },
-            { termsDocumentId: IMAGE_CONSENT_DOCUMENT.termsDocumentId, accepted: false },
+            { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+            {
+              termsDocumentId: IMAGE_CONSENT_DOCUMENT.termsDocumentId,
+              version: 1,
+              accepted: false,
+            },
           ],
         },
         {
           userId: CHILD.id,
           activityRoleTypeId: 'role-volunteer',
           termsDecisions: [
-            { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true },
-            { termsDocumentId: IMAGE_CONSENT_DOCUMENT.termsDocumentId, accepted: true },
+            { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+            { termsDocumentId: IMAGE_CONSENT_DOCUMENT.termsDocumentId, version: 1, accepted: true },
           ],
         },
       ],

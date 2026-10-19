@@ -11,4 +11,6 @@ export interface TermsDecisionRequest {
   accepted?: boolean | null;
   /** @nullable */
   signature?: string | null;
+  /** @nullable */
+  version?: number | null;
 }

@@ -117,6 +117,18 @@ export function useSignupFlow(options: SignupFlowOptions) {
   }
 
   function handleSignupError(error: unknown, action: PendingSignup): void {
+    if (hasErrorCode(error, 'EventTermsDocumentChanged')) {
+      feedback.warn(
+        t('pages.eventDetail.toast.termsChanged'),
+        t('pages.eventDetail.toast.termsChangedSummary'),
+      )
+      void queryClient
+        .invalidateQueries({ queryKey: eventKeys.terms(options.eventId()) })
+        .then(() => {
+          askTerms(action)
+        })
+      return
+    }
     if (hasErrorCode(error, 'EventTermsAcceptanceRequired')) {
       void queryClient.invalidateQueries({ queryKey: eventKeys.detail(options.eventId()) })
       void queryClient.invalidateQueries({ queryKey: eventKeys.terms(options.eventId()) })

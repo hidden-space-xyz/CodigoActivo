@@ -22,6 +22,7 @@ function terms(
     required: options.required ?? false,
     requiresSignature: options.requiresSignature ?? false,
     displayOrder: 0,
+    version: 1,
   }
 }
 
@@ -178,12 +179,12 @@ describe('readTermsDecisions', () => {
 
     expect(reading.decisions).toEqual({
       ada: [
-        { termsDocumentId: 'required', accepted: true },
-        { termsDocumentId: 'optional', accepted: false },
+        { termsDocumentId: 'required', version: 1, accepted: true },
+        { termsDocumentId: 'optional', version: 1, accepted: false },
       ],
       leo: [
-        { termsDocumentId: 'required', accepted: true },
-        { termsDocumentId: 'signed', accepted: true, signature: SIGNATURE },
+        { termsDocumentId: 'required', version: 1, accepted: true },
+        { termsDocumentId: 'signed', version: 1, accepted: true, signature: SIGNATURE },
       ],
     })
   })

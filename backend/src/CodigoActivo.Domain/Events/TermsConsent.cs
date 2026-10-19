@@ -34,7 +34,9 @@ public static class TermsConsent
     /// The decisions to record and whether a required document is still not accepted, or
     /// <see cref="DomainErrorCode.EventTermsSignatureRequired"/> or
     /// <see cref="DomainErrorCode.EventTermsSignatureInvalid"/> when a document that asks for a
-    /// signature is accepted without a valid one.
+    /// signature is accepted without a valid one, or
+    /// <see cref="DomainErrorCode.EventTermsDocumentChanged"/> when a decision names a version of its
+    /// document that is no longer current.
     /// </returns>
     public static Result<TermsConsentOutcome> Apply(
         EventId eventId,
@@ -65,6 +67,16 @@ public static class TermsConsent
         var linked = (decisions ?? [])
             .Where(decision => requiredById.ContainsKey(decision.TermsDocumentId))
             .ToList();
+        if (
+            linked.Exists(decision =>
+                decision.Version is { } version
+                && version != documentVersions[decision.TermsDocumentId]
+            )
+        )
+        {
+            return Error.Conflict(DomainErrorCode.EventTermsDocumentChanged);
+        }
+
         var signatures = Signatures(linked, signedDocumentIds, acceptanceByDocument);
         if (signatures.IsFailure)
         {

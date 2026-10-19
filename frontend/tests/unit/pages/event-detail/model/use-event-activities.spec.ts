@@ -183,7 +183,9 @@ describe('useEventActivities for signed-in users', () => {
     await result.assign.mutateAsync({
       activityId: 'activity-1',
       roleId: 'role-participant',
-      termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+      termsDecisions: [
+        { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+      ],
     })
 
     expect(calls.assign).toEqual([
@@ -191,7 +193,9 @@ describe('useEventActivities for signed-in users', () => {
         path: 'activity-1/user-1',
         body: {
           activityRoleTypeId: 'role-participant',
-          termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+          termsDecisions: [
+            { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+          ],
         },
         csrf: TEST_CSRF_TOKEN,
       },
@@ -241,7 +245,9 @@ describe('useEventActivities for signed-in users', () => {
         {
           userId: 'child-1',
           roleId: 'role-volunteer',
-          termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+          termsDecisions: [
+            { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+          ],
         },
       ],
     })
@@ -254,7 +260,9 @@ describe('useEventActivities for signed-in users', () => {
             {
               userId: 'child-1',
               activityRoleTypeId: 'role-volunteer',
-              termsDecisions: [{ termsDocumentId: TERMS_DOCUMENT.termsDocumentId, accepted: true }],
+              termsDecisions: [
+                { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+              ],
             },
           ],
         },

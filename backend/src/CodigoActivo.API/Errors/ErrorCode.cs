@@ -202,6 +202,12 @@ public enum ErrorCode
     EventTermsWithdrawalNotAllowed,
 
     /// <summary>
+    /// A terms document changed after the person read it; the decision has to be taken again on the
+    /// current version.
+    /// </summary>
+    EventTermsDocumentChanged,
+
+    /// <summary>
     /// Selects the terms document not found option.
     /// </summary>
     TermsDocumentNotFound,

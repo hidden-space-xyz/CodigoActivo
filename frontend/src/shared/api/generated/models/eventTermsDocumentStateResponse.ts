@@ -14,4 +14,5 @@ export interface EventTermsDocumentStateResponse {
   required: boolean;
   requiresSignature: boolean;
   displayOrder: number;
+  version: number;
 }

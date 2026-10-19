@@ -228,6 +228,42 @@ public sealed class TermsConsentTests
     }
 
     [Fact]
+    public void ApplyDecisionOnAVersionNoLongerCurrentIsRefusedAndChangesNothing()
+    {
+        var optional = Guid.NewGuid();
+        var required = Guid.NewGuid();
+        var stored = Stored(required, false);
+        documentVersion = 2;
+
+        var outcome = Consent(
+            Documents((optional, false), (required, true)),
+            [stored],
+            [
+                new TermsDecision(TermsDocumentId.From(required), true, Version: 2),
+                new TermsDecision(TermsDocumentId.From(optional), true, Version: 1),
+            ]
+        );
+
+        outcome.ShouldFail(ErrorKind.Conflict, DomainErrorCode.EventTermsDocumentChanged);
+        stored.Accepted.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ApplyDecisionOnTheCurrentVersionIsRecorded()
+    {
+        var optional = Guid.NewGuid();
+        documentVersion = 2;
+
+        var outcome = Apply(
+            Documents((optional, false)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(optional), true, Version: 2)]
+        );
+
+        outcome.Recorded.Should().ContainSingle().Which.TermsDocumentVersion.Should().Be(2);
+    }
+
+    [Fact]
     public void ApplyAcceptingDocumentDeclinedOnAnEarlierVersionRecordsTheCurrentOne()
     {
         var optional = Guid.NewGuid();

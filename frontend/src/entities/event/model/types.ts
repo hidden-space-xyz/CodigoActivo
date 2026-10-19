@@ -61,6 +61,8 @@ export interface EventTermsDocumentState {
   /** Accepting it asks for a signature drawn on screen. */
   readonly requiresSignature: boolean
   readonly displayOrder: number
+  /** Version of the text shown, which the decisions about it send back. */
+  readonly version: number
 }
 
 /** A decision already taken about one of the event's documents for a person. */

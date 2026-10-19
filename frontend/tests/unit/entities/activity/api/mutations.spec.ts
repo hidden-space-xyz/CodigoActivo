@@ -56,7 +56,7 @@ describe('activityMutations', () => {
         new MutationObserver(client, activityMutations.signUp('event-1', 'user-1')).mutate({
           activityId: 'activity-1',
           roleId: 'role-1',
-          termsDecisions: [{ termsDocumentId: 'terms-1', accepted: true }],
+          termsDecisions: [{ termsDocumentId: 'terms-1', version: 1, accepted: true }],
         }),
       (client: TestQueryClient) =>
         new MutationObserver(client, activityMutations.signUpHousehold('event-1')).mutate({
@@ -80,7 +80,7 @@ describe('activityMutations', () => {
         path: 'activity-1/user-1/assign',
         body: {
           activityRoleTypeId: 'role-1',
-          termsDecisions: [{ termsDocumentId: 'terms-1', accepted: true }],
+          termsDecisions: [{ termsDocumentId: 'terms-1', version: 1, accepted: true }],
         },
       },
       {

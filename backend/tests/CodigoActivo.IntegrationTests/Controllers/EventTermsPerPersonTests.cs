@@ -145,13 +145,13 @@ public sealed class EventTermsPerPersonTests(CodigoActivoWebAppFactory factory)
             new AssignHouseholdRequest([
                 Member(
                     TestSeedData.Users.MemberChildId,
-                    new TermsDecisionRequest(conditionsId, true),
-                    new TermsDecisionRequest(consentId, true)
+                    new TermsDecisionRequest(conditionsId, true, Version: 1),
+                    new TermsDecisionRequest(consentId, true, Version: 1)
                 ),
                 Member(
                     teenagerId,
-                    new TermsDecisionRequest(conditionsId, true),
-                    new TermsDecisionRequest(consentId, false)
+                    new TermsDecisionRequest(conditionsId, true, Version: 1),
+                    new TermsDecisionRequest(consentId, false, Version: 1)
                 ),
             ]),
             Ct
@@ -183,9 +183,9 @@ public sealed class EventTermsPerPersonTests(CodigoActivoWebAppFactory factory)
             new AssignHouseholdRequest([
                 Member(
                     TestSeedData.Users.MemberChildId,
-                    new TermsDecisionRequest(conditionsId, true)
+                    new TermsDecisionRequest(conditionsId, true, Version: 1)
                 ),
-                Member(teenagerId, new TermsDecisionRequest(consentId, true)),
+                Member(teenagerId, new TermsDecisionRequest(consentId, true, Version: 1)),
             ]),
             Ct
         );
