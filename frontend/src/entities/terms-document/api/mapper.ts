@@ -13,6 +13,7 @@ export function toTermsDocument(termsDocument: TermsDocumentResponse): TermsDocu
     description: termsDocument.description,
     requiresSignature: termsDocument.requiresSignature,
     kind: termsDocument.kind,
+    version: termsDocument.version,
   }
 }
 

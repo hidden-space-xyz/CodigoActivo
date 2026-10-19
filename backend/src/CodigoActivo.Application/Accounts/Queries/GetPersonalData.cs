@@ -142,6 +142,7 @@ public sealed class GetPersonalDataQueryHandler(
                     a.DecidedBy.FirstName + " " + a.DecidedBy.LastName,
                     a.Event.Title,
                     a.TermsDocument.Name,
+                    a.TermsDocumentVersion,
                     a.Accepted,
                     a.DecidedAt,
                     a.Signature,
@@ -149,6 +150,7 @@ public sealed class GetPersonalDataQueryHandler(
                         .ThenBy(c => c.Id)
                         .Select(c => new PersonalDataTermsDecisionChangeResponse(
                             c.Accepted,
+                            c.TermsDocumentVersion,
                             c.ChangedAt,
                             c.DecidedBy.FirstName + " " + c.DecidedBy.LastName
                         ))

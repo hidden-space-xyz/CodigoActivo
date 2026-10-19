@@ -8,6 +8,8 @@ export type TermsDocumentKind = 'Conditions' | 'Consent'
 /**
  * Terms participants accept or decline when signing up for an event; `description` is a rich-text
  * document and `requiresSignature` asks for a signature drawn on screen when accepting it.
+ * `version` grows with every change; the server keeps the versions it replaces, which the
+ * decisions taken on them still name.
  */
 export interface TermsDocument {
   readonly id: string
@@ -15,6 +17,7 @@ export interface TermsDocument {
   readonly description: string
   readonly requiresSignature: boolean
   readonly kind: TermsDocumentKind
+  readonly version: number
 }
 
 /** Values a terms document is created or updated with. */

@@ -22,7 +22,7 @@ internal static class DeletedAccountSnapshot
     /// <summary>
     /// Version of the JSON layout, stored in every copy.
     /// </summary>
-    internal const int SchemaVersion = 7;
+    internal const int SchemaVersion = 8;
 
     /// <summary>
     /// Serialization of the blocked copies, shared with <c>DeletedParticipationSnapshot</c>: web
@@ -206,6 +206,7 @@ internal static class DeletedAccountSnapshot
                 acceptance.EventId,
                 acceptance.TermsDocumentId,
                 DocumentName = document.Name,
+                acceptance.TermsDocumentVersion,
                 acceptance.Accepted,
                 acceptance.DecidedAt,
                 acceptance.UserId,
@@ -229,6 +230,7 @@ internal static class DeletedAccountSnapshot
             new LegalCopyDecision(
                 row.TermsDocumentId.Value,
                 row.DocumentName,
+                row.TermsDocumentVersion,
                 row.Accepted,
                 row.DecidedAt,
                 row.UserId.Value,
@@ -238,6 +240,7 @@ internal static class DeletedAccountSnapshot
                     .. changes[(row.EventId, row.UserId, row.TermsDocumentId)]
                         .Select(change => new LegalCopyDecisionChange(
                             change.Accepted,
+                            change.TermsDocumentVersion,
                             change.ChangedAt,
                             change.DecidedById.Value,
                             change.RecordedById.Value,
@@ -248,12 +251,38 @@ internal static class DeletedAccountSnapshot
         ));
 
         var documentIds = decisionRows.Select(row => row.TermsDocumentId).Distinct().ToList();
+        var referencedVersions = decisionRows
+            .Select(row => (row.TermsDocumentId, row.TermsDocumentVersion))
+            .Union(
+                changes
+                    .SelectMany(group => group)
+                    .Select(change => (change.TermsDocumentId, change.TermsDocumentVersion))
+            )
+            .ToHashSet();
         var documents = (
             await context
                 .TermsDocuments.AsNoTracking()
+                .Include(d => d.PreviousVersions)
                 .Where(d => documentIds.Contains(d.Id))
                 .ToListAsync(ct)
-        ).ConvertAll(d => new LegalCopyTermsDocument(d.Id.Value, d.Name, d.Description.Json));
+        ).ConvertAll(d => new LegalCopyTermsDocument(
+            d.Id.Value,
+            d.Name,
+            d.Version,
+            d.Description.Json,
+            [
+                .. d
+                    .PreviousVersions.Where(previous =>
+                        referencedVersions.Contains((d.Id, previous.Number))
+                    )
+                    .OrderBy(previous => previous.Number)
+                    .Select(previous => new LegalCopyTermsDocumentVersion(
+                        previous.Number,
+                        previous.Name,
+                        previous.Description.Json
+                    )),
+            ]
+        ));
 
         var eventIds = signupRows
             .Select(row => row.EventId)
@@ -338,10 +367,27 @@ internal static class DeletedAccountSnapshot
             writer.WriteStartObject();
             writer.WriteString("id", value.Id);
             writer.WriteString("name", value.Name);
-            writer.WritePropertyName("textAtDeletion");
-            using var document = JsonDocument.Parse(value.TextAtDeletion);
-            document.RootElement.WriteTo(writer);
+            writer.WriteNumber("version", value.Version);
+            WriteRichText(writer, "textAtDeletion", value.TextAtDeletion);
+            writer.WriteStartArray("previousVersions");
+            foreach (var previous in value.PreviousVersions)
+            {
+                writer.WriteStartObject();
+                writer.WriteNumber("version", previous.Number);
+                writer.WriteString("name", previous.Name);
+                WriteRichText(writer, "text", previous.Text);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
             writer.WriteEndObject();
+        }
+
+        private static void WriteRichText(Utf8JsonWriter writer, string property, string json)
+        {
+            writer.WritePropertyName(property);
+            using var document = JsonDocument.Parse(json);
+            document.RootElement.WriteTo(writer);
         }
     }
 }

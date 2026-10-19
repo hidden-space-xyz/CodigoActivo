@@ -67,7 +67,7 @@ public sealed class LegalCopyTests
 
     private static LegalCopyTermsDocument Document(Guid id, string name)
     {
-        return new LegalCopyTermsDocument(id, name, "{}");
+        return new LegalCopyTermsDocument(id, name, 1, "{}", []);
     }
 
     private static LegalCopyDecision Decision(
@@ -80,6 +80,7 @@ public sealed class LegalCopyTests
         return new LegalCopyDecision(
             document.Id,
             document.Name,
+            document.Version,
             true,
             decidedAt,
             personId,

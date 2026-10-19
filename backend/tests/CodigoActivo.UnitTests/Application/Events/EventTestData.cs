@@ -218,7 +218,8 @@ internal static class EventTestData
         string name = "Términos generales",
         string description = "{}",
         bool requiresSignature = false,
-        TermsDocumentKind kind = TermsDocumentKind.Conditions
+        TermsDocumentKind kind = TermsDocumentKind.Conditions,
+        int version = 1
     )
     {
         return new()
@@ -228,6 +229,7 @@ internal static class EventTestData
             Description = description,
             RequiresSignature = requiresSignature,
             Kind = kind,
+            Version = version,
         };
     }
 

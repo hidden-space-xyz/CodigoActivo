@@ -58,6 +58,7 @@ public sealed class TermsGate(
             ? await termsDocuments.ListRequiringSignatureAsync(linkedIds, ct)
             : [];
         var consentDocumentIds = await termsDocuments.ListConsentsAsync(linkedIds, ct);
+        var documentVersions = await termsDocuments.ListVersionsAsync(linkedIds, ct);
 
         var missingRequired = false;
         foreach (var signup in signups)
@@ -68,6 +69,7 @@ public sealed class TermsGate(
                 ev.TermsDocuments,
                 signedDocumentIds,
                 consentDocumentIds,
+                documentVersions,
                 await termsAcceptances.ListAsync(ev.Id, signup.Person.Id, ct),
                 signup.Decisions,
                 recordedById,

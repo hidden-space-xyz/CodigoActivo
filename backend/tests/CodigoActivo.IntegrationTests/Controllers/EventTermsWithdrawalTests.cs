@@ -43,6 +43,7 @@ public sealed class EventTermsWithdrawalTests(CodigoActivoWebAppFactory factory)
             UserId.From(personId),
             UserId.From(TestSeedData.Users.MemberId),
             TermsDocumentId.From(documentId),
+            1,
             true,
             null,
             UserId.From(TestSeedData.Users.MemberId),

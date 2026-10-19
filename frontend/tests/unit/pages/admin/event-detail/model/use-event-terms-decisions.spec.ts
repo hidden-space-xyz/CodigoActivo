@@ -19,6 +19,7 @@ const DECISION: EventTermsDecision = {
   decidedByName: 'Ada Lovelace',
   termsDocumentId: 'terms-1',
   documentName: 'Autorización',
+  documentVersion: 1,
   consent: true,
   accepted: true,
   withdrawn: false,

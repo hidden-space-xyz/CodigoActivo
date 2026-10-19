@@ -12,6 +12,7 @@ export interface PersonalDataTermsDecisionResponse {
   decidedByName: string;
   eventTitle: string;
   documentName: string;
+  documentVersion: number;
   accepted: boolean;
   decidedAt: string;
   /** @nullable */

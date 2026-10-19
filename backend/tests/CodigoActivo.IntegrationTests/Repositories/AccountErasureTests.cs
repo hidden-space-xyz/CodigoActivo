@@ -144,11 +144,30 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             UserId.From(userId),
             decider,
             TermsDocumentId.From(documentId),
+            1,
             accepted,
             signature,
             decider,
             decidedAt
         );
+    }
+
+    private static TermsDocument ImageRightsRewritten()
+    {
+        var document = TermsDocument.Create(
+            "Derechos de imagen",
+            RichText.From("{}"),
+            false,
+            TermsDocumentKind.Conditions,
+            TermsDocumentId.From(ImageRightsId)
+        );
+        document.Rewrite(
+            "Derechos de imagen",
+            RichText.From(ConditionsText),
+            false,
+            TermsDocumentKind.Conditions
+        );
+        return document;
     }
 
     private static EventTermsAcceptance ImageRightsWithdrawn()
@@ -232,14 +251,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                         Description = ConditionsText,
                     }
                 ),
-                Persisted.As<TermsDocument>(
-                    new
-                    {
-                        Id = ImageRightsId,
-                        Name = "Derechos de imagen",
-                        Description = "{}",
-                    }
-                ),
+                ImageRightsRewritten(),
                 Persisted.As<TermsDocument>(
                     new
                     {
@@ -488,7 +500,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
 
         var copy = await CopyOfAsync(TestSeedData.Users.MemberId);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(7);
+        copy.GetProperty("schemaVersion").GetInt32().Should().Be(8);
         copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Self");
         IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.MemberId);
         copy.GetProperty("guardian").ValueKind.Should().Be(JsonValueKind.Null);
@@ -550,6 +562,17 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .Equal("Condiciones", "Derechos de imagen", "Normas de la excursión");
         var conditions = Items(copy.GetProperty("termsDocuments"))[0];
         IdOf(conditions).Should().Be(ConditionsId);
+        conditions.GetProperty("version").GetInt32().Should().Be(1);
+        Items(conditions.GetProperty("previousVersions")).Should().BeEmpty();
+        var imageRights = Items(copy.GetProperty("termsDocuments"))[1];
+        imageRights.GetProperty("version").GetInt32().Should().Be(2);
+        var accepted = Items(imageRights.GetProperty("previousVersions"))
+            .Should()
+            .ContainSingle()
+            .Subject;
+        accepted.GetProperty("version").GetInt32().Should().Be(1);
+        accepted.GetProperty("name").GetString().Should().Be("Derechos de imagen");
+        accepted.GetProperty("text").ValueKind.Should().Be(JsonValueKind.Object);
         conditions
             .GetProperty("textAtDeletion")
             .GetProperty("content")[0]
@@ -592,6 +615,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         campDecisions[1].GetProperty("documentName").GetString().Should().Be("Derechos de imagen");
         campDecisions[1].GetProperty("accepted").GetBoolean().Should().BeFalse();
         campDecisions[1].GetProperty("signature").ValueKind.Should().Be(JsonValueKind.Null);
+        campDecisions[1].GetProperty("documentVersion").GetInt32().Should().Be(1);
+        Items(campDecisions[1].GetProperty("changes"))
+            .Should()
+            .AllSatisfy(change => change.GetProperty("documentVersion").GetInt32().Should().Be(1));
         Items(campDecisions[1].GetProperty("changes"))
             .Select(change =>
                 (
@@ -973,6 +1000,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     UserId.From(other),
                     UserId.From(other),
                     TermsDocumentId.From(ImageRightsId),
+                    1,
                     true,
                     null,
                     UserId.From(member),

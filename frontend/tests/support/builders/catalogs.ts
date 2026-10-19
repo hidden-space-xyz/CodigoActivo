@@ -23,6 +23,7 @@ export function buildTermsDocument(
     description: richText('Terms body'),
     requiresSignature: false,
     kind: 'Conditions',
+    version: 1,
     ...overrides,
   }
 }

@@ -65,6 +65,7 @@ public sealed class WithdrawTermsConsentCommandHandlerTests
             person.Id,
             guardianId,
             consent.Id,
+            1,
             accepted,
             null,
             guardianId,

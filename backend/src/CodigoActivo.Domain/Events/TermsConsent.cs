@@ -24,6 +24,7 @@ public static class TermsConsent
     /// <param name="documents">Terms documents linked to the event.</param>
     /// <param name="signedDocumentIds">Linked documents whose acceptance asks for a signature.</param>
     /// <param name="consentDocumentIds">Linked documents that hold a consent.</param>
+    /// <param name="documentVersions">Current version of each linked document.</param>
     /// <param name="acceptances">Decisions already taken about them for the person.</param>
     /// <param name="decisions">New decisions, if any.</param>
     /// <param name="recordedById">Identifier of the account that records the decisions.</param>
@@ -41,6 +42,7 @@ public static class TermsConsent
         IReadOnlyCollection<EventTermsDocument> documents,
         IReadOnlyCollection<TermsDocumentId> signedDocumentIds,
         IReadOnlyCollection<TermsDocumentId> consentDocumentIds,
+        IReadOnlyDictionary<TermsDocumentId, int> documentVersions,
         IReadOnlyCollection<EventTermsAcceptance> acceptances,
         IReadOnlyList<TermsDecision>? decisions,
         UserId recordedById,
@@ -52,6 +54,7 @@ public static class TermsConsent
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(signedDocumentIds);
         ArgumentNullException.ThrowIfNull(consentDocumentIds);
+        ArgumentNullException.ThrowIfNull(documentVersions);
         ArgumentNullException.ThrowIfNull(acceptances);
 
         var acceptanceByDocument = acceptances.ToDictionary(a => a.TermsDocumentId);
@@ -82,7 +85,13 @@ public static class TermsConsent
             {
                 if (!existing.Accepted && decision.Accepted)
                 {
-                    existing.Accept(decidedById, signature, recordedById, now);
+                    existing.Accept(
+                        decidedById,
+                        documentVersions[decision.TermsDocumentId],
+                        signature,
+                        recordedById,
+                        now
+                    );
                 }
 
                 continue;
@@ -98,6 +107,7 @@ public static class TermsConsent
                 person.Id,
                 decidedById,
                 decision.TermsDocumentId,
+                documentVersions[decision.TermsDocumentId],
                 decision.Accepted,
                 signature,
                 recordedById,

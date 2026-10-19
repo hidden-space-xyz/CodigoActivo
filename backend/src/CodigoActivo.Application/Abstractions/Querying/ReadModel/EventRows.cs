@@ -179,6 +179,9 @@ public sealed class EventTermsAcceptanceRow
     /// <summary>Gets the terms document.</summary>
     public TermsDocumentRow TermsDocument { get; init; } = null!;
 
+    /// <summary>Gets the version of the document the decision was last taken on.</summary>
+    public int TermsDocumentVersion { get; init; }
+
     /// <summary>Gets a value indicating whether the document was accepted.</summary>
     public bool Accepted { get; init; }
 
@@ -208,6 +211,9 @@ public sealed class TermsDecisionChangeRow
 
     /// <summary>Gets the identifier of the terms document.</summary>
     public Guid TermsDocumentId { get; init; }
+
+    /// <summary>Gets the version of the document the change was made on.</summary>
+    public int TermsDocumentVersion { get; init; }
 
     /// <summary>Gets whether the document was accepted; false for a decline or a withdrawal.</summary>
     public bool Accepted { get; init; }
@@ -244,4 +250,7 @@ public sealed class TermsDocumentRow
 
     /// <summary>Gets whether the document holds conditions or a consent.</summary>
     public TermsDocumentKind Kind { get; init; }
+
+    /// <summary>Gets the number of the current version.</summary>
+    public int Version { get; init; }
 }

@@ -12,4 +12,5 @@ export interface TermsDocumentResponse {
   description: string;
   requiresSignature: boolean;
   kind: TermsDocumentKind;
+  version: number;
 }

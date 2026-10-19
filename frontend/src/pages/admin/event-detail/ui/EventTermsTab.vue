@@ -84,7 +84,12 @@ function decisionActions(decision: EventTermsDecision): RowAction[] {
             @apply="table.onFilter"
           />
         </template>
-        <template #default="{ row }">{{ row.documentName }}</template>
+        <template #default="{ row }">
+          {{ row.documentName }}
+          <span class="document-version">{{
+            $t('pages.admin.eventDetail.terms.version', { version: row.documentVersion })
+          }}</span>
+        </template>
       </el-table-column>
       <el-table-column
         :label="$t('pages.admin.eventDetail.terms.columns.decidedBy')"
@@ -208,6 +213,12 @@ function decisionActions(decision: EventTermsDecision): RowAction[] {
 
 .no-signature {
   color: var(--ca-text-dim);
+}
+
+.document-version {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--ca-text-muted);
 }
 
 .signature {

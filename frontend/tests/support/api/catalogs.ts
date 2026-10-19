@@ -14,7 +14,14 @@ const categoryTypes: EventCategoryTypeResponse[] = [
 ]
 
 const termsDocuments: TermsDocumentResponse[] = [
-  { id: 'terms-1', name: 'Terms', description: '', requiresSignature: false, kind: 'Conditions' },
+  {
+    id: 'terms-1',
+    name: 'Terms',
+    description: '',
+    requiresSignature: false,
+    kind: 'Conditions',
+    version: 1,
+  },
 ]
 
 /** Registers the catalog endpoints used across the admin event screens. */

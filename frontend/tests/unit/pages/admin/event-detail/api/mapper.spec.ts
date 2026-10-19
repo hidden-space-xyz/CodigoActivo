@@ -120,6 +120,7 @@ describe('event detail mapper', () => {
       decidedByName: 'Ada Lovelace',
       termsDocumentId: 'terms-1',
       documentName: 'Autorización de imagen',
+      documentVersion: 1,
       consent: true,
       accepted: true,
       withdrawn: false,

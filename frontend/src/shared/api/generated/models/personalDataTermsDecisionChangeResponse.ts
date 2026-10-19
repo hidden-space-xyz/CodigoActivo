@@ -7,6 +7,7 @@
 
 export interface PersonalDataTermsDecisionChangeResponse {
   accepted: boolean;
+  documentVersion: number;
   changedAt: string;
   decidedByName: string;
 }

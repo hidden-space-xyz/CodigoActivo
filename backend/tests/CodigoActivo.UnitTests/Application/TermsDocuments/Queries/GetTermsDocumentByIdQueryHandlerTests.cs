@@ -30,7 +30,8 @@ public sealed class GetTermsDocumentByIdQueryHandlerTests
             "Normas del campamento",
             RichText,
             requiresSignature: true,
-            kind: TermsDocumentKind.Consent
+            kind: TermsDocumentKind.Consent,
+            version: 3
         );
         store.TermsDocuments.AddRange([NewTermsDocumentRow("Otras normas"), termsDocument]);
 
@@ -48,7 +49,8 @@ public sealed class GetTermsDocumentByIdQueryHandlerTests
                     "Normas del campamento",
                     RichText,
                     true,
-                    TermsDocumentKind.Consent
+                    TermsDocumentKind.Consent,
+                    3
                 )
             );
     }

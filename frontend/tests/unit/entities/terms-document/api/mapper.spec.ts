@@ -12,6 +12,7 @@ describe('terms document mapper', () => {
       description: richText('Terms body'),
       requiresSignature: false,
       kind: 'Conditions',
+      version: 1,
     })
   })
 

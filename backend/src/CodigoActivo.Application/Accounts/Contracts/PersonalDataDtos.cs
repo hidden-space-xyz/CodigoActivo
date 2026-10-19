@@ -146,6 +146,7 @@ public sealed record PersonalDataSignupResponse(
 /// <param name="DecidedByName">Full name of who decided: the person or their guardian.</param>
 /// <param name="EventTitle">Title of the event.</param>
 /// <param name="DocumentName">Name of the document.</param>
+/// <param name="DocumentVersion">Version of the document the decision was last taken on.</param>
 /// <param name="Accepted">Whether the document is accepted now.</param>
 /// <param name="DecidedAt">When it was last decided.</param>
 /// <param name="Signature">Handwritten signature as a PNG image, when the document asked for one and is accepted now.</param>
@@ -156,6 +157,7 @@ public sealed record PersonalDataTermsDecisionResponse(
     string DecidedByName,
     string EventTitle,
     string DocumentName,
+    int DocumentVersion,
     bool Accepted,
     DateTimeOffset DecidedAt,
     byte[]? Signature,
@@ -166,10 +168,12 @@ public sealed record PersonalDataTermsDecisionResponse(
 /// Represents one change of a decision on a document of an event in a copy of personal data.
 /// </summary>
 /// <param name="Accepted">Whether the document was accepted; false for a decline or a withdrawal.</param>
+/// <param name="DocumentVersion">Version of the document the change was made on.</param>
 /// <param name="ChangedAt">When it changed.</param>
 /// <param name="DecidedByName">Full name of who decided: the person or their guardian.</param>
 public sealed record PersonalDataTermsDecisionChangeResponse(
     bool Accepted,
+    int DocumentVersion,
     DateTimeOffset ChangedAt,
     string DecidedByName
 );

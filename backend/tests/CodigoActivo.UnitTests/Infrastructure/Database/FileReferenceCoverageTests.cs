@@ -33,6 +33,7 @@ public sealed class FileReferenceCoverageTests : IDisposable
         "news.description",
         "resources.description",
         "terms_documents.description",
+        "terms_document_versions.description",
     ];
 
     private readonly CodigoActivoDbContext context = new(

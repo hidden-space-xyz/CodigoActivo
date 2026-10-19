@@ -157,11 +157,13 @@ export interface PersonalDataFile {
     readonly decidioPor: string
     readonly evento: string
     readonly documento: string
+    readonly versionDelDocumento: number
     readonly aceptado: boolean
     readonly fecha: string
     readonly firmaPngBase64: string | null
     readonly cambios: readonly {
       readonly aceptado: boolean
+      readonly versionDelDocumento: number
       readonly fecha: string
       readonly decidioPor: string
     }[]

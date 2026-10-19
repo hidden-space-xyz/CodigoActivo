@@ -168,6 +168,7 @@ public sealed class ParticipationCopyTests(CodigoActivoWebAppFactory factory)
             UserId.From(Child),
             UserId.From(Member),
             TermsDocumentId.From(documentId),
+            1,
             accepted,
             signature,
             UserId.From(Member),
@@ -208,7 +209,7 @@ public sealed class ParticipationCopyTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var (stored, copy) = await SingleCopyAsync();
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(1);
+        copy.GetProperty("schemaVersion").GetInt32().Should().Be(2);
         var deletion = copy.GetProperty("deletion");
         deletion.GetProperty("origin").GetString().Should().Be("EventDeleted");
         IdOf(deletion, "actorId").Should().Be(TestSeedData.Users.AdminId);
@@ -246,6 +247,7 @@ public sealed class ParticipationCopyTests(CodigoActivoWebAppFactory factory)
         decisions.Should().AllSatisfy(d => IdOf(d, "personId").Should().Be(Child));
         var image = decisions.Single(d => IdOf(d, "documentId") == imageId);
         image.GetProperty("accepted").GetBoolean().Should().BeFalse();
+        image.GetProperty("documentVersion").GetInt32().Should().Be(1);
         Items(image.GetProperty("changes"))
             .Select(change =>
                 (change.GetProperty("accepted").GetBoolean(), IdOf(change, "recordedBy"))

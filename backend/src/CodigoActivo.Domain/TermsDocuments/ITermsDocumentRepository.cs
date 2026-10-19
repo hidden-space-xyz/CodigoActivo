@@ -60,4 +60,15 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
         IReadOnlyCollection<TermsDocumentId> ids,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Reads the current version of each of the given documents.
+    /// </summary>
+    /// <param name="ids">Identifiers of the documents to look at.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result maps each document found to its current version.</returns>
+    public Task<IReadOnlyDictionary<TermsDocumentId, int>> ListVersionsAsync(
+        IReadOnlyCollection<TermsDocumentId> ids,
+        CancellationToken ct = default
+    );
 }

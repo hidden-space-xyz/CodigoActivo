@@ -98,6 +98,7 @@ export function buildTermsDecision(
     decidedByLastName: 'Lovelace',
     termsDocumentId: 'terms-1',
     documentName: 'Autorización de imagen',
+    documentVersion: 1,
     documentKind: 'Consent',
     accepted: true,
     withdrawn: false,

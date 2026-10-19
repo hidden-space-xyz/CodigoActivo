@@ -232,6 +232,7 @@ public record EventTermsStateResponse(
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 /// <param name="DocumentName">Name of the terms document.</param>
 /// <param name="DocumentKind">Whether the document holds conditions or a consent.</param>
+/// <param name="DocumentVersion">Version of the document the decision was last taken on.</param>
 /// <param name="Accepted">Whether the document is accepted now.</param>
 /// <param name="Withdrawn">Whether it was accepted and later withdrawn.</param>
 /// <param name="DecidedAt">When it was decided.</param>
@@ -247,6 +248,7 @@ public record EventTermsDecisionResponse(
     Guid TermsDocumentId,
     string DocumentName,
     TermsDocumentKind DocumentKind,
+    int DocumentVersion,
     bool Accepted,
     bool Withdrawn,
     DateTimeOffset DecidedAt,
@@ -268,6 +270,7 @@ public record EventTermsDecisionResponse(
             Guid.Empty,
             string.Empty,
             TermsDocumentKind.Conditions,
+            0,
             false,
             false,
             default,

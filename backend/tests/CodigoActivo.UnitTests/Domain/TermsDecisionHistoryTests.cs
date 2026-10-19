@@ -25,6 +25,7 @@ public sealed class TermsDecisionHistoryTests
             personId,
             guardianId,
             documentId,
+            1,
             accepted,
             signature,
             guardianId,
@@ -90,12 +91,27 @@ public sealed class TermsDecisionHistoryTests
     }
 
     [Fact]
+    public void WithdrawKeepsTheVersionThatWasAccepted()
+    {
+        var decision = Decide(accepted: false);
+        decision.Accept(personId, 2, null, personId, Now.AddDays(1));
+
+        decision.Withdraw(personId, personId, Now.AddDays(2));
+
+        decision.TermsDocumentVersion.Should().Be(2);
+        decision
+            .Changes.Select(change => (change.Accepted, change.TermsDocumentVersion))
+            .Should()
+            .Equal((false, 1), (true, 2), (false, 2));
+    }
+
+    [Fact]
     public void AcceptAfterAWithdrawalAddsANewAcceptanceToTheHistory()
     {
         var decision = Decide(accepted: true);
         decision.Withdraw(personId, personId, Now.AddDays(1));
 
-        decision.Accept(personId, null, personId, Now.AddDays(2));
+        decision.Accept(personId, 1, null, personId, Now.AddDays(2));
 
         decision.Accepted.Should().BeTrue();
         decision.Changes.Select(change => change.Accepted).Should().Equal(true, false, true);

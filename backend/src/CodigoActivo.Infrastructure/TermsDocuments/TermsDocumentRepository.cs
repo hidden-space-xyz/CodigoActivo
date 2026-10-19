@@ -70,4 +70,15 @@ public class TermsDocumentRepository(CodigoActivoDbContext context)
             .Select(document => document.Id)
             .ToListAsync(ct);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<TermsDocumentId, int>> ListVersionsAsync(
+        IReadOnlyCollection<TermsDocumentId> ids,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Where(document => ids.Contains(document.Id))
+            .Select(document => new { document.Id, document.Version })
+            .ToDictionaryAsync(document => document.Id, document => document.Version, ct);
+    }
 }

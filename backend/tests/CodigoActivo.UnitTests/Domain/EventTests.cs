@@ -725,6 +725,7 @@ public sealed class EventTests
             UserId.From(userId),
             UserId.From(userId),
             TermsDocumentId.From(termsDocumentId),
+            1,
             false,
             null,
             UserId.From(userId),
@@ -747,13 +748,14 @@ public sealed class EventTests
             UserId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(termsDocumentId),
+            1,
             false,
             null,
             UserId.From(Guid.NewGuid()),
             Now
         );
 
-        acceptance.Accept(acceptance.UserId, null, acceptance.UserId, Now.AddHours(3));
+        acceptance.Accept(acceptance.UserId, 1, null, acceptance.UserId, Now.AddHours(3));
 
         acceptance.Accepted.Should().BeTrue();
         acceptance.DecidedAt.Should().Be(Now.AddHours(3));
@@ -770,6 +772,7 @@ public sealed class EventTests
             UserId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(Guid.NewGuid()),
+            1,
             true,
             signature,
             UserId.From(Guid.NewGuid()),
@@ -780,6 +783,7 @@ public sealed class EventTests
             UserId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(Guid.NewGuid()),
+            1,
             false,
             signature,
             UserId.From(Guid.NewGuid()),
@@ -799,13 +803,14 @@ public sealed class EventTests
             UserId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(Guid.NewGuid()),
+            1,
             false,
             null,
             UserId.From(Guid.NewGuid()),
             Now
         );
 
-        acceptance.Accept(acceptance.UserId, signature, acceptance.UserId, Now.AddHours(1));
+        acceptance.Accept(acceptance.UserId, 1, signature, acceptance.UserId, Now.AddHours(1));
 
         acceptance.Signature.Should().BeSameAs(signature);
     }

@@ -39,6 +39,11 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
     public TermsDocumentId TermsDocumentId { get; private set; }
 
     /// <summary>
+    /// Gets the version of the document the decision was last taken on.
+    /// </summary>
+    public int TermsDocumentVersion { get; private set; }
+
+    /// <summary>
     /// Gets a value indicating whether the document is accepted now.
     /// </summary>
     public bool Accepted { get; private set; }
@@ -65,6 +70,7 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
     /// <param name="userId">Identifier of the person the decision is about.</param>
     /// <param name="decidedById">Identifier of the person who decides.</param>
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
+    /// <param name="termsDocumentVersion">Version of the document the decision is taken on.</param>
     /// <param name="accepted">Whether the document is accepted.</param>
     /// <param name="signature">Signature drawn to accept it, if any; a declined document keeps none.</param>
     /// <param name="recordedById">Identifier of the account that records the decision.</param>
@@ -75,6 +81,7 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
         UserId userId,
         UserId decidedById,
         TermsDocumentId termsDocumentId,
+        int termsDocumentVersion,
         bool accepted,
         HandwrittenSignature? signature,
         UserId recordedById,
@@ -87,6 +94,7 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
             UserId = userId,
             DecidedById = decidedById,
             TermsDocumentId = termsDocumentId,
+            TermsDocumentVersion = termsDocumentVersion,
             Accepted = accepted,
             Signature = accepted ? signature : null,
             DecidedAt = now,
@@ -99,17 +107,20 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
     /// Accepts a document declined or withdrawn before.
     /// </summary>
     /// <param name="decidedById">Identifier of the person who accepts it now.</param>
+    /// <param name="termsDocumentVersion">Version of the document accepted.</param>
     /// <param name="signature">Signature drawn to accept it, if the document asks for one.</param>
     /// <param name="recordedById">Identifier of the account that records the acceptance.</param>
     /// <param name="now">Current time.</param>
     public void Accept(
         UserId decidedById,
+        int termsDocumentVersion,
         HandwrittenSignature? signature,
         UserId recordedById,
         DateTimeOffset now
     )
     {
         DecidedById = decidedById;
+        TermsDocumentVersion = termsDocumentVersion;
         Accepted = true;
         Signature = signature;
         DecidedAt = now;
@@ -117,8 +128,9 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
     }
 
     /// <summary>
-    /// Withdraws a consent given before. The acceptance it ends, with its signature, stays in
-    /// <see cref="Changes"/>, since withdrawing never makes unlawful what was done before.
+    /// Withdraws a consent given before, on the version that was accepted. The acceptance it ends,
+    /// with its signature, stays in <see cref="Changes"/>, since withdrawing never makes unlawful
+    /// what was done before.
     /// </summary>
     /// <param name="decidedById">Identifier of the person who withdraws it.</param>
     /// <param name="recordedById">Identifier of the account that records the withdrawal.</param>
