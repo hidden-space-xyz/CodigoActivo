@@ -21,7 +21,7 @@ internal static class DeletedParticipationSnapshot
     /// <summary>
     /// Version of the JSON layout, stored in every copy.
     /// </summary>
-    internal const int SchemaVersion = 1;
+    internal const int SchemaVersion = 2;
 
     /// <summary>
     /// Reads everything the removal takes away and serializes the copy. Call it inside the
@@ -85,6 +85,7 @@ internal static class DeletedParticipationSnapshot
                     select new
                     {
                         acceptance.TermsDocumentId,
+                        acceptance.TermsDocumentVersion,
                         DocumentName = document.Name,
                         acceptance.Accepted,
                         acceptance.DecidedAt,
@@ -130,8 +131,17 @@ internal static class DeletedParticipationSnapshot
         var documentIds = decisionRows.Select(row => row.TermsDocumentId).Distinct().ToList();
         var documents = await context
             .TermsDocuments.AsNoTracking()
+            .Include(d => d.PreviousVersions)
             .Where(d => documentIds.Contains(d.Id))
             .ToListAsync(ct);
+        var referencedVersions = decisionRows
+            .Select(row => (row.TermsDocumentId, row.TermsDocumentVersion))
+            .Union(
+                changes
+                    .SelectMany(group => group)
+                    .Select(change => (change.TermsDocumentId, change.TermsDocumentVersion))
+            )
+            .ToHashSet();
 
         var eventRow = await context
             .Events.AsNoTracking()
@@ -155,7 +165,24 @@ internal static class DeletedParticipationSnapshot
             people,
             [
                 .. documents
-                    .Select(d => new LegalCopyTermsDocument(d.Id.Value, d.Name, d.Description.Json))
+                    .Select(d => new LegalCopyTermsDocument(
+                        d.Id.Value,
+                        d.Name,
+                        d.Version,
+                        d.Description.Json,
+                        [
+                            .. d
+                                .PreviousVersions.Where(previous =>
+                                    referencedVersions.Contains((d.Id, previous.Number))
+                                )
+                                .OrderBy(previous => previous.Number)
+                                .Select(previous => new LegalCopyTermsDocumentVersion(
+                                    previous.Number,
+                                    previous.Name,
+                                    previous.Description.Json
+                                )),
+                        ]
+                    ))
                     .OrderBy(document => document.Name, StringComparer.Ordinal)
                     .ThenBy(document => document.Id),
             ],
@@ -169,6 +196,7 @@ internal static class DeletedParticipationSnapshot
                         .Select(row => new LegalCopyDecision(
                             row.TermsDocumentId.Value,
                             row.DocumentName,
+                            row.TermsDocumentVersion,
                             row.Accepted,
                             row.DecidedAt,
                             row.UserId.Value,
@@ -178,6 +206,7 @@ internal static class DeletedParticipationSnapshot
                                 .. changes[(row.UserId, row.TermsDocumentId)]
                                     .Select(change => new LegalCopyDecisionChange(
                                         change.Accepted,
+                                        change.TermsDocumentVersion,
                                         change.ChangedAt,
                                         change.DecidedById.Value,
                                         change.RecordedById.Value,

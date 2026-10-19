@@ -20,6 +20,7 @@ public sealed class TermsConsentTests
     private readonly Guid userId = Guid.NewGuid();
     private readonly Guid guardianId = Guid.NewGuid();
     private readonly List<TermsDocumentId> consents = [];
+    private int documentVersion = TermsDocument.FirstVersion;
     private User person;
 
     public TermsConsentTests()
@@ -86,6 +87,7 @@ public sealed class TermsConsentTests
             UserId.From(userId),
             UserId.From(userId),
             TermsDocumentId.From(termsDocumentId),
+            1,
             accepted,
             null,
             UserId.From(userId),
@@ -106,6 +108,7 @@ public sealed class TermsConsentTests
             documents,
             [.. signed.Select(TermsDocumentId.From)],
             consents,
+            documents.ToDictionary(document => document.TermsDocumentId, _ => documentVersion),
             acceptances,
             decisions,
             UserId.From(userId),
@@ -205,6 +208,40 @@ public sealed class TermsConsentTests
         outcome.MissingRequired.Should().BeFalse();
         stored.Accepted.Should().BeTrue();
         stored.DecidedAt.Should().Be(Now);
+    }
+
+    [Fact]
+    public void ApplyRecordsTheCurrentVersionOfTheDocumentInTheDecisionAndItsHistory()
+    {
+        var optional = Guid.NewGuid();
+        documentVersion = 3;
+
+        var outcome = Apply(
+            Documents((optional, false)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(optional), true)]
+        );
+
+        var recorded = outcome.Recorded.Should().ContainSingle().Which;
+        recorded.TermsDocumentVersion.Should().Be(3);
+        recorded.Changes.Should().ContainSingle().Which.TermsDocumentVersion.Should().Be(3);
+    }
+
+    [Fact]
+    public void ApplyAcceptingDocumentDeclinedOnAnEarlierVersionRecordsTheCurrentOne()
+    {
+        var optional = Guid.NewGuid();
+        var stored = Stored(optional, false);
+        documentVersion = 2;
+
+        Apply(
+            Documents((optional, false)),
+            [stored],
+            [new TermsDecision(TermsDocumentId.From(optional), true)]
+        );
+
+        stored.TermsDocumentVersion.Should().Be(2);
+        stored.Changes.Select(change => change.TermsDocumentVersion).Should().Equal(1, 2);
     }
 
     [Fact]
@@ -519,6 +556,7 @@ public sealed class TermsConsentTests
             UserId.From(userId),
             UserId.From(guardianId),
             TermsDocumentId.From(consent),
+            1,
             false,
             null,
             UserId.From(guardianId),

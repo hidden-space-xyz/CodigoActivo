@@ -7172,6 +7172,7 @@
           "decidedByLastName",
           "documentKind",
           "documentName",
+          "documentVersion",
           "firstName",
           "hasSignature",
           "lastName",
@@ -7214,6 +7215,10 @@
           },
           "documentKind": {
             "$ref": "#/components/schemas/TermsDocumentKind"
+          },
+          "documentVersion": {
+            "type": "integer",
+            "format": "int32"
           },
           "accepted": {
             "type": "boolean"
@@ -8231,6 +8236,7 @@
           "decidedAt",
           "decidedByName",
           "documentName",
+          "documentVersion",
           "eventTitle",
           "personId",
           "personName"
@@ -8252,6 +8258,10 @@
           },
           "documentName": {
             "type": "string"
+          },
+          "documentVersion": {
+            "type": "integer",
+            "format": "int32"
           },
           "accepted": {
             "type": "boolean"
@@ -8651,7 +8661,8 @@
           "id",
           "kind",
           "name",
-          "requiresSignature"
+          "requiresSignature",
+          "version"
         ],
         "type": "object",
         "properties": {
@@ -8670,6 +8681,10 @@
           },
           "kind": {
             "$ref": "#/components/schemas/TermsDocumentKind"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -9563,12 +9578,17 @@
         "required": [
           "accepted",
           "changedAt",
-          "decidedByName"
+          "decidedByName",
+          "documentVersion"
         ],
         "type": "object",
         "properties": {
           "accepted": {
             "type": "boolean"
+          },
+          "documentVersion": {
+            "type": "integer",
+            "format": "int32"
           },
           "changedAt": {
             "type": "string",

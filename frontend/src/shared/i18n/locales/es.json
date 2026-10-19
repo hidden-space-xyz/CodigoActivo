@@ -512,10 +512,10 @@
           },
           "terms": {
             "title": "Documentos y autorizaciones de los eventos",
-            "data": "La aceptación o el rechazo de cada documento que pide un evento, para ti y para cada menor que inscribas, con quién lo decidió, la fecha y, si el documento lo exige, la firma dibujada en la pantalla, y el historial de esa decisión: cada aceptación y cada retirada de un consentimiento, con quién la decidió, quién la registró y cuándo. Las condiciones de un menor las decides tú, como su representante, igual que sus consentimientos hasta los 14 años; desde los 14 años sus consentimientos los decide el propio menor.",
+            "data": "La aceptación o el rechazo de cada documento que pide un evento, para ti y para cada menor que inscribas, con quién lo decidió, la versión del documento que se decidió, la fecha y, si el documento lo exige, la firma dibujada en la pantalla, y el historial de esa decisión: cada aceptación y cada retirada de un consentimiento, con quién la decidió, quién la registró y cuándo. Las condiciones de un menor las decides tú, como su representante, igual que sus consentimientos hasta los 14 años; desde los 14 años sus consentimientos los decide el propio menor.",
             "purpose": "Recoger las condiciones y autorizaciones necesarias para participar en cada evento y poder demostrarlas. Las firmas solo las ve la administración, y tú en la copia de tus datos.",
             "legalBasis": "Para los documentos que recogen las condiciones de participación, la prestación del servicio que solicitas (art. 6.1.b RGPD); para los que te piden un consentimiento, que nunca exigimos para inscribirte, ese consentimiento (art. 6.1.a RGPD), y para guardar tu decisión, la obligación de poder demostrarla (arts. 6.1.c y 7.1 RGPD).",
-            "retention": "Mientras exista el evento y mantengas la cuenta; si eliminamos el evento o eliminas la cuenta, pasan a la copia bloqueada. Puedes retirar en cualquier momento un consentimiento que hayas dado en un documento desde «Mi cuenta» o escribiéndonos, sin que afecte a lo hecho antes de retirarlo; la aceptación anterior se conserva en el historial para poder demostrarla."
+            "retention": "Mientras exista el evento y mantengas la cuenta; si eliminamos el evento o eliminas la cuenta, pasan a la copia bloqueada. Puedes retirar en cualquier momento un consentimiento que hayas dado en un documento desde «Mi cuenta» o escribiéndonos, sin que afecte a lo hecho antes de retirarlo; la aceptación anterior se conserva en el historial para poder demostrarla. Cuando cambiamos un documento guardamos también su versión anterior, para poder mostrar siempre el texto que se aceptó."
           },
           "statistics": {
             "title": "Estadísticas de participación",
@@ -1226,7 +1226,8 @@
               "Consent": "Un consentimiento, como el de uso de imágenes. Nunca es obligatorio: cada persona lo da o lo niega sin que afecte a su inscripción, y desde los 14 años lo decide el propio menor."
             },
             "editHeader": "Editar términos y condiciones",
-            "newHeader": "Nuevos términos y condiciones"
+            "newHeader": "Nuevos términos y condiciones",
+            "versionHint": "Es la versión {version}. Si guardas cambios, pasará a ser la versión siguiente; la actual se conserva, y las decisiones ya tomadas siguen señalando la versión que se aceptó, sin pedir a nadie que vuelva a aceptar."
           },
           "toasts": {
             "created": "Términos y condiciones creados.",
@@ -1244,6 +1245,7 @@
           "newButton": "Nuevos términos",
           "title": "Términos y condiciones",
           "requiresSignature": "Requiere firma",
+          "version": "Versión {version}",
           "kinds": {
             "Conditions": "Condiciones",
             "Consent": "Consentimiento"
@@ -1296,6 +1298,7 @@
           "accepted": "Aceptado",
           "rejected": "Rechazado",
           "withdrawn": "Retirado",
+          "version": "v{version}",
           "withdraw": {
             "action": "Registrar retirada",
             "header": "Registrar la retirada de un consentimiento",

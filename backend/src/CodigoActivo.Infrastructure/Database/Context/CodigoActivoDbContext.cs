@@ -103,6 +103,11 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<TermsDocument> TermsDocuments => Set<TermsDocument>();
 
     /// <summary>
+    /// Gets the versions the terms documents replaced.
+    /// </summary>
+    public DbSet<TermsDocumentVersion> TermsDocumentVersions => Set<TermsDocumentVersion>();
+
+    /// <summary>
     /// Gets the event terms documents value.
     /// </summary>
     public DbSet<EventTermsDocument> EventTermsDocuments => Set<EventTermsDocument>();

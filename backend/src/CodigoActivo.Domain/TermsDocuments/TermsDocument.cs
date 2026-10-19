@@ -6,11 +6,30 @@ namespace CodigoActivo.Domain.TermsDocuments;
 /// <summary>
 /// Terms that participants accept or decline when signing up to the events that link them: the
 /// conditions of taking part or a consent, as its <see cref="Kind"/> tells. Its name is unique
-/// across documents.
+/// across documents. Every rewrite that changes it starts a new <see cref="Version"/> and keeps the
+/// one it replaces in <see cref="PreviousVersions"/>, so each decision can name the text it was
+/// taken on.
 /// </summary>
 public class TermsDocument : AggregateRoot<TermsDocumentId>
 {
+    /// <summary>
+    /// Number of the version a document starts with.
+    /// </summary>
+    public const int FirstVersion = 1;
+
+    private readonly List<TermsDocumentVersion> previousVersions = [];
+
     private TermsDocument() { }
+
+    /// <summary>
+    /// Gets the number of the current version.
+    /// </summary>
+    public int Version { get; private set; } = FirstVersion;
+
+    /// <summary>
+    /// Gets the versions later rewrites replaced.
+    /// </summary>
+    public IReadOnlyCollection<TermsDocumentVersion> PreviousVersions => previousVersions;
 
     /// <summary>
     /// Gets the human-readable name.
@@ -57,7 +76,9 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
 
     /// <summary>
     /// Replaces the name and content of the document, whether accepting it asks for a signature and
-    /// its kind. Decisions already taken stay as they were.
+    /// its kind. When anything changes, the current version is kept in
+    /// <see cref="PreviousVersions"/> and the new one gets the next number, so decisions already
+    /// taken keep naming the text they were taken on; nobody has to decide again.
     /// </summary>
     /// <param name="name">New name; surrounding spaces are removed.</param>
     /// <param name="description">New rich-text content.</param>
@@ -70,7 +91,21 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
         TermsDocumentKind kind
     )
     {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(description);
+
         var previousDescription = Description;
+        if (
+            Name != name.Trim()
+            || !Description.HasSameContentAs(description)
+            || RequiresSignature != requiresSignature
+            || Kind != kind
+        )
+        {
+            previousVersions.Add(new TermsDocumentVersion(this));
+            Version++;
+        }
+
         Apply(name, description, requiresSignature, kind);
         Raise(
             new TermsDocumentRewritten(

@@ -66,6 +66,9 @@ function rowActions(termsDocument: TermsDocument): RowAction[] {
               <el-tag v-if="row.requiresSignature" type="info" size="small" disable-transitions>{{
                 $t('pages.admin.catalogs.termsDocuments.requiresSignature')
               }}</el-tag>
+              <el-tag type="info" size="small" disable-transitions>{{
+                $t('pages.admin.catalogs.termsDocuments.version', { version: row.version })
+              }}</el-tag>
             </template>
           </TablePrimaryCell>
         </template>

@@ -38,6 +38,59 @@ public sealed class CatalogTests
     }
 
     [Fact]
+    public void TermsDocumentRewriteKeepsTheReplacedVersionAndNumbersTheNewOne()
+    {
+        var document = TermsDocument.Create(
+            "Imagen",
+            RichText.From("{\"a\":1}"),
+            false,
+            TermsDocumentKind.Consent
+        );
+        document.Version.Should().Be(TermsDocument.FirstVersion);
+
+        document.Rewrite("Imagen", RichText.From("{\"b\":2}"), true, TermsDocumentKind.Consent);
+        document.Rewrite("Fotos", RichText.From("{\"b\":2}"), true, TermsDocumentKind.Consent);
+
+        document.Version.Should().Be(3);
+        document
+            .PreviousVersions.Select(previous =>
+                (
+                    previous.TermsDocumentId,
+                    previous.Number,
+                    previous.Name,
+                    previous.Description.Json,
+                    previous.RequiresSignature
+                )
+            )
+            .Should()
+            .Equal(
+                (document.Id, 1, "Imagen", "{\"a\":1}", false),
+                (document.Id, 2, "Imagen", "{\"b\":2}", true)
+            );
+    }
+
+    [Fact]
+    public void TermsDocumentRewriteWithoutChangesKeepsTheVersion()
+    {
+        var document = TermsDocument.Create(
+            "Imagen",
+            RichText.From("{\"a\":1}"),
+            false,
+            TermsDocumentKind.Consent
+        );
+
+        document.Rewrite(
+            " Imagen ",
+            RichText.From("{ \"a\": 1 }"),
+            false,
+            TermsDocumentKind.Consent
+        );
+
+        document.Version.Should().Be(TermsDocument.FirstVersion);
+        document.PreviousVersions.Should().BeEmpty();
+    }
+
+    [Fact]
     public void TermsDocumentCreateStableIdKeepsIt()
     {
         var id = Guid.NewGuid();

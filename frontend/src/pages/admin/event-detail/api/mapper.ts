@@ -93,6 +93,7 @@ export function toEventTermsDecision(
     decidedByName: `${decision.decidedByFirstName} ${decision.decidedByLastName}`,
     termsDocumentId: decision.termsDocumentId,
     documentName: decision.documentName,
+    documentVersion: decision.documentVersion,
     consent: decision.documentKind === 'Consent',
     accepted: decision.accepted,
     withdrawn: decision.withdrawn,

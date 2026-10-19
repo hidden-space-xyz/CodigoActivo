@@ -395,6 +395,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("bytea")
                         .HasColumnName("signature");
 
+                    b.Property<int>("TermsDocumentVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("terms_document_version");
+
                     b.HasKey("EventId", "UserId", "TermsDocumentId")
                         .HasName("pk_event_terms_acceptances");
 
@@ -473,6 +477,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Property<Guid>("TermsDocumentId")
                         .HasColumnType("uuid")
                         .HasColumnName("terms_document_id");
+
+                    b.Property<int>("TermsDocumentVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("terms_document_version");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -751,6 +759,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("requires_signature");
 
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("pk_terms_documents");
 
@@ -759,6 +771,42 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_terms_documents_name");
 
                     b.ToTable("terms_documents", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.TermsDocuments.TermsDocumentVersion", b =>
+                {
+                    b.Property<Guid>("TermsDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("terms_document_id");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer")
+                        .HasColumnName("number");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<bool>("RequiresSignature")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_signature");
+
+                    b.HasKey("TermsDocumentId", "Number")
+                        .HasName("pk_terms_document_versions");
+
+                    b.ToTable("terms_document_versions", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Users.DeletedAccount", b =>
@@ -1891,6 +1939,16 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_resources_users_updated_by");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.TermsDocuments.TermsDocumentVersion", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.TermsDocuments.TermsDocument", null)
+                        .WithMany("PreviousVersions")
+                        .HasForeignKey("TermsDocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_terms_document_versions_terms_documents_terms_document_id");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Users.NewsConsentChange", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
@@ -1975,6 +2033,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
             modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsAcceptance", b =>
                 {
                     b.Navigation("Changes");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.TermsDocuments.TermsDocument", b =>
+                {
+                    b.Navigation("PreviousVersions");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>

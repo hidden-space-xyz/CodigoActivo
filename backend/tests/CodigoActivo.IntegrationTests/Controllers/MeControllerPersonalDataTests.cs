@@ -193,6 +193,7 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
             UserId.From(userId),
             UserId.From(userId),
             Domain.TermsDocuments.TermsDocumentId.From(TermsDocumentId),
+            1,
             true,
             signature,
             UserId.From(userId),
@@ -282,7 +283,7 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
         decision.Signature.Should().Equal(TestSeedData.ValidPng());
         decision
             .Changes.Should()
-            .Equal(new PersonalDataTermsDecisionChangeResponse(true, SeededAt, "Marta Miembro"));
+            .Equal(new PersonalDataTermsDecisionChangeResponse(true, 1, SeededAt, "Marta Miembro"));
         data.Sessions.Should().ContainSingle();
         data.SecurityLog.Should()
             .Equal(

@@ -106,6 +106,8 @@ export interface EventTermsDecision {
   readonly decidedByName: string
   readonly termsDocumentId: string
   readonly documentName: string
+  /** Version of the document the decision was last taken on. */
+  readonly documentVersion: number
   /** Whether the document holds a consent, which can be withdrawn, rather than conditions. */
   readonly consent: boolean
   readonly accepted: boolean

@@ -48,6 +48,13 @@ function save(): void {
     append-to-body
   >
     <form class="form" @submit.prevent="save">
+      <p v-if="termsDocument" class="form__hint">
+        {{
+          $t('pages.admin.catalogs.termsDocuments.form.versionHint', {
+            version: termsDocument.version,
+          })
+        }}
+      </p>
       <div class="form__field">
         <label for="terms-document-name">{{ $t('common.name') }}</label>
         <el-input

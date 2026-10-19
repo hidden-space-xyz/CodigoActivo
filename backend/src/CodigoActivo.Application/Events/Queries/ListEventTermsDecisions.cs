@@ -89,6 +89,7 @@ public sealed class ListEventTermsDecisionsQueryHandler(
                 TermsDocumentId = a.TermsDocumentId,
                 DocumentName = a.TermsDocument.Name,
                 DocumentKind = a.TermsDocument.Kind,
+                DocumentVersion = a.TermsDocumentVersion,
                 Accepted = a.Accepted,
                 Withdrawn = !a.Accepted && a.Changes.Any(change => change.Accepted),
                 DecidedAt = a.DecidedAt,

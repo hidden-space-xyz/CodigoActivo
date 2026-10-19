@@ -190,7 +190,7 @@ a dependent is deleted alone, every signup of the household with activity, event
 time, every terms decision (accepted or rejected, with who decided and its handwritten signature as base64
 PNG, and its history: every acceptance, rejection and withdrawal with who decided it, who recorded it, when and
 the signature it was accepted with) about the household — or about the guardian for the dependent's events — with each document's text as it stood at
-deletion (documents are not versioned), every change of each person's news consent with its instant
+deletion and the earlier versions any of those decisions was taken on, every change of each person's news consent with its instant
 and source, and who asked
 for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
 secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
@@ -210,7 +210,7 @@ added meanwhile escapes the copy, stores one JSON copy in `deleted_participation
 `jsonb`, no foreign key) and then removes it; a deadlock is retried as for accounts. The copy holds what was
 removed (`EventDeleted`, `ActivityDeleted` or `SignupCancelled`), who removed it, the event's title and dates,
 the signups removed with activity, role, status and signup time, and, when the event goes, its terms decisions
-with who decided, the signature, the history and each document's text, plus the first and last names of the
+with who decided, the signature, the history, each document's text and the earlier versions they were taken on, plus the first and last names of the
 people they are about or who decided them. A removal that takes away no signup or decision stores nothing.
 Like the account copies, nothing in the application reads it, `DeletedAccountGuard` refuses any change to a stored
 copy, and `DeletedAccountPurger` runs `PurgeDeletedParticipations`, which deletes each copy two years after
@@ -409,6 +409,13 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   legal contact (`LEGAL_EMAIL`; nothing without it) so what the consent covered stops being used and is removed
   from the site and the social profiles; a failed delivery is logged without personal data and never undoes the
   withdrawal.
+- A terms document is versioned (`terms_documents.version`), so the text each decision was taken on can always be
+  shown (article 7.1 GDPR): every rewrite that changes its name, text, kind or signature keeps the replaced version
+  in `terms_document_versions` and numbers the new one, even when nobody decided yet, so a decision recorded while
+  the document changes still names a version whose text is kept. Each decision and each change of its history
+  stores the version it was taken on (`terms_document_version`; a withdrawal keeps the one withdrawn), and nobody is
+  asked again after a rewrite. Texts are compared as JSON, so saving without changes keeps the version. Decisions
+  stored before versions existed name version 1, the text then current.
 - A terms document can ask for a handwritten signature (`requires_signature`): accepting it then needs a PNG
   drawn on screen (`TermsConsent` refuses the acceptance without one), which `HandwrittenSignature` refuses above 128 KiB or 2000×1000 pixels and which is stored
   in `event_terms_acceptances.signature`, never in the public file storage. Only administrators read it

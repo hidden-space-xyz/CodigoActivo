@@ -269,11 +269,13 @@ export function toPersonalDataFile(data: PersonalDataResponse, t: Translate): Pe
       decidioPor: decision.decidedByName,
       evento: decision.eventTitle,
       documento: decision.documentName,
+      versionDelDocumento: decision.documentVersion,
       aceptado: decision.accepted,
       fecha: decision.decidedAt,
       firmaPngBase64: decision.signature ?? null,
       cambios: decision.changes.map((change) => ({
         aceptado: change.accepted,
+        versionDelDocumento: change.documentVersion,
         fecha: change.changedAt,
         decidioPor: change.decidedByName,
       })),

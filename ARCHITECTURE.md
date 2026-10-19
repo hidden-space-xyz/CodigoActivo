@@ -261,7 +261,8 @@ signature (`requires_signature`). The signup wire contract carries `TermsDecisio
 `{TermsDocumentId, Accepted, Signature}`, the signature a base64 PNG drawn in the SPA with `signature_pad`: one
 for the person in `AssignRequest`, one per member in each `AssignHouseholdRequest` assignment. `TermsGate`
 applies `TermsConsent` person by person and records each decision as an `EventTermsAcceptance` about that person
-with who decided, which keeps every change of it as a `TermsDecisionChange` with the account that recorded it;
+with who decided and the document version it was taken on (a rewrite keeps the replaced version as a
+`TermsDocumentVersion`), which keeps every change of it as a `TermsDecisionChange` with the account that recorded it;
 `GET /api/events/{eventId}/terms` returns every linked document and, for the caller and each dependent, the
 decisions taken and whether they decide their own consents, and administrators list the decisions of an event
 under `/api/events/{eventId}/terms/decisions`. A given consent is withdrawn with

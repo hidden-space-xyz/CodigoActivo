@@ -1081,6 +1081,35 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task TermsDocumentUpdateKeepsTheReplacedVersionAndNumbersTheNewOne()
+    {
+        var termsDocumentId = await SeedTermsDocumentAsync("Reglamento");
+        var admin = await LoginAsAdminAsync();
+
+        using var updated = await admin.PutJsonAsync(
+            $"/api/events/termsDocument/{termsDocumentId}",
+            new UpdateTermsDocumentRequest(
+                "Reglamento",
+                "{\"type\":\"doc\"}",
+                TermsDocumentKind.Conditions
+            ),
+            Ct
+        );
+
+        updated.StatusCode.Should().Be(HttpStatusCode.OK);
+        var stored = await Factory.QueryAsync(db =>
+            db.TermsDocuments.Include(d => d.PreviousVersions)
+                .SingleAsync(d => d.Id == TermsDocumentId.From(termsDocumentId), Ct)
+        );
+        stored.Version.Should().Be(2);
+        stored.Description.HasSameContentAs(RichText.From("{\"type\":\"doc\"}")).Should().BeTrue();
+        var previous = stored.PreviousVersions.Should().ContainSingle().Subject;
+        previous.Number.Should().Be(1);
+        previous.Name.Should().Be("Reglamento");
+        previous.Description.HasSameContentAs(RichText.Empty).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task TermsDocumentWithAnImageIsRefusedOnCreateAndUpdate()
     {
         const string ImageDocument =

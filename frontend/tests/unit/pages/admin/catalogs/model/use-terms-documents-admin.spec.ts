@@ -45,6 +45,7 @@ describe('useTermsDocumentsAdmin', () => {
       description: richText('Body'),
       requiresSignature: false,
       kind: 'Conditions',
+      version: 1,
     })
     result.save({
       name: 'Privacy',

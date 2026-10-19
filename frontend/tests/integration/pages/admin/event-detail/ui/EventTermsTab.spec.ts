@@ -68,6 +68,9 @@ describe('EventTermsTab', () => {
     expect(declined?.find('.table-primary-cell__title').text()).toBe('Bea Gil')
     expect(declined?.find('.table-primary-cell__subtitle').exists()).toBe(false)
     expect(signed?.text()).toContain('Autorización de imagen')
+    expect(signed?.find('.document-version').text()).toBe(
+      t('pages.admin.eventDetail.terms.version', { version: 1 }),
+    )
     expect(signed?.text()).toContain(t('pages.admin.eventDetail.terms.decidedBySelf'))
     expect(declined?.text()).toContain('Ada Lovelace')
     expect(signed?.text()).toContain(t('pages.admin.eventDetail.terms.accepted'))

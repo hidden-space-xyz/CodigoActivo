@@ -22,6 +22,7 @@ describe('toTermsDocumentDraft', () => {
         description: richText('Body'),
         requiresSignature: true,
         kind: 'Conditions',
+        version: 1,
       }),
     ).toEqual({
       name: 'Privacy',

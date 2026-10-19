@@ -18,6 +18,7 @@ export interface EventTermsDecisionResponse {
   termsDocumentId: string;
   documentName: string;
   documentKind: TermsDocumentKind;
+  documentVersion: number;
   accepted: boolean;
   withdrawn: boolean;
   decidedAt: string;

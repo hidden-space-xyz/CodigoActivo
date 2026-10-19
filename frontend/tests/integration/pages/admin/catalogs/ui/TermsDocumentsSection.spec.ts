@@ -58,7 +58,7 @@ describe('TermsDocumentsSection', () => {
     expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ name: 'priv' })
   })
 
-  it('tags each document with its kind and those that ask for a signature', async () => {
+  it('tags each document with its kind, those that ask for a signature and its version', async () => {
     serveTerms([
       buildTermsDocument(),
       buildTermsDocument({
@@ -66,6 +66,7 @@ describe('TermsDocumentsSection', () => {
         name: 'Image',
         requiresSignature: true,
         kind: 'Consent',
+        version: 3,
       }),
     ])
     const { wrapper } = await renderSection()
@@ -74,10 +75,14 @@ describe('TermsDocumentsSection', () => {
     const badges = (index: number) =>
       rows[index]?.findAll('.table-primary-cell__badges .el-tag').map((tag) => tag.text())
     expect(rows[0]?.find('.table-primary-cell__title').attributes('title')).toBe('Privacy')
-    expect(badges(0)).toEqual([t('pages.admin.catalogs.termsDocuments.kinds.Conditions')])
+    expect(badges(0)).toEqual([
+      t('pages.admin.catalogs.termsDocuments.kinds.Conditions'),
+      t('pages.admin.catalogs.termsDocuments.version', { version: 1 }),
+    ])
     expect(badges(1)).toEqual([
       t('pages.admin.catalogs.termsDocuments.kinds.Consent'),
       t('pages.admin.catalogs.termsDocuments.requiresSignature'),
+      t('pages.admin.catalogs.termsDocuments.version', { version: 3 }),
     ])
     expect(rows[1]?.find('.table-primary-cell__badges .el-tag').classes()).toContain(
       'el-tag--small',
@@ -117,6 +122,7 @@ describe('TermsDocumentsSection', () => {
 
     await click(findButton(t('pages.admin.catalogs.termsDocuments.newButton')))
     const dialog = openDialog(t(NEW_TITLE))
+    expect(dialog.querySelector('form > p.form__hint')).toBeNull()
     await click(findButton(t('common.save'), dialog))
     expect(dialog.textContent).toContain(
       t('pages.admin.catalogs.termsDocuments.form.problems.contentRequired'),
@@ -163,6 +169,9 @@ describe('TermsDocumentsSection', () => {
 
     await click(findButton(t('common.edit')))
     const dialog = openDialog(t(EDIT_TITLE))
+    expect(dialog.textContent).toContain(
+      t('pages.admin.catalogs.termsDocuments.form.versionHint', { version: 1 }),
+    )
     expect(inputValue('#terms-document-name')).toBe('Privacy')
     await typeInto('#terms-document-name', 'Privacy policy')
     await click(dialog.querySelector('.el-switch') ?? dialog)

@@ -234,12 +234,23 @@ describe('toPersonalDataFile', () => {
         decidioPor: 'Ada Lovelace',
         evento: 'Hackatón',
         documento: 'Uso de imágenes',
+        versionDelDocumento: 2,
         aceptado: true,
         fecha: '2026-05-01T00:00:00Z',
         firmaPngBase64: 'iVBORw0KGgo=',
         cambios: [
-          { aceptado: false, fecha: '2026-04-01T00:00:00Z', decidioPor: 'Ada Lovelace' },
-          { aceptado: true, fecha: '2026-05-01T00:00:00Z', decidioPor: 'Ada Lovelace' },
+          {
+            aceptado: false,
+            versionDelDocumento: 1,
+            fecha: '2026-04-01T00:00:00Z',
+            decidioPor: 'Ada Lovelace',
+          },
+          {
+            aceptado: true,
+            versionDelDocumento: 2,
+            fecha: '2026-05-01T00:00:00Z',
+            decidioPor: 'Ada Lovelace',
+          },
         ],
       },
     ])

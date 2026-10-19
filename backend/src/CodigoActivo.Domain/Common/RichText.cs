@@ -55,6 +55,29 @@ public sealed record RichText
         return json is null ? Empty : new RichText(json);
     }
 
+    /// <summary>
+    /// Tells whether another rich text holds the same content, however its JSON is laid out: the
+    /// database stores it as <c>jsonb</c>, which drops spaces and reorders keys, while editors
+    /// send it compact.
+    /// </summary>
+    /// <param name="other">Rich text to compare with.</param>
+    /// <returns><see langword="true"/> when both hold the same JSON value.</returns>
+    public bool HasSameContentAs(RichText other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        try
+        {
+            using var mine = JsonDocument.Parse(Json, ParseOptions);
+            using var theirs = JsonDocument.Parse(other.Json, ParseOptions);
+            return JsonElement.DeepEquals(mine.RootElement, theirs.RootElement);
+        }
+        catch (JsonException)
+        {
+            return string.Equals(Json, other.Json, StringComparison.Ordinal);
+        }
+    }
+
     /// <inheritdoc />
     public override string ToString()
     {

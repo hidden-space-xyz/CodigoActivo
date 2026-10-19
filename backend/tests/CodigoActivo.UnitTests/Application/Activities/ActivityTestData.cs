@@ -355,6 +355,7 @@ internal static class ActivityTestData
             UserId.From(Guid.NewGuid()),
             UserId.From(Guid.NewGuid()),
             TermsDocumentId.From(termsDocumentId),
+            1,
             accepted,
             null,
             UserId.From(Guid.NewGuid()),
