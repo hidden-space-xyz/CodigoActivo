@@ -85,6 +85,9 @@ public enum AuditAction
     /// <summary>Deleted an activity.</summary>
     DeleteActivity,
 
+    /// <summary>Purged the blocked copies of removed participation past their retention.</summary>
+    PurgeDeletedParticipations,
+
     /// <summary>Withdrew a signup.</summary>
     UnassignActivity,
 

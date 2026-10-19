@@ -508,14 +508,14 @@
             "data": "Las actividades en las que te inscribes o inscribes a los menores a tu cargo, con el rol (participante, voluntariado o liderazgo), el estado de la inscripción y su fecha.",
             "purpose": "Gestionar las plazas; confirmar o denegar cada inscripción y avisarte por email; preparar los listados de asistencia que usa nuestro equipo durante el evento y las acreditaciones, que cada asistente lleva a la vista y muestran su nombre y apellidos, su relación con la asociación, sus actividades con su lugar y, en las de los menores, el nombre y el teléfono de su padre, madre o tutor; emitir los diplomas de participación, y que quien lidera una actividad pueda contactar con sus asistentes.",
             "legalBasis": "La prestación del servicio que solicitas al inscribirte (art. 6.1.b RGPD). Mostrar en la acreditación de cada menor el nombre y el teléfono de su padre, madre o tutor, para poder avisarle si el menor se pierde o se encuentra mal, se basa en nuestro interés legítimo en proteger a los menores (art. 6.1.f RGPD).",
-            "retention": "Mientras mantengas la cuenta; si la eliminas, pasan a la copia bloqueada."
+            "retention": "Mientras mantengas la cuenta. Si anulas una inscripción, si eliminamos la actividad o el evento, o si eliminas la cuenta, pasan a la copia bloqueada."
           },
           "terms": {
             "title": "Documentos y autorizaciones de los eventos",
             "data": "La aceptación o el rechazo de cada documento que pide un evento, para ti y para cada menor que inscribas, con quién lo decidió, la fecha y, si el documento lo exige, la firma dibujada en la pantalla, y el historial de esa decisión: cada aceptación y cada retirada de un consentimiento, con quién la decidió, quién la registró y cuándo. Las condiciones de un menor las decides tú, como su representante, igual que sus consentimientos hasta los 14 años; desde los 14 años sus consentimientos los decide el propio menor.",
             "purpose": "Recoger las condiciones y autorizaciones necesarias para participar en cada evento y poder demostrarlas. Las firmas solo las ve la administración, y tú en la copia de tus datos.",
             "legalBasis": "Para los documentos que recogen las condiciones de participación, la prestación del servicio que solicitas (art. 6.1.b RGPD); para los que te piden un consentimiento, que nunca exigimos para inscribirte, ese consentimiento (art. 6.1.a RGPD), y para guardar tu decisión, la obligación de poder demostrarla (arts. 6.1.c y 7.1 RGPD).",
-            "retention": "Mientras exista el evento y mantengas la cuenta; si la eliminas, pasan a la copia bloqueada. Puedes retirar en cualquier momento un consentimiento que hayas dado en un documento desde «Mi cuenta» o escribiéndonos, sin que afecte a lo hecho antes de retirarlo; la aceptación anterior se conserva en el historial para poder demostrarla."
+            "retention": "Mientras exista el evento y mantengas la cuenta; si eliminamos el evento o eliminas la cuenta, pasan a la copia bloqueada. Puedes retirar en cualquier momento un consentimiento que hayas dado en un documento desde «Mi cuenta» o escribiéndonos, sin que afecte a lo hecho antes de retirarlo; la aceptación anterior se conserva en el historial para poder demostrarla."
           },
           "statistics": {
             "title": "Estadísticas de participación",
@@ -567,8 +567,8 @@
             "retention": "El tiempo necesario para atender tu consulta. Las solicitudes de ejercicio de derechos y nuestra respuesta, tres años desde que las atendemos, para poder acreditarlo (art. 72 LOPDGDD)."
           },
           "erasure": {
-            "title": "Copia bloqueada al eliminar una cuenta o un menor",
-            "data": "Una copia de los datos de la persona eliminada y, si es una cuenta, de sus menores; si se elimina solo a un menor, también la identificación de su padre, madre o tutor; sus inscripciones; sus decisiones sobre los documentos de los eventos, con las firmas y el texto de cada documento tal como estaba al eliminarla; los cambios de su consentimiento para recibir novedades, y quién pidió la eliminación o, si fue automática, su motivo. Nunca incluye contraseñas, códigos ni claves.",
+            "title": "Copia bloqueada de los datos eliminados",
+            "data": "Al eliminar una cuenta o un menor, una copia de los datos de la persona eliminada y, si es una cuenta, de sus menores; si se elimina solo a un menor, también la identificación de su padre, madre o tutor; sus inscripciones; sus decisiones sobre los documentos de los eventos, con las firmas, su historial y el texto de cada documento tal como estaba al eliminarla; los cambios de su consentimiento para recibir novedades, y quién pidió la eliminación o, si fue automática, su motivo. Al anular una inscripción o eliminar una actividad o un evento, una copia de las inscripciones que se borran y, si es un evento, de las decisiones sobre sus documentos con las firmas, su historial y el texto de cada documento, con el nombre de las personas a las que se refieren o que las decidieron y quién lo eliminó. Nunca incluye contraseñas, códigos ni claves.",
             "purpose": "Atender las posibles responsabilidades nacidas del tratamiento. Nadie la consulta desde la web: solo puede ponerse a disposición de jueces y tribunales, el Ministerio Fiscal o las administraciones públicas competentes, en particular la Agencia Española de Protección de Datos.",
             "legalBasis": "La obligación legal de bloquear los datos suprimidos (art. 6.1.c RGPD y art. 32 LOPDGDD).",
             "retention": "Dos años desde la eliminación; después se borra automáticamente. Las copias de seguridad la conservan hasta que se sustituyen."
@@ -1660,6 +1660,7 @@
           "ChangeAssignmentStatus": "Cambiar el estado de una inscripción",
           "CreateActivity": "Crear una actividad",
           "DeleteActivity": "Eliminar una actividad",
+          "PurgeDeletedParticipations": "Purgar copias de inscripciones y decisiones eliminadas",
           "UnassignActivity": "Retirar una inscripción",
           "UpdateActivity": "Editar una actividad",
           "SendEmailToEventAttendees": "Enviar un email a los asistentes",

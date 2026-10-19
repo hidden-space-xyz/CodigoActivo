@@ -24,7 +24,11 @@ internal static class DeletedAccountSnapshot
     /// </summary>
     internal const int SchemaVersion = 7;
 
-    private static readonly JsonSerializerOptions SerializerOptions = new(
+    /// <summary>
+    /// Serialization of the blocked copies, shared with <c>DeletedParticipationSnapshot</c>: web
+    /// naming, enums by name and each document's text embedded as JSON.
+    /// </summary>
+    internal static readonly JsonSerializerOptions SerializerOptions = new(
         JsonSerializerDefaults.Web
     )
     {

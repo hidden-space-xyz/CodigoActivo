@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Domain.Activities;
@@ -17,11 +18,23 @@ public sealed class DeleteEventCommandHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly IParticipationArchive archive = Substitute.For<IParticipationArchive>();
+    private readonly IDeletedParticipationRepository deletedParticipations =
+        Substitute.For<IDeletedParticipationRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
+    private readonly TestCurrentUser currentUser = new(isAdmin: true);
+    private readonly TestClock clock = new();
     private readonly DeleteEventCommandHandler sut;
 
     public DeleteEventCommandHandlerTests()
     {
-        sut = new DeleteEventCommandHandler(events, activities);
+        sut = new DeleteEventCommandHandler(
+            events,
+            activities,
+            ParticipationErasers.Create(archive, deletedParticipations, uow),
+            currentUser,
+            clock
+        );
     }
 
     [Fact]
@@ -74,6 +87,29 @@ public sealed class DeleteEventCommandHandlerTests
                     foreignThumbnailId
                 )
             );
+    }
+
+    [Fact]
+    public async Task HandleAsyncValidEventCommitsItsRemovalWithTheBlockedCopyOfItsParticipation()
+    {
+        var ev = NewEvent();
+        events.Finds(ev);
+        activities.ListThumbnailIdsAsync(ev.Id, Arg.Any<CancellationToken>()).Returns([]);
+
+        await sut.HandleAsync(new DeleteEventCommand(ev.Id), TestContext.Current.CancellationToken);
+
+        var deletion = ParticipationDeletion.OfEvent(ev.Id, currentUser.Id!.Value, clock.UtcNow);
+        await archive.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
+        await archive.Received(1).CaptureCopyAsync(deletion, Arg.Any<CancellationToken>());
+        await deletedParticipations
+            .Received(1)
+            .AddAsync(
+                Arg.Is<DeletedParticipation>(copy =>
+                    copy.Data == ParticipationErasers.Copy && copy.DeletedAt == clock.UtcNow
+                ),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     private static bool IsDeletedEventThumbnailBatch(

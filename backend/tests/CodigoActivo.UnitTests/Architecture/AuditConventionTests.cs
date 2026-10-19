@@ -11,6 +11,7 @@ public sealed class AuditConventionTests
 {
     private static readonly string[] NeverRecordedIdentifiers =
     [
+        "DeletedParticipationId",
         "EventRatingId",
         "LoginChallengeId",
         "UserSessionId",
@@ -75,6 +76,7 @@ public sealed class AuditConventionTests
             .BeEquivalentTo(
                 "RemoveExpiredSessionsCommand",
                 "PurgeDeletedAccountsCommand",
+                "PurgeDeletedParticipationsCommand",
                 "PurgeUnverifiedAccountsCommand",
                 "PurgeUnusedFilesCommand",
                 "PurgeAdultDependentsCommand",

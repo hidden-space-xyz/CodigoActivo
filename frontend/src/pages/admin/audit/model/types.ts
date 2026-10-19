@@ -29,6 +29,7 @@ export type AuditAction =
   | 'ChangeAssignmentStatus'
   | 'CreateActivity'
   | 'DeleteActivity'
+  | 'PurgeDeletedParticipations'
   | 'UnassignActivity'
   | 'UpdateActivity'
   | 'SendEmailToEventAttendees'

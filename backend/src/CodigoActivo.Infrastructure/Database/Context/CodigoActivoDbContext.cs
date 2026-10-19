@@ -168,6 +168,11 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<DeletedAccount> DeletedAccounts => Set<DeletedAccount>();
 
     /// <summary>
+    /// Gets the blocked copies of removed participation.
+    /// </summary>
+    public DbSet<DeletedParticipation> DeletedParticipations => Set<DeletedParticipation>();
+
+    /// <summary>
     /// Adds <see cref="DeletedAccountGuard"/> to every instance, whatever registered the options, so
     /// no commit can delete a user without the legal copy.
     /// </summary>

@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Users;
@@ -29,6 +30,13 @@ public sealed class DeletedAccountPurgerTests(CodigoActivoWebAppFactory factory)
         );
     }
 
+    private Task<List<Guid>> RemainingParticipationCopyIdsAsync()
+    {
+        return Factory.QueryAsync(db =>
+            db.DeletedParticipations.Select(copy => copy.Id.Value).ToListAsync(Ct)
+        );
+    }
+
     [Fact]
     public async Task PurgeAsyncKeepsACopyForTwoYearsAndDeletesItRightAfter()
     {
@@ -47,15 +55,44 @@ public sealed class DeletedAccountPurgerTests(CodigoActivoWebAppFactory factory)
             return Task.CompletedTask;
         });
 
-        (await Build().PurgeAsync(Ct)).Should().Be(1);
+        (await Build().PurgeAsync(Ct)).Should().Be((1, 0));
         (await RemainingCopyIdsAsync()).Should().Equal(erasedToday);
 
         Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddYears(2).AddSeconds(-1);
-        (await Build().PurgeAsync(Ct)).Should().Be(0);
+        (await Build().PurgeAsync(Ct)).Should().Be((0, 0));
         (await RemainingCopyIdsAsync()).Should().Equal(erasedToday);
 
         Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddSeconds(1);
-        (await Build().PurgeAsync(Ct)).Should().Be(1);
+        (await Build().PurgeAsync(Ct)).Should().Be((1, 0));
         (await RemainingCopyIdsAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task PurgeAsyncKeepsAParticipationCopyForTwoYearsAndDeletesItRightAfter()
+    {
+        var removedToday = Guid.NewGuid();
+        var removedLongAgo = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.DeletedParticipations.AddRange(
+                Persisted.As<DeletedParticipation>(
+                    new { Id = removedToday, DeletedAt = Factory.Clock.UtcNow }
+                ),
+                Persisted.As<DeletedParticipation>(
+                    new { Id = removedLongAgo, DeletedAt = Factory.Clock.UtcNow.AddYears(-3) }
+                )
+            );
+            return Task.CompletedTask;
+        });
+
+        (await Build().PurgeAsync(Ct)).Should().Be((0, 1));
+        (await RemainingParticipationCopyIdsAsync()).Should().Equal(removedToday);
+
+        Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddYears(2).AddSeconds(-1);
+        (await Build().PurgeAsync(Ct)).Should().Be((0, 0));
+
+        Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddSeconds(1);
+        (await Build().PurgeAsync(Ct)).Should().Be((0, 1));
+        (await RemainingParticipationCopyIdsAsync()).Should().BeEmpty();
     }
 }

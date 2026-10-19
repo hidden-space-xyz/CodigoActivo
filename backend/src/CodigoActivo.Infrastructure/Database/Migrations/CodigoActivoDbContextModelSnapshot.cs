@@ -166,6 +166,30 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("assignments", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Activities.DeletedParticipation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("data");
+
+                    b.Property<DateTimeOffset>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_deleted_participations");
+
+                    b.HasIndex("DeletedAt")
+                        .HasDatabaseName("ix_deleted_participations_deleted_at");
+
+                    b.ToTable("deleted_participations", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.EventCategories.EventCategoryType", b =>
                 {
                     b.Property<Guid>("Id")

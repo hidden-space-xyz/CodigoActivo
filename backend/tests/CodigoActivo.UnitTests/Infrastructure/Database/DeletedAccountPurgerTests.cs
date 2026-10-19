@@ -1,7 +1,9 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Users.Commands;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
@@ -26,6 +28,8 @@ public sealed class DeletedAccountPurgerTests : IDisposable
 
     private readonly IDeletedAccountRepository deletedAccounts =
         Substitute.For<IDeletedAccountRepository>();
+    private readonly IDeletedParticipationRepository deletedParticipations =
+        Substitute.For<IDeletedParticipationRepository>();
     private readonly TestClock clock = new();
     private readonly RecordingLogger<DeletedAccountPurger> logger = new();
     private readonly ServiceProvider provider;
@@ -34,10 +38,15 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     {
         provider = new ServiceCollection()
             .AddScoped<IDeletedAccountRepository>(_ => deletedAccounts)
+            .AddScoped<IDeletedParticipationRepository>(_ => deletedParticipations)
             .AddSingleton<IClock>(clock)
             .AddScoped<
                 ICommandHandler<PurgeDeletedAccountsCommand, Result<int>>,
                 PurgeDeletedAccountsCommandHandler
+            >()
+            .AddScoped<
+                ICommandHandler<PurgeDeletedParticipationsCommand, Result<int>>,
+                PurgeDeletedParticipationsCommandHandler
             >()
             .BuildServiceProvider();
     }
@@ -73,11 +82,17 @@ public sealed class DeletedAccountPurgerTests : IDisposable
         deletedAccounts
             .PurgeDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
             .Returns(4);
+        deletedParticipations
+            .PurgeDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
+            .Returns(3);
 
         var purged = await Build().PurgeAsync(TestContext.Current.CancellationToken);
 
-        purged.Should().Be(4);
+        purged.Should().Be((4, 3));
         await deletedAccounts
+            .Received(1)
+            .PurgeDeletedUpToAsync(clock.UtcNow.AddYears(-2), Arg.Any<CancellationToken>());
+        await deletedParticipations
             .Received(1)
             .PurgeDeletedUpToAsync(clock.UtcNow.AddYears(-2), Arg.Any<CancellationToken>());
     }
