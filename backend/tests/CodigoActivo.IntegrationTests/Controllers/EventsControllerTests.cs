@@ -1110,6 +1110,29 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task TermsDocumentKindChangeWhileAnEventLinksItReturnsConflict()
+    {
+        var termsDocumentId = await SeedTermsDocumentAsync("Reglamento");
+        await SeedEventAsync(
+            new DateOnly(2026, 8, 1),
+            new DateOnly(2026, 8, 2),
+            termsDocumentId: termsDocumentId
+        );
+        var admin = await LoginAsAdminAsync();
+
+        using var updated = await admin.PutJsonAsync(
+            $"/api/events/termsDocument/{termsDocumentId}",
+            new UpdateTermsDocumentRequest("Reglamento", "{}", TermsDocumentKind.Consent),
+            Ct
+        );
+
+        await updated.ShouldBeConflictAsync(ErrorCode.TermsDocumentKindInUse);
+        var stored = (await FindAsync<TermsDocument>(termsDocumentId))!;
+        stored.Kind.Should().Be(CodigoActivo.Domain.TermsDocuments.TermsDocumentKind.Conditions);
+        stored.Version.Should().Be(TermsDocument.FirstVersion);
+    }
+
+    [Fact]
     public async Task TermsDocumentWithAnImageIsRefusedOnCreateAndUpdate()
     {
         const string ImageDocument =

@@ -6106,6 +6106,7 @@
           "DiagnosticLogEntryNotFound",
           "TermsDocumentNameAlreadyExists",
           "TermsDocumentInUse",
+          "TermsDocumentKindInUse",
           "ResourceNotFound",
           "ResourceThumbnailNotFound",
           "ResourceDescriptionRequired",

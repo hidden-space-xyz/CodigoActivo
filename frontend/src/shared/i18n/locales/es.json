@@ -253,6 +253,7 @@
     "DiagnosticLogEntryNotFound": "Esta entrada del registro de diagnóstico ya no existe.",
     "TermsDocumentNameAlreadyExists": "Ya existen unos términos y condiciones con ese nombre.",
     "TermsDocumentInUse": "No se pueden eliminar estos términos y condiciones porque hay eventos que los usan o personas que ya los han aceptado.",
+    "TermsDocumentKindInUse": "No se puede cambiar el tipo de estos términos y condiciones porque hay eventos que los usan o personas que ya han decidido sobre ellos.",
     "ResourceNotFound": "No se encontró el recurso.",
     "ResourceThumbnailNotFound": "No se encontró la imagen del recurso.",
     "ResourceDescriptionRequired": "Los recursos internos deben tener una descripción.",

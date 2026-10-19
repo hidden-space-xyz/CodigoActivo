@@ -21,6 +21,23 @@ public class TermsDocumentRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
+    public async Task<bool> LockAsync(TermsDocument termsDocument, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(termsDocument);
+
+        FormattableString sql = $"""
+            SELECT id AS "Value" FROM terms_documents WHERE id = {termsDocument.Id.Value} FOR UPDATE
+            """;
+        if ((await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Count is 0)
+        {
+            return false;
+        }
+
+        await Context.Entry(termsDocument).ReloadAsync(ct);
+        return true;
+    }
+
+    /// <inheritdoc />
     public Task<bool> NameExistsAsync(
         string name,
         TermsDocumentId? exceptId = null,

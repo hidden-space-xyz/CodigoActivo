@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.TermsDocuments;
 
 namespace CodigoActivo.Application.TermsDocuments.Commands;
@@ -25,11 +26,20 @@ public sealed record UpdateTermsDocumentCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to update the terms document.
+/// Executes the command to update the terms document. The document is locked and reloaded first, so
+/// concurrent rewrites run one after another, and its kind stays as it is while an event links it or
+/// anyone decided on it, since every rule about those decisions reads the current kind.
 /// </summary>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
-public sealed class UpdateTermsDocumentCommandHandler(ITermsDocumentRepository termsDocuments)
-    : ICommandHandler<UpdateTermsDocumentCommand, Result>
+/// <param name="events">Repository used to persist and retrieve events.</param>
+/// <param name="termsAcceptances">Repository used to persist and retrieve terms acceptances.</param>
+/// <param name="uow">Unit of work that runs the rewrite in one transaction.</param>
+public sealed class UpdateTermsDocumentCommandHandler(
+    ITermsDocumentRepository termsDocuments,
+    IEventRepository events,
+    IEventTermsAcceptanceRepository termsAcceptances,
+    IUnitOfWork uow
+) : ICommandHandler<UpdateTermsDocumentCommand, Result>
 {
     /// <summary>
     /// Handles the request to update the terms document.
@@ -56,12 +66,42 @@ public sealed class UpdateTermsDocumentCommandHandler(ITermsDocumentRepository t
             return Error.Conflict(ApplicationErrorCode.TermsDocumentNameAlreadyExists);
         }
 
+        return await uow.ExecuteInTransactionAsync(
+            attempt => RewriteLockedAsync(termsDocument, name, command, attempt),
+            ct
+        );
+    }
+
+    private async Task<Result> RewriteLockedAsync(
+        TermsDocument termsDocument,
+        string name,
+        UpdateTermsDocumentCommand command,
+        CancellationToken ct
+    )
+    {
+        if (!await termsDocuments.LockAsync(termsDocument, ct))
+        {
+            return Error.NotFound(ApplicationErrorCode.TermsDocumentNotFound);
+        }
+
+        if (
+            termsDocument.Kind != command.Kind
+            && (
+                await events.LinksTermsDocumentAsync(termsDocument.Id, ct)
+                || await termsAcceptances.AnyForDocumentAsync(termsDocument.Id, ct)
+            )
+        )
+        {
+            return Error.Conflict(ApplicationErrorCode.TermsDocumentKindInUse);
+        }
+
         termsDocument.Rewrite(
             name,
             RichText.From(command.Description),
             command.RequiresSignature,
             command.Kind
         );
+        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

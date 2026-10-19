@@ -256,8 +256,9 @@ anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and 
 refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
 
 An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); a
-document holds conditions or a consent (`kind`, and a consent is never required) and may ask for a handwritten
-signature (`requires_signature`). The signup wire contract carries `TermsDecisions` lists of
+document holds conditions or a consent (`kind`, which cannot change once an event links it or anyone decided on
+it, and a consent is never required) and may ask for a handwritten signature (`requires_signature`). The signup
+wire contract carries `TermsDecisions` lists of
 `{TermsDocumentId, Accepted, Signature, Version}`, the signature a base64 PNG drawn in the SPA with `signature_pad`: one
 for the person in `AssignRequest`, one per member in each `AssignHouseholdRequest` assignment. `TermsGate`
 applies `TermsConsent` person by person and records each decision as an `EventTermsAcceptance` about that person

@@ -16,6 +16,16 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
     public Task<TermsDocument?> GetByIdAsync(TermsDocumentId id, CancellationToken ct = default);
 
     /// <summary>
+    /// Locks the stored document until the running transaction ends and reloads it, so rewrites of
+    /// the same document run one after another and each one keeps, as a previous version, the text
+    /// the one before it stored. Changes staged on the document before the call are discarded.
+    /// </summary>
+    /// <param name="termsDocument">Document loaded in the unit of work.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is <see langword="false"/> when the document no longer exists.</returns>
+    public Task<bool> LockAsync(TermsDocument termsDocument, CancellationToken ct = default);
+
+    /// <summary>
     /// Tells whether another document already uses a name, ignoring letter case.
     /// </summary>
     /// <param name="name">Name to look for, already trimmed.</param>
