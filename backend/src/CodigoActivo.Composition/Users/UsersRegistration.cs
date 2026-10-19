@@ -10,7 +10,7 @@ namespace CodigoActivo.Composition.Users;
 
 /// <summary>
 /// Registers users: households, who may act for whom, the legal copies of erased accounts and the
-/// scheduled erasure of accounts nobody verified.
+/// scheduled erasure of accounts nobody verified and of dependents who came of age.
 /// </summary>
 internal static class UsersRegistration
 {
@@ -28,6 +28,8 @@ internal static class UsersRegistration
         services.AddHostedService<DeletedAccountPurger>();
         services.AddFixedOptions<UnverifiedAccountPurgeOptions>();
         services.AddHostedService<UnverifiedAccountPurger>();
+        services.AddFixedOptions<AdultDependentPurgeOptions>();
+        services.AddHostedService<AdultDependentPurger>();
         return services;
     }
 }

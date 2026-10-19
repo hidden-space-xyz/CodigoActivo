@@ -19,6 +19,10 @@ public sealed record ComposedAccountEmail(string Name, EmailRecipient Recipient)
     public DateTimeOffset? OccurredAt { get; init; }
 
     public string? MaskedNewEmail { get; init; }
+
+    public string? DependentName { get; init; }
+
+    public DateOnly? ComingOfAgeOn { get; init; }
 }
 
 public sealed class FakeAccountEmailComposer : IAccountEmailComposer
@@ -131,6 +135,22 @@ public sealed class FakeAccountEmailComposer : IAccountEmailComposer
                 Change = change,
                 OccurredAt = occurredAt,
                 MaskedNewEmail = maskedNewEmail,
+            }
+        );
+    }
+
+    public EmailMessage ComingOfAgeNotice(
+        EmailRecipient recipient,
+        string dependentName,
+        DateOnly comingOfAgeOn
+    )
+    {
+        return Compose(
+            EmailKind.ComingOfAgeNotice,
+            new(nameof(ComingOfAgeNotice), recipient)
+            {
+                DependentName = dependentName,
+                ComingOfAgeOn = comingOfAgeOn,
             }
         );
     }

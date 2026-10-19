@@ -103,14 +103,18 @@ authentication are not supported.
   so no request can demote an account into somebody's dependent; a dependent only accepts its own guardian
   repeated or omitted (`UserParentReassignmentForbidden` otherwise) and is never reassigned, must supply a
   birth date (`UserChildBirthDateRequired`) that stays a minor's only when it changes from the stored value
-  (`UserChildBirthDateNotMinor`), so a dependent who already turned 18 stays editable with their stored
-  birth date, and never stores a DNI/NIE or news consent; turning 18 changes nothing about the
-  account itself, which keeps the `Dependent` status and no password, so a login with its email answers
-  `InvalidCredentials` and `forgot-password` ignores it. Dependents are created by a registration (its
+  (`UserChildBirthDateNotMinor`), and never stores a DNI/NIE, news consent or password. Dependents are
+  created by a registration (its
   `minors` list, at most 20, `RequestValidationFailed` beyond) or through `POST /api/users/{id}/children`
   (at most 20 per guardian, counted with the guardian's row locked, `UserChildLimitReached` beyond). They must be
-  minors at creation and leave their guardian only when the guardian deletes them. A household signup list
-  holds at most 21 people.
+  minors at creation and leave their guardian when the guardian deletes them or when they come of age, since
+  the guardian no longer represents them then: `PurgeAdultDependents` erases a dependent, with its blocked
+  copy, on the day they turn 18 in `APP_TIMEZONE` (1 March for a 29 February birth in a common year), and
+  `SendComingOfAgeNotices` emails the guardian 30 days before, recording it in
+  `users.coming_of_age_notice_sent_at`. A changed birth date clears that record, so the corrected day gets its
+  own notice; a notice the email limits refuse is retried on the next run, and a guardian whose email nobody
+  verified gets none. `AdultDependentPurger` runs both 30 seconds after startup and then hourly, and each
+  dependent is locked and checked again first. A household signup list holds at most 21 people.
 - `PATCH /api/users/{id}/password` changes only the caller's own password and asks for the current one;
   guardians and administrators get `AccessDenied` (403) for any other account, so nobody else can spend that
   account's password attempts.
@@ -173,8 +177,8 @@ initial administrator instead of the household as author, last editor or uploade
 partners, resources and files, in the same transaction; the original credit is not kept anywhere.
 
 **Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's,
-a guardian's, that of an unverified account whose email another account claims, or that of one nobody
-verified within 24 hours — first stores one JSON
+a guardian's, that of an unverified account whose email another account claims, that of one nobody
+verified within 24 hours, or that of a dependent who came of age — first stores one JSON
 copy in `deleted_accounts` (`id` is the former user id with no foreign key, `deleted_at`, `data` as
 `jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
 their dependents and the household's signups and terms decisions, and then deletes them; a failed deletion

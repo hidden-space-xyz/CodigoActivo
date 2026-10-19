@@ -88,6 +88,21 @@ public sealed class AccountEmailComposerTests
     }
 
     [Fact]
+    public void ComingOfAgeNoticeLinksTheAccountPageAndGreetsTheGuardian()
+    {
+        var message = sut.ComingOfAgeNotice(Ana, "Leo Ruiz", new DateOnly(2026, 8, 3));
+
+        message.Kind.Should().Be(EmailKind.ComingOfAgeNotice);
+        message.ToAddress.Should().Be("ana@test.com");
+        message.ToName.Should().Be("Ana");
+        message
+            .TextBody.Should()
+            .Contain("https://app.test/account")
+            .And.Contain("03/08/2026")
+            .And.Contain(SiteFooter);
+    }
+
+    [Fact]
     public void EmailInUseValidRequestLinksTheLoginPageInsteadOfAnyCode()
     {
         var message = sut.EmailInUse(Ana);

@@ -742,6 +742,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("date")
                         .HasColumnName("birth_date");
 
+                    b.Property<DateTimeOffset?>("ComingOfAgeNoticeSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("coming_of_age_notice_sent_at");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");

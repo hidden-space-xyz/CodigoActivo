@@ -98,6 +98,9 @@ public sealed record PersonalDataConsentChangeResponse(
 /// <param name="GuardianshipDeclaredAt">
 /// When the user declared being the minor's parent or legal guardian.
 /// </param>
+/// <param name="ComingOfAgeNoticeSentAt">
+/// When the user was told that the minor will be erased the day it comes of age.
+/// </param>
 public sealed record PersonalDataDependentResponse(
     Guid Id,
     string FirstName,
@@ -107,7 +110,8 @@ public sealed record PersonalDataDependentResponse(
     string UserType,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    DateTimeOffset? GuardianshipDeclaredAt
+    DateTimeOffset? GuardianshipDeclaredAt,
+    DateTimeOffset? ComingOfAgeNoticeSentAt
 );
 
 /// <summary>

@@ -19,6 +19,7 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     private const string EmailChangePath = "/confirm-email";
     private const string PasswordResetPath = "/reset-password";
     private const string LoginPath = "/login";
+    private const string AccountPath = "/account";
 
     private string SiteUrl => application.BaseUrl.TrimEnd('/');
 
@@ -131,6 +132,24 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
             clock.TimeZone,
             SiteUrl,
             maskedNewEmail
+        );
+    }
+
+    /// <inheritdoc />
+    public EmailMessage ComingOfAgeNotice(
+        EmailRecipient recipient,
+        string dependentName,
+        DateOnly comingOfAgeOn
+    )
+    {
+        ArgumentNullException.ThrowIfNull(recipient);
+        return ComingOfAgeNoticeEmail.Create(
+            recipient.Address,
+            recipient.Name,
+            dependentName,
+            comingOfAgeOn,
+            $"{SiteUrl}{AccountPath}",
+            SiteUrl
         );
     }
 

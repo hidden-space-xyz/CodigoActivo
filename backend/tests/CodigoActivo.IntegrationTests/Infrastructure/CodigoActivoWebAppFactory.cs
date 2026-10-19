@@ -138,6 +138,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
             RemoveHostedService<ExpiredSessionCleaner>(services);
             RemoveHostedService<DeletedAccountPurger>(services);
             RemoveHostedService<UnverifiedAccountPurger>(services);
+            RemoveHostedService<AdultDependentPurger>(services);
             RemoveHostedService<UnusedFilePurger>(services);
             RemoveHostedService<EmailOutboxProcessor>(services);
             RemoveHostedService<DisposableEmailDomainRefresher>(services);

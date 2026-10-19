@@ -76,8 +76,10 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'AddChild',
   'ChangeUserType',
   'DeleteUser',
+  'PurgeAdultDependents',
   'PurgeDeletedAccounts',
   'ResetTwoFactor',
+  'SendComingOfAgeNotices',
   'SetAdmin',
   'UpdateUser',
 ]

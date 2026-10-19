@@ -58,6 +58,11 @@ public sealed class UserRow
     /// </summary>
     public DateTimeOffset? GuardianshipDeclaredAt { get; init; }
 
+    /// <summary>
+    /// Gets when the guardian was told that the dependent will be erased the day it comes of age.
+    /// </summary>
+    public DateTimeOffset? ComingOfAgeNoticeSentAt { get; init; }
+
     /// <summary>Gets the identifier of the guardian of a dependent.</summary>
     public Guid? ParentId { get; init; }
 

@@ -494,10 +494,10 @@
           },
           "minors": {
             "title": "Menores a tu cargo",
-            "data": "Nombre, apellidos, fecha de nacimiento y género de cada menor, que nos facilita su padre, madre o tutor legal, y la fecha en que declaró serlo al añadirlo.",
+            "data": "Nombre, apellidos, fecha de nacimiento y género de cada menor, que nos facilita su padre, madre o tutor legal, la fecha en que declaró serlo al añadirlo y la fecha en que le avisamos de que el menor iba a cumplir 18 años.",
             "purpose": "Que puedas inscribirlos en actividades adecuadas a su edad, que sepamos a quién avisar sobre ellos y que podamos acreditar que nos dio sus datos quien declaró ser su padre, madre o tutor legal.",
             "legalBasis": "La prestación del servicio que solicitas como su padre, madre o tutor legal (art. 6.1.b RGPD) y, para guardar la fecha en que declaraste serlo, nuestro interés legítimo en poder acreditar quién nos dio sus datos y defendernos ante reclamaciones (art. 6.1.f RGPD).",
-            "retention": "Hasta que los quites de tu cuenta o la elimines; después, solo la copia bloqueada que se explica más abajo."
+            "retention": "Hasta que los quites de tu cuenta o la elimines y, como mucho, hasta que cumplan 18 años: te avisamos por email 30 días antes y ese día los borramos con sus inscripciones. Después, solo la copia bloqueada que se explica más abajo."
           },
           "signups": {
             "title": "Inscripciones, acreditaciones y diplomas",
@@ -523,7 +523,7 @@
           "emails": {
             "title": "Comunicaciones por email",
             "data": "Tu nombre, tu email y tu preferencia sobre recibir novedades, con la fecha y el medio de cada cambio: el registro, «Mi cuenta», el enlace para darte de baja o el botón de baja de tu programa de correo.",
-            "purpose": "Enviarte los correos que el servicio necesita (verificación del email, códigos de acceso, avisos de seguridad, el estado de tus inscripciones e información práctica de los eventos en los que participas) y, solo si lo aceptas, novedades sobre las actividades de la asociación.",
+            "purpose": "Enviarte los correos que el servicio necesita (verificación del email, códigos de acceso, avisos de seguridad, el estado de tus inscripciones, el aviso de que un menor a tu cargo va a cumplir 18 años e información práctica de los eventos en los que participas) y, solo si lo aceptas, novedades sobre las actividades de la asociación.",
             "legalBasis": "Para los correos del servicio, su prestación (art. 6.1.b RGPD); para las novedades, tu consentimiento (art. 6.1.a RGPD), que puedes retirar gratis cuando quieras con el enlace para darte de baja que incluye cada novedad o con el botón de baja que muestre tu programa de correo, sin iniciar sesión, desde «Mi cuenta» o escribiéndonos a la dirección que también figura en cada novedad.",
             "retention": "Cada correo espera en la cola de envío, con el asunto y el contenido cifrados, solo hasta que se entrega o se descarta tras cinco intentos fallidos. Tu preferencia, hasta que la cambies o elimines la cuenta, y la fecha y el medio de cada cambio, mientras mantengas la cuenta, para poder demostrar tu consentimiento; si la eliminas, pasan a la copia bloqueada."
           },
@@ -564,7 +564,7 @@
           },
           "erasure": {
             "title": "Copia bloqueada al eliminar una cuenta o un menor",
-            "data": "Una copia de los datos de la persona eliminada y, si es una cuenta, de sus menores; si se elimina solo a un menor, también la identificación de su padre, madre o tutor; sus inscripciones; sus decisiones sobre los documentos de los eventos, con las firmas y el texto de cada documento tal como estaba al eliminarla; los cambios de su consentimiento para recibir novedades, y quién pidió la eliminación. Nunca incluye contraseñas, códigos ni claves.",
+            "data": "Una copia de los datos de la persona eliminada y, si es una cuenta, de sus menores; si se elimina solo a un menor, también la identificación de su padre, madre o tutor; sus inscripciones; sus decisiones sobre los documentos de los eventos, con las firmas y el texto de cada documento tal como estaba al eliminarla; los cambios de su consentimiento para recibir novedades, y quién pidió la eliminación o, si fue automática, su motivo. Nunca incluye contraseñas, códigos ni claves.",
             "purpose": "Atender las posibles responsabilidades nacidas del tratamiento. Nadie la consulta desde la web: solo puede ponerse a disposición de jueces y tribunales, el Ministerio Fiscal o las administraciones públicas competentes, en particular la Agencia Española de Protección de Datos.",
             "legalBasis": "La obligación legal de bloquear los datos suprimidos (art. 6.1.c RGPD y art. 32 LOPDGDD).",
             "retention": "Dos años desde la eliminación; después se borra automáticamente. Las copias de seguridad la conservan hasta que se sustituyen."
@@ -574,7 +574,7 @@
       "minors": {
         "title": "Menores de edad",
         "text": "Solo las personas mayores de edad pueden crear una cuenta: al registrarte declaras serlo y guardamos la fecha de esa declaración. Los datos de un menor solo puede dárnoslos su padre, madre o tutor legal, que al añadirlo declara serlo (guardamos la fecha de esa declaración) y responde de que los datos sean correctos. Los menores no inician sesión y nunca les pedimos DNI, email ni teléfono.",
-        "rights": "Los derechos de un menor de 14 años los ejerce en su nombre su padre, madre o tutor legal (art. 12.6 LOPDGDD). A partir de los 14 años puede ejercerlos el propio menor escribiéndonos, y es él quien da o retira el consentimiento en lo que se base en él (art. 7 LOPDGDD). Al cumplir 18 años puede escribirnos para ejercerlos directamente."
+        "rights": "Los derechos de un menor de 14 años los ejerce en su nombre su padre, madre o tutor legal (art. 12.6 LOPDGDD). A partir de los 14 años puede ejercerlos el propio menor escribiéndonos, y es él quien da o retira el consentimiento en lo que se base en él (art. 7 LOPDGDD). Al cumplir 18 años deja de estar a cargo de su padre, madre o tutor y borramos sus datos, salvo la copia bloqueada; desde entonces ejerce sus derechos directamente escribiéndonos y, si quiere seguir participando, puede crear su propia cuenta."
       },
       "required": {
         "title": "¿Estás obligado a darnos tus datos?",
@@ -1649,8 +1649,10 @@
           "AddChild": "Añadir un menor",
           "ChangeUserType": "Cambiar el tipo de usuario",
           "DeleteUser": "Eliminar un usuario",
+          "PurgeAdultDependents": "Eliminar menores que han cumplido 18 años",
           "PurgeDeletedAccounts": "Purgar copias de cuentas eliminadas",
           "ResetTwoFactor": "Restablecer el segundo factor",
+          "SendComingOfAgeNotices": "Avisar de menores que van a cumplir 18 años",
           "SetAdmin": "Cambiar los permisos de administrador",
           "UpdateUser": "Editar un usuario"
         },

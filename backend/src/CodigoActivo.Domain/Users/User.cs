@@ -17,6 +17,12 @@ public class User : AggregateRoot<UserId>
     /// </summary>
     public const int UnverifiedRetentionDays = 1;
 
+    /// <summary>
+    /// Days before a dependent comes of age on which its guardian is told that it will be erased
+    /// that day.
+    /// </summary>
+    public const int ComingOfAgeNoticeDays = 30;
+
     private readonly List<NewsConsentChange> newsConsentChanges = [];
 
     private User() { }
@@ -108,6 +114,12 @@ public class User : AggregateRoot<UserId>
     /// it; null for independent accounts and for dependents added before it was recorded.
     /// </summary>
     public DateTimeOffset? GuardianshipDeclaredAt { get; private set; }
+
+    /// <summary>
+    /// Gets when the guardian was told that this dependent will be erased the day it comes of age;
+    /// null until then, and again once its birth date changes.
+    /// </summary>
+    public DateTimeOffset? ComingOfAgeNoticeSentAt { get; private set; }
 
     /// <summary>
     /// Gets the UTC timestamp of the most recent update.
@@ -502,6 +514,11 @@ public class User : AggregateRoot<UserId>
             Phone = contact.Phone;
             SecondaryPhone = contact.SecondaryPhone;
             return;
+        }
+
+        if (change.BirthDate != BirthDate)
+        {
+            ComingOfAgeNoticeSentAt = null;
         }
 
         BirthDate = change.BirthDate;
@@ -947,6 +964,53 @@ public class User : AggregateRoot<UserId>
     public bool HasVerificationExpired(DateTimeOffset now)
     {
         return IsPendingVerification && CreatedAt <= UnverifiedPurgeCutoff(now);
+    }
+
+    /// <summary>
+    /// Tells up to which birth date the guardian of a dependent must be told on
+    /// <paramref name="today"/> that it will be erased the day it comes of age.
+    /// </summary>
+    /// <param name="today">Local day on which the age is evaluated.</param>
+    /// <returns>The latest birth date of a dependent who comes of age within the notice days.</returns>
+    public static DateOnly ComingOfAgeNoticeCutoff(DateOnly today)
+    {
+        return today.AddDays(ComingOfAgeNoticeDays).LatestAdultBirthDate();
+    }
+
+    /// <summary>
+    /// Tells whether the guardian still has to be told that this dependent will be erased the day it
+    /// comes of age: it is a minor on <paramref name="today"/>, comes of age within
+    /// <see cref="ComingOfAgeNoticeDays"/> days and its guardian was not told yet.
+    /// </summary>
+    /// <param name="today">Local day on which the age is evaluated.</param>
+    /// <returns><see langword="true"/> when the notice is due.</returns>
+    public bool IsComingOfAgeNoticeDue(DateOnly today)
+    {
+        return IsDependent
+            && ComingOfAgeNoticeSentAt is null
+            && BirthDate is { } birthDate
+            && birthDate.IsMinor(today)
+            && !birthDate.IsMinor(today.AddDays(ComingOfAgeNoticeDays));
+    }
+
+    /// <summary>
+    /// Records that the guardian was told that this dependent will be erased the day it comes of age.
+    /// </summary>
+    /// <param name="now">Current timestamp, stored as the time of the notice.</param>
+    public void RecordComingOfAgeNotice(DateTimeOffset now)
+    {
+        ComingOfAgeNoticeSentAt = now;
+    }
+
+    /// <summary>
+    /// Tells whether this dependent is of age on <paramref name="today"/>. Its guardian no longer
+    /// represents it then, so it is erased.
+    /// </summary>
+    /// <param name="today">Local day on which the age is evaluated.</param>
+    /// <returns><see langword="true"/> when the account is a dependent who has come of age.</returns>
+    public bool HasComeOfAge(DateOnly today)
+    {
+        return IsDependent && BirthDate is { } birthDate && !birthDate.IsMinor(today);
     }
 
     /// <summary>

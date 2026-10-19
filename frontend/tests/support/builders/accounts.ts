@@ -104,6 +104,7 @@ export function buildPersonalDataResponse(
         createdAt: '2026-01-01T00:00:00Z',
         updatedAt: null,
         guardianshipDeclaredAt: '2026-01-01T00:00:00Z',
+        comingOfAgeNoticeSentAt: '2026-06-01T00:00:00Z',
       },
     ],
     signups: [

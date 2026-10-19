@@ -82,6 +82,37 @@ public static class AppStrings
         Get("emails.activityDecision.signupPhraseSelf");
 
     /// <summary>
+    /// Gets the emails coming of age blocked copy note value.
+    /// </summary>
+    public static string EmailsComingOfAgeBlockedCopyNote =>
+        Get("emails.comingOfAge.blockedCopyNote");
+
+    /// <summary>
+    /// Gets the emails coming of age button label value.
+    /// </summary>
+    public static string EmailsComingOfAgeButtonLabel => Get("emails.comingOfAge.buttonLabel");
+
+    /// <summary>
+    /// Gets the emails coming of age download value.
+    /// </summary>
+    public static string EmailsComingOfAgeDownload => Get("emails.comingOfAge.download");
+
+    /// <summary>
+    /// Gets the emails coming of age heading value.
+    /// </summary>
+    public static string EmailsComingOfAgeHeading => Get("emails.comingOfAge.heading");
+
+    /// <summary>
+    /// Gets the emails coming of age own account value.
+    /// </summary>
+    public static string EmailsComingOfAgeOwnAccount => Get("emails.comingOfAge.ownAccount");
+
+    /// <summary>
+    /// Gets the emails coming of age subject value.
+    /// </summary>
+    public static string EmailsComingOfAgeSubject => Get("emails.comingOfAge.subject");
+
+    /// <summary>
     /// Gets the emails details activity label value.
     /// </summary>
     public static string EmailsDetailsActivityLabel => Get("emails.details.activityLabel");
@@ -501,6 +532,28 @@ public static class AppStrings
     public static string EmailsActivityDecisionSignupPhraseNamed(string participantName)
     {
         return Format("emails.activityDecision.signupPhraseNamed", participantName);
+    }
+
+    /// <summary>
+    /// Formats the localized emails coming of age intro html text with the supplied values.
+    /// </summary>
+    /// <param name="dependentName">Name of the dependent, already HTML-encoded.</param>
+    /// <param name="comingOfAgeOn">Day the dependent comes of age.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsComingOfAgeIntroHtml(string dependentName, string comingOfAgeOn)
+    {
+        return Format("emails.comingOfAge.introHtml", dependentName, comingOfAgeOn);
+    }
+
+    /// <summary>
+    /// Formats the localized emails coming of age intro text text with the supplied values.
+    /// </summary>
+    /// <param name="dependentName">Name of the dependent.</param>
+    /// <param name="comingOfAgeOn">Day the dependent comes of age.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsComingOfAgeIntroText(string dependentName, string comingOfAgeOn)
+    {
+        return Format("emails.comingOfAge.introText", dependentName, comingOfAgeOn);
     }
 
     /// <summary>

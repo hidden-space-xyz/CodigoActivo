@@ -174,6 +174,18 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
+    /// Records that the periodic erasure of the dependents who came of age, or the notices that
+    /// announce it, failed.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure that ended the run.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "The adult dependent purge run failed; the next run will retry"
+    )]
+    public static partial void AdultDependentPurgeFailed(this ILogger logger, Exception exception);
+
+    /// <summary>
     /// Records that the periodic deletion of the uploads no content used in time failed.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>

@@ -475,7 +475,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
 
         var copy = await CopyOfAsync(TestSeedData.Users.MemberId);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(4);
+        copy.GetProperty("schemaVersion").GetInt32().Should().Be(5);
         copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Self");
         IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.MemberId);
         copy.GetProperty("guardian").ValueKind.Should().Be(JsonValueKind.Null);
@@ -529,6 +529,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .Should()
             .Be(dependent.GetProperty("createdAt").GetDateTimeOffset());
         account.GetProperty("guardianshipDeclaredAt").ValueKind.Should().Be(JsonValueKind.Null);
+        dependent.GetProperty("comingOfAgeNoticeSentAt").ValueKind.Should().Be(JsonValueKind.Null);
 
         Items(copy.GetProperty("termsDocuments"))
             .Select(document => document.GetProperty("name").GetString())

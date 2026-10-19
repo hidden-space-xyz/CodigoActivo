@@ -212,6 +212,7 @@ describe('toPersonalDataFile', () => {
         altaEl: '2026-01-01T00:00:00Z',
         modificadoEl: null,
         declarasSerSuPadreMadreOTutorEl: '2026-01-01T00:00:00Z',
+        teAvisamosDeQueCumple18El: '2026-06-01T00:00:00Z',
       },
     ])
     expect(file.inscripciones).toEqual([

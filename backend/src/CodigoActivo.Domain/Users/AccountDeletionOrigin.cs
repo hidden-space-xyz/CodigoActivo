@@ -30,4 +30,10 @@ public enum AccountDeletionOrigin
     /// registration, so it was erased on schedule.
     /// </summary>
     VerificationExpired = 5,
+
+    /// <summary>
+    /// The dependent came of age, so its guardian no longer represents it, and it was erased on
+    /// schedule.
+    /// </summary>
+    CameOfAge = 6,
 }

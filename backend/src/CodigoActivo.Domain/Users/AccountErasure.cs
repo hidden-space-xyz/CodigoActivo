@@ -57,4 +57,18 @@ public sealed record AccountErasure(
 
         return new AccountErasure(AccountDeletionOrigin.VerificationExpired, account.Id, now);
     }
+
+    /// <summary>
+    /// Describes the scheduled deletion of a dependent who came of age. Nobody asks for it, so the
+    /// account itself stands as the actor.
+    /// </summary>
+    /// <param name="account">Dependent who came of age.</param>
+    /// <param name="now">Current time.</param>
+    /// <returns>The description of the deletion.</returns>
+    public static AccountErasure ForComingOfAge(User account, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(account);
+
+        return new AccountErasure(AccountDeletionOrigin.CameOfAge, account.Id, now);
+    }
 }

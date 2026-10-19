@@ -232,6 +232,7 @@ export function toPersonalDataFile(data: PersonalDataResponse, t: Translate): Pe
       altaEl: dependent.createdAt,
       modificadoEl: dependent.updatedAt ?? null,
       declarasSerSuPadreMadreOTutorEl: dependent.guardianshipDeclaredAt ?? null,
+      teAvisamosDeQueCumple18El: dependent.comingOfAgeNoticeSentAt ?? null,
     })),
     inscripciones: data.signups.map((signup) => ({
       personaId: signup.personId,

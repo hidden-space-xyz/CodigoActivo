@@ -105,7 +105,8 @@ public sealed class GetPersonalDataQueryHandler(
                     u.UserType.Name,
                     u.CreatedAt,
                     u.UpdatedAt,
-                    u.GuardianshipDeclaredAt
+                    u.GuardianshipDeclaredAt,
+                    u.ComingOfAgeNoticeSentAt
                 )),
             ct
         );
