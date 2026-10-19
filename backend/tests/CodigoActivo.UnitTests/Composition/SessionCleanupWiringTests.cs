@@ -30,6 +30,6 @@ public sealed class SessionCleanupWiringTests
         provider
             .GetServices<IHostedService>()
             .Should()
-            .ContainSingle(service => service is ExpiredSessionCleaner);
+            .ContainSingle(service => service is ExpiredSessionCleanupWorker);
     }
 }

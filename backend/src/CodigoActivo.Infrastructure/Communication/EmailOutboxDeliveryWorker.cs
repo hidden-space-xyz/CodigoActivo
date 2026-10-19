@@ -17,13 +17,13 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <param name="guard">Email guard configuration, whose alert interval spaces repeated failures.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
-public sealed class EmailOutboxProcessor(
+public sealed class EmailOutboxDeliveryWorker(
     EmailOutboxDeliverer deliverer,
     EmailOutboxSignal signal,
     EmailQueueOptions options,
     EmailGuardOptions guard,
     IClock clock,
-    ILogger<EmailOutboxProcessor> logger
+    ILogger<EmailOutboxDeliveryWorker> logger
 ) : BackgroundService
 {
     private readonly LogThrottle runFailures = new(guard.AlertInterval);

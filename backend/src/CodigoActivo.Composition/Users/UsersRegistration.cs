@@ -25,11 +25,11 @@ internal static class UsersRegistration
         services.AddScoped<IDeletedAccountRepository, DeletedAccountRepository>();
         services.AddScoped<ActingUserPolicy>();
         services.AddFixedOptions<DeletedAccountPurgeOptions>();
-        services.AddHostedService<DeletedAccountPurger>();
+        services.AddHostedService<DeletedAccountPurgeWorker>();
         services.AddFixedOptions<UnverifiedAccountPurgeOptions>();
-        services.AddHostedService<UnverifiedAccountPurger>();
+        services.AddHostedService<UnverifiedAccountPurgeWorker>();
         services.AddFixedOptions<AdultDependentPurgeOptions>();
-        services.AddHostedService<AdultDependentPurger>();
+        services.AddHostedService<AdultDependentPurgeWorker>();
         return services;
     }
 }

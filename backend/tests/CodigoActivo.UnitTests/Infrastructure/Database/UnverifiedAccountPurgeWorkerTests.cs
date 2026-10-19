@@ -1,33 +1,32 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Files.Commands;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Infrastructure.Files;
+using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Infrastructure.Files;
+namespace CodigoActivo.UnitTests.Infrastructure.Database;
 
-public sealed class UnusedFilePurgerTests : IDisposable
+public sealed class UnverifiedAccountPurgeWorkerTests : IDisposable
 {
     private static readonly TimeSpan WaitBudget = TimeSpan.FromSeconds(10);
 
-    private static readonly UnusedFilePurgeOptions Immediate = new()
+    private static readonly UnverifiedAccountPurgeOptions Immediate = new()
     {
         StartupDelay = TimeSpan.Zero,
         Interval = TimeSpan.FromHours(1),
     };
 
-    private readonly ICommandHandler<PurgeUnusedFilesCommand, Result<int>> purge = Substitute.For<
-        ICommandHandler<PurgeUnusedFilesCommand, Result<int>>
-    >();
-    private readonly RecordingLogger<UnusedFilePurger> logger = new();
+    private readonly ICommandHandler<PurgeUnverifiedAccountsCommand, Result<int>> purge =
+        Substitute.For<ICommandHandler<PurgeUnverifiedAccountsCommand, Result<int>>>();
+    private readonly RecordingLogger<UnverifiedAccountPurgeWorker> logger = new();
     private readonly ServiceProvider provider;
 
-    public UnusedFilePurgerTests()
+    public UnverifiedAccountPurgeWorkerTests()
     {
         provider = new ServiceCollection().AddScoped(_ => purge).BuildServiceProvider();
     }
@@ -37,20 +36,20 @@ public sealed class UnusedFilePurgerTests : IDisposable
         provider.Dispose();
     }
 
-    private UnusedFilePurger Build(UnusedFilePurgeOptions? options = null)
+    private UnverifiedAccountPurgeWorker Build(UnverifiedAccountPurgeOptions? options = null)
     {
-        return new UnusedFilePurger(
+        return new UnverifiedAccountPurgeWorker(
             provider.GetRequiredService<IServiceScopeFactory>(),
-            options ?? new UnusedFilePurgeOptions(),
+            options ?? new UnverifiedAccountPurgeOptions(),
             logger
         );
     }
 
     [Fact]
-    public async Task PurgeAsyncRunsTheUseCaseAndReturnsTheDeletedCount()
+    public async Task PurgeAsyncRunsTheUseCaseAndReturnsTheErasedCount()
     {
         purge
-            .HandleAsync(Arg.Any<PurgeUnusedFilesCommand>(), Arg.Any<CancellationToken>())
+            .HandleAsync(Arg.Any<PurgeUnverifiedAccountsCommand>(), Arg.Any<CancellationToken>())
             .Returns(3);
 
         var purged = await Build().PurgeAsync(TestContext.Current.CancellationToken);
@@ -63,7 +62,7 @@ public sealed class UnusedFilePurgerTests : IDisposable
     {
         var signal = new TaskCompletionSource();
         purge
-            .HandleAsync(Arg.Any<PurgeUnusedFilesCommand>(), Arg.Any<CancellationToken>())
+            .HandleAsync(Arg.Any<PurgeUnverifiedAccountsCommand>(), Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
                 signal.TrySetResult();
@@ -83,7 +82,7 @@ public sealed class UnusedFilePurgerTests : IDisposable
     {
         var signal = new TaskCompletionSource();
         purge
-            .HandleAsync(Arg.Any<PurgeUnusedFilesCommand>(), Arg.Any<CancellationToken>())
+            .HandleAsync(Arg.Any<PurgeUnverifiedAccountsCommand>(), Arg.Any<CancellationToken>())
             .Returns<Task<Result<int>>>(_ =>
             {
                 signal.TrySetResult();
@@ -105,7 +104,7 @@ public sealed class UnusedFilePurgerTests : IDisposable
     public async Task ExecuteAsyncShutdownBeforeTheFirstRunTouchesNothing()
     {
         var purger = Build(
-            new UnusedFilePurgeOptions
+            new UnverifiedAccountPurgeOptions
             {
                 StartupDelay = TimeSpan.FromHours(1),
                 Interval = TimeSpan.FromHours(1),

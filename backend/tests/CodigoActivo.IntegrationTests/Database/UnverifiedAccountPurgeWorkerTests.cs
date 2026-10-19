@@ -9,15 +9,15 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class UnverifiedAccountPurgerTests(CodigoActivoWebAppFactory factory)
+public sealed class UnverifiedAccountPurgeWorkerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private UnverifiedAccountPurger Build()
+    private UnverifiedAccountPurgeWorker Build()
     {
-        return new UnverifiedAccountPurger(
+        return new UnverifiedAccountPurgeWorker(
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
             new UnverifiedAccountPurgeOptions(),
-            NullLogger<UnverifiedAccountPurger>.Instance
+            NullLogger<UnverifiedAccountPurgeWorker>.Instance
         );
     }
 

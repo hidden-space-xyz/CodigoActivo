@@ -14,16 +14,16 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Database;
 
-public sealed class ExpiredSessionCleanerTests : IDisposable
+public sealed class ExpiredSessionCleanupWorkerTests : IDisposable
 {
     private static readonly TimeSpan WaitBudget = TimeSpan.FromSeconds(10);
 
     private readonly IUserSessionRepository sessions = Substitute.For<IUserSessionRepository>();
     private readonly TestClock clock = new();
-    private readonly RecordingLogger<ExpiredSessionCleaner> logger = new();
+    private readonly RecordingLogger<ExpiredSessionCleanupWorker> logger = new();
     private readonly ServiceProvider provider;
 
-    public ExpiredSessionCleanerTests()
+    public ExpiredSessionCleanupWorkerTests()
     {
         provider = new ServiceCollection()
             .AddScoped<IUserSessionRepository>(_ => sessions)
@@ -40,9 +40,9 @@ public sealed class ExpiredSessionCleanerTests : IDisposable
         provider.Dispose();
     }
 
-    private ExpiredSessionCleaner Build(SessionCleanupOptions? options = null)
+    private ExpiredSessionCleanupWorker Build(SessionCleanupOptions? options = null)
     {
-        return new ExpiredSessionCleaner(
+        return new ExpiredSessionCleanupWorker(
             provider.GetRequiredService<IServiceScopeFactory>(),
             options ?? new SessionCleanupOptions(),
             logger

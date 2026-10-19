@@ -339,7 +339,7 @@ HTML, the branding and the links to the SPA (`Infrastructure/Communication/Templ
 Automatic messages (`IEmailSender`/`ThrottledEmailSender`, rate-limited per recipient and globally) and
 administrator-authored bulk mail (`ManualEmailDispatcher`) both store their batch through `IEmailOutbox` in
 a PostgreSQL outbox, in a unit of work of its own committed before the call returns; a background
-`EmailOutboxProcessor` hosted service claims due rows and delivers them through `IEmailTransport`
+`EmailOutboxDeliveryWorker` hosted service claims due rows and delivers them through `IEmailTransport`
 (`SmtpEmailSender`), with retries and an attempt limit. The send commands (`SendEmailToUsers`,
 `SendEmailToEventAttendees`) and the audience-preview queries in `Application/Emails/Queries` share recipient
 selection through `ManualEmailAudience`, so a preview always matches what the corresponding send would reach;
@@ -356,7 +356,7 @@ records which of them withdrew the consent. Operational values are in
 
 Registration and email changes ask `DisposableEmailChecker` whether an address belongs to a disposable
 mailbox provider; it looks the domain and its parent domains (`EmailDomains`) up in
-`disposable_email_domains` through `IDisposableEmailDomainLookup`. The `DisposableEmailDomainRefresher`
+`disposable_email_domains` through `IDisposableEmailDomainLookup`. The `DisposableEmailDomainRefreshWorker`
 hosted service keeps that table filled from an external list, replacing it only with a download that
 `DisposableEmailDomainList` validated ([DEPLOYMENT.md](DEPLOYMENT.md#disposable-email-domains)).
 

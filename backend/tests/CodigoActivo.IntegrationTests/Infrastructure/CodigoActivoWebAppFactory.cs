@@ -135,13 +135,13 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 
         builder.ConfigureTestServices(services =>
         {
-            RemoveHostedService<ExpiredSessionCleaner>(services);
-            RemoveHostedService<DeletedAccountPurger>(services);
-            RemoveHostedService<UnverifiedAccountPurger>(services);
-            RemoveHostedService<AdultDependentPurger>(services);
-            RemoveHostedService<UnusedFilePurger>(services);
-            RemoveHostedService<EmailOutboxProcessor>(services);
-            RemoveHostedService<DisposableEmailDomainRefresher>(services);
+            RemoveHostedService<ExpiredSessionCleanupWorker>(services);
+            RemoveHostedService<DeletedAccountPurgeWorker>(services);
+            RemoveHostedService<UnverifiedAccountPurgeWorker>(services);
+            RemoveHostedService<AdultDependentPurgeWorker>(services);
+            RemoveHostedService<UnusedFilePurgeWorker>(services);
+            RemoveHostedService<EmailOutboxDeliveryWorker>(services);
+            RemoveHostedService<DisposableEmailDomainRefreshWorker>(services);
             RemoveHostedService<LogRetentionWorker>(services);
 
             services.RemoveAll<DeploymentModeLock>();

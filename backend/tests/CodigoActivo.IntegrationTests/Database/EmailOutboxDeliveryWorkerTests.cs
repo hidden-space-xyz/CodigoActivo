@@ -12,10 +12,10 @@ namespace CodigoActivo.IntegrationTests.Database;
 /// <summary>
 /// Exercises the hosted delivery worker itself against PostgreSQL. The shared factory drains the
 /// outbox inline so tests never race a background service, so this one wires the real
-/// <see cref="EmailOutboxProcessor"/> over the real store with a transport of its own, and stops and
+/// <see cref="EmailOutboxDeliveryWorker"/> over the real store with a transport of its own, and stops and
 /// disposes it before the test ends.
 /// </summary>
-public sealed class EmailOutboxProcessorTests(CodigoActivoWebAppFactory factory)
+public sealed class EmailOutboxDeliveryWorkerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
@@ -35,7 +35,7 @@ public sealed class EmailOutboxProcessorTests(CodigoActivoWebAppFactory factory)
             Factory.Clock
         );
         var transport = new AwaitedEmailTransport();
-        using var processor = new EmailOutboxProcessor(
+        using var processor = new EmailOutboxDeliveryWorker(
             new EmailOutboxDeliverer(
                 store,
                 transport,
@@ -49,7 +49,7 @@ public sealed class EmailOutboxProcessorTests(CodigoActivoWebAppFactory factory)
             options,
             guard,
             Factory.Clock,
-            NullLogger<EmailOutboxProcessor>.Instance
+            NullLogger<EmailOutboxDeliveryWorker>.Instance
         );
         var sender = new ThrottledEmailSender(
             store,

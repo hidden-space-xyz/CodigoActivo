@@ -102,10 +102,10 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task ScheduledPurgeIsRecordedAsTheSystemOnlyWhenItRemovedSomething()
     {
-        var purger = new DeletedAccountPurger(
+        var purger = new DeletedAccountPurgeWorker(
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
             new DeletedAccountPurgeOptions(),
-            NullLogger<DeletedAccountPurger>.Instance
+            NullLogger<DeletedAccountPurgeWorker>.Instance
         );
 
         await purger.PurgeAsync(Ct);

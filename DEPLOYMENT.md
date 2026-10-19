@@ -217,7 +217,7 @@ challenge lifetimes and the retentions; changing one requires updating them in
 
 Every email — automatic messages and administrator-written bulk mail alike — is stored in a PostgreSQL
 outbox (`email_outbox_messages`, `email_outbox_contents`, `email_outbox_content_parts`) and delivered in the
-background by the `EmailOutboxProcessor` hosted service; a request that queues email returns once the row
+background by the `EmailOutboxDeliveryWorker` hosted service; a request that queues email returns once the row
 is committed, not once SMTP accepts it. Automatic messages pass through a process-local rate limiter
 before reaching the outbox; administrator bulk email bypasses that budget but is queued the same way, so its
 response (`{ queued, skipped }`) reports what was accepted, not what was delivered.

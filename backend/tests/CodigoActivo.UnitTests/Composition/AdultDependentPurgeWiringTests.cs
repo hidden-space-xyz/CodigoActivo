@@ -31,7 +31,7 @@ public sealed class AdultDependentPurgeWiringTests
         provider
             .GetServices<IHostedService>()
             .Should()
-            .ContainSingle(service => service is AdultDependentPurger);
+            .ContainSingle(service => service is AdultDependentPurgeWorker);
         options.Interval.Should().Be(TimeSpan.FromHours(1));
         options.StartupDelay.Should().Be(TimeSpan.FromSeconds(30));
     }

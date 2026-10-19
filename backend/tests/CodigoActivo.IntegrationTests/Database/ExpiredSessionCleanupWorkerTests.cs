@@ -11,15 +11,15 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class ExpiredSessionCleanerTests(CodigoActivoWebAppFactory factory)
+public sealed class ExpiredSessionCleanupWorkerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private ExpiredSessionCleaner Build()
+    private ExpiredSessionCleanupWorker Build()
     {
-        return new ExpiredSessionCleaner(
+        return new ExpiredSessionCleanupWorker(
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
             new SessionCleanupOptions(),
-            NullLogger<ExpiredSessionCleaner>.Instance
+            NullLogger<ExpiredSessionCleanupWorker>.Instance
         );
     }
 

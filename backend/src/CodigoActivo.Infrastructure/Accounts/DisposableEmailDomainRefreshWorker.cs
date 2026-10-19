@@ -16,11 +16,11 @@ namespace CodigoActivo.Infrastructure.Accounts;
 /// <param name="scopes">Scope factory used to resolve the scoped store of each run.</param>
 /// <param name="options">Configuration values used by the component.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
-public sealed class DisposableEmailDomainRefresher(
+public sealed class DisposableEmailDomainRefreshWorker(
     DisposableEmailDomainDownloader downloader,
     IServiceScopeFactory scopes,
     DisposableEmailDomainOptions options,
-    ILogger<DisposableEmailDomainRefresher> logger
+    ILogger<DisposableEmailDomainRefreshWorker> logger
 ) : BackgroundService
 {
     /// <summary>

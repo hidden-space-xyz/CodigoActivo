@@ -42,7 +42,7 @@ internal static class ContentRegistration
         services.AddScoped<FileUploadValidator>();
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
         services.AddFixedOptions<UnusedFilePurgeOptions>();
-        services.AddHostedService<UnusedFilePurger>();
+        services.AddHostedService<UnusedFilePurgeWorker>();
         return services;
     }
 }
