@@ -208,6 +208,30 @@ Equipo de Código Activo</value>
   <data name="emails.accountDeletionCode.ignoreNote" xml:space="preserve">
     <value>Si no has solicitado eliminar tu cuenta, no introduzcas este código y restablece tu contraseña cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
   </data>
+  <data name="emails.comingOfAge.subject" xml:space="preserve">
+    <value>Un menor a tu cargo va a cumplir 18 años</value>
+  </data>
+  <data name="emails.comingOfAge.heading" xml:space="preserve">
+    <value>Va a cumplir 18 años</value>
+  </data>
+  <data name="emails.comingOfAge.introText" xml:space="preserve">
+    <value>{0} cumple 18 años el {1}. Ese día dejará de estar a tu cargo y borraremos sus datos y sus inscripciones de Código Activo.</value>
+  </data>
+  <data name="emails.comingOfAge.introHtml" xml:space="preserve">
+    <value>&lt;b&gt;{0}&lt;/b&gt; cumple 18 años el &lt;b&gt;{1}&lt;/b&gt;. Ese día dejará de estar a tu cargo y borraremos sus datos y sus inscripciones de &lt;b&gt;Código Activo&lt;/b&gt;.</value>
+  </data>
+  <data name="emails.comingOfAge.download" xml:space="preserve">
+    <value>Hasta entonces puedes descargar una copia de sus datos desde «Mi cuenta».</value>
+  </data>
+  <data name="emails.comingOfAge.buttonLabel" xml:space="preserve">
+    <value>Ir a Mi cuenta</value>
+  </data>
+  <data name="emails.comingOfAge.ownAccount" xml:space="preserve">
+    <value>Si quiere seguir participando en nuestras actividades, desde ese día puede registrarse con su propia cuenta.</value>
+  </data>
+  <data name="emails.comingOfAge.blockedCopyNote" xml:space="preserve">
+    <value>Como en cualquier eliminación, guardaremos bloqueada la copia que exige la ley; nadie la consulta desde la web.</value>
+  </data>
   <data name="emails.securityAlert.subject" xml:space="preserve">
     <value>Cambio de seguridad en tu cuenta de Código Activo</value>
   </data>

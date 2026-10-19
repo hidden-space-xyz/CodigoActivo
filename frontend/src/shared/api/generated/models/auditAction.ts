@@ -66,8 +66,10 @@ export const AuditAction = {
   AddChild: 'AddChild',
   ChangeUserType: 'ChangeUserType',
   DeleteUser: 'DeleteUser',
+  PurgeAdultDependents: 'PurgeAdultDependents',
   PurgeDeletedAccounts: 'PurgeDeletedAccounts',
   ResetTwoFactor: 'ResetTwoFactor',
+  SendComingOfAgeNotices: 'SendComingOfAgeNotices',
   SetAdmin: 'SetAdmin',
   UpdateUser: 'UpdateUser',
 } as const;

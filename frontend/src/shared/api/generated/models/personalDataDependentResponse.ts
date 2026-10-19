@@ -19,4 +19,6 @@ export interface PersonalDataDependentResponse {
   updatedAt?: string | null;
   /** @nullable */
   guardianshipDeclaredAt?: string | null;
+  /** @nullable */
+  comingOfAgeNoticeSentAt?: string | null;
 }

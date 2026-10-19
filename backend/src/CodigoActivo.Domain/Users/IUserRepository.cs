@@ -67,6 +67,17 @@ public interface IUserRepository : IRepository<User>
     );
 
     /// <summary>
+    /// Loads the dependents born up to a day.
+    /// </summary>
+    /// <param name="latestBirthDate">Latest birth date included.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the dependents, oldest first.</returns>
+    public Task<IReadOnlyList<User>> ListDependentsBornUpToAsync(
+        DateOnly latestBirthDate,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Tells whether an account already uses an email address.
     /// </summary>
     /// <param name="email">Normalized email address.</param>

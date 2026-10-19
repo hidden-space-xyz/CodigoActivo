@@ -76,7 +76,9 @@ public sealed class AuditConventionTests
                 "RemoveExpiredSessionsCommand",
                 "PurgeDeletedAccountsCommand",
                 "PurgeUnverifiedAccountsCommand",
-                "PurgeUnusedFilesCommand"
+                "PurgeUnusedFilesCommand",
+                "PurgeAdultDependentsCommand",
+                "SendComingOfAgeNoticesCommand"
             );
     }
 

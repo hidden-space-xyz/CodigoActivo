@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Notifications;
@@ -121,6 +122,27 @@ public sealed class AccountEmails(
             Recipient(user),
             code,
             twoFactor.ChallengeLifetime
+        );
+        return emailSender.SendAsync(message, ct);
+    }
+
+    /// <summary>
+    /// Tells the guardian of <paramref name="dependent"/> on which day it comes of age and is erased.
+    /// </summary>
+    /// <param name="guardian">Guardian of the dependent, with a verified email.</param>
+    /// <param name="dependent">Dependent about to come of age.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <exception cref="ArgumentException">The dependent has no birth date.</exception>
+    public Task SendComingOfAgeNoticeAsync(User guardian, User dependent, CancellationToken ct)
+    {
+        var birthDate =
+            dependent.BirthDate
+            ?? throw new ArgumentException("The dependent has no birth date.", nameof(dependent));
+        var message = composer.ComingOfAgeNotice(
+            Recipient(guardian),
+            $"{dependent.FirstName} {dependent.LastName}",
+            birthDate.ComingOfAgeOn()
         );
         return emailSender.SendAsync(message, ct);
     }

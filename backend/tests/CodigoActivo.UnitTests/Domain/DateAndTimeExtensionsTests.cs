@@ -63,4 +63,41 @@ public sealed class DateAndTimeExtensionsTests
 
         birthDate.IsMinor(new DateOnly(year, month, day)).Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData(2008, 7, 4, 2026, 7, 4)]
+    [InlineData(2008, 2, 29, 2026, 3, 1)]
+    [InlineData(2010, 2, 28, 2028, 2, 28)]
+    [InlineData(2008, 12, 31, 2026, 12, 31)]
+    public void ComingOfAgeOnIsTheFirstDayThePersonIsNoLongerAMinor(
+        int birthYear,
+        int birthMonth,
+        int birthDay,
+        int year,
+        int month,
+        int day
+    )
+    {
+        var birthDate = new DateOnly(birthYear, birthMonth, birthDay);
+        var expected = new DateOnly(year, month, day);
+
+        birthDate.ComingOfAgeOn().Should().Be(expected);
+        birthDate.IsMinor(expected).Should().BeFalse();
+        birthDate.IsMinor(expected.AddDays(-1)).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(2026, 7, 4)]
+    [InlineData(2026, 2, 28)]
+    [InlineData(2026, 3, 1)]
+    [InlineData(2028, 2, 29)]
+    public void LatestAdultBirthDateSeparatesAdultsFromMinors(int year, int month, int day)
+    {
+        var today = new DateOnly(year, month, day);
+
+        var latest = today.LatestAdultBirthDate();
+
+        latest.IsMinor(today).Should().BeFalse();
+        latest.AddDays(1).IsMinor(today).Should().BeTrue();
+    }
 }

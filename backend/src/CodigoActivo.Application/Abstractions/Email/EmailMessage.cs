@@ -35,6 +35,12 @@ public enum EmailKind
     /// Selects the manual option.
     /// </summary>
     Manual,
+
+    /// <summary>
+    /// Selects the notice that tells a guardian that a dependent will be erased the day it comes of
+    /// age.
+    /// </summary>
+    ComingOfAgeNotice,
 }
 
 /// <summary>

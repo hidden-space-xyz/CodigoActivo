@@ -27,6 +27,9 @@ namespace CodigoActivo.Domain.Users;
 /// <param name="GuardianshipDeclaredAt">
 /// When the guardian declared being the dependent's parent or legal guardian while adding it.
 /// </param>
+/// <param name="ComingOfAgeNoticeSentAt">
+/// When the guardian was told that the dependent would be erased the day it came of age.
+/// </param>
 /// <param name="UpdatedAt">When the account was last updated.</param>
 /// <param name="LastLoginAt">When the user last logged in.</param>
 public sealed record LegalCopyPerson(
@@ -51,6 +54,7 @@ public sealed record LegalCopyPerson(
     DateTimeOffset CreatedAt,
     DateTimeOffset? AdultDeclaredAt,
     DateTimeOffset? GuardianshipDeclaredAt,
+    DateTimeOffset? ComingOfAgeNoticeSentAt,
     DateTimeOffset? UpdatedAt,
     DateTimeOffset? LastLoginAt
 )

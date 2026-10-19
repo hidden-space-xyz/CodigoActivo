@@ -120,6 +120,7 @@ export interface PersonalDataFile {
     readonly altaEl: string
     readonly modificadoEl: string | null
     readonly declarasSerSuPadreMadreOTutorEl: string | null
+    readonly teAvisamosDeQueCumple18El: string | null
   }[]
   readonly inscripciones: readonly {
     readonly personaId: string

@@ -70,6 +70,19 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<User>> ListDependentsBornUpToAsync(
+        DateOnly latestBirthDate,
+        CancellationToken ct = default
+    )
+    {
+        return await Accounts
+            .Where(user => user.Status == UserStatus.Dependent && user.BirthDate <= latestBirthDate)
+            .OrderBy(user => user.BirthDate)
+            .ThenBy(user => user.Id)
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
     public Task<bool> EmailExistsAsync(
         EmailAddress email,
         UserId? excludeUserId = null,

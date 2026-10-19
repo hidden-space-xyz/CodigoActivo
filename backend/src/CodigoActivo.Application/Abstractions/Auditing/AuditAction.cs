@@ -178,11 +178,17 @@ public enum AuditAction
     /// <summary>Deleted a user.</summary>
     DeleteUser,
 
+    /// <summary>Erased the dependents who came of age.</summary>
+    PurgeAdultDependents,
+
     /// <summary>Purged the legal copies past their retention.</summary>
     PurgeDeletedAccounts,
 
     /// <summary>Reset the second factor of a user.</summary>
     ResetTwoFactor,
+
+    /// <summary>Told guardians which dependents come of age soon.</summary>
+    SendComingOfAgeNotices,
 
     /// <summary>Granted or removed administrator rights.</summary>
     SetAdmin,

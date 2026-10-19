@@ -85,6 +85,16 @@ public sealed class AccountDeletionTests
     }
 
     [Fact]
+    public void ErasureForComingOfAgeStandsTheDependentAsTheActor()
+    {
+        var dependent = Account(Guid.NewGuid());
+
+        var erasure = AccountErasure.ForComingOfAge(dependent, Now);
+
+        erasure.Should().Be(new AccountErasure(AccountDeletionOrigin.CameOfAge, dependent.Id, Now));
+    }
+
+    [Fact]
     public void ErasureForMissingAccountThrows()
     {
         var act = () => AccountErasure.For(null!, UserId.From(Guid.NewGuid()), Now);

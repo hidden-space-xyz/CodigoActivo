@@ -36,4 +36,25 @@ public static class DateAndTimeExtensions
     {
         return birthDate.AgeOn(today) < AdultAge;
     }
+
+    /// <summary>
+    /// Gets the day a person born on <paramref name="birthDate"/> comes of age.
+    /// </summary>
+    /// <param name="birthDate">User's date of birth.</param>
+    /// <returns>The first day on which the person is no longer a minor.</returns>
+    public static DateOnly ComingOfAgeOn(this DateOnly birthDate)
+    {
+        var birthday = birthDate.AddYears(AdultAge);
+        return birthDate.IsMinor(birthday) ? birthday.AddDays(1) : birthday;
+    }
+
+    /// <summary>
+    /// Gets the latest birth date of a person who is of age on <paramref name="today"/>.
+    /// </summary>
+    /// <param name="today">Local day on which the age is evaluated.</param>
+    /// <returns>The day 18 years before <paramref name="today"/>; anyone born up to it is of age.</returns>
+    public static DateOnly LatestAdultBirthDate(this DateOnly today)
+    {
+        return today.AddYears(-AdultAge);
+    }
 }

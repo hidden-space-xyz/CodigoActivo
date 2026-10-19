@@ -101,4 +101,18 @@ public interface IAccountEmailComposer
         DateTimeOffset occurredAt,
         string? maskedNewEmail
     );
+
+    /// <summary>
+    /// Composes the notice that tells a guardian on which day a dependent comes of age and is
+    /// erased.
+    /// </summary>
+    /// <param name="recipient">Guardian receiving the message.</param>
+    /// <param name="dependentName">Full name of the dependent.</param>
+    /// <param name="comingOfAgeOn">Day the dependent comes of age and is erased.</param>
+    /// <returns>The composed message.</returns>
+    public EmailMessage ComingOfAgeNotice(
+        EmailRecipient recipient,
+        string dependentName,
+        DateOnly comingOfAgeOn
+    );
 }

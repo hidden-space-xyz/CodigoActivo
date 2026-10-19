@@ -4982,8 +4982,10 @@
           "AddChild",
           "ChangeUserType",
           "DeleteUser",
+          "PurgeAdultDependents",
           "PurgeDeletedAccounts",
           "ResetTwoFactor",
+          "SendComingOfAgeNotices",
           "SetAdmin",
           "UpdateUser"
         ],
@@ -7998,6 +8000,11 @@
             "nullable": true
           },
           "guardianshipDeclaredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "comingOfAgeNoticeSentAt": {
             "type": "string",
             "format": "date-time",
             "nullable": true

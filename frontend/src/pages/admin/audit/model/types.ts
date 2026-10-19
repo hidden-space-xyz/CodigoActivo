@@ -60,8 +60,10 @@ export type AuditAction =
   | 'AddChild'
   | 'ChangeUserType'
   | 'DeleteUser'
+  | 'PurgeAdultDependents'
   | 'PurgeDeletedAccounts'
   | 'ResetTwoFactor'
+  | 'SendComingOfAgeNotices'
   | 'SetAdmin'
   | 'UpdateUser'
 
