@@ -113,6 +113,7 @@ function toTermsDecisions(termsDecisions?: readonly TermsDecisionInput[]) {
     ? {
         termsDecisions: termsDecisions.map((decision) => ({
           termsDocumentId: decision.termsDocumentId,
+          version: decision.version,
           accepted: decision.accepted,
           ...(decision.signature ? { signature: toBase64Png(decision.signature) } : {}),
         })),

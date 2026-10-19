@@ -65,7 +65,8 @@ public sealed class GetEventTermsStateQueryHandler(
                     d.TermsDocument.Kind,
                     d.IsRequired && d.TermsDocument.Kind != TermsDocumentKind.Consent,
                     d.TermsDocument.RequiresSignature,
-                    d.DisplayOrder
+                    d.DisplayOrder,
+                    d.TermsDocument.Version
                 )),
             ct
         );

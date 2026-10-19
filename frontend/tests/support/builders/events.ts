@@ -120,6 +120,7 @@ export function buildTermsDocumentState(
     required: true,
     requiresSignature: false,
     displayOrder: 0,
+    version: 1,
     ...overrides,
   }
 }

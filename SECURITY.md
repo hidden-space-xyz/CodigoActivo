@@ -414,8 +414,10 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   in `terms_document_versions` and numbers the new one, even when nobody decided yet, so a decision recorded while
   the document changes still names a version whose text is kept. Each decision and each change of its history
   stores the version it was taken on (`terms_document_version`; a withdrawal keeps the one withdrawn), and nobody is
-  asked again after a rewrite. Texts are compared as JSON, so saving without changes keeps the version. Decisions
-  stored before versions existed name version 1, the text then current.
+  asked again after a rewrite. Every decision sent names the version shown (`TermsDecisionRequest.Version`, which
+  the terms state returns); one on a version that is no longer current is refused (`EventTermsDocumentChanged`)
+  and the SPA reloads the documents and asks again. Texts are compared as JSON, so saving without changes keeps
+  the version. Decisions stored before versions existed name version 1, the text then current.
 - A terms document can ask for a handwritten signature (`requires_signature`): accepting it then needs a PNG
   drawn on screen (`TermsConsent` refuses the acceptance without one), which `HandwrittenSignature` refuses above 128 KiB or 2000×1000 pixels and which is stored
   in `event_terms_acceptances.signature`, never in the public file storage. Only administrators read it

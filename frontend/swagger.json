@@ -6101,6 +6101,7 @@
           "EventTermsConsentRequired",
           "EventTermsConsentNotGiven",
           "EventTermsWithdrawalNotAllowed",
+          "EventTermsDocumentChanged",
           "TermsDocumentNotFound",
           "DiagnosticLogEntryNotFound",
           "TermsDocumentNameAlreadyExists",
@@ -7317,7 +7318,8 @@
           "name",
           "required",
           "requiresSignature",
-          "termsDocumentId"
+          "termsDocumentId",
+          "version"
         ],
         "type": "object",
         "properties": {
@@ -7341,6 +7343,10 @@
             "type": "boolean"
           },
           "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
             "type": "integer",
             "format": "int32"
           }
@@ -8650,6 +8656,11 @@
           "signature": {
             "type": "string",
             "format": "byte",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           }
         },

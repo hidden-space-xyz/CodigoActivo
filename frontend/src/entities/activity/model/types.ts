@@ -20,6 +20,8 @@ export interface ActivityModality {
 /** One decision on an event terms document, sent alongside a signup for undecided documents. */
 export interface TermsDecisionInput {
   readonly termsDocumentId: string
+  /** Version of the document shown; the API refuses a decision on one that changed meanwhile. */
+  readonly version: number
   readonly accepted: boolean
   /** PNG data URL of the signature drawn to accept a document that asks for one. */
   readonly signature?: string

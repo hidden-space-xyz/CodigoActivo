@@ -23,6 +23,7 @@ const REQUIRED_DOC: EventTermsDocumentState = {
   kind: 'Conditions',
   requiresSignature: false,
   displayOrder: 0,
+  version: 1,
 }
 
 const OPTIONAL_DOC: EventTermsDocumentState = {
@@ -33,6 +34,7 @@ const OPTIONAL_DOC: EventTermsDocumentState = {
   kind: 'Conditions',
   requiresSignature: false,
   displayOrder: 1,
+  version: 1,
 }
 
 /** Finds the checkbox input for a terms document row, however Element Plus placed the id. */
@@ -182,8 +184,8 @@ describe('EventTermsDialog confirm decisions', () => {
       [
         {
           'user-1': [
-            { termsDocumentId: REQUIRED_DOC.id, accepted: true },
-            { termsDocumentId: OPTIONAL_DOC.id, accepted: false },
+            { termsDocumentId: REQUIRED_DOC.id, version: 1, accepted: true },
+            { termsDocumentId: OPTIONAL_DOC.id, version: 1, accepted: false },
           ],
         },
       ],
@@ -196,7 +198,7 @@ describe('EventTermsDialog confirm decisions', () => {
     await click(findButton(t('pages.eventDetail.terms.confirm')))
 
     expect(wrapper.emitted('confirm')).toEqual([
-      [{ 'user-1': [{ termsDocumentId: OPTIONAL_DOC.id, accepted: false }] }],
+      [{ 'user-1': [{ termsDocumentId: OPTIONAL_DOC.id, version: 1, accepted: false }] }],
     ])
   })
 })
@@ -210,6 +212,7 @@ describe('EventTermsDialog signatures', () => {
     kind: 'Conditions',
     requiresSignature: true,
     displayOrder: 2,
+    version: 1,
   }
 
   beforeEach(() => {
@@ -254,7 +257,14 @@ describe('EventTermsDialog signatures', () => {
     expect(wrapper.emitted('confirm')).toEqual([
       [
         {
-          'user-1': [{ termsDocumentId: SIGNED_DOC.id, accepted: true, signature: FAKE_SIGNATURE }],
+          'user-1': [
+            {
+              termsDocumentId: SIGNED_DOC.id,
+              version: 1,
+              accepted: true,
+              signature: FAKE_SIGNATURE,
+            },
+          ],
         },
       ],
     ])
@@ -286,6 +296,7 @@ describe('EventTermsDialog household sections', () => {
     required: false,
     requiresSignature: false,
     displayOrder: 3,
+    version: 1,
   }
 
   const teenager: TermsDialogSection = {
@@ -340,10 +351,10 @@ describe('EventTermsDialog household sections', () => {
     expect(wrapper.emitted('confirm')).toEqual([
       [
         {
-          'user-1': [{ termsDocumentId: REQUIRED_DOC.id, accepted: true }],
+          'user-1': [{ termsDocumentId: REQUIRED_DOC.id, version: 1, accepted: true }],
           'child-1': [
-            { termsDocumentId: REQUIRED_DOC.id, accepted: true },
-            { termsDocumentId: IMAGE_DOC.id, accepted: true },
+            { termsDocumentId: REQUIRED_DOC.id, version: 1, accepted: true },
+            { termsDocumentId: IMAGE_DOC.id, version: 1, accepted: true },
           ],
         },
       ],

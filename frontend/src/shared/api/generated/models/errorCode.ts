@@ -48,6 +48,7 @@ export const ErrorCode = {
   EventTermsConsentRequired: 'EventTermsConsentRequired',
   EventTermsConsentNotGiven: 'EventTermsConsentNotGiven',
   EventTermsWithdrawalNotAllowed: 'EventTermsWithdrawalNotAllowed',
+  EventTermsDocumentChanged: 'EventTermsDocumentChanged',
   TermsDocumentNotFound: 'TermsDocumentNotFound',
   DiagnosticLogEntryNotFound: 'DiagnosticLogEntryNotFound',
   TermsDocumentNameAlreadyExists: 'TermsDocumentNameAlreadyExists',

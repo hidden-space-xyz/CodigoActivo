@@ -106,6 +106,12 @@ public enum DomainErrorCode
     EventTermsWithdrawalNotAllowed,
 
     /// <summary>
+    /// A terms document changed after the person read it; the decision has to be taken again on the
+    /// current version.
+    /// </summary>
+    EventTermsDocumentChanged,
+
+    /// <summary>
     /// A terms document that asks for a signature was accepted without one.
     /// </summary>
     EventTermsSignatureRequired,

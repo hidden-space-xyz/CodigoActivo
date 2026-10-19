@@ -215,9 +215,10 @@ describe('activity requests', () => {
 
     await assignActivityRequest('activity-1', 'user-1', 'role-1')
     await assignActivityRequest('activity-1', 'user-1', 'role-1', [
-      { termsDocumentId: 'terms-1', accepted: true },
+      { termsDocumentId: 'terms-1', version: 1, accepted: true },
       {
         termsDocumentId: 'terms-2',
+        version: 1,
         accepted: true,
         signature: 'data:image/png;base64,iVBORw0KGgo=',
       },
@@ -228,8 +229,8 @@ describe('activity requests', () => {
       {
         activityRoleTypeId: 'role-1',
         termsDecisions: [
-          { termsDocumentId: 'terms-1', accepted: true },
-          { termsDocumentId: 'terms-2', accepted: true, signature: 'iVBORw0KGgo=' },
+          { termsDocumentId: 'terms-1', version: 1, accepted: true },
+          { termsDocumentId: 'terms-2', version: 1, accepted: true, signature: 'iVBORw0KGgo=' },
         ],
       },
     ])
@@ -265,7 +266,7 @@ describe('activity requests', () => {
       {
         userId: 'child-1',
         roleId: 'role-participant',
-        termsDecisions: [{ termsDocumentId: 'terms-1', accepted: false }],
+        termsDecisions: [{ termsDocumentId: 'terms-1', version: 1, accepted: false }],
       },
     ])
 
@@ -281,7 +282,7 @@ describe('activity requests', () => {
           {
             userId: 'child-1',
             activityRoleTypeId: 'role-participant',
-            termsDecisions: [{ termsDocumentId: 'terms-1', accepted: false }],
+            termsDecisions: [{ termsDocumentId: 'terms-1', version: 1, accepted: false }],
           },
         ],
       },

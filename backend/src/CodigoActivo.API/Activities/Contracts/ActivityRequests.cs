@@ -151,10 +151,15 @@ public record UpdateActivityRequest(
 /// Base64 PNG image of the signature drawn to accept a document that asks for one; ignored for
 /// other documents and for declined ones.
 /// </param>
+/// <param name="Version">
+/// Version of the document the person read, as the terms state returned it; a decision on a
+/// version that is no longer current is refused, so the person reads the current one.
+/// </param>
 public record TermsDecisionRequest(
     [Required] Guid TermsDocumentId,
     [Required] bool? Accepted,
-    byte[]? Signature = null
+    byte[]? Signature = null,
+    [Required] [Range(1, int.MaxValue)] int? Version = null
 );
 
 /// <summary>
@@ -356,7 +361,8 @@ internal static class ActivityRequestMapping
             .Select(decision => new TermsDecision(
                 TermsDocumentId.From(decision.TermsDocumentId),
                 decision.Accepted ?? false,
-                decision.Signature
+                decision.Signature,
+                decision.Version
             ))
             .ToList();
     }

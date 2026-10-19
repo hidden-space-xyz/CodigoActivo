@@ -64,6 +64,7 @@ export const TERMS_DOCUMENT = {
   required: true,
   requiresSignature: false,
   displayOrder: 0,
+  version: 1,
 }
 
 /** A second, optional terms document for tests that need more than one document to decide on. */
@@ -75,6 +76,7 @@ export const OPTIONAL_TERMS_DOCUMENT = {
   required: false,
   requiresSignature: false,
   displayOrder: 1,
+  version: 1,
 }
 
 /** A consent, never required, that a minor decides from the age of 14. */
@@ -86,6 +88,7 @@ export const IMAGE_CONSENT_DOCUMENT = {
   required: false,
   requiresSignature: false,
   displayOrder: 2,
+  version: 1,
 }
 
 /** A decision taken on 1 January 2026 about `documentId`. */

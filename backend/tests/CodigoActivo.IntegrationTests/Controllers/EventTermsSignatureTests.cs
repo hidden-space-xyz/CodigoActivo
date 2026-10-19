@@ -132,10 +132,42 @@ public sealed class EventTermsSignatureTests(CodigoActivoWebAppFactory factory)
         using var response = await SignUpAsync(
             client,
             activityId,
-            new TermsDecisionRequest(termsDocumentId, true)
+            new TermsDecisionRequest(termsDocumentId, true, Version: 1)
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.EventTermsSignatureRequired);
+        (await FindDecisionAsync(eventId, termsDocumentId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SignupDecidingOnAVersionNoLongerCurrentReturnsConflict()
+    {
+        var (eventId, activityId, termsDocumentId) = await SeedSignedTermsAsync();
+        var client = await LoginAsMemberAsync();
+
+        using var response = await SignUpAsync(
+            client,
+            activityId,
+            new TermsDecisionRequest(termsDocumentId, true, TestSeedData.ValidPng(), Version: 2)
+        );
+
+        await response.ShouldBeConflictAsync(ErrorCode.EventTermsDocumentChanged);
+        (await FindDecisionAsync(eventId, termsDocumentId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SignupDecisionWithoutTheVersionReadReturnsBadRequest()
+    {
+        var (eventId, activityId, termsDocumentId) = await SeedSignedTermsAsync();
+        var client = await LoginAsMemberAsync();
+
+        using var response = await SignUpAsync(
+            client,
+            activityId,
+            new TermsDecisionRequest(termsDocumentId, true, TestSeedData.ValidPng())
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
         (await FindDecisionAsync(eventId, termsDocumentId)).Should().BeNull();
     }
 
@@ -148,7 +180,7 @@ public sealed class EventTermsSignatureTests(CodigoActivoWebAppFactory factory)
         using var response = await SignUpAsync(
             client,
             activityId,
-            new TermsDecisionRequest(termsDocumentId, true, [1, 2, 3])
+            new TermsDecisionRequest(termsDocumentId, true, [1, 2, 3], Version: 1)
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
@@ -192,7 +224,7 @@ public sealed class EventTermsSignatureTests(CodigoActivoWebAppFactory factory)
         using var signup = await SignUpAsync(
             member,
             activityId,
-            new TermsDecisionRequest(termsDocumentId, true, png)
+            new TermsDecisionRequest(termsDocumentId, true, png, Version: 1)
         );
 
         signup.StatusCode.Should().Be(HttpStatusCode.OK);

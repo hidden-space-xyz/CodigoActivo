@@ -128,6 +128,7 @@ describe('event mapper', () => {
           kind: 'Consent',
           required: false,
           displayOrder: 1,
+          version: 3,
           description: '<p>Fotos</p>',
           requiresSignature: true,
         }),
@@ -156,6 +157,7 @@ describe('event mapper', () => {
           required: true,
           requiresSignature: false,
           displayOrder: 0,
+          version: 1,
         },
         {
           id: 'terms-2',
@@ -165,6 +167,7 @@ describe('event mapper', () => {
           required: false,
           requiresSignature: true,
           displayOrder: 1,
+          version: 3,
         },
       ],
       people: [

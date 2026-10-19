@@ -134,6 +134,7 @@ export function readTermsDecisions(
       ...(decisions[personId] ?? []),
       {
         termsDocumentId: document.id,
+        version: document.version,
         accepted: !!draft.checked[key],
         ...(signature ? { signature } : {}),
       },
