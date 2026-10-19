@@ -9,16 +9,16 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Accounts;
 
-public sealed class DisposableEmailDomainRefresherTests : IDisposable
+public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
 {
     private static readonly TimeSpan WaitBudget = TimeSpan.FromSeconds(10);
 
     private readonly FakeDisposableEmailDomainStore store = new();
-    private readonly RecordingLogger<DisposableEmailDomainRefresher> logger = new();
+    private readonly RecordingLogger<DisposableEmailDomainRefreshWorker> logger = new();
     private readonly List<IDisposable> owned = [];
     private IDisposableEmailDomainStore storedIn;
 
-    public DisposableEmailDomainRefresherTests()
+    public DisposableEmailDomainRefreshWorkerTests()
     {
         storedIn = store;
         store.Add("previous.test");
@@ -32,7 +32,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         }
     }
 
-    private DisposableEmailDomainRefresher Build(
+    private DisposableEmailDomainRefreshWorker Build(
         StubHttpMessageHandler handler,
         DisposableEmailDomainOptions? options = null
     )
@@ -40,7 +40,7 @@ public sealed class DisposableEmailDomainRefresherTests : IDisposable
         options ??= new DisposableEmailDomainOptions();
         var provider = new ServiceCollection().AddScoped(_ => storedIn).BuildServiceProvider();
         var downloader = new DisposableEmailDomainDownloader(handler, options);
-        var refresher = new DisposableEmailDomainRefresher(
+        var refresher = new DisposableEmailDomainRefreshWorker(
             downloader,
             provider.GetRequiredService<IServiceScopeFactory>(),
             options,

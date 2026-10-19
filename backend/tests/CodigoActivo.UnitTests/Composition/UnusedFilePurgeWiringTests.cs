@@ -31,7 +31,7 @@ public sealed class UnusedFilePurgeWiringTests
         provider
             .GetServices<IHostedService>()
             .Should()
-            .ContainSingle(service => service is UnusedFilePurger);
+            .ContainSingle(service => service is UnusedFilePurgeWorker);
         options.Interval.Should().Be(TimeSpan.FromHours(1));
         options.StartupDelay.Should().Be(TimeSpan.FromSeconds(30));
     }

@@ -10,15 +10,15 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class AdultDependentPurgerTests(CodigoActivoWebAppFactory factory)
+public sealed class AdultDependentPurgeWorkerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private AdultDependentPurger Build()
+    private AdultDependentPurgeWorker Build()
     {
-        return new AdultDependentPurger(
+        return new AdultDependentPurgeWorker(
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
             new AdultDependentPurgeOptions(),
-            NullLogger<AdultDependentPurger>.Instance
+            NullLogger<AdultDependentPurgeWorker>.Instance
         );
     }
 

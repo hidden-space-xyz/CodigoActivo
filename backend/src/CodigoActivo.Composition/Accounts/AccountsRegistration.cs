@@ -59,12 +59,12 @@ internal static class AccountsRegistration
         services.AddScoped<AccountEraser>();
         services.AddScoped<AuthenticatorCodeVerifier>();
         services.AddScoped<DisposableEmailChecker>();
-        services.AddHostedService<ExpiredSessionCleaner>();
+        services.AddHostedService<ExpiredSessionCleanupWorker>();
         services.AddSingleton(provider => new DisposableEmailDomainDownloader(
             new SocketsHttpHandler { AutomaticDecompression = System.Net.DecompressionMethods.All },
             provider.GetRequiredService<DisposableEmailDomainOptions>()
         ));
-        services.AddHostedService<DisposableEmailDomainRefresher>();
+        services.AddHostedService<DisposableEmailDomainRefreshWorker>();
         return services;
     }
 

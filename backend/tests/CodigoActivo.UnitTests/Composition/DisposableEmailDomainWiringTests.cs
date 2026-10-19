@@ -32,7 +32,7 @@ public sealed class DisposableEmailDomainWiringTests
         provider
             .GetServices<IHostedService>()
             .Should()
-            .ContainSingle(service => service is DisposableEmailDomainRefresher);
+            .ContainSingle(service => service is DisposableEmailDomainRefreshWorker);
         options.RefreshInterval.Should().Be(TimeSpan.FromDays(1));
         options.RetryInterval.Should().Be(TimeSpan.FromHours(1));
     }

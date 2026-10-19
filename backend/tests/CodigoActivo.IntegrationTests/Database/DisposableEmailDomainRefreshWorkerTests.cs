@@ -13,7 +13,7 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class DisposableEmailDomainRefresherTests(CodigoActivoWebAppFactory factory)
+public sealed class DisposableEmailDomainRefreshWorkerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
     private readonly StubHttpMessageHandler source = new();
@@ -29,14 +29,14 @@ public sealed class DisposableEmailDomainRefresherTests(CodigoActivoWebAppFactor
         );
     }
 
-    private DisposableEmailDomainRefresher Build()
+    private DisposableEmailDomainRefreshWorker Build()
     {
         var options = new DisposableEmailDomainOptions();
-        return new DisposableEmailDomainRefresher(
+        return new DisposableEmailDomainRefreshWorker(
             new DisposableEmailDomainDownloader(source, options),
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
             options,
-            NullLogger<DisposableEmailDomainRefresher>.Instance
+            NullLogger<DisposableEmailDomainRefreshWorker>.Instance
         );
     }
 

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Communication;
 
-public sealed class EmailOutboxProcessorTests
+public sealed class EmailOutboxDeliveryWorkerTests
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
@@ -33,11 +33,11 @@ public sealed class EmailOutboxProcessorTests
         );
     }
 
-    private EmailOutboxProcessor Create(
+    private EmailOutboxDeliveryWorker Create(
         FakeEmailOutboxStore store,
         EmailQueueOptions options,
         IEmailTransport? emailTransport = null,
-        ILogger<EmailOutboxProcessor>? logger = null
+        ILogger<EmailOutboxDeliveryWorker>? logger = null
     )
     {
         var deliverer = new EmailOutboxDeliverer(
@@ -50,13 +50,13 @@ public sealed class EmailOutboxProcessorTests
             NullLogger<EmailOutboxDeliverer>.Instance
         );
 
-        return new EmailOutboxProcessor(
+        return new EmailOutboxDeliveryWorker(
             deliverer,
             signal,
             options,
             guard,
             clock,
-            logger ?? NullLogger<EmailOutboxProcessor>.Instance
+            logger ?? NullLogger<EmailOutboxDeliveryWorker>.Instance
         );
     }
 
@@ -88,7 +88,7 @@ public sealed class EmailOutboxProcessorTests
             ThrowOnClaim = new InvalidOperationException("The outbox is unreachable."),
         };
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
-        var logger = new RecordingLogger<EmailOutboxProcessor>();
+        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, logger: logger);
         var runs = 0;
         var twoRuns = new TaskCompletionSource();
@@ -125,7 +125,7 @@ public sealed class EmailOutboxProcessorTests
             ShutdownDrain = TimeSpan.FromMilliseconds(50),
         };
         var blocking = new BlockingEmailTransport();
-        var logger = new RecordingLogger<EmailOutboxProcessor>();
+        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, blocking, logger);
 
         await processor.StartAsync(TestContext.Current.CancellationToken);
@@ -184,7 +184,7 @@ public sealed class EmailOutboxProcessorTests
             ThrowOnClaim = new OperationCanceledException("A database command timed out."),
         };
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
-        var logger = new RecordingLogger<EmailOutboxProcessor>();
+        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, logger: logger);
         var runs = 0;
         var twoRuns = new TaskCompletionSource();
@@ -221,7 +221,7 @@ public sealed class EmailOutboxProcessorTests
     {
         var store = new BlockingClaimStore(protector);
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
-        var logger = new RecordingLogger<EmailOutboxProcessor>();
+        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, logger: logger);
 
         await processor.StartAsync(TestContext.Current.CancellationToken);
@@ -236,7 +236,7 @@ public sealed class EmailOutboxProcessorTests
     {
         var store = new FakeEmailOutboxStore(protector);
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
-        var logger = new RecordingLogger<EmailOutboxProcessor>();
+        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, logger: logger);
 
         await processor.StartAsync(TestContext.Current.CancellationToken);

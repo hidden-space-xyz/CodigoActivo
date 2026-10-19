@@ -583,7 +583,7 @@ internal sealed class DemoLogHistory : IDisposable
 
     private void AddDomainListFailures()
     {
-        Diagnose<DisposableEmailDomainRefresher>(
+        Diagnose<DisposableEmailDomainRefreshWorker>(
             Local(Today.AddDays(-15), 4, 0),
             default,
             logger =>
@@ -595,7 +595,7 @@ internal sealed class DemoLogHistory : IDisposable
                     )
                 )
         );
-        Diagnose<DisposableEmailDomainRefresher>(
+        Diagnose<DisposableEmailDomainRefreshWorker>(
             Local(Today.AddDays(-5), 4, 0),
             default,
             logger =>

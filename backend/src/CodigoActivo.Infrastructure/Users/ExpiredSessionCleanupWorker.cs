@@ -1,41 +1,40 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Files.Commands;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Files;
 using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace CodigoActivo.Infrastructure.Files;
+namespace CodigoActivo.Infrastructure.Users;
 
 /// <summary>
-/// Deletes the uploads that no content references <see cref="StoredFile.UnusedRetentionDays"/>
-/// after they were uploaded. It runs shortly after startup, so a stopped API only delays the
-/// deletion until the next start, and then once per interval.
+/// Deletes <c>user_sessions</c> rows whose expiry has passed. Expired rows are already refused by
+/// the ticket validator and dropped when the same user logs in again; this worker also clears the
+/// rows of accounts that never come back, so the table does not grow without bound.
 /// </summary>
 /// <param name="scopes">Scope factory used to resolve the use case of each run.</param>
 /// <param name="options">Configuration values used by the component.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
-public sealed class UnusedFilePurger(
+public sealed class ExpiredSessionCleanupWorker(
     IServiceScopeFactory scopes,
-    UnusedFilePurgeOptions options,
-    ILogger<UnusedFilePurger> logger
+    SessionCleanupOptions options,
+    ILogger<ExpiredSessionCleanupWorker> logger
 ) : BackgroundService
 {
     /// <summary>
-    /// Deletes every upload that no content used in time.
+    /// Removes every session row that has already expired.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the number of deleted files.</returns>
+    /// <returns>A task whose result contains the number of deleted rows.</returns>
     public async Task<int> PurgeAsync(CancellationToken ct = default)
     {
         await using var scope = scopes.CreateAsyncScope();
-        var purge = scope.ServiceProvider.GetRequiredService<
-            ICommandHandler<PurgeUnusedFilesCommand, Result<int>>
+        var cleanup = scope.ServiceProvider.GetRequiredService<
+            ICommandHandler<RemoveExpiredSessionsCommand, Result<int>>
         >();
-        var purged = await purge.HandleAsync(new PurgeUnusedFilesCommand(), ct);
-        return purged.Value;
+        var removed = await cleanup.HandleAsync(new RemoveExpiredSessionsCommand(), ct);
+        return removed.Value;
     }
 
     /// <summary>
@@ -71,7 +70,7 @@ public sealed class UnusedFilePurger(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.UnusedFilePurgeFailed(ex);
+            logger.ExpiredSessionCleanupFailed(ex);
         }
     }
 }

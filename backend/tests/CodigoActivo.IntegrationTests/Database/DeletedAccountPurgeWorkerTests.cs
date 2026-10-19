@@ -11,15 +11,15 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class DeletedAccountPurgerTests(CodigoActivoWebAppFactory factory)
+public sealed class DeletedAccountPurgeWorkerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private DeletedAccountPurger Build()
+    private DeletedAccountPurgeWorker Build()
     {
-        return new DeletedAccountPurger(
+        return new DeletedAccountPurgeWorker(
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
             new DeletedAccountPurgeOptions(),
-            NullLogger<DeletedAccountPurger>.Instance
+            NullLogger<DeletedAccountPurgeWorker>.Instance
         );
     }
 

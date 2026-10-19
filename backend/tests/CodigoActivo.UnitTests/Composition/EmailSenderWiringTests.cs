@@ -100,7 +100,7 @@ public sealed class EmailSenderWiringTests
         provider
             .GetServices<IHostedService>()
             .Should()
-            .ContainSingle(service => service is EmailOutboxProcessor);
+            .ContainSingle(service => service is EmailOutboxDeliveryWorker);
     }
 
     [Theory]

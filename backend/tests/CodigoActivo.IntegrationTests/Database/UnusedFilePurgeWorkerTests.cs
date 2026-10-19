@@ -11,15 +11,15 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class UnusedFilePurgerTests(CodigoActivoWebAppFactory factory)
+public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private UnusedFilePurger Build()
+    private UnusedFilePurgeWorker Build()
     {
-        return new UnusedFilePurger(
+        return new UnusedFilePurgeWorker(
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
             new UnusedFilePurgeOptions(),
-            NullLogger<UnusedFilePurger>.Instance
+            NullLogger<UnusedFilePurgeWorker>.Instance
         );
     }
 

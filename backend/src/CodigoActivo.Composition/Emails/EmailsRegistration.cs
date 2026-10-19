@@ -39,7 +39,7 @@ internal static class EmailsRegistration
         services.AddSingleton<IEmailOutboxStore, EmailOutboxStore>();
         services.AddSingleton<IEmailOutbox>(sp => sp.GetRequiredService<IEmailOutboxStore>());
         services.AddSingleton<EmailOutboxDeliverer>();
-        services.AddHostedService<EmailOutboxProcessor>();
+        services.AddHostedService<EmailOutboxDeliveryWorker>();
         services.AddSingleton<IEmailSender, ThrottledEmailSender>();
         services.AddSingleton<IUnsubscribeTokens, DataProtectionUnsubscribeTokens>();
         services.AddSingleton<IManualEmailComposer, ManualEmailComposer>();

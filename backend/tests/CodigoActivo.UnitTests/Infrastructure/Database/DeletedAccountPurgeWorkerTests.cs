@@ -16,7 +16,7 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Database;
 
-public sealed class DeletedAccountPurgerTests : IDisposable
+public sealed class DeletedAccountPurgeWorkerTests : IDisposable
 {
     private static readonly TimeSpan WaitBudget = TimeSpan.FromSeconds(10);
 
@@ -31,10 +31,10 @@ public sealed class DeletedAccountPurgerTests : IDisposable
     private readonly IDeletedParticipationRepository deletedParticipations =
         Substitute.For<IDeletedParticipationRepository>();
     private readonly TestClock clock = new();
-    private readonly RecordingLogger<DeletedAccountPurger> logger = new();
+    private readonly RecordingLogger<DeletedAccountPurgeWorker> logger = new();
     private readonly ServiceProvider provider;
 
-    public DeletedAccountPurgerTests()
+    public DeletedAccountPurgeWorkerTests()
     {
         provider = new ServiceCollection()
             .AddScoped<IDeletedAccountRepository>(_ => deletedAccounts)
@@ -56,9 +56,9 @@ public sealed class DeletedAccountPurgerTests : IDisposable
         provider.Dispose();
     }
 
-    private DeletedAccountPurger Build(DeletedAccountPurgeOptions? options = null)
+    private DeletedAccountPurgeWorker Build(DeletedAccountPurgeOptions? options = null)
     {
-        return new DeletedAccountPurger(
+        return new DeletedAccountPurgeWorker(
             provider.GetRequiredService<IServiceScopeFactory>(),
             options ?? new DeletedAccountPurgeOptions(),
             logger

@@ -65,7 +65,7 @@ authentication are not supported.
   answer 204 alike. Registration refuses a disposable domain first (`DisposableEmailNotAllowed`), which depends
   only on the domain, and then hashes the password before looking the address up, so every other outcome costs
   the same Argon2 work. An account still unverified 24 hours after registering is erased with its
-  dependents and blocked copy by `PurgeUnverifiedAccounts`, which `UnverifiedAccountPurger` runs 30 seconds
+  dependents and blocked copy by `PurgeUnverifiedAccounts`, which `UnverifiedAccountPurgeWorker` runs 30 seconds
   after startup and then hourly; each account is locked and checked again before its erasure.
 - Only someone who knows an account's password learns its state: after a correct password, the password step
   answers a blocked account with `UserAccountBlocked`, an unverified one with `UserAccountPendingVerification`
@@ -113,7 +113,7 @@ authentication are not supported.
   `SendComingOfAgeNotices` emails the guardian 30 days before, recording it in
   `users.coming_of_age_notice_sent_at`. A changed birth date clears that record, so the corrected day gets its
   own notice; a notice the email limits refuse is retried on the next run, and a guardian whose email nobody
-  verified gets none. `AdultDependentPurger` runs both 30 seconds after startup and then hourly, and each
+  verified gets none. `AdultDependentPurgeWorker` runs both 30 seconds after startup and then hourly, and each
   dependent is locked and checked again first. A household signup list holds at most 21 people.
 - `PATCH /api/users/{id}/password` changes only the caller's own password and asks for the current one;
   guardians and administrators get `AccessDenied` (403) for any other account, so nobody else can spend that
@@ -194,7 +194,7 @@ deletion and the earlier versions any of those decisions was taken on, every cha
 and source, and who asked
 for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
 secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
-data is plain JSON protected only by database access. The `DeletedAccountPurger` hosted service runs
+data is plain JSON protected only by database access. The `DeletedAccountPurgeWorker` hosted service runs
 `PurgeDeletedAccounts`, which deletes
 each copy two years after `deleted_at`, 30 seconds after startup and then hourly. Users are deleted only
 through `AccountEraser`, and `DeletedAccountGuard` refuses any commit that deletes the initial administrator,
@@ -213,7 +213,7 @@ the signups removed with activity, role, status and signup time, and, when the e
 with who decided, the signature, the history, each document's text and the earlier versions they were taken on, plus the first and last names of the
 people they are about or who decided them. A removal that takes away no signup or decision stores nothing.
 Like the account copies, nothing in the application reads it, `DeletedAccountGuard` refuses any change to a stored
-copy, and `DeletedAccountPurger` runs `PurgeDeletedParticipations`, which deletes each copy two years after
+copy, and `DeletedAccountPurgeWorker` runs `PurgeDeletedParticipations`, which deletes each copy two years after
 `deleted_at`.
 
 **Recovery**: an administrator can reset a user's second factor to email
@@ -593,7 +593,7 @@ JSON request reaches; only the multipart upload and email endpoints raise it, to
 Access to stored files goes through API authorization, not a direct static volume mount. An upload is kept
 while content references it (`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after
 it was uploaded, such as an image picked for a form that was never saved, is deleted with its content by
-`PurgeUnusedFiles`, which `UnusedFilePurger` runs 30 seconds after startup and then hourly. The purge locks the
+`PurgeUnusedFiles`, which `UnusedFilePurgeWorker` runs 30 seconds after startup and then hourly. The purge locks the
 files it deletes (`FOR UPDATE`) before reading their references, and saving an event, news item or resource
 locks its thumbnail and the images its rich text embeds (`FOR KEY SHARE`, `ContentFiles`) in the transaction
 that stores it, so a save either commits first and keeps them or is refused (`*ThumbnailNotFound`,
@@ -627,7 +627,7 @@ Registration and email changes (`PUT /api/users/{id}`) refuse addresses of dispo
 providers with `DisposableEmailNotAllowed` (400), which the SPA presents as a security measure. An address
 is refused when its domain (lowercase, punycode, no trailing dot) or any parent domain other than the
 top-level one is in `disposable_email_domains`; an unchanged email is not re-checked, so existing accounts
-keep working. `DisposableEmailDomainRefresher` downloads the list of the
+keep working. `DisposableEmailDomainRefreshWorker` downloads the list of the
 [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains) project
 30 seconds after startup and then every 24 hours, or every hour after a failure. A download replaces the
 stored list only when it is at most 2 MiB of UTF-8 text with one valid domain name per line (blank and `#`
@@ -656,7 +656,7 @@ reaches the outbox; SMTP failure and a full outbox do not refund it. The limiter
 in-memory, resets on restart and is multiplied by the number of API replicas.
 
 Both automatic and administrator-written mail are stored in a PostgreSQL outbox (`email_outbox_messages`)
-and delivered in the background by `EmailOutboxProcessor`, so a request that queues email returns once the
+and delivered in the background by `EmailOutboxDeliveryWorker`, so a request that queues email returns once the
 row is committed, not once SMTP accepts it: see [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) for the
 delivery schedule, capacity and monitoring. The stored subject, bodies and attachments are protected with
 Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, unsubscribe link and one-click

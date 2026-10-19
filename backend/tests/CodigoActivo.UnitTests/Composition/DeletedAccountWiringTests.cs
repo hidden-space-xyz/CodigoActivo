@@ -35,7 +35,7 @@ public sealed class DeletedAccountWiringTests
         provider
             .GetServices<IHostedService>()
             .Should()
-            .ContainSingle(service => service is DeletedAccountPurger);
+            .ContainSingle(service => service is DeletedAccountPurgeWorker);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class DeletedAccountWiringTests
         provider
             .GetServices<IHostedService>()
             .Should()
-            .ContainSingle(service => service is UnverifiedAccountPurger);
+            .ContainSingle(service => service is UnverifiedAccountPurgeWorker);
         options.Interval.Should().Be(TimeSpan.FromHours(1));
         options.StartupDelay.Should().Be(TimeSpan.FromSeconds(30));
     }
