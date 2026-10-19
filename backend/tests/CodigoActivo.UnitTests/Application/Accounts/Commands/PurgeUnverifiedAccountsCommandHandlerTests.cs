@@ -56,10 +56,10 @@ public sealed class PurgeUnverifiedAccountsCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncErasesTheAccountsStillUnverifiedThirtyDaysAfterRegistering()
+    public async Task HandleAsyncErasesTheAccountsStillUnverifiedTwentyFourHoursAfterRegistering()
     {
         var first = Unverified(daysAgo: 45);
-        var second = Unverified(daysAgo: 30);
+        var second = Unverified(daysAgo: 1);
         Lists(first, second);
         users.LocksEveryAccount();
 
@@ -69,7 +69,7 @@ public sealed class PurgeUnverifiedAccountsCommandHandlerTests
         await users
             .Received(1)
             .ListUnverifiedRegisteredUpToAsync(
-                clock.UtcNow.AddDays(-30),
+                clock.UtcNow.AddDays(-1),
                 Arg.Any<CancellationToken>()
             );
         users.Received(1).Remove(first);

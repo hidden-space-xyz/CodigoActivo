@@ -15,7 +15,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Days an account may wait for the verification of its email before it is erased.
     /// </summary>
-    public const int UnverifiedRetentionDays = 30;
+    public const int UnverifiedRetentionDays = 1;
 
     private readonly List<NewsConsentChange> newsConsentChanges = [];
 

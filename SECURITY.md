@@ -64,7 +64,7 @@ authentication are not supported.
   verification mail it replaces. `POST /api/auth/resend-verification` (by email) and `forgot-password` also
   answer 204 alike. Registration refuses a disposable domain first (`DisposableEmailNotAllowed`), which depends
   only on the domain, and then hashes the password before looking the address up, so every other outcome costs
-  the same Argon2 work. An account still unverified 30 days after registering is erased with its
+  the same Argon2 work. An account still unverified 24 hours after registering is erased with its
   dependents and blocked copy by `PurgeUnverifiedAccounts`, which `UnverifiedAccountPurger` runs 30 seconds
   after startup and then hourly; each account is locked and checked again before its erasure.
 - Only someone who knows an account's password learns its state: after a correct password, the password step
@@ -174,7 +174,7 @@ partners, resources and files, in the same transaction; the original credit is n
 
 **Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's,
 a guardian's, that of an unverified account whose email another account claims, or that of one nobody
-verified within 30 days — first stores one JSON
+verified within 24 hours — first stores one JSON
 copy in `deleted_accounts` (`id` is the former user id with no foreign key, `deleted_at`, `data` as
 `jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
 their dependents and the household's signups and terms decisions, and then deletes them; a failed deletion
