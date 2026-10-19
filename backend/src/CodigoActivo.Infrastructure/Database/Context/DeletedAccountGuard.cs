@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Accounts.Erasure;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -8,7 +9,8 @@ namespace CodigoActivo.Infrastructure.Database.Context;
 /// <summary>
 /// Refuses any commit that deletes the initial administrator, any commit that deletes a user
 /// without the <see cref="DeletedAccount"/> copy that <see cref="AccountEraser.EraseAsync"/>
-/// adds first, and any commit that changes or deletes a stored copy. A dependent deleted together
+/// adds first, and any commit that changes or deletes a stored copy, of an account or of removed
+/// participation (<see cref="DeletedParticipation"/>). A dependent deleted together
 /// with an archived guardian is covered by the guardian's copy. Set-based deletes never reach the
 /// change tracker: no repository deletes users in bulk and the retention purge is the only
 /// set-based delete of copies.
@@ -66,6 +68,11 @@ public sealed class DeletedAccountGuard : SaveChangesInterceptor
                 case DeletedAccount when entry.State is EntityState.Modified or EntityState.Deleted:
                     throw new InvalidOperationException(
                         "A deleted account copy cannot be changed or deleted; only the retention purge removes it."
+                    );
+                case DeletedParticipation
+                    when entry.State is EntityState.Modified or EntityState.Deleted:
+                    throw new InvalidOperationException(
+                        "A deleted participation copy cannot be changed or deleted; only the retention purge removes it."
                     );
                 case User user when entry.State is EntityState.Deleted:
                     deletedUsers.Add(user);

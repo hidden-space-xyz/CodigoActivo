@@ -202,6 +202,20 @@ deletes a user without its copy or changes a stored copy.
 The SPA only tells users that they and their dependents lose access and cannot recover the account; the
 privacy policy (`/privacy`) states the two-year retention.
 
+**Blocked copy of removed participation** (LOPDGDD article 32): deleting an event (`DeleteEvent`) or an activity
+(`DeleteActivity`), or cancelling a signup (`UnassignActivity`), commits through `ParticipationEraser`, which in
+the same transaction locks (`FOR UPDATE`) what the removal takes away — the event, its activities, their
+signups and its terms decisions; the activity and its signups; or the one signup — so no signup or decision
+added meanwhile escapes the copy, stores one JSON copy in `deleted_participations` (`id`, `deleted_at`, `data` as
+`jsonb`, no foreign key) and then removes it; a deadlock is retried as for accounts. The copy holds what was
+removed (`EventDeleted`, `ActivityDeleted` or `SignupCancelled`), who removed it, the event's title and dates,
+the signups removed with activity, role, status and signup time, and, when the event goes, its terms decisions
+with who decided, the signature, the history and each document's text, plus the first and last names of the
+people they are about or who decided them. A removal that takes away no signup or decision stores nothing.
+Like the account copies, nothing in the application reads it, `DeletedAccountGuard` refuses any change to a stored
+copy, and `DeletedAccountPurger` runs `PurgeDeletedParticipations`, which deletes each copy two years after
+`deleted_at`.
+
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also clears any
 lockout; the user is only notified when the reset removed an authenticator. Losing the Data Protection keys makes stored authenticator secrets unreadable; affected users then
@@ -381,7 +395,8 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   with their own decisions. Decisions stored before they were per person name the deciding guardian as the
   person; documents stored before they had a kind are conditions; decisions stored before the history began
   with one change, their state then, recorded by who decided it. The rows and their history cascade away with
-  the person or the decider, once the blocked copy of that account holds them.
+  the person or the decider, once the blocked copy of that account holds them, and with the event, once the
+  blocked copy of removed participation does.
 - A consent is withdrawn (article 7.3 GDPR) through
   `POST /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw` (`[AllowOnlySelf]`): by the
   person, by their guardian, or by an administrator who records a withdrawal asked for by email. Conditions are

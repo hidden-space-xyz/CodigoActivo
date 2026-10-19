@@ -155,9 +155,11 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
   initial administrator and removes the account; any other change staged in the unit of work commits with it.
   `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, is the safety
   net that refuses any other user deletion, any deletion of the initial administrator and any change to a
-  stored copy. The
-  `PurgeDeletedAccounts`, `PurgeUnverifiedAccounts`, `PurgeAdultDependents`, `PurgeUnusedFiles` and
-  `RemoveExpiredSessions` commands delete legal copies past their retention, accounts nobody verified within
+  stored copy. Deleting an event or an activity, or cancelling a signup, commits through `ParticipationEraser`,
+  which locks what the removal takes away and stores its blocked copy (`DeletedParticipation`, built by
+  `IParticipationArchive` with the records of the legal copy) in the same transaction. The
+  `PurgeDeletedAccounts`, `PurgeDeletedParticipations`, `PurgeUnverifiedAccounts`, `PurgeAdultDependents`,
+  `PurgeUnusedFiles` and `RemoveExpiredSessions` commands delete legal copies past their retention, accounts nobody verified within
   24 hours and dependents who came of age (both through `AccountEraser`), uploads no content used within 7 days
   (through `IOrphanFileCleaner`) and expired sessions, and `SendComingOfAgeNotices` warns guardians 30 days
   before; hosted services in Infrastructure only run them on a schedule. What the copy holds and how

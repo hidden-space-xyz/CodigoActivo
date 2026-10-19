@@ -45,6 +45,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'ChangeAssignmentStatus',
   'CreateActivity',
   'DeleteActivity',
+  'PurgeDeletedParticipations',
   'UnassignActivity',
   'UpdateActivity',
   'SendEmailToEventAttendees',

@@ -35,6 +35,7 @@ export const AuditAction = {
   ChangeAssignmentStatus: 'ChangeAssignmentStatus',
   CreateActivity: 'CreateActivity',
   DeleteActivity: 'DeleteActivity',
+  PurgeDeletedParticipations: 'PurgeDeletedParticipations',
   UnassignActivity: 'UnassignActivity',
   UpdateActivity: 'UpdateActivity',
   SendEmailToEventAttendees: 'SendEmailToEventAttendees',
