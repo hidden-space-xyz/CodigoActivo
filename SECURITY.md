@@ -412,7 +412,10 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
 - A terms document is versioned (`terms_documents.version`), so the text each decision was taken on can always be
   shown (article 7.1 GDPR): every rewrite that changes its name, text, kind or signature keeps the replaced version
   in `terms_document_versions` and numbers the new one, even when nobody decided yet, so a decision recorded while
-  the document changes still names a version whose text is kept. Each decision and each change of its history
+  the document changes still names a version whose text is kept. Rewrites lock the document and run one after
+  another, so each keeps as a version the text the previous one stored, and its kind cannot change while an event
+  links it or anyone decided on it (`TermsDocumentKindInUse`), since what a decision requires and whether it can be
+  withdrawn follow the current kind. Each decision and each change of its history
   stores the version it was taken on (`terms_document_version`; a withdrawal keeps the one withdrawn), and nobody is
   asked again after a rewrite. Every decision sent names the version shown (`TermsDecisionRequest.Version`, which
   the terms state returns); one on a version that is no longer current is refused (`EventTermsDocumentChanged`)

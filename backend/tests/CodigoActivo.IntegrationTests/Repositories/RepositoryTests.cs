@@ -1119,6 +1119,71 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
+    public async Task LockAsyncTermsDocumentTakesTheRewriteAnotherSessionSaved()
+    {
+        await using var ctx = postgres.CreateContext();
+        var document = TermsDocument.Create(
+            "Documento original",
+            RichText.From("{}"),
+            false,
+            TermsDocumentKind.Conditions
+        );
+        ctx.TermsDocuments.Add(document);
+        await ctx.SaveChangesAsync(Ct);
+        await using (var other = postgres.CreateContext())
+        {
+            var copy = await new TermsDocumentRepository(other).GetByIdAsync(document.Id, Ct);
+            copy!.Rewrite(
+                "Documento reescrito",
+                RichText.From("{}"),
+                false,
+                TermsDocumentKind.Conditions
+            );
+            await other.SaveChangesAsync(Ct);
+        }
+
+        var repo = new TermsDocumentRepository(ctx);
+        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
+
+        (await repo.LockAsync(document, Ct)).Should().BeTrue();
+        document.Rewrite(
+            "Documento final",
+            RichText.From("{}"),
+            false,
+            TermsDocumentKind.Conditions
+        );
+        await ctx.SaveChangesAsync(Ct);
+        await transaction.CommitAsync(Ct);
+
+        document.Version.Should().Be(3);
+        (
+            await ctx
+                .TermsDocumentVersions.Where(version => version.TermsDocumentId == document.Id)
+                .OrderBy(version => version.Number)
+                .Select(version => version.Name)
+                .ToListAsync(Ct)
+        )
+            .Should()
+            .Equal("Documento original", "Documento reescrito");
+    }
+
+    [Fact]
+    public async Task LockAsyncTermsDocumentNotStoredReturnsFalse()
+    {
+        await using var ctx = postgres.CreateContext();
+        var document = TermsDocument.Create(
+            "Documento sin guardar",
+            RichText.From("{}"),
+            false,
+            TermsDocumentKind.Conditions
+        );
+        var repo = new TermsDocumentRepository(ctx);
+        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
+
+        (await repo.LockAsync(document, Ct)).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task SaveChangesAsyncTermsAcceptanceWithSignatureStoresTheImage()
     {
         await using var ctx = postgres.CreateContext();

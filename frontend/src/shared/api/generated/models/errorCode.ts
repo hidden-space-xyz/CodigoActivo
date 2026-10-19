@@ -53,6 +53,7 @@ export const ErrorCode = {
   DiagnosticLogEntryNotFound: 'DiagnosticLogEntryNotFound',
   TermsDocumentNameAlreadyExists: 'TermsDocumentNameAlreadyExists',
   TermsDocumentInUse: 'TermsDocumentInUse',
+  TermsDocumentKindInUse: 'TermsDocumentKindInUse',
   ResourceNotFound: 'ResourceNotFound',
   ResourceThumbnailNotFound: 'ResourceThumbnailNotFound',
   ResourceDescriptionRequired: 'ResourceDescriptionRequired',

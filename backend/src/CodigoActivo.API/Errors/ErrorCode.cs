@@ -228,6 +228,11 @@ public enum ErrorCode
     TermsDocumentInUse,
 
     /// <summary>
+    /// The kind of a terms document cannot change while an event links it or anyone decided on it.
+    /// </summary>
+    TermsDocumentKindInUse,
+
+    /// <summary>
     /// Selects the resource not found option.
     /// </summary>
     ResourceNotFound,
