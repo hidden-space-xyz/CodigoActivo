@@ -123,10 +123,7 @@ public sealed class OrphanFileCleaner(
     {
         try
         {
-            foreach (var storedName in FileNaming.StoredNames(fileId, extension))
-            {
-                storage.Delete(storedName);
-            }
+            storage.DeleteVariants(fileId, extension);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

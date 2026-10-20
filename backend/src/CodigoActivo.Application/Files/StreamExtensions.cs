@@ -95,6 +95,8 @@ public sealed record ImageFormat(string Extension, string ContentType)
     /// </summary>
     public static ImageFormat Webp { get; } = new("webp", "image/webp");
 
+    private static ImageFormat[] Known { get; } = [Jpeg, Png, Webp];
+
     /// <summary>
     /// Finds the format a stored extension stands for.
     /// </summary>
@@ -102,7 +104,7 @@ public sealed record ImageFormat(string Extension, string ContentType)
     /// <returns>The matching format, or <see langword="null"/> when it is not one of them.</returns>
     public static ImageFormat? FromExtension(string extension)
     {
-        return new[] { Jpeg, Png, Webp }.FirstOrDefault(format =>
+        return Known.FirstOrDefault(format =>
             string.Equals(format.Extension, extension, StringComparison.Ordinal)
         );
     }

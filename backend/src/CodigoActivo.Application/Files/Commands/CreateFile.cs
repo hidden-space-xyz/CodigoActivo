@@ -69,26 +69,15 @@ public sealed class CreateFileCommandHandler(
             clock.UtcNow
         );
 
-        var saved = new List<string>();
+        await storage.SaveVariantsAsync(file.Id, processed.Value, ct);
         try
         {
-            foreach (var variant in Enum.GetValues<FileVariant>())
-            {
-                var storedName = FileNaming.StoredName(file.Id, file.Extension, variant);
-                await using var content = new MemoryStream(
-                    processed.Value.Of(variant),
-                    writable: false
-                );
-                await storage.SaveAsync(storedName, content, ct);
-                saved.Add(storedName);
-            }
-
             await files.AddAsync(file, ct);
             await uow.SaveChangesAsync(ct);
         }
         catch
         {
-            saved.ForEach(storage.Delete);
+            storage.DiscardVariants(file.Id, file.Extension);
             throw;
         }
 
