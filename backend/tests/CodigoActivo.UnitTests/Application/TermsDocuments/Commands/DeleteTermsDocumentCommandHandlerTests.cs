@@ -6,6 +6,7 @@ using CodigoActivo.Application.TermsDocuments.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.UnitTests.Application.Events;
 using CodigoActivo.UnitTests.TestSupport;

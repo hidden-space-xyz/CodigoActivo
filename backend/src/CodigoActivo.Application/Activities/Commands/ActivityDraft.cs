@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Activities;
-using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Commands;

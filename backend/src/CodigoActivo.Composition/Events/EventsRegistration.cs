@@ -1,14 +1,17 @@
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Events;
+using CodigoActivo.Application.TermsDecisions;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Infrastructure.Activities;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.EventCategories;
 using CodigoActivo.Infrastructure.Events;
+using CodigoActivo.Infrastructure.TermsDecisions;
 using CodigoActivo.Infrastructure.TermsDocuments;
 using Microsoft.Extensions.DependencyInjection;
 

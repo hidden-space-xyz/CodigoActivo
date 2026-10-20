@@ -2,6 +2,8 @@ using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Application.Participation.Queries;
+using CodigoActivo.Application.TermsDecisions.Contracts;
+using CodigoActivo.Application.TermsDecisions.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

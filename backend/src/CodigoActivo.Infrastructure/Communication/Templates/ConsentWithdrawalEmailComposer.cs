@@ -1,7 +1,7 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common;
-using CodigoActivo.Application.Events;
+using CodigoActivo.Application.TermsDecisions;
 
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 

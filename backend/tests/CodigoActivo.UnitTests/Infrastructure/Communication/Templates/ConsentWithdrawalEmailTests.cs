@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Events;
+using CodigoActivo.Application.TermsDecisions;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using Xunit;
 

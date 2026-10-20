@@ -14,6 +14,8 @@ using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Logs;
 using CodigoActivo.Application.Reports;
+using CodigoActivo.Application.TermsDecisions;
+using CodigoActivo.Application.TermsDecisions.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Caching;

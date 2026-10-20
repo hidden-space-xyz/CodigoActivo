@@ -6,6 +6,7 @@ using CodigoActivo.Application.Logs.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Logs;

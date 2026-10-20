@@ -4,6 +4,7 @@ using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.API.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;

@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 
