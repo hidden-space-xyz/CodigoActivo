@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Activities.Signups;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 

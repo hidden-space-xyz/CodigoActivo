@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Domain.Activities;
 using NSubstitute;
 

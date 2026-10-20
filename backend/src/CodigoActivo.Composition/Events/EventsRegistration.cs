@@ -1,4 +1,6 @@
 using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Activities.Erasure;
+using CodigoActivo.Application.Activities.Signups;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.TermsDecisions;
 using CodigoActivo.Domain.Activities;

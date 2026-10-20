@@ -5,6 +5,7 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Activities.Signups;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;

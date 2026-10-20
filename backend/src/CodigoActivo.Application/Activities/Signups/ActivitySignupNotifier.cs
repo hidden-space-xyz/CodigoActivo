@@ -6,7 +6,7 @@ using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
 
-namespace CodigoActivo.Application.Activities;
+namespace CodigoActivo.Application.Activities.Signups;
 
 /// <summary>
 /// Builds and sends notifications for activity signup. An address its account has not confirmed yet

@@ -187,7 +187,7 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
 Each use case is a message and a sealed handler in `CodigoActivo.Application/<Feature>/Commands|Queries/`.
 `Accounts` groups its supporting types by concern: `Passwords/`, `SecondFactor/`, `Sessions/`, `EmailAddresses/`,
 `Notifications/` and `Erasure/`; `AccountLock`, `AccountLockoutLog` and `SecurityLog` sit at the `Accounts`
-root.
+root. `Activities` keeps the signup collaborators in `Signups/` and `ParticipationEraser` in `Erasure/`.
 `UseCaseRegistration` (Composition) registers every `ICommandHandler<,>`, `IQueryHandler<,>` and
 `IDomainEventListener<>` it finds by the contract it implements, and wraps the handlers in decorators: a command
 runs through `LoggingCommandDecorator` (warns about slow use cases), `AuditCommandDecorator` (records it in the

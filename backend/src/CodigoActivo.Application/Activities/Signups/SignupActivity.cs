@@ -1,4 +1,4 @@
-namespace CodigoActivo.Application.Activities;
+namespace CodigoActivo.Application.Activities.Signups;
 
 /// <summary>
 /// Describes the activity a signup decision is about, as the decision email presents it.

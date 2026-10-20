@@ -1,7 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Domain.Activities;
 
-namespace CodigoActivo.Application.Activities;
+namespace CodigoActivo.Application.Activities.Signups;
 
 /// <summary>
 /// Tells a person, or their guardian, that their signup was confirmed or denied, once the

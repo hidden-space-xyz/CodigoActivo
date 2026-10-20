@@ -2,6 +2,8 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Activities.Erasure;
+using CodigoActivo.Application.Activities.Signups;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;

@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
@@ -8,7 +9,7 @@ using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Application.Activities;
+namespace CodigoActivo.UnitTests.Application.Activities.Erasure;
 
 public sealed class ParticipationEraserTests
 {
