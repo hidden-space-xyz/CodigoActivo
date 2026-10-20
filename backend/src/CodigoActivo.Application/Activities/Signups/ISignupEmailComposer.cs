@@ -1,6 +1,6 @@
 using CodigoActivo.Application.Abstractions.Email;
 
-namespace CodigoActivo.Application.Activities;
+namespace CodigoActivo.Application.Activities.Signups;
 
 /// <summary>
 /// Composes the messages that tell a participant, or their guardian, how a signup was decided.

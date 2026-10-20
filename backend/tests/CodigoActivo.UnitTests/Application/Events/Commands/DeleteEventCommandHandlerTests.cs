@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Domain.Activities;

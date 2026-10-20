@@ -8,6 +8,7 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Activities.Signups;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Emails.Commands;

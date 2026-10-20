@@ -1,7 +1,7 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Activities;
 
-namespace CodigoActivo.Application.Activities;
+namespace CodigoActivo.Application.Activities.Erasure;
 
 /// <summary>
 /// Commits the removal of participation data staged in the unit of work (an event or an activity

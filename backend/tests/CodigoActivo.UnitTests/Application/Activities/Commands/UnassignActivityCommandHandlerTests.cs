@@ -3,6 +3,8 @@ using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
+using CodigoActivo.Application.Activities.Erasure;
+using CodigoActivo.Application.Activities.Signups;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;

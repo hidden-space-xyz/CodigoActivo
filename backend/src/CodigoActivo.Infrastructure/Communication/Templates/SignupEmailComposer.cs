@@ -1,6 +1,6 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Activities;
+using CodigoActivo.Application.Activities.Signups;
 using CodigoActivo.Application.Common;
 
 namespace CodigoActivo.Infrastructure.Communication.Templates;

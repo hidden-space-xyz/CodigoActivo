@@ -1,6 +1,6 @@
 using CodigoActivo.Domain.Activities;
 
-namespace CodigoActivo.Application.Activities;
+namespace CodigoActivo.Application.Activities.Erasure;
 
 /// <summary>
 /// Storage steps that keep the blocked copy of the participation a removal takes away. They run

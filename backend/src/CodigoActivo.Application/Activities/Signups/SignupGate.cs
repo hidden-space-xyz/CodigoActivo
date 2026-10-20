@@ -4,7 +4,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 
-namespace CodigoActivo.Application.Activities;
+namespace CodigoActivo.Application.Activities.Signups;
 
 /// <summary>
 /// Lets <see cref="SignupEligibility"/> decide whether the signup window of an activity is open to
