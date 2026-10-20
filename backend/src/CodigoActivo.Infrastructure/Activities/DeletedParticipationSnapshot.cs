@@ -4,7 +4,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Context;
-using CodigoActivo.Infrastructure.Events;
+using CodigoActivo.Infrastructure.TermsDecisions;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Activities;

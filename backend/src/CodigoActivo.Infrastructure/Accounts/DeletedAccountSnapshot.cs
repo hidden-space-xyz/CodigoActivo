@@ -6,7 +6,7 @@ using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Context;
-using CodigoActivo.Infrastructure.Events;
+using CodigoActivo.Infrastructure.TermsDecisions;
 using CodigoActivo.Infrastructure.Users;
 using Microsoft.EntityFrameworkCore;
 

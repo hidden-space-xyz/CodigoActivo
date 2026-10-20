@@ -58,9 +58,10 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
 ### Domain and persistence
 
 - `CodigoActivo.Domain` has one folder per feature (`Users/`, `Events/`, `Activities/`, `EventCategories/`,
-  `TermsDocuments/`, `News/`, `Resources/`, `Partners/`, `Files/`) with its aggregates, typed identifiers, value
-  objects, domain events, policies and repository ports; `Common/` holds `Result`, `Error`, `DomainErrorCode`, the
-  base classes (`Entity<TId>`, `AggregateRoot<TId>`, `AuditableEntity<TId>`) and the shared value objects.
+  `TermsDocuments/`, `TermsDecisions/`, `News/`, `Resources/`, `Partners/`, `Files/`) with its aggregates, typed
+  identifiers, value objects, domain events, policies and repository ports; `Common/` holds `Result`, `Error`,
+  `DomainErrorCode`, the base classes (`Entity<TId>`, `AggregateRoot<TId>`, `AuditableEntity<TId>`) and the shared
+  value objects.
 - Aggregates have a typed identifier (`UserId`, `EventId`, `ActivityId`, `PartnerId`, `StoredFileId`...), a
   `readonly record struct` over a `Guid` with no implicit conversion, so an identifier of one aggregate can never
   be passed for another; `EventTermsAcceptance` is keyed by event, user and document, and `DeletedAccount` by

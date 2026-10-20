@@ -7,6 +7,7 @@ using CodigoActivo.API.TermsDocuments.Contracts;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Application.Events.Contracts;
+using CodigoActivo.Application.TermsDecisions.Contracts;
 using CodigoActivo.Application.TermsDocuments.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;

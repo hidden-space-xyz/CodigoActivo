@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
