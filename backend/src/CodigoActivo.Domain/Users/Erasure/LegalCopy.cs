@@ -151,7 +151,8 @@ public sealed record LegalCopy(
                                         decision => decision.DocumentName,
                                         StringComparer.Ordinal
                                     )
-                                    .ThenBy(decision => decision.DocumentId),
+                                    .ThenBy(decision => decision.DocumentId)
+                                    .ThenBy(decision => decision.PersonId),
                             ],
                             Activities =
                             [

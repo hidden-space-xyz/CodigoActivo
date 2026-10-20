@@ -296,23 +296,26 @@ public sealed class LegalCopyTests
     }
 
     [Fact]
-    public void ComposeDecisionsAreSortedByDateDocumentNameAndDocumentId()
+    public void ComposeDecisionsAreSortedByDateDocumentNameDocumentIdAndPerson()
     {
         var account = Person(AccountId, "Ana", "Ruiz");
+        var child = Person(Id(1), "Leo", "Ruiz", AccountId);
         var fair = Event(Id(10), "Feria", FirstDay);
         var later = Decision(Document(Id(21), "A"), Now.AddHours(1), AccountId);
         var namedB = Decision(Document(Id(22), "B"), Now, AccountId);
         var secondNamedA = Decision(Document(Id(24), "A"), Now, AccountId);
         var firstNamedA = Decision(Document(Id(23), "A"), Now, AccountId);
+        var firstNamedAByChild = Decision(Document(Id(23), "A"), Now, child.Id);
 
         var copy = Compose(
-            [account],
+            [account, child],
             decisions:
             [
                 (fair.Id, later),
                 (fair.Id, namedB),
                 (fair.Id, secondNamedA),
                 (fair.Id, firstNamedA),
+                (fair.Id, firstNamedAByChild),
             ],
             events: [fair]
         );
@@ -320,7 +323,7 @@ public sealed class LegalCopyTests
         copy.Events.Should()
             .ContainSingle()
             .Which.TermsDecisions.Should()
-            .Equal(firstNamedA, secondNamedA, namedB, later);
+            .Equal(firstNamedAByChild, firstNamedA, secondNamedA, namedB, later);
     }
 
     [Fact]

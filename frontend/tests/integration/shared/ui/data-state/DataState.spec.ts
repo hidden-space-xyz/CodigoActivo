@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { renderWithProviders, t } from '../../../../support/render'
 import { DataState } from '@/shared/ui/data-state'
@@ -53,5 +53,20 @@ describe('DataState', () => {
 
     expect(wrapper.find('.content').text()).toBe('Row')
     expect(wrapper.find('.data-state').exists()).toBe(false)
+  })
+
+  it('passes its attributes to the state message only, without warnings', async () => {
+    const warn = vi.spyOn(console, 'warn')
+    const empty = await renderWithProviders(DataState, {
+      props: { loading: false, error: false, empty: true, class: 'no-print' },
+    })
+    const loaded = await renderWithProviders(DataState, {
+      props: { loading: false, error: false, empty: false, class: 'no-print' },
+      slots,
+    })
+
+    expect(empty.wrapper.get('.data-state').classes()).toContain('no-print')
+    expect(loaded.wrapper.get('.content').classes()).not.toContain('no-print')
+    expect(warn).not.toHaveBeenCalled()
   })
 })

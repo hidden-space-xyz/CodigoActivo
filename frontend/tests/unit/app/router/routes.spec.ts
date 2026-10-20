@@ -55,9 +55,13 @@ describe('routes', () => {
     expect(named('verify-account').meta?.access).toBeUndefined()
   })
 
-  it('files event details under the events section of the header', () => {
+  it('files each detail page under the header section of its list', () => {
     expect(named('events').meta?.section).toBe('events')
     expect(named('event-detail').meta?.section).toBe('events')
+    expect(named('news').meta?.section).toBe('news')
+    expect(named('news-detail').meta?.section).toBe('news')
+    expect(named('resources').meta?.section).toBe('resources')
+    expect(named('resource-detail').meta?.section).toBe('resources')
   })
 
   it('references only existing route names from the navigation config', () => {

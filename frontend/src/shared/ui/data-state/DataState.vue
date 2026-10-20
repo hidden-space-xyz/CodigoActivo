@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { AppIcon } from '@/shared/ui/app-icon'
 
+defineOptions({ inheritAttrs: false })
+
 defineProps<{
   /** Shows a spinner; takes precedence over `error` and `empty`. */
   loading: boolean
@@ -16,14 +18,16 @@ defineProps<{
 </script>
 
 <template>
-  <div v-if="loading" class="data-state">
+  <div v-if="loading" v-bind="$attrs" class="data-state">
     <span class="data-state__spinner"><AppIcon name="spinner" spin /></span>
     <span>{{ $t('common.loading') }}</span>
   </div>
-  <div v-else-if="error" class="data-state data-state--error">
+  <div v-else-if="error" v-bind="$attrs" class="data-state data-state--error">
     {{ errorText ?? $t('dataState.error') }}
   </div>
-  <div v-else-if="empty" class="data-state">{{ emptyText ?? $t('dataState.empty') }}</div>
+  <div v-else-if="empty" v-bind="$attrs" class="data-state">
+    {{ emptyText ?? $t('dataState.empty') }}
+  </div>
   <slot v-else />
 </template>
 

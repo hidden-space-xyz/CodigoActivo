@@ -355,6 +355,10 @@ function confirmDelete(): void {
   outline: none;
 }
 
+.acc-date:focus {
+  border-color: var(--ca-orange);
+}
+
 .acc-form__declaration {
   margin: 0;
   font-size: 13px;
