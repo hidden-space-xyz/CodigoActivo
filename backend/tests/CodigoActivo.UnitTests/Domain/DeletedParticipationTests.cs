@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.Application.Activities;
 using Xunit;
 

@@ -1,6 +1,6 @@
 using CodigoActivo.Domain.Common;
 
-namespace CodigoActivo.Domain.Users;
+namespace CodigoActivo.Domain.Users.Erasure;
 
 /// <summary>
 /// Blocked copy of an erased account that the law requires to keep: the personal data of the

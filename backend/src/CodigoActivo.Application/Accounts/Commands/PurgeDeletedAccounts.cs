@@ -2,9 +2,9 @@ using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 
-namespace CodigoActivo.Application.Users.Commands;
+namespace CodigoActivo.Application.Accounts.Commands;
 
 /// <summary>
 /// Carries the request to purge the legal copies kept long enough.

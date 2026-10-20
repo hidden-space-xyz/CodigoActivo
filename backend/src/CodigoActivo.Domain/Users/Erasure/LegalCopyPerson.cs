@@ -1,4 +1,4 @@
-namespace CodigoActivo.Domain.Users;
+namespace CodigoActivo.Domain.Users.Erasure;
 
 /// <summary>
 /// An erased account, or one of its dependents, as the legal copy keeps it. Catalog names are

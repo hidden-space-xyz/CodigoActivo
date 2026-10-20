@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Common;
 using Xunit;

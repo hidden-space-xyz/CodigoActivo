@@ -1,5 +1,5 @@
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Domain.Activities;
 

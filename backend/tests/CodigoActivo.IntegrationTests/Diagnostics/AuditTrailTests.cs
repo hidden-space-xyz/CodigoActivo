@@ -6,6 +6,7 @@ using CodigoActivo.API.Participation.Contracts;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;

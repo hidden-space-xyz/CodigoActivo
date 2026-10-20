@@ -4,6 +4,7 @@ using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.TermsDecisions;

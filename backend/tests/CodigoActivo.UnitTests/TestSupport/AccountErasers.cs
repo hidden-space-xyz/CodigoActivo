@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using NSubstitute;
 
 namespace CodigoActivo.UnitTests.TestSupport;

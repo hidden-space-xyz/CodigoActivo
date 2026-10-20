@@ -6,6 +6,7 @@ using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 

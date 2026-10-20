@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Application.Accounts.Erasure;
 
