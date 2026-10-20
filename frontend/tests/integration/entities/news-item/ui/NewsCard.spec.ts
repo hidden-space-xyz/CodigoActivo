@@ -20,7 +20,7 @@ describe('NewsCard', () => {
     expect(wrapper.find('time').text()).toContain(t('entities.newsItem.card.dateLabel'))
     expect(wrapper.find('time').text()).toContain('15 mar 2026')
     expect(wrapper.find('img').attributes()).toMatchObject({
-      src: '/api/files/thumb-a/content',
+      src: '/api/files/thumb-a/thumbnail',
       alt: 'Abrimos inscripciones',
     })
 

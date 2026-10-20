@@ -2603,6 +2603,29 @@
         }
       }
     },
+    "/api/files/{fileId}/thumbnail": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/files": {
       "post": {
         "tags": [
@@ -6123,6 +6146,8 @@
           "FileUploadTooLarge",
           "FileUploadStreamNotSeekable",
           "FileUploadUnsupportedFormat",
+          "FileUploadDimensionsTooLarge",
+          "FileUploadInvalidImage",
           "UserNotFound",
           "UserSelfDeleteRequiresVerification",
           "UserSelfAdminChangeForbidden",

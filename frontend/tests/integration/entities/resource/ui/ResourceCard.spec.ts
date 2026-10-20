@@ -18,7 +18,7 @@ describe('ResourceCard', () => {
     expect(wrapper.find('.resource-card__subtitle').text()).toBe('Primeros pasos')
     expect(wrapper.find('time').text()).toContain(t('entities.resource.card.dateLabel'))
     expect(wrapper.find('time').text()).toContain(formatDate('2026-02-01T10:00:00Z'))
-    expect(wrapper.find('img').attributes('src')).toBe('/api/files/thumb-r/content')
+    expect(wrapper.find('img').attributes('src')).toBe('/api/files/thumb-r/thumbnail')
 
     await link.trigger('click')
     await flushPromises()

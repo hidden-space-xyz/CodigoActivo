@@ -313,6 +313,16 @@ public enum ErrorCode
     FileUploadUnsupportedFormat,
 
     /// <summary>
+    /// An uploaded image declares more pixels than the upload limit allows.
+    /// </summary>
+    FileUploadDimensionsTooLarge,
+
+    /// <summary>
+    /// An uploaded image could not be decoded.
+    /// </summary>
+    FileUploadInvalidImage,
+
+    /// <summary>
     /// Selects the user not found option.
     /// </summary>
     UserNotFound,

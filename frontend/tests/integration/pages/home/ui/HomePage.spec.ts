@@ -199,7 +199,7 @@ describe('home page', () => {
       rel: 'noopener',
     })
     expect(cards[0]?.get('img').attributes()).toMatchObject({
-      src: '/api/files/f1/content',
+      src: '/api/files/f1/thumbnail',
       alt: 'Acme Labs',
     })
 

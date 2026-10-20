@@ -76,7 +76,6 @@ public static class RepositoryStubs
 
     public static void ThumbnailExists(this IStoredFileRepository files, bool exists)
     {
-        files.ExistsAsync(Arg.Any<StoredFileId>(), Arg.Any<CancellationToken>()).Returns(exists);
         files
             .LockExistingAsync(
                 Arg.Any<IReadOnlyCollection<StoredFileId>>(),

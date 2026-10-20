@@ -11,7 +11,7 @@ export const PASSWORD_MIN_LENGTH = 12
 export const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024
 
 /** File picker filter for the only image formats the API stores, detected from their content. */
-export const IMAGE_UPLOAD_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp'
+export const IMAGE_UPLOAD_ACCEPT = 'image/jpeg,image/png,image/webp'
 
 /** Minutes an emailed verification code or password reset link stays valid. */
 export const ONE_TIME_CODE_LIFETIME_MINUTES = 15

@@ -86,7 +86,7 @@ describe('admin partners page', () => {
       expect.arrayContaining(['list-thumb--table', 'list-thumb--contain']),
     )
     expect(logo.find('img').attributes()).toMatchObject({
-      src: '/api/files/thumb-partner-1/content',
+      src: '/api/files/thumb-partner-1/thumbnail',
       alt: '',
     })
     const link = first.find('a')

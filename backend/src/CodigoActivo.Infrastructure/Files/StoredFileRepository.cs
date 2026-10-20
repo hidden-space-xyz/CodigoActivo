@@ -99,12 +99,6 @@ public class StoredFileRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public Task<bool> ExistsAsync(StoredFileId id, CancellationToken ct = default)
-    {
-        return Set.AnyAsync(file => file.Id == id, ct);
-    }
-
-    /// <inheritdoc />
     public async Task<IReadOnlyList<StoredFileId>> GetInUseAsync(
         IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default

@@ -16,9 +16,12 @@ namespace CodigoActivo.UnitTests.Application.Files.Commands;
 
 public sealed class CreateFileCommandHandlerTests
 {
+    private static readonly ProcessedImage Processed = new([1, 2, 3], [4, 5]);
+
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IFileStorage storage = Substitute.For<IFileStorage>();
+    private readonly IImageProcessor processor = Substitute.For<IImageProcessor>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
     private readonly FileUploadOptions options = new();
@@ -32,8 +35,10 @@ public sealed class CreateFileCommandHandlerTests
             storage,
             currentUser,
             clock,
-            new FileUploadValidator(options)
+            new FileUploadValidator(options),
+            processor
         );
+        processor.ProcessAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>()).Returns(Processed);
     }
 
     private async Task<List<StoredFile>> CaptureAddedFilesAsync()
@@ -41,6 +46,22 @@ public sealed class CreateFileCommandHandlerTests
         var added = new List<StoredFile>();
         await files.AddAsync(Arg.Do<StoredFile>(added.Add), Arg.Any<CancellationToken>());
         return added;
+    }
+
+    private List<(string Name, byte[] Content)> CaptureSavedContent()
+    {
+        var saved = new List<(string Name, byte[] Content)>();
+        storage
+            .When(s =>
+                s.SaveAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            )
+            .Do(call =>
+            {
+                using var copy = new MemoryStream();
+                call.Arg<Stream>().CopyTo(copy);
+                saved.Add((call.Arg<string>(), copy.ToArray()));
+            });
+        return saved;
     }
 
     [Fact]
@@ -89,8 +110,7 @@ public sealed class CreateFileCommandHandlerTests
     public async Task HandleAsyncUploadAtExactSizeLimitIsAccepted()
     {
         options.MaxSizeBytes = 32;
-        var content = PngStream();
-        var upload = new FileUpload(content, "exact.png", 32);
+        var upload = new FileUpload(PngStream(), "exact.png", 32);
         var added = await CaptureAddedFilesAsync();
 
         var result = await sut.HandleAsync(
@@ -99,12 +119,7 @@ public sealed class CreateFileCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        var created = added.Should().ContainSingle().Which;
-        result.Value.Should().Be(created.Id);
-        created.Extension.Should().Be("png");
-        await storage
-            .Received(1)
-            .SaveAsync($"{result.Value}.png", content, Arg.Any<CancellationToken>());
+        added.Should().ContainSingle().Which.Id.Should().Be(result.Value);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -134,13 +149,30 @@ public sealed class CreateFileCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.FileUploadUnsupportedFormat);
         await AssertNothingPersistedAsync();
-        await storage
+        await processor
             .DidNotReceiveWithAnyArgs()
-            .SaveAsync(string.Empty, Stream.Null, TestContext.Current.CancellationToken);
+            .ProcessAsync(Stream.Null, TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncValidUploadSavesContentPersistsEntityAndReturnsId()
+    public async Task HandleAsyncProcessingFailsReturnsItsErrorAndStoresNothing()
+    {
+        processor
+            .ProcessAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Error.Validation(ApplicationErrorCode.FileUploadInvalidImage));
+        var upload = new FileUpload(PngStream(), "broken.png", 32);
+
+        var result = await sut.HandleAsync(
+            new CreateFileCommand(upload),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.FileUploadInvalidImage);
+        await AssertNothingPersistedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncValidUploadStoresTheProcessedVariantsPersistsEntityAndReturnsId()
     {
         var caller = Guid.NewGuid();
         currentUser.Id = UserId.From(caller);
@@ -148,6 +180,7 @@ public sealed class CreateFileCommandHandlerTests
         var content = PngStream();
         var upload = new FileUpload(content, "  C:\\folder\\avatar.png  ", 32);
         var added = await CaptureAddedFilesAsync();
+        var saved = CaptureSavedContent();
 
         var result = await sut.HandleAsync(
             new CreateFileCommand(upload),
@@ -158,14 +191,31 @@ public sealed class CreateFileCommandHandlerTests
         var created = added.Should().ContainSingle().Which;
         result.Value.Should().Be(created.Id);
         created.Name.Should().Be("avatar.png");
-        created.Extension.Should().Be("png");
+        created.Extension.Should().Be("webp");
         created.UploadedBy.Value.Should().Be(caller);
         created.UploadedAt.Should().Be(clock.UtcNow);
 
-        await storage
-            .Received(1)
-            .SaveAsync($"{created.Id}.png", content, Arg.Any<CancellationToken>());
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await processor.Received(1).ProcessAsync(content, Arg.Any<CancellationToken>());
+        Received.InOrder(() =>
+        {
+            storage.SaveAsync(
+                $"{created.Id}.webp",
+                Arg.Any<Stream>(),
+                Arg.Any<CancellationToken>()
+            );
+            storage.SaveAsync(
+                $"{created.Id}.thumbnail.webp",
+                Arg.Any<Stream>(),
+                Arg.Any<CancellationToken>()
+            );
+            uow.SaveChangesAsync(Arg.Any<CancellationToken>());
+        });
+        saved
+            .Should()
+            .SatisfyRespectively(
+                full => full.Content.Should().Equal(Processed.Full),
+                thumbnail => thumbnail.Content.Should().Equal(Processed.Thumbnail)
+            );
     }
 
     [Fact]
@@ -217,9 +267,10 @@ public sealed class CreateFileCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncPersistenceThrowsRollsBackStorage()
+    public async Task HandleAsyncPersistenceThrowsRemovesBothStoredVariants()
     {
         var upload = new FileUpload(PngStream(), "avatar.png", 32);
+        var added = await CaptureAddedFilesAsync();
         uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
             .Do(_ => throw new InvalidOperationException("db down"));
 
@@ -230,7 +281,39 @@ public sealed class CreateFileCommandHandlerTests
             );
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        storage.Received(1).Delete(Arg.Any<string>());
+        var id = added.Should().ContainSingle().Which.Id;
+        storage.Received(1).Delete($"{id}.webp");
+        storage.Received(1).Delete($"{id}.thumbnail.webp");
+    }
+
+    [Fact]
+    public async Task HandleAsyncSecondVariantFailsToSaveRemovesTheFirstAndPersistsNothing()
+    {
+        var upload = new FileUpload(PngStream(), "avatar.png", 32);
+        storage
+            .SaveAsync(
+                Arg.Is<string>(name => name.Contains(".thumbnail.", StringComparison.Ordinal)),
+                Arg.Any<Stream>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(Task.FromException(new IOException("disk full")));
+
+        var act = async () =>
+            await sut.HandleAsync(
+                new CreateFileCommand(upload),
+                TestContext.Current.CancellationToken
+            );
+
+        await act.Should().ThrowAsync<IOException>();
+        storage
+            .Received(1)
+            .Delete(
+                Arg.Is<string>(name => !name.Contains(".thumbnail.", StringComparison.Ordinal))
+            );
+        storage
+            .DidNotReceive()
+            .Delete(Arg.Is<string>(name => name.Contains(".thumbnail.", StringComparison.Ordinal)));
+        await AssertNothingPersistedAsync();
     }
 
     private Task<int> AssertNotSavedAsync()

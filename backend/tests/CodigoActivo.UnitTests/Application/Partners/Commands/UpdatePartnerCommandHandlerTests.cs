@@ -15,13 +15,20 @@ public sealed class UpdatePartnerCommandHandlerTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
     private readonly UpdatePartnerCommandHandler sut;
 
     public UpdatePartnerCommandHandlerTests()
     {
-        sut = new UpdatePartnerCommandHandler(partners, files, currentUser, clock);
+        sut = new UpdatePartnerCommandHandler(
+            partners,
+            files,
+            currentUser,
+            clock,
+            uow.RunsTransactions()
+        );
     }
 
     private static UpdatePartnerCommand Command(

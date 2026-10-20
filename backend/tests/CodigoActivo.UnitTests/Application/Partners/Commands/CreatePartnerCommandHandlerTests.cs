@@ -15,13 +15,20 @@ public sealed class CreatePartnerCommandHandlerTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
     private readonly CreatePartnerCommandHandler sut;
 
     public CreatePartnerCommandHandlerTests()
     {
-        sut = new CreatePartnerCommandHandler(partners, files, currentUser, clock);
+        sut = new CreatePartnerCommandHandler(
+            partners,
+            files,
+            currentUser,
+            clock,
+            uow.RunsTransactionsOf<Result<PartnerId>>()
+        );
     }
 
     private async Task<List<Partner>> CaptureAddedPartnersAsync()
@@ -82,6 +89,13 @@ public sealed class CreatePartnerCommandHandlerTests
         created.CreatedBy.Should().Be(currentUser.Id!.Value);
         created.CreatedAt.Should().Be(clock.UtcNow);
         created.PullDomainEvents().Should().Equal(new PartnerCreated(created.Id));
+        await files
+            .Received(1)
+            .LockExistingAsync(
+                Arg.Is<IReadOnlyCollection<StoredFileId>>(ids => ids.Contains(created.ThumbnailId)),
+                Arg.Any<CancellationToken>()
+            );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

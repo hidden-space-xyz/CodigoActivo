@@ -6,8 +6,10 @@ using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
+using CodigoActivo.Infrastructure.Files;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -24,7 +26,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         using var response = await client.SendUploadAsync(
             HttpMethod.Post,
             "/api/files",
-            bytes ?? TestSeedData.ValidPng(),
+            bytes ?? TestImages.Png(),
             fileName
         );
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -34,7 +36,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task CreateAsAdminReturnsCreatedAndPersistsFile()
     {
-        var bytes = TestSeedData.ValidPng();
+        var bytes = TestImages.Png();
         var client = await LoginAsAdminAsync();
 
         using var response = await client.SendUploadAsync(
@@ -47,13 +49,16 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await response.ReadJsonAsync<FileResponse>(Ct);
         created!.Name.Should().Be("picture.png");
-        created.Extension.Should().Be("png");
+        created.Extension.Should().Be("webp");
         created.UploadedAt.Should().Be(Factory.Clock.UtcNow);
         response.Headers.Location!.ToString().Should().EndWith($"/api/files/{created.Id}");
 
         var stored = await FindAsync<StoredFile>(created.Id);
-        stored!.Extension.Should().Be("png");
+        stored!.Extension.Should().Be("webp");
         stored.UploadedBy.Value.Should().Be(TestSeedData.Users.AdminId);
+        var root = Factory.Services.GetRequiredService<FileStorageOptions>().RootPath;
+        System.IO.File.Exists(Path.Join(root, $"{created.Id}.webp")).Should().BeTrue();
+        System.IO.File.Exists(Path.Join(root, $"{created.Id}.thumbnail.webp")).Should().BeTrue();
     }
 
     [Fact]
@@ -128,6 +133,39 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task CreateGifReturnsBadRequestFileUploadUnsupportedFormat()
+    {
+        var client = await LoginAsAdminAsync();
+
+        using var response = await client.SendUploadAsync(
+            HttpMethod.Post,
+            "/api/files",
+            TestImages.Gif(),
+            "animation.gif",
+            "image/gif"
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.FileUploadUnsupportedFormat);
+    }
+
+    [Fact]
+    public async Task CreatePngThatCannotBeDecodedReturnsBadRequestFileUploadInvalidImage()
+    {
+        var client = await LoginAsAdminAsync();
+        var before = await Factory.QueryAsync(db => db.Files.CountAsync(Ct));
+
+        using var response = await client.SendUploadAsync(
+            HttpMethod.Post,
+            "/api/files",
+            TestSeedData.ValidPng()
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.FileUploadInvalidImage);
+        var after = await Factory.QueryAsync(db => db.Files.CountAsync(Ct));
+        after.Should().Be(before);
+    }
+
+    [Fact]
     public async Task GetAnonymousReturnsUploadedFileMetadata()
     {
         var created = await UploadAsAdminAsync(fileName: "avatar.png");
@@ -139,7 +177,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var meta = await response.ReadJsonAsync<FileResponse>(Ct);
         meta!.Id.Should().Be(created.Id);
         meta.Name.Should().Be("avatar.png");
-        meta.Extension.Should().Be("png");
+        meta.Extension.Should().Be("webp");
     }
 
     [Fact]
@@ -153,10 +191,9 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetContentRichTextContentUrlReturnsStoredBytesAndContentType()
+    public async Task GetContentRichTextContentUrlReturnsTheImageReencodedAsWebp()
     {
-        var bytes = TestSeedData.ValidPng();
-        var created = await UploadAsAdminAsync(bytes, "photo.png");
+        var created = await UploadAsAdminAsync(TestImages.Png(), "photo.png");
         var client = CreateClient();
 
         var response = await client.GetAsync(
@@ -165,9 +202,32 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Content.Headers.ContentType!.MediaType.Should().Be("image/png");
+        response.Content.Headers.ContentType!.MediaType.Should().Be("image/webp");
         var downloaded = await response.Content.ReadAsByteArrayAsync(Ct);
-        downloaded.Should().Equal(bytes);
+        TestImages
+            .Describe(downloaded)
+            .Should()
+            .Be((TestImages.Width, TestImages.Height, "webpload_buffer"));
+    }
+
+    [Fact]
+    public async Task GetThumbnailReturnsTheImmutableThumbnailWithItsOwnEtag()
+    {
+        var created = await UploadAsAdminAsync(TestImages.Png(), "photo.png");
+        var client = CreateClient();
+
+        using var response = await client.GetAsync(
+            TestUri.Rel($"/api/files/{created.Id}/thumbnail"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should().Be("image/webp");
+        response.Headers.CacheControl!.Extensions.Select(e => e.Name).Should().Contain("immutable");
+        var ticks = created.UploadedAt.UtcTicks.ToString(CultureInfo.InvariantCulture);
+        response.Headers.ETag!.Tag.Should().Be($"\"{created.Id:N}-{ticks}-thumbnail\"");
+        var downloaded = await response.Content.ReadAsByteArrayAsync(Ct);
+        TestImages.Describe(downloaded).Loader.Should().Be("webpload_buffer");
     }
 
     [Fact]
@@ -200,7 +260,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task GetContentIfNoneMatchMatchesEtagReturnsNotModified()
     {
-        var created = await UploadAsAdminAsync(TestSeedData.ValidPng(), "cached.png");
+        var created = await UploadAsAdminAsync(TestImages.Png(), "cached.png");
         var client = CreateClient();
 
         using var first = await client.GetAsync(

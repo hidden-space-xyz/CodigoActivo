@@ -29,10 +29,9 @@ public static class StreamExtensions
 
         return length switch
         {
-            _ when IsJpeg(header) => new ImageFormat("jpg", "image/jpeg"),
-            _ when IsPng(header) => new ImageFormat("png", "image/png"),
-            _ when IsGif(header) => new ImageFormat("gif", "image/gif"),
-            _ when IsWebp(header, length) => new ImageFormat("webp", "image/webp"),
+            _ when IsJpeg(header) => ImageFormat.Jpeg,
+            _ when IsPng(header) => ImageFormat.Png,
+            _ when IsWebp(header, length) => ImageFormat.Webp,
             _ => null,
         };
     }
@@ -46,21 +45,6 @@ public static class StreamExtensions
     private static bool IsPng(ReadOnlySpan<byte> header)
     {
         return PngImage.TryReadSize(header, out _, out _);
-    }
-
-    private static bool IsGif(ReadOnlySpan<byte> header)
-    {
-        if (
-            header.Length < 10
-            || (!header[..6].SequenceEqual("GIF87a"u8) && !header[..6].SequenceEqual("GIF89a"u8))
-        )
-        {
-            return false;
-        }
-
-        var width = BinaryPrimitives.ReadUInt16LittleEndian(header[6..8]);
-        var height = BinaryPrimitives.ReadUInt16LittleEndian(header[8..10]);
-        return width > 0 && height > 0;
     }
 
     private static bool IsWebp(ReadOnlySpan<byte> header, long length)
@@ -94,4 +78,32 @@ public static class StreamExtensions
 /// </summary>
 /// <param name="Extension">The extension value.</param>
 /// <param name="ContentType">The content type value.</param>
-public sealed record ImageFormat(string Extension, string ContentType);
+public sealed record ImageFormat(string Extension, string ContentType)
+{
+    /// <summary>
+    /// Gets the JPEG format.
+    /// </summary>
+    public static ImageFormat Jpeg { get; } = new("jpg", "image/jpeg");
+
+    /// <summary>
+    /// Gets the PNG format.
+    /// </summary>
+    public static ImageFormat Png { get; } = new("png", "image/png");
+
+    /// <summary>
+    /// Gets the WebP format.
+    /// </summary>
+    public static ImageFormat Webp { get; } = new("webp", "image/webp");
+
+    /// <summary>
+    /// Finds the format a stored extension stands for.
+    /// </summary>
+    /// <param name="extension">Extension of a stored file.</param>
+    /// <returns>The matching format, or <see langword="null"/> when it is not one of them.</returns>
+    public static ImageFormat? FromExtension(string extension)
+    {
+        return new[] { Jpeg, Png, Webp }.FirstOrDefault(format =>
+            string.Equals(format.Extension, extension, StringComparison.Ordinal)
+        );
+    }
+}

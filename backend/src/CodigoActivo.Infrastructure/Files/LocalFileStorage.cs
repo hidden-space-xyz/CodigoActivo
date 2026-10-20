@@ -28,24 +28,58 @@ public sealed class LocalFileStorage : IFileStorage
     }
 
     /// <summary>
-    /// Writes the supplied content to its durable storage location.
+    /// Writes the content to a temporary entry of the root, flushes it to disk and only then moves
+    /// it to its name, so a write that fails or is cancelled leaves nothing under the name and
+    /// content already stored there is never replaced.
     /// </summary>
     /// <param name="storedName">Storage-safe file name identifying the content.</param>
     /// <param name="content">Content stream to store or inspect.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <exception cref="IOException">Content is already stored under the name, or it could not be written.</exception>
     public async Task SaveAsync(string storedName, Stream content, CancellationToken ct = default)
     {
         var path = ResolvePath(storedName);
-        await using var fs = new FileStream(
-            path,
-            FileMode.Create,
-            FileAccess.Write,
-            FileShare.None,
-            StreamBufferSize,
-            FileOptions.Asynchronous | FileOptions.SequentialScan
-        );
-        await content.CopyToAsync(fs, ct);
+        var temporaryPath = ResolvePath($".{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await using (
+                var fs = new FileStream(
+                    temporaryPath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None,
+                    StreamBufferSize,
+                    FileOptions.Asynchronous | FileOptions.SequentialScan
+                )
+            )
+            {
+                await content.CopyToAsync(fs, ct);
+                fs.Flush(flushToDisk: true);
+            }
+
+            File.Move(temporaryPath, path, overwrite: false);
+        }
+        finally
+        {
+            File.Delete(temporaryPath);
+        }
+    }
+
+    /// <summary>
+    /// Lists the entries of the root last written at or before an instant.
+    /// </summary>
+    /// <param name="cutoff">Latest write instant to include.</param>
+    /// <returns>The names of the entries.</returns>
+    public IReadOnlyList<string> ListWrittenUpTo(DateTimeOffset cutoff)
+    {
+        return
+        [
+            .. new DirectoryInfo(rootPath)
+                .EnumerateFiles()
+                .Where(file => file.LastWriteTimeUtc <= cutoff.UtcDateTime)
+                .Select(file => file.Name),
+        ];
     }
 
     /// <summary>

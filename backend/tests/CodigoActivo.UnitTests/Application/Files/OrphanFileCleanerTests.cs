@@ -102,8 +102,11 @@ public sealed class OrphanFileCleanerTests
         files.DidNotReceive().Remove(inUseFile);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         storage.Received(1).Delete($"{orphanPng.Id}.png");
+        storage.Received(1).Delete($"{orphanPng.Id}.thumbnail.png");
         storage.Received(1).Delete($"{orphanJpg.Id}.jpg");
+        storage.Received(1).Delete($"{orphanJpg.Id}.thumbnail.jpg");
         storage.DidNotReceive().Delete($"{inUseFile.Id}.png");
+        storage.DidNotReceive().Delete($"{inUseFile.Id}.thumbnail.png");
     }
 
     [Fact]

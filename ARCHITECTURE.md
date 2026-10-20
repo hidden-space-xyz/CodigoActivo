@@ -96,6 +96,9 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
 - Rich text references a stored file only by its content URL `/api/files/{id}/content`, which saved documents
   keep and the frontend builds and checks; `RichTextFileReferences` in Domain owns it, so it cannot change
   without migrating saved documents.
+- An upload is never stored as sent: `IImageProcessor` (libvips through NetVips) re-encodes it as two WebP
+  variants (`FileVariant`), the content that pages and rich text show and the thumbnail at
+  `/api/files/{id}/thumbnail` that lists, cards and logos show.
 - Rules that span aggregates are domain policies (`SignupEligibility`, `SignupRoles`, `EarlySignup`,
   `EventTimeline`, `AssignmentDecisions`, `TermsConsent`, `FeaturedSelection`, `AccountErasure`,
   `InitialAdministrator`, `LegalCopy`, `Household`); `EventTimeline` also decides the stage the read side
@@ -162,7 +165,8 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
   `PurgeDeletedAccounts`, `PurgeDeletedParticipations`, `PurgeUnverifiedAccounts`, `PurgeAdultDependents`,
   `PurgeUnusedFiles` and `RemoveExpiredSessions` commands delete legal copies past their retention, accounts nobody verified within
   24 hours and dependents who came of age (both through `AccountEraser`), uploads no content used within 7 days
-  (through `IOrphanFileCleaner`) and expired sessions, and `SendComingOfAgeNotices` warns guardians 30 days
+  (through `IOrphanFileCleaner`), stored content no file row owns an hour after it was written and expired
+  sessions, and `SendComingOfAgeNotices` warns guardians 30 days
   before; hosted services in Infrastructure only run them on a schedule. What the copy holds and how
   long it is kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
 - Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
@@ -284,7 +288,7 @@ under `/api/events/{eventId}/terms/decisions`. A given consent is withdrawn with
   HTTP output entries; commands never invalidate caches themselves.
 - Both stores are process-local and invalidated in process, which assumes one API replica.
 - nginx does not cache API responses. It adds `Cache-Control: no-store` to every proxied response that sets
-  none, so browsers and intermediaries never store API data. File content keeps the API's own
+  none, so browsers and intermediaries never store API data. File content and thumbnails keep the API's own
   `public, max-age` of a year, `immutable`: a stored file's content never changes (there is no replace
   endpoint; a new image is uploaded as a new file and the one it replaces is removed once unreferenced), so
   a browser that already holds a deleted file may keep showing it from its cache.

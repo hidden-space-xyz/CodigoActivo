@@ -25,11 +25,13 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 /// <param name="storage">Repository used to persist and retrieve storage.</param>
+/// <param name="processor">Service that encodes the stored variants of each demo image.</param>
 /// <param name="passwordHasher">Service used to securely hash and verify passwords.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class DemoDataSeeder(
     CodigoActivoDbContext context,
     IFileStorage storage,
+    IImageProcessor processor,
     IPasswordHasher passwordHasher,
     IClock clock
 )
@@ -140,9 +142,9 @@ public sealed class DemoDataSeeder(
         }
         catch
         {
-            foreach (var id in fileIds)
+            foreach (var storedName in fileIds.SelectMany(StoredNames))
             {
-                storage.Delete(StoredName(id));
+                storage.Delete(storedName);
             }
 
             throw;
@@ -543,7 +545,7 @@ public sealed class DemoDataSeeder(
 
     private static StoredFileId NewFile(List<StoredFile> files, string name, DateTimeOffset now)
     {
-        var file = StoredFile.Upload(name, "jpg", DemoAuthorId, now);
+        var file = StoredFile.Upload(name, ProcessedImage.Format.Extension, DemoAuthorId, now);
         files.Add(file);
         return file.Id;
     }
@@ -686,8 +688,7 @@ public sealed class DemoDataSeeder(
                 try
                 {
                     var bytes = await http.GetByteArrayAsync(url, ct);
-                    using var stream = new MemoryStream(bytes, writable: false);
-                    await storage.SaveAsync(StoredName(fileId), stream, ct);
+                    await SaveVariantsAsync(fileId, bytes, ct);
                     return;
                 }
                 catch (Exception) when (!ct.IsCancellationRequested && attempt < 3)
@@ -699,6 +700,42 @@ public sealed class DemoDataSeeder(
         finally
         {
             throttle.Release();
+        }
+    }
+
+    private async Task SaveVariantsAsync(Guid fileId, byte[] image, CancellationToken ct)
+    {
+        await using var download = new MemoryStream(image, writable: false);
+        var processed = await processor.ProcessAsync(download, ct);
+        if (processed.IsFailure)
+        {
+            throw new InvalidOperationException("A demo image could not be processed.");
+        }
+
+        var id = StoredFileId.From(fileId);
+        try
+        {
+            foreach (var variant in Enum.GetValues<FileVariant>())
+            {
+                await using var content = new MemoryStream(
+                    processed.Value.Of(variant),
+                    writable: false
+                );
+                await storage.SaveAsync(
+                    FileNaming.StoredName(id, ProcessedImage.Format.Extension, variant),
+                    content,
+                    ct
+                );
+            }
+        }
+        catch
+        {
+            foreach (var storedName in StoredNames(fileId))
+            {
+                storage.Delete(storedName);
+            }
+
+            throw;
         }
     }
 
@@ -747,9 +784,9 @@ public sealed class DemoDataSeeder(
         return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(local, timeZone), TimeSpan.Zero);
     }
 
-    private static string StoredName(Guid fileId)
+    private static IReadOnlyList<string> StoredNames(Guid fileId)
     {
-        return $"{fileId}.jpg";
+        return FileNaming.StoredNames(StoredFileId.From(fileId), ProcessedImage.Format.Extension);
     }
 
     private static Guid MakeId(int category, int index)

@@ -6,6 +6,7 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Common.Validation;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
@@ -35,11 +36,13 @@ public sealed record CreatePartnerCommand(
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work whose transaction locks the logo and saves the partner.</param>
 public sealed class CreatePartnerCommandHandler(
     IPartnerRepository partners,
     IStoredFileRepository files,
     ICurrentUser currentUser,
-    IClock clock
+    IClock clock,
+    IUnitOfWork uow
 ) : ICommandHandler<CreatePartnerCommand, Result<PartnerId>>
 {
     /// <summary>
@@ -55,9 +58,27 @@ public sealed class CreatePartnerCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (!await files.ExistsAsync(command.ThumbnailId, ct))
+        return await uow.ExecuteInTransactionAsync(
+            attempt => CreateLockedAsync(command, attempt),
+            ct
+        );
+    }
+
+    private async Task<Result<PartnerId>> CreateLockedAsync(
+        CreatePartnerCommand command,
+        CancellationToken ct
+    )
+    {
+        var available = await ContentFiles.EnsureAvailableAsync(
+            files,
+            command.ThumbnailId,
+            null,
+            ApplicationErrorCode.PartnerThumbnailNotFound,
+            ct
+        );
+        if (available.IsFailure)
         {
-            return Error.Validation(ApplicationErrorCode.PartnerThumbnailNotFound);
+            return available.Error!;
         }
 
         var partner = Partner.Create(
@@ -72,6 +93,7 @@ public sealed class CreatePartnerCommandHandler(
             clock.UtcNow
         );
         await partners.AddAsync(partner, ct);
+        await uow.SaveChangesAsync(ct);
         return partner.Id;
     }
 }

@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/vue-query'
 
 import { partnerQueries } from '@/entities/partner'
-import { fileContentUrl } from '@/shared/api'
+import { fileThumbnailUrl } from '@/shared/api'
 
 import { useSponsorCarousel } from '../../model/use-sponsor-carousel'
 
@@ -71,12 +71,12 @@ function distanceOf(offset: number): number {
             >
               <div
                 class="sponsor__logo"
-                :class="{ 'sponsor__logo--color': !fileContentUrl(card.sponsor.thumbnailId) }"
+                :class="{ 'sponsor__logo--color': !fileThumbnailUrl(card.sponsor.thumbnailId) }"
                 :style="{ '--logo-color': colorFor(card.sponsor.id) }"
               >
                 <img
-                  v-if="fileContentUrl(card.sponsor.thumbnailId)"
-                  :src="fileContentUrl(card.sponsor.thumbnailId)"
+                  v-if="fileThumbnailUrl(card.sponsor.thumbnailId)"
+                  :src="fileThumbnailUrl(card.sponsor.thumbnailId)"
                   :alt="card.sponsor.name"
                   class="sponsor__logo-img"
                   loading="lazy"

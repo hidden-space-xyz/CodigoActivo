@@ -60,7 +60,10 @@ public sealed class UpdateResourceCommandHandlerTests
         result.Error.Code.Should().Be(ApplicationErrorCode.ResourceNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
-            .ExistsAsync(Arg.Any<StoredFileId>(), TestContext.Current.CancellationToken);
+            .LockExistingAsync(
+                Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                TestContext.Current.CancellationToken
+            );
     }
 
     [Fact]

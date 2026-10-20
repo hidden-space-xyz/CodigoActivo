@@ -18,7 +18,7 @@ describe('EventCard', () => {
     expect(wrapper.text()).toContain(`${t('entities.event.card.dateLabel')}:`)
     expect(wrapper.text()).toContain('3 oct 2026')
     expect(wrapper.find('img').attributes()).toMatchObject({
-      src: '/api/files/thumb-1/content',
+      src: '/api/files/thumb-1/thumbnail',
       alt: 'Día Código Activo',
     })
     expect(wrapper.findAll('.el-tag').map((tag) => tag.text())).toEqual(['Robótica', 'IA'])

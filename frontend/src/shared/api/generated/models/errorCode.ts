@@ -70,6 +70,8 @@ export const ErrorCode = {
   FileUploadTooLarge: 'FileUploadTooLarge',
   FileUploadStreamNotSeekable: 'FileUploadStreamNotSeekable',
   FileUploadUnsupportedFormat: 'FileUploadUnsupportedFormat',
+  FileUploadDimensionsTooLarge: 'FileUploadDimensionsTooLarge',
+  FileUploadInvalidImage: 'FileUploadInvalidImage',
   UserNotFound: 'UserNotFound',
   UserSelfDeleteRequiresVerification: 'UserSelfDeleteRequiresVerification',
   UserSelfAdminChangeForbidden: 'UserSelfAdminChangeForbidden',

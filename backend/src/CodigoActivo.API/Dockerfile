@@ -12,6 +12,7 @@ WORKDIR /app
 EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
+ARG TARGETARCH
 WORKDIR /source
 COPY Directory.Packages.props Directory.Build.props Directory.Build.Analyzers.props Directory.Build.targets ./
 COPY src/CodigoActivo.Domain/CodigoActivo.Domain.csproj                 src/CodigoActivo.Domain/
@@ -19,13 +20,14 @@ COPY src/CodigoActivo.Application/CodigoActivo.Application.csproj       src/Codi
 COPY src/CodigoActivo.Infrastructure/CodigoActivo.Infrastructure.csproj src/CodigoActivo.Infrastructure/
 COPY src/CodigoActivo.Composition/CodigoActivo.Composition.csproj      src/CodigoActivo.Composition/
 COPY src/CodigoActivo.API/CodigoActivo.API.csproj                      src/CodigoActivo.API/
-RUN dotnet restore src/CodigoActivo.API/CodigoActivo.API.csproj
+RUN dotnet restore src/CodigoActivo.API/CodigoActivo.API.csproj -a $TARGETARCH
 COPY . .
 
 FROM build AS publish
+ARG TARGETARCH
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish src/CodigoActivo.API/CodigoActivo.API.csproj \
-    -c $BUILD_CONFIGURATION -o /app/publish --no-restore -p:UseAppHost=false
+    -c $BUILD_CONFIGURATION -a $TARGETARCH -o /app/publish --no-restore -p:UseAppHost=false
 
 FROM base AS final
 ENV ASPNETCORE_ENVIRONMENT=Production

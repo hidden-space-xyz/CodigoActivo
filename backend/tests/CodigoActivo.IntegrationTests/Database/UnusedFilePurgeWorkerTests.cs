@@ -85,6 +85,38 @@ public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory
     }
 
     [Fact]
+    public async Task PurgeAsyncRemovesTheOldStoredContentNoFileRowOwns()
+    {
+        var owned = File(1);
+        await Factory.SeedAsync(db =>
+        {
+            db.Files.Add(owned);
+            return Task.CompletedTask;
+        });
+        var root = Factory.Services.GetRequiredService<FileStorageOptions>().RootPath;
+        Directory.CreateDirectory(root);
+        var old = Factory.Clock.UtcNow.UtcDateTime.AddHours(-2);
+        var ownedContent = StoredPath(owned);
+        var ownerless = Path.Join(root, $"{Guid.NewGuid()}.webp");
+        var leftover = Path.Join(root, $".{Guid.NewGuid():N}.tmp");
+        var recentOwnerless = Path.Join(root, $"{Guid.NewGuid()}.webp");
+        foreach (var path in new[] { ownedContent, ownerless, leftover, recentOwnerless })
+        {
+            await System.IO.File.WriteAllBytesAsync(path, [1], Ct);
+            System.IO.File.SetLastWriteTimeUtc(path, old);
+        }
+
+        System.IO.File.SetLastWriteTimeUtc(recentOwnerless, Factory.Clock.UtcNow.UtcDateTime);
+
+        await Build().PurgeAsync(Ct);
+
+        System.IO.File.Exists(ownedContent).Should().BeTrue();
+        System.IO.File.Exists(ownerless).Should().BeFalse();
+        System.IO.File.Exists(leftover).Should().BeFalse();
+        System.IO.File.Exists(recentOwnerless).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task PurgeAsyncWaitsForASaveThatLockedTheFileAndThenKeepsIt()
     {
         var embedded = File(StoredFile.UnusedRetentionDays + 1);

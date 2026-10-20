@@ -40,6 +40,7 @@ internal static class ContentRegistration
         services.AddFixedOptions<FileStorageOptions>();
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddScoped<FileUploadValidator>();
+        services.AddSingleton<IImageProcessor, VipsImageProcessor>();
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
         services.AddFixedOptions<UnusedFilePurgeOptions>();
         services.AddHostedService<UnusedFilePurgeWorker>();

@@ -42,7 +42,7 @@ public interface IOrphanFileCleaner
 /// save that locked them to reference them is waited for, and the rows are deleted in that
 /// transaction, so a refused delete leaves nothing staged for a later commit of the same request.
 /// The stored content is only deleted once the rows are gone; when that fails the content stays on
-/// the volume and a warning is logged.
+/// the volume, a warning is logged and <see cref="Commands.PurgeUnusedFilesCommand"/> removes it later.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -123,7 +123,10 @@ public sealed class OrphanFileCleaner(
     {
         try
         {
-            storage.Delete(FileNaming.StoredName(fileId, extension));
+            foreach (var storedName in FileNaming.StoredNames(fileId, extension))
+            {
+                storage.Delete(storedName);
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

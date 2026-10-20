@@ -71,7 +71,7 @@ public sealed class NormalUseLoggingTests(CodigoActivoWebAppFactory factory)
         using var upload = await client.SendUploadAsync(
             HttpMethod.Post,
             "/api/files",
-            TestSeedData.ValidPng()
+            TestImages.Png()
         );
         upload.StatusCode.Should().Be(HttpStatusCode.Created);
         var thumbnail = await upload.ReadJsonAsync<FileResponse>(Ct);
