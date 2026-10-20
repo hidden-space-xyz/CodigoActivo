@@ -152,7 +152,7 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
 - Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
   which replaces an unverified account whose email a registration or a confirmed email change takes. In one
   such transaction it locks the household, stores the legal copy (composed by `LegalCopy` and serialized by
-  Infrastructure as JSON with `SchemaVersion` 7), hands the content credited to the household over to the
+  Infrastructure as JSON with `SchemaVersion` 8), hands the content credited to the household over to the
   initial administrator and removes the account; any other change staged in the unit of work commits with it.
   `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, is the safety
   net that refuses any other user deletion, any deletion of the initial administrator and any change to a
