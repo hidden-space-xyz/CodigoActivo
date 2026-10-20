@@ -1,4 +1,4 @@
-namespace CodigoActivo.Domain.Users;
+namespace CodigoActivo.Domain.Users.Erasure;
 
 /// <summary>
 /// Guardian of an erased dependent, as the legal copy keeps them: enough to identify who decided

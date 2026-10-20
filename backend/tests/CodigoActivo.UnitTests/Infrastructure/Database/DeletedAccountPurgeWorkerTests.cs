@@ -1,11 +1,13 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.UnitTests.TestSupport;

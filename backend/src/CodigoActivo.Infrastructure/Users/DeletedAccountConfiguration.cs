@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

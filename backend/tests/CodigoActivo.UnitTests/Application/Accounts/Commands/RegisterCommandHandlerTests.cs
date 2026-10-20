@@ -12,6 +12,7 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;

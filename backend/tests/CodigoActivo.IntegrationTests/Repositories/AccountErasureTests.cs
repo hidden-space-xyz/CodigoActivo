@@ -14,6 +14,7 @@ using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;

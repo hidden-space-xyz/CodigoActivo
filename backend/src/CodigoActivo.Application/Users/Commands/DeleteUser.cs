@@ -7,6 +7,7 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Application.Users.Commands;
 

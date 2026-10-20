@@ -1,6 +1,6 @@
 using CodigoActivo.Domain.Common;
 
-namespace CodigoActivo.Domain.Users;
+namespace CodigoActivo.Domain.Users.Erasure;
 
 /// <summary>
 /// Stores the legal copies of erased accounts.

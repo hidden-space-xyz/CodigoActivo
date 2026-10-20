@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Users;

@@ -11,6 +11,7 @@ using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Application.Accounts.Commands;
 

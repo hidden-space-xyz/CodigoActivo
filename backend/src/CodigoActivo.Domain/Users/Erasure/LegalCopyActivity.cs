@@ -1,4 +1,4 @@
-namespace CodigoActivo.Domain.Users;
+namespace CodigoActivo.Domain.Users.Erasure;
 
 /// <summary>
 /// Signup of a member of the household to an activity, as the legal copy keeps it. Titles and

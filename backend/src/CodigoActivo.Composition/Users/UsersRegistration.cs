@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Users;

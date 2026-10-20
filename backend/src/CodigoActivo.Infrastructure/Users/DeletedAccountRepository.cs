@@ -1,4 +1,4 @@
-using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 using Microsoft.EntityFrameworkCore;

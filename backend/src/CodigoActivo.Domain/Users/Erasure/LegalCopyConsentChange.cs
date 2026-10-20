@@ -1,4 +1,4 @@
-namespace CodigoActivo.Domain.Users;
+namespace CodigoActivo.Domain.Users.Erasure;
 
 /// <summary>
 /// A change of the news consent of an erased account, as the legal copy keeps it to prove

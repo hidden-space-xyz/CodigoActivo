@@ -1,8 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

@@ -1,4 +1,4 @@
-namespace CodigoActivo.Domain.Users;
+namespace CodigoActivo.Domain.Users.Erasure;
 
 /// <summary>
 /// Decision on a terms document of an event, as the legal copy keeps it.

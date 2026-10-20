@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 

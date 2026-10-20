@@ -1,11 +1,13 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Application.Users.Commands;
+namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
 public sealed class PurgeDeletedAccountsCommandHandlerTests
 {
