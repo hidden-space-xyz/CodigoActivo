@@ -142,9 +142,9 @@ public sealed class DemoDataSeeder(
         }
         catch
         {
-            foreach (var storedName in fileIds.SelectMany(StoredNames))
+            foreach (var id in fileIds)
             {
-                storage.Delete(storedName);
+                storage.DiscardVariants(StoredFileId.From(id), ProcessedImage.Format.Extension);
             }
 
             throw;
@@ -712,31 +712,7 @@ public sealed class DemoDataSeeder(
             throw new InvalidOperationException("A demo image could not be processed.");
         }
 
-        var id = StoredFileId.From(fileId);
-        try
-        {
-            foreach (var variant in Enum.GetValues<FileVariant>())
-            {
-                await using var content = new MemoryStream(
-                    processed.Value.Of(variant),
-                    writable: false
-                );
-                await storage.SaveAsync(
-                    FileNaming.StoredName(id, ProcessedImage.Format.Extension, variant),
-                    content,
-                    ct
-                );
-            }
-        }
-        catch
-        {
-            foreach (var storedName in StoredNames(fileId))
-            {
-                storage.Delete(storedName);
-            }
-
-            throw;
-        }
+        await storage.SaveVariantsAsync(StoredFileId.From(fileId), processed.Value, ct);
     }
 
     private static string BuildRichText(
@@ -782,11 +758,6 @@ public sealed class DemoDataSeeder(
     {
         var local = date.ToDateTime(new TimeOnly(hour, minute));
         return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(local, timeZone), TimeSpan.Zero);
-    }
-
-    private static IReadOnlyList<string> StoredNames(Guid fileId)
-    {
-        return FileNaming.StoredNames(StoredFileId.From(fileId), ProcessedImage.Format.Extension);
     }
 
     private static Guid MakeId(int category, int index)
