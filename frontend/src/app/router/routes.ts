@@ -78,6 +78,7 @@ export const routes: readonly RouteRecordRaw[] = [
     name: 'resource-detail',
     component: () => import('@/pages/resource-detail').then((m) => m.ResourceDetailPage),
     props: true,
+    meta: { section: 'resources' },
   },
   {
     path: '/news',
@@ -96,6 +97,7 @@ export const routes: readonly RouteRecordRaw[] = [
     name: 'news-detail',
     component: () => import('@/pages/news-detail').then((m) => m.NewsDetailPage),
     props: true,
+    meta: { section: 'news' },
   },
   {
     path: '/cookies',

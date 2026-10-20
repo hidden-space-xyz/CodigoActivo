@@ -93,7 +93,7 @@ public sealed class ResourceTypeEntryConfiguration : IEntityTypeConfiguration<Re
 }
 
 /// <summary>
-/// Shared mapping of the reference tables and of the columns that point to them.
+/// Shared mapping of the key and unique name of the reference tables.
 /// </summary>
 internal static class CatalogEntryMapping
 {

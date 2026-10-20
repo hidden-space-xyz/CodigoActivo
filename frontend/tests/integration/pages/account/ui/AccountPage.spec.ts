@@ -29,6 +29,7 @@ function serveAccount() {
     http.get('/api/me/certificates', () =>
       HttpResponse.json([buildCertificateResponse({ code: 'CA-2025-0042' })]),
     ),
+    http.get('/api/me/consents', () => HttpResponse.json([])),
   )
 }
 
@@ -79,6 +80,7 @@ describe('account page', () => {
     expect(activePanelText()).toContain(t('pages.account.profile.lead'))
     expect(activePanelText()).toContain(t('pages.account.twoFactor.title'))
     expect(activePanelText()).toContain(t('pages.account.minors.title'))
+    await vi.waitFor(() => expect(activePanelText()).toContain(t('pages.account.consents.empty')))
     expect(activePanelText()).toContain(t('pages.account.deleteAccount.title'))
     expect(wrapper.text()).not.toContain('Campus de verano')
   })
