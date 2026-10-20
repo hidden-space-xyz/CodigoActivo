@@ -49,9 +49,7 @@ watch(
       :error="report.isError.value"
       :empty="badges.length === 0"
       :empty-text="$t('pages.admin.eventBadges.emptyText')"
-    >
-      <span />
-    </DataState>
+    />
 
     <div v-for="(sheet, sheetIndex) in sheets" :key="sheetIndex" class="sheet">
       <article

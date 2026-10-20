@@ -151,9 +151,7 @@ export function toAccountCertificate(certificate: EventCertificateResponse): Acc
     participantId: certificate.userId,
     firstName: certificate.firstName,
     lastName: certificate.lastName,
-    isSelf: certificate.isSelf,
     eventTitle: certificate.eventTitle,
-    eventSubtitle: certificate.eventSubtitle,
     startsAt: certificate.eventStartsAt,
     endsAt: certificate.eventEndsAt,
   }

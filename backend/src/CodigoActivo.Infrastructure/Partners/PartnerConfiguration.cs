@@ -1,6 +1,6 @@
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
-using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -32,15 +32,6 @@ public class PartnerConfiguration : IEntityTypeConfiguration<Partner>
             .HasForeignKey(p => p.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(p => p.CreatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(p => p.UpdatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasAuthors<Partner, PartnerId>();
     }
 }

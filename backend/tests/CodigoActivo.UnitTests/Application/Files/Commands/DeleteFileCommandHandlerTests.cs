@@ -1,7 +1,6 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
@@ -15,13 +14,12 @@ namespace CodigoActivo.UnitTests.Application.Files.Commands;
 public sealed class DeleteFileCommandHandlerTests
 {
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly IFileStorage storage = Substitute.For<IFileStorage>();
+    private readonly IOrphanFileCleaner orphanCleaner = Substitute.For<IOrphanFileCleaner>();
     private readonly DeleteFileCommandHandler sut;
 
     public DeleteFileCommandHandlerTests()
     {
-        sut = new DeleteFileCommandHandler(files, uow, storage);
+        sut = new DeleteFileCommandHandler(files, orphanCleaner);
     }
 
     [Fact]
@@ -35,8 +33,9 @@ public sealed class DeleteFileCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.FileNotFound);
-        await AssertNotSavedAsync();
-        storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
+        await orphanCleaner
+            .DidNotReceiveWithAnyArgs()
+            .PurgeOrphanedAsync([], TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -44,7 +43,7 @@ public sealed class DeleteFileCommandHandlerTests
     {
         var file = NewFile();
         files.FileFound(file);
-        files.FileReferenced(true);
+        PurgeDeletes(0);
 
         var result = await sut.HandleAsync(
             new DeleteFileCommand(file.Id),
@@ -52,18 +51,14 @@ public sealed class DeleteFileCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.FileInUse);
-        files.DidNotReceiveWithAnyArgs().Remove(NewFile());
-        await AssertNotSavedAsync();
-        storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
-        file.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public async Task HandleAsyncNotInUseRemovesRowSavesDeletesStoredContentAndRaisesDeletion()
+    public async Task HandleAsyncNotInUsePurgesTheFile()
     {
-        var file = NewFile(name: "gone.png", extension: "png");
+        var file = NewFile();
         files.FileFound(file);
-        files.FileReferenced(false);
+        PurgeDeletes(1);
 
         var result = await sut.HandleAsync(
             new DeleteFileCommand(file.Id),
@@ -71,19 +66,23 @@ public sealed class DeleteFileCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        files.Received(1).Remove(file);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        storage.Received(1).Delete($"{file.Id}.png");
-        file.PullDomainEvents()
-            .Should()
-            .ContainSingle()
-            .Which.Should()
-            .BeOfType<StoredFileDeleted>();
+        await orphanCleaner
+            .Received(1)
+            .PurgeOrphanedAsync(
+                Arg.Is<IReadOnlyCollection<StoredFileId>>(ids =>
+                    ids.Count == 1 && ids.Contains(file.Id)
+                ),
+                Arg.Any<CancellationToken>()
+            );
     }
 
-    private Task<int> AssertNotSavedAsync()
+    private void PurgeDeletes(int count)
     {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        orphanCleaner
+            .PurgeOrphanedAsync(
+                Arg.Any<IReadOnlyCollection<StoredFileId>>(),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(count);
     }
 }

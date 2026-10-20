@@ -9,6 +9,5 @@ import { toAuditEntry } from './mapper'
 export async function getAuditPageRequest(
   params: AuditListParams,
 ): Promise<ServerTablePage<AuditEntry>> {
-  const { items, total } = toPage(await getApiLogsAudit(params))
-  return { items: items.map(toAuditEntry), total }
+  return toPage(await getApiLogsAudit(params), toAuditEntry)
 }

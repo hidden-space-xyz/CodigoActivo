@@ -8,7 +8,7 @@ import type { EventSummary } from '../model/types'
 import EventCardFooter from './EventCardFooter.vue'
 
 defineProps<{
-  /** Upcoming event rendered as a card linking to its detail page. */
+  /** Event rendered as a card linking to its detail page. */
   event: EventSummary
 }>()
 </script>
@@ -24,8 +24,10 @@ defineProps<{
       :label="$t('entities.event.card.dateLabel')"
       :value="formatDateRange(event.startsAt, event.endsAt)"
     />
-    <h3 class="event-card__title">{{ event.title }}</h3>
-    <div v-if="event.subtitle" class="event-card__slogan">«{{ event.subtitle }}»</div>
+    <h3 class="ca-list-card__title">{{ event.title }}</h3>
+    <div v-if="event.subtitle" class="ca-list-card__subtitle event-card__slogan">
+      «{{ event.subtitle }}»
+    </div>
 
     <div v-if="event.categories.length" class="event-card__cats">
       <ColorTag
@@ -48,19 +50,8 @@ defineProps<{
   cursor: pointer;
 }
 
-.event-card__title {
-  font-family: var(--ca-font-display);
-  font-weight: 600;
-  font-size: 20px;
-  line-height: 1.2;
-  color: var(--ca-text-bright);
-}
-
 .event-card__slogan {
-  font-size: 14.5px;
-  line-height: 1.5;
   margin-top: -6px;
-  color: var(--ca-text-muted);
 }
 
 .event-card__cats {

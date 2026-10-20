@@ -357,60 +357,6 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
             .Be(2);
     }
 
-    [Theory]
-    [InlineData("dup@x.test", true)]
-    [InlineData("free@x.test", false)]
-    public async Task EmailExistsAsyncNoExcludeUserIdReportsPresence(string email, bool expected)
-    {
-        await using var ctx = postgres.CreateContext();
-        var user = NewUser(email: "dup@x.test");
-        ctx.Users.Add(user);
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
-
-        (await repo.EmailExistsAsync(EmailAddress.FromStored(email), ct: Ct)).Should().Be(expected);
-    }
-
-    [Fact]
-    public async Task EmailExistsAsyncExcludeUserIdMatchesOwnerReturnsFalse()
-    {
-        await using var ctx = postgres.CreateContext();
-        var user = NewUser(email: "dup@x.test");
-        ctx.Users.Add(user);
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
-
-        (
-            await repo.EmailExistsAsync(
-                EmailAddress.FromStored("dup@x.test"),
-                excludeUserId: user.Id,
-                ct: Ct
-            )
-        )
-            .Should()
-            .BeFalse("owner is excluded");
-    }
-
-    [Fact]
-    public async Task EmailExistsAsyncExcludeUserIdIsOtherUserReturnsTrue()
-    {
-        await using var ctx = postgres.CreateContext();
-        var user = NewUser(email: "dup@x.test");
-        ctx.Users.Add(user);
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
-
-        (
-            await repo.EmailExistsAsync(
-                EmailAddress.FromStored("dup@x.test"),
-                excludeUserId: UserId.From(Guid.NewGuid()),
-                ct: Ct
-            )
-        )
-            .Should()
-            .BeTrue("another user still collides");
-    }
-
     [Fact]
     public async Task ListByIdsAsyncReturnsOnlyTheRequestedAccounts()
     {
@@ -759,7 +705,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     }
 
     [Fact]
-    public async Task IsInUseAsyncThumbnailOrDescriptionReferenceDetectsUsage()
+    public async Task GetInUseAsyncThumbnailOrDescriptionReferenceDetectsUsage()
     {
         await using var ctx = postgres.CreateContext();
 
@@ -767,6 +713,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         var newsItemEmbeddedFileId = Guid.NewGuid();
         var resourceEmbeddedFileId = Guid.NewGuid();
         var termsEmbeddedFileId = Guid.NewGuid();
+        var unreferencedId = Guid.NewGuid();
 
         var ev = NewEvent(
             description: $"{{\"img\":\"/api/files/{eventEmbeddedFileId.ToString().ToUpperInvariant()}/content\"}}"
@@ -787,12 +734,28 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
         await ctx.SaveChangesAsync(Ct);
         var repo = new StoredFileRepository(ctx);
 
-        (await repo.IsInUseAsync(StoredFileId.From(ThumbId), Ct)).Should().BeTrue();
-        (await repo.IsInUseAsync(StoredFileId.From(eventEmbeddedFileId), Ct)).Should().BeTrue();
-        (await repo.IsInUseAsync(StoredFileId.From(newsItemEmbeddedFileId), Ct)).Should().BeTrue();
-        (await repo.IsInUseAsync(StoredFileId.From(resourceEmbeddedFileId), Ct)).Should().BeTrue();
-        (await repo.IsInUseAsync(StoredFileId.From(termsEmbeddedFileId), Ct)).Should().BeTrue();
-        (await repo.IsInUseAsync(StoredFileId.From(Guid.NewGuid()), Ct)).Should().BeFalse();
+        var inUse = await repo.GetInUseAsync(
+            [
+                StoredFileId.From(ThumbId),
+                StoredFileId.From(eventEmbeddedFileId),
+                StoredFileId.From(newsItemEmbeddedFileId),
+                StoredFileId.From(resourceEmbeddedFileId),
+                StoredFileId.From(termsEmbeddedFileId),
+                StoredFileId.From(unreferencedId),
+            ],
+            Ct
+        );
+
+        inUse
+            .Select(id => id.Value)
+            .Should()
+            .BeEquivalentTo([
+                ThumbId,
+                eventEmbeddedFileId,
+                newsItemEmbeddedFileId,
+                resourceEmbeddedFileId,
+                termsEmbeddedFileId,
+            ]);
     }
 
     [Fact]

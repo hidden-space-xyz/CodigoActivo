@@ -2,12 +2,12 @@
 import { computed, ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
-import { eventPages, eventQueries, PastEventCard } from '@/entities/event'
+import { EventCard, eventPages, eventQueries } from '@/entities/event'
 import { usePagedList } from '@/shared/lib/paging'
 import { ActionButton } from '@/shared/ui/action-button'
 import { PageHeading } from '@/shared/ui/page-heading'
 import { SearchInput } from '@/shared/ui/search-input'
-import { YearFilter } from '@/shared/ui/year-filter'
+import { YearFilter, yearSelection } from '@/shared/ui/year-filter'
 
 import EventBoard from './EventBoard.vue'
 import EventCategoryFilter from './EventCategoryFilter.vue'
@@ -32,8 +32,7 @@ const categoryId = ref('')
 watch(
   years,
   (list) => {
-    const [first] = list
-    if (first && !selectedYear.value) selectedYear.value = first
+    selectedYear.value = yearSelection(list, selectedYear.value)
   },
   { immediate: true },
 )
@@ -116,7 +115,7 @@ const hasNoPastResults = computed(
           {{ $t('pages.events.noResults') }}
         </p>
         <div v-else class="events-grid">
-          <PastEventCard v-for="event in pastEvents" :key="event.id" :event="event" />
+          <EventCard v-for="event in pastEvents" :key="event.id" :event="event" />
         </div>
         <div v-if="hasMorePast" class="events-more">
           <ActionButton

@@ -40,35 +40,28 @@ public sealed class ListPartnersQueryHandler(IReadStore readStore, IQueryExecuto
         CancellationToken ct = default
     )
     {
-        return FetchAsync(query.Filters, ct);
-    }
-
-    private Task<PagedResult<PartnerResponse>> FetchAsync(
-        PartnerListQuery query,
-        CancellationToken ct
-    )
-    {
+        var filters = query.Filters;
         var source = readStore.Partners.Select(PartnerProjections.Partner);
 
-        if (query.Tier is { } tier)
+        if (filters.Tier is { } tier)
         {
             source = source.Where(p => p.Tier == tier);
         }
 
-        if (query.FromDateFrom is { } fromDateFrom)
+        if (filters.FromDateFrom is { } fromDateFrom)
         {
             source = source.Where(p => p.FromDate >= fromDateFrom);
         }
 
-        if (query.FromDateTo is { } fromDateTo)
+        if (filters.FromDateTo is { } fromDateTo)
         {
             source = source.Where(p => p.FromDate <= fromDateTo);
         }
 
-        source = source.WhereContains(p => p.Name, query.Name);
-        source = source.WhereContains(p => p.Website, query.Website);
+        source = source.WhereContains(p => p.Name, filters.Name);
+        source = source.WhereContains(p => p.Website, filters.Website);
 
-        source = Sort.Apply(source, query.Sort);
-        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        source = Sort.Apply(source, filters.Sort);
+        return executor.ToPagedAsync(source, filters.Page, filters.PageSize, ct);
     }
 }

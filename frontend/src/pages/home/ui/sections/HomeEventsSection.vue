@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
 import { EventCard, eventQueries, FeaturedEventCard } from '@/entities/event'
-import { BrandButton } from '@/shared/ui/brand-button'
+
+import HomeFeedSection from './HomeFeedSection.vue'
 
 const { data, isLoading } = useQuery(eventQueries.home())
 const featured = computed(() => data.value?.featured ?? null)
@@ -11,77 +12,18 @@ const items = computed(() => data.value?.items ?? [])
 </script>
 
 <template>
-  <section v-if="isLoading || featured || items.length" class="home-section">
-    <div class="ca-container">
-      <div class="home-section__head">
-        <h2 class="home-section__title">{{ $t('pages.home.events.title') }}</h2>
-        <BrandButton variant="link" class="home-section__view-all" :to="{ name: 'events' }">
-          {{ $t('pages.home.events.viewAll') }}
-        </BrandButton>
-      </div>
-
-      <p v-if="isLoading" class="home-section__loading">{{ $t('common.loading') }}</p>
-      <template v-else>
-        <FeaturedEventCard v-if="featured" :event="featured" />
-        <div v-if="items.length" class="home-section__grid">
-          <EventCard v-for="event in items" :key="event.id" :event="event" />
-        </div>
-      </template>
-    </div>
-  </section>
+  <HomeFeedSection
+    v-if="isLoading || featured || items.length"
+    :title="$t('pages.home.events.title')"
+    :view-all-label="$t('pages.home.events.viewAll')"
+    :view-all-to="{ name: 'events' }"
+    :loading="isLoading"
+  >
+    <template #featured>
+      <FeaturedEventCard v-if="featured" :event="featured" />
+    </template>
+    <template v-if="items.length" #default>
+      <EventCard v-for="event in items" :key="event.id" :event="event" />
+    </template>
+  </HomeFeedSection>
 </template>
-
-<style scoped>
-.home-section {
-  padding: 28px var(--ca-gutter) 8px;
-}
-
-.home-section__head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 26px;
-  flex-wrap: wrap;
-}
-
-.home-section__title {
-  font-family: var(--ca-font-display);
-  font-size: 38px;
-  font-weight: 700;
-  color: var(--ca-text-bright);
-  letter-spacing: -0.02em;
-}
-
-.base-button--link.home-section__view-all {
-  color: var(--ca-orange);
-}
-
-.base-button--link.home-section__view-all:hover {
-  color: var(--ca-orange-strong);
-}
-
-.home-section__grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  margin-top: 18px;
-}
-
-.home-section__loading {
-  color: var(--ca-text-dim);
-  font-family: var(--ca-font-mono);
-}
-
-@media (max-width: 1024px) {
-  .home-section__grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .home-section__grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

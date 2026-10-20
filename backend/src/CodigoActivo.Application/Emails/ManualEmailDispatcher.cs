@@ -61,7 +61,8 @@ public sealed class ManualEmailDispatcher(
         );
 
     /// <summary>
-    /// Validates and queues the manual email for delivery.
+    /// Validates and queues the manual email for delivery, refusing a batch with no recipients or
+    /// more than <see cref="ManualEmailOptions.MaxRecipients"/>.
     /// </summary>
     /// <param name="recipients">The recipients value.</param>
     /// <param name="skipped">The skipped value.</param>
@@ -79,6 +80,16 @@ public sealed class ManualEmailDispatcher(
         CancellationToken ct
     )
     {
+        if (recipients.Count is 0)
+        {
+            return Error.Validation(ApplicationErrorCode.EmailNoRecipients);
+        }
+
+        if (recipients.Count > options.MaxRecipients)
+        {
+            return Error.Validation(ApplicationErrorCode.EmailTooManyRecipients);
+        }
+
         var buffered = await BufferAsync(attachments, ct);
         if (buffered.IsFailure)
         {

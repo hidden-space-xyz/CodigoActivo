@@ -47,9 +47,6 @@ public sealed class ActivityRow
     /// <summary>Gets the identifier of the author.</summary>
     public Guid CreatedBy { get; init; }
 
-    /// <summary>Gets the identifier of the last editor.</summary>
-    public Guid? UpdatedBy { get; init; }
-
     /// <summary>Gets the assignments of the activity.</summary>
     public ICollection<AssignmentRow> Assignments { get; init; } = [];
 

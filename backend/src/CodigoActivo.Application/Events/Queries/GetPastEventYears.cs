@@ -32,11 +32,6 @@ public sealed class GetPastEventYearsQueryHandler(
         CancellationToken ct = default
     )
     {
-        return FetchAsync(ct);
-    }
-
-    private Task<IReadOnlyList<int>> FetchAsync(CancellationToken ct)
-    {
         var today = clock.Today;
         return executor.ToListAsync(
             readStore

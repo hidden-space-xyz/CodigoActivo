@@ -15,7 +15,6 @@ import {
   outcomeLabelKey,
   outcomeTagType,
   relatedLabel,
-  shortId,
 } from '@/pages/admin/audit/lib/labels'
 import { AuditAction } from '@/shared/api/generated/models'
 import { i18n } from '@/shared/i18n'
@@ -61,7 +60,6 @@ describe('audit labels', () => {
   })
 
   it('names an entity by its name, or as removed once it no longer exists', () => {
-    expect(shortId('aaaaaaaa-1111-1111-1111-111111111111')).toBe('aaaaaaaa')
     expect(entityLabel({ type: 'User', id: 'user-2', name: 'Marta Miembro' }, t)).toBe(
       'Marta Miembro',
     )

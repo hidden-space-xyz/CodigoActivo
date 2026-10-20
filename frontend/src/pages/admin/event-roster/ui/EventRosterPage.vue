@@ -49,9 +49,7 @@ watch(activities, () => void paginate(), { immediate: true })
       :error="report.isError.value"
       :empty="activities.length === 0"
       :empty-text="$t('pages.admin.eventRoster.emptyText')"
-    >
-      <span />
-    </DataState>
+    />
 
     <div v-for="(sheet, sheetIndex) in sheets" :key="sheetIndex" class="sheet">
       <p class="sheet__event">

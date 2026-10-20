@@ -1,51 +1,26 @@
 <script setup lang="ts">
 import { BrandButton } from '@/shared/ui/brand-button'
-import { SectionEyebrow } from '@/shared/ui/section-eyebrow'
+import { PageHead } from '@/shared/ui/page-head'
 </script>
 
 <template>
-  <div>
-    <section class="not-found">
-      <div class="not-found__glow" aria-hidden="true" />
-      <div class="ca-container--narrow not-found__inner">
-        <SectionEyebrow :text="$t('pages.notFound.eyebrow')" color="var(--ca-orange-ink)" />
-        <h1 class="not-found__title">{{ $t('pages.notFound.title') }}</h1>
-        <p class="not-found__text">
-          {{ $t('pages.notFound.text') }}
-        </p>
-        <div class="not-found__actions">
-          <BrandButton variant="primary" :to="{ name: 'home' }">{{
-            $t('common.backToHome')
-          }}</BrandButton>
-        </div>
+  <div class="not-found">
+    <PageHead :eyebrow="$t('pages.notFound.eyebrow')" :title="$t('pages.notFound.title')">
+      <p class="not-found__text">
+        {{ $t('pages.notFound.text') }}
+      </p>
+      <div class="not-found__actions">
+        <BrandButton variant="primary" :to="{ name: 'home' }">{{
+          $t('common.backToHome')
+        }}</BrandButton>
       </div>
-    </section>
+    </PageHead>
   </div>
 </template>
 
 <style scoped>
 .not-found {
-  position: relative;
-  overflow: hidden;
-  padding: 64px var(--ca-gutter) 80px;
-}
-
-.not-found__glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(700px 400px at 80% -20%, var(--ca-orange-soft), transparent 60%);
-}
-
-.not-found__inner {
-  position: relative;
-}
-
-.not-found__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: clamp(28px, 6vw, 46px);
-  letter-spacing: -0.03em;
-  color: var(--ca-text-bright);
+  padding-bottom: 64px;
 }
 
 .not-found__text {

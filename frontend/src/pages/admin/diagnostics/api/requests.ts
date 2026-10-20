@@ -12,8 +12,7 @@ import { toDiagnosticDetail, toDiagnosticEntry } from './mapper'
 export async function getDiagnosticsPageRequest(
   params: DiagnosticListParams,
 ): Promise<ServerTablePage<DiagnosticEntry>> {
-  const { items, total } = toPage(await getApiLogsDiagnostics(params))
-  return { items: items.map(toDiagnosticEntry), total }
+  return toPage(await getApiLogsDiagnostics(params), toDiagnosticEntry)
 }
 
 /** Loads one diagnostic entry with its exception. */

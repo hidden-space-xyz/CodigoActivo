@@ -33,8 +33,11 @@ describe('unwrapOrNull', () => {
 })
 
 describe('toPage', () => {
-  it('returns items and total from the response', () => {
-    expect(toPage({ data: { items: [1, 2], total: 7 } })).toEqual({ items: [1, 2], total: 7 })
+  it('maps the items and keeps the total from the response', () => {
+    expect(toPage({ data: { items: [1, 2], total: 7 } }, (item) => item * 10)).toEqual({
+      items: [10, 20],
+      total: 7,
+    })
   })
 })
 

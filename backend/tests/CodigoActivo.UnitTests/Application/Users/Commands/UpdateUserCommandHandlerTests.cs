@@ -560,9 +560,6 @@ public sealed class UpdateUserCommandHandlerTests
                 )
             );
         emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("taken@test.com");
-        await users
-            .DidNotReceiveWithAnyArgs()
-            .EmailExistsAsync(default!, default, TestContext.Current.CancellationToken);
     }
 
     [Fact]

@@ -9,5 +9,4 @@ export {
   formatTimeRange,
   parseDateOnly,
   toDateOnly,
-  todayIso,
 } from './format'

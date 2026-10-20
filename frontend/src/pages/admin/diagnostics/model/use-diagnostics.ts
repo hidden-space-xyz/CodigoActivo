@@ -87,7 +87,6 @@ export function useDiagnostics() {
 
   return {
     table,
-    traceId,
     extraFilters,
     filterByTrace,
     openAudit,

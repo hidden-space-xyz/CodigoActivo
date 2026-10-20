@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { shortTrace } from '@/shared/api'
 import { formatDateTimeSeconds } from '@/shared/lib/date'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
 import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
@@ -9,7 +10,6 @@ import { RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { DIAGNOSTIC_LEVELS, levelLabelKey, levelTagType } from '../lib/levels'
-import { shortTrace } from '../lib/trace'
 import type { DiagnosticEntry } from '../model/types'
 import { useDiagnostics } from '../model/use-diagnostics'
 import DiagnosticDetailDialog from './DiagnosticDetailDialog.vue'

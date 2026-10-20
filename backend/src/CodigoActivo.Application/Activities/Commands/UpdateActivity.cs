@@ -58,13 +58,7 @@ public sealed class UpdateActivityCommandHandler(
         }
 
         activity.Update(
-            new ActivityDetails(
-                draft.Title,
-                draft.Description,
-                draft.Location,
-                validated.Value.Modality,
-                draft.ThumbnailId
-            ),
+            draft.ToDetails(),
             validated.Value.Schedule,
             validated.Value.Capacities,
             currentUser.RequiredId(),

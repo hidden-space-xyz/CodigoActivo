@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { getThumbnailNameRequest } from '../api/requests'
 import { fileContentUrl } from '@/shared/api'
 import { IMAGE_UPLOAD_ACCEPT, MAX_IMAGE_UPLOAD_BYTES } from '@/shared/config'
+import { formatFileSize } from '@/shared/lib/number'
 import { ActionButton } from '@/shared/ui/action-button'
 
 const { t } = useI18n()
@@ -12,14 +13,17 @@ const { t } = useI18n()
 const props = defineProps<{
   /** Stored thumbnail previewed until a new image is picked; empty shows the placeholder. */
   existingThumbnailId?: string | null | undefined
-  /** Highlights the preview border as a validation error. */
+  /** Marks the field as missing its required image: highlights the preview border and says so. */
   invalid?: boolean
+  /** Message of a failed upload of the picked image, shown below the field; empty shows nothing. */
+  uploadError?: string
 }>()
 
 const emit = defineEmits<{
   /**
-   * Fired with the picked image (files over 10 MB are rejected without emitting), or `null` when
-   * the selection is removed and the existing thumbnail is shown again. Nothing is uploaded here.
+   * Fired with the picked image (files over the image upload limit are rejected without emitting),
+   * or `null` when the selection is removed and the existing thumbnail is shown again. Nothing is
+   * uploaded here.
    */
   'update:file': [file: File | null]
 }>()
@@ -73,7 +77,7 @@ function onChange(event: Event): void {
   input.value = ''
   if (!file) return
   if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
-    sizeError.value = t('entities.file.thumbnail.tooLarge')
+    sizeError.value = t('common.imageTooLarge', { max: formatFileSize(MAX_IMAGE_UPLOAD_BYTES) })
     return
   }
   sizeError.value = ''
@@ -131,6 +135,8 @@ onBeforeUnmount(revokeObjectUrl)
     </div>
 
     <small v-if="sizeError" class="thumb__error">{{ sizeError }}</small>
+    <small v-if="invalid" class="thumb__error">{{ $t('common.imageRequired') }}</small>
+    <small v-if="uploadError" class="thumb__error">{{ uploadError }}</small>
 
     <input
       ref="fileInput"

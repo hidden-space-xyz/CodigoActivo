@@ -11,7 +11,6 @@ import {
   getAssignmentStatusesRequest,
   getEventActivitiesRequest,
   getHouseholdAssignmentsRequest,
-  getHouseholdMembersRequest,
   getMyAssignmentsRequest,
   getSignupRolesRequest,
   verifyOverlapsRequest,
@@ -24,7 +23,6 @@ export const activityKeys = {
   myAssignments: (eventId: string) => [...activityKeys.all, 'my-assignments', eventId] as const,
   householdAssignments: (eventId: string) =>
     [...activityKeys.all, 'household-assignments', eventId] as const,
-  householdMembers: () => [...activityKeys.all, 'household-members'] as const,
   signupRoles: () => [...activityKeys.all, 'signup-roles'] as const,
   overlaps: (activityId: string, userId: string) =>
     [...activityKeys.all, 'overlaps', activityId, userId] as const,
@@ -62,12 +60,6 @@ export const activityQueries = {
     queryOptions({
       queryKey: activityKeys.householdAssignments(eventId),
       queryFn: () => getHouseholdAssignmentsRequest(eventId),
-    }),
-  /** Minors under `userId`, whom they can sign up as well. */
-  householdMembers: (userId: string) =>
-    queryOptions({
-      queryKey: [...activityKeys.householdMembers(), userId] as const,
-      queryFn: () => getHouseholdMembersRequest(userId),
     }),
   /** Roles each household member may sign up for. */
   signupRoles: () =>

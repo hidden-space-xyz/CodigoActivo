@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using AwesomeAssertions;
 using CodigoActivo.API.Security;
 using Microsoft.AspNetCore.Http;
@@ -53,6 +54,24 @@ public sealed class ClientRequestRateLimiterTests
 
         using var accepted = sut.AttemptAcquire(first);
         using var rejected = sut.AttemptAcquire(sameIp);
+        using var independent = sut.AttemptAcquire(otherIp);
+
+        accepted.IsAcquired.Should().BeTrue();
+        rejected.IsAcquired.Should().BeFalse();
+        independent.IsAcquired.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IpPolicySharesTheBudgetOfAnIpAcrossUsers()
+    {
+        var policy = ClientRequestRateLimiter.CreateIpPolicy(1);
+        using var sut = PartitionedRateLimiter.Create<HttpContext, string>(policy);
+        var firstUser = NewContext(IPAddress.Loopback, Guid.NewGuid());
+        var secondUser = NewContext(IPAddress.Loopback, Guid.NewGuid());
+        var otherIp = NewContext(IPAddress.Parse("192.0.2.10"), Guid.NewGuid());
+
+        using var accepted = sut.AttemptAcquire(firstUser);
+        using var rejected = sut.AttemptAcquire(secondUser);
         using var independent = sut.AttemptAcquire(otherIp);
 
         accepted.IsAcquired.Should().BeTrue();

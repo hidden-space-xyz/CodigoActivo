@@ -9,14 +9,7 @@ import { useSponsorCarousel } from '../../model/use-sponsor-carousel'
 const { data: sponsors } = useQuery(partnerQueries.sponsors())
 const { cards, next, prev, pause, resume } = useSponsorCarousel(sponsors)
 
-const LOGO_PALETTE = [
-  'var(--ca-orange)',
-  'var(--ca-lime)',
-  'var(--ca-azure)',
-  'var(--ca-orange)',
-  'var(--ca-lime)',
-  'var(--ca-azure)',
-] as const
+const LOGO_PALETTE = ['var(--ca-orange)', 'var(--ca-lime)', 'var(--ca-azure)'] as const
 
 function colorFor(id: string): string {
   let hash = 0
@@ -30,10 +23,6 @@ function initials(name: string): string {
     return (words[0][0] ?? '') + (words[1][0] ?? '')
   }
   return (words[0] ?? '').slice(0, 2)
-}
-
-function logoUrl(thumbnailId: string): string {
-  return fileContentUrl(thumbnailId)
 }
 
 function distanceOf(offset: number): number {
@@ -82,12 +71,12 @@ function distanceOf(offset: number): number {
             >
               <div
                 class="sponsor__logo"
-                :class="{ 'sponsor__logo--color': !logoUrl(card.sponsor.thumbnailId) }"
+                :class="{ 'sponsor__logo--color': !fileContentUrl(card.sponsor.thumbnailId) }"
                 :style="{ '--logo-color': colorFor(card.sponsor.id) }"
               >
                 <img
-                  v-if="logoUrl(card.sponsor.thumbnailId)"
-                  :src="logoUrl(card.sponsor.thumbnailId)"
+                  v-if="fileContentUrl(card.sponsor.thumbnailId)"
+                  :src="fileContentUrl(card.sponsor.thumbnailId)"
                   :alt="card.sponsor.name"
                   class="sponsor__logo-img"
                   loading="lazy"

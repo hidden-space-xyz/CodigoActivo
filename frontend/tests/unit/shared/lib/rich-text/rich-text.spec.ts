@@ -4,7 +4,6 @@ import {
   cleanRichText,
   EMPTY_DOC_JSON,
   isRichTextBlank,
-  isRichTextEmpty,
   isRichTextTooLong,
   normalizeLink,
   parseRichText,
@@ -332,19 +331,6 @@ describe('isRichTextTooLong', () => {
   it('accepts documents up to the length the API stores and refuses longer ones', () => {
     expect(isRichTextTooLong('a'.repeat(262_144))).toBe(false)
     expect(isRichTextTooLong('a'.repeat(262_145))).toBe(true)
-  })
-})
-
-describe('isRichTextEmpty', () => {
-  it('is true for documents without nodes or with only empty paragraphs', () => {
-    expect(isRichTextEmpty(null)).toBe(true)
-    expect(isRichTextEmpty(EMPTY_DOC_JSON)).toBe(true)
-    expect(isRichTextEmpty(doc(paragraph(), { type: 'paragraph', content: [] }))).toBe(true)
-  })
-
-  it('is false when any node has content, even whitespace', () => {
-    expect(isRichTextEmpty(doc(paragraph(text(' '))))).toBe(false)
-    expect(isRichTextEmpty(doc({ type: 'horizontalRule' }))).toBe(false)
   })
 })
 

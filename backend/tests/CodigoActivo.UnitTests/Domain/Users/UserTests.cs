@@ -122,18 +122,6 @@ public sealed class UserTests
     }
 
     [Fact]
-    public void ClearOtpUserWithIssuedOtpClearsHashAndTimestamps()
-    {
-        var user = NewPendingUser();
-
-        user.ClearOtp();
-
-        user.VerificationCode.Hash.Should().BeNull();
-        user.VerificationCode.ExpiresAt.Should().BeNull();
-        user.VerificationCode.LastSentAt.Should().BeNull();
-    }
-
-    [Fact]
     public void RegisterLoginPendingUserStampsSuppliedLastLoginTime()
     {
         var user = NewPendingUser();
@@ -220,12 +208,12 @@ public sealed class UserTests
     }
 
     [Fact]
-    public void ClearLoginCodeForgetsHashAndTimestamps()
+    public void CompleteTwoFactorLoginForgetsLoginCodeHashAndTimestamps()
     {
         var user = NewPendingUser();
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
 
-        user.ClearLoginCode();
+        user.CompleteTwoFactorLogin(Now);
 
         user.LoginCode.Hash.Should().BeNull();
         user.LoginCode.ExpiresAt.Should().BeNull();
@@ -418,7 +406,7 @@ public sealed class UserTests
     }
 
     [Fact]
-    public void UseEmailTwoFactorForgetsActiveAndPendingAuthenticators()
+    public void DisableAuthenticatorForgetsActiveAndPendingAuthenticators()
     {
         var user = NewPendingUser();
         user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
@@ -435,7 +423,7 @@ public sealed class UserTests
             }
         );
 
-        user.UseEmailTwoFactor(Now.AddHours(1));
+        user.DisableAuthenticator(Now.AddHours(1));
 
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
         user.Authenticator.Key.Should().BeNull();
@@ -598,7 +586,7 @@ public sealed class UserTests
     public void UsableCodeHashesNoCodeIssuedReturnNothing()
     {
         var user = NewPendingUser();
-        user.ClearOtp();
+        Persisted.Overwrite(user, new { VerificationCode = default(OneTimeCode) });
 
         user.VerificationCode.UsableHash(Now).Should().BeNull();
         user.LoginCode.UsableHash(Now).Should().BeNull();
@@ -851,7 +839,7 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         var cooldown = TimeSpan.FromMinutes(1);
-        user.ClearOtp();
+        Persisted.Overwrite(user, new { VerificationCode = default(OneTimeCode) });
 
         user.VerificationCode.IsResendCoolingDown(Now, cooldown).Should().BeFalse();
         user.PasswordResetCode.IsResendCoolingDown(Now, cooldown).Should().BeFalse();
@@ -897,7 +885,7 @@ public sealed class UserTests
     }
 
     [Fact]
-    public void ClearTwoFactorFailuresForgetsTheCountWithoutLiftingALock()
+    public void DisableAuthenticatorForgetsTheFailuresWithoutLiftingALock()
     {
         var user = NewPendingUser();
         Persisted.Overwrite(
@@ -905,7 +893,7 @@ public sealed class UserTests
             new { TwoFactorLockout = new { FailedAttempts = 2, LockedUntil = Now.AddMinutes(5) } }
         );
 
-        user.ClearTwoFactorFailures();
+        user.DisableAuthenticator(Now);
 
         user.TwoFactorLockout.FailedAttempts.Should().Be(0);
         user.TwoFactorLockout.IsLocked(Now).Should().BeTrue();

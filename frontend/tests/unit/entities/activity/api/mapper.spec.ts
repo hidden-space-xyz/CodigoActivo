@@ -5,7 +5,6 @@ import {
   toActivityDetail,
   toEventActivity,
   toHouseholdActivityAssignment,
-  toHouseholdMember,
   toHouseholdSignupRoles,
   toOverlapCheck,
 } from '@/entities/activity/api/mapper'
@@ -14,7 +13,6 @@ import {
   buildActivityResponse,
   buildAssignedActivity,
   buildHouseholdAssignment,
-  buildUserResponse,
 } from '../../../../support/builders'
 
 const activity = buildActivityResponse({
@@ -109,13 +107,6 @@ describe('activity mapper', () => {
     expect(toHouseholdActivityAssignment(buildHouseholdAssignment({ lastName: '' })).name).toBe(
       'Byron',
     )
-  })
-
-  it('reduces a minor to id and full name', () => {
-    expect(toHouseholdMember(buildUserResponse({ id: 'child-1', firstName: 'Byron' }))).toEqual({
-      id: 'child-1',
-      name: 'Byron Lovelace',
-    })
   })
 
   it('maps the overlap check', () => {

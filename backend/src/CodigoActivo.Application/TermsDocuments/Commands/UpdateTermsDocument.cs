@@ -21,7 +21,8 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 public sealed record UpdateTermsDocumentCommand(
     TermsDocumentId TermsDocumentId,
     [property: Required, MaxLength(120), NotBlank] string Name,
-    [property: Required, RichText(AllowImages = false), MaxLength(262144)] string Description,
+    [property: Required, RichText(AllowImages = false), MaxLength(RichTextAllowlist.MaxJsonLength)]
+        string Description,
     bool RequiresSignature,
     TermsDocumentKind Kind
 ) : ICommand<Result>;

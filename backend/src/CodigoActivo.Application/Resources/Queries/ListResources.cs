@@ -47,39 +47,32 @@ public sealed class ListResourcesQueryHandler(
         CancellationToken ct = default
     )
     {
-        return FetchAsync(query.Filters, ct);
-    }
-
-    private Task<PagedResult<ResourceListItemResponse>> FetchAsync(
-        ResourceListQuery query,
-        CancellationToken ct
-    )
-    {
+        var filters = query.Filters;
         var source = readStore.Resources.Select(ResourceProjections.ResourceListItem);
 
-        if (query.ResourceTypeId is { } resourceTypeId)
+        if (filters.ResourceTypeId is { } resourceTypeId)
         {
             source = source.Where(r => r.Type.Id == resourceTypeId);
         }
 
-        if (query.CreatedFrom is { } createdFrom)
+        if (filters.CreatedFrom is { } createdFrom)
         {
             var createdLower = LocalDayRange.LowerUtc(createdFrom, clock.TimeZone);
             source = source.Where(r => r.CreatedAt >= createdLower);
         }
 
-        if (query.CreatedTo is { } createdTo)
+        if (filters.CreatedTo is { } createdTo)
         {
             var createdUpper = LocalDayRange.UpperExclusiveUtc(createdTo, clock.TimeZone);
             source = source.Where(r => r.CreatedAt < createdUpper);
         }
 
-        source = source.WhereContains(r => r.Title + " " + r.Subtitle, query.Search);
-        source = source.WhereContains(r => r.Title, query.Title);
-        source = source.WhereContains(r => r.Subtitle, query.Subtitle);
-        source = source.WhereContains(r => r.Url, query.Url);
+        source = source.WhereContains(r => r.Title + " " + r.Subtitle, filters.Search);
+        source = source.WhereContains(r => r.Title, filters.Title);
+        source = source.WhereContains(r => r.Subtitle, filters.Subtitle);
+        source = source.WhereContains(r => r.Url, filters.Url);
 
-        source = Sort.Apply(source, query.Sort);
-        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        source = Sort.Apply(source, filters.Sort);
+        return executor.ToPagedAsync(source, filters.Page, filters.PageSize, ct);
     }
 }

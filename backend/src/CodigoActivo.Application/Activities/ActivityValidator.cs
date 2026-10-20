@@ -58,12 +58,11 @@ public sealed class ActivityValidator(
             return capacities.Error!;
         }
 
-        return new ValidatedActivity(schedule.Value, draft.Modality, capacities.Value);
+        return new ValidatedActivity(schedule.Value, capacities.Value);
     }
 
     internal readonly record struct ValidatedActivity(
         ActivitySchedule Schedule,
-        ActivityModality Modality,
         RoleCapacityPlan Capacities
     );
 }

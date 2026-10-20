@@ -25,6 +25,11 @@ public static partial class RichTextAllowlist
     /// </summary>
     public const int MaxNodes = 5_000;
 
+    /// <summary>
+    /// Longest rich-text JSON a field may hold, in characters.
+    /// </summary>
+    public const int MaxJsonLength = 262144;
+
     private const int MaxLabelLength = 300;
 
     private static readonly JsonDocumentOptions ParseOptions = new()
@@ -266,18 +271,16 @@ public static partial class RichTextAllowlist
             return true;
         }
 
-        if (!Uri.TryCreate(href, UriKind.Absolute, out var uri))
+        if (HttpUrlAttribute.IsHttpUrl(href))
         {
-            return false;
+            return true;
         }
 
-        if (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
-        {
-            return !string.IsNullOrWhiteSpace(uri.IdnHost) && string.IsNullOrEmpty(uri.UserInfo);
-        }
-
-        return uri.Scheme == Uri.UriSchemeMailto
-            || string.Equals(uri.Scheme, "tel", StringComparison.Ordinal);
+        return Uri.TryCreate(href, UriKind.Absolute, out var uri)
+            && (
+                uri.Scheme == Uri.UriSchemeMailto
+                || string.Equals(uri.Scheme, "tel", StringComparison.Ordinal)
+            );
     }
 
     private static bool IsAlignment(JsonElement value)

@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
 import { accountMutations } from '@/entities/account'
-import { todayIso } from '@/shared/lib/date'
+import { toDateOnly } from '@/shared/lib/date'
 import { downloadBlob } from '@/shared/lib/download'
 import { useCrudFeedback } from '@/shared/lib/feedback'
 
@@ -17,7 +17,7 @@ export function usePersonalDataDownload() {
   const mutation = useMutation({
     ...accountMutations.personalData(t),
     onSuccess: (file) => {
-      downloadBlob(t('pages.account.personalData.fileName', { date: todayIso() }), file)
+      downloadBlob(t('pages.account.personalData.fileName', { date: toDateOnly(new Date()) }), file)
     },
     onError: (error) => {
       feedback.error(error)

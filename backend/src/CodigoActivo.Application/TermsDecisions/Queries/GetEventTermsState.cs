@@ -8,6 +8,7 @@ using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.TermsDecisions.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.TermsDecisions.Queries;
 
@@ -118,8 +119,7 @@ public sealed class GetEventTermsStateQueryHandler(
                 member.Id,
                 member.FirstName,
                 member.LastName,
-                member.ParentId is null
-                    || (member.BirthDate is { } birthDate && birthDate.MayConsent(today)),
+                User.GivesOwnConsent(member.ParentId is not null, member.BirthDate, today),
                 [
                     .. decisions[member.Id]
                         .OrderBy(decision => decision.DecidedAt)

@@ -122,7 +122,6 @@ describe('useLogin', () => {
     await vi.waitFor(() => expect(result.isError.value).toBe(true))
     await flushPromises()
 
-    expect(result.error.value).toMatchObject({ code: 'InvalidCredentials' })
     expect(sessionOf(queryClient).isAuthenticated).toBe(false)
     expect(router.currentRoute.value.name).toBe('login')
   })

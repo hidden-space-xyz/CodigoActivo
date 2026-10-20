@@ -22,33 +22,32 @@ describe('usePagedList', () => {
 
     expect(fetchPage).toHaveBeenCalledWith(1, 25)
     expect(result.items.value).toHaveLength(25)
-    expect(result.total.value).toBe(60)
     expect(result.hasMore.value).toBe(true)
-    expect(result.isError.value).toBe(false)
   })
 
   it('appends pages on loadMore until every item is loaded', async () => {
     const fetchPage = vi.fn((page: number, pageSize: number) => {
       const start = (page - 1) * pageSize
-      return Promise.resolve(pageOf(start, Math.min(pageSize, 5 - start), 5))
+      return Promise.resolve(pageOf(start, Math.min(pageSize, 60 - start), 60))
     })
 
     const { result } = await mountComposable(() =>
-      usePagedList(() => ({ queryKey: ['small'], fetchPage }), { pageSize: 2 }),
+      usePagedList(() => ({ queryKey: ['small'], fetchPage })),
     )
-    await vi.waitFor(() => expect(result.items.value).toEqual([0, 1]))
+    await vi.waitFor(() => expect(result.items.value).toHaveLength(25))
 
     result.loadMore()
-    await vi.waitFor(() => expect(result.items.value).toEqual([0, 1, 2, 3]))
+    await vi.waitFor(() => expect(result.items.value).toHaveLength(50))
     expect(result.hasMore.value).toBe(true)
 
     result.loadMore()
-    await vi.waitFor(() => expect(result.items.value).toEqual([0, 1, 2, 3, 4]))
+    await vi.waitFor(() => expect(result.items.value).toHaveLength(60))
 
+    expect(result.items.value.at(-1)).toBe(59)
     expect(fetchPage.mock.calls).toEqual([
-      [1, 2],
-      [2, 2],
-      [3, 2],
+      [1, 25],
+      [2, 25],
+      [3, 25],
     ])
     expect(result.hasMore.value).toBe(false)
     expect(result.isFetchingMore.value).toBe(false)
@@ -79,13 +78,12 @@ describe('usePagedList', () => {
 
     expect(fetchPage).not.toHaveBeenCalled()
     expect(result.items.value).toEqual([])
-    expect(result.total.value).toBe(0)
 
     enabled.value = true
     await vi.waitFor(() => expect(fetchPage).toHaveBeenCalledTimes(1))
   })
 
-  it('exposes failures through isError', async () => {
+  it('keeps the list empty and stops loading when a page fails', async () => {
     const { result } = await mountComposable(() =>
       usePagedList(() => ({
         queryKey: ['broken'],
@@ -93,7 +91,8 @@ describe('usePagedList', () => {
       })),
     )
 
-    await vi.waitFor(() => expect(result.isError.value).toBe(true))
+    await vi.waitFor(() => expect(result.isLoading.value).toBe(false))
     expect(result.items.value).toEqual([])
+    expect(result.hasMore.value).toBe(false)
   })
 })

@@ -50,12 +50,7 @@ public static class SecurityAlertEmail
         }
 
         blocks.Add(EmailBlocks.Prose(Warning(change)));
-        blocks.Add(
-            EmailBlocks.Prose(
-                AppStrings.EmailsSharedSignoffHtml,
-                AppStrings.EmailsSharedSignoffText
-            )
-        );
+        blocks.Add(EmailBlocks.Signoff());
 
         var locked = change is AccountSecurityChange.PasswordLocked;
         var content = EmailLayout.Render(
@@ -71,16 +66,13 @@ public static class SecurityAlertEmail
             blocks
         );
 
-        return new EmailMessage(
+        return content.ToMessage(
             EmailKind.SecurityAlert,
             toAddress,
             toName,
             locked
                 ? AppStrings.EmailsSecurityAlertPasswordLockedSubject
-                : AppStrings.EmailsSecurityAlertSubject,
-            content.Html,
-            content.Text,
-            InlineImages: content.InlineImages
+                : AppStrings.EmailsSecurityAlertSubject
         );
     }
 

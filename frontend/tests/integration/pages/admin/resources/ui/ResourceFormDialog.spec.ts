@@ -198,9 +198,7 @@ describe('ResourceFormDialog', () => {
 
     await click(findButton(t('common.save'), dialog))
 
-    await vi.waitFor(() =>
-      expect(dialog.textContent).toContain(t('entities.file.thumbnail.uploadFailed')),
-    )
+    await vi.waitFor(() => expect(dialog.textContent).toContain(t('common.imageUploadFailed')))
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 

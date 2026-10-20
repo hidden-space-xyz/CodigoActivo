@@ -9,6 +9,7 @@ import {
   type RegistrationForm as RegistrationFormModel,
 } from '@/pages/register/model/registration-form'
 import type { Gender } from '@/shared/api/generated/models'
+import { PASSWORD_MIN_LENGTH } from '@/shared/config'
 
 import { renderWithProviders, t } from '../../../../support/render'
 import { TEST_LEGAL_ENTITY } from '../../../../support/server'
@@ -112,7 +113,7 @@ describe('RegistrationForm', () => {
       t('entities.user.person.genderRequired'),
       t('entities.user.person.required'),
       t('entities.user.person.required'),
-      t('validation.passwordMin'),
+      t('validation.passwordMin', { min: PASSWORD_MIN_LENGTH }),
     ])
     expect(wrapper.findAll('.ca-invalid').length).toBeGreaterThanOrEqual(6)
   })
@@ -148,7 +149,7 @@ describe('RegistrationForm', () => {
       t('validation.nationalIdFormat'),
       t('entities.user.person.sameAsPhone'),
       t('entities.user.person.emailFormat'),
-      t('validation.passwordMin'),
+      t('validation.passwordMin', { min: PASSWORD_MIN_LENGTH }),
     ])
 
     await wrapper.find('#reg-email').setValue('ada@example.test')

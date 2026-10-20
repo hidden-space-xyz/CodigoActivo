@@ -1,6 +1,4 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
@@ -14,15 +12,14 @@ namespace CodigoActivo.Application.Files.Commands;
 public sealed record DeleteFileCommand(StoredFileId FileId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the file.
+/// Executes the command to delete the file through <see cref="IOrphanFileCleaner"/>, which locks it
+/// and checks its references again in the transaction that deletes it.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="storage">Repository used to persist and retrieve storage.</param>
+/// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>
 public sealed class DeleteFileCommandHandler(
     IStoredFileRepository files,
-    IUnitOfWork uow,
-    IFileStorage storage
+    IOrphanFileCleaner orphanCleaner
 ) : ICommandHandler<DeleteFileCommand, Result>
 {
     /// <summary>
@@ -39,18 +36,8 @@ public sealed class DeleteFileCommandHandler(
             return Error.NotFound(ApplicationErrorCode.FileNotFound);
         }
 
-        if (await files.IsInUseAsync(command.FileId, ct))
-        {
-            return Error.Conflict(ApplicationErrorCode.FileInUse);
-        }
-
-        var storedName = FileNaming.StoredName(file.Id, file.Extension);
-
-        file.Delete();
-        files.Remove(file);
-        await uow.SaveChangesAsync(ct);
-
-        storage.Delete(storedName);
-        return Result.Success();
+        return await orphanCleaner.PurgeOrphanedAsync([command.FileId], ct) > 0
+            ? Result.Success()
+            : Error.Conflict(ApplicationErrorCode.FileInUse);
     }
 }

@@ -1,8 +1,8 @@
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Resources;
-using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Catalogs;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Conversions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -24,7 +24,7 @@ public class ResourceConfiguration : IEntityTypeConfiguration<Resource>
 
         builder.Property(r => r.Title).IsRequired();
         builder.Property(r => r.Subtitle).IsRequired();
-        builder.Property(r => r.Description).HasColumnType("jsonb").IsRequired();
+        builder.Property(r => r.Description).IsRequired();
         builder.Property(r => r.CreatedAt).IsRequired();
 
         builder
@@ -46,15 +46,6 @@ public class ResourceConfiguration : IEntityTypeConfiguration<Resource>
             .HasForeignKey(r => r.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(r => r.CreatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(r => r.UpdatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasAuthors<Resource, ResourceId>();
     }
 }

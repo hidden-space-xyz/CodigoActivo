@@ -5,6 +5,7 @@ import {
   putApiEventsCategoryTypeEventCategoryTypeId,
 } from '@/shared/api/generated/endpoints/events/events'
 import { toPage } from '@/shared/api'
+import { MAX_PAGE_SIZE } from '@/shared/config'
 import type { ServerTablePage } from '@/shared/lib/paging'
 
 import type { EventCategory, EventCategoryInput, EventCategoryListParams } from '../model/types'
@@ -12,16 +13,15 @@ import { toEventCategory, toEventCategoryRequest } from './mapper'
 
 /** Loads up to 100 categories for selectors and filters. */
 export async function getEventCategoriesRequest(): Promise<readonly EventCategory[]> {
-  const response = await getApiEventsCategoryType({ pageSize: 100 })
-  return toPage(response).items.map(toEventCategory)
+  const response = await getApiEventsCategoryType({ pageSize: MAX_PAGE_SIZE })
+  return toPage(response, toEventCategory).items
 }
 
 /** Fetches one page of the admin category list. */
 export async function getEventCategoryListPageRequest(
   params: EventCategoryListParams,
 ): Promise<ServerTablePage<EventCategory>> {
-  const { items, total } = toPage(await getApiEventsCategoryType(params))
-  return { items: items.map(toEventCategory), total }
+  return toPage(await getApiEventsCategoryType(params), toEventCategory)
 }
 
 /** Creates a category and resolves to it. */

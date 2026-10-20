@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useTwoFactorLogin } from '../model/use-two-factor-login'
-import { AppIcon } from '@/shared/ui/app-icon'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
+import { StatusPanel } from '@/shared/ui/status-panel'
 
 const {
   form,
@@ -33,29 +33,20 @@ const {
 
     <section class="two-factor-body">
       <div class="two-factor-card">
-        <div v-if="isLoading" class="two-factor-panel two-factor-panel--loading">
-          <span class="two-factor-panel__icon" aria-hidden="true">
-            <AppIcon name="spinner" spin />
-          </span>
-          <p class="two-factor-panel__text" aria-live="polite">
-            {{ $t('pages.loginTwoFactor.loading') }}
-          </p>
-        </div>
+        <StatusPanel v-if="isLoading" state="pending" :text="$t('pages.loginTwoFactor.loading')" />
 
-        <div v-else-if="expired" class="two-factor-panel">
-          <div class="two-factor-panel__icon two-factor-panel__icon--error" aria-hidden="true">
-            !
-          </div>
-          <h2 class="two-factor-panel__title">{{ $t('pages.loginTwoFactor.expiredTitle') }}</h2>
-          <p class="two-factor-panel__text" role="alert">
-            {{ $t('pages.loginTwoFactor.expiredText') }}
-          </p>
-          <div class="two-factor-panel__actions">
+        <StatusPanel
+          v-else-if="expired"
+          state="error"
+          :title="$t('pages.loginTwoFactor.expiredTitle')"
+          :text="$t('pages.loginTwoFactor.expiredText')"
+        >
+          <template #actions>
             <BrandButton :to="loginRoute" variant="primary">
               {{ $t('pages.loginTwoFactor.backToLogin') }}
             </BrandButton>
-          </div>
-        </div>
+          </template>
+        </StatusPanel>
 
         <form v-else class="two-factor-form" @submit.prevent="submit">
           <p class="two-factor-form__intro">
@@ -141,15 +132,11 @@ const {
   margin: 0 auto;
 }
 
-.two-factor-form,
-.two-factor-panel {
+.two-factor-form {
   background: var(--ca-bg-elevated);
   border: 1px solid var(--ca-border-strong);
   border-radius: 18px;
   padding: 30px;
-}
-
-.two-factor-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -199,50 +186,6 @@ const {
   display: inline;
   padding: 0;
   font-size: inherit;
-}
-
-.two-factor-panel {
-  text-align: center;
-}
-
-.two-factor-panel__icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  margin: 0 auto 20px;
-}
-
-.two-factor-panel__icon--error {
-  background: var(--ca-danger-soft);
-  border: 1px solid var(--ca-danger);
-  color: var(--ca-danger);
-  font-weight: 700;
-}
-
-.two-factor-panel__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 24px;
-  color: var(--ca-text-bright);
-}
-
-.two-factor-panel__text {
-  margin-top: 10px;
-  font-size: 15.5px;
-  line-height: 1.6;
-  color: var(--ca-text-muted);
-}
-
-.two-factor-panel__actions {
-  display: flex;
-  gap: 14px;
-  justify-content: center;
-  margin-top: 24px;
-  flex-wrap: wrap;
 }
 
 .two-factor-alt {

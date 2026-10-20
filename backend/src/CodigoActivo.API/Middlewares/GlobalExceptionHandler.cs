@@ -36,13 +36,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
     {
         ArgumentNullException.ThrowIfNull(httpContext);
 
-        var (statusCode, body) = Answer(httpContext, exception);
-        httpContext.Response.StatusCode = statusCode;
-        await httpContext.Response.WriteAsJsonAsync(
-            body,
-            ApiErrorResponseExtensions.SerializerOptions,
-            cancellationToken
-        );
+        await httpContext.WriteApiErrorAsync(Answer(httpContext, exception), cancellationToken);
 
         return true;
     }

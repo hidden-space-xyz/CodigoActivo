@@ -2,6 +2,8 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ThumbnailField } from '@/entities/file'
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/shared/config'
+import { formatFileSize } from '@/shared/lib/number'
 
 import { renderWithProviders, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
@@ -46,12 +48,23 @@ describe('ThumbnailField', () => {
     expect(buttonLabels(wrapper)).toEqual([t('entities.file.thumbnail.select')])
     expect(wrapper.find('.thumb__name').exists()).toBe(false)
     expect(wrapper.find('.thumb__preview--invalid').exists()).toBe(false)
+    expect(wrapper.find('.thumb__error').exists()).toBe(false)
   })
 
-  it('marks the preview as invalid', async () => {
+  it('marks the preview as invalid and says the image is required', async () => {
     const { wrapper } = await renderWithProviders(ThumbnailField, { props: { invalid: true } })
 
     expect(wrapper.find('.thumb__preview--invalid').exists()).toBe(true)
+    expect(wrapper.find('.thumb__error').text()).toBe(t('common.imageRequired'))
+  })
+
+  it('shows the upload error it is given', async () => {
+    const { wrapper } = await renderWithProviders(ThumbnailField, {
+      props: { uploadError: 'No se pudo subir.' },
+    })
+
+    expect(wrapper.find('.thumb__error').text()).toBe('No se pudo subir.')
+    expect(wrapper.find('.thumb__preview--invalid').exists()).toBe(false)
   })
 
   it('previews the stored thumbnail and shows its file name', async () => {
@@ -125,7 +138,9 @@ describe('ThumbnailField', () => {
 
     await pickFiles(wrapper, [image('huge.png', 10 * 1024 * 1024 + 1)])
 
-    expect(wrapper.find('.thumb__error').text()).toBe(t('entities.file.thumbnail.tooLarge'))
+    expect(wrapper.find('.thumb__error').text()).toBe(
+      t('common.imageTooLarge', { max: formatFileSize(MAX_IMAGE_UPLOAD_BYTES) }),
+    )
     expect(wrapper.emitted('update:file')).toBeUndefined()
     expect(wrapper.find('img').exists()).toBe(false)
 

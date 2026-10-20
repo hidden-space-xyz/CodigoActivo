@@ -24,7 +24,6 @@ public static class WireErrorCodes
         [DomainErrorCode.EventRatingScoreOutOfRange] = ErrorCode.RequestValidationFailed,
         [DomainErrorCode.EventRatingAnswerTooLong] = ErrorCode.RequestValidationFailed,
         [DomainErrorCode.EventTermsSignatureInvalid] = ErrorCode.RequestValidationFailed,
-        [ApplicationErrorCode.RegistrationInvalid] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.MessageInvalid] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.ActingForAnotherUserForbidden] = ErrorCode.AccessDenied,
     }.ToFrozenDictionary();

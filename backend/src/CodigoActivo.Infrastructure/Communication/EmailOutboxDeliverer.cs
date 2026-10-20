@@ -110,7 +110,7 @@ public sealed class EmailOutboxDeliverer(
             if (EmailQueueOptions.IsExhausted(attempts))
             {
                 await store.RemoveAsync(message.Id, attempts, CancellationToken.None);
-                LogGaveUp(failure, message.Kind, attempts);
+                logger.EmailDeliveryGaveUp(message.Kind, attempts, failure);
                 return;
             }
 
@@ -139,7 +139,7 @@ public sealed class EmailOutboxDeliverer(
         {
             foreach (var exhausted in await store.RemoveExhaustedAsync(now, ct))
             {
-                LogGaveUp(failure: null, exhausted.Kind, exhausted.AttemptCount);
+                logger.EmailDeliveryGaveUp(exhausted.Kind, exhausted.AttemptCount, null);
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -161,11 +161,6 @@ public sealed class EmailOutboxDeliverer(
         {
             logger.EmailContentSweepFailed(ex);
         }
-    }
-
-    private void LogGaveUp(Exception? failure, EmailKind kind, int attempts)
-    {
-        logger.EmailDeliveryGaveUp(kind, attempts, failure);
     }
 
     private static string Describe(Exception failure)

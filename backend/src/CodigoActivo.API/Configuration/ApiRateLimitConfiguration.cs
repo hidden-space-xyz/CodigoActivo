@@ -29,15 +29,9 @@ internal static class ApiRateLimitConfiguration
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.OnRejected = async (context, ct) =>
             {
-                var response = context.HttpContext.Response;
-                response.Headers.RetryAfter = GetRetryAfter(context.Lease);
-                var (status, body) = ApiErrorResponseExtensions.CreateTooManyRequests(
-                    context.HttpContext
-                );
-                response.StatusCode = status;
-                await response.WriteAsJsonAsync(
-                    body,
-                    ApiErrorResponseExtensions.SerializerOptions,
+                context.HttpContext.Response.Headers.RetryAfter = GetRetryAfter(context.Lease);
+                await context.HttpContext.WriteApiErrorAsync(
+                    ApiErrorResponseExtensions.CreateTooManyRequests(context.HttpContext),
                     ct
                 );
             };
@@ -51,18 +45,7 @@ internal static class ApiRateLimitConfiguration
 
         options.AddPolicy(
             SecurityPolicies.Credentials,
-            context =>
-                RateLimitPartition.GetSlidingWindowLimiter(
-                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                    _ => new SlidingWindowRateLimiterOptions
-                    {
-                        PermitLimit = limits.CredentialRequestsPerMinutePerIp,
-                        Window = TimeSpan.FromMinutes(1),
-                        SegmentsPerWindow = 6,
-                        QueueLimit = 0,
-                        AutoReplenishment = true,
-                    }
-                )
+            ClientRequestRateLimiter.CreateIpPolicy(limits.CredentialRequestsPerMinutePerIp)
         );
         options.AddPolicy(
             SecurityPolicies.Reports,

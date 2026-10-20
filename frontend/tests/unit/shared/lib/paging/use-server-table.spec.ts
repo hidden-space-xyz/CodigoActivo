@@ -64,21 +64,18 @@ describe('useServerTable', () => {
       pagerCount: 7,
       background: true,
     })
-    expect(result.defaultSortProp.value).toBe('createdAt')
-    expect(result.defaultSortOrder.value).toBe('descending')
   })
 
   it('omits the sort without a default and uses ascending order by default', async () => {
     const fetchPage = fixedPage(0)
 
     const { result } = await mountComposable(() =>
-      useServerTable<Row>({ queryKey: ['unsorted'], fetchPage, rows: 50 }),
+      useServerTable<Row>({ queryKey: ['unsorted'], fetchPage }),
     )
     await vi.waitFor(() => expect(fetchPage).toHaveBeenCalled())
 
-    expect(lastParams(fetchPage)).toEqual({ page: 1, pageSize: 50 })
-    expect(result.sortParam.value).toBeUndefined()
-    expect(result.defaultSort.value).toEqual({ prop: '', order: 'ascending' })
+    expect(lastParams(fetchPage)).toEqual({ page: 1, pageSize: 25 })
+    expect(result.tableProps.value.defaultSort).toEqual({ prop: '', order: 'ascending' })
     expect(result.items.value).toEqual([])
   })
 
@@ -161,17 +158,19 @@ describe('useServerTable', () => {
     result.onCurrentPageChange(3)
 
     result.onSortChange({ prop: 'name', order: 'descending' })
-    expect(result.sortParam.value).toBe('-name')
+    expect(result.sortField.value).toBe('name')
+    expect(result.sortOrder.value).toBe(-1)
     expect(result.first.value).toBe(0)
 
     result.onSortChange({ prop: 'name', order: 'ascending' })
-    expect(result.sortParam.value).toBe('name')
+    expect(result.sortField.value).toBe('name')
+    expect(result.sortOrder.value).toBe(1)
 
     result.onSortChange({ prop: 'name', order: null })
     expect(result.sortField.value).toBeUndefined()
 
     result.onSortChange({ prop: null, order: 'ascending' })
-    expect(result.sortParam.value).toBeUndefined()
+    expect(result.sortField.value).toBeUndefined()
     expect(result.sortOrder.value).toBe(1)
   })
 
@@ -362,18 +361,21 @@ describe('useServerTable', () => {
 
     result.setSort('eventStartsAt', -1)
 
-    expect(result.sortParam.value).toBe('-eventStartsAt')
     expect(result.first.value).toBe(0)
-    expect(result.defaultSort.value).toEqual({ prop: 'eventStartsAt', order: 'descending' })
+    expect(result.tableProps.value.defaultSort).toEqual({
+      prop: 'eventStartsAt',
+      order: 'descending',
+    })
     await vi.waitFor(() =>
       expect(lastParams(fetchPage)).toEqual({ page: 1, pageSize: 25, sort: '-eventStartsAt' }),
     )
 
     result.setSort('title')
-    expect(result.sortParam.value).toBe('title')
+    expect(result.sortField.value).toBe('title')
+    expect(result.sortOrder.value).toBe(1)
 
     result.setSort(undefined)
-    expect(result.sortParam.value).toBeUndefined()
+    expect(result.sortField.value).toBeUndefined()
   })
 
   it('passes a custom row key to the table', async () => {

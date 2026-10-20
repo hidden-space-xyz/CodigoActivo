@@ -86,7 +86,6 @@ export interface ServerTableSource<T, TParams> {
 interface UseServerTableOptions<T, TParams> extends ServerTableSource<T, TParams> {
   readonly columns?: Record<string, ServerTableColumn<TParams>> | undefined
   readonly defaultSort?: { readonly field: string; readonly order?: 1 | -1 } | undefined
-  readonly rows?: number | undefined
   readonly extraParams?: (() => Record<string, unknown>) | undefined
   readonly enabled?: (() => boolean) | undefined
   /** Row identity for Element Plus; defaults to `'id'`. Lists whose rows have no id pass a function. */
@@ -117,7 +116,7 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
 ) {
   const columns = options.columns ?? {}
   const first = ref(0)
-  const rows = ref(options.rows ?? 25)
+  const rows = ref(25)
   const sortField = ref<string | undefined>(options.defaultSort?.field)
   const sortOrder = ref<number>(options.defaultSort?.order ?? 1)
   const filters = ref<Record<string, ServerTableFilterState>>(initialFilters(columns))
@@ -269,9 +268,6 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
   return {
     tableProps,
     paginationProps,
-    defaultSort,
-    defaultSortProp,
-    defaultSortOrder,
     items: computed(() => page.value.items),
     total: computed(() => page.value.total),
     loading: tableQuery.isFetching,
@@ -285,7 +281,6 @@ export function useServerTable<T, TParams = Record<string, unknown>>(
     sortField,
     sortOrder,
     filterParams,
-    sortParam,
     columnFilter,
     filterValue,
     clearFilters,

@@ -6,6 +6,7 @@ import { currentUser } from '@/entities/session'
 import { genderLabelKey } from '@/entities/user'
 import ProfileSection from '@/pages/account/ui/ProfileSection.vue'
 import type { UserResponse } from '@/shared/api/generated/models'
+import { PASSWORD_MIN_LENGTH } from '@/shared/config'
 
 import { renderWithProviders, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
@@ -441,7 +442,7 @@ describe('ProfileSection', () => {
     const dialog = await submitPassword('current', 'short', 'short')
 
     expect(dialog.querySelector('.acc-form__error')?.textContent.trim()).toBe(
-      t('validation.newPasswordMin'),
+      t('validation.newPasswordMin', { min: PASSWORD_MIN_LENGTH }),
     )
     expect(patched).not.toHaveBeenCalled()
   })

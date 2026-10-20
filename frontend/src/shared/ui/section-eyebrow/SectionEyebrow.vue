@@ -1,19 +1,12 @@
 <script setup lang="ts">
-withDefaults(
-  defineProps<{
-    /** Kicker text, rendered uppercase in the monospace font. */
-    text: string
-    /** Any CSS color value, preferably a `--ca-*` variable. */
-    color?: string
-  }>(),
-  {
-    color: 'var(--ca-orange-ink)',
-  },
-)
+defineProps<{
+  /** Kicker text, rendered uppercase in the monospace font. */
+  text: string
+}>()
 </script>
 
 <template>
-  <div class="eyebrow" :style="{ color }">{{ text }}</div>
+  <div class="eyebrow">{{ text }}</div>
 </template>
 
 <style scoped>
@@ -23,5 +16,6 @@ withDefaults(
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 10px;
+  color: var(--ca-orange-ink);
 }
 </style>

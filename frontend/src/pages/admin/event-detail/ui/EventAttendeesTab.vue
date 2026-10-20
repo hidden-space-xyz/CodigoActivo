@@ -7,7 +7,6 @@ import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/se
 import { MAX_SEARCH_LENGTH } from '@/shared/config'
 import { normalizeHexColor } from '@/shared/lib/color'
 import { ageFrom, formatDateTime } from '@/shared/lib/date'
-import { useCrudFeedback } from '@/shared/lib/feedback'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AppIcon } from '@/shared/ui/app-icon'
 import { ColorTag } from '@/shared/ui/color-tag'
@@ -27,7 +26,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const feedback = useCrudFeedback()
 const {
   table,
   searchText,
@@ -60,7 +58,7 @@ const {
   applyRole,
   applyStatus,
 } = useAssignmentChanges(() => props.eventId)
-const { sendToEventAttendees, usersAudience, eventAttendeesAudience } = useSendEmail()
+const { sendToEventAttendees, eventAttendeesAudience } = useSendEmail()
 
 const sortOptions: { label: string; value: string }[] = [
   { label: t('common.name'), value: 'firstName' },
@@ -92,11 +90,7 @@ const {
   bulkPending: () => sendToEventAttendees.isPending.value,
   sendAll: (payload, handlers) =>
     sendToEventAttendees.mutate({ eventId: props.eventId, params: filters(), payload }, handlers),
-  fetchAudience: (attendee) =>
-    attendee
-      ? usersAudience({ id: attendee.userId })
-      : eventAttendeesAudience(props.eventId, filters()),
-  onError: (error) => feedback.error(error),
+  fetchAudience: () => eventAttendeesAudience(props.eventId, filters()),
 })
 
 function attendeeVars(attendee: EventAttendee): Record<string, string> | undefined {

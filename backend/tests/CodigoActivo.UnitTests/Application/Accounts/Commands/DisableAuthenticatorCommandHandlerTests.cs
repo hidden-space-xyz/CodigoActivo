@@ -183,7 +183,14 @@ public sealed class DisableAuthenticatorCommandHandlerTests
             .LockAsync(user, Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
-                user.UseEmailTwoFactor(clock.UtcNow);
+                Persisted.Overwrite(
+                    user,
+                    new
+                    {
+                        TwoFactorMethod = TwoFactorMethod.Email,
+                        Authenticator = default(Authenticator),
+                    }
+                );
                 return true;
             });
 

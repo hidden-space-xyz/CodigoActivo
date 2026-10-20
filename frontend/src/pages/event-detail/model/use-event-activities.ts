@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
+import { accountQueries } from '@/entities/account'
 import {
   activityMutations,
   activityQueries,
@@ -10,6 +11,7 @@ import {
   type OverlapCheck,
 } from '@/entities/activity'
 import { eventKeys, eventQueries } from '@/entities/event'
+import { fullName } from '@/entities/user'
 import { useSession } from '@/entities/session'
 import { alsoInvalidates } from '@/shared/api'
 
@@ -35,7 +37,8 @@ export function useEventActivities(eventId: () => string, hasTerms: () => boolea
     enabled: isAuthenticated.value,
   }))
   const householdMembers = useQuery(() => ({
-    ...activityQueries.householdMembers(userId.value ?? ''),
+    ...accountQueries.children(userId.value ?? ''),
+    select: (children) => children.map((child) => ({ id: child.id, name: fullName(child) })),
     enabled: isAuthenticated.value,
   }))
   const household = useQuery(() => ({

@@ -45,22 +45,16 @@ public static class PasswordResetEmail
                     AppStrings.EmailsPasswordResetExpiryHtml(minutes),
                     AppStrings.EmailsPasswordResetExpiryText(minutes)
                 ),
-                EmailBlocks.Prose(
-                    AppStrings.EmailsSharedSignoffHtml,
-                    AppStrings.EmailsSharedSignoffText
-                ),
+                EmailBlocks.Signoff(),
                 EmailBlocks.Note(AppStrings.EmailsPasswordResetIgnoreNote),
             ]
         );
 
-        return new EmailMessage(
+        return content.ToMessage(
             EmailKind.PasswordReset,
             toAddress,
             toName,
-            AppStrings.EmailsPasswordResetSubject,
-            content.Html,
-            content.Text,
-            InlineImages: content.InlineImages
+            AppStrings.EmailsPasswordResetSubject
         );
     }
 }

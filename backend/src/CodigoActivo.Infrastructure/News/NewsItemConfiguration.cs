@@ -1,6 +1,6 @@
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
-using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,7 +21,7 @@ public class NewsItemConfiguration : IEntityTypeConfiguration<NewsItem>
 
         builder.Property(a => a.Title).IsRequired();
         builder.Property(a => a.Subtitle).IsRequired();
-        builder.Property(a => a.Description).HasColumnType("jsonb").IsRequired();
+        builder.Property(a => a.Description).IsRequired();
         builder.Property(a => a.CreatedAt).IsRequired();
 
         builder.HasIndex(a => a.CreatedAt);
@@ -33,15 +33,6 @@ public class NewsItemConfiguration : IEntityTypeConfiguration<NewsItem>
             .HasForeignKey(a => a.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(a => a.CreatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(a => a.UpdatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasAuthors<NewsItem, NewsItemId>();
     }
 }

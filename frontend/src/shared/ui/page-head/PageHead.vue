@@ -13,7 +13,7 @@ defineProps<{
   <section class="page-head">
     <div class="page-head__glow" aria-hidden="true" />
     <div class="ca-container--narrow page-head__inner">
-      <SectionEyebrow :text="eyebrow" color="var(--ca-orange-ink)" />
+      <SectionEyebrow :text="eyebrow" />
       <h1 class="page-head__title">{{ title }}</h1>
       <slot />
     </div>

@@ -75,15 +75,6 @@ public sealed class WireErrorCodesTests
     }
 
     [Fact]
-    public void ToWireInvalidRegistrationIsReportedAsRequestValidationFailed()
-    {
-        WireErrorCodes
-            .ToWire(ApplicationErrorCode.RegistrationInvalid)
-            .Should()
-            .Be(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
     public void ToWireAccountNoLongerPendingIsReportedAsAnInvalidCode()
     {
         WireErrorCodes

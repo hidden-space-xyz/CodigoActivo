@@ -99,7 +99,7 @@ describe('PartnerFormDialog', () => {
     await pickFiles(fileInput(dialog), [new File(['x'], 'logo.png', { type: 'image/png' })])
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).toContain(t('entities.file.thumbnail.uploadFailed'))
+    expect(dialog.textContent).toContain(t('common.imageUploadFailed'))
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 

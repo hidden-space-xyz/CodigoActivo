@@ -45,22 +45,16 @@ public static class AccountDeletionCodeEmail
                     AppStrings.EmailsAccountDeletionCodeExpiryHtml(minutes),
                     AppStrings.EmailsAccountDeletionCodeExpiryText(minutes)
                 ),
-                EmailBlocks.Prose(
-                    AppStrings.EmailsSharedSignoffHtml,
-                    AppStrings.EmailsSharedSignoffText
-                ),
+                EmailBlocks.Signoff(),
                 EmailBlocks.Note(AppStrings.EmailsAccountDeletionCodeIgnoreNote),
             ]
         );
 
-        return new EmailMessage(
+        return content.ToMessage(
             EmailKind.TwoFactorCode,
             toAddress,
             toName,
-            AppStrings.EmailsAccountDeletionCodeSubject,
-            content.Html,
-            content.Text,
-            InlineImages: content.InlineImages
+            AppStrings.EmailsAccountDeletionCodeSubject
         );
     }
 }

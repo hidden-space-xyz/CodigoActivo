@@ -70,18 +70,7 @@ public sealed class ResendTwoFactorCodeCommandHandler(
             return Expired;
         }
 
-        var allowed = user.MayReceiveLoginCode(now);
-        if (allowed.IsFailure)
-        {
-            return allowed;
-        }
-
-        if (user.LoginCode.IsResendCoolingDown(now, options.ResendCooldown))
-        {
-            return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
-        }
-
-        return null;
+        return loginCodes.RefusalOf(user, now);
     }
 
     private async Task<Result> ResendLockedAsync(

@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { resourceQueries } from '@/entities/resource'
 import { fileContentUrl } from '@/shared/api'
-import { isRichTextEmpty, normalizeLink, richTextExcerpt } from '@/shared/lib/rich-text'
+import { isRichTextBlank, normalizeLink, richTextExcerpt } from '@/shared/lib/rich-text'
 import { type SeoData, useSeo } from '@/shared/lib/seo'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { RichTextContent } from '@/shared/ui/rich-text-content'
@@ -22,7 +22,7 @@ const notFound = computed(() => !isLoading.value && resource.value === null)
 
 const redirectUrl = computed(() => normalizeLink(resource.value?.url ?? '', false))
 const posterUrl = computed(() => fileContentUrl(resource.value?.thumbnailId))
-const hasDescription = computed(() => !isRichTextEmpty(resource.value?.description))
+const hasDescription = computed(() => !isRichTextBlank(resource.value?.description))
 
 const seo = computed<SeoData | undefined>(() => {
   if (notFound.value) return { title: t('pages.resourceDetail.seoNotFound'), noindex: true }
@@ -57,7 +57,7 @@ watchEffect(() => {
 
     <p v-if="isLoading" class="detail-state ca-container--narrow">{{ $t('common.loading') }}</p>
 
-    <p v-else-if="notFound || !resource" class="detail-state ca-container--narrow">
+    <p v-else-if="!resource" class="detail-state ca-container--narrow">
       {{ $t('pages.resourceDetail.notFound') }}
     </p>
 

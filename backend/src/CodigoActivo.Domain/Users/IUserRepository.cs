@@ -78,19 +78,6 @@ public interface IUserRepository : IRepository<User>
     );
 
     /// <summary>
-    /// Tells whether an account already uses an email address.
-    /// </summary>
-    /// <param name="email">Normalized email address.</param>
-    /// <param name="excludeUserId">Account to ignore, when it is the one changing its address.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the address is taken.</returns>
-    public Task<bool> EmailExistsAsync(
-        EmailAddress email,
-        UserId? excludeUserId = null,
-        CancellationToken ct = default
-    );
-
-    /// <summary>
     /// Locks the stored password lockout state of an account until the running transaction ends
     /// and refreshes it on the loaded account, so concurrent wrong passwords are counted one after
     /// another.

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Application.News.Commands;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
@@ -15,7 +16,7 @@ namespace CodigoActivo.API.News.Contracts;
 public record CreateNewsItemRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
-    [MaxLength(262144)] string Description,
+    [MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     Guid ThumbnailId
 )
 {
@@ -44,7 +45,7 @@ public record CreateNewsItemRequest(
 public record UpdateNewsItemRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
-    [MaxLength(262144)] string Description,
+    [MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     Guid ThumbnailId
 )
 {

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/vue-query'
 
 import { newsPages, newsQueries } from '@/entities/news-item'
 import { usePagedList } from '@/shared/lib/paging'
+import { yearSelection } from '@/shared/ui/year-filter'
 
 /**
  * Public news archive: the years that have news, a selected year that stays valid (the newest by
@@ -18,7 +19,7 @@ export function useNewsArchive() {
   watch(
     years,
     (list) => {
-      if (!list.includes(selectedYear.value)) selectedYear.value = list[0] ?? ''
+      selectedYear.value = yearSelection(list, selectedYear.value)
     },
     { immediate: true },
   )

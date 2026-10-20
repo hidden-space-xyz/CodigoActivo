@@ -43,8 +43,7 @@ export async function getUpcomingEventsPageRequest(
   pageSize: number,
 ): Promise<PagedListPage<EventSummary>> {
   const response = await getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', page, pageSize })
-  const { items, total } = toPage(response)
-  return { items: items.map(toEventSummary), total }
+  return toPage(response, toEventSummary)
 }
 
 /** Lists the years that have past events, as strings for select options. */
@@ -74,8 +73,7 @@ export async function getPastEventsPageRequest(
     page,
     pageSize,
   })
-  const { items, total } = toPage(response)
-  return { items: items.map(toPastEventSummary), total }
+  return toPage(response, toPastEventSummary)
 }
 
 /** Loads a whole event for its public page; resolves to `null` when it does not exist (404). */
@@ -110,11 +108,9 @@ export async function getHomeEventsRequest(): Promise<HomeEvents> {
     getApiEvents({ featured: true, scope: 'Upcoming', pageSize: 1 }),
     getApiEvents({ scope: 'Upcoming', sort: 'eventStartsAt', pageSize: 4 }),
   ])
-  const [first] = toPage(featuredPage).items
-  const featured = first ? toEventSummary(first) : null
-  const items = toPage(upcomingPage)
-    .items.map(toEventSummary)
-    .filter((event) => event.id !== featured?.id)
+  const featured = toPage(featuredPage, toEventSummary).items[0] ?? null
+  const items = toPage(upcomingPage, toEventSummary)
+    .items.filter((event) => event.id !== featured?.id)
     .slice(0, 3)
   return { featured, items }
 }
@@ -123,8 +119,7 @@ export async function getHomeEventsRequest(): Promise<HomeEvents> {
 export async function getEventsPageRequest(
   params: EventListParams,
 ): Promise<ServerTablePage<EventListing>> {
-  const { items, total } = toPage(await getApiEvents(params))
-  return { items: items.map(toEventListing), total }
+  return toPage(await getApiEvents(params), toEventListing)
 }
 
 /** Creates an event. */

@@ -1,6 +1,12 @@
 /** Longest search term or text filter a list query accepts (`PageQuery.MaxTextLength`). */
 export const MAX_SEARCH_LENGTH = 200
 
+/** Largest page a list query returns (`PageQuery.MaxPageSize`). */
+export const MAX_PAGE_SIZE = 100
+
+/** Fewest characters the API accepts in a password (`[MinLength(12)]` on the account requests). */
+export const PASSWORD_MIN_LENGTH = 12
+
 /** Largest image the API stores (`FileUploadOptions.DefaultMaxSizeBytes`). */
 export const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024
 

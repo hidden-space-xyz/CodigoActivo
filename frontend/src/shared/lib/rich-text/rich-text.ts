@@ -313,18 +313,6 @@ export function isRichTextTooLong(value: string): boolean {
   return value.length > RICH_TEXT_MAX_LENGTH
 }
 
-/**
- * True when the document has no nodes or only empty paragraphs. Whitespace-only text counts as
- * content; use `isRichTextBlank` to ignore it.
- */
-export function isRichTextEmpty(value?: string | null): boolean {
-  const doc = parseRichText(value)
-  if (!doc.content || doc.content.length === 0) return true
-  return doc.content.every(
-    (node) => node.type === 'paragraph' && (!node.content || node.content.length === 0),
-  )
-}
-
 /** True when no image or non-whitespace text exists at any depth; used for required fields. */
 export function isRichTextBlank(value?: string | null): boolean {
   return !hasRichTextContent(parseRichText(value))

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { shortTrace } from '@/shared/api'
 import { LOCALE } from '@/shared/config'
 import { formatDateTimeSeconds } from '@/shared/lib/date'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
@@ -22,7 +23,6 @@ import {
   outcomeLabelKey,
   outcomeTagType,
   relatedLabel,
-  shortId,
 } from '../lib/labels'
 import type { AuditEntry } from '../model/types'
 import { useAuditLog } from '../model/use-audit-log'
@@ -237,7 +237,7 @@ function entryActions(entry: AuditEntry): RowAction[] {
             :aria-label="$t('pages.admin.audit.filterTrace', { trace: row.traceId })"
             @click="filterByTrace(row.traceId)"
           >
-            {{ shortId(row.traceId) }}
+            {{ shortTrace(row.traceId) }}
           </button>
           <span v-else class="muted">—</span>
         </template>

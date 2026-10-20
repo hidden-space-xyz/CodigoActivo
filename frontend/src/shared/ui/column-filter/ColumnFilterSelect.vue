@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
 import { useTableFilterRegistration } from './filter-registry'
@@ -28,31 +28,21 @@ const emit = defineEmits<{
 }>()
 
 const shell = ref<InstanceType<typeof ColumnFilterShell>>()
-const draft = ref<string | boolean | null>(props.modelValue)
 
 const active = computed(() => props.modelValue !== null && props.modelValue !== undefined)
 
-watch(
-  () => props.modelValue,
-  (value) => {
-    draft.value = value ?? null
-  },
-)
-
-function commit(): void {
-  emit('update:modelValue', draft.value)
+function commit(value: string | boolean | null): void {
+  emit('update:modelValue', value)
   emit('apply')
 }
 
 function onChange(value: unknown): void {
-  draft.value = value === undefined || value === '' ? null : (value as string | boolean)
-  commit()
+  commit(value === undefined || value === '' ? null : (value as string | boolean))
   shell.value?.hide()
 }
 
 function clear(): void {
-  draft.value = null
-  commit()
+  commit(null)
   shell.value?.hide()
 }
 
@@ -72,12 +62,12 @@ useTableFilterRegistration(() => {
     :variant="variant"
     :toggle-label="$t('table.filterBy', { label })"
     :clear-label="$t('table.clearFilter')"
-    :show-clear="draft != null"
+    :show-clear="active"
     @clear="clear"
   >
     <template #default="{ panel }">
       <el-select
-        :model-value="draft"
+        :model-value="modelValue"
         :placeholder="$t('table.filterBy', { label })"
         clearable
         :filterable="filterable"

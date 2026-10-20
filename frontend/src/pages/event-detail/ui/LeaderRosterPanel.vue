@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 import type { LeaderRosterActivity, LeaderRosterDependent } from '@/entities/event'
+import { fullName } from '@/entities/user'
 
 import { useLeaderRoster } from '../model/use-leader-roster'
 import { formatDate, formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
@@ -188,7 +189,7 @@ function telHref(phone: string): string {
                   </div>
                   <div class="lr-field">
                     <dt>{{ t('pages.eventDetail.leaderRoster.columns.guardian') }}</dt>
-                    <dd>{{ dependent.guardian.firstName }} {{ dependent.guardian.lastName }}</dd>
+                    <dd>{{ fullName(dependent.guardian) }}</dd>
                   </div>
                   <div class="lr-field lr-field--contact">
                     <dt>{{ t('pages.eventDetail.leaderRoster.columns.guardianEmail') }}</dt>

@@ -51,7 +51,7 @@ watch(visible, (open) => {
 
 async function save(): Promise<void> {
   const value = form.submit()
-  if (!value || missingThumbnail.value) return
+  if (!value) return
   const thumbnailId = await thumbnail.resolveThumbnailId()
   if (!thumbnailId) return
   emit('submit', { ...value, thumbnailId })
@@ -133,12 +133,9 @@ async function save(): Promise<void> {
           aria-labelledby="resource-image-label"
           :existing-thumbnail-id="resource?.thumbnailId"
           :invalid="submitted && missingThumbnail"
+          :upload-error="uploadError"
           @update:file="pickedFile = $event"
         />
-        <small v-if="submitted && missingThumbnail" class="form__error">{{
-          $t('common.imageRequired')
-        }}</small>
-        <small v-if="uploadError" class="form__error">{{ uploadError }}</small>
       </div>
     </form>
 

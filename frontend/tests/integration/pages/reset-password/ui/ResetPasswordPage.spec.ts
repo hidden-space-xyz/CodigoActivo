@@ -1,6 +1,8 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
+import { PASSWORD_MIN_LENGTH } from '@/shared/config'
+
 import { renderApp, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
 
@@ -35,7 +37,7 @@ describe('reset password page', () => {
 
     expect(wrapper.text()).toContain(t('pages.resetPassword.invalidTitle'))
     expect(wrapper.find('form').exists()).toBe(false)
-    const hrefs = wrapper.findAll('.reset-panel__actions a').map((a) => a.attributes('href'))
+    const hrefs = wrapper.findAll('.status-panel__actions a').map((a) => a.attributes('href'))
     expect(hrefs).toEqual([
       router.resolve({ name: 'forgot-password' }).href,
       router.resolve({ name: 'home' }).href,
@@ -47,7 +49,9 @@ describe('reset password page', () => {
     const { wrapper } = await renderApp(`/reset-password#userId=${USER_ID}&code=otp-1`)
 
     await fillPasswords(wrapper, 'too-short')
-    expect(wrapper.get('[role="alert"]').text()).toBe(t('validation.newPasswordMin'))
+    expect(wrapper.get('[role="alert"]').text()).toBe(
+      t('validation.newPasswordMin', { min: PASSWORD_MIN_LENGTH }),
+    )
 
     await fillPasswords(wrapper, PASSWORD, `${PASSWORD}?`)
     expect(wrapper.get('[role="alert"]').text()).toBe(t('validation.passwordsMismatch'))
@@ -64,7 +68,7 @@ describe('reset password page', () => {
 
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.resetPassword.successTitle')))
     expect(calls).toEqual([{ userId: USER_ID, body: { otp: 'otp-1', newPassword: PASSWORD } }])
-    expect(wrapper.get('.reset-panel__actions a').attributes('href')).toBe(
+    expect(wrapper.get('.status-panel__actions a').attributes('href')).toBe(
       router.resolve({ name: 'login' }).href,
     )
   })

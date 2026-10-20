@@ -10,7 +10,6 @@ import {
   formatTimeRange,
   parseDateOnly,
   toDateOnly,
-  todayIso,
 } from '@/shared/lib/date'
 
 function freezeTime(date: Date): void {
@@ -36,14 +35,6 @@ describe('parseDateOnly', () => {
 describe('toDateOnly', () => {
   it('formats the local calendar date with zero padding', () => {
     expect(toDateOnly(new Date(2025, 0, 5, 23, 30))).toBe('2025-01-05')
-  })
-})
-
-describe('todayIso', () => {
-  it('uses the current UTC date', () => {
-    freezeTime(new Date('2026-09-17T12:00:00Z'))
-
-    expect(todayIso()).toBe('2026-09-17')
   })
 })
 

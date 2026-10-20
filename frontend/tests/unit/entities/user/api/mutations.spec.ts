@@ -9,7 +9,7 @@ import { createTestQueryClient } from '../../../../support/render'
 
 function cachedUsers() {
   const client = createTestQueryClient()
-  const keys = [userKeys.list(), userKeys.detail('u1'), userKeys.types()]
+  const keys = [userKeys.list(), [...userKeys.all, 'other'], userKeys.types()]
   for (const queryKey of keys) client.setQueryData(queryKey, [])
   const invalidated = () =>
     keys.map((queryKey) => client.getQueryState(queryKey)?.isInvalidated ?? false)

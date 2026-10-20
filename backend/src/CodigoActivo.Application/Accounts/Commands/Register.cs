@@ -128,14 +128,6 @@ public sealed class RegisterCommandHandler(
     private Result<NewHousehold> PlanHousehold(RegisterCommand request)
     {
         var minorRequests = request.Minors;
-        if (
-            string.IsNullOrWhiteSpace(request.Password)
-            || minorRequests.Count > Household.MaxDependents
-        )
-        {
-            return Error.Validation(ApplicationErrorCode.RegistrationInvalid);
-        }
-
         var now = clock.UtcNow;
         var created = User.CreateIndependent(
             new PersonDetails(

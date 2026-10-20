@@ -45,17 +45,10 @@ public sealed class ListNewsQueryHandler(
         CancellationToken ct = default
     )
     {
-        return FetchAsync(query.Filters, ct);
-    }
-
-    private Task<PagedResult<NewsListItemResponse>> FetchAsync(
-        NewsListQuery query,
-        CancellationToken ct
-    )
-    {
+        var filters = query.Filters;
         var source = readStore.News.Select(NewsProjections.NewsListItem);
 
-        if (query.Year is { } year)
+        if (filters.Year is { } year)
         {
             var valid = year is >= 1 and <= 9999;
             var lower = valid
@@ -68,28 +61,28 @@ public sealed class ListNewsQueryHandler(
             source = source.Where(a => a.CreatedAt >= lower && a.CreatedAt < upper);
         }
 
-        if (query.Featured is { } featured)
+        if (filters.Featured is { } featured)
         {
             source = source.Where(a => a.Featured == featured);
         }
 
-        if (query.CreatedFrom is { } createdFrom)
+        if (filters.CreatedFrom is { } createdFrom)
         {
             var createdLower = LocalDayRange.LowerUtc(createdFrom, clock.TimeZone);
             source = source.Where(a => a.CreatedAt >= createdLower);
         }
 
-        if (query.CreatedTo is { } createdTo)
+        if (filters.CreatedTo is { } createdTo)
         {
             var createdUpper = LocalDayRange.UpperExclusiveUtc(createdTo, clock.TimeZone);
             source = source.Where(a => a.CreatedAt < createdUpper);
         }
 
-        source = source.WhereContains(a => a.Title + " " + a.Subtitle, query.Search);
-        source = source.WhereContains(a => a.Title, query.Title);
-        source = source.WhereContains(a => a.Subtitle, query.Subtitle);
+        source = source.WhereContains(a => a.Title + " " + a.Subtitle, filters.Search);
+        source = source.WhereContains(a => a.Title, filters.Title);
+        source = source.WhereContains(a => a.Subtitle, filters.Subtitle);
 
-        source = Sort.Apply(source, query.Sort);
-        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        source = Sort.Apply(source, filters.Sort);
+        return executor.ToPagedAsync(source, filters.Page, filters.PageSize, ct);
     }
 }

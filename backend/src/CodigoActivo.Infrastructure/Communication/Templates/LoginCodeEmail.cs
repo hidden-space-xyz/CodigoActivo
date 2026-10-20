@@ -45,22 +45,16 @@ public static class LoginCodeEmail
                     AppStrings.EmailsLoginCodeExpiryHtml(minutes),
                     AppStrings.EmailsLoginCodeExpiryText(minutes)
                 ),
-                EmailBlocks.Prose(
-                    AppStrings.EmailsSharedSignoffHtml,
-                    AppStrings.EmailsSharedSignoffText
-                ),
+                EmailBlocks.Signoff(),
                 EmailBlocks.Note(AppStrings.EmailsLoginCodeIgnoreNote),
             ]
         );
 
-        return new EmailMessage(
+        return content.ToMessage(
             EmailKind.TwoFactorCode,
             toAddress,
             toName,
-            AppStrings.EmailsLoginCodeSubject,
-            content.Html,
-            content.Text,
-            InlineImages: content.InlineImages
+            AppStrings.EmailsLoginCodeSubject
         );
     }
 }

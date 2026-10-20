@@ -41,32 +41,41 @@ public class StoredFileRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<StoredFileId>> LockExistingAsync(
+    public Task<IReadOnlyList<StoredFileId>> LockExistingAsync(
         IReadOnlyCollection<StoredFileId> ids,
         CancellationToken ct = default
     )
     {
-        var values = OrderedValues(ids);
-        if (values.Length is 0)
-        {
-            return [];
-        }
-
-        FormattableString sql = $"""
-            SELECT id AS "Value" FROM files WHERE id = ANY({values}) ORDER BY id FOR KEY SHARE
-            """;
-        return
-        [
-            .. (await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Select(
-                StoredFileId.From
-            ),
-        ];
+        return LockAsync(
+            ids,
+            values =>
+                $"""
+                    SELECT id AS "Value" FROM files WHERE id = ANY({values}) ORDER BY id FOR KEY SHARE
+                    """,
+            ct
+        );
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<StoredFileId>> LockForDeletionAsync(
+    public Task<IReadOnlyList<StoredFileId>> LockForDeletionAsync(
         IReadOnlyCollection<StoredFileId> ids,
         CancellationToken ct = default
+    )
+    {
+        return LockAsync(
+            ids,
+            values =>
+                $"""
+                    SELECT id AS "Value" FROM files WHERE id = ANY({values}) ORDER BY id FOR UPDATE
+                    """,
+            ct
+        );
+    }
+
+    private async Task<IReadOnlyList<StoredFileId>> LockAsync(
+        IReadOnlyCollection<StoredFileId> ids,
+        Func<Guid[], FormattableString> sql,
+        CancellationToken ct
     )
     {
         var values = OrderedValues(ids);
@@ -75,12 +84,9 @@ public class StoredFileRepository(CodigoActivoDbContext context)
             return [];
         }
 
-        FormattableString sql = $"""
-            SELECT id AS "Value" FROM files WHERE id = ANY({values}) ORDER BY id FOR UPDATE
-            """;
         return
         [
-            .. (await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Select(
+            .. (await Context.Database.SqlQuery<Guid>(sql(values)).ToListAsync(ct)).Select(
                 StoredFileId.From
             ),
         ];
@@ -96,12 +102,6 @@ public class StoredFileRepository(CodigoActivoDbContext context)
     public Task<bool> ExistsAsync(StoredFileId id, CancellationToken ct = default)
     {
         return Set.AnyAsync(file => file.Id == id, ct);
-    }
-
-    /// <inheritdoc />
-    public async Task<bool> IsInUseAsync(StoredFileId fileId, CancellationToken ct = default)
-    {
-        return (await GetInUseAsync([fileId], ct)).Count > 0;
     }
 
     /// <inheritdoc />

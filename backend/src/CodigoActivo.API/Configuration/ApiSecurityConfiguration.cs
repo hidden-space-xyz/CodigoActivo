@@ -24,16 +24,23 @@ internal static class ApiSecurityConfiguration
         {
             options.HeaderName = "X-CSRF-TOKEN";
             options.SuppressXFrameOptionsHeader = true;
-            options.Cookie.Name = builder.Environment.IsProduction()
-                ? "__Host-CodigoActivo.Csrf"
-                : "CodigoActivo.Csrf";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.Path = "/";
-            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-                ? CookieSecurePolicy.SameAsRequest
-                : CookieSecurePolicy.Always;
-            options.Cookie.SameSite = SameSiteMode.Lax;
+            ApplyCookiePolicy(options.Cookie, builder.Environment, "CodigoActivo.Csrf");
         });
+    }
+
+    private static void ApplyCookiePolicy(
+        CookieBuilder cookie,
+        IHostEnvironment environment,
+        string name
+    )
+    {
+        cookie.Name = environment.IsProduction() ? "__Host-" + name : name;
+        cookie.HttpOnly = true;
+        cookie.Path = "/";
+        cookie.SecurePolicy = environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
+        cookie.SameSite = SameSiteMode.Lax;
     }
 
     private static void AddAuthentication(WebApplicationBuilder builder)
@@ -42,15 +49,7 @@ internal static class ApiSecurityConfiguration
             .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
-                options.Cookie.Name = builder.Environment.IsProduction()
-                    ? "__Host-CodigoActivo.Session"
-                    : "CodigoActivo.Session";
-                options.Cookie.HttpOnly = true;
-                options.Cookie.Path = "/";
-                options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-                    ? CookieSecurePolicy.SameAsRequest
-                    : CookieSecurePolicy.Always;
-                options.Cookie.SameSite = SameSiteMode.Lax;
+                ApplyCookiePolicy(options.Cookie, builder.Environment, "CodigoActivo.Session");
                 options.SlidingExpiration = false;
 
                 options.Events.OnRedirectToLogin = context =>
@@ -70,15 +69,11 @@ internal static class ApiSecurityConfiguration
                 TwoFactorAuthentication.Scheme,
                 options =>
                 {
-                    options.Cookie.Name = builder.Environment.IsProduction()
-                        ? "__Host-CodigoActivo.TwoFactor"
-                        : "CodigoActivo.TwoFactor";
-                    options.Cookie.HttpOnly = true;
-                    options.Cookie.Path = "/";
-                    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-                        ? CookieSecurePolicy.SameAsRequest
-                        : CookieSecurePolicy.Always;
-                    options.Cookie.SameSite = SameSiteMode.Lax;
+                    ApplyCookiePolicy(
+                        options.Cookie,
+                        builder.Environment,
+                        "CodigoActivo.TwoFactor"
+                    );
                     options.SlidingExpiration = false;
 
                     options.Events.OnRedirectToLogin = context =>

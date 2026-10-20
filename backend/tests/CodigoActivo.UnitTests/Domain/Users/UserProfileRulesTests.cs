@@ -340,7 +340,6 @@ public sealed class UserProfileRulesTests
             .PlanProfileChange(AdultDetails(email, phone, secondaryPhone), null, Today)
             .Value;
 
-        change.Email!.Value.Should().Be(email.Trim().ToLowerInvariant());
         (change.NewEmail?.Value).Should().Be(expectedNewEmail);
         change.ReplacesContact.Should().Be(expectedReplacesContact);
     }
@@ -400,7 +399,6 @@ public sealed class UserProfileRulesTests
             .Value;
         child.ApplyProfileChange(change, Now);
 
-        change.Email.Should().BeNull();
         change.NewEmail.Should().BeNull();
         change.ReplacesContact.Should().BeFalse();
         child.BirthDate.Should().Be(MinorDob.AddDays(1));

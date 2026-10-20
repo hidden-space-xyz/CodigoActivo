@@ -32,7 +32,9 @@ public sealed class GetAccountDeletionStatusQueryHandler(ICurrentUser currentUse
     )
     {
         return Task.FromResult(
-            new AccountDeletionStatusResponse(currentUser.RequiredId() != InitialAdministrator.Id)
+            new AccountDeletionStatusResponse(
+                InitialAdministrator.EnsureMayBeDeleted(currentUser.RequiredId()).IsSuccess
+            )
         );
     }
 }

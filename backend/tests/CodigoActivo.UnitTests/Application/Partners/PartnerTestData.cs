@@ -43,7 +43,6 @@ internal static class PartnerTestData
             FromDate = fromDate ?? new DateOnly(2024, 1, 1),
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            CreatedBy = Guid.NewGuid(),
         };
     }
 }

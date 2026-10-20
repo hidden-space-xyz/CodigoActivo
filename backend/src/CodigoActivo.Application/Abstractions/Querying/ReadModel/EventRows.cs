@@ -47,9 +47,6 @@ public sealed class EventRow
     /// <summary>Gets the identifier of the author.</summary>
     public Guid CreatedBy { get; init; }
 
-    /// <summary>Gets the identifier of the last editor.</summary>
-    public Guid? UpdatedBy { get; init; }
-
     /// <summary>Gets the terms documents linked to the event.</summary>
     public ICollection<EventTermsDocumentRow> TermsDocuments { get; init; } = [];
 
@@ -223,9 +220,6 @@ public sealed class TermsDecisionChangeRow
 
     /// <summary>Gets the person who decided.</summary>
     public UserRow DecidedBy { get; init; } = null!;
-
-    /// <summary>Gets the identifier of the account that recorded the change.</summary>
-    public Guid RecordedById { get; init; }
 
     /// <summary>Gets when the change was made.</summary>
     public DateTimeOffset ChangedAt { get; init; }

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 using CodigoActivo.Application.Abstractions.Auditing;
 using Serilog.Events;
@@ -88,7 +87,7 @@ public static class AuditLogEvents
 
     private static string RelatedJson(IReadOnlyList<AuditEntity> related)
     {
-        return Json(writer =>
+        return LogJson.Write(writer =>
         {
             writer.WriteStartArray();
             foreach (var entity in related)
@@ -101,16 +100,5 @@ public static class AuditLogEvents
 
             writer.WriteEndArray();
         });
-    }
-
-    private static string Json(Action<Utf8JsonWriter> write)
-    {
-        using var buffer = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(buffer))
-        {
-            write(writer);
-        }
-
-        return Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
     }
 }

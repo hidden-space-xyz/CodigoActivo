@@ -68,14 +68,11 @@ public static class ConsentWithdrawalEmail
             ]
         );
 
-        return new EmailMessage(
+        return content.ToMessage(
             EmailKind.ConsentWithdrawalNotice,
             toAddress,
             toName,
-            AppStrings.EmailsConsentWithdrawnSubject,
-            content.Html,
-            content.Text,
-            InlineImages: content.InlineImages
+            AppStrings.EmailsConsentWithdrawnSubject
         );
     }
 }

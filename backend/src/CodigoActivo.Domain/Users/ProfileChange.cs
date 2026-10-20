@@ -32,12 +32,6 @@ public sealed class ProfileChange
     }
 
     /// <summary>
-    /// Gets the email the account keeps or receives; <see langword="null"/> for a dependent, which
-    /// has none of its own.
-    /// </summary>
-    public EmailAddress? Email => Contact?.Email;
-
-    /// <summary>
     /// Gets the email when it replaces the stored one; <see langword="null"/> when the email stays
     /// the same or the account is a dependent.
     /// </summary>

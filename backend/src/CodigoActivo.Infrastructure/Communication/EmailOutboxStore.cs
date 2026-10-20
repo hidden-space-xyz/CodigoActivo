@@ -1,4 +1,3 @@
-using System.Data.Common;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Infrastructure.Database.Context;
@@ -110,35 +109,6 @@ public sealed class EmailOutboxStore(
     IClock clock
 ) : IEmailOutboxStore
 {
-    private const string ClaimSql = """
-        UPDATE email_outbox_messages
-        SET locked_until = @lease,
-            attempt_count = attempt_count + 1
-        WHERE id IN (
-            SELECT id
-            FROM email_outbox_messages
-            WHERE next_attempt_at <= @now
-              AND (locked_until IS NULL OR locked_until <= @now)
-              AND attempt_count < @attempts
-            ORDER BY priority, next_attempt_at
-            LIMIT @batch
-            FOR UPDATE SKIP LOCKED
-        )
-        RETURNING id
-        """;
-
-    private const string RemoveExhaustedSql = """
-        DELETE FROM email_outbox_messages
-        WHERE id IN (
-            SELECT id
-            FROM email_outbox_messages
-            WHERE attempt_count >= @attempts
-              AND (locked_until IS NULL OR locked_until <= @now)
-            FOR UPDATE SKIP LOCKED
-        )
-        RETURNING kind, attempt_count
-        """;
-
     /// <inheritdoc />
     public async Task<bool> TryEnqueueAsync(EmailBatch batch, CancellationToken ct = default)
     {
@@ -282,32 +252,26 @@ public sealed class EmailOutboxStore(
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
 
-        await db.Database.OpenConnectionAsync(ct);
-        try
-        {
-            await using var command = db.Database.GetDbConnection().CreateCommand();
-            command.CommandText = RemoveExhaustedSql;
-            AddParameter(command, "now", now.ToUniversalTime());
-            AddParameter(command, "attempts", EmailQueueOptions.MaxAttempts);
+        FormattableString sql = $"""
+            DELETE FROM email_outbox_messages
+            WHERE id IN (
+                SELECT id
+                FROM email_outbox_messages
+                WHERE attempt_count >= {EmailQueueOptions.MaxAttempts}
+                  AND (locked_until IS NULL OR locked_until <= {now.ToUniversalTime()})
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING kind, attempt_count
+            """;
+        var removed = await db.Database.SqlQuery<ExhaustedRow>(sql).ToListAsync(ct);
 
-            var removed = new List<ExhaustedEmail>();
-            await using var reader = await command.ExecuteReaderAsync(ct);
-            while (await reader.ReadAsync(ct))
-            {
-                removed.Add(
-                    new ExhaustedEmail(
-                        Enum.Parse<EmailKind>(reader.GetString(0)),
-                        reader.GetInt32(1)
-                    )
-                );
-            }
-
-            return removed;
-        }
-        finally
-        {
-            await db.Database.CloseConnectionAsync();
-        }
+        return
+        [
+            .. removed.Select(row => new ExhaustedEmail(
+                Enum.Parse<EmailKind>(row.Kind),
+                row.AttemptCount
+            )),
+        ];
     }
 
     /// <inheritdoc />
@@ -323,7 +287,7 @@ public sealed class EmailOutboxStore(
             .ExecuteDeleteAsync(ct);
     }
 
-    private static async Task<List<Guid>> ClaimIdsAsync(
+    private static Task<List<Guid>> ClaimIdsAsync(
         CodigoActivoDbContext db,
         DateTimeOffset now,
         DateTimeOffset leaseUntil,
@@ -331,37 +295,24 @@ public sealed class EmailOutboxStore(
         CancellationToken ct
     )
     {
-        await db.Database.OpenConnectionAsync(ct);
-        try
-        {
-            await using var command = db.Database.GetDbConnection().CreateCommand();
-            command.CommandText = ClaimSql;
-            AddParameter(command, "now", now.ToUniversalTime());
-            AddParameter(command, "lease", leaseUntil.ToUniversalTime());
-            AddParameter(command, "batch", batchSize);
-            AddParameter(command, "attempts", EmailQueueOptions.MaxAttempts);
-
-            var claimed = new List<Guid>(batchSize);
-            await using var reader = await command.ExecuteReaderAsync(ct);
-            while (await reader.ReadAsync(ct))
-            {
-                claimed.Add(reader.GetGuid(0));
-            }
-
-            return claimed;
-        }
-        finally
-        {
-            await db.Database.CloseConnectionAsync();
-        }
-    }
-
-    private static void AddParameter(DbCommand command, string name, object value)
-    {
-        var parameter = command.CreateParameter();
-        parameter.ParameterName = name;
-        parameter.Value = value;
-        command.Parameters.Add(parameter);
+        var due = now.ToUniversalTime();
+        FormattableString sql = $"""
+            UPDATE email_outbox_messages
+            SET locked_until = {leaseUntil.ToUniversalTime()},
+                attempt_count = attempt_count + 1
+            WHERE id IN (
+                SELECT id
+                FROM email_outbox_messages
+                WHERE next_attempt_at <= {due}
+                  AND (locked_until IS NULL OR locked_until <= {due})
+                  AND attempt_count < {EmailQueueOptions.MaxAttempts}
+                ORDER BY priority, next_attempt_at
+                LIMIT {batchSize}
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING id AS "Value"
+            """;
+        return db.Database.SqlQuery<Guid>(sql).ToListAsync(ct);
     }
 
     private static string? Truncate(string? error)
@@ -374,5 +325,12 @@ public sealed class EmailOutboxStore(
         return error.Length <= EmailOutboxMessage.LastErrorMaxLength
             ? error
             : error[..EmailOutboxMessage.LastErrorMaxLength];
+    }
+
+    internal sealed record ExhaustedRow
+    {
+        public string Kind { get; init; } = string.Empty;
+
+        public int AttemptCount { get; init; }
     }
 }

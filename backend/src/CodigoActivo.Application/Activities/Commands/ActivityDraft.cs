@@ -27,7 +27,17 @@ public sealed record ActivityDraft(
     DateTimeOffset? ActivityEndsAt,
     StoredFileId ThumbnailId,
     [property: MaxLength(50)] IReadOnlyList<RoleCapacityDraft> RoleCapacities
-);
+)
+{
+    /// <summary>
+    /// Gets the details the activity is created or replaced with.
+    /// </summary>
+    /// <returns>The details.</returns>
+    public ActivityDetails ToDetails()
+    {
+        return new ActivityDetails(Title, Description, Location, Modality, ThumbnailId);
+    }
+}
 
 /// <summary>
 /// How many people a role of an activity takes.

@@ -13,7 +13,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
   <footer class="footer">
     <div class="footer__inner">
       <div class="footer__brandcol">
-        <BrandLogo size="md" class="footer__brand" />
+        <BrandLogo class="footer__brand" />
         <p class="footer__tagline">
           {{ $t('widgets.siteFooter.tagline') }}
         </p>

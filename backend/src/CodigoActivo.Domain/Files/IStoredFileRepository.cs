@@ -71,14 +71,6 @@ public interface IStoredFileRepository : IRepository<StoredFile>
     public Task<bool> ExistsAsync(StoredFileId id, CancellationToken ct = default);
 
     /// <summary>
-    /// Tells whether any content uses the file as thumbnail or embeds it in rich text.
-    /// </summary>
-    /// <param name="fileId">Identifier of the file.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the file is referenced.</returns>
-    public Task<bool> IsInUseAsync(StoredFileId fileId, CancellationToken ct = default);
-
-    /// <summary>
     /// Returns which of the given files any content still references.
     /// </summary>
     /// <param name="fileIds">Identifiers of the candidate files.</param>

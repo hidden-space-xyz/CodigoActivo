@@ -61,7 +61,11 @@ function useSendEmailFeedback() {
       feedback.warn(t('features.sendEmail.toast.skipped', { count: skipped }, skipped))
   }
 
-  return { reportSendResult }
+  function reportError(error: unknown): void {
+    feedback.error(error)
+  }
+
+  return { reportSendResult, reportError }
 }
 
 interface SendEmailHandlers {
@@ -71,8 +75,8 @@ interface SendEmailHandlers {
 
 /** How a list page plugs its rows and bulk send into `useSendEmailDialog`. */
 export interface SendEmailDialogOptions<T> {
-  /** User id to email; when `undefined` the single-recipient send is skipped. */
-  readonly idOf: (recipient: T) => string | undefined
+  /** User id of a row, the one emailed and counted when the dialog targets that row. */
+  readonly idOf: (recipient: T) => string
   /** Localized recipient description shown and confirmed in the dialog for one row. */
   readonly targetOne: (recipient: T) => string
   /** Localized description of the bulk audience, e.g. the filtered row count. */
@@ -82,12 +86,10 @@ export interface SendEmailDialogOptions<T> {
   /** Sends to the page's current filtered audience, calling `handlers` when it settles. */
   readonly sendAll: (payload: SendEmailPayload, handlers: SendEmailHandlers) => void
   /**
-   * Loads who the email would reach: one recipient, or the whole filtered audience for `null`. It
-   * must select recipients exactly as the matching send does, and is skipped for a recipient
-   * without id, like the send itself.
+   * Loads who an email to the whole filtered audience would reach. It must select recipients
+   * exactly as `sendAll` does.
    */
-  readonly fetchAudience: (recipient: T | null) => Promise<EmailAudience>
-  readonly onError: (error: unknown) => void
+  readonly fetchAudience: () => Promise<EmailAudience>
 }
 
 /**
@@ -95,11 +97,11 @@ export interface SendEmailDialogOptions<T> {
  * the whole filtered audience. Opening also loads that audience: `recipients` counts the addresses
  * a notice reaches and `withoutConsent` those a news email leaves out; both stay `null`
  * while loading, after a failure or once a newer `open` superseded the request. After sending, toasts report the queued and skipped
- * counts, and the dialog closes only if at least one email was accepted for delivery.
+ * counts, or the error, and the dialog closes only if at least one email was accepted for delivery.
  */
 export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
   const { sendToUser } = useSendEmail()
-  const { reportSendResult } = useSendEmailFeedback()
+  const { reportSendResult, reportError } = useSendEmailFeedback()
 
   const visible = ref(false)
   const recipient = shallowRef<T | null>(null)
@@ -112,8 +114,11 @@ export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
     audienceRequest += 1
     const request = audienceRequest
     audience.value = null
-    if (next !== null && !options.idOf(next)) return
-    void options.fetchAudience(next).then(
+    const loading =
+      next === null
+        ? options.fetchAudience()
+        : getUsersEmailAudienceRequest({ id: options.idOf(next) })
+    void loading.then(
       (loaded) => {
         if (request === audienceRequest) audience.value = loaded
       },
@@ -140,19 +145,17 @@ export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
         if (result.queued > 0) visible.value = false
         reportSendResult(result)
       },
-      onError: options.onError,
+      onError: reportError,
     }
 
     const current = recipient.value
     if (current) {
-      const userId = options.idOf(current)
-      if (!userId) return
-      sendToUser.mutate({ userId, payload }, handlers)
+      sendToUser.mutate({ userId: options.idOf(current), payload }, handlers)
       return
     }
 
     options.sendAll(payload, handlers)
   }
 
-  return { visible, recipient, target, sending, recipients, withoutConsent, open, submit }
+  return { visible, target, sending, recipients, withoutConsent, open, submit }
 }

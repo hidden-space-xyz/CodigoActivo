@@ -24,8 +24,6 @@ onMounted(() => {
 
 <template>
   <component :is="layout">
-    <RouterView v-slot="{ Component }">
-      <component :is="Component" />
-    </RouterView>
+    <RouterView />
   </component>
 </template>

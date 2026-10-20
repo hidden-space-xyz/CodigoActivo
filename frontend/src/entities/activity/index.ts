@@ -1,4 +1,5 @@
 export type { HouseholdAssignmentInput } from './model/household-assignment-input'
+export { signupStatusTagType } from './model/signup-status'
 export type {
   ActivityAssignment,
   ActivityDetail,

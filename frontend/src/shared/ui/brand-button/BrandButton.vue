@@ -11,10 +11,8 @@ const props = withDefaults(
   defineProps<{
     /** Visual style; `back` includes the standard leading arrow for return actions. */
     variant?: Variant
-    /** Renders a `RouterLink` to this route; takes precedence over `href`. */
+    /** Renders a `RouterLink` to this route instead of a button. */
     to?: RouteLocationRaw | undefined
-    /** Renders a plain `<a>` with this URL when `to` is not set. */
-    href?: string | undefined
     /** Native button type; ignored when rendered as a link. */
     type?: 'button' | 'submit'
     /** Stretches the button to the full width of its container. */
@@ -27,7 +25,6 @@ const props = withDefaults(
   {
     variant: 'primary',
     to: undefined,
-    href: undefined,
     type: 'button',
     block: false,
     disabled: false,
@@ -35,18 +32,16 @@ const props = withDefaults(
   },
 )
 
-const isButton = computed(() => !props.to && !props.href)
+const isButton = computed(() => !props.to)
 const isInactive = computed(() => props.disabled || props.loading)
 
 const componentTag = computed(() => {
   if (props.to) return RouterLink
-  if (props.href) return 'a'
   return 'button'
 })
 
 const bindings = computed(() => {
   if (props.to) return { to: props.to }
-  if (props.href) return { href: props.href }
   return { type: props.type, disabled: isInactive.value }
 })
 </script>

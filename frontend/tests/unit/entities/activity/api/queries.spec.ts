@@ -15,7 +15,6 @@ import {
   roleTypes,
   buildAssignedActivity,
   buildHouseholdAssignment,
-  buildUserResponse,
 } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
@@ -50,23 +49,6 @@ describe('activityQueries', () => {
     expect(activityQueries.householdAssignments('event-1').queryKey).toEqual(
       activityKeys.householdAssignments('event-1'),
     )
-  })
-
-  it('keys the household members by user under the household members root', async () => {
-    server.use(
-      http.get('/api/users', () =>
-        HttpResponse.json(paged([buildUserResponse({ id: 'child-1', firstName: 'Byron' })])),
-      ),
-    )
-    const client = createTestQueryClient()
-
-    await expect(client.fetchQuery(activityQueries.householdMembers('user-1'))).resolves.toEqual([
-      { id: 'child-1', name: 'Byron Lovelace' },
-    ])
-    expect(activityQueries.householdMembers('user-1').queryKey).toEqual([
-      ...activityKeys.householdMembers(),
-      'user-1',
-    ])
   })
 
   it('loads the signup roles and asks for overlaps afresh every time', async () => {

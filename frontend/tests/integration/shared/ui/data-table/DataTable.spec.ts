@@ -425,7 +425,7 @@ describe('DataTable', () => {
     table.setSort(undefined)
 
     await vi.waitFor(() => expect(nameHeader()?.classes()).not.toContain('descending'))
-    expect(table.sortParam.value).toBeUndefined()
+    expect(table.sortField.value).toBeUndefined()
   })
 
   it('sorts from a header click without fighting the table state', async () => {
@@ -439,16 +439,19 @@ describe('DataTable', () => {
       expect(fetchPage).toHaveBeenLastCalledWith({ page: 1, pageSize: 25, sort: 'name' }),
     )
     expect(nameHeader()?.classes()).toContain('ascending')
-    expect(table.sortParam.value).toBe('name')
+    expect(table.sortField.value).toBe('name')
+    expect(table.sortOrder.value).toBe(1)
 
     table.setSort('name', -1)
 
     await vi.waitFor(() => expect(nameHeader()?.classes()).toContain('descending'))
-    expect(table.sortParam.value).toBe('-name')
+    expect(table.sortField.value).toBe('name')
+    expect(table.sortOrder.value).toBe(-1)
 
     table.setSort('name')
 
     await vi.waitFor(() => expect(nameHeader()?.classes()).toContain('ascending'))
-    expect(table.sortParam.value).toBe('name')
+    expect(table.sortField.value).toBe('name')
+    expect(table.sortOrder.value).toBe(1)
   })
 })

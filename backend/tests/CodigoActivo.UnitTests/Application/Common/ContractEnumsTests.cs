@@ -36,15 +36,8 @@ public sealed class ContractEnumsTests
     [Theory]
     [InlineData(Gender.Male, DomainGender.Male)]
     [InlineData(Gender.PreferNotToSay, DomainGender.PreferNotToSay)]
-    public void GenderTranslatesBothWays(Gender contract, DomainGender domain)
+    public void GenderTranslatesToTheDomain(Gender contract, DomainGender domain)
     {
         contract.ToDomain().Should().Be(domain);
-        domain.ToContract().Should().Be(contract);
-    }
-
-    [Fact]
-    public void TwoFactorMethodTranslatesToTheContract()
-    {
-        DomainTwoFactorMethod.Authenticator.ToContract().Should().Be(TwoFactorMethod.Authenticator);
     }
 }

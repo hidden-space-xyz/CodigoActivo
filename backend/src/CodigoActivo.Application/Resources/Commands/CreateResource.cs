@@ -25,7 +25,7 @@ namespace CodigoActivo.Application.Resources.Commands;
 public sealed record CreateResourceCommand(
     [property: Required, MaxLength(200), NotBlank] string Title,
     [property: Required, MaxLength(300), NotBlank] string Subtitle,
-    [property: RichText, MaxLength(262144)] string? Description,
+    [property: RichText, MaxLength(RichTextAllowlist.MaxJsonLength)] string? Description,
     [property: HttpUrl, MaxLength(500)] string? Url,
     ResourceType Type,
     StoredFileId ThumbnailId

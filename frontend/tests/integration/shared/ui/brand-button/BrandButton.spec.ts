@@ -63,7 +63,7 @@ describe('BrandButton', () => {
 
   it('renders a router link when a route is given', async () => {
     const { wrapper, router } = await renderWithProviders(BrandButton, {
-      props: { to: { name: 'events' }, href: '/ignored', variant: 'light', disabled: true },
+      props: { to: { name: 'events' }, variant: 'light', disabled: true },
       slots: { default: 'Events' },
     })
 
@@ -75,20 +75,5 @@ describe('BrandButton', () => {
 
     await link.trigger('click')
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('events'))
-  })
-
-  it('renders a plain anchor for an external URL', async () => {
-    const { wrapper } = await renderWithProviders(BrandButton, {
-      props: { href: 'https://example.test', variant: 'link', loading: true },
-      slots: { default: 'Visit' },
-    })
-
-    const link = wrapper.find('a')
-    expect(link.attributes('href')).toBe('https://example.test')
-    expect(link.attributes('type')).toBeUndefined()
-    expect(link.classes()).toEqual(
-      expect.arrayContaining(['base-button--link', 'base-button--loading']),
-    )
-    expect(link.classes()).not.toContain('base-button--disabled')
   })
 })

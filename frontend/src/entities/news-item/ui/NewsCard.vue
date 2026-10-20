@@ -22,8 +22,8 @@ defineProps<{
       :label="$t('entities.newsItem.card.dateLabel')"
       :value="formatDate(newsItem.createdAt)"
     />
-    <h3 class="news-card__title">{{ newsItem.title }}</h3>
-    <p v-if="newsItem.subtitle" class="news-card__subtitle">
+    <h3 class="ca-list-card__title">{{ newsItem.title }}</h3>
+    <p v-if="newsItem.subtitle" class="ca-list-card__subtitle news-card__subtitle">
       {{ newsItem.subtitle }}
     </p>
   </RouterLink>
@@ -34,19 +34,5 @@ defineProps<{
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.news-card__title {
-  font-family: var(--ca-font-display);
-  font-weight: 600;
-  font-size: 20px;
-  line-height: 1.2;
-  color: var(--ca-text-bright);
-}
-
-.news-card__subtitle {
-  font-size: 14.5px;
-  line-height: 1.5;
-  color: var(--ca-text-muted);
 }
 </style>

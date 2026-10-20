@@ -120,7 +120,6 @@ describe('CertificatesSection', () => {
         code: 'CA-2025-0002',
         participantId: 'child-1',
         firstName: 'Byron',
-        isSelf: false,
       }),
       expect.any(Function),
     )

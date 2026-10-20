@@ -9,7 +9,7 @@ import { useSession } from '@/entities/session'
 import { fileContentUrl } from '@/shared/api'
 import { ORGANIZATION } from '@/shared/config'
 import { formatDateRange, formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
-import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/rich-text'
+import { isRichTextBlank, richTextExcerpt } from '@/shared/lib/rich-text'
 import { absoluteUrl, type SeoData, useSeo } from '@/shared/lib/seo'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { ColorTag } from '@/shared/ui/color-tag'
@@ -38,7 +38,7 @@ watch(canSeeAttendees, (visible) => {
   if (!visible && tab.value === 'attendees') tab.value = 'info'
 })
 
-const hasDescription = computed(() => !isRichTextEmpty(event.value?.description))
+const hasDescription = computed(() => !isRichTextBlank(event.value?.description))
 
 const access = computed(() =>
   event.value ? signupAccess(event.value, session.user?.earlySignupEligible ?? false) : 'closed',
@@ -120,7 +120,7 @@ useSeo(seo)
 
     <p v-if="isLoading" class="detail-state ca-container--narrow">{{ $t('common.loading') }}</p>
 
-    <p v-else-if="notFound || !event" class="detail-state ca-container--narrow">
+    <p v-else-if="!event" class="detail-state ca-container--narrow">
       {{ $t('pages.eventDetail.notFound') }}
     </p>
 

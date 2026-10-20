@@ -63,7 +63,6 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
             currentUser,
             clock,
             PasswordGuards.Create(hasher, uow, clock, lockout),
-            options,
             new LoginCodeIssuer(
                 new FakeOneTimeCodeHasher(),
                 options,

@@ -29,6 +29,8 @@
     "gender": "Género",
     "image": "Imagen",
     "imageRequired": "La imagen es obligatoria.",
+    "imageTooLarge": "La imagen supera el tamaño máximo de {max}.",
+    "imageUploadFailed": "No se pudo subir la imagen.",
     "status": "Estado",
     "actions": "Acciones",
     "greeting": "Hola, {name}",
@@ -60,8 +62,8 @@
     }
   },
   "validation": {
-    "passwordMin": "La contraseña debe tener al menos 12 caracteres.",
-    "newPasswordMin": "La nueva contraseña debe tener al menos 12 caracteres.",
+    "passwordMin": "La contraseña debe tener al menos {min} caracteres.",
+    "newPasswordMin": "La nueva contraseña debe tener al menos {min} caracteres.",
     "newPasswordSameAsCurrent": "La nueva contraseña debe ser distinta de la actual.",
     "passwordsMismatch": "Las contraseñas no coinciden.",
     "nationalIdFormat": "Escribe 8 números y la letra (DNI) o X, Y o Z, 7 números y la letra (NIE).",
@@ -201,8 +203,6 @@
     "rowAdd": "+ Fila",
     "rowRemove": "− Fila",
     "headerCell": "Cabecera",
-    "uploadError": "No se pudo subir la imagen.",
-    "imageTooLarge": "La imagen supera el tamaño máximo de 10 MB.",
     "linkPrompt": "Dirección del enlace, por ejemplo https://ejemplo.org, mailto:hola{'@'}ejemplo.org o /eventos (déjalo vacío para quitarlo):",
     "linkInvalid": "Ese enlace no está permitido. Usa una dirección web (https://…), un correo (mailto:…), un teléfono (tel:…) o una ruta de esta web que empiece por /.",
     "placeholder": "Escribe aquí…"
@@ -1708,7 +1708,6 @@
         "codes": {
           "UniqueConstraintViolation": "Otra petición guardó el mismo dato a la vez.",
           "MessageInvalid": "Los datos enviados no son válidos.",
-          "RegistrationInvalid": "Los datos del registro no son válidos.",
           "ActingForAnotherUserForbidden": "Intentó actuar en nombre de otra persona.",
           "UserNationalIdInvalid": "El DNI/NIE no es válido.",
           "UserEmailInvalid": "El email no es válido.",
@@ -2164,9 +2163,7 @@
         "placeholder": "Sin imagen",
         "change": "Cambiar imagen",
         "select": "Seleccionar imagen",
-        "remove": "Quitar",
-        "tooLarge": "La imagen supera el tamaño máximo de 10 MB.",
-        "uploadFailed": "No se pudo subir la imagen."
+        "remove": "Quitar"
       }
     },
     "user": {

@@ -135,7 +135,7 @@ describe('useThumbnailUpload', () => {
     result.pickedFile.value = image()
 
     await result.resolveThumbnailId()
-    expect(result.uploadError.value).toBe(t('entities.file.thumbnail.uploadFailed'))
+    expect(result.uploadError.value).toBe(t('common.imageUploadFailed'))
 
     fail = false
     await expect(result.resolveThumbnailId()).resolves.toBe('file-2')
@@ -144,7 +144,7 @@ describe('useThumbnailUpload', () => {
     fail = true
     result.pickedFile.value = image()
     await result.resolveThumbnailId()
-    expect(result.uploadError.value).toBe(t('entities.file.thumbnail.uploadFailed'))
+    expect(result.uploadError.value).toBe(t('common.imageUploadFailed'))
     result.reset()
     expect(result.uploadError.value).toBe('')
     expect(result.pickedFile.value).toBeNull()

@@ -35,7 +35,6 @@ public sealed record RequestAccountDeletionCodeCommand(
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
-/// <param name="options">Second-factor configuration.</param>
 /// <param name="loginCodes">Issuer of emailed one-time codes.</param>
 public sealed class RequestAccountDeletionCodeCommandHandler(
     IUserRepository users,
@@ -43,7 +42,6 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
     ICurrentUser currentUser,
     IClock clock,
     PasswordAttemptGuard passwordAttempts,
-    TwoFactorOptions options,
     LoginCodeIssuer loginCodes
 ) : ICommandHandler<RequestAccountDeletionCodeCommand, Result>
 {
@@ -76,7 +74,7 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
         }
 
         var verifiedHash = user.PasswordHash;
-        return RefusalOf(user)
+        return loginCodes.RefusalOf(user, clock.UtcNow)
             ?? await accountLock.RunAsync(
                 user,
                 attempt => IssueLockedAsync(user, verifiedHash, attempt),
@@ -90,38 +88,18 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
         return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
     }
 
-    private Result? RefusalOf(User user)
-    {
-        var now = clock.UtcNow;
-        var allowed = user.MayReceiveLoginCode(now);
-        if (allowed.IsFailure)
-        {
-            return allowed;
-        }
-
-        if (user.LoginCode.IsResendCoolingDown(now, options.ResendCooldown))
-        {
-            return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
-        }
-
-        return null;
-    }
-
     private async Task<Result> IssueLockedAsync(
         User user,
         string? verifiedHash,
         CancellationToken ct
     )
     {
-        if (
-            !string.Equals(user.PasswordHash, verifiedHash, StringComparison.Ordinal)
-            || user.PasswordLockout.IsLocked
-        )
+        if (!PasswordAttemptGuard.StillVerified(user, verifiedHash))
         {
             return CurrentPasswordIncorrect();
         }
 
-        return RefusalOf(user)
+        return loginCodes.RefusalOf(user, clock.UtcNow)
             ?? await loginCodes.IssueAccountDeletionAsync(user, clock.UtcNow, ct);
     }
 }

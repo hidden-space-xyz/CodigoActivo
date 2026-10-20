@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 
 import { isPasswordTooShort } from '@/entities/account'
 import { endSession, logoutRequest } from '@/entities/session'
+import { PASSWORD_MIN_LENGTH } from '@/shared/config'
 import { getErrorMessage, useCrudFeedback } from '@/shared/lib/feedback'
 
 import type { useAccount } from './use-account'
@@ -46,7 +47,7 @@ export function usePasswordChange(account: Pick<ReturnType<typeof useAccount>, '
   function save(): void {
     error.value = ''
     if (isPasswordTooShort(form.next)) {
-      error.value = t('validation.newPasswordMin')
+      error.value = t('validation.newPasswordMin', { min: PASSWORD_MIN_LENGTH })
       return
     }
     if (form.next === form.current) {

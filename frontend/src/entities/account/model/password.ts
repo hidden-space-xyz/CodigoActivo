@@ -1,5 +1,4 @@
-/** Fewest characters the API accepts in a new password. */
-const PASSWORD_MIN_LENGTH = 12
+import { PASSWORD_MIN_LENGTH } from '@/shared/config'
 
 /** Whether a new password is shorter than the API accepts. */
 export function isPasswordTooShort(password: string): boolean {

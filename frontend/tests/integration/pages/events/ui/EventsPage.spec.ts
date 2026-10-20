@@ -2,6 +2,7 @@ import { flushPromises } from '@vue/test-utils'
 import { ElSelect } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
+import { eventKeys } from '@/entities/event'
 import { EventsPage } from '@/pages/events'
 import EventCategoryFilter from '@/pages/events/ui/EventCategoryFilter.vue'
 import type {
@@ -155,6 +156,27 @@ describe('events page', () => {
 
     await vi.waitFor(() => expect(wrapper.find('.events-grid').text()).toContain('Evento 2024'))
     expect(pastQueries.map((params) => params.get('year'))).toEqual(['2025', '2024'])
+  })
+
+  it('selects the newest year again when the selected one disappears', async () => {
+    const options: EventsApiOptions = {
+      years: [2025, 2024],
+      past: (params) => ({
+        items: [pastEvent(`p-${params.get('year')}`, `Evento ${params.get('year')}`)],
+      }),
+    }
+    serveEventsApi(options)
+
+    const { wrapper, queryClient } = await renderPage()
+    const pill2024 = wrapper.findAll('.year-filter__pill').find((pill) => pill.text() === '2024')
+    await pill2024?.trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('.events-grid').text()).toContain('Evento 2024'))
+
+    options.years = [2025]
+    await queryClient.invalidateQueries({ queryKey: eventKeys.pastYears() })
+
+    await vi.waitFor(() => expect(wrapper.find('.year-filter__pill--active').text()).toBe('2025'))
+    await vi.waitFor(() => expect(wrapper.find('.events-grid').text()).toContain('Evento 2025'))
   })
 
   it('searches past events and reports when nothing matches', async () => {

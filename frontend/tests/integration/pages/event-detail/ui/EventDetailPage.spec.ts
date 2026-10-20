@@ -16,6 +16,7 @@ import {
   buildLeaderRosterActivity,
   FAR_FUTURE,
   LONG_AGO,
+  richText,
 } from '../../../../support/builders'
 import { formatDateRange, formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
 
@@ -130,6 +131,14 @@ describe('event detail page', () => {
       expect(metaContent('meta[name="description"]')).toBe('Programa tu futuro'),
     )
     expect(jsonLd()).toMatchObject({ description: 'Programa tu futuro' })
+  })
+
+  it('shows the no-description placeholder for a whitespace-only description', async () => {
+    serveEvent(buildEventResponse({ description: richText('   ') }))
+
+    const { wrapper } = await renderPage()
+
+    expect(wrapper.find('.detail-body__p--muted').text()).toBe(t('pages.eventDetail.noDescription'))
   })
 
   it('shows the not-found message and marks the page as noindex', async () => {

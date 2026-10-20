@@ -102,10 +102,7 @@ public sealed class ChangePasswordCommandHandler(
 
     private Result ChangeLocked(User user, string verifiedHash, string newHash)
     {
-        if (
-            !string.Equals(user.PasswordHash, verifiedHash, StringComparison.Ordinal)
-            || user.PasswordLockout.IsLocked
-        )
+        if (!PasswordAttemptGuard.StillVerified(user, verifiedHash))
         {
             return CurrentPasswordIncorrect();
         }

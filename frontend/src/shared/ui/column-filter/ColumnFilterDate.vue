@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
@@ -31,25 +31,16 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const shell = ref<InstanceType<typeof ColumnFilterShell>>()
-const draft = ref<(Date | null)[] | null>(props.modelValue)
 const narrow = useMediaQuery('(max-width: 640px)')
 
 const active = computed(() => (props.modelValue ?? []).some((date) => date instanceof Date))
 
 const pickerValue = computed<Date[]>(() =>
-  (draft.value ?? []).filter((date): date is Date => date instanceof Date),
+  (props.modelValue ?? []).filter((date): date is Date => date instanceof Date),
 )
 
-watch(
-  () => props.modelValue,
-  (value) => {
-    draft.value = value ?? null
-  },
-)
-
-function commit(): void {
-  const range = draft.value ?? []
-  emit('update:modelValue', range.some((date) => date instanceof Date) ? draft.value : null)
+function commit(range: Date[] | null): void {
+  emit('update:modelValue', range)
   emit('apply')
 }
 
@@ -57,14 +48,12 @@ function onSelect(value: unknown): void {
   const range = Array.isArray(value)
     ? value.filter((item): item is Date => item instanceof Date)
     : []
-  draft.value = range.length > 0 ? range : null
-  commit()
+  commit(range.length > 0 ? range : null)
   if (range.length === 2) shell.value?.hide()
 }
 
 function clear(): void {
-  draft.value = null
-  commit()
+  commit(null)
   shell.value?.hide()
 }
 
@@ -93,7 +82,7 @@ useTableFilterRegistration(() => {
     :variant="variant"
     :toggle-label="$t('table.filterBy', { label })"
     :clear-label="$t('table.clearFilter')"
-    :show-clear="active || draft != null"
+    :show-clear="modelValue != null"
     wide
     @clear="clear"
   >

@@ -16,10 +16,10 @@ export async function unwrapOrNull<T>(
   }
 }
 
-/** The rows of a paged API response and how many rows match in total. */
-export function toPage<T>(response: { data: { items: T[]; total: number } }): {
-  items: T[]
-  total: number
-} {
-  return { items: response.data.items, total: response.data.total }
+/** The rows of a paged API response, each turned into a model by `map`, and how many rows match. */
+export function toPage<T, R>(
+  response: { data: { items: T[]; total: number } },
+  map: (item: T) => R,
+): { items: R[]; total: number } {
+  return { items: response.data.items.map(map), total: response.data.total }
 }

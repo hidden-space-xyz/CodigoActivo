@@ -21,7 +21,7 @@ public sealed class TermsDocumentVersionConfiguration
         builder.HasKey(x => new { x.TermsDocumentId, x.Number });
         builder.Property(x => x.Number).ValueGeneratedNever();
         builder.Property(x => x.Name).IsRequired();
-        builder.Property(x => x.Description).HasColumnType("jsonb").IsRequired();
+        builder.Property(x => x.Description).IsRequired();
         builder.Property(x => x.RequiresSignature).IsRequired();
         builder.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16).IsRequired();
 

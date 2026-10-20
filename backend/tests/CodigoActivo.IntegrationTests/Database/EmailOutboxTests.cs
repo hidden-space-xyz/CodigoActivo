@@ -674,7 +674,11 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             CancellationToken cancellationToken = default
         )
         {
-            shutdown.Cancel();
+            if (eventData.CommandSource is not CommandSource.FromSqlQuery)
+            {
+                shutdown.Cancel();
+            }
+
             return ValueTask.FromResult(result);
         }
     }
