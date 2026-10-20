@@ -34,12 +34,6 @@ public sealed class ResourceRow
 
     /// <summary>Gets when the resource was last updated.</summary>
     public DateTimeOffset? UpdatedAt { get; init; }
-
-    /// <summary>Gets the identifier of the author.</summary>
-    public Guid CreatedBy { get; init; }
-
-    /// <summary>Gets the identifier of the last editor.</summary>
-    public Guid? UpdatedBy { get; init; }
 }
 
 /// <summary>
@@ -94,9 +88,6 @@ public sealed class NewsItemRow
 
     /// <summary>Gets the identifier of the author.</summary>
     public Guid CreatedBy { get; init; }
-
-    /// <summary>Gets the identifier of the last editor.</summary>
-    public Guid? UpdatedBy { get; init; }
 }
 
 /// <summary>
@@ -127,12 +118,6 @@ public sealed class PartnerRow
 
     /// <summary>Gets when the partner was last updated.</summary>
     public DateTimeOffset? UpdatedAt { get; init; }
-
-    /// <summary>Gets the identifier of the author.</summary>
-    public Guid CreatedBy { get; init; }
-
-    /// <summary>Gets the identifier of the last editor.</summary>
-    public Guid? UpdatedBy { get; init; }
 }
 
 /// <summary>
@@ -151,7 +136,4 @@ public sealed class FileRow
 
     /// <summary>Gets when the file was uploaded.</summary>
     public DateTimeOffset UploadedAt { get; init; }
-
-    /// <summary>Gets the identifier of the uploader.</summary>
-    public Guid UploadedBy { get; init; }
 }

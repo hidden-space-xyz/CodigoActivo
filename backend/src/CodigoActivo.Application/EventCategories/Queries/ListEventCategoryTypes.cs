@@ -40,22 +40,15 @@ public sealed class ListEventCategoryTypesQueryHandler(
         CancellationToken ct = default
     )
     {
-        return FetchAsync(query.Filters, ct);
-    }
-
-    private Task<PagedResult<EventCategoryTypeResponse>> FetchAsync(
-        EventCategoryTypeListQuery query,
-        CancellationToken ct
-    )
-    {
+        var filters = query.Filters;
         var source = readStore.EventCategoryTypes.Select(
             EventCategoryProjections.EventCategoryType
         );
 
-        source = source.WhereContains(c => c.Name, query.Name);
-        source = source.WhereContains(c => c.Color, query.Color);
+        source = source.WhereContains(c => c.Name, filters.Name);
+        source = source.WhereContains(c => c.Color, filters.Color);
 
-        source = Sort.Apply(source, query.Sort);
-        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        source = Sort.Apply(source, filters.Sort);
+        return executor.ToPagedAsync(source, filters.Page, filters.PageSize, ct);
     }
 }

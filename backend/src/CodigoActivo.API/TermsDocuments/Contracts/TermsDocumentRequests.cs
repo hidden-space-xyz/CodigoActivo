@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Mapping;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Application.TermsDocuments.Commands;
 using CodigoActivo.Domain.TermsDocuments;
 using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
@@ -15,7 +16,7 @@ namespace CodigoActivo.API.TermsDocuments.Contracts;
 /// <param name="Kind">Whether the document holds conditions or a consent.</param>
 public record CreateTermsDocumentRequest(
     [Required] [MaxLength(120)] string Name,
-    [Required] [MaxLength(262144)] string Description,
+    [Required] [MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     [EnumDataType(typeof(TermsDocumentKind))] TermsDocumentKind Kind,
     bool RequiresSignature = false
 )
@@ -44,7 +45,7 @@ public record CreateTermsDocumentRequest(
 /// <param name="Kind">Whether the document holds conditions or a consent.</param>
 public record UpdateTermsDocumentRequest(
     [Required] [MaxLength(120)] string Name,
-    [Required] [MaxLength(262144)] string Description,
+    [Required] [MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     [EnumDataType(typeof(TermsDocumentKind))] TermsDocumentKind Kind,
     bool RequiresSignature = false
 )

@@ -24,8 +24,8 @@ type StoredPerson = Partial<Pick<PersonDraft, 'email' | 'phone' | 'secondaryPhon
 
 /** Where a person form gets its rules and the record it edits. */
 export interface PersonFormOptions {
-  /** Which rules apply; a getter lets one dialog edit both kinds of account. */
-  readonly kind: MaybeRefOrGetter<PersonKind>
+  /** Which rules apply, fixed for the life of the form. */
+  readonly kind: PersonKind
   /**
    * Record being edited, or `null` while creating one. Replacing its email or phones requires the
    * password of whoever makes the change, and a dependent may keep its stored birth date.
@@ -94,7 +94,7 @@ function toReading<T>(
  */
 export function usePersonForm(options: PersonFormOptions) {
   const today = options.today ?? toDateOnly(new Date())
-  const kind = computed(() => toValue(options.kind))
+  const { kind } = options
   const stored = computed(() => toValue(options.stored) ?? null)
   const currentPassword = ref('')
   const passwordRejected = ref(false)
@@ -102,7 +102,7 @@ export function usePersonForm(options: PersonFormOptions) {
   const form = useForm({
     initial: emptyDraft,
     read: (draft) =>
-      kind.value === 'dependent'
+      kind === 'dependent'
         ? toReading(
             parseDependentPerson(draft, {
               today,
@@ -124,7 +124,7 @@ export function usePersonForm(options: PersonFormOptions) {
     )
   })
   const requiresPassword = computed(
-    () => kind.value === 'independent' && (replacesContact.value || passwordRejected.value),
+    () => kind === 'independent' && (replacesContact.value || passwordRejected.value),
   )
   const passwordMissing = computed(() => requiresPassword.value && !currentPassword.value)
 

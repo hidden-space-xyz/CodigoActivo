@@ -280,7 +280,7 @@ describe('EventFormDialog', () => {
     await flushPromises()
 
     clickButton(t('common.save'), saveButton())
-    await vi.waitFor(() => expect(bodyText()).toContain(t('entities.file.thumbnail.uploadFailed')))
+    await vi.waitFor(() => expect(bodyText()).toContain(t('common.imageUploadFailed')))
     expect(uploads).toBe(1)
     expect(wrapper.emitted('submit')).toBeUndefined()
   })

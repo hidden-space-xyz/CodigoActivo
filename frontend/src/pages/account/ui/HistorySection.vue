@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useAccountHistory } from '../model/use-account-history'
 import EventRatingDialog from './EventRatingDialog.vue'
 import type { AccountHistoryEntry, EventRatingInput } from '@/entities/account'
+import { signupStatusTagType } from '@/entities/activity'
 import { formatDateRange } from '@/shared/lib/date'
 import { useCrudFeedback } from '@/shared/lib/feedback'
 import { AppIcon } from '@/shared/ui/app-icon'
@@ -26,13 +27,6 @@ function isExpanded(eventId: string): boolean {
 
 function activityCount(entry: AccountHistoryEntry): number {
   return new Set(entry.activities.map((activity) => activity.activityId)).size
-}
-
-function statusSeverity(name: string): 'success' | 'danger' | 'info' {
-  const value = name.toLowerCase()
-  if (value.includes('confirm')) return 'success'
-  if (value.includes('rechaz')) return 'danger'
-  return 'info'
 }
 
 const ratingTarget = ref<AccountHistoryEntry | null>(null)
@@ -133,7 +127,7 @@ const groups = computed(() => [
                   </span>
                   <el-tag
                     v-if="!entry.isPast && activity.statusName"
-                    :type="statusSeverity(activity.statusName)"
+                    :type="signupStatusTagType(activity.statusName)"
                   >
                     {{ activity.statusName }}
                   </el-tag>

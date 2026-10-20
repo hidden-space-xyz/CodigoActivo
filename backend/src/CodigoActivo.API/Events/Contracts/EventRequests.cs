@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Application.Events.Commands;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
@@ -25,7 +26,7 @@ namespace CodigoActivo.API.Events.Contracts;
 public record CreateEventRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
-    [MaxLength(262144)] string Description,
+    [MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
     DateTimeOffset? EarlySignupStartsAt,
@@ -77,7 +78,7 @@ public record CreateEventRequest(
 public record UpdateEventRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
-    [MaxLength(262144)] string Description,
+    [MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     [Required] DateOnly? EventStartsAt,
     [Required] DateOnly? EventEndsAt,
     DateTimeOffset? EarlySignupStartsAt,

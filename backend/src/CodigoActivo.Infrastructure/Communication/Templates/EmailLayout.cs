@@ -22,7 +22,29 @@ public sealed record EmailContent(
     string Html,
     string Text,
     IReadOnlyList<EmailInlineImage> InlineImages
-);
+)
+{
+    /// <summary>
+    /// Builds the message that carries this content, inline images included, to one recipient.
+    /// </summary>
+    /// <param name="kind">Email category whose limits and priority apply.</param>
+    /// <param name="toAddress">Address of the recipient.</param>
+    /// <param name="toName">Name of the recipient.</param>
+    /// <param name="subject">Subject of the message.</param>
+    /// <returns>The resulting email message value.</returns>
+    public EmailMessage ToMessage(EmailKind kind, string toAddress, string toName, string subject)
+    {
+        return new EmailMessage(
+            kind,
+            toAddress,
+            toName,
+            subject,
+            Html,
+            Text,
+            InlineImages: InlineImages
+        );
+    }
+}
 
 /// <summary>
 /// Parses and validates email documents.

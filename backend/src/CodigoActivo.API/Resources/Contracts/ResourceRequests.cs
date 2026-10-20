@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.API.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Application.Resources.Commands;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Resources;
@@ -19,7 +20,7 @@ namespace CodigoActivo.API.Resources.Contracts;
 public record CreateResourceRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
-    [MaxLength(262144)] string? Description,
+    [MaxLength(RichTextAllowlist.MaxJsonLength)] string? Description,
     [MaxLength(500)] string? Url,
     Guid ResourceTypeId,
     Guid ThumbnailId
@@ -64,7 +65,7 @@ public record CreateResourceRequest(
 public record UpdateResourceRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
-    [MaxLength(262144)] string? Description,
+    [MaxLength(RichTextAllowlist.MaxJsonLength)] string? Description,
     [MaxLength(500)] string? Url,
     Guid ResourceTypeId,
     Guid ThumbnailId

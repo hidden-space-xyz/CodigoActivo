@@ -15,16 +15,27 @@ public sealed class CatalogKeysTests
     [Fact]
     public void CatalogIdsEveryMemberOfEveryCatalogHasItsOwnIdentifier()
     {
-        CatalogIds.UserStatuses.Ids.Keys.Should().BeEquivalentTo(Enum.GetValues<UserStatus>());
-        CatalogIds.UserTypes.Ids.Keys.Should().BeEquivalentTo(Enum.GetValues<UserType>());
-        CatalogIds.ActivityRoles.Ids.Keys.Should().BeEquivalentTo(Enum.GetValues<ActivityRole>());
-        CatalogIds
-            .AssignmentStatuses.Ids.Keys.Should()
-            .BeEquivalentTo(Enum.GetValues<AssignmentStatus>());
-        CatalogIds
-            .ActivityModalities.Ids.Keys.Should()
-            .BeEquivalentTo(Enum.GetValues<ActivityModality>());
-        CatalogIds.ResourceTypes.Ids.Keys.Should().BeEquivalentTo(Enum.GetValues<ResourceType>());
+        Enum.GetValues<UserStatus>()
+            .Select(CatalogIds.UserStatuses.IdOf)
+            .Should()
+            .OnlyHaveUniqueItems();
+        Enum.GetValues<UserType>().Select(CatalogIds.UserTypes.IdOf).Should().OnlyHaveUniqueItems();
+        Enum.GetValues<ActivityRole>()
+            .Select(CatalogIds.ActivityRoles.IdOf)
+            .Should()
+            .OnlyHaveUniqueItems();
+        Enum.GetValues<AssignmentStatus>()
+            .Select(CatalogIds.AssignmentStatuses.IdOf)
+            .Should()
+            .OnlyHaveUniqueItems();
+        Enum.GetValues<ActivityModality>()
+            .Select(CatalogIds.ActivityModalities.IdOf)
+            .Should()
+            .OnlyHaveUniqueItems();
+        Enum.GetValues<ResourceType>()
+            .Select(CatalogIds.ResourceTypes.IdOf)
+            .Should()
+            .OnlyHaveUniqueItems();
     }
 
     [Fact]

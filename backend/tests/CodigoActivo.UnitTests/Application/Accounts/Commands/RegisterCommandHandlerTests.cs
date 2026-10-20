@@ -243,15 +243,6 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncBlankPasswordReturnsBadRequest()
-    {
-        var result = await HandleAsync(NewRegister(password: "   "));
-
-        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.RegistrationInvalid);
-        await AssertNotSavedAsync();
-    }
-
-    [Fact]
     public async Task HandleAsyncAddressOwnedByAnAccountGetsANoticeAndNothingIsCreated()
     {
         var holder = HolderOfTheAddress(KnownIds.UserStatusTypes.Active);
@@ -394,17 +385,6 @@ public sealed class RegisterCommandHandlerTests
         await users
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task HandleAsyncTooManyMinorsReturnsBadRequest()
-    {
-        var minors = Enumerable.Range(0, 21).Select(_ => NewMinor()).ToList();
-
-        var result = await HandleAsync(NewRegister(minors: minors));
-
-        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.RegistrationInvalid);
-        await AssertNotSavedAsync();
     }
 
     [Fact]

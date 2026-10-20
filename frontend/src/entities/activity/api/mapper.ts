@@ -8,7 +8,6 @@ import type {
   HouseholdMemberAssignmentResponse,
   HouseholdSignupRolesResponse,
   TimeOverlapResponse,
-  UserResponse,
 } from '@/shared/api/generated/models'
 
 import type {
@@ -21,7 +20,6 @@ import type {
   AssignmentStatus,
   EventActivity,
   HouseholdActivityAssignment,
-  HouseholdMember,
   HouseholdSignupRoles,
   OverlapCheck,
 } from '../model/types'
@@ -138,11 +136,6 @@ export function toHouseholdActivityAssignment(
     roleName: assignment.roleName,
     status: assignment.statusName,
   }
-}
-
-/** Reduces a minor to the id and full name used by signup pickers. */
-export function toHouseholdMember(child: UserResponse): HouseholdMember {
-  return { id: child.id, name: `${child.firstName} ${child.lastName}`.trim() }
 }
 
 /** Maps the schedule-conflict check run before signing a user up for an activity. */

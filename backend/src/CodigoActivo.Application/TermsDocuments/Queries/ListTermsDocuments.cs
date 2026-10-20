@@ -37,19 +37,12 @@ public sealed class ListTermsDocumentsQueryHandler(IReadStore readStore, IQueryE
         CancellationToken ct = default
     )
     {
-        return FetchAsync(query.Filters, ct);
-    }
-
-    private Task<PagedResult<TermsDocumentResponse>> FetchAsync(
-        TermsDocumentListQuery query,
-        CancellationToken ct
-    )
-    {
+        var filters = query.Filters;
         var source = readStore.TermsDocuments.Select(TermsDocumentProjections.TermsDocument);
 
-        source = source.WhereContains(t => t.Name, query.Name);
+        source = source.WhereContains(t => t.Name, filters.Name);
 
-        source = Sort.Apply(source, query.Sort);
-        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        source = Sort.Apply(source, filters.Sort);
+        return executor.ToPagedAsync(source, filters.Page, filters.PageSize, ct);
     }
 }

@@ -35,11 +35,6 @@ public sealed class GetPastEventCategoryTypesQueryHandler(
         CancellationToken ct = default
     )
     {
-        return FetchAsync(ct);
-    }
-
-    private Task<IReadOnlyList<EventCategoryTypeResponse>> FetchAsync(CancellationToken ct)
-    {
         var today = clock.Today;
         return executor.ToListAsync(
             readStore

@@ -35,11 +35,6 @@ public sealed class CatalogKeys<TValue>
     }
 
     /// <summary>
-    /// Gets the identifier of every member.
-    /// </summary>
-    public IReadOnlyDictionary<TValue, Guid> Ids => ids;
-
-    /// <summary>
     /// Gets the identifier of a member.
     /// </summary>
     /// <param name="value">Member of the catalog.</param>

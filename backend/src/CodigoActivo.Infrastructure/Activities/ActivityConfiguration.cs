@@ -2,7 +2,6 @@ using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
-using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Catalogs;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Conversions;
@@ -59,16 +58,6 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
             .HasForeignKey(a => a.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(a => a.CreatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(a => a.UpdatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasAuthors<Activity, ActivityId>();
     }
 }

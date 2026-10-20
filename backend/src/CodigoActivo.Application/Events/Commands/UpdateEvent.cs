@@ -58,13 +58,7 @@ public sealed class UpdateEventCommandHandler(
         ArgumentNullException.ThrowIfNull(command);
         var draft = command.Event;
 
-        var schedule = EventSchedule.Create(
-            draft.EventStartsAt,
-            draft.EventEndsAt,
-            draft.EarlySignupStartsAt,
-            draft.SignupStartsAt,
-            draft.SignupEndsAt
-        );
+        var schedule = draft.ToSchedule();
         if (schedule.IsFailure)
         {
             return schedule.Error!;
@@ -129,7 +123,7 @@ public sealed class UpdateEventCommandHandler(
         }
 
         ev.Update(
-            new EventContent(draft.Title, draft.Subtitle, description, draft.ThumbnailId),
+            draft.ToContent(description),
             schedule,
             categories,
             terms.Value,

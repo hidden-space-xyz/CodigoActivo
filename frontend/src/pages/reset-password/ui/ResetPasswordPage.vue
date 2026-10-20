@@ -3,6 +3,7 @@ import { useResetPassword } from '../model/use-reset-password'
 import { useLinkFragment } from '@/shared/lib/navigation'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
+import { StatusPanel } from '@/shared/ui/status-panel'
 
 const linkParam = useLinkFragment()
 
@@ -19,34 +20,34 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
 
     <section class="reset-body">
       <div class="reset-card">
-        <div v-if="!hasValidLink" class="reset-panel">
-          <div class="reset-panel__icon reset-panel__icon--error" aria-hidden="true">!</div>
-          <h2 class="reset-panel__title">{{ $t('pages.resetPassword.invalidTitle') }}</h2>
-          <p class="reset-panel__text" role="alert">
-            {{ $t('pages.resetPassword.invalidText') }}
-          </p>
-          <div class="reset-panel__actions">
+        <StatusPanel
+          v-if="!hasValidLink"
+          state="error"
+          :title="$t('pages.resetPassword.invalidTitle')"
+          :text="$t('pages.resetPassword.invalidText')"
+        >
+          <template #actions>
             <BrandButton :to="{ name: 'forgot-password' }" variant="primary">
               {{ $t('pages.resetPassword.requestNewLink') }}
             </BrandButton>
             <BrandButton :to="{ name: 'home' }" variant="ghost">{{
               $t('common.backToHome')
             }}</BrandButton>
-          </div>
-        </div>
+          </template>
+        </StatusPanel>
 
-        <div v-else-if="state === 'success'" class="reset-panel">
-          <div class="reset-panel__icon reset-panel__icon--ok" aria-hidden="true">✓</div>
-          <h2 class="reset-panel__title">{{ $t('pages.resetPassword.successTitle') }}</h2>
-          <p class="reset-panel__text">
-            {{ $t('pages.resetPassword.successText') }}
-          </p>
-          <div class="reset-panel__actions">
+        <StatusPanel
+          v-else-if="state === 'success'"
+          state="success"
+          :title="$t('pages.resetPassword.successTitle')"
+          :text="$t('pages.resetPassword.successText')"
+        >
+          <template #actions>
             <BrandButton :to="{ name: 'login' }" variant="primary">{{
               $t('common.login')
             }}</BrandButton>
-          </div>
-        </div>
+          </template>
+        </StatusPanel>
 
         <form v-else class="reset-form" @submit.prevent="submit">
           <div class="reset-field">
@@ -143,59 +144,5 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
 
 .reset-request-link:hover {
   text-decoration: underline;
-}
-
-.reset-panel {
-  background: var(--ca-bg-elevated);
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 18px;
-  padding: 36px 30px;
-  text-align: center;
-}
-
-.reset-panel__icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  margin: 0 auto 20px;
-}
-
-.reset-panel__icon--ok {
-  background: var(--ca-success-soft);
-  border: 1px solid var(--ca-success);
-  color: var(--ca-success);
-}
-
-.reset-panel__icon--error {
-  background: var(--ca-danger-soft);
-  border: 1px solid var(--ca-danger);
-  color: var(--ca-danger);
-  font-weight: 700;
-}
-
-.reset-panel__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 24px;
-  color: var(--ca-text-bright);
-}
-
-.reset-panel__text {
-  margin-top: 10px;
-  font-size: 15.5px;
-  line-height: 1.6;
-  color: var(--ca-text-muted);
-}
-
-.reset-panel__actions {
-  display: flex;
-  gap: 14px;
-  justify-content: center;
-  margin-top: 24px;
-  flex-wrap: wrap;
 }
 </style>

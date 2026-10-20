@@ -23,8 +23,6 @@ public sealed class LogPartitionMaintainer(
 )
 {
     private const string LockTimeout = "SET LOCAL lock_timeout = '5s'";
-    private const string DuplicateTable = "42P07";
-    private const string UniqueViolation = "23505";
 
     /// <summary>
     /// Creates the partitions kept ready and removes everything past the retention, in every log
@@ -146,7 +144,11 @@ public sealed class LogPartitionMaintainer(
                 ct
             );
         }
-        catch (PostgresException ex) when (ex.SqlState is DuplicateTable or UniqueViolation) { }
+        catch (PostgresException ex)
+            when (ex.SqlState
+                    is PostgresErrorCodes.DuplicateTable
+                        or PostgresErrorCodes.UniqueViolation
+            ) { }
     }
 
     private static string Bound(DateOnly day)

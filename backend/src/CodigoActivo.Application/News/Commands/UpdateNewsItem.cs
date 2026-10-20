@@ -25,7 +25,7 @@ public sealed record UpdateNewsItemCommand(
     NewsItemId NewsItemId,
     [property: Required, MaxLength(200), NotBlank] string Title,
     [property: Required, MaxLength(300), NotBlank] string Subtitle,
-    [property: RichText, MaxLength(262144)] string Description,
+    [property: RichText, MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     StoredFileId ThumbnailId
 ) : ICommand<Result>;
 

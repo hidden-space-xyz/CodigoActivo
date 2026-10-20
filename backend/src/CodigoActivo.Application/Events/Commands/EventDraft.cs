@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Common.Validation;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
@@ -23,7 +24,7 @@ namespace CodigoActivo.Application.Events.Commands;
 public sealed record EventDraft(
     [property: Required, MaxLength(200), NotBlank] string Title,
     [property: Required, MaxLength(300), NotBlank] string Subtitle,
-    [property: RichText, MaxLength(262144)] string Description,
+    [property: RichText, MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     DateOnly? EventStartsAt,
     DateOnly? EventEndsAt,
     DateTimeOffset? EarlySignupStartsAt,
@@ -32,4 +33,30 @@ public sealed record EventDraft(
     StoredFileId ThumbnailId,
     [property: MaxLength(50)] IReadOnlyList<EventCategoryTypeId> CategoryTypeIds,
     [property: MaxLength(50)] IReadOnlyList<EventTermsLink> TermsDocuments
-);
+)
+{
+    /// <summary>
+    /// Gets the schedule the event is created or replaced with.
+    /// </summary>
+    /// <returns>The schedule, or the rule its dates break.</returns>
+    public Result<EventSchedule> ToSchedule()
+    {
+        return EventSchedule.Create(
+            EventStartsAt,
+            EventEndsAt,
+            EarlySignupStartsAt,
+            SignupStartsAt,
+            SignupEndsAt
+        );
+    }
+
+    /// <summary>
+    /// Gets the content the event is created or replaced with.
+    /// </summary>
+    /// <param name="description">Description read from <see cref="Description"/>.</param>
+    /// <returns>The content.</returns>
+    public EventContent ToContent(RichText description)
+    {
+        return new EventContent(Title, Subtitle, description, ThumbnailId);
+    }
+}

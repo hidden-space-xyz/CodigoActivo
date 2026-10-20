@@ -58,9 +58,7 @@ export interface AccountCertificate {
   readonly participantId: string
   readonly firstName: string
   readonly lastName: string
-  readonly isSelf: boolean
   readonly eventTitle: string
-  readonly eventSubtitle: string
   readonly startsAt: string
   readonly endsAt: string
 }

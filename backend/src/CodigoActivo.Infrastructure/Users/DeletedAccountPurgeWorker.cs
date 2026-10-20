@@ -1,9 +1,8 @@
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Diagnostics;
+using CodigoActivo.Infrastructure.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -34,8 +33,16 @@ public sealed class DeletedAccountPurgeWorker(
     /// </returns>
     public async Task<(int Accounts, int Participations)> PurgeAsync(CancellationToken ct = default)
     {
-        var accounts = await RunAsync(new PurgeDeletedAccountsCommand(), ct);
-        var participations = await RunAsync(new PurgeDeletedParticipationsCommand(), ct);
+        var accounts = await ScheduledCommandRunner.RunAsync(
+            scopes,
+            new PurgeDeletedAccountsCommand(),
+            ct
+        );
+        var participations = await ScheduledCommandRunner.RunAsync(
+            scopes,
+            new PurgeDeletedParticipationsCommand(),
+            ct
+        );
         return (accounts, participations);
     }
 
@@ -45,45 +52,14 @@ public sealed class DeletedAccountPurgeWorker(
     /// </summary>
     /// <param name="stoppingToken">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(options.Interval);
-
-        try
-        {
-            await Task.Delay(options.StartupDelay, stoppingToken);
-
-            do
-            {
-                await PurgeSafelyAsync(stoppingToken);
-            } while (await timer.WaitForNextTickAsync(stoppingToken));
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-    }
-
-    private async Task<int> RunAsync<TCommand>(TCommand command, CancellationToken ct)
-        where TCommand : ICommand<Result<int>>
-    {
-        await using var scope = scopes.CreateAsyncScope();
-        var handler = scope.ServiceProvider.GetRequiredService<
-            ICommandHandler<TCommand, Result<int>>
-        >();
-        var result = await handler.HandleAsync(command, ct);
-        return result.Value;
-    }
-
-    private async Task PurgeSafelyAsync(CancellationToken ct)
-    {
-        try
-        {
-            await PurgeAsync(ct);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.DeletedAccountPurgeFailed(ex);
-        }
+        return ScheduledCommandRunner.RepeatAsync(
+            options.StartupDelay,
+            options.Interval,
+            PurgeAsync,
+            logger.DeletedAccountPurgeFailed,
+            stoppingToken
+        );
     }
 }

@@ -26,7 +26,6 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
         sut = new SendEmailToUsersCommandHandler(
             store,
             new FakeQueryExecutor(),
-            options,
             NewDispatcher(outbox, options, composer)
         );
     }

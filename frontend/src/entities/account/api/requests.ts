@@ -28,6 +28,7 @@ import {
   putApiUsersUserId,
 } from '@/shared/api/generated/endpoints/users/users'
 import { toPage, unwrapOrNull } from '@/shared/api'
+import { MAX_PAGE_SIZE } from '@/shared/config'
 import type { Translate } from '@/shared/i18n'
 
 import type {
@@ -73,8 +74,8 @@ export async function getAccountProfileRequest(): Promise<AccountProfile | null>
 export async function getAccountChildrenRequest(
   parentId: string,
 ): Promise<readonly AccountChild[]> {
-  const response = await getApiUsers({ parentId, pageSize: 100, sort: 'firstName' })
-  return toPage(response).items.map(toAccountChild)
+  const response = await getApiUsers({ parentId, pageSize: MAX_PAGE_SIZE, sort: 'firstName' })
+  return toPage(response, toAccountChild).items
 }
 
 /** Saves the user's own profile and returns the updated profile from the server. */

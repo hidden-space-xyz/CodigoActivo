@@ -50,23 +50,26 @@ describe('useDiagnostics', () => {
     chip?.remove()
     await flushPromises()
 
-    expect(result.traceId.value).toBe('')
+    expect(result.extraFilters.value).toEqual([])
     expect(router.currentRoute.value.query).toEqual({})
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.has('traceId')).toBe(false))
   })
 
   it('ignores an address trace that is not one and follows later address changes', async () => {
-    recordRequests()
+    const urls = recordRequests()
 
     const { result, router } = await mountComposable(useDiagnostics, {
       route: '/admin/diagnostics?traceId=not-a-trace',
     })
-    expect(result.traceId.value).toBe('')
+    await vi.waitFor(() => expect(urls).toHaveLength(1))
+    expect(urls[0]?.searchParams.has('traceId')).toBe(false)
+    expect(result.extraFilters.value).toEqual([])
 
     await router.replace({ query: { traceId: TRACE_ID } })
     await flushPromises()
 
-    expect(result.traceId.value).toBe(TRACE_ID)
+    await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('traceId')).toBe(TRACE_ID))
+    expect(result.extraFilters.value).toHaveLength(1)
   })
 
   it('filters by a trace and keeps it in the address', async () => {

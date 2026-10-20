@@ -25,7 +25,8 @@ describe('useCrudDialog', () => {
     expect(dialog.editing.value).toBeNull()
 
     dialog.visible.value = false
-    expect(dialog.state.value).toEqual({ mode: 'closed' })
+    expect(dialog.visible.value).toBe(false)
+    expect(dialog.loading.value).toBe(false)
   })
 
   it('edits the row itself when it has nothing to load', async () => {

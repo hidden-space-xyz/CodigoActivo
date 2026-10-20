@@ -28,7 +28,6 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
         sut = new SendEmailToEventAttendeesCommandHandler(
             store,
             new FakeQueryExecutor(),
-            options,
             NewDispatcher(outbox, options)
         );
     }
@@ -110,6 +109,30 @@ public sealed class SendEmailToEventAttendeesCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         outbox.Messages.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.local");
+    }
+
+    [Fact]
+    public async Task HandleAsyncMoreAttendeesThanAllowedReturnsTooManyRecipients()
+    {
+        options.MaxRecipients = 1;
+        store.Users.AddRange([
+            NewAttendee("Ana", "ana@test.local", KnownIds.AssignmentStatusTypes.Confirmed),
+            NewAttendee("Berto", "berto@test.local", KnownIds.AssignmentStatusTypes.Confirmed),
+        ]);
+
+        var result = await sut.HandleAsync(
+            new SendEmailToEventAttendeesCommand(
+                global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                new EventAttendeeListQuery(),
+                Request(),
+                ManualEmailPurpose.Notice,
+                []
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EmailTooManyRecipients);
+        outbox.Messages.Should().BeEmpty();
     }
 
     [Fact]

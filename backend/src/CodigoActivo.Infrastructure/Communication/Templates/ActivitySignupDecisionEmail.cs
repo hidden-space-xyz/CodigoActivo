@@ -116,26 +116,18 @@ public static class ActivitySignupDecisionEmail
         }
 
         blocks.Add(EmailBlocks.Action(content.ButtonLabel, content.ButtonUrl));
-        blocks.Add(
-            EmailBlocks.Prose(
-                AppStrings.EmailsSharedSignoffHtml,
-                AppStrings.EmailsSharedSignoffText
-            )
-        );
+        blocks.Add(EmailBlocks.Signoff());
 
         var rendered = EmailLayout.Render(
             new EmailDocument(content.Heading, content.IntroText, toName, siteUrl, content.Accent),
             blocks
         );
 
-        return new EmailMessage(
+        return rendered.ToMessage(
             EmailKind.ActivityNotification,
             toAddress,
             toName,
-            content.Subject,
-            rendered.Html,
-            rendered.Text,
-            InlineImages: rendered.InlineImages
+            content.Subject
         );
     }
 

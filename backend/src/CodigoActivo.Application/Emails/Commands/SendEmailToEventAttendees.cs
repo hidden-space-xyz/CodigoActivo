@@ -31,12 +31,10 @@ public sealed record SendEmailToEventAttendeesCommand(
 /// </summary>
 /// <param name="readStore">Read side used to resolve the recipients.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="options">Configuration values used by the component.</param>
 /// <param name="dispatcher">The dispatcher value.</param>
 public sealed class SendEmailToEventAttendeesCommandHandler(
     IReadStore readStore,
     IQueryExecutor executor,
-    ManualEmailOptions options,
     ManualEmailDispatcher dispatcher
 ) : ICommandHandler<SendEmailToEventAttendeesCommand, Result<EmailDispatch>>
 {
@@ -63,22 +61,13 @@ public sealed class SendEmailToEventAttendeesCommandHandler(
             executor,
             ct
         );
-        var recipients = audience.ReachedBy(command.Purpose);
-
-        return recipients.Count switch
-        {
-            0 => Error.Validation(ApplicationErrorCode.EmailNoRecipients),
-            _ when recipients.Count > options.MaxRecipients => Error.Validation(
-                ApplicationErrorCode.EmailTooManyRecipients
-            ),
-            _ => await dispatcher.DispatchAsync(
-                recipients,
-                audience.Skipped,
-                command.Content,
-                command.Purpose,
-                command.Attachments,
-                ct
-            ),
-        };
+        return await dispatcher.DispatchAsync(
+            audience.ReachedBy(command.Purpose),
+            audience.Skipped,
+            command.Content,
+            command.Purpose,
+            command.Attachments,
+            ct
+        );
     }
 }

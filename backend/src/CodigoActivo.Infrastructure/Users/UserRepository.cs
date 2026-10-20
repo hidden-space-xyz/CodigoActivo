@@ -83,19 +83,6 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     }
 
     /// <inheritdoc />
-    public Task<bool> EmailExistsAsync(
-        EmailAddress email,
-        UserId? excludeUserId = null,
-        CancellationToken ct = default
-    )
-    {
-        return Set.AnyAsync(
-            user => user.Email == email && (excludeUserId == null || user.Id != excludeUserId),
-            ct
-        );
-    }
-
-    /// <inheritdoc />
     public async Task<bool> LockPasswordStateAsync(User user, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(user);

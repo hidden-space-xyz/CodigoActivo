@@ -31,9 +31,7 @@ export function buildCertificate(overrides: Partial<AccountCertificate> = {}): A
     participantId: 'user-1',
     firstName: 'Ada',
     lastName: 'Lovelace',
-    isSelf: true,
     eventTitle: 'Hackathon de Primavera',
-    eventSubtitle: 'Edición 2025',
     startsAt: '2025-05-10',
     endsAt: '2025-05-12',
     ...overrides,
@@ -56,21 +54,6 @@ export function buildEventSummary(overrides: Partial<EventSummary> = {}): EventS
     ],
     ...overrides,
   }
-}
-
-/** Card model of a finished event. */
-export function buildPastEventSummary(overrides: Partial<EventSummary> = {}): EventSummary {
-  return buildEventSummary({
-    id: 'event-0',
-    title: 'Edición 2025',
-    subtitle: 'Crea y comparte',
-    startsAt: '2025-05-10',
-    endsAt: '2025-05-10',
-    status: 'finished',
-    thumbnailId: 'thumb-0',
-    categories: [{ id: 'cat-1', name: 'Robótica', color: '#ff6b5e' }],
-    ...overrides,
-  })
 }
 
 /** News card model. */

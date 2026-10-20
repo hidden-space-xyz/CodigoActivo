@@ -130,6 +130,22 @@ public sealed class PasswordAttemptGuard(
         return await VerifyReauthenticationAsync(actingUser, password, ct);
     }
 
+    /// <summary>
+    /// Tells whether an account reloaded with its row locked still stores the password that was
+    /// verified and is not locked by wrong passwords, so a password replaced or an account locked
+    /// since the check is refused.
+    /// </summary>
+    /// <param name="user">Account reloaded with its row locked.</param>
+    /// <param name="verifiedHash">Stored password hash the password was verified against.</param>
+    /// <returns><see langword="true"/> when the verified password still applies.</returns>
+    public static bool StillVerified(User user, string? verifiedHash)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        return string.Equals(user.PasswordHash, verifiedHash, StringComparison.Ordinal)
+            && !user.PasswordLockout.IsLocked;
+    }
+
     private async Task<bool> ForgetFailuresAsync(User user, CancellationToken ct)
     {
         return await uow.ExecuteInTransactionAsync(

@@ -53,22 +53,16 @@ public static class ComingOfAgeNoticeEmail
                 EmailBlocks.Prose(AppStrings.EmailsComingOfAgeDownload),
                 EmailBlocks.Action(AppStrings.EmailsComingOfAgeButtonLabel, accountUrl),
                 EmailBlocks.Prose(AppStrings.EmailsComingOfAgeOwnAccount),
-                EmailBlocks.Prose(
-                    AppStrings.EmailsSharedSignoffHtml,
-                    AppStrings.EmailsSharedSignoffText
-                ),
+                EmailBlocks.Signoff(),
                 EmailBlocks.Note(AppStrings.EmailsComingOfAgeBlockedCopyNote),
             ]
         );
 
-        return new EmailMessage(
+        return content.ToMessage(
             EmailKind.ComingOfAgeNotice,
             toAddress,
             toName,
-            AppStrings.EmailsComingOfAgeSubject,
-            content.Html,
-            content.Text,
-            InlineImages: content.InlineImages
+            AppStrings.EmailsComingOfAgeSubject
         );
     }
 }

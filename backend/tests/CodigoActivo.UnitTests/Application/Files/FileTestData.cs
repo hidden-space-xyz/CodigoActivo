@@ -54,7 +54,6 @@ internal static class FileTestData
             Name = name,
             Extension = extension,
             UploadedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            UploadedBy = Guid.NewGuid(),
         };
     }
 
@@ -78,12 +77,5 @@ internal static class FileTestData
                 Arg.Any<CancellationToken>()
             )
             .Returns([]);
-    }
-
-    public static void FileReferenced(this IStoredFileRepository files, bool referenced)
-    {
-        files
-            .IsInUseAsync(Arg.Any<StoredFileId>(), Arg.Any<CancellationToken>())
-            .Returns(referenced);
     }
 }

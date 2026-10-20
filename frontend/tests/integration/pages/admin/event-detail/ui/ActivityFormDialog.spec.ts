@@ -225,7 +225,7 @@ describe('ActivityFormDialog', () => {
 
     save()
 
-    await vi.waitFor(() => expect(bodyText()).toContain(t('entities.file.thumbnail.uploadFailed')))
+    await vi.waitFor(() => expect(bodyText()).toContain(t('common.imageUploadFailed')))
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 

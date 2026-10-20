@@ -121,9 +121,7 @@ describe('account mapper', () => {
       participantId: 'user-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
-      isSelf: true,
       eventTitle: 'Hackathon de Primavera',
-      eventSubtitle: 'Edición 2025',
       startsAt: '2025-05-10',
       endsAt: '2025-05-12',
     })

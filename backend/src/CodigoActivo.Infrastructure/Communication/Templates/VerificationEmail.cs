@@ -53,22 +53,16 @@ public static class VerificationEmail
                         ? [EmailBlocks.Prose(AppStrings.EmailsVerificationNewsConsent)]
                         : Array.Empty<EmailBlock>()
                 ),
-                EmailBlocks.Prose(
-                    AppStrings.EmailsSharedSignoffHtml,
-                    AppStrings.EmailsSharedSignoffText
-                ),
+                EmailBlocks.Signoff(),
                 EmailBlocks.Note(AppStrings.EmailsVerificationIgnoreNote),
             ]
         );
 
-        return new EmailMessage(
+        return content.ToMessage(
             EmailKind.AccountVerification,
             toAddress,
             toName,
-            AppStrings.EmailsVerificationSubject,
-            content.Html,
-            content.Text,
-            InlineImages: content.InlineImages
+            AppStrings.EmailsVerificationSubject
         );
     }
 }

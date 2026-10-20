@@ -60,5 +60,5 @@ export function useCrudDialog<TRow, TItem = TRow>(options?: CrudDialogOptions<TR
     }
   }
 
-  return { state, editing, loading, visible, close, openCreate, openEdit }
+  return { editing, loading, visible, close, openCreate, openEdit }
 }

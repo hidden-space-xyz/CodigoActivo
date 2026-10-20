@@ -33,8 +33,7 @@ export async function getNewsByYearPageRequest(
     page,
     pageSize,
   })
-  const { items, total } = toPage(response)
-  return { items: items.map(toNewsSummary), total }
+  return toPage(response, toNewsSummary)
 }
 
 /**
@@ -43,7 +42,7 @@ export async function getNewsByYearPageRequest(
  */
 export async function getHomeNewsRequest(): Promise<HomeNews> {
   const response = await getApiNews({ sort: FEATURED_FIRST_SORT, pageSize: 4 })
-  const news = toPage(response).items.map(toNewsSummary)
+  const news = toPage(response, toNewsSummary).items
   const featured = news[0]?.featured ? news[0] : null
   return { featured, items: news.filter((item) => item !== featured).slice(0, 3) }
 }
@@ -58,8 +57,7 @@ export async function getNewsItemRequest(id: string): Promise<NewsItem | null> {
 export async function getNewsListPageRequest(
   params: NewsListParams,
 ): Promise<ServerTablePage<NewsSummary>> {
-  const { items, total } = toPage(await getApiNews(params))
-  return { items: items.map(toNewsSummary), total }
+  return toPage(await getApiNews(params), toNewsSummary)
 }
 
 /** Creates a news item. */

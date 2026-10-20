@@ -3,7 +3,6 @@ import {
   getApiUsers,
   getApiUsersStatusTypes,
   getApiUsersTypes,
-  getApiUsersUserId,
   patchApiUsersUserIdAdmin,
   patchApiUsersUserIdChangeType,
   postApiUsersUserIdTwoFactorReset,
@@ -18,14 +17,7 @@ import { toUser, toUserCatalogRef } from './mapper'
 export async function getUserListPageRequest(
   params: UserListParams,
 ): Promise<ServerTablePage<User>> {
-  const { items, total } = toPage(await getApiUsers(params))
-  return { items: items.map(toUser), total }
-}
-
-/** Loads a user by id; unlike other detail requests a 404 throws instead of resolving `null`. */
-export async function getUserRequest(id: string): Promise<User> {
-  const response = await getApiUsersUserId(id)
-  return toUser(response.data)
+  return toPage(await getApiUsers(params), toUser)
 }
 
 /** Lists the user types an admin can assign. */

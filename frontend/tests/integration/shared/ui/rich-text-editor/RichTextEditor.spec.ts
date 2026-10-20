@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { renderWithProviders, t } from '../../../../support/render'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/shared/config'
+import { formatFileSize } from '@/shared/lib/number'
 
 const FILE_ID = '0f8fad5b-d9cb-469f-a165-70867728950e'
 
@@ -371,7 +373,9 @@ describe('RichTextEditor', () => {
       await settle()
 
       expect(upload).not.toHaveBeenCalled()
-      expect(wrapper.find('.rt__error').text()).toBe(t('editor.imageTooLarge'))
+      expect(wrapper.find('.rt__error').text()).toBe(
+        t('common.imageTooLarge', { max: formatFileSize(MAX_IMAGE_UPLOAD_BYTES) }),
+      )
     })
 
     it('uploads the chosen image and inserts it with the stored file URL', async () => {
@@ -423,7 +427,7 @@ describe('RichTextEditor', () => {
       chooseFile(wrapper, [new File(['png'], 'x.png', { type: 'image/png' })])
       await settle()
 
-      expect(wrapper.find('.rt__error').text()).toBe(t('editor.uploadError'))
+      expect(wrapper.find('.rt__error').text()).toBe(t('common.imageUploadFailed'))
       expect(button(wrapper, t('editor.insertImage')).attributes('disabled')).toBeUndefined()
     })
 

@@ -1,12 +1,11 @@
 using GenderContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 using TermsDocumentKindContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
-using TwoFactorMethodContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.Application.Common.Mapping;
 
 /// <summary>
-/// Translates between the enumerations of the domain and those clients send and receive, which
-/// share names and values so a stored value reads the same on both sides.
+/// Translates the enumerations clients send into those of the domain, which share names and values
+/// so a stored value reads the same on both sides.
 /// </summary>
 public static class ContractEnums
 {
@@ -18,26 +17,6 @@ public static class ContractEnums
     public static Domain.Users.Gender ToDomain(this GenderContract gender)
     {
         return (Domain.Users.Gender)(int)gender;
-    }
-
-    /// <summary>
-    /// Gets the gender clients receive for a domain gender.
-    /// </summary>
-    /// <param name="gender">Domain gender.</param>
-    /// <returns>The gender as clients receive it.</returns>
-    public static GenderContract ToContract(this Domain.Users.Gender gender)
-    {
-        return (GenderContract)(int)gender;
-    }
-
-    /// <summary>
-    /// Gets the second factor clients receive for a domain second factor.
-    /// </summary>
-    /// <param name="method">Domain second factor.</param>
-    /// <returns>The second factor as clients receive it.</returns>
-    public static TwoFactorMethodContract ToContract(this Domain.Users.TwoFactorMethod method)
-    {
-        return (TwoFactorMethodContract)(int)method;
     }
 
     /// <summary>

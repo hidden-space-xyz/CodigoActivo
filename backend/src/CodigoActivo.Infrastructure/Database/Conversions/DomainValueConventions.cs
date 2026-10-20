@@ -11,7 +11,8 @@ namespace CodigoActivo.Infrastructure.Database.Conversions;
 /// <summary>
 /// Stores the identifiers and value objects of the domain in the columns their underlying values
 /// always used: a <c>uuid</c> for each <see cref="IEntityId{TSelf}"/>, <c>bytea</c> for a
-/// <see cref="HandwrittenSignature"/> and text for the rest.
+/// <see cref="HandwrittenSignature"/>, <c>jsonb</c> for a <see cref="RichText"/> and text for the
+/// rest.
 /// </summary>
 internal static class DomainValueConventions
 {
@@ -33,7 +34,10 @@ internal static class DomainValueConventions
         configurationBuilder
             .Properties<SpanishNationalId>()
             .HaveConversion<SpanishNationalIdConverter>();
-        configurationBuilder.Properties<RichText>().HaveConversion<RichTextConverter>();
+        configurationBuilder
+            .Properties<RichText>()
+            .HaveConversion<RichTextConverter>()
+            .HaveColumnType("jsonb");
         configurationBuilder
             .Properties<HandwrittenSignature>()
             .HaveConversion<HandwrittenSignatureConverter>();

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GENDERS, genderLabelKey, NationalIdInput } from '@/entities/user'
+import { fullName, GENDERS, genderLabelKey, NationalIdInput } from '@/entities/user'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 import { useAccount } from '../model/use-account'
@@ -50,7 +50,7 @@ const {
     <dl v-else-if="user" class="acc-info">
       <div class="acc-info__row">
         <dt>{{ $t('common.name') }}</dt>
-        <dd>{{ user.firstName }} {{ user.lastName }}</dd>
+        <dd>{{ fullName(user) }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.status') }}</dt>

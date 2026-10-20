@@ -47,42 +47,35 @@ public sealed class ListActivitiesQueryHandler(
         CancellationToken ct = default
     )
     {
-        return FetchAsync(query.Filters, ct);
-    }
-
-    private Task<PagedResult<ActivityResponse>> FetchAsync(
-        ActivityListQuery query,
-        CancellationToken ct
-    )
-    {
+        var filters = query.Filters;
         var source = readStore.Activities.Select(ActivityProjections.Activity);
 
-        if (query.EventId is { } eventId)
+        if (filters.EventId is { } eventId)
         {
             source = source.Where(a => a.EventId == eventId);
         }
 
-        if (query.ModalityTypeId is { } modalityTypeId)
+        if (filters.ModalityTypeId is { } modalityTypeId)
         {
             source = source.Where(a => a.ModalityId == modalityTypeId);
         }
 
-        if (query.ActivityDateFrom is { } activityDateFrom)
+        if (filters.ActivityDateFrom is { } activityDateFrom)
         {
             var activityLower = LocalDayRange.LowerUtc(activityDateFrom, clock.TimeZone);
             source = source.Where(a => a.ActivityEndsAt >= activityLower);
         }
 
-        if (query.ActivityDateTo is { } activityDateTo)
+        if (filters.ActivityDateTo is { } activityDateTo)
         {
             var activityUpper = LocalDayRange.UpperExclusiveUtc(activityDateTo, clock.TimeZone);
             source = source.Where(a => a.ActivityStartsAt < activityUpper);
         }
 
-        source = source.WhereContains(a => a.Title, query.Title);
-        source = source.WhereContains(a => a.Location, query.Location);
+        source = source.WhereContains(a => a.Title, filters.Title);
+        source = source.WhereContains(a => a.Location, filters.Location);
 
-        source = Sort.Apply(source, query.Sort);
-        return executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        source = Sort.Apply(source, filters.Sort);
+        return executor.ToPagedAsync(source, filters.Page, filters.PageSize, ct);
     }
 }

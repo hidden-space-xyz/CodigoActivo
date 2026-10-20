@@ -39,11 +39,6 @@ export function toDateOnly(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
-/** Today's date as `YYYY-MM-DD` in UTC, which can differ from the local date around midnight. */
-export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
 /** Completed years since a birth date, or `null` when the date is missing or invalid. */
 export function ageFrom(value?: Date | string | null): number | null {
   if (!value) return null

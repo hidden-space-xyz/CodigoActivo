@@ -14,6 +14,7 @@ import {
   richTextExtensions,
   serializeRichText,
 } from '@/shared/lib/rich-text'
+import { formatFileSize } from '@/shared/lib/number'
 
 const { t } = useI18n()
 
@@ -86,7 +87,7 @@ async function onFileChange(event: Event): Promise<void> {
   input.value = ''
   if (!file || !editor.value || !upload) return
   if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
-    uploadError.value = t('editor.imageTooLarge')
+    uploadError.value = t('common.imageTooLarge', { max: formatFileSize(MAX_IMAGE_UPLOAD_BYTES) })
     return
   }
   uploading.value = true
@@ -96,7 +97,7 @@ async function onFileChange(event: Event): Promise<void> {
     const url = fileContentUrl(fileId)
     if (url) editor.value.chain().focus().setImage({ src: url, alt: file.name }).run()
   } catch {
-    uploadError.value = t('editor.uploadError')
+    uploadError.value = t('common.imageUploadFailed')
   } finally {
     uploading.value = false
   }

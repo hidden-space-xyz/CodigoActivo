@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Contracts;
@@ -28,12 +27,10 @@ public sealed record SendEmailToUsersCommand(
 /// </summary>
 /// <param name="readStore">Read side used to resolve the recipients.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="options">Configuration values used by the component.</param>
 /// <param name="dispatcher">The dispatcher value.</param>
 public sealed class SendEmailToUsersCommandHandler(
     IReadStore readStore,
     IQueryExecutor executor,
-    ManualEmailOptions options,
     ManualEmailDispatcher dispatcher
 ) : ICommandHandler<SendEmailToUsersCommand, Result<EmailDispatch>>
 {
@@ -53,22 +50,13 @@ public sealed class SendEmailToUsersCommandHandler(
             executor,
             ct
         );
-        var recipients = audience.ReachedBy(command.Purpose);
-
-        return recipients.Count switch
-        {
-            0 => Error.Validation(ApplicationErrorCode.EmailNoRecipients),
-            _ when recipients.Count > options.MaxRecipients => Error.Validation(
-                ApplicationErrorCode.EmailTooManyRecipients
-            ),
-            _ => await dispatcher.DispatchAsync(
-                recipients,
-                audience.Skipped,
-                command.Content,
-                command.Purpose,
-                command.Attachments,
-                ct
-            ),
-        };
+        return await dispatcher.DispatchAsync(
+            audience.ReachedBy(command.Purpose),
+            audience.Skipped,
+            command.Content,
+            command.Purpose,
+            command.Attachments,
+            ct
+        );
     }
 }

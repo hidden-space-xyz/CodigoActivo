@@ -34,6 +34,15 @@ public static class EmailBlocks
     }
 
     /// <summary>
+    /// Builds the sign-off every transactional email ends its prose with.
+    /// </summary>
+    /// <returns>The resulting email block value.</returns>
+    public static EmailBlock Signoff()
+    {
+        return Prose(AppStrings.EmailsSharedSignoffHtml, AppStrings.EmailsSharedSignoffText);
+    }
+
+    /// <summary>
     /// Builds an email prose content block.
     /// </summary>
     /// <param name="text">The text value.</param>

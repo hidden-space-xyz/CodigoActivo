@@ -84,47 +84,14 @@ public sealed class UserRow
     /// <summary>Gets a value indicating whether the account is an administrator.</summary>
     public bool IsAdmin { get; init; }
 
-    /// <summary>Gets when the pending verification code expires.</summary>
-    public DateTimeOffset? OtpExpiresAt { get; init; }
-
-    /// <summary>Gets when the last verification code was sent.</summary>
-    public DateTimeOffset? OtpLastSentAt { get; init; }
-
-    /// <summary>Gets when the pending password reset code expires.</summary>
-    public DateTimeOffset? PasswordResetExpiresAt { get; init; }
-
-    /// <summary>Gets when the last password reset code was sent.</summary>
-    public DateTimeOffset? PasswordResetLastSentAt { get; init; }
-
     /// <summary>Gets the second-factor method.</summary>
     public TwoFactorMethod TwoFactorMethod { get; init; } = TwoFactorMethod.Email;
-
-    /// <summary>Gets the last authenticator step accepted.</summary>
-    public long? AuthenticatorLastUsedStep { get; init; }
-
-    /// <summary>Gets when the pending authenticator enrollment expires.</summary>
-    public DateTimeOffset? PendingAuthenticatorExpiresAt { get; init; }
-
-    /// <summary>Gets when the pending login code expires.</summary>
-    public DateTimeOffset? LoginCodeExpiresAt { get; init; }
-
-    /// <summary>Gets when the last login code was sent.</summary>
-    public DateTimeOffset? LoginCodeLastSentAt { get; init; }
 
     /// <summary>Gets the identifier of the pending second-factor challenge.</summary>
     public Guid? LoginChallengeId { get; init; }
 
     /// <summary>Gets when the pending second-factor challenge was opened.</summary>
     public DateTimeOffset? LoginChallengeStartedAt { get; init; }
-
-    /// <summary>Gets the consecutive failed second-factor attempts.</summary>
-    public int TwoFactorFailedAttempts { get; init; }
-
-    /// <summary>Gets until when the second factor is locked.</summary>
-    public DateTimeOffset? TwoFactorLockedUntil { get; init; }
-
-    /// <summary>Gets the consecutive wrong passwords.</summary>
-    public int PasswordFailedAttempts { get; init; }
 
     /// <summary>Gets when the account was locked after wrong passwords.</summary>
     public DateTimeOffset? PasswordLockedAt { get; init; }

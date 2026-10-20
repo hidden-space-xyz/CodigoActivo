@@ -1,4 +1,3 @@
-import { ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import { usePersonForm } from '@/entities/user'
@@ -145,17 +144,5 @@ describe('usePersonForm', () => {
 
     expect(form.submit()).toBeNull()
     expect(form.errors.value).toEqual({ birthDate: t('entities.user.person.birthDateNotMinor') })
-  })
-
-  it('switches rules with the kind of the record being edited', () => {
-    const kind = ref<'independent' | 'dependent'>('independent')
-    const form = usePersonForm({ kind, stored: null, today: TODAY })
-    form.load({ firstName: 'Tim', lastName: 'King', gender: 'Male', birthDate: '2016-02-01' })
-
-    expect(form.submit()).toBeNull()
-
-    kind.value = 'dependent'
-
-    expect(form.submit()).toMatchObject({ kind: 'dependent', person: { birthDate: '2016-02-01' } })
   })
 })

@@ -47,7 +47,6 @@ public sealed class ProjectionsTests
             CreatedAt = Created,
             UpdatedAt = Updated,
             CreatedBy = Guid.NewGuid(),
-            UpdatedBy = Guid.NewGuid(),
             ThumbnailId = Guid.NewGuid(),
             Featured = true,
             Categories =
@@ -146,8 +145,6 @@ public sealed class ProjectionsTests
             Web = "https://acme.test",
             CreatedAt = Created,
             UpdatedAt = Updated,
-            CreatedBy = Guid.NewGuid(),
-            UpdatedBy = Guid.NewGuid(),
             ThumbnailId = Guid.NewGuid(),
         };
 
@@ -192,7 +189,6 @@ public sealed class ProjectionsTests
             CreatedAt = Created,
             UpdatedAt = Updated,
             CreatedBy = Guid.NewGuid(),
-            UpdatedBy = Guid.NewGuid(),
         };
 
         var response = Project(ActivityProjections.Activity, activity);

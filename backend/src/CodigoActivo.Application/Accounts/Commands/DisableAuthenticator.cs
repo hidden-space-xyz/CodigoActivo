@@ -71,15 +71,10 @@ public sealed class DisableAuthenticatorCommandHandler(
             return Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect);
         }
 
-        var disabled = await uow.ExecuteInTransactionAsync(
+        return await uow.ExecuteInTransactionAsync(
             attempt => DisableLockedAsync(user, command.Code, attempt),
             ct
         );
-        if (disabled.IsFailure)
-        {
-            return disabled;
-        }
-        return Result.Success();
     }
 
     private async Task<Result> DisableLockedAsync(User user, string code, CancellationToken ct)

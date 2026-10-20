@@ -39,22 +39,16 @@ public static class EmailInUseEmail
                 ),
                 EmailBlocks.Action(AppStrings.EmailsEmailInUseButtonLabel, loginUrl),
                 EmailBlocks.Prose(AppStrings.EmailsEmailInUseRecovery),
-                EmailBlocks.Prose(
-                    AppStrings.EmailsSharedSignoffHtml,
-                    AppStrings.EmailsSharedSignoffText
-                ),
+                EmailBlocks.Signoff(),
                 EmailBlocks.Note(AppStrings.EmailsEmailInUseIgnoreNote),
             ]
         );
 
-        return new EmailMessage(
+        return content.ToMessage(
             EmailKind.AccountVerification,
             toAddress,
             toName,
-            AppStrings.EmailsEmailInUseSubject,
-            content.Html,
-            content.Text,
-            InlineImages: content.InlineImages
+            AppStrings.EmailsEmailInUseSubject
         );
     }
 }

@@ -582,7 +582,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Clears the stored otp.
     /// </summary>
-    public void ClearOtp()
+    private void ClearOtp()
     {
         VerificationCode = default;
     }
@@ -601,7 +601,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Clears the stored password reset code.
     /// </summary>
-    public void ClearPasswordResetCode()
+    private void ClearPasswordResetCode()
     {
         PasswordResetCode = default;
     }
@@ -731,7 +731,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Clears the emailed login code and its timestamps.
     /// </summary>
-    public void ClearLoginCode()
+    private void ClearLoginCode()
     {
         LoginCode = default;
     }
@@ -862,7 +862,7 @@ public class User : AggregateRoot<UserId>
     /// Makes email the second factor again and forgets any authenticator, active or pending.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
-    public void UseEmailTwoFactor(DateTimeOffset now)
+    private void UseEmailTwoFactor(DateTimeOffset now)
     {
         TwoFactorMethod = TwoFactorMethod.Email;
         Authenticator = default;
@@ -1022,7 +1022,21 @@ public class User : AggregateRoot<UserId>
     /// <returns><see langword="true"/> when the person decides their own consents.</returns>
     public bool GivesOwnConsent(DateOnly today)
     {
-        return ParentId is null || (BirthDate is { } birthDate && birthDate.MayConsent(today));
+        return GivesOwnConsent(ParentId is not null, BirthDate, today);
+    }
+
+    /// <summary>
+    /// Tells whether a person gives their own consents on <paramref name="today"/>: one without a
+    /// guardian always does, and one in the care of a guardian from the age of 14; before, their
+    /// guardian gives them.
+    /// </summary>
+    /// <param name="hasGuardian">Whether the person is in the care of a guardian.</param>
+    /// <param name="birthDate">Date of birth of the person, when known.</param>
+    /// <param name="today">Local day on which the age is evaluated.</param>
+    /// <returns><see langword="true"/> when the person decides their own consents.</returns>
+    public static bool GivesOwnConsent(bool hasGuardian, DateOnly? birthDate, DateOnly today)
+    {
+        return !hasGuardian || (birthDate is { } date && date.MayConsent(today));
     }
 
     /// <summary>
@@ -1084,7 +1098,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Forgets the failed second-factor attempts.
     /// </summary>
-    public void ClearTwoFactorFailures()
+    private void ClearTwoFactorFailures()
     {
         TwoFactorLockout = TwoFactorLockout.WithoutFailures();
     }

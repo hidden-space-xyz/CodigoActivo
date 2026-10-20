@@ -4,7 +4,13 @@ import { useI18n } from 'vue-i18n'
 
 import { useAccount } from '../model/use-account'
 import type { AccountChild } from '@/entities/account'
-import { GENDERS, genderLabelKey, minorBirthDateRange, usePersonForm } from '@/entities/user'
+import {
+  fullName,
+  GENDERS,
+  genderLabelKey,
+  minorBirthDateRange,
+  usePersonForm,
+} from '@/entities/user'
 import { formatDate } from '@/shared/lib/date'
 import { useCrudFeedback } from '@/shared/lib/feedback'
 import { BrandButton } from '@/shared/ui/brand-button'
@@ -62,7 +68,6 @@ function save(): void {
     return
   }
 
-  if (!child.id) return
   updateChild.mutate(
     { childId: child.id, input: submission.person },
     {
@@ -118,7 +123,7 @@ function confirmDelete(): void {
     <ul v-else class="acc-minors">
       <li v-for="child in items" :key="child.id" class="acc-minor">
         <div class="acc-minor__info">
-          <span class="acc-minor__name">{{ child.firstName }} {{ child.lastName }}</span>
+          <span class="acc-minor__name">{{ fullName(child) }}</span>
           <span class="acc-minor__meta">
             {{ formatDate(child.birthDate) }} · {{ $t(genderLabelKey(child.gender)) }}
           </span>

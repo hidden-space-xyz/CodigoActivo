@@ -77,11 +77,4 @@ public sealed class LogTextTests
                 """{"Text":"ab","Flag":true,"Missing":null,"Items":[1,"x"],"Item":{"Kind":"Event"}}"""
             );
     }
-
-    [Fact]
-    public void FromValueWritesNothingForAMissingValue()
-    {
-        LogJson.FromValue(null).Should().BeNull();
-        LogJson.FromValue(new ScalarValue(null)).Should().BeNull();
-    }
 }

@@ -22,7 +22,7 @@ describe('forgot password page', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.forgotPassword.sentTitle')))
     expect(received).toEqual([{ body: { email: 'ada@example.test' }, csrf: TEST_CSRF_TOKEN }])
     expect(wrapper.find('form').exists()).toBe(false)
-    expect(wrapper.get('.forgot-sent').text()).toContain(
+    expect(wrapper.get('.status-panel').text()).toContain(
       t('pages.forgotPassword.sentExpiry', { minutes: 15 }),
     )
   })

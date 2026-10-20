@@ -76,7 +76,7 @@ describe('two-factor login page', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.loginTwoFactor.expiredTitle')))
 
     expect(wrapper.find('#two-factor-code').exists()).toBe(false)
-    expect(wrapper.get('.two-factor-panel a').attributes('href')).toBe(
+    expect(wrapper.get('.status-panel__actions a').attributes('href')).toBe(
       router.resolve({ name: 'login', query: { redirect: '/events' } }).href,
     )
   })

@@ -27,9 +27,7 @@ public static class ClientRequestRateLimiter
         return PartitionedRateLimiter.Create<HttpContext, string>(context =>
         {
             var userId = context.User.GetUserId();
-            var key = userId is null
-                ? $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}"
-                : $"user:{userId.Value:N}";
+            var key = userId is null ? IpKey(context) : $"user:{userId.Value:N}";
             var permitLimit = userId is null ? anonymousPermitLimit : authenticatedPermitLimit;
 
             return SlidingWindow(key, permitLimit);
@@ -76,12 +74,28 @@ public static class ClientRequestRateLimiter
 
         return context =>
         {
-            var key = context.User.GetUserId() is { } userId
-                ? $"user:{userId:N}"
-                : $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+            var key = context.User.GetUserId() is { } userId ? $"user:{userId:N}" : IpKey(context);
 
             return SlidingWindow(key, permitLimit);
         };
+    }
+
+    /// <summary>
+    /// Creates a named per-IP policy, which counts the requests of one address whether or not they
+    /// come from a signed-in user.
+    /// </summary>
+    /// <param name="permitLimit">Requests allowed per IP and window.</param>
+    /// <returns>A partition factory for the named policy.</returns>
+    public static Func<HttpContext, RateLimitPartition<string>> CreateIpPolicy(int permitLimit)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(permitLimit, 1);
+
+        return context => SlidingWindow(IpKey(context), permitLimit);
+    }
+
+    private static string IpKey(HttpContext context)
+    {
+        return $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
     }
 
     private static RateLimitPartition<string> SlidingWindow(string key, int permitLimit)

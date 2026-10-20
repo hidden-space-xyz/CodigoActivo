@@ -2,6 +2,7 @@ import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useResetPassword } from '@/pages/reset-password/model/use-reset-password'
+import { PASSWORD_MIN_LENGTH } from '@/shared/config'
 
 import { t } from '../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
@@ -44,7 +45,9 @@ describe('useResetPassword', () => {
     result.submit()
     await flushPromises()
 
-    expect(result.errorMessage.value).toBe(t('validation.newPasswordMin'))
+    expect(result.errorMessage.value).toBe(
+      t('validation.newPasswordMin', { min: PASSWORD_MIN_LENGTH }),
+    )
     expect(calls).toHaveLength(0)
   })
 
@@ -106,6 +109,8 @@ describe('useResetPassword', () => {
     result.submit()
 
     expect(result.canRequestNewLink.value).toBe(false)
-    expect(result.errorMessage.value).toBe(t('validation.newPasswordMin'))
+    expect(result.errorMessage.value).toBe(
+      t('validation.newPasswordMin', { min: PASSWORD_MIN_LENGTH }),
+    )
   })
 })

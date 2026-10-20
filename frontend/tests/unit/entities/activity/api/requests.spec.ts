@@ -15,7 +15,6 @@ import {
   getAssignmentStatusesRequest,
   getEventActivitiesRequest,
   getHouseholdAssignmentsRequest,
-  getHouseholdMembersRequest,
   getMyAssignmentsRequest,
   getSignupRolesRequest,
   unassignActivityRequest,
@@ -34,7 +33,6 @@ import {
   buildActivityResponse,
   buildAssignedActivity,
   buildHouseholdAssignment,
-  buildUserResponse,
   assignmentStatusTypes,
   modalityTypes,
   roleTypes,
@@ -157,21 +155,6 @@ describe('activity requests', () => {
         status: 'Solicitada',
       },
     ])
-  })
-
-  it('lists household members as the minors of the user', async () => {
-    let url: URL | undefined
-    server.use(
-      http.get('/api/users', ({ request }) => {
-        url = new URL(request.url)
-        return HttpResponse.json(paged([buildUserResponse({ id: 'child-1', firstName: 'Byron' })]))
-      }),
-    )
-
-    await expect(getHouseholdMembersRequest('user-1')).resolves.toEqual([
-      { id: 'child-1', name: 'Byron Lovelace' },
-    ])
-    expect(queryOf(url)).toEqual({ parentId: 'user-1', pageSize: '100', sort: 'firstName' })
   })
 
   it('maps signup roles per household member', async () => {

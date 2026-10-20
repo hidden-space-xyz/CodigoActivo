@@ -46,22 +46,15 @@ public sealed class ListEventsQueryHandler(
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains a paged event list item.</returns>
-    public Task<PagedResult<EventListItemResponse>> HandleAsync(
+    public async Task<PagedResult<EventListItemResponse>> HandleAsync(
         ListEventsQuery query,
         CancellationToken ct = default
     )
     {
-        return FetchAsync(query.Filters, ct);
-    }
-
-    private async Task<PagedResult<EventListItemResponse>> FetchAsync(
-        EventListQuery query,
-        CancellationToken ct
-    )
-    {
+        var filters = query.Filters;
         var now = clock.UtcNow;
         var today = clock.Today;
-        var events = query.Scope switch
+        var events = filters.Scope switch
         {
             EventScope.Upcoming => readStore.Events.Where(EventProjections.NotEndedBy(today)),
             EventScope.Past => readStore.Events.Where(EventProjections.EndedBy(today)),
@@ -69,7 +62,7 @@ public sealed class ListEventsQueryHandler(
         };
         var source = events.Select(EventProjections.EventListItem);
 
-        if (query.Year is { } year)
+        if (filters.Year is { } year)
         {
             var valid = year is >= 1 and <= 9999;
             var lower = valid ? new DateOnly(year, 1, 1) : DateOnly.MaxValue;
@@ -77,44 +70,44 @@ public sealed class ListEventsQueryHandler(
             source = source.Where(e => e.EventStartsAt >= lower && e.EventStartsAt <= upper);
         }
 
-        if (query.Featured is { } featured)
+        if (filters.Featured is { } featured)
         {
             source = source.Where(e => e.Featured == featured);
         }
 
-        if (query.CategoryTypeId is { } categoryTypeId)
+        if (filters.CategoryTypeId is { } categoryTypeId)
         {
             source = source.Where(e => e.Categories.Any(c => c.CategoryTypeId == categoryTypeId));
         }
 
-        if (query.EventDateFrom is { } eventDateFrom)
+        if (filters.EventDateFrom is { } eventDateFrom)
         {
             source = source.Where(e => e.EventEndsAt >= eventDateFrom);
         }
 
-        if (query.EventDateTo is { } eventDateTo)
+        if (filters.EventDateTo is { } eventDateTo)
         {
             source = source.Where(e => e.EventStartsAt <= eventDateTo);
         }
 
-        if (query.SignupFrom is { } signupFrom)
+        if (filters.SignupFrom is { } signupFrom)
         {
             var signupLower = LocalDayRange.LowerUtc(signupFrom, clock.TimeZone);
             source = source.Where(e => e.SignupEndsAt >= signupLower);
         }
 
-        if (query.SignupTo is { } signupTo)
+        if (filters.SignupTo is { } signupTo)
         {
             var signupUpper = LocalDayRange.UpperExclusiveUtc(signupTo, clock.TimeZone);
             source = source.Where(e => e.SignupStartsAt < signupUpper);
         }
 
-        source = source.WhereContains(e => e.Title + " " + e.Subtitle, query.Search);
-        source = source.WhereContains(e => e.Title, query.Title);
-        source = source.WhereContains(e => e.Subtitle, query.Subtitle);
+        source = source.WhereContains(e => e.Title + " " + e.Subtitle, filters.Search);
+        source = source.WhereContains(e => e.Title, filters.Title);
+        source = source.WhereContains(e => e.Subtitle, filters.Subtitle);
 
-        source = Sort.Apply(source, query.Sort);
-        var page = await executor.ToPagedAsync(source, query.Page, query.PageSize, ct);
+        source = Sort.Apply(source, filters.Sort);
+        var page = await executor.ToPagedAsync(source, filters.Page, filters.PageSize, ct);
         return page with
         {
             Items = [.. page.Items.Select(item => EventStages.Stamp(item, now, today))],

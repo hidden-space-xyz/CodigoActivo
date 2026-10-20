@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { shortTrace } from '@/pages/admin/diagnostics/lib/trace'
+import { shortTrace } from '@/shared/api'
 
 describe('shortTrace', () => {
   it('keeps the first eight characters of a trace id', () => {

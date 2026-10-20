@@ -67,7 +67,6 @@ internal static class ResourceTestData
             ResourceType = resourceType,
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            CreatedBy = Guid.NewGuid(),
         };
     }
 

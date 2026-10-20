@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { ActivityRole } from '@/entities/activity'
+import { signupStatusTagType, type ActivityRole } from '@/entities/activity'
 
 import type { TimelineActivity } from '../model/types'
 import { formatTimeRange } from '@/shared/lib/date'
@@ -89,13 +89,6 @@ function scheduleLabel(): string {
   return formatTimeRange(props.activity.start, props.activity.end, props.referenceDate)
 }
 
-function statusSeverity(name: string): 'success' | 'danger' | 'info' {
-  const n = name.toLowerCase()
-  if (n.includes('confirm')) return 'success'
-  if (n.includes('rechaz')) return 'danger'
-  return 'info'
-}
-
 function onSignup(): void {
   if (selectedRoleId.value) emit('signup', selectedRoleId.value)
 }
@@ -107,7 +100,7 @@ function onSignup(): void {
       <h4 class="act__title">{{ activity.title }}</h4>
       <el-tag
         v-if="!hasHousehold && activity.assignment"
-        :type="statusSeverity(activity.assignment.status)"
+        :type="signupStatusTagType(activity.assignment.status)"
       >
         {{ activity.assignment.status }}
       </el-tag>
@@ -126,7 +119,7 @@ function onSignup(): void {
       <li v-for="member in activity.household" :key="member.userId" class="act__member">
         <span class="act__member-info">
           <b>{{ member.name }}</b> · {{ member.roleName }}
-          <el-tag :type="statusSeverity(member.status)" class="act__member-tag">
+          <el-tag :type="signupStatusTagType(member.status)" class="act__member-tag">
             {{ member.status }}
           </el-tag>
         </span>

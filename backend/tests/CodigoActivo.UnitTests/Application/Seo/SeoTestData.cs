@@ -51,7 +51,6 @@ internal static class SeoTestData
             ResourceTypeId = Guid.NewGuid(),
             ThumbnailId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 4, 1, 0, 0, 0, TimeSpan.Zero),
-            CreatedBy = Guid.NewGuid(),
         };
     }
 }

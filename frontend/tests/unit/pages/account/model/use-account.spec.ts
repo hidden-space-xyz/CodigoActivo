@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { accountKeys } from '@/entities/account'
-import { activityKeys } from '@/entities/activity'
 import { useAccount } from '@/pages/account/model/use-account'
 
 import { http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
@@ -192,8 +191,7 @@ describe('useAccount', () => {
       { method: 'DELETE', path: '/api/users/child-1', body: null },
     ])
     expect(invalidate).toHaveBeenCalledWith({ queryKey: accountKeys.children() })
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: activityKeys.householdMembers() })
-    expect(invalidate).toHaveBeenCalledTimes(6)
+    expect(invalidate).toHaveBeenCalledTimes(3)
     await vi.waitFor(() => expect(queries.length).toBeGreaterThan(1))
   })
 

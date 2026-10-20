@@ -35,8 +35,7 @@ export async function getResourcesPageRequest(
     page,
     pageSize,
   })
-  const { items, total } = toPage(response)
-  return { items: items.map(toLearningResourceSummary), total }
+  return toPage(response, toLearningResourceSummary)
 }
 
 /** Loads a whole resource; resolves to `null` when it does not exist (404). */
@@ -55,8 +54,7 @@ export async function getResourceTypesRequest(): Promise<readonly ResourceType[]
 export async function getResourceListPageRequest(
   params: ResourceListParams,
 ): Promise<ServerTablePage<LearningResourceSummary>> {
-  const { items, total } = toPage(await getApiResources(params))
-  return { items: items.map(toLearningResourceSummary), total }
+  return toPage(await getApiResources(params), toLearningResourceSummary)
 }
 
 /** Creates a resource. */

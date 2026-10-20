@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { usePersonalDataDownload } from '@/pages/account/model/use-personal-data-download'
-import { todayIso } from '@/shared/lib/date'
+import { toDateOnly } from '@/shared/lib/date'
 
 import { buildPersonalDataResponse } from '../../../../support/builders'
 import { mountComposable, t } from '../../../../support/render'
@@ -49,7 +49,9 @@ describe('usePersonalDataDownload', () => {
     await vi.waitFor(() => expect(files.names).toHaveLength(1))
 
     expect(requests).toBe(1)
-    expect(files.names[0]).toBe(t('pages.account.personalData.fileName', { date: todayIso() }))
+    expect(files.names[0]).toBe(
+      t('pages.account.personalData.fileName', { date: toDateOnly(new Date()) }),
+    )
     expect(files.blobs[0]?.type).toBe('application/json')
     expect(JSON.parse((await files.blobs[0]?.text()) ?? '{}')).toMatchObject({
       cuenta: { nombre: 'Ada', genero: t('entities.user.gender.Female') },

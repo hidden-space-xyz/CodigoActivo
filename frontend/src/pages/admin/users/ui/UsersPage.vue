@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import { fullName, type User } from '@/entities/user'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import { ageFrom, formatDate } from '@/shared/lib/date'
-import { useCrudFeedback } from '@/shared/lib/feedback'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AdminPageHeader } from '@/shared/ui/admin-page-header'
 import { ColorTag } from '@/shared/ui/color-tag'
@@ -24,7 +23,6 @@ import AdminPasswordDialog from './AdminPasswordDialog.vue'
 import UserTypeDialog from './UserTypeDialog.vue'
 
 const { t } = useI18n()
-const feedback = useCrudFeedback()
 const {
   table,
   types,
@@ -110,8 +108,7 @@ const {
   bulkPending: () => sendToUsers.isPending.value,
   sendAll: (payload, handlers) =>
     sendToUsers.mutate({ params: table.filterParams.value, payload }, handlers),
-  fetchAudience: (user) => usersAudience(user ? { id: user.id } : table.filterParams.value),
-  onError: (error) => feedback.error(error),
+  fetchAudience: () => usersAudience(table.filterParams.value),
 })
 
 function blockedBy(

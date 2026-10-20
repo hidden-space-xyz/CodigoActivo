@@ -95,10 +95,7 @@ public sealed class LoginCommandHandler(
         CancellationToken ct
     )
     {
-        if (
-            !string.Equals(user.PasswordHash, verifiedHash, StringComparison.Ordinal)
-            || user.PasswordLockout.IsLocked
-        )
+        if (!PasswordAttemptGuard.StillVerified(user, verifiedHash))
         {
             return InvalidCredentials();
         }

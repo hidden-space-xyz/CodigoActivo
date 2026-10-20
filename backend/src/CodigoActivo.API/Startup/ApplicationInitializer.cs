@@ -4,16 +4,8 @@ namespace CodigoActivo.API.Startup;
 
 internal static class ApplicationInitializer
 {
-    internal static Task InitializeAsync(
+    internal static async Task InitializeAsync(
         this WebApplication app,
-        CancellationToken cancellationToken
-    )
-    {
-        return InitializeDatabaseAsync(app, cancellationToken);
-    }
-
-    private static async Task InitializeDatabaseAsync(
-        WebApplication app,
         CancellationToken cancellationToken
     )
     {

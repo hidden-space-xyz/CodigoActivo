@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 
 import { accountMutations, isPasswordTooShort } from '@/entities/account'
+import { PASSWORD_MIN_LENGTH } from '@/shared/config'
 import { getErrorMessage } from '@/shared/lib/feedback'
 import { isGuid } from '@/shared/lib/navigation'
 
@@ -38,7 +39,7 @@ export function useResetPassword(userId: string | null, code: string | null) {
     errorMessage.value = null
     canRequestNewLink.value = false
     if (isPasswordTooShort(form.password)) {
-      errorMessage.value = t('validation.newPasswordMin')
+      errorMessage.value = t('validation.newPasswordMin', { min: PASSWORD_MIN_LENGTH })
       return
     }
     if (form.password !== form.confirmPassword) {

@@ -2,7 +2,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { uploadThumbnailRequest } from '../api/requests'
+import { uploadFileRequest } from '../api/requests'
 import { getErrorMessage } from '@/shared/lib/feedback'
 
 /**
@@ -42,11 +42,11 @@ export function useThumbnailUpload(existingId: MaybeRefOrGetter<string | null | 
     }
     uploading.value = true
     try {
-      const id = await uploadThumbnailRequest(file)
+      const id = await uploadFileRequest(file)
       uploaded = { file, id, at: Date.now() }
       return id
     } catch (error) {
-      uploadError.value = getErrorMessage(error, t('entities.file.thumbnail.uploadFailed'))
+      uploadError.value = getErrorMessage(error, t('common.imageUploadFailed'))
       return null
     } finally {
       uploading.value = false

@@ -7,7 +7,7 @@ import { useRoute } from 'vue-router'
 import { newsQueries } from '@/entities/news-item'
 import { fileContentUrl } from '@/shared/api'
 import { formatDate } from '@/shared/lib/date'
-import { isRichTextEmpty, richTextExcerpt } from '@/shared/lib/rich-text'
+import { isRichTextBlank, richTextExcerpt } from '@/shared/lib/rich-text'
 import { absoluteUrl, type SeoData, useSeo } from '@/shared/lib/seo'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { RichTextContent } from '@/shared/ui/rich-text-content'
@@ -23,7 +23,7 @@ const { data: newsItem, isLoading } = useQuery(() => newsQueries.detail(props.ne
 const notFound = computed(() => !isLoading.value && newsItem.value === null)
 
 const posterUrl = computed(() => fileContentUrl(newsItem.value?.thumbnailId))
-const hasDescription = computed(() => !isRichTextEmpty(newsItem.value?.description))
+const hasDescription = computed(() => !isRichTextBlank(newsItem.value?.description))
 
 const seo = computed<SeoData | undefined>(() => {
   if (notFound.value) return { title: t('pages.newsDetail.notFoundTitle'), noindex: true }
@@ -70,7 +70,7 @@ useSeo(seo)
 
     <p v-if="isLoading" class="detail-state ca-container--narrow">{{ $t('common.loading') }}</p>
 
-    <p v-else-if="notFound || !newsItem" class="detail-state ca-container--narrow">
+    <p v-else-if="!newsItem" class="detail-state ca-container--narrow">
       {{ $t('pages.newsDetail.notFound') }}
     </p>
 

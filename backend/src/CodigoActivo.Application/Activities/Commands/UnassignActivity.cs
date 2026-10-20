@@ -64,18 +64,15 @@ public sealed class UnassignActivityCommandHandler(
             return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
         }
 
-        if (!currentUser.IsAdmin)
+        var signup = await signupGate.EnsureSignupOpenAsync(
+            activity,
+            [command.UserId],
+            currentUser.IsAdmin,
+            ct
+        );
+        if (signup.IsFailure)
         {
-            var signup = await signupGate.EnsureSignupOpenAsync(
-                activity,
-                [command.UserId],
-                isAdmin: false,
-                ct
-            );
-            if (signup.IsFailure)
-            {
-                return signup.Error!;
-            }
+            return signup.Error!;
         }
 
         var unassigned = activity.Unassign(command.UserId);

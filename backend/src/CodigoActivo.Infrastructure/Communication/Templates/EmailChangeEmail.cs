@@ -45,22 +45,16 @@ public static class EmailChangeEmail
                     AppStrings.EmailsEmailChangeExpiryHtml(minutes),
                     AppStrings.EmailsEmailChangeExpiryText(minutes)
                 ),
-                EmailBlocks.Prose(
-                    AppStrings.EmailsSharedSignoffHtml,
-                    AppStrings.EmailsSharedSignoffText
-                ),
+                EmailBlocks.Signoff(),
                 EmailBlocks.Note(AppStrings.EmailsEmailChangeIgnoreNote),
             ]
         );
 
-        return new EmailMessage(
+        return content.ToMessage(
             EmailKind.AccountVerification,
             toAddress,
             toName,
-            AppStrings.EmailsEmailChangeSubject,
-            content.Html,
-            content.Text,
-            InlineImages: content.InlineImages
+            AppStrings.EmailsEmailChangeSubject
         );
     }
 }

@@ -44,19 +44,7 @@ public static class LogJson
         });
     }
 
-    /// <summary>
-    /// Writes one value as JSON.
-    /// </summary>
-    /// <param name="value">Value to write.</param>
-    /// <returns>The JSON value, or <see langword="null"/> when there is no value.</returns>
-    public static string? FromValue(LogEventPropertyValue? value)
-    {
-        return value is null or ScalarValue { Value: null }
-            ? null
-            : Write(writer => WriteValue(writer, value));
-    }
-
-    private static string Write(Action<Utf8JsonWriter> write)
+    internal static string Write(Action<Utf8JsonWriter> write)
     {
         using var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer))

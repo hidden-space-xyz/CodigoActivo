@@ -11,11 +11,6 @@ public sealed class LogRetentionOptions
     public static readonly TimeSpan DefaultDiagnostics = TimeSpan.FromDays(30);
 
     /// <summary>
-    /// Stores the shared default retention of the audit log.
-    /// </summary>
-    public static readonly TimeSpan DefaultAudit = TimeSpan.FromDays(60);
-
-    /// <summary>
     /// Gets or sets the age after which a diagnostic entry is removed.
     /// </summary>
     public TimeSpan Diagnostics { get; set; } = DefaultDiagnostics;
@@ -23,7 +18,7 @@ public sealed class LogRetentionOptions
     /// <summary>
     /// Gets or sets the age after which an audit entry is removed.
     /// </summary>
-    public TimeSpan Audit { get; set; } = DefaultAudit;
+    public TimeSpan Audit { get; set; } = TimeSpan.FromDays(60);
 
     /// <summary>
     /// Gets the retention of a log table.

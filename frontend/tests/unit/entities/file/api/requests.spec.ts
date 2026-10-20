@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { uploadFileRequest } from '@/entities/file'
-import { getThumbnailNameRequest, uploadThumbnailRequest } from '@/entities/file/api/requests'
+import { getThumbnailNameRequest } from '@/entities/file/api/requests'
 import { ApiError } from '@/shared/api'
 
 import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
@@ -28,7 +28,7 @@ function image(name = 'poster.png'): File {
 }
 
 describe('file requests', () => {
-  describe('uploadThumbnailRequest', () => {
+  describe('uploadFileRequest', () => {
     it('creates a new file as multipart form data and returns its id', async () => {
       let upload: Upload | undefined
       server.use(
@@ -38,7 +38,7 @@ describe('file requests', () => {
         }),
       )
 
-      await expect(uploadThumbnailRequest(image())).resolves.toBe('file-new')
+      await expect(uploadFileRequest(image())).resolves.toBe('file-new')
       expect(upload).toEqual({
         method: 'POST',
         path: '/api/files',
@@ -47,16 +47,10 @@ describe('file requests', () => {
       })
     })
 
-    it('returns an empty id when the API omits it', async () => {
-      server.use(http.post('/api/files', () => HttpResponse.json({})))
-
-      await expect(uploadThumbnailRequest(image())).resolves.toBe('')
-    })
-
     it('rejects with the API error when the upload fails', async () => {
       server.use(http.post('/api/files', () => apiError(413, 'FileUploadTooLarge')))
 
-      await expect(uploadThumbnailRequest(image())).rejects.toMatchObject({
+      await expect(uploadFileRequest(image())).rejects.toMatchObject({
         status: 413,
         code: 'FileUploadTooLarge',
       })
@@ -84,24 +78,6 @@ describe('file requests', () => {
       server.use(http.get('/api/files/broken', () => apiError(500)))
 
       await expect(getThumbnailNameRequest('broken')).rejects.toBeInstanceOf(ApiError)
-    })
-  })
-
-  describe('uploadFileRequest', () => {
-    it('uploads a new file and returns its id or undefined', async () => {
-      const uploads: Upload[] = []
-      let id: string | undefined = 'file-9'
-      server.use(
-        http.post('/api/files', async ({ request }) => {
-          uploads.push(await readUpload(request))
-          return HttpResponse.json(id ? { id } : {})
-        }),
-      )
-
-      await expect(uploadFileRequest(image('doc.pdf'))).resolves.toBe('file-9')
-      id = undefined
-      await expect(uploadFileRequest(image('doc.pdf'))).resolves.toBeUndefined()
-      expect(uploads.map((upload) => upload.file?.name)).toEqual(['doc.pdf', 'doc.pdf'])
     })
   })
 })

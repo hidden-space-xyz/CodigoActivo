@@ -58,6 +58,31 @@ public sealed class LoginCodeIssuer(
         return IssueCoreAsync(user, now, accountEmails.SendAccountDeletionCodeEmailAsync, ct);
     }
 
+    /// <summary>
+    /// Tells why a new code may not be emailed to the user now: the account may not receive codes
+    /// (<see cref="User.MayReceiveLoginCode"/>) or the last one was sent within the resend cooldown.
+    /// </summary>
+    /// <param name="user">User who asks for a new code.</param>
+    /// <param name="now">Current timestamp.</param>
+    /// <returns>The failed result, or <see langword="null"/> when a new code may be sent.</returns>
+    public Result? RefusalOf(User user, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        var allowed = user.MayReceiveLoginCode(now);
+        if (allowed.IsFailure)
+        {
+            return allowed;
+        }
+
+        if (user.LoginCode.IsResendCoolingDown(now, options.ResendCooldown))
+        {
+            return Error.Conflict(ApplicationErrorCode.TwoFactorResendCooldownActive);
+        }
+
+        return null;
+    }
+
     private async Task<Result> IssueCoreAsync(
         User user,
         DateTimeOffset now,

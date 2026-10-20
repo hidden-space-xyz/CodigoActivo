@@ -37,6 +37,5 @@ export function useLogin() {
     submit,
     isSubmitting: mutation.isPending,
     isError: mutation.isError,
-    error: mutation.error,
   }
 }

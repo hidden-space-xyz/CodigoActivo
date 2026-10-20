@@ -10,7 +10,7 @@ import type {
 
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
 import { expectNotification, notificationTexts, queryOf, tp } from '../../../../support/dom'
-import { mountComposable } from '../../../../support/render'
+import { mountComposable, t } from '../../../../support/render'
 
 interface CapturedEmail {
   url: string
@@ -151,20 +151,26 @@ describe('useSendEmail', () => {
 })
 
 interface Recipient {
-  id?: string
+  id: string
   name: string
 }
 
 function setupDialog(
   overrides: {
     bulkPending?: () => boolean
-    fetchAudience?: (recipient: Recipient | null) => Promise<EmailAudience>
+    fetchAudience?: () => Promise<EmailAudience>
   } = {},
 ) {
   const sendAll = vi.fn()
-  const onError = vi.fn()
   const fetchAudience = vi.fn(
     overrides.fetchAudience ?? (() => Promise.resolve({ recipients: 1, withoutConsent: 0 })),
+  )
+  const userAudienceQueries: Record<string, string>[] = []
+  server.use(
+    http.get('/api/emails/users/audience', ({ request }) => {
+      userAudienceQueries.push(queryOf(request.url))
+      return HttpResponse.json({ recipients: 1, withoutConsent: 1 })
+    }),
   )
   return mountComposable(() =>
     useSendEmailDialog<Recipient>({
@@ -174,9 +180,8 @@ function setupDialog(
       bulkPending: overrides.bulkPending ?? (() => false),
       sendAll,
       fetchAudience,
-      onError,
     }),
-  ).then((rendered) => ({ ...rendered, sendAll, onError, fetchAudience }))
+  ).then((rendered) => ({ ...rendered, sendAll, fetchAudience, userAudienceQueries }))
 }
 
 describe('useSendEmailDialog', () => {
@@ -188,7 +193,6 @@ describe('useSendEmailDialog', () => {
 
     result.open({ id: 'user-1', name: 'Ada' })
     expect(result.visible.value).toBe(true)
-    expect(result.recipient.value).toEqual({ id: 'user-1', name: 'Ada' })
     expect(result.target.value).toBe('one:Ada')
 
     result.open(null)
@@ -196,9 +200,8 @@ describe('useSendEmailDialog', () => {
   })
 
   it('loads the audience of whoever the dialog targets when it opens', async () => {
-    const { result, fetchAudience } = await setupDialog({
-      fetchAudience: (recipient) =>
-        Promise.resolve({ recipients: 2, withoutConsent: recipient ? 0 : 2 }),
+    const { result, fetchAudience, userAudienceQueries } = await setupDialog({
+      fetchAudience: () => Promise.resolve({ recipients: 2, withoutConsent: 2 }),
     })
 
     expect(result.withoutConsent.value).toBeNull()
@@ -212,9 +215,10 @@ describe('useSendEmailDialog', () => {
     result.open({ id: 'user-1', name: 'Ada' })
     expect(result.withoutConsent.value).toBeNull()
     expect(result.recipients.value).toBeNull()
-    await flushPromises()
-    expect(result.withoutConsent.value).toBe(0)
-    expect(fetchAudience.mock.calls).toEqual([[null], [{ id: 'user-1', name: 'Ada' }]])
+    await vi.waitFor(() => expect(result.recipients.value).toBe(1))
+    expect(result.withoutConsent.value).toBe(1)
+    expect(fetchAudience).toHaveBeenCalledTimes(1)
+    expect(userAudienceQueries).toEqual([{ id: 'user-1' }])
   })
 
   it('ignores an audience answered after the dialog was opened again', async () => {
@@ -228,8 +232,7 @@ describe('useSendEmailDialog', () => {
 
     result.open(null)
     result.open({ id: 'user-1', name: 'Ada' })
-    pending[1]?.({ recipients: 1, withoutConsent: 1 })
-    await flushPromises()
+    await vi.waitFor(() => expect(result.recipients.value).toBe(1))
     pending[0]?.({ recipients: 9, withoutConsent: 9 })
     await flushPromises()
 
@@ -237,19 +240,27 @@ describe('useSendEmailDialog', () => {
     expect(result.recipients.value).toBe(1)
   })
 
-  it('leaves the audience unknown when it cannot be loaded or has no recipient id', async () => {
-    const { result, fetchAudience } = await setupDialog({
+  it('leaves the audience unknown when it cannot be loaded', async () => {
+    const { result } = await setupDialog({
       fetchAudience: () => Promise.reject(new Error('offline')),
     })
+    let failedQueries = 0
+    server.use(
+      http.get('/api/emails/users/audience', () => {
+        failedQueries += 1
+        return apiError(500)
+      }),
+    )
 
     result.open(null)
     await flushPromises()
     expect(result.withoutConsent.value).toBeNull()
 
-    result.open({ name: 'Nobody' })
+    result.open({ id: 'user-1', name: 'Ada' })
+    await vi.waitFor(() => expect(failedQueries).toBe(1))
     await flushPromises()
     expect(result.withoutConsent.value).toBeNull()
-    expect(fetchAudience).toHaveBeenCalledTimes(1)
+    expect(result.recipients.value).toBeNull()
   })
 
   it('reports queued and skipped counts and closes after a send to one user', async () => {
@@ -289,30 +300,19 @@ describe('useSendEmailDialog', () => {
     expect(notificationTexts()).toEqual([])
   })
 
-  it('passes send failures to the error handler', async () => {
+  it('reports send failures as an error toast and keeps the dialog open', async () => {
     server.use(http.post('/api/emails/users/:userId', () => apiError(500)))
-    const { result, onError } = await setupDialog()
+    const { result } = await setupDialog()
 
     result.open({ id: 'user-1', name: 'Ada' })
     result.submit(payload)
 
-    await vi.waitFor(() => expect(onError).toHaveBeenCalledTimes(1))
+    await expectNotification(t('errors.generic'))
     expect(result.visible.value).toBe(true)
   })
 
-  it('skips the single send when the recipient has no id', async () => {
-    const { result, sendAll } = await setupDialog()
-
-    result.open({ name: 'Nobody' })
-    result.submit(payload)
-    await flushPromises()
-
-    expect(sendAll).not.toHaveBeenCalled()
-    expect(result.sending.value).toBe(false)
-  })
-
   it('delegates bulk sends to the page with result handlers', async () => {
-    const { result, sendAll, onError } = await setupDialog({ bulkPending: () => true })
+    const { result, sendAll } = await setupDialog({ bulkPending: () => true })
 
     expect(result.sending.value).toBe(true)
     result.open(null)
@@ -324,10 +324,12 @@ describe('useSendEmailDialog', () => {
       { onSuccess: (r: SendEmailResult) => void; onError: (e: unknown) => void },
     ]
     expect(sentPayload).toBe(payload)
-    expect(handlers.onError).toBe(onError)
 
     handlers.onSuccess({ queued: 4, skipped: 0 })
     expect(result.visible.value).toBe(false)
     await expectNotification(tp('features.sendEmail.toast.queued', 4, { count: 4 }))
+
+    handlers.onError('No se pudo enviar.')
+    await expectNotification('No se pudo enviar.')
   })
 })

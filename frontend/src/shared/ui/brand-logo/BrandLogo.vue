@@ -1,17 +1,9 @@
 <script setup lang="ts">
 import { logoMark } from '@/shared/branding'
-
-withDefaults(
-  defineProps<{
-    /** `sm` shrinks the mark and wordmark slightly for compact headers. */
-    size?: 'sm' | 'md'
-  }>(),
-  { size: 'md' },
-)
 </script>
 
 <template>
-  <div class="brand" :class="`brand--${size}`">
+  <div class="brand">
     <img class="brand__mark" :src="logoMark" alt="" aria-hidden="true" width="30" height="30" />
     <div class="brand__word">
       {{ $t('common.brand.nameStart')
@@ -43,14 +35,5 @@ withDefaults(
 
 .brand__accent {
   color: var(--ca-orange);
-}
-
-.brand--sm .brand__mark {
-  width: 28px;
-  height: 28px;
-}
-
-.brand--sm .brand__word {
-  font-size: 18px;
 }
 </style>

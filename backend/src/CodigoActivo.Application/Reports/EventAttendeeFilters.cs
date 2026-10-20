@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
@@ -22,33 +23,9 @@ public static class EventAttendeeFilters
         EventAttendeeListQuery query
     )
     {
-        var activityId = query.ActivityId;
-        var roleTypeId = query.RoleTypeId;
-        var statusId = query.StatusId;
-
         var matchingAssignments = source
             .SelectMany(user => user.Assignments)
-            .Where(assignment => assignment.Activity.EventId == eventId);
-        if (activityId is { } selectedActivityId)
-        {
-            matchingAssignments = matchingAssignments.Where(assignment =>
-                assignment.ActivityId == selectedActivityId
-            );
-        }
-
-        if (roleTypeId is { } selectedRoleTypeId)
-        {
-            matchingAssignments = matchingAssignments.Where(assignment =>
-                assignment.ActivityRoleTypeId == selectedRoleTypeId
-            );
-        }
-
-        if (statusId is { } selectedStatusId)
-        {
-            matchingAssignments = matchingAssignments.Where(assignment =>
-                assignment.AssignmentStatusId == selectedStatusId
-            );
-        }
+            .Where(MatchingAssignment(eventId, query));
 
         var attendeeIds = matchingAssignments.Select(assignment => assignment.UserId).Distinct();
         source = source.Where(user => attendeeIds.Contains(user.Id));
@@ -90,5 +67,30 @@ public static class EventAttendeeFilters
                 ),
             query.Search
         );
+    }
+
+    /// <summary>
+    /// Gets the condition an assignment meets to make its user an attendee under the criteria: it
+    /// belongs to an activity of the event and, when they are selected, to the activity, the role
+    /// and the status.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="query">Query containing the selection criteria.</param>
+    /// <returns>The condition on an assignment.</returns>
+    public static Expression<Func<AssignmentRow, bool>> MatchingAssignment(
+        Guid eventId,
+        EventAttendeeListQuery query
+    )
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var activityId = query.ActivityId;
+        var roleTypeId = query.RoleTypeId;
+        var statusId = query.StatusId;
+
+        return assignment =>
+            assignment.Activity.EventId == eventId
+            && (activityId == null || assignment.ActivityId == activityId)
+            && (roleTypeId == null || assignment.ActivityRoleTypeId == roleTypeId)
+            && (statusId == null || assignment.AssignmentStatusId == statusId);
     }
 }

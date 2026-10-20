@@ -252,9 +252,7 @@ describe('admin news page', () => {
     await pickThumbnail(dialog)
     await click(findButton(t('common.save'), dialog))
 
-    await vi.waitFor(() =>
-      expect(dialog.textContent).toContain(t('entities.file.thumbnail.uploadFailed')),
-    )
+    await vi.waitFor(() => expect(dialog.textContent).toContain(t('common.imageUploadFailed')))
   })
 
   it('reports a failure creating a news item', async () => {

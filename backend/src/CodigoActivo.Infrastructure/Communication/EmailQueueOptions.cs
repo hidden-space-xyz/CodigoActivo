@@ -29,11 +29,6 @@ public sealed class EmailQueueOptions
     public const int BulkPriority = 2;
 
     /// <summary>
-    /// Identifies the default capacity configuration or policy value.
-    /// </summary>
-    public const int DefaultCapacity = 1000;
-
-    /// <summary>
     /// Identifies the default workers configuration or policy value.
     /// </summary>
     public const int DefaultWorkers = 4;
@@ -47,21 +42,6 @@ public sealed class EmailQueueOptions
     /// Identifies how many times a message is attempted in total before it is discarded.
     /// </summary>
     public const int MaxAttempts = 5;
-
-    /// <summary>
-    /// Stores the shared default shutdown drain value.
-    /// </summary>
-    public static readonly TimeSpan DefaultShutdownDrain = TimeSpan.FromSeconds(20);
-
-    /// <summary>
-    /// Stores the shared default send timeout value.
-    /// </summary>
-    public static readonly TimeSpan DefaultSendTimeout = TimeSpan.FromSeconds(60);
-
-    /// <summary>
-    /// Stores the shared default poll interval value.
-    /// </summary>
-    public static readonly TimeSpan DefaultPollInterval = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// Stores the extra time added to a lease on top of the worst case of the claimed batch, which
@@ -90,7 +70,7 @@ public sealed class EmailQueueOptions
     /// <see cref="IsCapacityExempt"/> accepts are stored past it and still occupy the pending rows it
     /// counts.
     /// </summary>
-    public int Capacity { get; set; } = DefaultCapacity;
+    public int Capacity { get; set; } = 1000;
 
     /// <summary>
     /// Gets or sets the workers value, the number of messages delivered concurrently.
@@ -105,17 +85,17 @@ public sealed class EmailQueueOptions
     /// <summary>
     /// Gets or sets the shutdown drain value.
     /// </summary>
-    public TimeSpan ShutdownDrain { get; set; } = DefaultShutdownDrain;
+    public TimeSpan ShutdownDrain { get; set; } = TimeSpan.FromSeconds(20);
 
     /// <summary>
     /// Gets or sets the send timeout value.
     /// </summary>
-    public TimeSpan SendTimeout { get; set; } = DefaultSendTimeout;
+    public TimeSpan SendTimeout { get; set; } = TimeSpan.FromSeconds(60);
 
     /// <summary>
     /// Gets or sets how long the worker waits for new work before looking for due messages again.
     /// </summary>
-    public TimeSpan PollInterval { get; set; } = DefaultPollInterval;
+    public TimeSpan PollInterval { get; set; } = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// Gets how long a claimed message stays reserved for the worker that took it. The whole batch is

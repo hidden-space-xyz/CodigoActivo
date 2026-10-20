@@ -14,6 +14,7 @@ import {
   type PersonField,
   type PersonProblem,
 } from '@/entities/user'
+import { PASSWORD_MIN_LENGTH } from '@/shared/config'
 import { toDateOnly } from '@/shared/lib/date'
 import { BrandButton } from '@/shared/ui/brand-button'
 
@@ -250,7 +251,7 @@ function removeMinor(index: number): void {
               @blur="touched.password = true"
             />
             <small v-if="showPasswordTooShort" class="reg__error">{{
-              $t('validation.passwordMin')
+              $t('validation.passwordMin', { min: PASSWORD_MIN_LENGTH })
             }}</small>
           </div>
           <div class="reg__field">
@@ -460,7 +461,6 @@ function removeMinor(index: number): void {
   font-family: inherit;
   font-size: 15px;
   outline: none;
-  color-scheme: dark;
 }
 
 .reg__date:focus {

@@ -15,8 +15,6 @@ type OutcomeTagType = 'success' | 'warning' | 'danger'
 /** Tells whether a message exists, like `te` of `useI18n`. */
 export type HasMessage = (key: string) => boolean
 
-const SHORT_ID_LENGTH = 8
-
 /** Every command the audit log names, in the order the API declares them. */
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'BeginAuthenticatorSetup',
@@ -139,11 +137,6 @@ export function outcomeLabelKey(outcome: AuditOutcome): TranslationKey {
 /** Tag colour of an outcome: green when it succeeded, amber when refused, red when it failed. */
 export function outcomeTagType(outcome: AuditOutcome): OutcomeTagType {
   return OUTCOME_TAG_TYPES[outcome]
-}
-
-/** First characters of an identifier, enough to tell entries apart at a glance. */
-export function shortId(id: string): string {
-  return id.slice(0, SHORT_ID_LENGTH)
 }
 
 /**

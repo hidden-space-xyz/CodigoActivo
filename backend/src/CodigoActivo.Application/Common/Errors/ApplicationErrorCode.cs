@@ -333,11 +333,6 @@ public enum ApplicationErrorCode
     EmailSendFailed,
 
     /// <summary>
-    /// A registration lacks a password or lists more dependents than a household may hold.
-    /// </summary>
-    RegistrationInvalid,
-
-    /// <summary>
     /// A command or query breaks a rule of its input shape, such as a missing or too long value.
     /// </summary>
     MessageInvalid,

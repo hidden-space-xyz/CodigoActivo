@@ -17,7 +17,8 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 /// <param name="Kind">Whether it holds conditions or a consent.</param>
 public sealed record CreateTermsDocumentCommand(
     [property: Required, MaxLength(120), NotBlank] string Name,
-    [property: Required, RichText(AllowImages = false), MaxLength(262144)] string Description,
+    [property: Required, RichText(AllowImages = false), MaxLength(RichTextAllowlist.MaxJsonLength)]
+        string Description,
     bool RequiresSignature,
     TermsDocumentKind Kind
 ) : ICommand<Result<TermsDocumentId>>;

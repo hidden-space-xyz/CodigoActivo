@@ -1,7 +1,6 @@
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts.Commands;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Diagnostics;
+using CodigoActivo.Infrastructure.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -27,14 +26,9 @@ public sealed class ExpiredSessionCleanupWorker(
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the number of deleted rows.</returns>
-    public async Task<int> PurgeAsync(CancellationToken ct = default)
+    public Task<int> PurgeAsync(CancellationToken ct = default)
     {
-        await using var scope = scopes.CreateAsyncScope();
-        var cleanup = scope.ServiceProvider.GetRequiredService<
-            ICommandHandler<RemoveExpiredSessionsCommand, Result<int>>
-        >();
-        var removed = await cleanup.HandleAsync(new RemoveExpiredSessionsCommand(), ct);
-        return removed.Value;
+        return ScheduledCommandRunner.RunAsync(scopes, new RemoveExpiredSessionsCommand(), ct);
     }
 
     /// <summary>
@@ -43,34 +37,14 @@ public sealed class ExpiredSessionCleanupWorker(
     /// </summary>
     /// <param name="stoppingToken">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(options.Interval);
-
-        try
-        {
-            await Task.Delay(options.StartupDelay, stoppingToken);
-
-            do
-            {
-                await PurgeSafelyAsync(stoppingToken);
-            } while (await timer.WaitForNextTickAsync(stoppingToken));
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-    }
-
-    private async Task PurgeSafelyAsync(CancellationToken ct)
-    {
-        try
-        {
-            await PurgeAsync(ct);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.ExpiredSessionCleanupFailed(ex);
-        }
+        return ScheduledCommandRunner.RepeatAsync(
+            options.StartupDelay,
+            options.Interval,
+            PurgeAsync,
+            logger.ExpiredSessionCleanupFailed,
+            stoppingToken
+        );
     }
 }

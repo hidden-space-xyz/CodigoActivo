@@ -4,14 +4,13 @@ import {
   changeUserTypeRequest,
   deleteUserRequest,
   getUserListPageRequest,
-  getUserRequest,
   getUserStatusesRequest,
   getUserTypesRequest,
   resetUserTwoFactorRequest,
   setUserAdminRequest,
 } from '@/entities/user/api/requests'
 
-import { apiError, http, HttpResponse, noContent, paged, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, paged, server } from '../../../../support/server'
 import { buildUserResponse, userStatusTypes, userTypes } from '../../../../support/builders'
 import { queryOf } from '../../../../support/dom'
 
@@ -30,19 +29,6 @@ describe('user requests', () => {
     expect(page.total).toBe(40)
     expect(page.items).toEqual([expect.objectContaining({ id: 'u2', firstName: 'Ada' })])
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '2', pageSize: '20', name: 'ada' })
-  })
-
-  it('loads a user, throwing on 404', async () => {
-    server.use(
-      http.get('/api/users/u1', () => HttpResponse.json(buildUserResponse({ id: 'u1' }))),
-      http.get('/api/users/missing', () => apiError(404, 'UserNotFound')),
-    )
-
-    await expect(getUserRequest('u1')).resolves.toMatchObject({ id: 'u1', lastName: 'Lovelace' })
-    await expect(getUserRequest('missing')).rejects.toMatchObject({
-      status: 404,
-      code: 'UserNotFound',
-    })
   })
 
   it('lists the user types and statuses', async () => {

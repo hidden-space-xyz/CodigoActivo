@@ -3,6 +3,7 @@ import { useForgotPassword } from '../model/use-forgot-password'
 import { ONE_TIME_CODE_LIFETIME_MINUTES } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
+import { StatusPanel } from '@/shared/ui/status-panel'
 
 const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
 </script>
@@ -46,14 +47,14 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
           </BrandButton>
         </form>
 
-        <div v-else class="forgot-sent" aria-live="polite">
-          <div class="forgot-sent__icon" aria-hidden="true">✓</div>
-          <h2 class="forgot-sent__title">{{ $t('pages.forgotPassword.sentTitle') }}</h2>
-          <p class="forgot-sent__text">
-            {{ $t('pages.forgotPassword.sentBody') }}
-            {{ $t('pages.forgotPassword.sentExpiry', { minutes: ONE_TIME_CODE_LIFETIME_MINUTES }) }}
-          </p>
-        </div>
+        <StatusPanel
+          v-else
+          state="success"
+          aria-live="polite"
+          :title="$t('pages.forgotPassword.sentTitle')"
+          :text="$t('pages.forgotPassword.sentBody')"
+          :hint="$t('pages.forgotPassword.sentExpiry', { minutes: ONE_TIME_CODE_LIFETIME_MINUTES })"
+        />
 
         <p class="forgot-alt">
           {{ $t('pages.forgotPassword.rememberedAlt') }}
@@ -109,42 +110,6 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
 .forgot-error {
   font-size: 13.5px;
   color: var(--ca-danger-ink);
-}
-
-.forgot-sent {
-  background: var(--ca-bg-elevated);
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 18px;
-  padding: 36px 30px;
-  text-align: center;
-}
-
-.forgot-sent__icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  margin: 0 auto 20px;
-  background: var(--ca-success-soft);
-  border: 1px solid var(--ca-success);
-  color: var(--ca-success);
-}
-
-.forgot-sent__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 24px;
-  color: var(--ca-text-bright);
-}
-
-.forgot-sent__text {
-  margin-top: 10px;
-  font-size: 15.5px;
-  line-height: 1.6;
-  color: var(--ca-text-muted);
 }
 
 .forgot-alt {

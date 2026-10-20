@@ -114,18 +114,11 @@ function toTermsSummary(document: EventTermsDocumentResponse): EventTermsSummary
 /** Maps a whole event for its public page. */
 export function toEventDetail(event: EventResponse): EventDetail {
   return {
-    id: event.id,
-    title: event.title,
-    subtitle: event.subtitle,
+    ...toEventSummary(event),
     description: event.description,
-    startsAt: event.eventStartsAt,
-    endsAt: event.eventEndsAt,
     signupStartsAt: event.signupStartsAt,
     signupEndsAt: event.signupEndsAt,
     earlySignupStartsAt: event.earlySignupStartsAt ?? null,
-    status: STAGE_KINDS[event.stage],
-    thumbnailId: event.thumbnailId,
-    categories: event.categories.map(toEventCategoryTag),
     terms: event.termsDocuments.map(toTermsSummary),
   }
 }

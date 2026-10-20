@@ -17,8 +17,8 @@ import {
   putApiActivitiesActivityId,
 } from '@/shared/api/generated/endpoints/activities/activities'
 import { getApiMeAssignedActivities } from '@/shared/api/generated/endpoints/me/me'
-import { getApiUsers } from '@/shared/api/generated/endpoints/users/users'
 import { toPage, unwrapOrNull } from '@/shared/api'
+import { MAX_PAGE_SIZE } from '@/shared/config'
 import type { ServerTablePage } from '@/shared/lib/paging'
 
 import type { HouseholdAssignmentInput } from '../model/household-assignment-input'
@@ -33,7 +33,6 @@ import type {
   AssignmentStatus,
   EventActivity,
   HouseholdActivityAssignment,
-  HouseholdMember,
   HouseholdSignupRoles,
   OverlapCheck,
   TermsDecisionInput,
@@ -48,7 +47,6 @@ import {
   toAssignmentStatus,
   toEventActivity,
   toHouseholdActivityAssignment,
-  toHouseholdMember,
   toHouseholdSignupRoles,
   toOverlapCheck,
 } from './mapper'
@@ -57,10 +55,10 @@ import {
 export async function getEventActivitiesRequest(
   eventId: string,
 ): Promise<readonly EventActivity[]> {
-  const { items } = toPage(
-    await getApiActivities({ eventId, pageSize: 100, sort: 'activityStartsAt' }),
-  )
-  return items.map(toEventActivity)
+  return toPage(
+    await getApiActivities({ eventId, pageSize: MAX_PAGE_SIZE, sort: 'activityStartsAt' }),
+    toEventActivity,
+  ).items
 }
 
 /** Loads the signed-in user's own signups to the activities of an event. */
@@ -77,16 +75,6 @@ export async function getHouseholdAssignmentsRequest(
 ): Promise<readonly HouseholdActivityAssignment[]> {
   const { data } = await getApiActivitiesHouseholdAssignmentsEventId(eventId)
   return data.map(toHouseholdActivityAssignment)
-}
-
-/** Lists the minors under `userId` (first 100 by first name); the caller adds the user itself. */
-export async function getHouseholdMembersRequest(
-  userId: string,
-): Promise<readonly HouseholdMember[]> {
-  const { items } = toPage(
-    await getApiUsers({ parentId: userId, pageSize: 100, sort: 'firstName' }),
-  )
-  return items.map(toHouseholdMember)
 }
 
 /** Loads, per household member, the roles their user type allows them to sign up for. */
@@ -164,8 +152,7 @@ export async function unassignActivityRequest(activityId: string, userId: string
 export async function getActivitiesPageRequest(
   params: ActivityListParams,
 ): Promise<ServerTablePage<ActivityListing>> {
-  const { items, total } = toPage(await getApiActivities(params))
-  return { items: items.map(toActivityListing), total }
+  return toPage(await getApiActivities(params), toActivityListing)
 }
 
 /** Loads an activity for the admin edit form; resolves `null` when it no longer exists (404). */

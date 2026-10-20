@@ -57,10 +57,6 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
         }
 
         var filters = query.Filters;
-        var activityId = filters.ActivityId;
-        var roleTypeId = filters.RoleTypeId;
-        var statusId = filters.StatusId;
-
         var source = EventAttendeeFilters.Apply(readStore.Users, eventId, filters);
 
         var projected = AttendeeSort
@@ -85,10 +81,8 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
                         u.Parent.Phone,
                         u.Parent.SecondaryPhone
                     ),
-                u.Assignments.Where(a => a.Activity.EventId == eventId)
-                    .Where(a => activityId == null || a.ActivityId == activityId)
-                    .Where(a => roleTypeId == null || a.ActivityRoleTypeId == roleTypeId)
-                    .Where(a => statusId == null || a.AssignmentStatusId == statusId)
+                u.Assignments.AsQueryable()
+                    .Where(EventAttendeeFilters.MatchingAssignment(eventId, filters))
                     .OrderBy(a => a.Activity.ActivityStartsAt)
                     .ThenBy(a => a.Activity.Title)
                     .Select(a => new EventAttendeeAssignmentResponse(

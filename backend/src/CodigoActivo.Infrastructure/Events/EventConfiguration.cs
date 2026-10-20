@@ -1,6 +1,5 @@
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
-using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -22,7 +21,7 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
 
         builder.Property(e => e.Title).IsRequired();
         builder.Property(e => e.Subtitle).IsRequired();
-        builder.Property(e => e.Description).HasColumnType("jsonb").IsRequired();
+        builder.Property(e => e.Description).IsRequired();
         builder.Property(e => e.CreatedAt).IsRequired();
 
         builder.Ignore(e => e.Calendar);
@@ -43,16 +42,6 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
             .HasForeignKey(e => e.ThumbnailId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(e => e.CreatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder
-            .HasOne<User>()
-            .WithMany()
-            .HasForeignKey(e => e.UpdatedBy)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasAuthors<Event, EventId>();
     }
 }

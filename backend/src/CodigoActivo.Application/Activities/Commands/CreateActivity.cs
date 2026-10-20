@@ -53,13 +53,7 @@ public sealed class CreateActivityCommandHandler(
 
         var activity = Activity.Create(
             command.EventId,
-            new ActivityDetails(
-                draft.Title,
-                draft.Description,
-                draft.Location,
-                validated.Value.Modality,
-                draft.ThumbnailId
-            ),
+            draft.ToDetails(),
             validated.Value.Schedule,
             validated.Value.Capacities,
             currentUser.RequiredId(),

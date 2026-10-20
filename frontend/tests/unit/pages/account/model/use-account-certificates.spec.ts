@@ -76,7 +76,6 @@ describe('useAccountCertificates', () => {
     expect(result.entries.value[1]).toMatchObject({
       eventId: 'event-2',
       participantId: 'child-1',
-      isSelf: false,
     })
   })
 

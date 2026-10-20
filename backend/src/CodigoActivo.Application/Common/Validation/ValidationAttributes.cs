@@ -86,6 +86,21 @@ public sealed class RichTextAttribute : ValidationAttribute
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class HttpUrlAttribute : ValidationAttribute
 {
+    /// <summary>
+    /// Tells whether a text, once trimmed, is an absolute HTTP or HTTPS URL with a host and without
+    /// credentials.
+    /// </summary>
+    /// <param name="text">Text to check.</param>
+    /// <returns><see langword="true"/> when the text is such a URL.</returns>
+    public static bool IsHttpUrl(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return Uri.TryCreate(text.Trim(), UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            && !string.IsNullOrWhiteSpace(uri.IdnHost)
+            && string.IsNullOrEmpty(uri.UserInfo);
+    }
+
     /// <inheritdoc />
     public override bool IsValid(object? value)
     {
@@ -94,11 +109,7 @@ public sealed class HttpUrlAttribute : ValidationAttribute
             return true;
         }
 
-        return value is string text
-            && Uri.TryCreate(text.Trim(), UriKind.Absolute, out var uri)
-            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
-            && !string.IsNullOrWhiteSpace(uri.IdnHost)
-            && string.IsNullOrEmpty(uri.UserInfo);
+        return value is string text && IsHttpUrl(text);
     }
 }
 

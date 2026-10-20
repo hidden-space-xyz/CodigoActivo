@@ -17,21 +17,20 @@ export interface PagedListSource<T> {
 }
 
 interface UsePagedListOptions {
-  readonly pageSize?: number | undefined
   readonly enabled?: (() => boolean) | undefined
 }
 
 /**
  * "Load more" list on top of an infinite query over the source that `source` returns; when it
- * depends on reactive filters and its key changes, the list starts over. Pages hold 25 items by
- * default, `items` concatenates every loaded page and `hasMore` turns false once `total` items are
+ * depends on reactive filters and its key changes, the list starts over. Pages hold 25 items,
+ * `items` concatenates every loaded page and `hasMore` turns false once every matching item is
  * loaded.
  */
 export function usePagedList<T>(
   source: () => PagedListSource<T>,
   options: UsePagedListOptions = {},
 ) {
-  const pageSize = options.pageSize ?? 25
+  const pageSize = 25
   const current = computed(source)
 
   const listQuery = useInfiniteQuery({
@@ -53,11 +52,9 @@ export function usePagedList<T>(
 
   return {
     items: computed<T[]>(() => pages.value.flatMap((page) => page.items)),
-    total: computed(() => pages.value[pages.value.length - 1]?.total ?? 0),
     hasMore: computed(() => listQuery.hasNextPage.value),
     loadMore,
     isLoading: listQuery.isLoading,
     isFetchingMore: listQuery.isFetchingNextPage,
-    isError: listQuery.isError,
   }
 }
