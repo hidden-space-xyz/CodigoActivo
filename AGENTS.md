@@ -16,6 +16,18 @@ new operational facts.
 Backend and frontend coding conventions live in [backend/AGENTS.md](backend/AGENTS.md) and
 [frontend/AGENTS.md](frontend/AGENTS.md).
 
+## Not deployed yet
+
+The application is not used in production or deployed anywhere yet. Until the user announces a deployment:
+
+- Change code and stored structures freely. Keep no legacy code, compatibility shims or data migrations for
+  earlier versions.
+- Keep a single EF Core migration, `InitialCreate`: after a model change, regenerate it as
+  [CONTRIBUTING.md](CONTRIBUTING.md#commands) describes instead of adding another.
+
+When the user announces a deployment, remove this section and the regeneration paragraph in CONTRIBUTING.md:
+from then on every model change adds a migration and stays compatible with the deployed version and its data.
+
 ## Non-negotiable rules
 
 - Never implement cryptographic or one-time-password algorithms by hand. Delegate to .NET primitives
