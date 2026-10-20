@@ -86,10 +86,11 @@ Domain + Application + Infrastructure <- Composition <- API
   value typed by the client, a credential, a code, a token or a third-party reply that may quote them. Exception
   messages you throw follow the same rule because they are logged. `NormalUseLoggingTests` fails when a normal
   flow writes an entry. See [SECURITY.md](../SECURITY.md#logging).
-- Handlers and listeners need no registration. Register other services and options in the feature's
-  registration under `CodigoActivo.Composition/<Feature>/`. Read deployment settings through `Settings` and
-  `AddValidatedOptions` so an unusable value stops the start instead of falling back; register options whose
-  values are fixed in code with `AddFixedOptions`, which no setting can reach (`FixedOptionsTests`).
+- Handlers and listeners need no registration. Register other services and options in the registration under
+  `CodigoActivo.Composition/` that covers their feature (`Events/` also covers activities, event categories,
+  ratings and terms; `Content/` covers news, partners, resources and files). Read deployment settings through
+  `Settings` and `AddValidatedOptions` so an unusable value stops the start instead of falling back; register
+  options whose values are fixed in code with `AddFixedOptions`, which no setting can reach (`FixedOptionsTests`).
 - Package versions are centralized in `Directory.Packages.props`; `PackageReference` items carry no `Version`.
 - Private fields use `camelCase` without a leading underscore.
 - Keep CSharpier formatting and every SDK analyzer rule clean; warnings are errors. Document every public type
