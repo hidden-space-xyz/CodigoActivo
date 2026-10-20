@@ -259,7 +259,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         using var uploaded = await admin.SendUploadAsync(
             HttpMethod.Post,
             "/api/files",
-            TestSeedData.ValidPng()
+            TestImages.Png()
         );
         uploaded.StatusCode.Should().Be(HttpStatusCode.Created);
         var file = await uploaded.ReadJsonAsync<FileResponse>(Ct);

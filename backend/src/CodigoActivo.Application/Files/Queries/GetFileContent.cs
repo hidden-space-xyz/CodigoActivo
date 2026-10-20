@@ -11,7 +11,9 @@ namespace CodigoActivo.Application.Files.Queries;
 /// Carries the criteria used to retrieve file content.
 /// </summary>
 /// <param name="FileId">Identifier of the file.</param>
-public sealed record GetFileContentQuery(StoredFileId FileId) : IQuery<Result<FileContent>>;
+/// <param name="Variant">Variant of the file to read.</param>
+public sealed record GetFileContentQuery(StoredFileId FileId, FileVariant Variant)
+    : IQuery<Result<FileContent>>;
 
 /// <summary>
 /// Executes the query to retrieve file content.
@@ -43,7 +45,11 @@ public sealed class GetFileContentQueryHandler(
         }
 
         var stream = await storage.OpenReadAsync(
-            FileNaming.StoredName(StoredFileId.From(meta.Value.Id), meta.Value.Extension),
+            FileNaming.StoredName(
+                StoredFileId.From(meta.Value.Id),
+                meta.Value.Extension,
+                query.Variant
+            ),
             ct
         );
         if (stream is null)
@@ -51,12 +57,9 @@ public sealed class GetFileContentQueryHandler(
             return Error.NotFound(ApplicationErrorCode.FileContentMissingFromStorage);
         }
 
-        var format = await stream.DetectImageFormatAsync(ct);
-        stream.Position = 0;
-
         return new FileContent(
             stream,
-            format?.ContentType ?? FallbackContentType,
+            ImageFormat.FromExtension(meta.Value.Extension)?.ContentType ?? FallbackContentType,
             meta.Value.Name,
             meta.Value.UploadedAt
         );

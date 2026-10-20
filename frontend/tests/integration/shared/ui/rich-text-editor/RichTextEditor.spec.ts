@@ -359,7 +359,7 @@ describe('RichTextEditor', () => {
 
       expect(click).toHaveBeenCalledTimes(1)
       expect(wrapper.find('input[type="file"]').attributes('accept')).toBe(
-        'image/jpeg,image/png,image/gif,image/webp',
+        'image/jpeg,image/png,image/webp',
       )
     })
 

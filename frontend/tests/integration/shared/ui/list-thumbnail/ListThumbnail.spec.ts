@@ -10,7 +10,7 @@ describe('ListThumbnail', () => {
     })
 
     const image = wrapper.find('img')
-    expect(image.attributes('src')).toBe('/api/files/file-9/content')
+    expect(image.attributes('src')).toBe('/api/files/file-9/thumbnail')
     expect(image.attributes('alt')).toBe('Workshop')
     expect(image.attributes('loading')).toBe('lazy')
     expect(wrapper.find('.list-thumb__placeholder').exists()).toBe(false)
@@ -57,7 +57,7 @@ describe('ListThumbnail', () => {
 
     await wrapper.setProps({ thumbnailId: 'file-10' })
 
-    expect(wrapper.find('img').attributes('src')).toBe('/api/files/file-10/content')
+    expect(wrapper.find('img').attributes('src')).toBe('/api/files/file-10/thumbnail')
     expect(wrapper.find('.list-thumb__placeholder').exists()).toBe(false)
   })
 })

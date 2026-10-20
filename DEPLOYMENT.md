@@ -26,7 +26,7 @@ policy. Networks: `frontend` (shared by `web` and `api`) and internal-only `back
 | Volume               | Contents                                                           |
 | -------------------- | ------------------------------------------------------------------ |
 | `db-data`            | PostgreSQL data, including the API's diagnostic and audit logs     |
-| `api-files`          | Uploaded files                                                     |
+| `api-files`          | Uploaded images, re-encoded as two WebP variants each              |
 | `api-dataprotection` | ASP.NET Data Protection keys and the generated Ed25519 certificate |
 | `api-state`          | The immutable demo/normal deployment-mode choice                   |
 | `logs-db`            | PostgreSQL log files, one per weekday                              |
@@ -381,7 +381,10 @@ dump and restore.
 
 ## Backups and recovery
 
-Back up `db-data`, `api-files`, `api-dataprotection` and `api-state`, and test restoration regularly. Keep
+Back up `db-data`, `api-files`, `api-dataprotection` and `api-state`, and test restoration regularly. Copy
+`api-files` after the `db-data` backup: content added in between has no row and the hourly file purge removes
+it, but content deleted in between is missing for the rows that still name it, a gap that stopping `api`
+during the backup or a filesystem snapshot of both volumes closes. Keep
 `secrets/` separately from the `api-dataprotection` backup; losing either the key volume or
 `secrets/data_protection_certificate_password` makes
 the protected key ring unusable and invalidates sessions. That password also derives the key-wrapping key of

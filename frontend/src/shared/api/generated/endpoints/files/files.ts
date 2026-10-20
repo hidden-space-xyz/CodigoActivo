@@ -283,6 +283,85 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiFilesFileIdContentMutationOptions(options), queryClient);
     }
+    export type getApiFilesFileIdThumbnailResponse200 = {
+  data: void
+  status: 200
+}
+
+export type getApiFilesFileIdThumbnailResponseSuccess = (getApiFilesFileIdThumbnailResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiFilesFileIdThumbnailResponse = (getApiFilesFileIdThumbnailResponseSuccess)
+
+export const getGetApiFilesFileIdThumbnailUrl = (fileId: string,) => {
+
+
+
+
+  return `/api/files/${fileId}/thumbnail`
+}
+
+export const getApiFilesFileIdThumbnail = async (fileId: string, options?: Parameters<typeof httpClient>[1]): Promise<getApiFilesFileIdThumbnailResponse> => {
+
+  return httpClient<getApiFilesFileIdThumbnailResponse>(getGetApiFilesFileIdThumbnailUrl(fileId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiFilesFileIdThumbnailMutationKey = () => ['getApiFilesFileIdThumbnail'] as const;
+
+export const getGetApiFilesFileIdThumbnailMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>, TError,GetApiFilesFileIdThumbnailMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>, TError,GetApiFilesFileIdThumbnailMutationVariables, TContext> => {
+
+const mutationKey = getGetApiFilesFileIdThumbnailMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>, GetApiFilesFileIdThumbnailMutationVariables> = (props) => {
+          const {fileId} = props ?? {};
+
+          return  getApiFilesFileIdThumbnail(fileId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiFilesFileIdThumbnailMutationResult = NonNullable<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>>
+
+    export type GetApiFilesFileIdThumbnailMutationError = unknown
+    export type GetApiFilesFileIdThumbnailMutationVariables = {fileId: string}
+
+    export const useGetApiFilesFileIdThumbnail = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>, TError,GetApiFilesFileIdThumbnailMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>,
+        TError,
+        GetApiFilesFileIdThumbnailMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetApiFilesFileIdThumbnailMutationOptions(options), queryClient);
+    }
     export type postApiFilesResponse201 = {
   data: FileResponse
   status: 201

@@ -6,6 +6,7 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Common.Validation;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
@@ -37,11 +38,13 @@ public sealed record UpdatePartnerCommand(
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work whose transaction locks the logo and saves the partner.</param>
 public sealed class UpdatePartnerCommandHandler(
     IPartnerRepository partners,
     IStoredFileRepository files,
     ICurrentUser currentUser,
-    IClock clock
+    IClock clock,
+    IUnitOfWork uow
 ) : ICommandHandler<UpdatePartnerCommand, Result>
 {
     /// <summary>
@@ -63,9 +66,28 @@ public sealed class UpdatePartnerCommandHandler(
             return Error.NotFound(ApplicationErrorCode.PartnerNotFound);
         }
 
-        if (!await files.ExistsAsync(command.ThumbnailId, ct))
+        return await uow.ExecuteInTransactionAsync(
+            attempt => UpdateLockedAsync(partner, command, attempt),
+            ct
+        );
+    }
+
+    private async Task<Result> UpdateLockedAsync(
+        Partner partner,
+        UpdatePartnerCommand command,
+        CancellationToken ct
+    )
+    {
+        var available = await ContentFiles.EnsureAvailableAsync(
+            files,
+            command.ThumbnailId,
+            null,
+            ApplicationErrorCode.PartnerThumbnailNotFound,
+            ct
+        );
+        if (available.IsFailure)
         {
-            return Error.Validation(ApplicationErrorCode.PartnerThumbnailNotFound);
+            return available;
         }
 
         partner.Update(
@@ -79,6 +101,7 @@ public sealed class UpdatePartnerCommandHandler(
             currentUser.RequiredId(),
             clock.UtcNow
         );
+        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

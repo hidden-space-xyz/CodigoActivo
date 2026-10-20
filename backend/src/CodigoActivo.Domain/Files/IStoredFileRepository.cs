@@ -63,14 +63,6 @@ public interface IStoredFileRepository : IRepository<StoredFile>
     );
 
     /// <summary>
-    /// Tells whether a file exists.
-    /// </summary>
-    /// <param name="id">Identifier of the file.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the file exists.</returns>
-    public Task<bool> ExistsAsync(StoredFileId id, CancellationToken ct = default);
-
-    /// <summary>
     /// Returns which of the given files any content still references.
     /// </summary>
     /// <param name="fileIds">Identifiers of the candidate files.</param>

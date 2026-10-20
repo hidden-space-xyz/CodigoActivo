@@ -73,7 +73,7 @@ public sealed class LocalFileStorageTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsyncNameAlreadyOnDiskOverwritesTheWholeFile()
+    public async Task SaveAsyncNameAlreadyStoredThrowsAndKeepsTheStoredContent()
     {
         await using (var original = new MemoryStream([1, 2, 3, 4, 5, 6]))
         {
@@ -82,14 +82,69 @@ public sealed class LocalFileStorageTests : IDisposable
 
         await using (var replacement = new MemoryStream([9, 9]))
         {
-            await sut.SaveAsync("dup.bin", replacement, Ct);
+            await sut.Invoking(s => s.SaveAsync("dup.bin", replacement, Ct))
+                .Should()
+                .ThrowAsync<IOException>();
         }
 
         await using var stream = await sut.OpenReadAsync("dup.bin", Ct);
         Assert.NotNull(stream);
         await using var buffer = new MemoryStream();
         await stream.CopyToAsync(buffer, Ct);
-        buffer.ToArray().Should().Equal([9, 9]);
+        buffer.ToArray().Should().Equal([1, 2, 3, 4, 5, 6]);
+        Directory.EnumerateFileSystemEntries(rootPath).Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task SaveAsyncCancelledWriteLeavesNothingInTheRoot()
+    {
+        await using var content = new MemoryStream([1, 2, 3]);
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync();
+
+        await sut.Invoking(s => s.SaveAsync("cut.bin", content, cancelled.Token))
+            .Should()
+            .ThrowAsync<OperationCanceledException>();
+
+        Directory.EnumerateFileSystemEntries(rootPath).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SaveAsyncContentFailingMidwayLeavesNothingInTheRoot()
+    {
+        await using var content = new FailingStream();
+
+        await sut.Invoking(s => s.SaveAsync("broken.bin", content, Ct))
+            .Should()
+            .ThrowAsync<IOException>();
+
+        Directory.EnumerateFileSystemEntries(rootPath).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListWrittenUpToListsTheEntriesWrittenByTheCutoffTemporaryOnesIncluded()
+    {
+        var cutoff = new DateTimeOffset(2026, 7, 4, 11, 0, 0, TimeSpan.Zero);
+        await using (var content = new MemoryStream([1]))
+        {
+            await sut.SaveAsync("old.bin", content, Ct);
+        }
+
+        await using (var content = new MemoryStream([2]))
+        {
+            await sut.SaveAsync("new.bin", content, Ct);
+        }
+
+        var leftover = Path.Join(rootPath, ".leftover.tmp");
+        await System.IO.File.WriteAllBytesAsync(leftover, [3], Ct);
+        System.IO.File.SetLastWriteTimeUtc(Path.Join(rootPath, "old.bin"), cutoff.UtcDateTime);
+        System.IO.File.SetLastWriteTimeUtc(leftover, cutoff.UtcDateTime.AddHours(-1));
+        System.IO.File.SetLastWriteTimeUtc(
+            Path.Join(rootPath, "new.bin"),
+            cutoff.UtcDateTime.AddSeconds(1)
+        );
+
+        sut.ListWrittenUpTo(cutoff).Should().BeEquivalentTo(["old.bin", ".leftover.tmp"]);
     }
 
     [Fact]
@@ -156,5 +211,66 @@ public sealed class LocalFileStorageTests : IDisposable
             .Should()
             .ThrowAsync<ArgumentException>()
             .WithParameterName("storedName");
+    }
+
+    private sealed class FailingStream : Stream
+    {
+        private int reads;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return ++reads > 1 ? throw new IOException("connection lost") : FillOne(buffer, offset);
+        }
+
+        public override ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken cancellationToken = default
+        )
+        {
+            if (++reads > 1)
+            {
+                throw new IOException("connection lost");
+            }
+
+            buffer.Span[0] = 1;
+            return ValueTask.FromResult(1);
+        }
+
+        public override void Flush() { }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        private static int FillOne(byte[] buffer, int offset)
+        {
+            buffer[offset] = 1;
+            return 1;
+        }
     }
 }

@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Files;
 using CodigoActivo.Application.Files.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
@@ -29,7 +30,7 @@ public sealed class GetFileContentQueryHandlerTests
     public async Task HandleAsyncMetadataMissingReturnsNotFound()
     {
         var result = await sut.HandleAsync(
-            new GetFileContentQuery(StoredFileId.New()),
+            new GetFileContentQuery(StoredFileId.New(), FileVariant.Full),
             TestContext.Current.CancellationToken
         );
 
@@ -39,41 +40,61 @@ public sealed class GetFileContentQueryHandlerTests
             .OpenReadAsync(string.Empty, TestContext.Current.CancellationToken);
     }
 
-    [Fact]
-    public async Task HandleAsyncKnownSignatureReturnsDetectedContentTypeAndRewindsStream()
+    [Theory]
+    [InlineData(FileVariant.Full, "")]
+    [InlineData(FileVariant.Thumbnail, ".thumbnail")]
+    public async Task HandleAsyncVariantReadsItsStoredNameWithTheContentTypeOfTheExtension(
+        FileVariant variant,
+        string variantInfix
+    )
     {
-        var file = NewFileRow(name: "avatar.png");
+        var file = NewFileRow(name: "avatar.png", extension: "webp");
         store.Files.Add(file);
         var stream = PngStream();
-        storage.OpenReadAsync($"{file.Id}.png", Arg.Any<CancellationToken>()).Returns(stream);
+        storage
+            .OpenReadAsync($"{file.Id}{variantInfix}.webp", Arg.Any<CancellationToken>())
+            .Returns(stream);
 
         var result = await sut.HandleAsync(
-            new GetFileContentQuery(StoredFileId.From(file.Id)),
+            new GetFileContentQuery(StoredFileId.From(file.Id), variant),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.ContentType.Should().Be("image/png");
+        result.Value.ContentType.Should().Be("image/webp");
         result.Value.FileName.Should().Be("avatar.png");
         result.Value.Content.Should().BeSameAs(stream);
-        result.Value.Content.Position.Should().Be(0);
     }
 
     [Fact]
-    public async Task HandleAsyncUnknownBytesFallsBackToOctetStream()
+    public async Task HandleAsyncUnknownExtensionFallsBackToOctetStream()
     {
-        var file = NewFileRow();
+        var file = NewFileRow(extension: "bin");
         store.Files.Add(file);
         storage
             .OpenReadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(JunkStream());
 
         var result = await sut.HandleAsync(
-            new GetFileContentQuery(StoredFileId.From(file.Id)),
+            new GetFileContentQuery(StoredFileId.From(file.Id), FileVariant.Full),
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ContentType.Should().Be("application/octet-stream");
+    }
+
+    [Fact]
+    public async Task HandleAsyncContentMissingFromStorageReturnsNotFound()
+    {
+        var file = NewFileRow(extension: "webp");
+        store.Files.Add(file);
+
+        var result = await sut.HandleAsync(
+            new GetFileContentQuery(StoredFileId.From(file.Id), FileVariant.Thumbnail),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.FileContentMissingFromStorage);
     }
 }

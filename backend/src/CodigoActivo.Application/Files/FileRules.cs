@@ -14,14 +14,51 @@ public static class FileNaming
     private const int MaxNameLength = 260;
 
     /// <summary>
-    /// Creates a unique storage name while preserving the safe file extension.
+    /// Creates the unique storage name of one variant of a file, keeping its safe extension.
     /// </summary>
     /// <param name="id">Identifier of the target entity.</param>
     /// <param name="extension">The extension value.</param>
+    /// <param name="variant">Variant of the file the name stores.</param>
     /// <returns>The generated text.</returns>
-    public static string StoredName(StoredFileId id, string extension)
+    public static string StoredName(StoredFileId id, string extension, FileVariant variant)
     {
-        return $"{id}.{extension}";
+        return variant is FileVariant.Thumbnail
+            ? $"{id}.thumbnail.{extension}"
+            : $"{id}.{extension}";
+    }
+
+    /// <summary>
+    /// Creates the storage names of every variant of a file.
+    /// </summary>
+    /// <param name="id">Identifier of the target entity.</param>
+    /// <param name="extension">The extension value.</param>
+    /// <returns>The storage names, one per variant.</returns>
+    public static IReadOnlyList<string> StoredNames(StoredFileId id, string extension)
+    {
+        return
+        [
+            .. Enum.GetValues<FileVariant>().Select(variant => StoredName(id, extension, variant)),
+        ];
+    }
+
+    /// <summary>
+    /// Reads the identifier of the file a storage name belongs to.
+    /// </summary>
+    /// <param name="storedName">Storage name to read.</param>
+    /// <param name="id">Identifier of the file, when the name starts with one.</param>
+    /// <returns><see langword="true"/> when the name starts with a file identifier and a dot.</returns>
+    public static bool TryReadId(string storedName, out StoredFileId id)
+    {
+        ArgumentNullException.ThrowIfNull(storedName);
+        var dot = storedName.IndexOf('.', StringComparison.Ordinal);
+        if (dot > 0 && Guid.TryParseExact(storedName.AsSpan(0, dot), "D", out var value))
+        {
+            id = StoredFileId.From(value);
+            return true;
+        }
+
+        id = default;
+        return false;
     }
 
     /// <summary>

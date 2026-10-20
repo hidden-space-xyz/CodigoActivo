@@ -15,8 +15,6 @@ public sealed class StreamExtensionsTests
             { Jpeg(0xE0), "jpg", "image/jpeg" },
             { Jpeg(0xC0), "jpg", "image/jpeg" },
             { Png(), "png", "image/png" },
-            { Gif("GIF87a"), "gif", "image/gif" },
-            { Gif("GIF89a"), "gif", "image/gif" },
             { Webp("VP8 "), "webp", "image/webp" },
             { Webp("VP8L"), "webp", "image/webp" },
             { Webp("VP8X"), "webp", "image/webp" },
@@ -50,9 +48,8 @@ public sealed class StreamExtensionsTests
             Png(height: 0),
             Png(ihdrLen: 12),
             Png(tag: "IHDX"),
-            Truncate(Gif("GIF89a"), 8),
-            Gif("GIF89a", width: 0, height: 0),
-            Gif("GIF9999"),
+            Gif("GIF87a"),
+            Gif("GIF89a"),
             Truncate(Webp("VP8 "), 12),
             Webp("XXXX"),
             Webp("VP8 ", riffSize: 100),
@@ -100,6 +97,24 @@ public sealed class StreamExtensionsTests
         result.Should().BeNull();
     }
 
+    [Theory]
+    [InlineData("jpg", "image/jpeg")]
+    [InlineData("png", "image/png")]
+    [InlineData("webp", "image/webp")]
+    public void FromExtensionKnownExtensionReturnsItsFormat(string extension, string contentType)
+    {
+        ImageFormat.FromExtension(extension).Should().Be(new ImageFormat(extension, contentType));
+    }
+
+    [Theory]
+    [InlineData("gif")]
+    [InlineData("WEBP")]
+    [InlineData("")]
+    public void FromExtensionUnknownExtensionReturnsNull(string extension)
+    {
+        ImageFormat.FromExtension(extension).Should().BeNull();
+    }
+
     private static byte[] Jpeg(byte fourth)
     {
         var b = new byte[32];
@@ -127,12 +142,12 @@ public sealed class StreamExtensionsTests
         return b;
     }
 
-    private static byte[] Gif(string magic, ushort width = 10, ushort height = 10)
+    private static byte[] Gif(string magic)
     {
         var b = new byte[32];
         Encoding.ASCII.GetBytes(magic).CopyTo(b.AsSpan(0));
-        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(6, 2), width);
-        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(8, 2), height);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(6, 2), 10);
+        BinaryPrimitives.WriteUInt16LittleEndian(b.AsSpan(8, 2), 10);
         return b;
     }
 

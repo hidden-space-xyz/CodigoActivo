@@ -57,28 +57,33 @@ public class FilesController : ApiControllerBase
     [HttpGet("{fileId:guid}/content")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]
-    public async Task<IActionResult> GetContentAsync(
+    public Task<IActionResult> GetContentAsync(
         Guid fileId,
         [FromServices] IQueryHandler<GetFileContentQuery, Result<FileContent>> handler,
         CancellationToken ct
     )
     {
-        var result = await handler.HandleAsync(
-            new GetFileContentQuery(StoredFileId.From(fileId)),
-            ct
-        );
-        if (result.IsFailure)
-        {
-            return ToProblem(result.Error!);
-        }
+        return ContentAsync(fileId, FileVariant.Full, handler, ct);
+    }
 
-        var content = result.Value;
-
-        var lastModified = content.UploadedAt;
-        var ticks = lastModified.UtcTicks.ToString(CultureInfo.InvariantCulture);
-        var etag = new EntityTagHeaderValue($"\"{fileId:N}-{ticks}\"");
-        Response.Headers.CacheControl = ImmutableContentCacheControl;
-        return File(content.Content, content.ContentType, lastModified, etag);
+    /// <summary>
+    /// Gets the smaller copy of the requested content that lists, cards and logos show. Like the
+    /// content, it never changes under its id.
+    /// </summary>
+    /// <param name="fileId">Identifier of the file.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpGet("{fileId:guid}/thumbnail")]
+    [AllowAnonymous]
+    [OutputCache(PolicyName = CacheTags.Files)]
+    public Task<IActionResult> GetThumbnailAsync(
+        Guid fileId,
+        [FromServices] IQueryHandler<GetFileContentQuery, Result<FileContent>> handler,
+        CancellationToken ct
+    )
+    {
+        return ContentAsync(fileId, FileVariant.Thumbnail, handler, ct);
     }
 
     /// <summary>
@@ -127,6 +132,32 @@ public class FilesController : ApiControllerBase
         return ToNoContent(
             await handler.HandleAsync(new DeleteFileCommand(StoredFileId.From(fileId)), ct)
         );
+    }
+
+    private async Task<IActionResult> ContentAsync(
+        Guid fileId,
+        FileVariant variant,
+        IQueryHandler<GetFileContentQuery, Result<FileContent>> handler,
+        CancellationToken ct
+    )
+    {
+        var result = await handler.HandleAsync(
+            new GetFileContentQuery(StoredFileId.From(fileId), variant),
+            ct
+        );
+        if (result.IsFailure)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        var content = result.Value;
+
+        var lastModified = content.UploadedAt;
+        var ticks = lastModified.UtcTicks.ToString(CultureInfo.InvariantCulture);
+        var suffix = variant is FileVariant.Thumbnail ? "-thumbnail" : string.Empty;
+        var etag = new EntityTagHeaderValue($"\"{fileId:N}-{ticks}{suffix}\"");
+        Response.Headers.CacheControl = ImmutableContentCacheControl;
+        return File(content.Content, content.ContentType, lastModified, etag);
     }
 
     private static FileUpload? ToUploadRequest(IFormFile? file)

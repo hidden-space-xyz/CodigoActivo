@@ -24,11 +24,13 @@ public sealed record CreateActivityCommand(EventId EventId, ActivityDraft Activi
 /// <param name="validator">The validator value.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="uow">Unit of work whose transaction validates and saves the activity.</param>
 public sealed class CreateActivityCommandHandler(
     IActivityRepository activities,
     ActivityValidator validator,
     ICurrentUser currentUser,
-    IClock clock
+    IClock clock,
+    IUnitOfWork uow
 ) : ICommandHandler<CreateActivityCommand, Result<ActivityId>>
 {
     /// <summary>
@@ -43,6 +45,18 @@ public sealed class CreateActivityCommandHandler(
     )
     {
         ArgumentNullException.ThrowIfNull(command);
+
+        return await uow.ExecuteInTransactionAsync(
+            attempt => CreateLockedAsync(command, attempt),
+            ct
+        );
+    }
+
+    private async Task<Result<ActivityId>> CreateLockedAsync(
+        CreateActivityCommand command,
+        CancellationToken ct
+    )
+    {
         var draft = command.Activity;
 
         var validated = await validator.ValidateActivityAsync(command.EventId, draft, ct);
@@ -61,6 +75,7 @@ public sealed class CreateActivityCommandHandler(
         );
 
         await activities.AddAsync(activity, ct);
+        await uow.SaveChangesAsync(ct);
         return activity.Id;
     }
 }

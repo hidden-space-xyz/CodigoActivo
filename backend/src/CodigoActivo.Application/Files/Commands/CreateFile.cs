@@ -17,7 +17,8 @@ namespace CodigoActivo.Application.Files.Commands;
 public sealed record CreateFileCommand(FileUpload? Upload) : ICommand<Result<StoredFileId>>;
 
 /// <summary>
-/// Executes the command to create a file.
+/// Executes the command to create a file: the upload is validated, turned into its variants by
+/// <see cref="IImageProcessor"/> and only those are stored; the upload itself is discarded.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -25,13 +26,15 @@ public sealed record CreateFileCommand(FileUpload? Upload) : ICommand<Result<Sto
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="validator">The validator value.</param>
+/// <param name="processor">Service that encodes the stored variants of the upload.</param>
 public sealed class CreateFileCommandHandler(
     IStoredFileRepository files,
     IUnitOfWork uow,
     IFileStorage storage,
     ICurrentUser currentUser,
     IClock clock,
-    FileUploadValidator validator
+    FileUploadValidator validator,
+    IImageProcessor processor
 ) : ICommandHandler<CreateFileCommand, Result<StoredFileId>>
 {
     /// <summary>
@@ -53,25 +56,39 @@ public sealed class CreateFileCommandHandler(
             return detection.Error!;
         }
 
-        var format = detection.Value;
+        var processed = await processor.ProcessAsync(upload!.Content, ct);
+        if (processed.IsFailure)
+        {
+            return processed.Error!;
+        }
+
         var file = StoredFile.Upload(
-            FileNaming.SanitizeName(upload!.FileName, AppStrings.FilesFallbackFileName),
-            format.Extension,
+            FileNaming.SanitizeName(upload.FileName, AppStrings.FilesFallbackFileName),
+            ProcessedImage.Format.Extension,
             currentUser.RequiredId(),
             clock.UtcNow
         );
 
-        var storedName = FileNaming.StoredName(file.Id, file.Extension);
-        await storage.SaveAsync(storedName, upload.Content, ct);
-
+        var saved = new List<string>();
         try
         {
+            foreach (var variant in Enum.GetValues<FileVariant>())
+            {
+                var storedName = FileNaming.StoredName(file.Id, file.Extension, variant);
+                await using var content = new MemoryStream(
+                    processed.Value.Of(variant),
+                    writable: false
+                );
+                await storage.SaveAsync(storedName, content, ct);
+                saved.Add(storedName);
+            }
+
             await files.AddAsync(file, ct);
             await uow.SaveChangesAsync(ct);
         }
         catch
         {
-            storage.Delete(storedName);
+            saved.ForEach(storage.Delete);
             throw;
         }
 

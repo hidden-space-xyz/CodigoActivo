@@ -12,6 +12,8 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="NetVips" />
+    <PackageReference Include="NetVips.Native" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Otp.NET" />
     <PackageReference Include="Serilog" />

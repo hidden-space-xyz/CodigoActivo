@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { AppIcon } from '@/shared/ui/app-icon'
-import { fileContentUrl } from '@/shared/api'
+import { fileThumbnailUrl } from '@/shared/api'
 
 const props = withDefaults(
   defineProps<{
@@ -20,7 +20,7 @@ const props = withDefaults(
 
 const failed = ref(false)
 
-const url = computed(() => fileContentUrl(props.thumbnailId))
+const url = computed(() => fileThumbnailUrl(props.thumbnailId))
 
 watch(
   () => props.thumbnailId,

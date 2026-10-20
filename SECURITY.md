@@ -587,18 +587,28 @@ The development override removes parts of this boundary and must not be deployed
 
 ### Files and multipart requests
 
-Stored uploads are limited to 10 MiB by default and saved under `/app/files` in the `api-files` volume; nginx
-also enforces a `12m` request-body limit. Kestrel refuses any other request body above 2 MiB, which no valid
-JSON request reaches; only the multipart upload and email endpoints raise it, to the upload limit plus 64 KiB.
-Access to stored files goes through API authorization, not a direct static volume mount. An upload is kept
+Uploads are limited to 10 MiB by default; nginx also enforces a `12m` request-body limit. Kestrel refuses any
+other request body above 2 MiB, which no valid JSON request reaches; only the multipart upload and email
+endpoints raise it, to the upload limit plus 64 KiB. Only JPEG, PNG and WebP are accepted, detected from their
+first bytes. No upload is stored as sent: `VipsImageProcessor` reads the dimensions from the header and refuses
+more than 50 megapixels before decoding (`FileUploadDimensionsTooLarge`), keeps only the libvips JPEG, PNG and
+WebP loaders enabled, decodes at most two uploads at a time, applies the EXIF orientation, converts to sRGB,
+drops every metadata block (EXIF with any GPS position, XMP, IPTC, color profile) and stores two WebP variants:
+the content, at most 2048 × 2048 pixels, and a thumbnail at most 800 pixels wide, lossless when the image has
+an alpha channel. An upload no loader decodes is refused (`FileUploadInvalidImage`). The variants are saved
+under `/app/files` in the `api-files` volume, each written to a temporary entry, flushed to disk and only then
+moved to its name, which never replaces stored content. Access to stored files goes through API
+authorization, not a direct static volume mount. An upload is kept
 while content references it (`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after
 it was uploaded, such as an image picked for a form that was never saved, is deleted with its content by
 `PurgeUnusedFiles`, which `UnusedFilePurgeWorker` runs 30 seconds after startup and then hourly. The purge locks the
-files it deletes (`FOR UPDATE`) before reading their references, and saving an event, news item or resource
-locks its thumbnail and the images its rich text embeds (`FOR KEY SHARE`, `ContentFiles`) in the transaction
-that stores it, so a save either commits first and keeps them or is refused (`*ThumbnailNotFound`,
-`RichTextFileNotFound`) instead of storing a reference to a deleted file. A failed run logs
-`UnusedFilePurgeFailed`, and content that cannot be removed from the volume logs
+files it deletes (`FOR UPDATE`) before reading their references, and saving an event, activity, news item,
+resource or partner locks its thumbnail and the images its rich text embeds (`FOR KEY SHARE`, `ContentFiles`)
+in the transaction that stores it, so a save either commits first and keeps them or is refused
+(`*ThumbnailNotFound`, `RichTextFileNotFound`) instead of storing a reference to a deleted file. The same run
+then removes every entry of the volume that no file row owns an hour after it was written: a write cut short,
+an upload whose row was never committed, content whose deletion failed or what a restored backup left over. A
+failed run logs `UnusedFilePurgeFailed`, and content that cannot be removed from the volume logs
 `StoredFileContentDeleteFailed`. Administrator email
 attachments never reach the `api-files` volume: they are read once
 per batch into the Data Protection-protected outbox content described above and removed once every message
