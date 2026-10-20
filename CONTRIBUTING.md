@@ -79,8 +79,15 @@ PostgreSQL database.
 Create migrations with:
 
 ```bash
-dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.Infrastructure
+dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.Infrastructure --output-dir Database/Migrations
 ```
+
+Until the first deployment there is only `InitialCreate` ([AGENTS.md](AGENTS.md#not-deployed-yet)): after a
+model change, delete `src/CodigoActivo.Infrastructure/Database/Migrations/` and run the command with that name.
+EF Core cannot create a partitioned table, so then replace the generated `CreateTable` of `audit_log_entries`
+and `diagnostic_log_entries` with the `CREATE TABLE ... PARTITION BY RANGE (occurred_at)` SQL of the deleted
+migration. The API cannot migrate a database created from a previous `InitialCreate`; recreate it, locally
+with `docker compose down -v`.
 
 `--context` is required because Infrastructure also has `CodigoActivoReadDbContext`, the read side, which never
 has migrations. The tools build the context through `CodigoActivoDesignTimeDbContextFactory`, whose placeholder
