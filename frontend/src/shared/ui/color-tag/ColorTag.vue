@@ -26,8 +26,8 @@ const tagStyle = computed(() => {
   const luminance = hexLuminance(hex.value)
   return {
     '--el-tag-bg-color': hex.value,
-    '--el-tag-text-color': luminance > 0.6 ? '#1f2937' : '#ffffff',
-    '--el-tag-border-color': luminance > 0.85 ? 'rgba(0, 0, 0, 0.15)' : 'transparent',
+    '--el-tag-text-color': luminance > 0.6 ? 'var(--ca-paper-text)' : 'var(--ca-paper)',
+    '--el-tag-border-color': luminance > 0.85 ? 'var(--ca-paper-edge)' : 'transparent',
   }
 })
 

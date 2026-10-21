@@ -130,15 +130,6 @@ async function onDownload(
 }
 
 .cert-tile {
-  --cert-orange: #f9a320;
-  --cert-orange-glow: rgb(249 163 32 / 0.16);
-  --cert-lime: #7cb518;
-  --cert-azure: #159fde;
-  --cert-ink: #8f5900;
-  --cert-ink-soft: rgb(143 89 0 / 0.28);
-  --cert-ink-border: rgb(143 89 0 / 0.45);
-  --cert-paper: #fdfbf7;
-  --cert-paper-shade: #f4efe6;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--ca-border-soft);
@@ -174,8 +165,8 @@ async function onDownload(
   display: block;
   height: 76px;
   background:
-    radial-gradient(120% 160% at 100% 0%, var(--cert-orange-glow), transparent 60%),
-    linear-gradient(150deg, var(--cert-paper), var(--cert-paper-shade));
+    radial-gradient(120% 160% at 100% 0%, var(--ca-certificate-orange-glow), transparent 60%),
+    linear-gradient(150deg, var(--ca-certificate-paper), var(--ca-certificate-paper-shade));
   border-bottom: 1px solid var(--ca-border-soft);
 }
 
@@ -186,9 +177,9 @@ async function onDownload(
   border-radius: 2px;
   background: linear-gradient(
     90deg,
-    var(--cert-orange) 0 34%,
-    var(--cert-lime) 34% 67%,
-    var(--cert-azure) 67% 100%
+    var(--ca-certificate-orange) 0 34%,
+    var(--ca-certificate-lime) 34% 67%,
+    var(--ca-certificate-azure) 67% 100%
   );
   opacity: 0.85;
 }
@@ -197,7 +188,7 @@ async function onDownload(
   position: absolute;
   inset: auto 12px 12px;
   height: 1px;
-  background: var(--cert-ink-soft);
+  background: var(--ca-certificate-ink-soft);
 }
 
 .cert-tile__seal {
@@ -209,10 +200,10 @@ async function onDownload(
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: 1px solid var(--cert-ink-border);
+  border: 1px solid var(--ca-certificate-ink-border);
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.6);
-  color: var(--cert-ink);
+  background: color-mix(in srgb, var(--ca-paper) 60%, transparent);
+  color: var(--ca-certificate-ink);
   font-family: var(--ca-font-mono);
   font-size: 11px;
   font-weight: 600;

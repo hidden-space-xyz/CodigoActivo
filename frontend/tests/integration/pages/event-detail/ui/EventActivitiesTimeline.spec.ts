@@ -82,7 +82,6 @@ async function renderTimeline(
   const rendered = await renderWithProviders(EventActivitiesTimeline, {
     props: { eventId: 'event-1', signupOpen: true, ...props },
     attach: true,
-    // Dialogs only report closing through the header button once their leave transition ends.
     ...(options.realTransitions ? { stubs: { transition: false } } : {}),
     ...(options.guest ? {} : { user: { id: 'user-1', firstName: 'Ada' } }),
   })

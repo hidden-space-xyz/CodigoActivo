@@ -84,7 +84,6 @@ describe('RangeFilter', () => {
     await flushPromises()
     expect(picker.props('modelValue')).toEqual([new Date(2026, 2, 1)])
 
-    // Opening the popover discards the uncommitted draft and shows the committed dates again.
     await wrapper.find('.range-filter__pill--custom').trigger('click')
     await vi.waitFor(() => expect(picker.props('modelValue')).toEqual([start, end]))
     expect(picker.props('unlinkPanels')).toBe(true)
@@ -98,7 +97,6 @@ describe('RangeFilter', () => {
     await flushPromises()
     expect(picker.props('modelValue')).toEqual([])
 
-    // Clicks and key presses inside the panel must not reach the popover trigger and close it.
     const panel = document.body.querySelector<HTMLElement>('.range-filter__panel')
     const outerEvents = vi.fn()
     document.body.addEventListener('click', outerEvents)

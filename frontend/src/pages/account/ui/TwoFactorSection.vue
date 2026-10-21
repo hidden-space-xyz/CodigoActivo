@@ -329,7 +329,7 @@ const {
   width: 200px;
   height: 200px;
   border-radius: 12px;
-  background: #fff;
+  background: var(--ca-paper);
   padding: 6px;
   border: 1px solid var(--ca-border-strong);
 }

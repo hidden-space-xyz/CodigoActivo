@@ -83,9 +83,7 @@ public sealed class FakeSmtpServer : IAsyncDisposable
         }
         catch (Exception ex)
             when (ex is OperationCanceledException or SocketException or ObjectDisposedException)
-        {
-            // The server is stopping.
-        }
+        { }
     }
 
     private async Task HandleSessionAsync(TcpClient client)
@@ -98,10 +96,7 @@ public sealed class FakeSmtpServer : IAsyncDisposable
             }
         }
         catch (Exception ex)
-            when (ex is IOException or OperationCanceledException or ObjectDisposedException)
-        {
-            // The client or the server closed the connection.
-        }
+            when (ex is IOException or OperationCanceledException or ObjectDisposedException) { }
     }
 
     private async Task RunSessionAsync(NetworkStream stream, CancellationToken ct)

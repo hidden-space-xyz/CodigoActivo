@@ -96,6 +96,38 @@ public sealed class RepositoryConventionTests
     }
 
     [Fact]
+    public void DomainInterfacesImplementedOutsideDomainAlwaysAreRepositories()
+    {
+        var implemented = ProductionAssemblies
+            .Types(
+                ProductionAssemblies.Application,
+                ProductionAssemblies.Infrastructure,
+                ProductionAssemblies.Composition,
+                ProductionAssemblies.Api
+            )
+            .SelectMany(type => type.GetInterfaces())
+            .Where(contract => contract.Assembly == ProductionAssemblies.Domain)
+            .Distinct()
+            .ToList();
+
+        var offenders = implemented
+            .Where(contract =>
+                !contract
+                    .GetInterfaces()
+                    .Prepend(contract)
+                    .Any(candidate =>
+                        candidate.IsGenericType
+                        && candidate.GetGenericTypeDefinition() == typeof(IRepository<>)
+                    )
+            )
+            .Select(contract => contract.Name)
+            .ToList();
+
+        implemented.Should().NotBeEmpty();
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
     public void RepositoriesNeverDeclareAnotherRemove()
     {
         var offenders = DomainRepositories()

@@ -11,7 +11,6 @@ import { mountComposable } from '../../../../support/render'
 type Registration = ReturnType<typeof useRegistration>
 
 function useCooldownClock(): void {
-  // Only the cooldown interval and clock are faked; TanStack Query and MSW keep real timeouts.
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
   vi.setSystemTime(new Date('2026-09-17T10:00:00Z'))
 }

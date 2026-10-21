@@ -26,7 +26,7 @@ describe('ColorTag', () => {
     const tag = tagVars(wrapper)
     expect(tag.text).toBe('Robotics')
     expect(tag.background).toBe('#112233')
-    expect(tag.color).toBe('#ffffff')
+    expect(tag.color).toBe('var(--ca-paper)')
     expect(tag.border).toBe('transparent')
     expect(tag.classes).not.toContain('el-tag--info')
   })
@@ -37,7 +37,7 @@ describe('ColorTag', () => {
     })
 
     const tag = tagVars(wrapper)
-    expect(tag.color).toBe('#1f2937')
+    expect(tag.color).toBe('var(--ca-paper-text)')
     expect(tag.border).toBe('transparent')
   })
 
@@ -46,7 +46,7 @@ describe('ColorTag', () => {
       props: { value: 'Blank', color: '#FAFAFA' },
     })
 
-    expect(tagVars(wrapper).border).toBe('rgba(0, 0, 0, 0.15)')
+    expect(tagVars(wrapper).border).toBe('var(--ca-paper-edge)')
   })
 
   it('falls back to the neutral info tag for missing or invalid colors', async () => {

@@ -16,7 +16,6 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       chunkSizeWarningLimit: 700,
-      // Keep font files as same-origin assets: the production CSP (`font-src 'self'`) blocks `data:` fonts.
       assetsInlineLimit: (filePath) => (/\.woff2?$/.test(filePath) ? false : undefined),
       rolldownOptions: {
         output: {

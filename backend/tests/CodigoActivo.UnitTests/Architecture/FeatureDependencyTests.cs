@@ -1,21 +1,20 @@
+using System.Reflection;
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Messaging;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Architecture;
 
 public sealed class FeatureDependencyTests
 {
-    private const string ApplicationPrefix = "CodigoActivo.Application.";
-
     private static readonly string[] SharedSlices = ["Abstractions", "Common"];
 
-    private static Dictionary<string, HashSet<string>> SliceDependencies()
+    private static Dictionary<string, HashSet<string>> SliceDependencies(Assembly assembly)
     {
+        var prefix = assembly.GetName().Name + ".";
         var dependencies = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
-        foreach (var type in typeof(IQuery<>).Assembly.GetTypes())
+        foreach (var type in assembly.GetTypes())
         {
-            if (SliceOf(type) is not { } slice)
+            if (SliceOf(type, prefix) is not { } slice)
             {
                 continue;
             }
@@ -25,7 +24,7 @@ public sealed class FeatureDependencyTests
                 : dependencies[slice] = new HashSet<string>(StringComparer.Ordinal);
             foreach (var target in IlReferences.TypesUsedBy(type).SelectMany(IlReferences.Expand))
             {
-                if (SliceOf(target) is { } other && other != slice)
+                if (SliceOf(target, prefix) is { } other && other != slice)
                 {
                     used.Add(other);
                 }
@@ -35,15 +34,15 @@ public sealed class FeatureDependencyTests
         return dependencies;
     }
 
-    private static string? SliceOf(Type type)
+    private static string? SliceOf(Type type, string prefix)
     {
         var ns = type.Namespace;
-        if (ns is null || !ns.StartsWith(ApplicationPrefix, StringComparison.Ordinal))
+        if (ns is null || !ns.StartsWith(prefix, StringComparison.Ordinal))
         {
             return null;
         }
 
-        var rest = ns[ApplicationPrefix.Length..];
+        var rest = ns[prefix.Length..];
         var end = rest.IndexOf('.', StringComparison.Ordinal);
         return end < 0 ? rest : rest[..end];
     }
@@ -51,7 +50,8 @@ public sealed class FeatureDependencyTests
     [Fact]
     public void SharedSlicesNeverDependOnFeatures()
     {
-        var offenders = SliceDependencies()
+        var dependencies = SliceDependencies(ProductionAssemblies.Application);
+        var offenders = dependencies
             .Where(entry => SharedSlices.Contains(entry.Key))
             .SelectMany(entry =>
                 entry
@@ -60,14 +60,14 @@ public sealed class FeatureDependencyTests
             )
             .ToList();
 
-        SliceDependencies().Should().ContainKeys(SharedSlices);
+        dependencies.Should().ContainKeys(SharedSlices);
         offenders.Should().BeEmpty();
     }
 
     [Fact]
     public void SliceDependenciesAlwaysSeeSignaturesAndMethodBodies()
     {
-        var dependencies = SliceDependencies();
+        var dependencies = SliceDependencies(ProductionAssemblies.Application);
 
         dependencies["Users"].Should().Contain("Accounts");
         dependencies["Participation"].Should().Contain("Activities");
@@ -76,13 +76,20 @@ public sealed class FeatureDependencyTests
     [Fact]
     public void AccountsNeverDependOnUsers()
     {
-        SliceDependencies()["Accounts"].Should().NotContain("Users");
+        SliceDependencies(ProductionAssemblies.Application)["Accounts"]
+            .Should()
+            .NotContain("Users");
     }
 
-    [Fact]
-    public void FeaturesNeverDependOnEachOtherInACycle()
+    [Theory]
+    [InlineData("CodigoActivo.Application")]
+    [InlineData("CodigoActivo.Composition")]
+    [InlineData("CodigoActivo.API")]
+    public void FeaturesNeverDependOnEachOtherInACycle(string assemblyName)
     {
-        var dependencies = SliceDependencies();
+        var dependencies = SliceDependencies(
+            ProductionAssemblies.All.Single(assembly => assembly.GetName().Name == assemblyName)
+        );
 
         var offenders = dependencies
             .SelectMany(entry =>

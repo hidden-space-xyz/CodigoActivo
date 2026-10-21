@@ -102,7 +102,6 @@ describe('parseRichText', () => {
 
     const parsed = parseRichText(doc(...paragraphs))
 
-    // The document itself and each paragraph with its text count as nodes.
     expect(parsed.content).toHaveLength(2500)
   })
 

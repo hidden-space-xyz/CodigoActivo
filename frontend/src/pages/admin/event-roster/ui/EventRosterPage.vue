@@ -92,9 +92,9 @@ watch(activities, () => void paginate(), { immediate: true })
   min-height: 297mm;
   margin: 0 auto 24px;
   padding: 8mm;
-  background: #fff;
-  color: #111827;
-  box-shadow: 0 4px 24px rgb(0 0 0 / 0.5);
+  background: var(--ca-paper);
+  color: var(--ca-paper-ink);
+  box-shadow: var(--ca-paper-shadow);
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }
@@ -116,7 +116,7 @@ watch(activities, () => void paginate(), { immediate: true })
   font-size: 8pt;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #4b5563;
+  color: var(--ca-paper-text-dim);
 }
 
 @media print {

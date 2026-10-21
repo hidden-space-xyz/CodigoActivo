@@ -97,7 +97,7 @@ function participantsLabel(count: number): string {
 .chunk__head {
   margin: 0;
   padding-bottom: 1.6mm;
-  border-bottom: 0.5mm solid #111827;
+  border-bottom: 0.5mm solid var(--ca-paper-ink);
 }
 
 .chunk__title {
@@ -106,13 +106,13 @@ function participantsLabel(count: number): string {
   font-size: 12.5pt;
   font-weight: 800;
   line-height: 1.15;
-  color: #111827;
+  color: var(--ca-paper-ink);
 }
 
 .chunk__cont {
   font-size: 9pt;
   font-weight: 600;
-  color: #4b5563;
+  color: var(--ca-paper-text-dim);
 }
 
 .chunk__meta {
@@ -121,7 +121,7 @@ function participantsLabel(count: number): string {
   gap: 1.2mm;
   margin: 0.8mm 0 0;
   font-size: 8pt;
-  color: #374151;
+  color: var(--ca-paper-text-muted);
 }
 
 .list {
@@ -134,31 +134,31 @@ function participantsLabel(count: number): string {
 
 .list th {
   padding: 1mm 1.5mm;
-  border-bottom: 0.4mm solid #111827;
+  border-bottom: 0.4mm solid var(--ca-paper-ink);
   text-align: left;
   font-size: 7pt;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #374151;
+  color: var(--ca-paper-text-muted);
 }
 
 .list td {
   padding: 1.1mm 1.5mm;
-  border-bottom: 0.2mm solid #d1d5db;
+  border-bottom: 0.2mm solid var(--ca-paper-rule-soft);
   vertical-align: top;
   overflow-wrap: anywhere;
-  color: #111827;
+  color: var(--ca-paper-ink);
 }
 
 .list__role-row td {
   padding: 1mm 1.5mm;
-  border-bottom: 0.4mm solid #9ca3af;
-  background: #eef0f3;
+  border-bottom: 0.4mm solid var(--ca-paper-rule);
+  background: var(--ca-paper-band);
   font-size: 7.5pt;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #1f2937;
+  color: var(--ca-paper-text);
 }
 
 .list__name-col {
@@ -174,7 +174,7 @@ function participantsLabel(count: number): string {
   display: inline-block;
   width: 4mm;
   height: 4mm;
-  border: 0.4mm solid #111827;
+  border: 0.4mm solid var(--ca-paper-ink);
   border-radius: 0.8mm;
 }
 
@@ -189,6 +189,6 @@ function participantsLabel(count: number): string {
 
 .list__contact {
   font-size: 7.5pt;
-  color: #1f2937;
+  color: var(--ca-paper-text);
 }
 </style>

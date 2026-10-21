@@ -165,7 +165,6 @@ describe('ResourceFormDialog', () => {
     server.use(
       http.get('/api/resources/types', () => {
         calls += 1
-        // The query runs on mount and is retried when the dialog opens; both attempts fail.
         return calls <= 2 ? apiError(500) : HttpResponse.json([internalType])
       }),
     )

@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 import pluginVue from 'eslint-plugin-vue'
 import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 import { withVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
@@ -12,10 +14,8 @@ const disableTypeChecked = Array.isArray(vueTsConfigs.disableTypeChecked)
 
 if (!disableTypeChecked) throw new Error('Missing disable-type-checked ESLint configuration')
 
-// Test names must explain themselves, so tests are exempt from documentation rules.
 const testSources = ['src/**/*.{spec,test}.ts', 'src/**/__tests__/**', 'tests/**']
 
-// Mirrors CS1591 in the backend: top-level exports and public class members form a module's public API.
 const publicApiContexts = [
   'Program > ExportDefaultDeclaration',
   'Program > ExportNamedDeclaration > ClassDeclaration',
@@ -29,7 +29,6 @@ const publicApiContexts = [
   'ExportNamedDeclaration > ClassDeclaration > ClassBody > PropertyDefinition[accessibility!="private"][accessibility!="protected"]',
 ]
 
-// Props, emits and exposed members form a component's public API.
 const componentApiContexts = [
   'CallExpression[callee.name="defineEmits"] > TSTypeParameterInstantiation > TSTypeLiteral > TSPropertySignature',
   'CallExpression[callee.name="defineExpose"] > ObjectExpression > Property',
@@ -48,7 +47,7 @@ const imperativeFeedbackImport = {
 }
 
 const generatedClientPattern = {
-  group: ['@/shared/api/generated', '@/shared/api/generated/**'],
+  regex: '(^|/)api/generated(/|$)',
   message: 'Only `api` segments use the generated client; map its DTOs to model types there.',
 }
 
@@ -74,6 +73,52 @@ const viewOnlyImports = [
     message: 'Views only resolve file URLs; requests and API errors belong to `api` and `model`.',
   },
 ]
+
+/** @type {import('eslint').ESLint.Plugin} */
+const conventions = {
+  rules: {
+    'file-name-case': {
+      meta: {
+        type: 'problem',
+        schema: [],
+        messages: {
+          component: 'Name component files in PascalCase, such as `EventCard.vue`.',
+          module: 'Name non-component files in kebab-case, such as `use-events-admin.ts`.',
+        },
+      },
+      create(context) {
+        const name = path.basename(context.filename)
+        const component = name.endsWith('.vue')
+        const pattern = component
+          ? /^[A-Z][A-Za-z0-9]*\.vue$/
+          : /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+)+$/
+        return pattern.test(name)
+          ? {}
+          : {
+              Program: (node) =>
+                context.report({ node, messageId: component ? 'component' : 'module' }),
+            }
+      },
+    },
+    'spec-mirrors-source': {
+      meta: {
+        type: 'problem',
+        schema: [],
+        messages: {
+          unmirrored: 'Place the spec at the `src/` path of the file it tests.',
+        },
+      },
+      create(context) {
+        const tests = path.join(import.meta.dirname, 'tests')
+        const segments = path.relative(tests, context.filename).split(path.sep).slice(1)
+        const source = path.join(import.meta.dirname, 'src', ...segments).replace(/\.spec\.ts$/, '')
+        return ['.ts', '.vue'].some((extension) => existsSync(source + extension))
+          ? {}
+          : { Program: (node) => context.report({ node, messageId: 'unmirrored' }) }
+      },
+    },
+  },
+}
 
 export default withVueTs(
   {
@@ -222,6 +267,31 @@ export default withVueTs(
     },
   },
   {
+    name: 'app/architecture-generated-client',
+    files: ['src/app/**/*.{ts,vue}', 'src/shared/**/*.ts'],
+    ignores: ['src/shared/api/**'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [generatedClientPattern] }],
+    },
+  },
+  {
+    name: 'app/file-names',
+    files: ['src/**/*.{ts,vue}'],
+    plugins: { conventions },
+    rules: {
+      'conventions/file-name-case': 'error',
+    },
+  },
+  {
+    name: 'app/test-layout',
+    files: ['tests/{unit,integration}/**/*.spec.ts'],
+    ignores: ['tests/unit/docker/**'],
+    plugins: { conventions },
+    rules: {
+      'conventions/spec-mirrors-source': 'error',
+    },
+  },
+  {
     ...disableTypeChecked,
     name: 'app/i18n-locales',
     files: ['src/shared/i18n/locales/*.json'],
@@ -238,7 +308,6 @@ export default withVueTs(
         {
           src: './src',
           extensions: ['.ts', '.vue'],
-          // These namespaces are resolved through TranslationKey-typed maps or backend ErrorCode values.
           ignores: [
             '/^widgets\\.siteHeader\\.nav\\./u',
             '/^widgets\\.adminShell\\.nav\\./u',

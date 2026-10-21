@@ -57,6 +57,28 @@
   --ca-signature-paper: #ffffff;
   --ca-signature-ink: #1b2a4a;
 
+  --ca-paper: #ffffff;
+  --ca-paper-ink: #111827;
+  --ca-paper-ink-strong: #0f172a;
+  --ca-paper-text: #1f2937;
+  --ca-paper-text-muted: #374151;
+  --ca-paper-text-dim: #4b5563;
+  --ca-paper-rule: #9ca3af;
+  --ca-paper-rule-soft: #d1d5db;
+  --ca-paper-band: #eef0f3;
+  --ca-paper-edge: rgba(0, 0, 0, 0.15);
+  --ca-paper-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+
+  --ca-certificate-paper: #fdfbf7;
+  --ca-certificate-paper-shade: #f4efe6;
+  --ca-certificate-orange: #f9a320;
+  --ca-certificate-orange-glow: rgba(249, 163, 32, 0.16);
+  --ca-certificate-lime: #7cb518;
+  --ca-certificate-azure: #159fde;
+  --ca-certificate-ink: #8f5900;
+  --ca-certificate-ink-soft: rgba(143, 89, 0, 0.28);
+  --ca-certificate-ink-border: rgba(143, 89, 0, 0.45);
+
   --ca-glass-bg: rgba(245, 245, 245, 0.82);
   --ca-grid-line: rgba(249, 163, 32, 0.11);
   --ca-vignette: rgba(0, 0, 0, 0.04);

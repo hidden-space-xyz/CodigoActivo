@@ -58,8 +58,6 @@ public sealed class SmtpEmailSender(SmtpOptions options) : IEmailTransport
         }
         catch (SmtpCommandException ex)
         {
-            // The server reply usually quotes the rejected mailbox and every caller logs this exception, so
-            // only the codes leave the transport.
             throw new SmtpCommandException(
                 ex.ErrorCode,
                 ex.StatusCode,

@@ -4,6 +4,10 @@ using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
+using CodigoActivo.Domain.TermsDecisions;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.UnitTests.Architecture;
 using NSubstitute;
 using Xunit;
 
@@ -11,6 +15,20 @@ namespace CodigoActivo.UnitTests.Application.Common.Caching;
 
 public sealed class CacheInvalidationOnCommitTests
 {
+    private static readonly Type[] EventsThatChangeNoCachedData =
+    [
+        typeof(AuthenticatorDisabled),
+        typeof(AuthenticatorEnabled),
+        typeof(ContactDetailsReplaced),
+        typeof(PasswordChanged),
+        typeof(PasswordLocked),
+        typeof(PasswordReset),
+        typeof(TermsConsentWithdrawn),
+        typeof(TermsDocumentDeleted),
+        typeof(TwoFactorLocked),
+        typeof(TwoFactorReset),
+    ];
+
     private sealed record UncachedEvent : IDomainEvent;
 
     private readonly ICacheInvalidator invalidator = Substitute.For<ICacheInvalidator>();
@@ -56,5 +74,25 @@ public sealed class CacheInvalidationOnCommitTests
         CacheTagsByEvent
             .MappedEvents.Should()
             .OnlyContain(type => typeof(IDomainEvent).IsAssignableFrom(type));
+    }
+
+    [Fact]
+    public void DomainEventsAreMappedOrListedAsChangingNoCachedData()
+    {
+        var events = ProductionAssemblies
+            .AllTypes.Where(type =>
+                type is { IsClass: true, IsAbstract: false }
+                && typeof(IDomainEvent).IsAssignableFrom(type)
+            )
+            .ToList();
+        var unclassified = events
+            .Except(CacheTagsByEvent.MappedEvents)
+            .Except(EventsThatChangeNoCachedData)
+            .Select(type => type.Name)
+            .ToList();
+
+        events.Should().Contain(CacheTagsByEvent.MappedEvents.Concat(EventsThatChangeNoCachedData));
+        CacheTagsByEvent.MappedEvents.Should().NotIntersectWith(EventsThatChangeNoCachedData);
+        unclassified.Should().BeEmpty();
     }
 }

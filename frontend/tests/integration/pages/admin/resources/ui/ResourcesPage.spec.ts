@@ -343,7 +343,6 @@ describe('admin resources page', () => {
     expect(findButton(t('common.edit')).disabled).toBe(true)
     expect(findButton(t('common.delete')).disabled).toBe(false)
 
-    // Disabled buttons swallow clicks; emit directly to exercise the handlers' own guards.
     const buttons = wrapper.findAllComponents(ElButton)
     const create = buttons.find(
       (button) => button.text() === t('pages.admin.resources.newResource'),

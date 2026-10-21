@@ -53,7 +53,8 @@ outbox for events or event sourcing.
 
 The `ProjectReference` graph is the source of truth for these boundaries. The tests under
 `tests/CodigoActivo.UnitTests/Architecture/` enforce the layer and feature dependencies (the API reaches neither
-Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/AGENTS.md).
+Infrastructure nor EF Core) and further conventions; [backend/AGENTS.md](backend/AGENTS.md) lists the ones no
+check enforces.
 
 ### Domain and persistence
 
@@ -116,7 +117,8 @@ Infrastructure nor EF Core) and the conventions in [backend/AGENTS.md](backend/A
   converters use to store the enum in the foreign key column and the API uses to accept and return catalog
   identifiers. A request whose identifier names no member is invalid (`RequestValidationFailed`), and
   the API maps the identifier to the enum before building the command, so commands never carry catalog
-  identifiers.
+  identifiers. The exception is `SendEmailToUsers` and `SendEmailToEventAttendees`, which carry the list filters
+  of their table (`UserListQuery`, `EventAttendeeListQuery`) to read the same audience.
 - Repositories exist only for aggregate roots (`IRepository<T>` plus methods that name their intention), never
   expose `IQueryable` or predicates, and share the scoped `CodigoActivoDbContext`. `AddAsync` and `Remove` only
   stage changes; the few methods that write immediately, without waiting for the unit of work, say so by their
@@ -216,7 +218,8 @@ the read model depends on no feature.
 Queries read the database through `IReadStore`: no-tracking `IQueryable` sources of read rows
 (`Application/Abstractions/Querying/ReadModel`) that `CodigoActivoReadDbContext` maps onto the same tables,
 excluded from migrations. They project to response shapes in the database, materialize through
-`IQueryExecutor`, and never depend on repositories or domain entities. There are two exceptions: the dashboard
+`IQueryExecutor`, and never depend on repositories or domain entities beyond static domain rules such as
+`User.GivesOwnConsent`. There are two exceptions: the dashboard
 port `IDashboardCountsReader` (`Application/Reports`, plain SQL in `Infrastructure/Reports`), which counts
 whole tables in one round trip and creation times per chart bucket with `width_bucket`, and the log port
 `ILogEntryReader` (`Application/Logs`, `Infrastructure/Logs/LogEntryReader`), which reads the partitioned log
@@ -371,8 +374,9 @@ The frontend follows Feature-Sliced Design 2.1, pages first. Imports flow downwa
 not import one another (the only exception is the `@x` cross-import `entities/user/@x/account.ts`) and each
 slice exposes its public API through `index.ts`; `@` maps to `src`. Code starts in the page that uses it and
 moves down to a feature or entity only when a second slice needs it. Steiger (`npm run lint:fsd`) enforces the
-structure, including that a widget, feature or entity slice is used by at least two slices or by `app`. The
-coding rules and their ESLint enforcement are in [frontend/AGENTS.md](frontend/AGENTS.md).
+structure, including that a widget, feature or entity slice is used by at least two slices or by `app`.
+`eslint.config.js` enforces most coding rules; [frontend/AGENTS.md](frontend/AGENTS.md) lists the ones no check
+enforces.
 
 | Layer       | Responsibility                                                                                |
 | ----------- | --------------------------------------------------------------------------------------------- |

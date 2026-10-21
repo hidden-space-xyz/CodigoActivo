@@ -141,6 +141,34 @@ public sealed class HandlerConventionTests
     }
 
     [Fact]
+    public void HandlerUnitTestsAlwaysStartWithHandleAsync()
+    {
+        var testClassNames = HandlerImplementations()
+            .Select(entry => entry.Handler.Name + "Tests")
+            .ToHashSet(StringComparer.Ordinal);
+        var testClasses = typeof(HandlerConventionTests)
+            .Assembly.GetTypes()
+            .Where(type => testClassNames.Contains(type.Name))
+            .ToList();
+
+        var offenders = testClasses
+            .SelectMany(type =>
+                type.GetMethods(
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly
+                )
+            )
+            .Where(method =>
+                method.IsDefined(typeof(FactAttribute))
+                && !method.Name.StartsWith("HandleAsync", StringComparison.Ordinal)
+            )
+            .Select(method => $"{method.DeclaringType!.Name}.{method.Name}")
+            .ToList();
+
+        testClasses.Should().NotBeEmpty();
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
     public void MessagesAlwaysCarryTheSuffixOfTheirContract()
     {
         var offenders = HandlerImplementations()
