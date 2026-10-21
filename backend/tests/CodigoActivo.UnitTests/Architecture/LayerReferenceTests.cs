@@ -53,14 +53,9 @@ public sealed class LayerReferenceTests
     public void DomainAssemblyReferencesAreBclOnly()
     {
         var references = ReferencedAssemblyNames(typeof(Result).Assembly);
+        var framework = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
 
-        references
-            .Should()
-            .OnlyContain(name =>
-                name.StartsWith("System", StringComparison.Ordinal)
-                || string.Equals(name, "netstandard", StringComparison.Ordinal)
-                || string.Equals(name, "mscorlib", StringComparison.Ordinal)
-            );
+        references.Should().OnlyContain(name => File.Exists(Path.Join(framework, name + ".dll")));
     }
 
     [Fact]

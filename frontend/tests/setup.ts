@@ -10,10 +10,6 @@ import { server } from './support/server'
 
 installBrowserPolyfills()
 
-// Multipart uploads use Node's Blob, File and FormData so MSW receives the real file part: jsdom's
-// FormData stringifies Node files and Node's fetch rejects jsdom files. The properties are redefined
-// on the global object only; assigning them would also replace jsdom's `window` classes, which
-// Vitest's jsdom Request compatibility layer relies on.
 const nodeFormData = await new Response(new URLSearchParams('probe=1')).formData()
 defineGlobal('Blob', NodeBlob)
 defineGlobal('File', NodeFile)
@@ -24,7 +20,6 @@ function defineGlobal(name: 'Blob' | 'File' | 'FormData', value: unknown): void 
 }
 
 beforeAll(() => {
-  // Any request without an explicit handler fails the test, so no test can reach a real backend.
   server.listen({ onUnhandledRequest: 'error' })
 })
 
@@ -39,7 +34,6 @@ afterEach(() => {
   sessionStorage.clear()
   document.body.innerHTML = ''
   document.documentElement.className = ''
-  // SEO composables write title, meta, canonical and JSON-LD tags into the head.
   document.title = ''
   document.head
     .querySelectorAll('meta, link[rel="canonical"], script[type="application/ld+json"]')
@@ -73,7 +67,6 @@ function installBrowserPolyfills(): void {
   Element.prototype.scrollIntoView = () => undefined
   Element.prototype.scrollTo = () => undefined
 
-  // ProseMirror measures ranges and hit-tests coordinates, which jsdom does not implement.
   const emptyRects = (): DOMRectList => Object.assign([], { item: () => null })
   const emptyRect = (): DOMRect => new DOMRect(0, 0, 0, 0)
   Range.prototype.getClientRects = emptyRects
@@ -84,6 +77,5 @@ function installBrowserPolyfills(): void {
   URL.createObjectURL = () => 'blob:test-object-url'
   URL.revokeObjectURL = () => undefined
 
-  // Chart.js and canvas consumers only need a context object; jsdom has no canvas backend.
   HTMLCanvasElement.prototype.getContext = (() => null) as HTMLCanvasElement['getContext']
 }

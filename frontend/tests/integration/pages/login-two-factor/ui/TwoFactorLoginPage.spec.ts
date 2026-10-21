@@ -33,7 +33,6 @@ describe('two-factor login page', () => {
     await wrapper.find('#two-factor-code').setValue('123456')
     await wrapper.find('form').trigger('submit')
 
-    // The home page chunk loads lazily, which can take a while on slow file systems.
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'), {
       timeout: 10_000,
     })

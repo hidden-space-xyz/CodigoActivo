@@ -114,7 +114,7 @@ watch(
   width: 100%;
   border-radius: 10px;
   overflow: hidden;
-  background: #fdfbf7;
+  background: var(--ca-certificate-paper);
   box-shadow: var(--ca-shadow-md);
 }
 

@@ -18,22 +18,19 @@ Backend and frontend coding conventions live in [backend/AGENTS.md](backend/AGEN
 
 ## Not deployed yet
 
-The application is not used in production or deployed anywhere yet. Until the user announces a deployment:
+The application is not used in production or deployed anywhere yet. Until the user announces a deployment,
+change code and stored structures freely. Keep no legacy code, compatibility shims or data migrations for
+earlier versions.
 
-- Change code and stored structures freely. Keep no legacy code, compatibility shims or data migrations for
-  earlier versions.
-- Keep a single EF Core migration, `InitialCreate`: after a model change, regenerate it as
-  [CONTRIBUTING.md](CONTRIBUTING.md#commands) describes instead of adding another.
-
-When the user announces a deployment, remove this section and the regeneration paragraph in CONTRIBUTING.md:
-from then on every model change adds a migration and stays compatible with the deployed version and its data.
+When the user announces a deployment, remove this section, the regeneration paragraph in CONTRIBUTING.md and
+`MigrationsAlwaysAreTheSingleInitialCreate`: from then on every model change adds a migration and stays
+compatible with the deployed version and its data.
 
 ## Non-negotiable rules
 
 - Never implement cryptographic or one-time-password algorithms by hand. Delegate to .NET primitives
   (`System.Security.Cryptography`, ASP.NET Data Protection) or established packages (Argon2id via
   Konscious, TOTP via Otp.NET, BouncyCastle when a primitive is missing).
-- Never edit `frontend/src/shared/api/generated/`. Orval deletes and recreates it.
 
 ## Compose
 
@@ -64,5 +61,5 @@ from a clone, use `docker compose -f docker-compose.yml ...` so the override is 
 ## API changes
 
 Follow the five-step contract change flow in
-[ARCHITECTURE.md](ARCHITECTURE.md#changing-the-api-contract). Do not leave the committed Swagger document or
-generated client out of sync.
+[ARCHITECTURE.md](ARCHITECTURE.md#changing-the-api-contract). Do not leave the committed Swagger document out of
+sync.

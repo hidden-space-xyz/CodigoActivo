@@ -132,8 +132,8 @@ watch(
   min-height: 297mm;
   margin: 0 auto 24px;
   padding: 21.3mm 8mm;
-  background: #fff;
-  box-shadow: 0 4px 24px rgb(0 0 0 / 0.5);
+  background: var(--ca-paper);
+  box-shadow: var(--ca-paper-shadow);
   display: grid;
   grid-template-columns: repeat(2, 97mm);
   grid-auto-rows: 42.4mm;
@@ -143,7 +143,7 @@ watch(
 .badge {
   --fit: 1;
   --name-fit: 1;
-  --accent-ink: color-mix(in srgb, var(--accent) 72%, #111827);
+  --accent-ink: color-mix(in srgb, var(--accent) 72%, var(--ca-paper-ink));
 
   position: relative;
   box-sizing: border-box;
@@ -153,14 +153,14 @@ watch(
   background:
     radial-gradient(
       140% 120% at 100% 0%,
-      color-mix(in srgb, var(--accent) 22%, #fff) 0%,
+      color-mix(in srgb, var(--accent) 22%, var(--ca-paper)) 0%,
       transparent 55%
     ),
     linear-gradient(
       165deg,
-      #fff 0%,
-      color-mix(in srgb, var(--accent) 10%, #fff) 55%,
-      color-mix(in srgb, var(--accent) 18%, #fff) 100%
+      var(--ca-paper) 0%,
+      color-mix(in srgb, var(--accent) 10%, var(--ca-paper)) 55%,
+      color-mix(in srgb, var(--accent) 18%, var(--ca-paper)) 100%
     );
   break-inside: avoid;
   print-color-adjust: exact;
@@ -197,11 +197,15 @@ watch(
   gap: 3mm;
   min-height: 8mm;
   padding: 1.2mm 3.5mm;
-  border-bottom: 0.5mm solid color-mix(in srgb, var(--accent) 45%, #fff);
+  border-bottom: 0.5mm solid color-mix(in srgb, var(--accent) 45%, var(--ca-paper));
   background:
-    repeating-linear-gradient(115deg, rgb(255 255 255 / 0.07) 0 1.2mm, transparent 1.2mm 3.6mm),
+    repeating-linear-gradient(
+      115deg,
+      color-mix(in srgb, var(--ca-paper) 7%, transparent) 0 1.2mm,
+      transparent 1.2mm 3.6mm
+    ),
     linear-gradient(120deg, var(--accent), var(--accent-ink));
-  color: #fff;
+  color: var(--ca-paper);
 }
 
 .badge__brand {
@@ -222,7 +226,7 @@ watch(
   align-items: center;
   padding: 0.4mm 1mm;
   border-radius: 1mm;
-  background: rgb(255 255 255 / 0.18);
+  background: color-mix(in srgb, var(--ca-paper) 18%, transparent);
   font-size: 6.5pt;
   letter-spacing: 0;
 }
@@ -257,7 +261,7 @@ watch(
   line-height: 1.05;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  color: #0f172a;
+  color: var(--ca-paper-ink-strong);
   margin: 0;
 }
 
@@ -271,8 +275,8 @@ watch(
   padding: 0.9mm 3.5mm;
   background: linear-gradient(
     120deg,
-    color-mix(in srgb, var(--accent) 32%, #fff),
-    color-mix(in srgb, var(--accent) 16%, #fff)
+    color-mix(in srgb, var(--accent) 32%, var(--ca-paper)),
+    color-mix(in srgb, var(--accent) 16%, var(--ca-paper))
   );
 }
 
@@ -280,7 +284,7 @@ watch(
   font-family: var(--ca-font-display, inherit);
   padding: 0.3mm 1.8mm;
   border-radius: 3mm;
-  background: rgb(255 255 255 / 0.55);
+  background: color-mix(in srgb, var(--ca-paper) 55%, transparent);
   font-size: 8pt;
   font-weight: 800;
   text-transform: uppercase;
@@ -313,11 +317,11 @@ watch(
 
 .badge__guardian-name {
   font-weight: 700;
-  color: #1f2937;
+  color: var(--ca-paper-text);
 }
 
 .badge__guardian-phone {
-  color: #374151;
+  color: var(--ca-paper-text-muted);
 }
 
 .badge__phone-icon {
@@ -348,8 +352,8 @@ watch(
   padding: calc(0.8mm * var(--fit)) calc(2mm * var(--fit)) calc(0.8mm * var(--fit))
     calc(4.3mm * var(--fit));
   border-radius: calc(2.4mm * var(--fit));
-  background: rgb(255 255 255 / 0.65);
-  color: #374151;
+  background: color-mix(in srgb, var(--ca-paper) 65%, transparent);
+  color: var(--ca-paper-text-muted);
 }
 
 .badge__activity::before {
@@ -365,7 +369,7 @@ watch(
 
 .badge__activity-title {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--ca-paper-text);
 }
 
 .badge__location-icon {

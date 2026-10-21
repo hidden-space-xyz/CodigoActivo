@@ -15,8 +15,19 @@ public sealed class MigrationModelTests
         context
             .Database.HasPendingModelChanges()
             .Should()
-            .BeFalse(
-                "a model change needs a migration, added with the command in backend/AGENTS.md"
-            );
+            .BeFalse("a model change regenerates InitialCreate as CONTRIBUTING.md describes");
+    }
+
+    [Fact]
+    public void MigrationsAlwaysAreTheSingleInitialCreate()
+    {
+        using var context = new CodigoActivoDesignTimeDbContextFactory().CreateDbContext([]);
+
+        context
+            .Database.GetMigrations()
+            .Should()
+            .ContainSingle("until the first deployment a model change regenerates InitialCreate")
+            .Which.Should()
+            .EndWith("_InitialCreate");
     }
 }

@@ -9,7 +9,6 @@ import { createQueryClient, isSessionLost } from '@/shared/api'
 export const queryClient = createQueryClient({
   defaultOptions: {
     queries: {
-      // The API owns response caching. Keep data only while it is being observed by a view.
       staleTime: 0,
       gcTime: 0,
       retry: (failureCount, error) => failureCount < 1 && !isSessionLost(error),

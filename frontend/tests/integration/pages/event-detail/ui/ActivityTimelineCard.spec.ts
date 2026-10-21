@@ -104,7 +104,6 @@ describe('ActivityTimelineCard self signup', () => {
     const enroll = buttonByText(wrapper, t('pages.eventDetail.card.enrollSelf'))
     expect(enroll.attributes('disabled')).toBeDefined()
     await enroll.trigger('click')
-    // Even a click that bypasses the disabled button must not sign up without a role.
     wrapper.findComponent(ElButton).vm.$emit('click', new MouseEvent('click'))
     expect(wrapper.emitted('signup')).toBeUndefined()
 
