@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Queries;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
@@ -114,6 +115,33 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
         store.Activities.Add(target);
         store.Assignments.Add(
             OverlapAssignment(userId, OverlapActivityRow(Guid.NewGuid(), 13, 14))
+        );
+
+        var result = await sut.HandleAsync(
+            new VerifyTimeOverlapsQuery(ActivityId.From(target.Id), UserId.From(userId)),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.HasOverlaps.Should().BeFalse();
+        result.Value.Overlaps.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncDeniedAssignmentReportsNoOverlaps()
+    {
+        var userId = Guid.NewGuid();
+        var target = OverlapActivityRow(Guid.NewGuid(), 10, 12);
+        store.Activities.Add(target);
+        var clash = OverlapActivityRow(Guid.NewGuid(), 11, 13);
+        store.Assignments.Add(
+            new AssignmentRow
+            {
+                UserId = userId,
+                ActivityId = clash.Id,
+                Activity = clash,
+                AssignmentStatusId = CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Denied),
+            }
         );
 
         var result = await sut.HandleAsync(
