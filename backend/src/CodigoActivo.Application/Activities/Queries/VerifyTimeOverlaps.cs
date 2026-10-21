@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
@@ -65,6 +66,8 @@ public sealed class VerifyTimeOverlapsQueryHandler(
                 .Assignments.Where(x =>
                     x.UserId == userId
                     && x.ActivityId != activityId
+                    && x.AssignmentStatusId
+                        != CatalogIds.AssignmentStatuses.IdOf(AssignmentStatus.Denied)
                     && x.Activity.ActivityStartsAt < target.ActivityEndsAt
                     && target.ActivityStartsAt < x.Activity.ActivityEndsAt
                 )
