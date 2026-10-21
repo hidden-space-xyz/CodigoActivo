@@ -45,8 +45,10 @@ const {
       <form class="acc-form" @submit.prevent="submit">
         <template v-if="!codeStep">
           <p class="acc-form__intro">{{ $t('pages.account.deleteAccount.passwordIntro') }}</p>
-          <div class="acc-form__field">
-            <label for="del-password">{{ $t('pages.account.deleteAccount.passwordLabel') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="del-password">{{
+              $t('pages.account.deleteAccount.passwordLabel')
+            }}</label>
             <el-input
               id="del-password"
               v-model="draft.password"
@@ -54,8 +56,12 @@ const {
               show-password
               autocomplete="current-password"
               :maxlength="128"
+              :aria-invalid="!!errors.password"
+              :aria-describedby="errors.password ? 'del-password-error' : undefined"
             />
-            <small v-if="errors.password" class="acc-form__error">{{ errors.password }}</small>
+            <small v-if="errors.password" id="del-password-error" class="ca-field__error">{{
+              errors.password
+            }}</small>
           </div>
         </template>
 
@@ -67,8 +73,10 @@ const {
                 : $t('pages.account.deleteAccount.codeSent', { email })
             }}
           </p>
-          <div class="acc-form__field">
-            <label for="del-code">{{ $t('pages.account.deleteAccount.codeLabel') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="del-code">{{
+              $t('pages.account.deleteAccount.codeLabel')
+            }}</label>
             <el-input
               id="del-code"
               v-model="draft.code"
@@ -99,7 +107,9 @@ const {
           </div>
         </template>
 
-        <p v-if="errorMessage" class="acc-form__error" role="alert">{{ errorMessage }}</p>
+        <p v-if="errorMessage" class="ca-form-alert acc-form__alert" role="alert">
+          {{ errorMessage }}
+        </p>
         <div class="acc-form__actions">
           <BrandButton variant="link" type="button" @click="close">{{
             $t('common.cancel')
@@ -221,16 +231,7 @@ const {
 }
 
 .acc-form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   margin-bottom: 14px;
-}
-
-.acc-form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
 }
 
 .acc-form__actions {
@@ -240,10 +241,8 @@ const {
   margin-top: 8px;
 }
 
-.acc-form__error {
-  color: var(--ca-danger-ink);
-  font-size: 13.5px;
-  margin: 0 0 10px;
+.acc-form__alert {
+  margin-bottom: 10px;
 }
 
 @media (max-width: 640px) {

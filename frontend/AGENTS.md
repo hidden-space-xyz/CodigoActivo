@@ -28,6 +28,9 @@ that page; move it down only when a second slice needs it. Steiger enforces thes
   Explain purpose and non-obvious behavior, not the name or types. Tests (`tests/`, `*.spec.ts`, `*.test.ts`,
   `__tests__/`) are exempt.
 - Theme values use `--ca-*` variables; map Element Plus values to them instead of adding isolated colors.
+- Form fields use the global `ca-field*`, `ca-form-alert` and `ca-form-grid` classes from
+  `app/styles/main.css` instead of scoped copies. Link each field error to its control with
+  `aria-describedby` and `aria-invalid` when the control forwards them.
 - `shared/config` is the one home of the association's public identity (`ORGANIZATION`), the interface
   `LOCALE` and the API limits the SPA repeats (`api-policy.ts`); never write those values as literals. The
   legal identity and contact details come from the API (`legalEntityQueries`), never from code.

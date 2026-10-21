@@ -45,8 +45,8 @@ const emit = defineEmits<{
         })
       }}
     </p>
-    <div class="form__field">
-      <label :for="inputId">{{ label }}</label>
+    <div class="ca-field">
+      <label class="ca-field__label" :for="inputId">{{ label }}</label>
       <el-select :id="inputId" v-model="selected" :placeholder="placeholder">
         <el-option
           v-for="option in options"
@@ -55,7 +55,7 @@ const emit = defineEmits<{
           :value="option.value"
         />
       </el-select>
-      <small v-if="unavailableText && options.length === 0" class="form__warning">
+      <small v-if="unavailableText && options.length === 0" class="ca-field__error">
         {{ unavailableText }}
       </small>
     </div>
@@ -82,22 +82,5 @@ const emit = defineEmits<{
   font-size: 13.5px;
   color: var(--ca-text-muted);
   margin: 0 0 14px;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__warning {
-  font-size: 12.5px;
-  color: var(--ca-danger-ink);
 }
 </style>

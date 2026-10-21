@@ -441,7 +441,7 @@ describe('ProfileSection', () => {
 
     const dialog = await submitPassword('current', 'short', 'short')
 
-    expect(dialog.querySelector('.acc-form__error')?.textContent.trim()).toBe(
+    expect(dialog.querySelector('.ca-form-alert')?.textContent.trim()).toBe(
       t('validation.newPasswordMin', { min: PASSWORD_MIN_LENGTH }),
     )
     expect(patched).not.toHaveBeenCalled()
@@ -457,7 +457,7 @@ describe('ProfileSection', () => {
       'a-long-password-1',
     )
 
-    expect(dialog.querySelector('.acc-form__error')?.textContent.trim()).toBe(
+    expect(dialog.querySelector('.ca-form-alert')?.textContent.trim()).toBe(
       t('validation.newPasswordSameAsCurrent'),
     )
   })
@@ -468,7 +468,7 @@ describe('ProfileSection', () => {
 
     const dialog = await submitPassword('current', 'a-long-password-1', 'a-long-password-2')
 
-    expect(dialog.querySelector('.acc-form__error')?.textContent.trim()).toBe(
+    expect(dialog.querySelector('.ca-form-alert')?.textContent.trim()).toBe(
       t('validation.passwordsMismatch'),
     )
   })
@@ -513,7 +513,7 @@ describe('ProfileSection', () => {
 
     const reopened = await openPasswordDialog()
     expect(reopened.querySelector<HTMLInputElement>('#p-cur')?.value).toBe('')
-    expect(reopened.querySelector('.acc-form__error')).toBeNull()
+    expect(reopened.querySelector('.ca-form-alert')).toBeNull()
   })
 
   it('explains when the current password is not accepted', async () => {
@@ -528,7 +528,7 @@ describe('ProfileSection', () => {
     const dialog = await submitPassword('wrong', 'a-long-password-1', 'a-long-password-1')
 
     await vi.waitFor(() =>
-      expect(dialog.querySelector('.acc-form__error')?.textContent.trim()).toBe(
+      expect(dialog.querySelector('.ca-form-alert')?.textContent.trim()).toBe(
         t('errors.UserCurrentPasswordIncorrect'),
       ),
     )

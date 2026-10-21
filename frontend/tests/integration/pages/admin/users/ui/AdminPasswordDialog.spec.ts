@@ -46,6 +46,17 @@ describe('AdminPasswordDialog', () => {
     expect(wrapper.emitted('submit')).toEqual([['Str0ngPass!23']])
   })
 
+  it('links the password error to the input so screen readers announce it', async () => {
+    const { dialog } = await renderDialog(t('errors.UserCurrentPasswordIncorrect'))
+    const input = dialog.querySelector('#reset-two-factor-password')
+
+    expect(input?.getAttribute('aria-invalid')).toBe('true')
+    expect(input?.getAttribute('aria-describedby')).toBe('reset-two-factor-password-error')
+    expect(dialog.querySelector('#reset-two-factor-password-error')?.textContent.trim()).toBe(
+      t('errors.UserCurrentPasswordIncorrect'),
+    )
+  })
+
   it('shows the parent error, and clears the password whenever it reopens', async () => {
     const { wrapper, dialog } = await renderDialog(t('errors.UserCurrentPasswordIncorrect'))
     expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect'))

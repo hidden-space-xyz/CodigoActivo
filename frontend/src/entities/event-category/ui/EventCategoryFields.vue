@@ -25,17 +25,18 @@ function pickColor(value: string | null): void {
 
 <template>
   <div class="category-fields">
-    <div class="category-fields__field">
-      <label for="event-category-name">{{ $t('common.name') }}</label>
+    <div class="ca-field">
+      <label class="ca-field__label" for="event-category-name">{{ $t('common.name') }}</label>
       <el-input
         id="event-category-name"
         v-model="name"
         :maxlength="120"
         :class="{ 'ca-invalid': invalid }"
+        :aria-invalid="invalid"
       />
     </div>
-    <div class="category-fields__field">
-      <div id="event-category-color-label" class="category-fields__label">
+    <div class="ca-field">
+      <div id="event-category-color-label" class="ca-field__label">
         {{ $t('entities.eventCategory.fields.color') }}
       </div>
       <div class="category-fields__color" role="group" aria-labelledby="event-category-color-label">
@@ -55,19 +56,6 @@ function pickColor(value: string | null): void {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.category-fields__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.category-fields__field label,
-.category-fields__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
 }
 
 .category-fields__color {

@@ -51,36 +51,42 @@ async function save(): Promise<void> {
     width="min(920px, 94vw)"
   >
     <form class="form" @submit.prevent="save">
-      <div class="form__field">
-        <label for="news-title">{{ $t('pages.admin.news.form.title') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="news-title">{{
+          $t('pages.admin.news.form.title')
+        }}</label>
         <el-input
           id="news-title"
           v-model="draft.title"
           :maxlength="200"
           :class="{ 'ca-invalid': invalid('title') }"
+          :aria-invalid="invalid('title')"
         />
       </div>
-      <div class="form__field">
-        <label for="news-subtitle">{{ $t('pages.admin.news.form.subtitle') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="news-subtitle">{{
+          $t('pages.admin.news.form.subtitle')
+        }}</label>
         <el-input
           id="news-subtitle"
           v-model="draft.subtitle"
           :maxlength="300"
           :class="{ 'ca-invalid': invalid('subtitle') }"
+          :aria-invalid="invalid('subtitle')"
         />
       </div>
-      <div class="form__field">
-        <div class="form__label">{{ $t('pages.admin.news.form.description') }}</div>
+      <div class="ca-field">
+        <div class="ca-field__label">{{ $t('pages.admin.news.form.description') }}</div>
         <RichTextEditor
           v-model="draft.description"
           :label="$t('pages.admin.news.form.description')"
           :upload="uploadFileRequest"
           :invalid="!!errors.description"
         />
-        <small v-if="errors.description" class="form__error">{{ errors.description }}</small>
+        <small v-if="errors.description" class="ca-field__error">{{ errors.description }}</small>
       </div>
-      <div class="form__field">
-        <div id="news-image-label" class="form__label">{{ $t('common.image') }}</div>
+      <div class="ca-field">
+        <div id="news-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
         <ThumbnailField
           role="group"
           aria-labelledby="news-image-label"
@@ -117,24 +123,6 @@ async function save(): Promise<void> {
   padding-top: 6px;
   max-height: 78vh;
   overflow-y: auto;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label,
-.form__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__error {
-  color: var(--ca-danger-ink);
-  font-size: 12.5px;
 }
 
 @media (max-width: 640px) {

@@ -122,7 +122,7 @@ describe('TermsDocumentsSection', () => {
 
     await click(findButton(t('pages.admin.catalogs.termsDocuments.newButton')))
     const dialog = openDialog(t(NEW_TITLE))
-    expect(dialog.querySelector('form > p.form__hint')).toBeNull()
+    expect(dialog.querySelector('form > p.ca-field__hint')).toBeNull()
     await click(findButton(t('common.save'), dialog))
     expect(dialog.textContent).toContain(
       t('pages.admin.catalogs.termsDocuments.form.problems.contentRequired'),

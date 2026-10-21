@@ -38,7 +38,7 @@ watch(visible, (open) => {
         v-model:color="draft.color"
         :invalid="invalid('name')"
       />
-      <small v-if="error" class="form__error">{{ error }}</small>
+      <p v-if="error" class="ca-form-alert" role="alert">{{ error }}</p>
     </form>
     <template #footer>
       <ActionButton
@@ -63,10 +63,5 @@ watch(visible, (open) => {
   flex-direction: column;
   gap: 16px;
   padding-top: 6px;
-}
-
-.form__error {
-  color: var(--ca-danger-ink);
-  font-size: 12.5px;
 }
 </style>

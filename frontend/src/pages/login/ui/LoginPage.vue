@@ -17,8 +17,8 @@ const { form, submit, isSubmitting, isError } = useLogin()
     <section class="login-body">
       <div class="login-card">
         <form class="login-form" @submit.prevent="submit">
-          <div class="login-field">
-            <label class="login-label" for="login-identifier">{{
+          <div class="ca-field">
+            <label class="ca-field__label" for="login-identifier">{{
               $t('pages.login.identifierLabel')
             }}</label>
             <el-input
@@ -33,8 +33,8 @@ const { form, submit, isSubmitting, isError } = useLogin()
               required
             />
           </div>
-          <div class="login-field">
-            <label class="login-label" for="login-password">{{ $t('common.password') }}</label>
+          <div class="ca-field">
+            <label class="ca-field__label" for="login-password">{{ $t('common.password') }}</label>
             <el-input
               id="login-password"
               v-model="form.password"
@@ -60,7 +60,7 @@ const { form, submit, isSubmitting, isError } = useLogin()
             </el-checkbox>
           </div>
 
-          <p v-if="isError" class="login-error" role="alert">
+          <p v-if="isError" class="ca-form-alert" role="alert">
             {{ $t('pages.login.error') }}
           </p>
 
@@ -104,18 +104,6 @@ const { form, submit, isSubmitting, isError } = useLogin()
   gap: 16px;
 }
 
-.login-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.login-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-  margin-bottom: 6px;
-}
-
 .login-forgot {
   margin-top: -6px;
   align-self: flex-end;
@@ -136,11 +124,6 @@ const { form, submit, isSubmitting, isError } = useLogin()
   line-height: 1.5;
   color: var(--ca-text);
   cursor: pointer;
-}
-
-.login-error {
-  font-size: 13.5px;
-  color: var(--ca-danger-ink);
 }
 
 .login-alt {

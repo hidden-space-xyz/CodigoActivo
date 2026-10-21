@@ -82,8 +82,10 @@ const {
       <form class="acc-form" @submit.prevent="submitSetup">
         <template v-if="setupStep === 'password'">
           <p class="acc-form__intro">{{ $t('pages.account.twoFactor.setupPasswordIntro') }}</p>
-          <div class="acc-form__field">
-            <label for="tf-setup-password">{{ $t('pages.account.twoFactor.passwordLabel') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="tf-setup-password">{{
+              $t('pages.account.twoFactor.passwordLabel')
+            }}</label>
             <el-input
               id="tf-setup-password"
               v-model="setupPassword.password"
@@ -91,10 +93,17 @@ const {
               show-password
               autocomplete="current-password"
               :maxlength="128"
+              :aria-invalid="!!setupPasswordErrors.password"
+              :aria-describedby="
+                setupPasswordErrors.password ? 'tf-setup-password-error' : undefined
+              "
             />
-            <small v-if="setupPasswordErrors.password" class="acc-form__error">{{
-              setupPasswordErrors.password
-            }}</small>
+            <small
+              v-if="setupPasswordErrors.password"
+              id="tf-setup-password-error"
+              class="ca-field__error"
+              >{{ setupPasswordErrors.password }}</small
+            >
           </div>
         </template>
 
@@ -119,22 +128,28 @@ const {
             </div>
           </div>
           <p class="acc-form__intro">{{ $t('pages.account.twoFactor.codeIntro') }}</p>
-          <div class="acc-form__field">
-            <label for="tf-setup-code">{{ $t('pages.account.twoFactor.codeLabel') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="tf-setup-code">{{
+              $t('pages.account.twoFactor.codeLabel')
+            }}</label>
             <el-input
               id="tf-setup-code"
               v-model="setupCode.code"
               inputmode="numeric"
               autocomplete="one-time-code"
               :maxlength="16"
+              :aria-invalid="!!setupCodeErrors.code"
+              :aria-describedby="setupCodeErrors.code ? 'tf-setup-code-error' : undefined"
             />
-            <small v-if="setupCodeErrors.code" class="acc-form__error">{{
+            <small v-if="setupCodeErrors.code" id="tf-setup-code-error" class="ca-field__error">{{
               setupCodeErrors.code
             }}</small>
           </div>
         </template>
 
-        <p v-if="errorMessage" class="acc-form__error" role="alert">{{ errorMessage }}</p>
+        <p v-if="errorMessage" class="ca-form-alert acc-form__alert" role="alert">
+          {{ errorMessage }}
+        </p>
         <div class="acc-form__actions">
           <BrandButton variant="link" type="button" @click="closeSetup">{{
             $t('common.cancel')
@@ -163,8 +178,10 @@ const {
     >
       <form class="acc-form" @submit.prevent="submitDisable">
         <p class="acc-form__intro">{{ $t('pages.account.twoFactor.disableIntro') }}</p>
-        <div class="acc-form__field">
-          <label for="tf-disable-password">{{ $t('pages.account.twoFactor.passwordLabel') }}</label>
+        <div class="ca-field acc-form__field">
+          <label class="ca-field__label" for="tf-disable-password">{{
+            $t('pages.account.twoFactor.passwordLabel')
+          }}</label>
           <el-input
             id="tf-disable-password"
             v-model="disableDraft.password"
@@ -172,23 +189,36 @@ const {
             show-password
             autocomplete="current-password"
             :maxlength="128"
+            :aria-invalid="!!disableErrors.password"
+            :aria-describedby="disableErrors.password ? 'tf-disable-password-error' : undefined"
           />
-          <small v-if="disableErrors.password" class="acc-form__error">{{
-            disableErrors.password
-          }}</small>
+          <small
+            v-if="disableErrors.password"
+            id="tf-disable-password-error"
+            class="ca-field__error"
+            >{{ disableErrors.password }}</small
+          >
         </div>
-        <div class="acc-form__field">
-          <label for="tf-disable-code">{{ $t('pages.account.twoFactor.codeLabel') }}</label>
+        <div class="ca-field acc-form__field">
+          <label class="ca-field__label" for="tf-disable-code">{{
+            $t('pages.account.twoFactor.codeLabel')
+          }}</label>
           <el-input
             id="tf-disable-code"
             v-model="disableDraft.code"
             inputmode="numeric"
             autocomplete="one-time-code"
             :maxlength="16"
+            :aria-invalid="!!disableErrors.code"
+            :aria-describedby="disableErrors.code ? 'tf-disable-code-error' : undefined"
           />
-          <small v-if="disableErrors.code" class="acc-form__error">{{ disableErrors.code }}</small>
+          <small v-if="disableErrors.code" id="tf-disable-code-error" class="ca-field__error">{{
+            disableErrors.code
+          }}</small>
         </div>
-        <p v-if="errorMessage" class="acc-form__error" role="alert">{{ errorMessage }}</p>
+        <p v-if="errorMessage" class="ca-form-alert acc-form__alert" role="alert">
+          {{ errorMessage }}
+        </p>
         <div class="acc-form__actions">
           <BrandButton variant="link" type="button" @click="closeDisable">{{
             $t('common.cancel')
@@ -273,16 +303,7 @@ const {
 }
 
 .acc-form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   margin-bottom: 14px;
-}
-
-.acc-form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
 }
 
 .acc-form__actions {
@@ -292,10 +313,8 @@ const {
   margin-top: 8px;
 }
 
-.acc-form__error {
-  color: var(--ca-danger-ink);
-  font-size: 13.5px;
-  margin: 0 0 10px;
+.acc-form__alert {
+  margin-bottom: 10px;
 }
 
 .tf-enroll {

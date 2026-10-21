@@ -98,8 +98,8 @@ async function save(): Promise<void> {
     width="min(560px, 92vw)"
   >
     <form class="form" @submit.prevent="save">
-      <div class="form__field">
-        <label for="activity-title">{{
+      <div class="ca-field">
+        <label class="ca-field__label" for="activity-title">{{
           $t('pages.admin.eventDetail.activities.form.fields.title')
         }}</label>
         <el-input
@@ -107,10 +107,11 @@ async function save(): Promise<void> {
           v-model="draft.title"
           :maxlength="200"
           :class="{ 'ca-invalid': invalid('title') }"
+          :aria-invalid="invalid('title')"
         />
       </div>
-      <div class="form__field">
-        <label for="activity-description">{{
+      <div class="ca-field">
+        <label class="ca-field__label" for="activity-description">{{
           $t('pages.admin.eventDetail.activities.form.fields.description')
         }}</label>
         <el-input
@@ -120,11 +121,12 @@ async function save(): Promise<void> {
           :maxlength="4000"
           :autosize="{ minRows: 3 }"
           :class="{ 'ca-invalid': invalid('description') }"
+          :aria-invalid="invalid('description')"
         />
       </div>
-      <div class="form__row">
-        <div class="form__field">
-          <label for="activity-modality">{{
+      <div class="ca-form-grid">
+        <div class="ca-field">
+          <label class="ca-field__label" for="activity-modality">{{
             $t('pages.admin.eventDetail.activities.form.fields.modality')
           }}</label>
           <el-select
@@ -140,10 +142,10 @@ async function save(): Promise<void> {
               :value="modality.id"
             />
           </el-select>
-          <small v-if="errors.modalityId" class="form__error">{{ errors.modalityId }}</small>
+          <small v-if="errors.modalityId" class="ca-field__error">{{ errors.modalityId }}</small>
         </div>
-        <div class="form__field">
-          <label for="activity-location">{{
+        <div class="ca-field">
+          <label class="ca-field__label" for="activity-location">{{
             $t('pages.admin.eventDetail.activities.form.fields.location')
           }}</label>
           <el-input
@@ -151,13 +153,17 @@ async function save(): Promise<void> {
             v-model="draft.location"
             :maxlength="200"
             :class="{ 'ca-invalid': invalid('location') }"
+            :aria-invalid="invalid('location')"
+            :aria-describedby="errors.location ? 'activity-location-error' : undefined"
           />
-          <small v-if="errors.location" class="form__error">{{ errors.location }}</small>
+          <small v-if="errors.location" id="activity-location-error" class="ca-field__error">{{
+            errors.location
+          }}</small>
         </div>
       </div>
-      <div class="form__row">
-        <div class="form__field">
-          <label for="activity-start">{{
+      <div class="ca-form-grid">
+        <div class="ca-field">
+          <label class="ca-field__label" for="activity-start">{{
             $t('pages.admin.eventDetail.activities.form.fields.start')
           }}</label>
           <el-date-picker
@@ -168,10 +174,10 @@ async function save(): Promise<void> {
             :disabled-date="outsideEvent"
             :class="{ 'ca-invalid': invalid('startsAt') }"
           />
-          <small v-if="errors.startsAt" class="form__error">{{ errors.startsAt }}</small>
+          <small v-if="errors.startsAt" class="ca-field__error">{{ errors.startsAt }}</small>
         </div>
-        <div class="form__field">
-          <label for="activity-end">{{
+        <div class="ca-field">
+          <label class="ca-field__label" for="activity-end">{{
             $t('pages.admin.eventDetail.activities.form.fields.end')
           }}</label>
           <el-date-picker
@@ -182,12 +188,12 @@ async function save(): Promise<void> {
             :disabled-date="beforeStartOrOutsideEvent"
             :class="{ 'ca-invalid': invalid('endsAt') }"
           />
-          <small v-if="errors.endsAt" class="form__error">{{ errors.endsAt }}</small>
+          <small v-if="errors.endsAt" class="ca-field__error">{{ errors.endsAt }}</small>
         </div>
       </div>
-      <small v-if="errors.schedule" class="form__error">{{ errors.schedule }}</small>
-      <div v-if="roles.length" class="form__field">
-        <div id="activity-capacities-label" class="form__label">
+      <small v-if="errors.schedule" class="ca-field__error">{{ errors.schedule }}</small>
+      <div v-if="roles.length" class="ca-field">
+        <div id="activity-capacities-label" class="ca-field__label">
           {{ $t('pages.admin.eventDetail.activities.form.fields.desiredCounts') }}
         </div>
         <div class="form__capacities" role="group" aria-labelledby="activity-capacities-label">
@@ -204,12 +210,12 @@ async function save(): Promise<void> {
             />
           </div>
         </div>
-        <small class="form__hint">
+        <small class="ca-field__hint">
           {{ $t('pages.admin.eventDetail.activities.form.hint') }}
         </small>
       </div>
-      <div class="form__field">
-        <div id="activity-image-label" class="form__label">{{ $t('common.image') }}</div>
+      <div class="ca-field">
+        <div id="activity-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
         <ThumbnailField
           role="group"
           aria-labelledby="activity-image-label"
@@ -246,30 +252,6 @@ async function save(): Promise<void> {
   padding-top: 6px;
 }
 
-.form__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label,
-.form__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__error {
-  color: var(--ca-danger-ink);
-  font-size: 12.5px;
-}
-
 .form__capacities {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -287,19 +269,7 @@ async function save(): Promise<void> {
   color: var(--ca-text);
 }
 
-.form__hint {
-  color: var(--ca-text-muted);
-  font-size: 12px;
-}
-
-.form :deep(.el-select),
-.form :deep(.el-date-editor),
-.form :deep(.el-input-number) {
-  width: 100%;
-}
-
 @media (max-width: 640px) {
-  .form__row,
   .form__capacities {
     grid-template-columns: 1fr;
   }

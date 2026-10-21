@@ -57,19 +57,25 @@ async function save(): Promise<void> {
     width="min(460px, 92vw)"
   >
     <form class="form" @submit.prevent="save">
-      <div class="form__field">
-        <label for="partner-name">{{ $t('common.name') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="partner-name">{{ $t('common.name') }}</label>
         <el-input
           id="partner-name"
           v-model="draft.name"
           :maxlength="200"
           :class="{ 'ca-invalid': errors.name }"
+          :aria-invalid="!!errors.name"
+          :aria-describedby="errors.name ? 'partner-name-error' : undefined"
         />
-        <small v-if="errors.name" class="form__error">{{ errors.name }}</small>
+        <small v-if="errors.name" id="partner-name-error" class="ca-field__error">{{
+          errors.name
+        }}</small>
       </div>
 
-      <div class="form__field">
-        <label for="partner-from">{{ $t('pages.admin.partners.form.fromDate') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="partner-from">{{
+          $t('pages.admin.partners.form.fromDate')
+        }}</label>
         <el-date-picker
           id="partner-from"
           v-model="draft.fromDate"
@@ -78,11 +84,13 @@ async function save(): Promise<void> {
           :disabled-date="(date: Date) => isDayAfter(date, new Date())"
           :class="{ 'ca-invalid': errors.fromDate }"
         />
-        <small v-if="errors.fromDate" class="form__error">{{ errors.fromDate }}</small>
+        <small v-if="errors.fromDate" class="ca-field__error">{{ errors.fromDate }}</small>
       </div>
 
-      <div class="form__field">
-        <label for="partner-tier">{{ $t('pages.admin.partners.form.tier') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="partner-tier">{{
+          $t('pages.admin.partners.form.tier')
+        }}</label>
         <el-input-number
           id="partner-tier"
           v-model="draft.tier"
@@ -93,8 +101,10 @@ async function save(): Promise<void> {
         />
       </div>
 
-      <div class="form__field">
-        <label for="partner-website">{{ $t('pages.admin.partners.form.website') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="partner-website">{{
+          $t('pages.admin.partners.form.website')
+        }}</label>
         <el-input
           id="partner-website"
           v-model="draft.website"
@@ -102,12 +112,16 @@ async function save(): Promise<void> {
           :maxlength="500"
           :placeholder="$t('pages.admin.partners.form.urlPlaceholder')"
           :class="{ 'ca-invalid': errors.website }"
+          :aria-invalid="!!errors.website"
+          :aria-describedby="errors.website ? 'partner-website-error' : undefined"
         />
-        <small v-if="errors.website" class="form__error">{{ errors.website }}</small>
+        <small v-if="errors.website" id="partner-website-error" class="ca-field__error">{{
+          errors.website
+        }}</small>
       </div>
 
-      <div class="form__field">
-        <div id="partner-image-label" class="form__label">{{ $t('common.image') }}</div>
+      <div class="ca-field">
+        <div id="partner-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
         <ThumbnailField
           role="group"
           aria-labelledby="partner-image-label"
@@ -142,28 +156,5 @@ async function save(): Promise<void> {
   flex-direction: column;
   gap: 16px;
   padding-top: 6px;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label,
-.form__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__error {
-  color: var(--ca-danger-ink);
-  font-size: 12.5px;
-}
-
-.form :deep(.el-date-editor),
-.form :deep(.el-input-number) {
-  width: 100%;
 }
 </style>

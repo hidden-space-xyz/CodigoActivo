@@ -60,8 +60,8 @@ const {
             </template>
           </p>
 
-          <div class="two-factor-field">
-            <label class="two-factor-label" for="two-factor-code">{{
+          <div class="ca-field">
+            <label class="ca-field__label" for="two-factor-code">{{
               $t('pages.loginTwoFactor.codeLabel')
             }}</label>
             <el-input
@@ -78,7 +78,7 @@ const {
             />
           </div>
 
-          <p v-if="errorMessage" class="two-factor-error" role="alert">
+          <p v-if="errorMessage" class="ca-form-alert" role="alert">
             {{ errorMessage }}
           </p>
 
@@ -149,29 +149,11 @@ const {
   color: var(--ca-text-muted);
 }
 
-.two-factor-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.two-factor-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-  margin-bottom: 6px;
-}
-
 .two-factor-input :deep(.el-input__inner) {
   font-family: var(--ca-font-mono);
   font-size: 22px;
   letter-spacing: 0.35em;
   text-align: center;
-}
-
-.two-factor-error {
-  margin: 0;
-  font-size: 13.5px;
-  color: var(--ca-danger-ink);
 }
 
 .two-factor-resend {

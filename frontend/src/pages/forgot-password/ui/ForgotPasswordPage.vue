@@ -22,8 +22,8 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
     <section class="forgot-body">
       <div class="forgot-card">
         <form v-if="!sent" class="forgot-form" @submit.prevent="submit">
-          <div class="forgot-field">
-            <label class="forgot-label" for="forgot-email">{{ $t('common.emailLong') }}</label>
+          <div class="ca-field">
+            <label class="ca-field__label" for="forgot-email">{{ $t('common.emailLong') }}</label>
             <el-input
               id="forgot-email"
               v-model="form.email"
@@ -38,7 +38,7 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
             />
           </div>
 
-          <p v-if="isError" class="forgot-error" role="alert">
+          <p v-if="isError" class="ca-form-alert" role="alert">
             {{ $t('pages.forgotPassword.error') }}
           </p>
 
@@ -93,23 +93,6 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.forgot-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.forgot-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-  margin-bottom: 6px;
-}
-
-.forgot-error {
-  font-size: 13.5px;
-  color: var(--ca-danger-ink);
 }
 
 .forgot-alt {

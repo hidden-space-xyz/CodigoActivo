@@ -89,39 +89,47 @@ const {
       :close-on-click-modal="false"
     >
       <form class="acc-form" @submit.prevent="saveEdit">
-        <div class="acc-form__grid">
-          <div class="acc-form__field">
-            <label for="p-firstname">{{ $t('common.firstName') }}</label>
+        <div class="ca-form-grid">
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="p-firstname">{{ $t('common.firstName') }}</label>
             <el-input
               id="p-firstname"
               v-model="draft.firstName"
               :maxlength="120"
               :class="{ 'ca-invalid': errors.firstName }"
+              :aria-invalid="!!errors.firstName"
+              :aria-describedby="errors.firstName ? 'p-firstname-error' : undefined"
               required
             />
-            <small v-if="errors.firstName" class="acc-form__error">{{ errors.firstName }}</small>
+            <small v-if="errors.firstName" id="p-firstname-error" class="ca-field__error">{{
+              errors.firstName
+            }}</small>
           </div>
-          <div class="acc-form__field">
-            <label for="p-lastname">{{ $t('common.lastName') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="p-lastname">{{ $t('common.lastName') }}</label>
             <el-input
               id="p-lastname"
               v-model="draft.lastName"
               :maxlength="120"
               :class="{ 'ca-invalid': errors.lastName }"
+              :aria-invalid="!!errors.lastName"
+              :aria-describedby="errors.lastName ? 'p-lastname-error' : undefined"
               required
             />
-            <small v-if="errors.lastName" class="acc-form__error">{{ errors.lastName }}</small>
+            <small v-if="errors.lastName" id="p-lastname-error" class="ca-field__error">{{
+              errors.lastName
+            }}</small>
           </div>
-          <div class="acc-form__field">
-            <label for="p-national-id">{{ $t('common.nationalId') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="p-national-id">{{ $t('common.nationalId') }}</label>
             <NationalIdInput
               id="p-national-id"
               v-model="draft.nationalId"
               :show-errors="editSubmitted"
             />
           </div>
-          <div class="acc-form__field">
-            <label for="p-gender">{{ $t('common.gender') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="p-gender">{{ $t('common.gender') }}</label>
             <el-select
               id="p-gender"
               v-model="draft.gender"
@@ -134,46 +142,61 @@ const {
                 :value="gender"
               />
             </el-select>
-            <small v-if="errors.gender" class="acc-form__error">{{ errors.gender }}</small>
+            <small v-if="errors.gender" class="ca-field__error">{{ errors.gender }}</small>
           </div>
-          <div class="acc-form__field">
-            <label for="p-phone">{{ $t('common.phone') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="p-phone">{{ $t('common.phone') }}</label>
             <el-input
               id="p-phone"
               v-model="draft.phone"
               type="tel"
               :maxlength="40"
               :class="{ 'ca-invalid': errors.phone }"
+              :aria-invalid="!!errors.phone"
+              :aria-describedby="errors.phone ? 'p-phone-error' : undefined"
               required
             />
-            <small v-if="errors.phone" class="acc-form__error">{{ errors.phone }}</small>
+            <small v-if="errors.phone" id="p-phone-error" class="ca-field__error">{{
+              errors.phone
+            }}</small>
           </div>
-          <div class="acc-form__field">
-            <label for="p-secondary-phone">{{ $t('common.secondaryPhoneOptional') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="p-secondary-phone">{{
+              $t('common.secondaryPhoneOptional')
+            }}</label>
             <el-input
               id="p-secondary-phone"
               v-model="draft.secondaryPhone"
               type="tel"
               :maxlength="40"
               :class="{ 'ca-invalid': errors.secondaryPhone }"
+              :aria-invalid="!!errors.secondaryPhone"
+              :aria-describedby="errors.secondaryPhone ? 'p-secondary-phone-error' : undefined"
             />
-            <small v-if="errors.secondaryPhone" class="acc-form__error">{{
-              errors.secondaryPhone
-            }}</small>
+            <small
+              v-if="errors.secondaryPhone"
+              id="p-secondary-phone-error"
+              class="ca-field__error"
+              >{{ errors.secondaryPhone }}</small
+            >
           </div>
-          <div class="acc-form__field acc-form__field--wide">
-            <label for="p-email">{{ $t('common.email') }}</label>
+          <div class="ca-field ca-field--wide acc-form__field">
+            <label class="ca-field__label" for="p-email">{{ $t('common.email') }}</label>
             <el-input
               id="p-email"
               v-model="draft.email"
               type="email"
               :maxlength="256"
               :class="{ 'ca-invalid': errors.email }"
+              :aria-invalid="!!errors.email"
+              :aria-describedby="errors.email ? 'p-email-error' : undefined"
               required
             />
-            <small v-if="errors.email" class="acc-form__error">{{ errors.email }}</small>
+            <small v-if="errors.email" id="p-email-error" class="ca-field__error">{{
+              errors.email
+            }}</small>
           </div>
-          <div class="acc-form__consent acc-form__field--wide">
+          <div class="acc-form__consent ca-field--wide">
             <el-checkbox
               id="p-news-consent"
               v-model="draft.newsConsent"
@@ -182,11 +205,11 @@ const {
               {{ $t('common.newsConsentOption') }}
             </el-checkbox>
           </div>
-          <div v-if="requiresPassword" class="acc-form__field acc-form__field--wide">
-            <label for="p-current">{{
+          <div v-if="requiresPassword" class="ca-field ca-field--wide acc-form__field">
+            <label class="ca-field__label" for="p-current">{{
               $t('pages.account.profile.contactChange.passwordLabel')
             }}</label>
-            <p class="acc-form__hint">
+            <p class="ca-field__hint">
               {{ $t('pages.account.profile.contactChange.message') }}
             </p>
             <el-input
@@ -196,11 +219,20 @@ const {
               show-password
               autocomplete="current-password"
               :maxlength="128"
+              :aria-invalid="!!editError || (editSubmitted && passwordMissing)"
+              :aria-describedby="
+                editError || (editSubmitted && passwordMissing) ? 'p-current-error' : undefined
+              "
             />
-            <small v-if="editError" class="acc-form__error">{{ editError }}</small>
-            <small v-else-if="editSubmitted && passwordMissing" class="acc-form__error">{{
-              $t('pages.account.profile.contactChange.passwordRequired')
+            <small v-if="editError" id="p-current-error" class="ca-field__error">{{
+              editError
             }}</small>
+            <small
+              v-else-if="editSubmitted && passwordMissing"
+              id="p-current-error"
+              class="ca-field__error"
+              >{{ $t('pages.account.profile.contactChange.passwordRequired') }}</small
+            >
           </div>
         </div>
         <div class="acc-form__actions">
@@ -221,8 +253,10 @@ const {
       :close-on-click-modal="false"
     >
       <form class="acc-form" @submit.prevent="savePassword">
-        <div class="acc-form__field">
-          <label for="p-cur">{{ $t('pages.account.profile.currentPassword') }}</label>
+        <div class="ca-field acc-form__field">
+          <label class="ca-field__label" for="p-cur">{{
+            $t('pages.account.profile.currentPassword')
+          }}</label>
           <el-input
             id="p-cur"
             v-model="passwordForm.current"
@@ -233,8 +267,10 @@ const {
             required
           />
         </div>
-        <div class="acc-form__field">
-          <label for="p-new">{{ $t('pages.account.profile.newPassword') }}</label>
+        <div class="ca-field acc-form__field">
+          <label class="ca-field__label" for="p-new">{{
+            $t('pages.account.profile.newPassword')
+          }}</label>
           <el-input
             id="p-new"
             v-model="passwordForm.next"
@@ -245,8 +281,10 @@ const {
             required
           />
         </div>
-        <div class="acc-form__field">
-          <label for="p-conf">{{ $t('pages.account.profile.confirmNewPassword') }}</label>
+        <div class="ca-field acc-form__field">
+          <label class="ca-field__label" for="p-conf">{{
+            $t('pages.account.profile.confirmNewPassword')
+          }}</label>
           <el-input
             id="p-conf"
             v-model="passwordForm.confirm"
@@ -257,7 +295,9 @@ const {
             required
           />
         </div>
-        <p v-if="passwordError" class="acc-form__error">{{ passwordError }}</p>
+        <p v-if="passwordError" class="ca-form-alert acc-form__alert" role="alert">
+          {{ passwordError }}
+        </p>
         <div class="acc-form__actions">
           <BrandButton variant="link" type="button" @click="passwordVisible = false">
             {{ $t('common.cancel') }}
@@ -326,23 +366,8 @@ const {
   overflow-wrap: anywhere;
 }
 
-.acc-form__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
 .acc-form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   margin-bottom: 14px;
-}
-
-.acc-form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
 }
 
 .acc-form__consent {
@@ -366,26 +391,12 @@ const {
   margin-top: 8px;
 }
 
-.acc-form__error {
-  color: var(--ca-danger-ink);
-  font-size: 13.5px;
-  margin: 0 0 10px;
-}
-
-.acc-form__field--wide {
-  grid-column: 1 / -1;
-}
-
-.acc-form__hint {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: var(--ca-text-muted);
+.acc-form__alert {
+  margin-bottom: 10px;
 }
 
 @media (max-width: 640px) {
-  .acc-info,
-  .acc-form__grid {
+  .acc-info {
     grid-template-columns: 1fr;
   }
 
