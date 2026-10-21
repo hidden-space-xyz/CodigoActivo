@@ -48,33 +48,36 @@ function save(): void {
     append-to-body
   >
     <form class="form" @submit.prevent="save">
-      <p v-if="termsDocument" class="form__hint">
+      <p v-if="termsDocument" class="ca-field__hint">
         {{
           $t('pages.admin.catalogs.termsDocuments.form.versionHint', {
             version: termsDocument.version,
           })
         }}
       </p>
-      <div class="form__field">
-        <label for="terms-document-name">{{ $t('common.name') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="terms-document-name">{{ $t('common.name') }}</label>
         <el-input
           id="terms-document-name"
           v-model="draft.name"
           :maxlength="120"
           :class="{ 'ca-invalid': invalid('name') }"
+          :aria-invalid="invalid('name')"
         />
       </div>
-      <div class="form__field">
-        <div class="form__label">{{ $t('pages.admin.catalogs.termsDocuments.form.content') }}</div>
+      <div class="ca-field">
+        <div class="ca-field__label">
+          {{ $t('pages.admin.catalogs.termsDocuments.form.content') }}
+        </div>
         <RichTextEditor
           v-model="draft.description"
           :label="$t('pages.admin.catalogs.termsDocuments.form.content')"
           :invalid="invalid('description')"
         />
-        <small v-if="errors.description" class="form__error">{{ errors.description }}</small>
+        <small v-if="errors.description" class="ca-field__error">{{ errors.description }}</small>
       </div>
-      <div class="form__field">
-        <div id="terms-document-kind-label" class="form__label">
+      <div class="ca-field">
+        <div id="terms-document-kind-label" class="ca-field__label">
           {{ $t('pages.admin.catalogs.termsDocuments.form.kind') }}
         </div>
         <el-radio-group v-model="draft.kind" aria-labelledby="terms-document-kind-label">
@@ -85,7 +88,7 @@ function save(): void {
             {{ $t('pages.admin.catalogs.termsDocuments.kinds.Consent') }}
           </el-radio>
         </el-radio-group>
-        <small class="form__hint">
+        <small class="ca-field__hint">
           {{
             draft.kind === 'Consent'
               ? $t('pages.admin.catalogs.termsDocuments.form.kindHints.Consent')
@@ -93,13 +96,13 @@ function save(): void {
           }}
         </small>
       </div>
-      <div class="form__field">
+      <div class="ca-field">
         <el-switch
           id="terms-document-requires-signature"
           v-model="draft.requiresSignature"
           :active-text="$t('pages.admin.catalogs.termsDocuments.form.requiresSignature')"
         />
-        <small class="form__hint">
+        <small class="ca-field__hint">
           {{ $t('pages.admin.catalogs.termsDocuments.form.requiresSignatureHint') }}
         </small>
       </div>
@@ -119,29 +122,6 @@ function save(): void {
   padding-top: 6px;
   max-height: 68vh;
   overflow-y: auto;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label,
-.form__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__error {
-  color: var(--ca-danger-ink);
-  font-size: 12.5px;
-}
-
-.form__hint {
-  color: var(--ca-text-muted);
-  font-size: 12.5px;
 }
 
 @media (max-width: 640px) {

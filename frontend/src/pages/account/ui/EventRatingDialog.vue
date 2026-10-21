@@ -68,8 +68,10 @@ function onSubmit(): void {
     <p class="acc-rating__notice">{{ $t('pages.account.history.dialog.anonymousNotice') }}</p>
 
     <form class="acc-form" @submit.prevent="onSubmit">
-      <div class="acc-form__field">
-        <label for="rating-score">{{ $t('pages.account.history.dialog.score') }}</label>
+      <div class="ca-field acc-form__field">
+        <label class="ca-field__label" for="rating-score">{{
+          $t('pages.account.history.dialog.score')
+        }}</label>
         <div class="acc-rating__stars">
           <el-rate id="rating-score" v-model="form.stars" />
           <BrandButton v-if="form.stars > 0" variant="link" type="button" @click="form.stars = 0">{{
@@ -78,8 +80,10 @@ function onSubmit(): void {
         </div>
       </div>
 
-      <div class="acc-form__field">
-        <label for="rating-most">{{ $t('entities.event.ratingQuestions.mostLiked') }}</label>
+      <div class="ca-field acc-form__field">
+        <label class="ca-field__label" for="rating-most">{{
+          $t('entities.event.ratingQuestions.mostLiked')
+        }}</label>
         <el-input
           id="rating-most"
           v-model="form.mostLiked"
@@ -89,8 +93,10 @@ function onSubmit(): void {
         />
       </div>
 
-      <div class="acc-form__field">
-        <label for="rating-least">{{ $t('entities.event.ratingQuestions.leastLiked') }}</label>
+      <div class="ca-field acc-form__field">
+        <label class="ca-field__label" for="rating-least">{{
+          $t('entities.event.ratingQuestions.leastLiked')
+        }}</label>
         <el-input
           id="rating-least"
           v-model="form.leastLiked"
@@ -100,8 +106,8 @@ function onSubmit(): void {
         />
       </div>
 
-      <div class="acc-form__field">
-        <label for="rating-suggestions">{{
+      <div class="ca-field acc-form__field">
+        <label class="ca-field__label" for="rating-suggestions">{{
           $t('entities.event.ratingQuestions.suggestions')
         }}</label>
         <el-input
@@ -168,16 +174,7 @@ function onSubmit(): void {
 }
 
 .acc-form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   margin-bottom: 16px;
-}
-
-.acc-form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
 }
 
 .acc-form__actions {

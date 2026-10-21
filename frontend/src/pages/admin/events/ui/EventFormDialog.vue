@@ -91,26 +91,34 @@ async function save(): Promise<void> {
     append-to-body
   >
     <form class="form form--scroll" @submit.prevent="save">
-      <div class="form__field">
-        <label for="event-title">{{ $t('pages.admin.events.form.fields.title') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="event-title">{{
+          $t('pages.admin.events.form.fields.title')
+        }}</label>
         <el-input
           id="event-title"
           v-model="draft.title"
           :maxlength="200"
           :class="{ 'ca-invalid': invalid('title') }"
+          :aria-invalid="invalid('title')"
         />
       </div>
-      <div class="form__field">
-        <label for="event-subtitle">{{ $t('pages.admin.events.form.fields.subtitle') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="event-subtitle">{{
+          $t('pages.admin.events.form.fields.subtitle')
+        }}</label>
         <el-input
           id="event-subtitle"
           v-model="draft.subtitle"
           :maxlength="300"
           :class="{ 'ca-invalid': invalid('subtitle') }"
+          :aria-invalid="invalid('subtitle')"
         />
       </div>
-      <div class="form__field">
-        <label for="event-categories">{{ $t('pages.admin.events.form.fields.categories') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="event-categories">{{
+          $t('pages.admin.events.form.fields.categories')
+        }}</label>
         <div class="form__cats">
           <el-select
             id="event-categories"
@@ -139,10 +147,10 @@ async function save(): Promise<void> {
             @click="categoryDialogVisible = true"
           />
         </div>
-        <small v-if="errors.categoryIds" class="form__error">{{ errors.categoryIds }}</small>
+        <small v-if="errors.categoryIds" class="ca-field__error">{{ errors.categoryIds }}</small>
       </div>
-      <div class="form__field">
-        <label for="event-terms-documents">{{
+      <div class="ca-field">
+        <label class="ca-field__label" for="event-terms-documents">{{
           $t('pages.admin.events.form.fields.termsDocuments')
         }}</label>
         <el-select
@@ -161,7 +169,9 @@ async function save(): Promise<void> {
             :value="document.id"
           />
         </el-select>
-        <small class="form__hint">{{ $t('pages.admin.events.form.hints.termsDocuments') }}</small>
+        <small class="ca-field__hint">{{
+          $t('pages.admin.events.form.hints.termsDocuments')
+        }}</small>
         <ul v-if="draft.termsDocumentIds.length" class="form__terms-list">
           <li v-for="id in draft.termsDocumentIds" :key="id" class="form__terms-row">
             <span class="form__terms-name">{{ termsName(id) }}</span>
@@ -179,19 +189,21 @@ async function save(): Promise<void> {
           </li>
         </ul>
       </div>
-      <div class="form__field">
-        <div class="form__label">{{ $t('pages.admin.events.form.fields.description') }}</div>
+      <div class="ca-field">
+        <div class="ca-field__label">{{ $t('pages.admin.events.form.fields.description') }}</div>
         <RichTextEditor
           v-model="draft.description"
           :label="$t('pages.admin.events.form.fields.description')"
           :upload="uploadFileRequest"
           :invalid="!!errors.description"
         />
-        <small v-if="errors.description" class="form__error">{{ errors.description }}</small>
+        <small v-if="errors.description" class="ca-field__error">{{ errors.description }}</small>
       </div>
-      <div class="form__row">
-        <div class="form__field">
-          <label for="event-start">{{ $t('pages.admin.events.form.fields.eventStart') }}</label>
+      <div class="ca-form-grid">
+        <div class="ca-field">
+          <label class="ca-field__label" for="event-start">{{
+            $t('pages.admin.events.form.fields.eventStart')
+          }}</label>
           <el-date-picker
             id="event-start"
             v-model="draft.startsAt"
@@ -199,10 +211,12 @@ async function save(): Promise<void> {
             :format="DATE_FORMAT"
             :class="{ 'ca-invalid': invalid('startsAt') }"
           />
-          <small v-if="errors.startsAt" class="form__error">{{ errors.startsAt }}</small>
+          <small v-if="errors.startsAt" class="ca-field__error">{{ errors.startsAt }}</small>
         </div>
-        <div class="form__field">
-          <label for="event-end">{{ $t('pages.admin.events.form.fields.eventEnd') }}</label>
+        <div class="ca-field">
+          <label class="ca-field__label" for="event-end">{{
+            $t('pages.admin.events.form.fields.eventEnd')
+          }}</label>
           <el-date-picker
             id="event-end"
             v-model="draft.endsAt"
@@ -211,11 +225,11 @@ async function save(): Promise<void> {
             :disabled-date="(date: Date) => isDayBefore(date, draft.startsAt)"
             :class="{ 'ca-invalid': invalid('endsAt') }"
           />
-          <small v-if="errors.endsAt" class="form__error">{{ errors.endsAt }}</small>
+          <small v-if="errors.endsAt" class="ca-field__error">{{ errors.endsAt }}</small>
         </div>
       </div>
-      <div class="form__field">
-        <label for="event-early-signup-start">{{
+      <div class="ca-field">
+        <label class="ca-field__label" for="event-early-signup-start">{{
           $t('pages.admin.events.form.fields.earlySignupStart')
         }}</label>
         <el-date-picker
@@ -227,16 +241,16 @@ async function save(): Promise<void> {
           :disabled-date="(date: Date) => isDayAfter(date, draft.signupStartsAt)"
           :class="{ 'ca-invalid': invalid('earlySignupStartsAt') }"
         />
-        <small v-if="errors.earlySignupStartsAt" class="form__error">{{
+        <small v-if="errors.earlySignupStartsAt" class="ca-field__error">{{
           errors.earlySignupStartsAt
         }}</small>
-        <small v-else class="form__hint">{{
+        <small v-else class="ca-field__hint">{{
           $t('pages.admin.events.form.hints.earlySignupStart')
         }}</small>
       </div>
-      <div class="form__row">
-        <div class="form__field">
-          <label for="event-signup-start">{{
+      <div class="ca-form-grid">
+        <div class="ca-field">
+          <label class="ca-field__label" for="event-signup-start">{{
             $t('pages.admin.events.form.fields.signupStart')
           }}</label>
           <el-date-picker
@@ -246,12 +260,14 @@ async function save(): Promise<void> {
             :format="DATE_TIME_FORMAT"
             :class="{ 'ca-invalid': invalid('signupStartsAt') }"
           />
-          <small v-if="errors.signupStartsAt" class="form__error">{{
+          <small v-if="errors.signupStartsAt" class="ca-field__error">{{
             errors.signupStartsAt
           }}</small>
         </div>
-        <div class="form__field">
-          <label for="event-signup-end">{{ $t('pages.admin.events.form.fields.signupEnd') }}</label>
+        <div class="ca-field">
+          <label class="ca-field__label" for="event-signup-end">{{
+            $t('pages.admin.events.form.fields.signupEnd')
+          }}</label>
           <el-date-picker
             id="event-signup-end"
             v-model="draft.signupEndsAt"
@@ -263,11 +279,13 @@ async function save(): Promise<void> {
             "
             :class="{ 'ca-invalid': invalid('signupEndsAt') }"
           />
-          <small v-if="errors.signupEndsAt" class="form__error">{{ errors.signupEndsAt }}</small>
+          <small v-if="errors.signupEndsAt" class="ca-field__error">{{
+            errors.signupEndsAt
+          }}</small>
         </div>
       </div>
-      <div class="form__field">
-        <div id="event-image-label" class="form__label">{{ $t('common.image') }}</div>
+      <div class="ca-field">
+        <div id="event-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
         <ThumbnailField
           role="group"
           aria-labelledby="event-image-label"
@@ -311,25 +329,6 @@ async function save(): Promise<void> {
   overflow-y: auto;
 }
 
-.form__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label,
-.form__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
 .form__cats {
   display: flex;
   align-items: center;
@@ -339,16 +338,6 @@ async function save(): Promise<void> {
 .form__cats-select {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.form__error {
-  color: var(--ca-danger-ink);
-  font-size: 12.5px;
-}
-
-.form__hint {
-  color: var(--ca-text-muted);
-  font-size: 12.5px;
 }
 
 .form__terms-list {
@@ -385,18 +374,10 @@ async function save(): Promise<void> {
   white-space: nowrap;
 }
 
-.form :deep(.el-date-editor) {
-  width: 100%;
-}
-
 @media (max-width: 640px) {
   .form--scroll {
     max-height: none;
     overflow-y: visible;
-  }
-
-  .form__row {
-    grid-template-columns: 1fr;
   }
 }
 </style>

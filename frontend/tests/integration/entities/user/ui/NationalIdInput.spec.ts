@@ -15,7 +15,7 @@ async function renderInput(props: Record<string, unknown> = {}) {
     },
   })
   const input = rendered.wrapper.get('#dni')
-  const message = () => rendered.wrapper.find('.national-id-input__error')
+  const message = () => rendered.wrapper.find('.ca-field__error')
   const invalid = () => rendered.wrapper.find('.ca-invalid').exists()
   return { ...rendered, input, message, invalid }
 }
@@ -45,6 +45,19 @@ describe('NationalIdInput', () => {
 
     expect(message().text()).toBe(t('validation.nationalIdFormat'))
     expect(invalid()).toBe(true)
+  })
+
+  it('links the reported problem to the input so screen readers announce it', async () => {
+    const { input, message } = await renderInput()
+    expect(input.attributes('aria-invalid')).toBe('false')
+    expect(input.attributes('aria-describedby')).toBeUndefined()
+
+    await input.setValue('1234567')
+    await input.trigger('blur')
+
+    expect(input.attributes('aria-invalid')).toBe('true')
+    expect(input.attributes('aria-describedby')).toBe('dni-error')
+    expect(message().attributes('id')).toBe('dni-error')
   })
 
   it('reports a control letter that does not match and clears it once fixed', async () => {

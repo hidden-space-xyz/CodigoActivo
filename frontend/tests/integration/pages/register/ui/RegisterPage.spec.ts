@@ -183,7 +183,7 @@ describe('register page', () => {
     await clickButton(wrapper, t('pages.register.ageGate.confirm'))
 
     await wrapper.find('form').trigger('submit')
-    await vi.waitFor(() => expect(wrapper.findAll('.reg__error').length).toBeGreaterThan(0))
+    await vi.waitFor(() => expect(wrapper.findAll('.ca-field__error').length).toBeGreaterThan(0))
 
     expect(received).toHaveLength(0)
   })

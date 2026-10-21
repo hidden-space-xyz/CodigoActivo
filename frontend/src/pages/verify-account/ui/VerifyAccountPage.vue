@@ -51,7 +51,7 @@ onMounted(() => {
           :hint="$t('pages.verifyAccount.hint')"
         >
           <form class="verify-resend" @submit.prevent="resend">
-            <label class="verify-resend__label" for="verify-resend-email">{{
+            <label class="ca-field__label" for="verify-resend-email">{{
               $t('common.emailLong')
             }}</label>
             <el-input
@@ -93,11 +93,5 @@ onMounted(() => {
   max-width: 360px;
   margin: 20px auto 0;
   text-align: left;
-}
-
-.verify-resend__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
 }
 </style>

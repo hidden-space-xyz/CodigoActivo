@@ -69,26 +69,34 @@ async function save(): Promise<void> {
     width="min(920px, 94vw)"
   >
     <form class="form form--scroll" @submit.prevent="save">
-      <div class="form__field">
-        <label for="resource-title">{{ $t('pages.admin.resources.form.title') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="resource-title">{{
+          $t('pages.admin.resources.form.title')
+        }}</label>
         <el-input
           id="resource-title"
           v-model="draft.title"
           :maxlength="200"
           :class="{ 'ca-invalid': invalid('title') }"
+          :aria-invalid="invalid('title')"
         />
       </div>
-      <div class="form__field">
-        <label for="resource-subtitle">{{ $t('pages.admin.resources.form.subtitle') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="resource-subtitle">{{
+          $t('pages.admin.resources.form.subtitle')
+        }}</label>
         <el-input
           id="resource-subtitle"
           v-model="draft.subtitle"
           :maxlength="300"
           :class="{ 'ca-invalid': invalid('subtitle') }"
+          :aria-invalid="invalid('subtitle')"
         />
       </div>
-      <div class="form__field">
-        <label for="resource-type">{{ $t('pages.admin.resources.form.type') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="resource-type">{{
+          $t('pages.admin.resources.form.type')
+        }}</label>
         <el-select
           id="resource-type"
           v-model="draft.resourceTypeId"
@@ -98,36 +106,42 @@ async function save(): Promise<void> {
         >
           <el-option v-for="type in types" :key="type.id" :label="type.name" :value="type.id" />
         </el-select>
-        <small v-if="typesFailed" class="form__error">{{
+        <small v-if="typesFailed" class="ca-field__error">{{
           $t('pages.admin.resources.form.typesLoadError')
         }}</small>
-        <small v-else-if="errors.resourceTypeId" class="form__error">{{
+        <small v-else-if="errors.resourceTypeId" class="ca-field__error">{{
           errors.resourceTypeId
         }}</small>
       </div>
-      <div v-if="selectedType && !selectedType.isExternal" class="form__field">
-        <div class="form__label">{{ $t('pages.admin.resources.form.description') }}</div>
+      <div v-if="selectedType && !selectedType.isExternal" class="ca-field">
+        <div class="ca-field__label">{{ $t('pages.admin.resources.form.description') }}</div>
         <RichTextEditor
           v-model="draft.description"
           :label="$t('pages.admin.resources.form.description')"
           :upload="uploadFileRequest"
           :invalid="!!errors.description"
         />
-        <small v-if="errors.description" class="form__error">{{ errors.description }}</small>
+        <small v-if="errors.description" class="ca-field__error">{{ errors.description }}</small>
       </div>
-      <div v-if="selectedType?.isExternal" class="form__field">
-        <label for="resource-url">{{ $t('pages.admin.resources.form.url') }}</label>
+      <div v-if="selectedType?.isExternal" class="ca-field">
+        <label class="ca-field__label" for="resource-url">{{
+          $t('pages.admin.resources.form.url')
+        }}</label>
         <el-input
           id="resource-url"
           v-model="draft.url"
           :maxlength="500"
           :placeholder="$t('pages.admin.resources.form.urlPlaceholder')"
           :class="{ 'ca-invalid': errors.url }"
+          :aria-invalid="!!errors.url"
+          :aria-describedby="errors.url ? 'resource-url-error' : undefined"
         />
-        <small v-if="errors.url" class="form__error">{{ errors.url }}</small>
+        <small v-if="errors.url" id="resource-url-error" class="ca-field__error">{{
+          errors.url
+        }}</small>
       </div>
-      <div class="form__field">
-        <div id="resource-image-label" class="form__label">{{ $t('common.image') }}</div>
+      <div class="ca-field">
+        <div id="resource-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
         <ThumbnailField
           role="group"
           aria-labelledby="resource-image-label"
@@ -167,28 +181,6 @@ async function save(): Promise<void> {
 .form--scroll {
   max-height: 68vh;
   overflow-y: auto;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label,
-.form__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__error {
-  color: var(--ca-danger-ink);
-  font-size: 12.5px;
-}
-
-.form :deep(.el-select) {
-  width: 100%;
 }
 
 @media (max-width: 640px) {

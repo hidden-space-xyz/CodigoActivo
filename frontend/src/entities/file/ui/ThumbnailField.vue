@@ -134,9 +134,9 @@ onBeforeUnmount(revokeObjectUrl)
       <span v-if="fileName" class="thumb__name">{{ fileName }}</span>
     </div>
 
-    <small v-if="sizeError" class="thumb__error">{{ sizeError }}</small>
-    <small v-if="invalid" class="thumb__error">{{ $t('common.imageRequired') }}</small>
-    <small v-if="uploadError" class="thumb__error">{{ uploadError }}</small>
+    <small v-if="sizeError" class="ca-field__error">{{ sizeError }}</small>
+    <small v-if="invalid" class="ca-field__error">{{ $t('common.imageRequired') }}</small>
+    <small v-if="uploadError" class="ca-field__error">{{ uploadError }}</small>
 
     <input
       ref="fileInput"
@@ -195,11 +195,6 @@ onBeforeUnmount(revokeObjectUrl)
   font-size: 12.5px;
   color: var(--ca-text-muted);
   word-break: break-all;
-}
-
-.thumb__error {
-  font-size: 12.5px;
-  color: var(--ca-danger-ink);
 }
 
 .thumb__input {

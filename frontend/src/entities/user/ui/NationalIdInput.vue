@@ -57,14 +57,16 @@ function onBlur(): void {
       spellcheck="false"
       :maxlength="12"
       :class="{ 'ca-invalid': visibleProblem !== null }"
+      :aria-invalid="visibleProblem !== null"
+      :aria-describedby="visibleProblem ? `${id}-error` : undefined"
       required
       @update:model-value="update"
       @blur="onBlur"
     />
-    <small v-if="visibleProblem === 'letter'" class="national-id-input__error">{{
+    <small v-if="visibleProblem === 'letter'" :id="`${id}-error`" class="ca-field__error">{{
       $t('validation.nationalIdLetter')
     }}</small>
-    <small v-else-if="visibleProblem === 'format'" class="national-id-input__error">{{
+    <small v-else-if="visibleProblem === 'format'" :id="`${id}-error`" class="ca-field__error">{{
       $t('validation.nationalIdFormat')
     }}</small>
   </div>
@@ -75,10 +77,5 @@ function onBlur(): void {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.national-id-input__error {
-  font-size: 12.5px;
-  color: var(--ca-danger-ink);
 }
 </style>

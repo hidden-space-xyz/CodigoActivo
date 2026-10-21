@@ -48,14 +48,14 @@ describe('ThumbnailField', () => {
     expect(buttonLabels(wrapper)).toEqual([t('entities.file.thumbnail.select')])
     expect(wrapper.find('.thumb__name').exists()).toBe(false)
     expect(wrapper.find('.thumb__preview--invalid').exists()).toBe(false)
-    expect(wrapper.find('.thumb__error').exists()).toBe(false)
+    expect(wrapper.find('.ca-field__error').exists()).toBe(false)
   })
 
   it('marks the preview as invalid and says the image is required', async () => {
     const { wrapper } = await renderWithProviders(ThumbnailField, { props: { invalid: true } })
 
     expect(wrapper.find('.thumb__preview--invalid').exists()).toBe(true)
-    expect(wrapper.find('.thumb__error').text()).toBe(t('common.imageRequired'))
+    expect(wrapper.find('.ca-field__error').text()).toBe(t('common.imageRequired'))
   })
 
   it('shows the upload error it is given', async () => {
@@ -63,7 +63,7 @@ describe('ThumbnailField', () => {
       props: { uploadError: 'No se pudo subir.' },
     })
 
-    expect(wrapper.find('.thumb__error').text()).toBe('No se pudo subir.')
+    expect(wrapper.find('.ca-field__error').text()).toBe('No se pudo subir.')
     expect(wrapper.find('.thumb__preview--invalid').exists()).toBe(false)
   })
 
@@ -138,7 +138,7 @@ describe('ThumbnailField', () => {
 
     await pickFiles(wrapper, [image('huge.png', 10 * 1024 * 1024 + 1)])
 
-    expect(wrapper.find('.thumb__error').text()).toBe(
+    expect(wrapper.find('.ca-field__error').text()).toBe(
       t('common.imageTooLarge', { max: formatFileSize(MAX_IMAGE_UPLOAD_BYTES) }),
     )
     expect(wrapper.emitted('update:file')).toBeUndefined()
@@ -147,7 +147,7 @@ describe('ThumbnailField', () => {
     const exact = image('limit.png', 10 * 1024 * 1024)
     await pickFiles(wrapper, [exact])
 
-    expect(wrapper.find('.thumb__error').exists()).toBe(false)
+    expect(wrapper.find('.ca-field__error').exists()).toBe(false)
     expect(wrapper.emitted('update:file')).toEqual([[exact]])
   })
 

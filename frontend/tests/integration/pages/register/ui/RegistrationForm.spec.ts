@@ -49,7 +49,7 @@ function addMinorButton(wrapper: VueWrapper) {
 }
 
 function errors(wrapper: VueWrapper): string[] {
-  return wrapper.findAll('.reg__error, .national-id-input__error').map((error) => error.text())
+  return wrapper.findAll('.ca-field__error').map((error) => error.text())
 }
 
 describe('RegistrationForm', () => {
@@ -116,6 +116,34 @@ describe('RegistrationForm', () => {
       t('validation.passwordMin', { min: PASSWORD_MIN_LENGTH }),
     ])
     expect(wrapper.findAll('.ca-invalid').length).toBeGreaterThanOrEqual(6)
+  })
+
+  it('links every reported problem to its field so screen readers announce it', async () => {
+    const { wrapper } = await renderForm()
+    await addMinorButton(wrapper).trigger('click')
+    const ids = [
+      'reg-firstname',
+      'reg-lastname',
+      'reg-national-id',
+      'reg-phone',
+      'reg-email',
+      'reg-password',
+      'minor-firstname-0',
+      'minor-lastname-0',
+      'minor-dob-0',
+    ]
+    for (const id of ids) {
+      expect(wrapper.get(`#${id}`).attributes('aria-invalid')).toBe('false')
+      expect(wrapper.get(`#${id}`).attributes('aria-describedby')).toBeUndefined()
+    }
+
+    await wrapper.find('form').trigger('submit')
+
+    for (const id of ids) {
+      expect(wrapper.get(`#${id}`).attributes('aria-invalid')).toBe('true')
+      expect(wrapper.get(`#${id}`).attributes('aria-describedby')).toBe(`${id}-error`)
+      expect(wrapper.get(`#${id}-error`).classes()).toContain('ca-field__error')
+    }
   })
 
   it('does not show validation errors while a field is being typed', async () => {

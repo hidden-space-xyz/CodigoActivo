@@ -939,3 +939,11 @@
 .ca-invalid.ca-invalid .el-select__wrapper {
   box-shadow: 0 0 0 1px var(--ca-danger) inset;
 }
+
+.ca-field .el-date-editor {
+  --el-date-editor-width: 100%;
+}
+
+.ca-field .el-input-number {
+  width: 100%;
+}

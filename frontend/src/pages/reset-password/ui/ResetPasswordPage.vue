@@ -50,8 +50,8 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
         </StatusPanel>
 
         <form v-else class="reset-form" @submit.prevent="submit">
-          <div class="reset-field">
-            <label class="reset-label" for="reset-password">{{
+          <div class="ca-field">
+            <label class="ca-field__label" for="reset-password">{{
               $t('pages.resetPassword.newPasswordLabel')
             }}</label>
             <el-input
@@ -64,8 +64,8 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
               required
             />
           </div>
-          <div class="reset-field">
-            <label class="reset-label" for="reset-password-confirm">{{
+          <div class="ca-field">
+            <label class="ca-field__label" for="reset-password-confirm">{{
               $t('pages.resetPassword.confirmPasswordLabel')
             }}</label>
             <el-input
@@ -79,7 +79,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             />
           </div>
 
-          <p v-if="errorMessage" class="reset-error" role="alert">{{ errorMessage }}</p>
+          <p v-if="errorMessage" class="ca-form-alert" role="alert">{{ errorMessage }}</p>
           <RouterLink
             v-if="canRequestNewLink"
             :to="{ name: 'forgot-password' }"
@@ -115,23 +115,6 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.reset-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.reset-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-  margin-bottom: 6px;
-}
-
-.reset-error {
-  font-size: 13.5px;
-  color: var(--ca-danger-ink);
 }
 
 .reset-request-link {

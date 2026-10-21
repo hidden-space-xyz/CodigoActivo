@@ -150,45 +150,57 @@ function confirmDelete(): void {
       :close-on-click-modal="false"
     >
       <form class="acc-form" @submit.prevent="save">
-        <div class="acc-form__grid">
-          <div class="acc-form__field">
-            <label for="m-firstname">{{ $t('common.firstName') }}</label>
+        <div class="ca-form-grid">
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="m-firstname">{{ $t('common.firstName') }}</label>
             <el-input
               id="m-firstname"
               v-model="draft.firstName"
               :maxlength="120"
               :class="{ 'ca-invalid': errors.firstName }"
+              :aria-invalid="!!errors.firstName"
+              :aria-describedby="errors.firstName ? 'm-firstname-error' : undefined"
               required
             />
-            <small v-if="errors.firstName" class="acc-form__error">{{ errors.firstName }}</small>
+            <small v-if="errors.firstName" id="m-firstname-error" class="ca-field__error">{{
+              errors.firstName
+            }}</small>
           </div>
-          <div class="acc-form__field">
-            <label for="m-lastname">{{ $t('common.lastName') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="m-lastname">{{ $t('common.lastName') }}</label>
             <el-input
               id="m-lastname"
               v-model="draft.lastName"
               :maxlength="120"
               :class="{ 'ca-invalid': errors.lastName }"
+              :aria-invalid="!!errors.lastName"
+              :aria-describedby="errors.lastName ? 'm-lastname-error' : undefined"
               required
             />
-            <small v-if="errors.lastName" class="acc-form__error">{{ errors.lastName }}</small>
+            <small v-if="errors.lastName" id="m-lastname-error" class="ca-field__error">{{
+              errors.lastName
+            }}</small>
           </div>
-          <div class="acc-form__field">
-            <label for="m-dob">{{ $t('common.birthDate') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="m-dob">{{ $t('common.birthDate') }}</label>
             <input
               id="m-dob"
               v-model="draft.birthDate"
               type="date"
               class="acc-date"
               :class="{ 'acc-date--invalid': errors.birthDate }"
+              :aria-invalid="!!errors.birthDate"
+              :aria-describedby="errors.birthDate ? 'm-dob-error' : undefined"
               :min="minBirthDateIso"
               :max="birthDateRange.max"
               required
             />
-            <small v-if="errors.birthDate" class="acc-form__error">{{ errors.birthDate }}</small>
+            <small v-if="errors.birthDate" id="m-dob-error" class="ca-field__error">{{
+              errors.birthDate
+            }}</small>
           </div>
-          <div class="acc-form__field">
-            <label for="m-gender">{{ $t('common.gender') }}</label>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="m-gender">{{ $t('common.gender') }}</label>
             <el-select
               id="m-gender"
               v-model="draft.gender"
@@ -201,7 +213,7 @@ function confirmDelete(): void {
                 :value="gender"
               />
             </el-select>
-            <small v-if="errors.gender" class="acc-form__error">{{ errors.gender }}</small>
+            <small v-if="errors.gender" class="ca-field__error">{{ errors.gender }}</small>
           </div>
         </div>
         <p v-if="mode === 'add'" class="acc-form__declaration">
@@ -324,23 +336,8 @@ function confirmDelete(): void {
   flex-shrink: 0;
 }
 
-.acc-form__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
 .acc-form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   margin-bottom: 14px;
-}
-
-.acc-form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
 }
 
 .acc-date {
@@ -373,11 +370,6 @@ function confirmDelete(): void {
   margin-top: 8px;
 }
 
-.acc-form__error {
-  color: var(--ca-danger-ink);
-  font-size: 13.5px;
-}
-
 .acc-date--invalid {
   border-color: var(--ca-danger);
 }
@@ -389,10 +381,6 @@ function confirmDelete(): void {
 }
 
 @media (max-width: 640px) {
-  .acc-form__grid {
-    grid-template-columns: 1fr;
-  }
-
   .acc-minor {
     flex-direction: column;
     align-items: stretch;

@@ -153,6 +153,23 @@ describe('SendEmailDialog', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
+  it('links each problem to its field so screen readers announce it', async () => {
+    const { dialog } = await renderDialog()
+
+    await click(findButton(t('features.sendEmail.send'), dialog))
+
+    const fields = [
+      [dialog.querySelector('[role="radiogroup"]'), 'send-email-purpose-error'],
+      [dialog.querySelector('#send-email-subject'), 'send-email-subject-error'],
+      [dialog.querySelector('#send-email-body'), 'send-email-body-error'],
+    ] as const
+    for (const [field, errorId] of fields) {
+      expect(field?.getAttribute('aria-invalid')).toBe('true')
+      expect(field?.getAttribute('aria-describedby')).toBe(errorId)
+      expect(dialog.querySelector(`#${errorId}`)?.classList).toContain('ca-field__error')
+    }
+  })
+
   it('emits the composed email with attachments after confirmation', async () => {
     const { wrapper, dialog } = await renderDialog()
 

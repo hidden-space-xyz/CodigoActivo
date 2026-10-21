@@ -48,8 +48,10 @@ function confirm(): void {
   <el-dialog v-model="visible" :title="title" :width="width" :close-on-click-modal="false">
     <form class="form" @submit.prevent="confirm">
       <p class="form__message">{{ message }}</p>
-      <div class="form__field">
-        <label :for="inputId">{{ $t('pages.admin.users.adminPassword.label') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" :for="inputId">{{
+          $t('pages.admin.users.adminPassword.label')
+        }}</label>
         <el-input
           :id="inputId"
           v-model="draft.password"
@@ -58,9 +60,15 @@ function confirm(): void {
           autocomplete="current-password"
           :maxlength="128"
           :class="{ 'ca-invalid': invalid('password') || error }"
+          :aria-invalid="invalid('password') || !!error"
+          :aria-describedby="errors.password || error ? `${inputId}-error` : undefined"
         />
-        <small v-if="errors.password" class="form__error">{{ errors.password }}</small>
-        <small v-else-if="error" class="form__error">{{ error }}</small>
+        <small v-if="errors.password" :id="`${inputId}-error`" class="ca-field__error">{{
+          errors.password
+        }}</small>
+        <small v-else-if="error" :id="`${inputId}-error`" class="ca-field__error">{{
+          error
+        }}</small>
       </div>
     </form>
 
@@ -83,22 +91,5 @@ function confirm(): void {
   margin: 0;
   line-height: 1.5;
   color: var(--ca-text);
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__error {
-  color: var(--ca-danger-ink);
-  font-size: 12.5px;
 }
 </style>

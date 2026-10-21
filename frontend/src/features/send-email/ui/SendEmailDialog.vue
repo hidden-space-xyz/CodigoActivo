@@ -162,14 +162,16 @@ function send(): void {
     />
 
     <form class="form" @submit.prevent="send">
-      <div class="form__field">
-        <div id="send-email-purpose-label" class="form__label">
+      <div class="ca-field">
+        <div id="send-email-purpose-label" class="ca-field__label">
           {{ $t('features.sendEmail.purpose.label') }}
         </div>
         <el-radio-group
           v-model="draft.purpose"
           :class="{ 'ca-invalid': invalid('purpose') }"
           aria-labelledby="send-email-purpose-label"
+          :aria-invalid="invalid('purpose')"
+          :aria-describedby="errors.purpose ? 'send-email-purpose-error' : undefined"
         >
           <el-radio value="Notice">
             {{ $t('features.sendEmail.purpose.notice') }}
@@ -178,8 +180,10 @@ function send(): void {
             {{ $t('features.sendEmail.purpose.news') }}
           </el-radio>
         </el-radio-group>
-        <small v-if="errors.purpose" class="form__error">{{ errors.purpose }}</small>
-        <small v-else-if="draft.purpose" class="form__hint">
+        <small v-if="errors.purpose" id="send-email-purpose-error" class="ca-field__error">{{
+          errors.purpose
+        }}</small>
+        <small v-else-if="draft.purpose" class="ca-field__hint">
           {{
             news
               ? $t('features.sendEmail.purpose.newsHint')
@@ -188,38 +192,55 @@ function send(): void {
         </small>
       </div>
 
-      <div class="form__field">
-        <label for="send-email-subject">{{ $t('features.sendEmail.subject') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="send-email-subject">{{
+          $t('features.sendEmail.subject')
+        }}</label>
         <el-input
           id="send-email-subject"
           v-model="draft.subject"
           :maxlength="SUBJECT_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('subject') }"
+          :aria-invalid="invalid('subject')"
+          :aria-describedby="errors.subject ? 'send-email-subject-error' : undefined"
           :placeholder="$t('features.sendEmail.subjectPlaceholder')"
         />
-        <small v-if="errors.subject" class="form__error">{{ errors.subject }}</small>
+        <small v-if="errors.subject" id="send-email-subject-error" class="ca-field__error">{{
+          errors.subject
+        }}</small>
       </div>
 
-      <div class="form__field">
-        <label for="send-email-body">{{ $t('features.sendEmail.body') }}</label>
+      <div class="ca-field">
+        <label class="ca-field__label" for="send-email-body">{{
+          $t('features.sendEmail.body')
+        }}</label>
         <el-input
           id="send-email-body"
           v-model="draft.body"
           type="textarea"
           :maxlength="BODY_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('body') }"
+          :aria-invalid="invalid('body')"
+          :aria-describedby="errors.body ? 'send-email-body-error' : undefined"
           :placeholder="$t('features.sendEmail.bodyPlaceholder')"
           :autosize="{ minRows: 6, maxRows: 12 }"
         />
-        <small v-if="errors.body" class="form__error">{{ errors.body }}</small>
-        <small v-else class="form__hint">{{ $t('features.sendEmail.bodyHint') }}</small>
+        <small v-if="errors.body" id="send-email-body-error" class="ca-field__error">{{
+          errors.body
+        }}</small>
+        <small v-else class="ca-field__hint">{{ $t('features.sendEmail.bodyHint') }}</small>
       </div>
 
-      <div class="form__field">
-        <div id="send-email-attachments-label" class="form__label">
+      <div class="ca-field">
+        <div id="send-email-attachments-label" class="ca-field__label">
           {{ $t('features.sendEmail.attachments.label') }}
         </div>
-        <div class="attachments" role="group" aria-labelledby="send-email-attachments-label">
+        <div
+          class="attachments"
+          role="group"
+          aria-labelledby="send-email-attachments-label"
+          :aria-describedby="attachmentError ? 'send-email-attachments-error' : undefined"
+        >
           <ActionButton
             :label="$t('features.sendEmail.attachments.add')"
             icon="paperclip"
@@ -263,7 +284,9 @@ function send(): void {
             />
           </li>
         </ul>
-        <small v-if="attachmentError" class="form__error">{{ attachmentError }}</small>
+        <small v-if="attachmentError" id="send-email-attachments-error" class="ca-field__error">{{
+          attachmentError
+        }}</small>
       </div>
     </form>
 
@@ -297,29 +320,6 @@ function send(): void {
   flex-direction: column;
   gap: 16px;
   padding-top: 2px;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label,
-.form__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__error {
-  color: var(--ca-danger-ink);
-  font-size: 12.5px;
-}
-
-.form__hint {
-  color: var(--ca-text-dim);
-  font-size: 12.5px;
 }
 
 .attachments {

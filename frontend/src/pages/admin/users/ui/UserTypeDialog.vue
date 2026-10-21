@@ -42,13 +42,14 @@ function apply(): void {
     <p class="form__lead">
       {{ $t('pages.admin.users.typeDialog.lead', { fullName: fullName(user ?? {}) }) }}
     </p>
-    <div class="form__field">
-      <label for="user-type">{{ $t('pages.admin.users.typeDialog.typeLabel') }}</label>
+    <div class="ca-field">
+      <label class="ca-field__label" for="user-type">{{
+        $t('pages.admin.users.typeDialog.typeLabel')
+      }}</label>
       <el-select
         id="user-type"
         v-model="userTypeId"
         :placeholder="$t('pages.admin.users.typeDialog.placeholder')"
-        class="form__select"
       >
         <el-option
           v-for="option in options"
@@ -76,21 +77,5 @@ function apply(): void {
   margin: 0 0 14px;
   color: var(--ca-text-muted);
   font-size: 14px;
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form__field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ca-text-muted);
-}
-
-.form__select {
-  width: 100%;
 }
 </style>
