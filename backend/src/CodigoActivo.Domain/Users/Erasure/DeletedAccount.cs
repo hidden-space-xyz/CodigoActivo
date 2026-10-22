@@ -11,9 +11,10 @@ namespace CodigoActivo.Domain.Users.Erasure;
 public class DeletedAccount : AggregateRoot<UserId>
 {
     /// <summary>
-    /// Years a copy is kept before it is physically purged.
+    /// Years a copy is kept before it is physically purged: the limitation period of the very
+    /// serious infringements (LOPDGDD article 72), the longest of the liabilities it serves.
     /// </summary>
-    public const int RetentionYears = 2;
+    public const int RetentionYears = 3;
 
     private DeletedAccount() { }
 

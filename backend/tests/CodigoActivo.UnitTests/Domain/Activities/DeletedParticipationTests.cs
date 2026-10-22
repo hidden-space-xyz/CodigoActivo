@@ -82,9 +82,9 @@ public sealed class DeletedParticipationTests
     }
 
     [Fact]
-    public void PurgeCutoffIsTwoYearsBeforeNowLikeForAccounts()
+    public void PurgeCutoffIsThreeYearsBeforeNowLikeForAccounts()
     {
         DeletedParticipation.PurgeCutoff(Now).Should().Be(DeletedAccount.PurgeCutoff(Now));
-        DeletedParticipation.PurgeCutoff(Now).Should().Be(Now.AddYears(-2));
+        DeletedParticipation.PurgeCutoff(Now).Should().Be(Now.AddYears(-3));
     }
 }

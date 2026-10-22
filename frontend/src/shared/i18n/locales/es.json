@@ -465,7 +465,7 @@
       "eyebrow": "// privacidad",
       "title": "Política de privacidad",
       "lead": "Qué datos personales tratamos, para qué, con qué base jurídica, durante cuánto tiempo y cómo puedes ejercer tus derechos, conforme al Reglamento (UE) 2016/679, General de Protección de Datos (RGPD), y a la Ley Orgánica 3/2018, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).",
-      "updated": "Última actualización: 19 de octubre de 2026",
+      "updated": "Última actualización: 22 de octubre de 2026",
       "controller": {
         "title": "¿Quién es el responsable del tratamiento?",
         "name": "Denominación",
@@ -575,7 +575,7 @@
             "data": "Al eliminar una cuenta o un menor, una copia de los datos de la persona eliminada y, si es una cuenta, de sus menores; si se elimina solo a un menor, también la identificación de su padre, madre o tutor; sus inscripciones; sus decisiones sobre los documentos de los eventos, con las firmas, su historial y el texto de cada documento tal como estaba al eliminarla; los cambios de su consentimiento para recibir novedades, y quién pidió la eliminación o, si fue automática, su motivo. Al anular una inscripción o eliminar una actividad o un evento, una copia de las inscripciones que se borran y, si es un evento, de las decisiones sobre sus documentos con las firmas, su historial y el texto de cada documento, con el nombre de las personas a las que se refieren o que las decidieron y quién lo eliminó. Nunca incluye contraseñas, códigos ni claves.",
             "purpose": "Atender las posibles responsabilidades nacidas del tratamiento. Nadie la consulta desde la web: solo puede ponerse a disposición de jueces y tribunales, el Ministerio Fiscal o las administraciones públicas competentes, en particular la Agencia Española de Protección de Datos.",
             "legalBasis": "La obligación legal de bloquear los datos suprimidos (art. 6.1.c RGPD y art. 32 LOPDGDD).",
-            "retention": "Dos años desde la eliminación; después se borra automáticamente. Las copias de seguridad la conservan hasta que se sustituyen."
+            "retention": "Tres años desde la eliminación, el plazo en que prescriben las infracciones más graves (art. 72 LOPDGDD); después se borra automáticamente. Las copias de seguridad la conservan hasta que se sustituyen."
           }
         }
       },
@@ -703,7 +703,7 @@
       },
       "deleteAccount": {
         "title": "Eliminar mi cuenta",
-        "lead": "Al eliminar tu cuenta, tú y los menores a tu cargo perderéis el acceso para siempre: se anularán vuestras inscripciones y ya no podrás consultar vuestros diplomas. No podrás recuperar la cuenta después. Guardaremos una copia bloqueada de vuestros datos durante dos años, solo para atender posibles responsabilidades, como explica la política de privacidad.",
+        "lead": "Al eliminar tu cuenta, tú y los menores a tu cargo perderéis el acceso para siempre: se anularán vuestras inscripciones y ya no podrás consultar vuestros diplomas. No podrás recuperar la cuenta después. Guardaremos una copia bloqueada de vuestros datos durante tres años, solo para atender posibles responsabilidades, como explica la política de privacidad.",
         "initialAdminNote": "Esta es la cuenta genérica de administración, así que no se puede eliminar.",
         "action": "Eliminar mi cuenta",
         "dialogHeader": "Eliminar mi cuenta",
@@ -755,7 +755,7 @@
         "editHeader": "Editar menor",
         "declaration": "Al añadirlo declaras ser su padre, madre o tutor legal.",
         "deleteHeader": "Eliminar menor",
-        "deleteConfirm": "¿Seguro que quieres eliminar a {name}? Esta acción no se puede deshacer: se anularán sus inscripciones y ya no podrás consultar sus diplomas. Guardaremos una copia bloqueada de sus datos y de tu identificación como su padre, madre o tutor durante dos años, solo para atender posibles responsabilidades, como explica la política de privacidad.",
+        "deleteConfirm": "¿Seguro que quieres eliminar a {name}? Esta acción no se puede deshacer: se anularán sus inscripciones y ya no podrás consultar sus diplomas. Guardaremos una copia bloqueada de sus datos y de tu identificación como su padre, madre o tutor durante tres años, solo para atender posibles responsabilidades, como explica la política de privacidad.",
         "addedDetail": "El menor se ha registrado a tu cargo.",
         "addedSummary": "Menor añadido",
         "updatedDetail": "Los datos del menor se han guardado.",
