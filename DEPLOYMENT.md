@@ -17,11 +17,10 @@ it does not require a repository clone.
 | `api`   | `ghcr.io/hidden-space-xyz/codigoactivo-backend:latest`  | ASP.NET Core on `api:8080`; reachable only by the Compose networks               |
 | `web`   | `ghcr.io/hidden-space-xyz/codigoactivo-frontend:latest` | Unprivileged nginx serving the SPA and proxying API/SEO routes; host port `8080` |
 
-The shipped mapping is `0.0.0.0:8080:8080`, so `web` listens on **all host IPv4 interfaces** over plain HTTP;
-put it behind a TLS-terminating reverse proxy and restrict direct access to `8080` with a firewall or network
-policy. Networks: `frontend` (shared by `web` and `api`) and internal-only `backend` (shared by `api` and
-`db`), both with IPv6 disabled. The application accepts IPv4 clients only: see
-[TLS and proxy boundary](#tls-and-proxy-boundary).
+The shipped mapping is `0.0.0.0:8080:8080`, so `web` listens on **all host IPv4 interfaces** over plain HTTP
+and expects a TLS-terminating proxy in front. Networks: `frontend` (shared by `web` and `api`) and
+internal-only `backend` (shared by `api` and `db`), both with IPv6 disabled. The application accepts IPv4
+clients only: see [TLS and proxy boundary](#tls-and-proxy-boundary).
 
 | Volume               | Contents                                                           |
 | -------------------- | ------------------------------------------------------------------ |
@@ -33,8 +32,8 @@ policy. Networks: `frontend` (shared by `web` and `api`) and internal-only `back
 
 The API stores its log in two PostgreSQL tables, which administrators read on the «Diagnóstico» and
 «Auditoría» pages and the API purges itself; PostgreSQL writes its own log files into `logs-db` and overwrites
-each one a week later. See [SECURITY.md](SECURITY.md#logging) for what is logged and how retention works. Do
-not include `logs-db` in backups: it holds only diagnostics subject to that retention. `db` and `web` disable
+each one a week later. See [SECURITY.md](SECURITY.md#logging) for what is logged and how retention works.
+`db` and `web` disable
 container logging (`logging: driver: none`); `api` keeps a capped `json-file` log (2 files of 1 MB) for what
 cannot reach the database: a failed start and failures of the logging pipeline itself. Queued email is
 persisted in `db-data`, not held in memory; see [Email delivery](#email-delivery).
@@ -53,8 +52,7 @@ serves directly (`gzip_static`). A reverse proxy in front must not strip `Accept
 
 nginx allows 8,192 connections per worker, 4,000 active client connections and 2,000 per IP (`web`'s open-file
 limit is raised to 65,536). Application request and credential-work rate limits are documented once, in
-[SECURITY.md](SECURITY.md#passwords-and-credential-endpoints). The shipped budgets baseline one 4-core, 8-GiB
-host targeting 1,000 concurrently active users; validate on production-equivalent infrastructure.
+[SECURITY.md](SECURITY.md#passwords-and-credential-endpoints).
 
 ## First production start
 
@@ -101,8 +99,7 @@ application settings are validated.
 
 ### TLS and proxy boundary
 
-The external proxy must terminate HTTPS, accepting only TLS 1.3 with TLS 1.2 as the sole fallback and
-disabling TLS 1.1, TLS 1.0 and SSL; overwrite client-supplied forwarding headers; and send the effective
+The external proxy must terminate HTTPS, overwrite client-supplied forwarding headers and send the effective
 scheme as `X-Forwarded-Proto`. nginx normalizes that header itself before forwarding it to the API: only an
 exact `https` value (case-insensitive) counts, so any other value — including a comma-separated list such as
 `https, http` — or a missing header becomes `http`. Because nginx only reads the header value, not the peer,
@@ -114,10 +111,9 @@ only when its normalized scheme is HTTPS. The API accepts one forwarded hop and 
 so a proxy or container network outside those ranges makes it ignore both headers and put every client in a
 single shared rate-limit partition. The proxy must also pass the public host name in `Host`: in Production the
 API only accepts the host of `APP_BASE_URL` (plus `localhost`, `127.0.0.1` and `api`) and answers any other
-with 400. IPv6 is not supported: the external proxy must listen on IPv4 only and the public name must have no
-`AAAA` record, because nginx answers 403 to every request whose client address, read from `X-Forwarded-For`,
-is IPv6. `APP_BASE_URL` controls links in email and the URLs generated in `/sitemap.xml` and `/robots.txt`; it
-must match the public origin.
+with 400. IPv6 is not supported: nginx answers 403 to every request whose client address, read from
+`X-Forwarded-For`, is IPv6. `APP_BASE_URL` controls links in email and the URLs generated in `/sitemap.xml`
+and `/robots.txt`; it must match the public origin.
 
 ## Environment variables
 
@@ -252,18 +248,17 @@ Shutdown only waits for sends already in flight, up to 20 seconds, below the API
 `stop_grace_period`; whatever is not delivered by then stays in the outbox for the next start. These values
 live in `EmailQueueOptions` and cannot be configured.
 
-Alert on every `Error` entry, among them a full outbox (`EmailOutboxFull`), an exhausted global budget
-(`GlobalEmailBudgetExhausted`) and exhausted attempts (`EmailDeliveryGaveUp`, with the last error), and watch
-the `Warning` event for delivery failures (`EmailDeliveryAttemptFailed`). That event, a failed outbox run and a
+A full outbox (`EmailOutboxFull`), an exhausted global budget (`GlobalEmailBudgetExhausted`) and exhausted
+attempts (`EmailDeliveryGaveUp`, with the last error) are logged as `Error`, and each delivery failure as the
+`Warning` event `EmailDeliveryAttemptFailed`. That event, a failed outbox run and a
 failed removal of spent messages repeat while their cause lasts, so each is logged at most once every 15
 minutes. Recipient throttling, a low global budget and an incomplete shutdown drain
 are not logged. See [SECURITY.md](SECURITY.md#logging) for where these events are written.
 
 News email carries the one-click unsubscribe of RFC 8058 (`List-Unsubscribe` pointing at
-`APP_BASE_URL/api/emails/unsubscribe/one-click?token=…`, and `List-Unsubscribe-Post`), which Gmail and Yahoo
-require from bulk senders. The API does not sign mail: mail clients only offer the button when the relay
-behind `SMTP_HOST` signs it with DKIM for the domain of `SMTP_FROM_ADDRESS` and the signature covers both
-headers, so check that in the provider's DKIM settings. The proxy in front of nginx must pass that `POST`
+`APP_BASE_URL/api/emails/unsubscribe/one-click?token=…`, and `List-Unsubscribe-Post`). The API does not sign
+mail: mail clients only offer the button when the relay behind `SMTP_HOST` signs it with DKIM for the domain
+of `SMTP_FROM_ADDRESS` and the signature covers both headers. The proxy in front of nginx must pass that `POST`
 through to `APP_BASE_URL` as it is, without a redirect (RFC 8058 forbids them), a login wall or a bot
 challenge, since the mail provider's servers send it without cookies.
 
@@ -275,15 +270,15 @@ site keeps working: the last valid list stays in `disposable_email_domains` (in 
 is accepted if none was ever stored. Restarting `api` forces a new download. Validation and matching rules
 are in [SECURITY.md](SECURITY.md#email-abuse-controls).
 
-The source is fixed in code: the project's `disposable_email_blocklist.conf` on its `main` branch. Monitor `DisposableEmailDomainDownloadFailed` and `DisposableEmailDomainListRejected` (`Warning`,
-retried hourly) and `DisposableEmailDomainListNotStored` (`Error`); while they repeat, new disposable domains
-are not blocked.
+The source is fixed in code: the project's `disposable_email_blocklist.conf` on its `main` branch. Failures log
+`DisposableEmailDomainDownloadFailed` and `DisposableEmailDomainListRejected` (`Warning`, retried hourly) and
+`DisposableEmailDomainListNotStored` (`Error`); while they repeat, new disposable domains are not blocked.
 
 ## Locked accounts
 
 Five wrong passwords lock an account for good: the lock has no expiry and is lifted only by a completed
-password reset, which needs working SMTP. Anyone who knows an account's email can lock accounts in bulk, so
-alert on the `PasswordLockoutTriggered` log event. If every administrator is locked while email is
+password reset, which needs working SMTP. Anyone who knows an account's email can lock accounts in bulk; each
+lock logs `PasswordLockoutTriggered`. If every administrator is locked while email is
 unavailable, unlock against the `db` container:
 
 ```bash
@@ -374,34 +369,4 @@ repository contents, packages and security events.
 
 The production Compose file follows `latest`. Upgrade with `docker compose pull && docker compose up -d`, then
 review `docker compose logs api`, the «Diagnóstico» page and `logs-db` (see [SECURITY.md](SECURITY.md#logging))
-and smoke test. A deployment upgraded from a release that logged to files keeps an orphaned `logs-api` volume;
-remove it with `docker volume rm <project>_logs-api` once its files are no longer needed.
-The PostgreSQL image does not upgrade `db-data` across major versions; changing from PostgreSQL 18 requires a
-dump and restore.
-
-## Backups and recovery
-
-Back up `db-data`, `api-files`, `api-dataprotection` and `api-state`, and test restoration regularly. Copy
-`api-files` after the `db-data` backup: content added in between has no row and the hourly file purge removes
-it, but content deleted in between is missing for the rows that still name it, a gap that stopping `api`
-during the backup or a filesystem snapshot of both volumes closes. Keep
-`secrets/` separately from the `api-dataprotection` backup; losing either the key volume or
-`secrets/data_protection_certificate_password` makes
-the protected key ring unusable and invalidates sessions. That password also derives the key-wrapping key of
-every stored key element, so it cannot be rotated on its own: a new password requires recreating the volume,
-which invalidates all sessions, stored authenticator secrets, the unsubscribe links of news email
-already sent, and pending one-time codes and links, whose
-hashing key is derived from the certificate in that volume (see
-[SECURITY.md](SECURITY.md#data-protection-and-containers)). The email outbox lives in `db-data`, so a
-`db-data` backup includes pending mail; restoring an older backup can redeliver or drop messages queued
-after it was taken, and its protected content depends on the Data Protection key ring in effect when it was
-queued. `db-data` also holds `deleted_accounts`, the blocked copies of erased accounts that the API purges two
-years after each deletion: a backup keeps a copy for as long as the backup itself is kept, so backup retention
-adds to those two years, and a restored backup brings expired copies back until the purge that runs 30 seconds
-after startup. The diagnostic and audit log tables live in `db-data` too: their retention grows by the age of
-the backup, and a restored backup's expired entries are removed when the API starts.
-
-Before public exposure, verify TLS and forwarded headers, firewall access to port `8080`, SMTP delivery,
-database and volume recovery, registration and email verification, the two-step login, password reset,
-authorization changes, file access and the selected demo mode. Review [SECURITY.md](SECURITY.md) for the
-complete security model.
+and smoke test.

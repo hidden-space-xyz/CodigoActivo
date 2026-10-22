@@ -315,8 +315,8 @@ API, answer 429 `TooManyRequests` with `Retry-After`. These are per-instance con
 
 ### Transport and proxy trust
 
-TLS ends at the operator's external proxy; its requirements (TLS versions, overwriting forwarded headers,
-redirecting plain HTTP, the `Host` header, IPv4 only, no direct access to port `8080`) are in
+TLS ends at an external proxy; its requirements (overwriting forwarded headers, redirecting plain HTTP, the
+`Host` header, IPv4 only) are in
 [DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary). The API accepts one forwarded hop and honours
 `X-Forwarded-For`/`X-Forwarded-Proto` only from IPv4 loopback and private ranges (`127.0.0.0/8`, `10.0.0.0/8`,
 `172.16.0.0/12`, `192.168.0.0/16`). nginx applies no peer filtering of its own and counts only an exact `https`
@@ -363,7 +363,7 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   code hashes, authenticator secrets, the login challenge or lockout counters. It leaves out ratings, which
   nothing links to an account (article 11 GDPR); blocked copies, which nobody may use (LOPDGDD article 32); the
   email outbox, which only holds a message until it is delivered and may carry one-time codes; and the
-  authorship of content, the images in Google Drive and inquiries, which are answered on request. Add a new
+  authorship of content, which is answered on request. Add a new
   personal field or table to it.
 - News consent (articles 6.1.a and 7 GDPR) is changed only by its holder: at
   registration, in «Mi cuenta», or through the unsubscribe link of a news email or its mail client's
@@ -559,8 +559,7 @@ the full list of startup checks and the secret file rules are in
 variables, so they stay out of `docker inspect`, `docker compose config` and every process environment; code
 running inside a container can still read the files mounted into it. The root `.env` and `appsettings.json`
 hold no credentials, and there is no bootstrap password. The API's database connection never leaves the
-internal `backend` network. Restrict `secrets/` to the deployment account and keep it out of images and
-unencrypted backups. Rotating the database password must update both the PostgreSQL role and
+internal `backend` network. Rotating the database password must update both the PostgreSQL role and
 `secrets/postgres_password`.
 
 ### Data Protection and containers
@@ -607,7 +606,7 @@ resource or partner locks its thumbnail and the images its rich text embeds (`FO
 in the transaction that stores it, so a save either commits first and keeps them or is refused
 (`*ThumbnailNotFound`, `RichTextFileNotFound`) instead of storing a reference to a deleted file. The same run
 then removes every entry of the volume that no file row owns an hour after it was written: a write cut short,
-an upload whose row was never committed, content whose deletion failed or what a restored backup left over. A
+an upload whose row was never committed or content whose deletion failed. A
 failed run logs `UnusedFilePurgeFailed`, and content that cannot be removed from the volume logs
 `StoredFileContentDeleteFailed`. Administrator email
 attachments never reach the `api-files` volume: they are read once
@@ -668,7 +667,7 @@ in-memory, resets on restart and is multiplied by the number of API replicas.
 Both automatic and administrator-written mail are stored in a PostgreSQL outbox (`email_outbox_messages`)
 and delivered in the background by `EmailOutboxDeliveryWorker`, so a request that queues email returns once the
 row is committed, not once SMTP accepts it: see [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) for the
-delivery schedule, capacity and monitoring. The stored subject, bodies and attachments are protected with
+delivery schedule, capacity and logged failures. The stored subject, bodies and attachments are protected with
 Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, unsubscribe link and one-click
 unsubscribe address, kind and attachment names are stored in clear. Recreating the Data Protection key ring makes pending rows unreadable and they are
 discarded on their next delivery attempt.
@@ -720,13 +719,3 @@ deployments are disposable and must never contain private data. Seeding download
 with an invented history, including a password attack, whose callers use the IP ranges reserved for
 documentation (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`, `2001:db8::/32`). The mode is locked
 on first start; see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode-and-initial-administrator).
-
-## Operational checklist
-
-- Keep the TLS proxy as the only public ingress and restrict direct port `8080` access.
-- Back up and test restoration of the database, uploads, mode state and Data Protection material.
-- Alert on authentication abuse, email-budget exhaustion, queue saturation and SMTP delivery failures.
-- Review administrator access; smoke-test session revocation, file authorization and account recovery after
-  releases.
-- Treat the development override, the bootstrap administrator of demo deployments and any copied production
-  `secrets/` directory as sensitive operational risks.

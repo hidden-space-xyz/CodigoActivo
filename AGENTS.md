@@ -5,7 +5,7 @@
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): domain language, boundaries, data flow and API contract.
 - [CONTRIBUTING.md](CONTRIBUTING.md): local setup, commands and pull requests.
-- [DEPLOYMENT.md](DEPLOYMENT.md): Compose, environment variables, releases and backups.
+- [DEPLOYMENT.md](DEPLOYMENT.md): Compose, environment variables and releases.
 - [SECURITY.md](SECURITY.md): authentication, trust boundaries and abuse controls.
 
 Update the owning document in the same change when behavior, architecture, configuration or security changes.

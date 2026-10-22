@@ -90,7 +90,7 @@ To run the applications directly with hot reload instead of full containers, see
 | ---------------------------------------- | --------------------------------------------------------- |
 | [ARCHITECTURE.md](ARCHITECTURE.md)       | System structure, dependency rules and API contract       |
 | [CONTRIBUTING.md](CONTRIBUTING.md)       | Development setup, commands, migrations and pull requests |
-| [DEPLOYMENT.md](DEPLOYMENT.md)           | Production topology, configuration, releases and backups  |
+| [DEPLOYMENT.md](DEPLOYMENT.md)           | Production topology, configuration and releases           |
 | [SECURITY.md](SECURITY.md)               | Vulnerability reporting and the security model            |
 | [AGENTS.md](AGENTS.md)                   | Repository guidance for coding agents                     |
 | [backend/AGENTS.md](backend/AGENTS.md)   | Backend coding conventions and tests                      |

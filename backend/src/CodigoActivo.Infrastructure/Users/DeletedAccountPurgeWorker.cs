@@ -12,8 +12,8 @@ namespace CodigoActivo.Infrastructure.Users;
 /// <summary>
 /// Physically deletes the copies of erased accounts and of removed participation once
 /// <see cref="DeletedAccount.RetentionYears"/> have passed since the deletion. It runs shortly
-/// after startup, so restoring an old backup or a stopped API only delays the purge until the next
-/// start, and then once per interval.
+/// after startup, so a stopped API only delays the purge until the next start, and then once per
+/// interval.
 /// </summary>
 /// <param name="scopes">Scope factory used to resolve the use cases of each run.</param>
 /// <param name="options">Configuration values used by the component.</param>
