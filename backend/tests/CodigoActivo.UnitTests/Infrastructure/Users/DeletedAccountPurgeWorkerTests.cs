@@ -79,7 +79,7 @@ public sealed class DeletedAccountPurgeWorkerTests : IDisposable
     }
 
     [Fact]
-    public async Task PurgeAsyncPurgesCopiesDeletedTwoYearsBeforeTheCurrentClockTime()
+    public async Task PurgeAsyncPurgesCopiesDeletedThreeYearsBeforeTheCurrentClockTime()
     {
         deletedAccounts
             .PurgeDeletedUpToAsync(Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>())
@@ -93,10 +93,10 @@ public sealed class DeletedAccountPurgeWorkerTests : IDisposable
         purged.Should().Be((4, 3));
         await deletedAccounts
             .Received(1)
-            .PurgeDeletedUpToAsync(clock.UtcNow.AddYears(-2), Arg.Any<CancellationToken>());
+            .PurgeDeletedUpToAsync(clock.UtcNow.AddYears(-3), Arg.Any<CancellationToken>());
         await deletedParticipations
             .Received(1)
-            .PurgeDeletedUpToAsync(clock.UtcNow.AddYears(-2), Arg.Any<CancellationToken>());
+            .PurgeDeletedUpToAsync(clock.UtcNow.AddYears(-3), Arg.Any<CancellationToken>());
     }
 
     [Fact]

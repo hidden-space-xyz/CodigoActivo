@@ -196,11 +196,12 @@ for the deletion. It never holds password or code hashes, an unconfirmed email c
 secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
 data is plain JSON protected only by database access. The `DeletedAccountPurgeWorker` hosted service runs
 `PurgeDeletedAccounts`, which deletes
-each copy two years after `deleted_at`, 30 seconds after startup and then hourly. Users are deleted only
+each copy three years after `deleted_at`, when the very serious infringements prescribe (LOPDGDD article 72), 30
+seconds after startup and then hourly. Users are deleted only
 through `AccountEraser`, and `DeletedAccountGuard` refuses any commit that deletes the initial administrator,
 deletes a user without its copy or changes a stored copy.
 The SPA only tells users that they and their dependents lose access and cannot recover the account; the
-privacy policy (`/privacy`) states the two-year retention.
+privacy policy (`/privacy`) states the three-year retention.
 
 **Blocked copy of removed participation** (LOPDGDD article 32): deleting an event (`DeleteEvent`) or an activity
 (`DeleteActivity`), or cancelling a signup (`UnassignActivity`), commits through `ParticipationEraser`, which in
@@ -213,7 +214,7 @@ the signups removed with activity, role, status and signup time, and, when the e
 with who decided, the signature, the history, each document's text and the earlier versions they were taken on, plus the first and last names of the
 people they are about or who decided them. A removal that takes away no signup or decision stores nothing.
 Like the account copies, nothing in the application reads it, `DeletedAccountGuard` refuses any change to a stored
-copy, and `DeletedAccountPurgeWorker` runs `PurgeDeletedParticipations`, which deletes each copy two years after
+copy, and `DeletedAccountPurgeWorker` runs `PurgeDeletedParticipations`, which deletes each copy three years after
 `deleted_at`.
 
 **Recovery**: an administrator can reset a user's second factor to email

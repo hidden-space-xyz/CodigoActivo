@@ -181,10 +181,10 @@ public sealed class AccountDeletionTests
     [Fact]
     public void PurgeCutoffIsTheRetentionPeriodBeforeNow()
     {
-        DeletedAccount.RetentionYears.Should().Be(2);
+        DeletedAccount.RetentionYears.Should().Be(3);
         DeletedAccount
             .PurgeCutoff(Now)
             .Should()
-            .Be(new DateTimeOffset(2024, 7, 4, 12, 0, 0, TimeSpan.Zero));
+            .Be(new DateTimeOffset(2023, 7, 4, 12, 0, 0, TimeSpan.Zero));
     }
 }

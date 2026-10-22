@@ -116,7 +116,7 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
         {
             db.DeletedAccounts.Add(
                 Persisted.As<DeletedAccount>(
-                    new { Id = Guid.NewGuid(), DeletedAt = Factory.Clock.UtcNow.AddYears(-3) }
+                    new { Id = Guid.NewGuid(), DeletedAt = Factory.Clock.UtcNow.AddYears(-4) }
                 )
             );
             return Task.CompletedTask;

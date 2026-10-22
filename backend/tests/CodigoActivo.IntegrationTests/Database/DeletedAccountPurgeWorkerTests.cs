@@ -39,7 +39,7 @@ public sealed class DeletedAccountPurgeWorkerTests(CodigoActivoWebAppFactory fac
     }
 
     [Fact]
-    public async Task PurgeAsyncKeepsACopyForTwoYearsAndDeletesItRightAfter()
+    public async Task PurgeAsyncKeepsACopyForThreeYearsAndDeletesItRightAfter()
     {
         var erasedToday = Guid.NewGuid();
         var erasedLongAgo = Guid.NewGuid();
@@ -50,7 +50,7 @@ public sealed class DeletedAccountPurgeWorkerTests(CodigoActivoWebAppFactory fac
                     new { Id = erasedToday, DeletedAt = Factory.Clock.UtcNow }
                 ),
                 Persisted.As<DeletedAccount>(
-                    new { Id = erasedLongAgo, DeletedAt = Factory.Clock.UtcNow.AddYears(-3) }
+                    new { Id = erasedLongAgo, DeletedAt = Factory.Clock.UtcNow.AddYears(-4) }
                 )
             );
             return Task.CompletedTask;
@@ -59,7 +59,7 @@ public sealed class DeletedAccountPurgeWorkerTests(CodigoActivoWebAppFactory fac
         (await Build().PurgeAsync(Ct)).Should().Be((1, 0));
         (await RemainingCopyIdsAsync()).Should().Equal(erasedToday);
 
-        Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddYears(2).AddSeconds(-1);
+        Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddYears(3).AddSeconds(-1);
         (await Build().PurgeAsync(Ct)).Should().Be((0, 0));
         (await RemainingCopyIdsAsync()).Should().Equal(erasedToday);
 
@@ -69,7 +69,7 @@ public sealed class DeletedAccountPurgeWorkerTests(CodigoActivoWebAppFactory fac
     }
 
     [Fact]
-    public async Task PurgeAsyncKeepsAParticipationCopyForTwoYearsAndDeletesItRightAfter()
+    public async Task PurgeAsyncKeepsAParticipationCopyForThreeYearsAndDeletesItRightAfter()
     {
         var removedToday = Guid.NewGuid();
         var removedLongAgo = Guid.NewGuid();
@@ -80,7 +80,7 @@ public sealed class DeletedAccountPurgeWorkerTests(CodigoActivoWebAppFactory fac
                     new { Id = removedToday, DeletedAt = Factory.Clock.UtcNow }
                 ),
                 Persisted.As<DeletedParticipation>(
-                    new { Id = removedLongAgo, DeletedAt = Factory.Clock.UtcNow.AddYears(-3) }
+                    new { Id = removedLongAgo, DeletedAt = Factory.Clock.UtcNow.AddYears(-4) }
                 )
             );
             return Task.CompletedTask;
@@ -89,7 +89,7 @@ public sealed class DeletedAccountPurgeWorkerTests(CodigoActivoWebAppFactory fac
         (await Build().PurgeAsync(Ct)).Should().Be((0, 1));
         (await RemainingParticipationCopyIdsAsync()).Should().Equal(removedToday);
 
-        Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddYears(2).AddSeconds(-1);
+        Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddYears(3).AddSeconds(-1);
         (await Build().PurgeAsync(Ct)).Should().Be((0, 0));
 
         Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddSeconds(1);
