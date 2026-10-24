@@ -41,7 +41,7 @@ from a clone, use `docker compose -f docker-compose.yml ...` so the override is 
 
 - The API reads flat environment variables plus the Compose file secrets in `/run/secrets`, each file named
   after its key. It does not load the root `.env` or `secrets/`; Docker Compose does. Secrets
-  (`POSTGRES_PASSWORD`, `DATA_PROTECTION_CERTIFICATE_PASSWORD`, `SMTP_PASSWORD`) belong in `secrets/`, never
+  (`POSTGRES_PASSWORD`, `DATA_PROTECTION_KEY`, `SMTP_PASSWORD`) belong in `secrets/`, never
   in `.env` or `api.environment`.
 - `SMTP_HOST` and `SMTP_FROM_ADDRESS` are always required at startup: every login is completed with a
   one-time code (mandatory two-factor authentication), emailed by default. Locally point them at a mail

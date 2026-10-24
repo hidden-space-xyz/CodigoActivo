@@ -266,14 +266,14 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
-    /// Records that keys the key encryption certificate does not protect were left out of the
+    /// Records that keys not encrypted with the data protection root key were left out of the
     /// Data Protection key ring, which means someone wrote to the key volume.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="count">Keys left out.</param>
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Ignored {Count} data protection keys that the key encryption certificate does not protect"
+        Message = "Ignored {Count} data protection keys not encrypted with DATA_PROTECTION_KEY"
     )]
     public static partial void DataProtectionKeysIgnored(this ILogger logger, int count);
 

@@ -13,16 +13,15 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Security;
 
-public sealed class Ed25519KeyRingRepositoryTests : IDisposable
+public sealed class ProtectedKeyRingRepositoryTests : IDisposable
 {
-    private const string Password = "a-strong-ed25519-certificate-password";
     private const string DataProtectionNamespace = "http://schemas.asp.net/2015/03/dataProtection";
 
-    private static readonly string CertificateDecryptor =
-        $"{typeof(Ed25519AesGcmXmlDecryptor).FullName}, {typeof(Ed25519AesGcmXmlDecryptor).Assembly.GetName().Name}, Version=1.0.0.0";
+    private static readonly string AesGcmDecryptor =
+        $"{typeof(AesGcmXmlDecryptor).FullName}, {typeof(AesGcmXmlDecryptor).Assembly.GetName().Name}, Version=1.0.0.0";
 
     private readonly IXmlRepository inner = Substitute.For<IXmlRepository>();
-    private readonly RecordingLogger<Ed25519KeyRingRepository> logger = new();
+    private readonly RecordingLogger<ProtectedKeyRingRepository> logger = new();
     private readonly string directory = Path.Join(
         Path.GetTempPath(),
         "codigoactivo-keyring-tests",
@@ -65,13 +64,13 @@ public sealed class Ed25519KeyRingRepositoryTests : IDisposable
     private IReadOnlyCollection<XElement> Read(params XElement[] elements)
     {
         inner.GetAllElements().Returns(elements);
-        return new Ed25519KeyRingRepository(inner, logger).GetAllElements();
+        return new ProtectedKeyRingRepository(inner, logger).GetAllElements();
     }
 
     [Fact]
     public void GetAllElementsKeepsProtectedKeysAndElementsThatAreNotKeys()
     {
-        var protectedKey = Key(EncryptedSecret(CertificateDecryptor));
+        var protectedKey = Key(EncryptedSecret(AesGcmDecryptor));
         var revocation = new XElement("revocation", new XElement("key"));
 
         Read(protectedKey, revocation).Should().Equal(protectedKey, revocation);
@@ -83,8 +82,8 @@ public sealed class Ed25519KeyRingRepositoryTests : IDisposable
     [InlineData(
         "Microsoft.AspNetCore.DataProtection.XmlEncryption.NullXmlDecryptor, Microsoft.AspNetCore.DataProtection"
     )]
-    [InlineData("CodigoActivo.Infrastructure.Security.Ed25519AesGcmXmlDecryptor, Planted")]
-    [InlineData("CodigoActivo.Infrastructure.Security.Ed25519AesGcmXmlDecryptor")]
+    [InlineData("CodigoActivo.Infrastructure.Security.AesGcmXmlDecryptor, Planted")]
+    [InlineData("CodigoActivo.Infrastructure.Security.AesGcmXmlDecryptor")]
     [InlineData("")]
     public void GetAllElementsLeavesOutAKeyWrappedByAnotherDecryptor(string decryptor)
     {
@@ -103,11 +102,8 @@ public sealed class Ed25519KeyRingRepositoryTests : IDisposable
     public void GetAllElementsLeavesOutAClearKeyHiddenNextToAProtectedSecret()
     {
         Read(
-                Key(
-                    MasterKeyInClear(markedForEncryption: false),
-                    EncryptedSecret(CertificateDecryptor)
-                ),
-                Key(EncryptedSecret(CertificateDecryptor), EncryptedSecret("Other, Assembly"))
+                Key(MasterKeyInClear(markedForEncryption: false), EncryptedSecret(AesGcmDecryptor)),
+                Key(EncryptedSecret(AesGcmDecryptor), EncryptedSecret("Other, Assembly"))
             )
             .Should()
             .BeEmpty();
@@ -117,7 +113,7 @@ public sealed class Ed25519KeyRingRepositoryTests : IDisposable
     public void GetAllElementsLogsHowManyKeysItLeftOut()
     {
         Read(
-            Key(EncryptedSecret(CertificateDecryptor)),
+            Key(EncryptedSecret(AesGcmDecryptor)),
             Key(MasterKeyInClear()),
             Key(EncryptedSecret(string.Empty))
         );
@@ -126,27 +122,26 @@ public sealed class Ed25519KeyRingRepositoryTests : IDisposable
         entry.Level.Should().Be(LogLevel.Warning);
         entry
             .Message.Should()
-            .Be(
-                "Ignored 2 data protection keys that the key encryption certificate does not protect"
-            );
+            .Be("Ignored 2 data protection keys not encrypted with DATA_PROTECTION_KEY");
     }
 
     [Fact]
     public void StoreElementDelegatesToTheInnerRepository()
     {
-        var element = Key(EncryptedSecret(CertificateDecryptor));
+        var element = Key(EncryptedSecret(AesGcmDecryptor));
 
-        new Ed25519KeyRingRepository(inner, logger).StoreElement(element, "friendly");
+        new ProtectedKeyRingRepository(inner, logger).StoreElement(element, "friendly");
 
         inner.Received(1).StoreElement(element, "friendly");
     }
 
     [Fact]
-    public void ProductionWiringIgnoresAKeyPlantedWithoutTheCertificate()
+    public void ProductionWiringIgnoresAKeyPlantedWithoutTheRootKey()
     {
         var keysDirectory = new DirectoryInfo(directory);
+        var rootKey = DataProtectionRootKeys.Random();
         Guid protectedKeyId;
-        using (var provider = BuildProductionLikeProvider(keysDirectory))
+        using (var provider = BuildProductionLikeProvider(keysDirectory, rootKey))
         {
             protectedKeyId = provider
                 .GetRequiredService<IKeyManager>()
@@ -163,7 +158,7 @@ public sealed class Ed25519KeyRingRepositoryTests : IDisposable
                 .KeyId;
         }
 
-        using var reloaded = BuildProductionLikeProvider(keysDirectory);
+        using var reloaded = BuildProductionLikeProvider(keysDirectory, rootKey);
         var keyIds = reloaded
             .GetRequiredService<IKeyManager>()
             .GetAllKeys()
@@ -181,14 +176,17 @@ public sealed class Ed25519KeyRingRepositoryTests : IDisposable
         }
     }
 
-    private static ServiceProvider BuildProductionLikeProvider(DirectoryInfo keysDirectory)
+    private static ServiceProvider BuildProductionLikeProvider(
+        DirectoryInfo keysDirectory,
+        DataProtectionRootKey rootKey
+    )
     {
         var services = new ServiceCollection();
         services
             .AddDataProtection()
             .SetApplicationName("CodigoActivo")
             .ProtectPayloadsWithAesGcm()
-            .ProtectKeysWithEd25519Certificate(services, keysDirectory, Password, new TestClock());
+            .ProtectKeysWithRootKey(keysDirectory, rootKey);
         return services.BuildServiceProvider();
     }
 

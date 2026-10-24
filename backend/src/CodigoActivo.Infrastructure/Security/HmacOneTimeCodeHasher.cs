@@ -6,9 +6,9 @@ namespace CodigoActivo.Infrastructure.Security;
 
 /// <summary>
 /// Hashes one-time codes with HMAC-SHA256 under a server-side key that is never stored in the
-/// database, and encodes the result in Base64. Production derives the key from the Data Protection
-/// certificate with <see cref="KeyPurpose"/>; changing the key only invalidates the codes still
-/// pending.
+/// database, and encodes the result in Base64. Production derives the key from
+/// <see cref="DataProtectionRootKey"/> with <see cref="KeyPurpose"/>; changing the key only
+/// invalidates the codes still pending.
 /// </summary>
 public sealed class HmacOneTimeCodeHasher : IOneTimeCodeHasher
 {

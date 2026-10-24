@@ -1,4 +1,5 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Composition;
 using CodigoActivo.Composition.Configuration;
 using Microsoft.Extensions.Configuration;
@@ -42,11 +43,7 @@ public sealed class ProductionConfigurationTests
 
     [Theory]
     [InlineData("POSTGRES_PASSWORD", "short", "POSTGRES_PASSWORD")]
-    [InlineData(
-        "DATA_PROTECTION_CERTIFICATE_PASSWORD",
-        "short",
-        "DATA_PROTECTION_CERTIFICATE_PASSWORD"
-    )]
+    [InlineData("DATA_PROTECTION_KEY", "short", "DATA_PROTECTION_KEY")]
     [InlineData("APP_BASE_URL", "http://app.test", "APP_BASE_URL")]
     [InlineData("APP_BASE_URL", "https://example.org", "APP_BASE_URL")]
     [InlineData("APP_BASE_URL", "https://app.test", "APP_BASE_URL")]
@@ -82,6 +79,29 @@ public sealed class ProductionConfigurationTests
         act.Should().Throw<InvalidOperationException>().WithMessage("*POSTGRES_PASSWORD*");
     }
 
+    [Fact]
+    public void AddCodigoActivoProductionDerivesTheOneTimeCodeKeyFromTheDataProtectionKey()
+    {
+        var hash = OneTimeCodeHasher(BuildConfiguration()).Hash("123456");
+        var otherKey = BuildConfiguration(
+            new KeyValuePair<string, string?>(
+                "DATA_PROTECTION_KEY",
+                "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp8="
+            )
+        );
+
+        OneTimeCodeHasher(BuildConfiguration()).Verify("123456", hash).Should().BeTrue();
+        OneTimeCodeHasher(otherKey).Verify("123456", hash).Should().BeFalse();
+    }
+
+    private static IOneTimeCodeHasher OneTimeCodeHasher(IConfiguration config)
+    {
+        using var provider = new ServiceCollection()
+            .AddCodigoActivo(config, production: true)
+            .BuildServiceProvider();
+        return provider.GetRequiredService<IOneTimeCodeHasher>();
+    }
+
     private static IConfiguration BuildConfiguration(
         KeyValuePair<string, string?>? replacement = null
     )
@@ -90,7 +110,7 @@ public sealed class ProductionConfigurationTests
         {
             ["DEMO_MODE"] = "false",
             ["POSTGRES_PASSWORD"] = "a-strong-32-character-db-password",
-            ["DATA_PROTECTION_CERTIFICATE_PASSWORD"] = "a-separate-strong-data-protection-password",
+            ["DATA_PROTECTION_KEY"] = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
             ["APP_BASE_URL"] = "https://codigoactivo.es",
             ["SMTP_SECURITY"] = "StartTls",
             ["SMTP_HOST"] = "smtp.app.test",

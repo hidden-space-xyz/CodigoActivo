@@ -25,7 +25,7 @@ with Compose, then provide the API configuration as process environment variable
 cp .env.example .env
 mkdir -m 700 secrets
 openssl rand -base64 32 | tr -d '\r\n' > secrets/postgres_password
-touch secrets/data_protection_certificate_password secrets/smtp_password
+touch secrets/data_protection_key secrets/smtp_password
 docker compose up -d db mailpit
 
 export POSTGRES_PASSWORD="$(cat secrets/postgres_password)"

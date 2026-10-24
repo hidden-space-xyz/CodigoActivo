@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using CodigoActivo.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
 
 namespace CodigoActivo.Composition.Configuration;
@@ -25,10 +26,11 @@ internal static class ProductionConfiguration
             errors.Add("POSTGRES_PASSWORD must contain at least 16 characters");
         }
 
-        var dataProtectionPassword = config["DATA_PROTECTION_CERTIFICATE_PASSWORD"];
-        if (string.IsNullOrEmpty(dataProtectionPassword) || dataProtectionPassword.Length < 32)
+        if (!DataProtectionRootKey.TryParse(config["DATA_PROTECTION_KEY"], out _))
         {
-            errors.Add("DATA_PROTECTION_CERTIFICATE_PASSWORD must contain at least 32 characters");
+            errors.Add(
+                $"DATA_PROTECTION_KEY must be {DataProtectionRootKey.Size} random bytes encoded in Base64"
+            );
         }
 
         var baseUrl = config["APP_BASE_URL"];
