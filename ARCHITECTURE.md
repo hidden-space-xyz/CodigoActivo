@@ -59,7 +59,7 @@ check enforces.
 ### Domain and persistence
 
 - `CodigoActivo.Domain` has one folder per feature (`Users/`, `Events/`, `Activities/`, `EventCategories/`,
-  `TermsDocuments/`, `TermsDecisions/`, `News/`, `Resources/`, `Partners/`, `Files/`) with its aggregates, typed
+  `TermsDocuments/`, `TermsDecisions/`, `News/`, `Resources/`, `Partners/`, `Files/`, `Legal/`) with its aggregates, typed
   identifiers, value objects, domain events, policies and repository ports; `Common/` holds `Result`, `Error`,
   `DomainErrorCode`, the base classes (`Entity<TId>`, `AggregateRoot<TId>`, `AuditableEntity<TId>`) and the shared
   value objects.
@@ -77,7 +77,7 @@ check enforces.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
   `DeletedAccount`, `Event` (with its categories and terms links), `Activity` (with its role capacities and
   signups), `EventTermsAcceptance`, `EventRating`, `NewsItem`, `Resource`, `Partner`, `TermsDocument`,
-  `EventCategoryType` and `StoredFile`. Their state has private setters: factories create them, returning
+  `LegalPolicy`, `EventCategoryType` and `StoredFile`. Their state has private setters: factories create them, returning
   `Result<T>` when a rule can fail, and behavior methods own the invariants and the transitions
   (`User.Verify`, `User.RecordPasswordFailure`, `Activity.RequestAssignment`, `Activity.ChangeAssignmentStatus`,
   `Event.Feature`). Child entities change only through their root. For people, `CreateIndependent`,
@@ -279,6 +279,14 @@ under `/api/events/{eventId}/terms/decisions`. A given consent is withdrawn with
 `TermsConsentWithdrawn` domain event `ConsentWithdrawalNotification` turns into an email to the legal contact;
 «Mi cuenta» lists the household's consents from `GET /api/me/consents`. Consent rules are in
 [SECURITY.md](SECURITY.md#privacy-and-third-parties).
+
+The privacy and cookie policies are `LegalPolicy` aggregates, at most one per `LegalPolicyKind` (unique `kind`),
+whose text-only rich text administrators write in «Textos legales» (`/admin/legal`). The repository holds no
+policy text; demo mode seeds a short generic example of each. `PublishLegalPolicy`
+(`PUT /api/legal-policies/{kind}`) locks the policy and creates it on its first publication; later ones keep the
+version they replace as a `LegalPolicyVersion` with its publication date, and the same content changes nothing.
+Anyone reads the version in force from `GET /api/legal-policies/{kind}` (404 `LegalPolicyNotFound` until it is
+published); administrators list every version under `/versions` and read one under `/versions/{version}`.
 
 ### Caching
 

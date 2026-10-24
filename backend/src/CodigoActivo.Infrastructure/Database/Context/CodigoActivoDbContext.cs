@@ -2,6 +2,7 @@ using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
@@ -108,6 +109,16 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     /// Gets the versions the terms documents replaced.
     /// </summary>
     public DbSet<TermsDocumentVersion> TermsDocumentVersions => Set<TermsDocumentVersion>();
+
+    /// <summary>
+    /// Gets the legal policies, with the version in force of each one.
+    /// </summary>
+    public DbSet<LegalPolicy> LegalPolicies => Set<LegalPolicy>();
+
+    /// <summary>
+    /// Gets the versions the legal policies replaced.
+    /// </summary>
+    public DbSet<LegalPolicyVersion> LegalPolicyVersions => Set<LegalPolicyVersion>();
 
     /// <summary>
     /// Gets the event terms documents value.

@@ -70,4 +70,10 @@ public interface IReadStore
 
     /// <summary>Gets the stored file metadata.</summary>
     public IQueryable<FileRow> Files { get; }
+
+    /// <summary>Gets the published legal policies.</summary>
+    public IQueryable<LegalPolicyRow> LegalPolicies { get; }
+
+    /// <summary>Gets the versions the legal policies replaced.</summary>
+    public IQueryable<LegalPolicyVersionRow> LegalPolicyVersions { get; }
 }

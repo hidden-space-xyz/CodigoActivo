@@ -365,55 +365,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("event_ratings", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsAcceptance", b =>
-                {
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("event_id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<Guid>("TermsDocumentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("terms_document_id");
-
-                    b.Property<bool>("Accepted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("accepted");
-
-                    b.Property<DateTimeOffset>("DecidedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("decided_at");
-
-                    b.Property<Guid>("DecidedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("decided_by_id");
-
-                    b.Property<byte[]>("Signature")
-                        .HasColumnType("bytea")
-                        .HasColumnName("signature");
-
-                    b.Property<int>("TermsDocumentVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("terms_document_version");
-
-                    b.HasKey("EventId", "UserId", "TermsDocumentId")
-                        .HasName("pk_event_terms_acceptances");
-
-                    b.HasIndex("DecidedById")
-                        .HasDatabaseName("ix_event_terms_acceptances_decided_by_id");
-
-                    b.HasIndex("TermsDocumentId")
-                        .HasDatabaseName("ix_event_terms_acceptances_terms_document_id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_event_terms_acceptances_user_id");
-
-                    b.ToTable("event_terms_acceptances", (string)null);
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsDocument", b =>
                 {
                     b.Property<Guid>("EventId")
@@ -439,66 +390,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_event_terms_documents_terms_document_id");
 
                     b.ToTable("event_terms_documents", (string)null);
-                });
-
-            modelBuilder.Entity("CodigoActivo.Domain.Events.TermsDecisionChange", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<bool>("Accepted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("accepted");
-
-                    b.Property<DateTimeOffset>("ChangedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("changed_at");
-
-                    b.Property<Guid>("DecidedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("decided_by_id");
-
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("event_id");
-
-                    b.Property<Guid>("RecordedById")
-                        .HasColumnType("uuid")
-                        .HasColumnName("recorded_by_id");
-
-                    b.Property<byte[]>("Signature")
-                        .HasColumnType("bytea")
-                        .HasColumnName("signature");
-
-                    b.Property<Guid>("TermsDocumentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("terms_document_id");
-
-                    b.Property<int>("TermsDocumentVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("terms_document_version");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_terms_decision_changes");
-
-                    b.HasIndex("DecidedById")
-                        .HasDatabaseName("ix_terms_decision_changes_decided_by_id");
-
-                    b.HasIndex("RecordedById")
-                        .HasDatabaseName("ix_terms_decision_changes_recorded_by_id");
-
-                    b.HasIndex("EventId", "UserId", "TermsDocumentId")
-                        .HasDatabaseName("ix_terms_decision_changes_event_id_user_id_terms_document_id");
-
-                    b.ToTable("terms_decision_changes", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Files.StoredFile", b =>
@@ -532,6 +423,66 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_files_uploaded_by");
 
                     b.ToTable("files", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Legal.LegalPolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("content");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTimeOffset>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_legal_policies");
+
+                    b.HasIndex("Kind")
+                        .IsUnique()
+                        .HasDatabaseName("ix_legal_policies_kind");
+
+                    b.ToTable("legal_policies", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Legal.LegalPolicyVersion", b =>
+                {
+                    b.Property<Guid>("LegalPolicyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("legal_policy_id");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer")
+                        .HasColumnName("number");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("content");
+
+                    b.Property<DateTimeOffset>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.HasKey("LegalPolicyId", "Number")
+                        .HasName("pk_legal_policy_versions");
+
+                    b.ToTable("legal_policy_versions", (string)null);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.News.NewsItem", b =>
@@ -733,6 +684,115 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("resources", (string)null);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.TermsDecisions.EventTermsAcceptance", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("TermsDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("terms_document_id");
+
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("accepted");
+
+                    b.Property<DateTimeOffset>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<Guid>("DecidedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by_id");
+
+                    b.Property<byte[]>("Signature")
+                        .HasColumnType("bytea")
+                        .HasColumnName("signature");
+
+                    b.Property<int>("TermsDocumentVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("terms_document_version");
+
+                    b.HasKey("EventId", "UserId", "TermsDocumentId")
+                        .HasName("pk_event_terms_acceptances");
+
+                    b.HasIndex("DecidedById")
+                        .HasDatabaseName("ix_event_terms_acceptances_decided_by_id");
+
+                    b.HasIndex("TermsDocumentId")
+                        .HasDatabaseName("ix_event_terms_acceptances_terms_document_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_event_terms_acceptances_user_id");
+
+                    b.ToTable("event_terms_acceptances", (string)null);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.TermsDecisions.TermsDecisionChange", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("accepted");
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at");
+
+                    b.Property<Guid>("DecidedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by_id");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("RecordedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_id");
+
+                    b.Property<byte[]>("Signature")
+                        .HasColumnType("bytea")
+                        .HasColumnName("signature");
+
+                    b.Property<Guid>("TermsDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("terms_document_id");
+
+                    b.Property<int>("TermsDocumentVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("terms_document_version");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_terms_decision_changes");
+
+                    b.HasIndex("DecidedById")
+                        .HasDatabaseName("ix_terms_decision_changes_decided_by_id");
+
+                    b.HasIndex("RecordedById")
+                        .HasDatabaseName("ix_terms_decision_changes_recorded_by_id");
+
+                    b.HasIndex("EventId", "UserId", "TermsDocumentId")
+                        .HasDatabaseName("ix_terms_decision_changes_event_id_user_id_terms_document_id");
+
+                    b.ToTable("terms_decision_changes", (string)null);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.TermsDocuments.TermsDocument", b =>
                 {
                     b.Property<Guid>("Id")
@@ -809,7 +869,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.ToTable("terms_document_versions", (string)null);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Users.DeletedAccount", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Users.Erasure.DeletedAccount", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -1781,37 +1841,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_event_ratings_events_event_id");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsAcceptance", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("DecidedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_terms_acceptances_users_decided_by_id");
-
-                    b.HasOne("CodigoActivo.Domain.Events.Event", null)
-                        .WithMany()
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_terms_acceptances_events_event_id");
-
-                    b.HasOne("CodigoActivo.Domain.TermsDocuments.TermsDocument", null)
-                        .WithMany()
-                        .HasForeignKey("TermsDocumentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_terms_acceptances_terms_documents_terms_document_id");
-
-                    b.HasOne("CodigoActivo.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_event_terms_acceptances_users_user_id");
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsDocument", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Events.Event", null)
@@ -1829,30 +1858,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_event_terms_documents_terms_documents_terms_document_id");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Events.TermsDecisionChange", b =>
-                {
-                    b.HasOne("CodigoActivo.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("DecidedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_terms_decision_changes_users_decided_by_id");
-
-                    b.HasOne("CodigoActivo.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("RecordedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_terms_decision_changes_users_recorded_by_id");
-
-                    b.HasOne("CodigoActivo.Domain.Events.EventTermsAcceptance", null)
-                        .WithMany("Changes")
-                        .HasForeignKey("EventId", "UserId", "TermsDocumentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_terms_decision_changes_event_terms_acceptances_event_id_use");
-                });
-
             modelBuilder.Entity("CodigoActivo.Domain.Files.StoredFile", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
@@ -1861,6 +1866,16 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_files_users_uploaded_by");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Legal.LegalPolicyVersion", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Legal.LegalPolicy", null)
+                        .WithMany("PreviousVersions")
+                        .HasForeignKey("LegalPolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_legal_policy_versions_legal_policies_legal_policy_id");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.News.NewsItem", b =>
@@ -1937,6 +1952,61 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_resources_users_updated_by");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.TermsDecisions.EventTermsAcceptance", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_users_decided_by_id");
+
+                    b.HasOne("CodigoActivo.Domain.Events.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_events_event_id");
+
+                    b.HasOne("CodigoActivo.Domain.TermsDocuments.TermsDocument", null)
+                        .WithMany()
+                        .HasForeignKey("TermsDocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_terms_documents_terms_document_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_terms_acceptances_users_user_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.TermsDecisions.TermsDecisionChange", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_terms_decision_changes_users_decided_by_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_terms_decision_changes_users_recorded_by_id");
+
+                    b.HasOne("CodigoActivo.Domain.TermsDecisions.EventTermsAcceptance", null)
+                        .WithMany("Changes")
+                        .HasForeignKey("EventId", "UserId", "TermsDocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_terms_decision_changes_event_terms_acceptances_event_id_use");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.TermsDocuments.TermsDocumentVersion", b =>
@@ -2030,7 +2100,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("TermsDocuments");
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsAcceptance", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.Legal.LegalPolicy", b =>
+                {
+                    b.Navigation("PreviousVersions");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.TermsDecisions.EventTermsAcceptance", b =>
                 {
                     b.Navigation("Changes");
                 });

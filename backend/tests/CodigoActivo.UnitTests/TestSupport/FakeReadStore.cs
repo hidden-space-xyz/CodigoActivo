@@ -49,6 +49,10 @@ public sealed class FakeReadStore : IReadStore
 
     public List<FileRow> Files { get; } = [];
 
+    public List<LegalPolicyRow> LegalPolicies { get; } = [];
+
+    public List<LegalPolicyVersionRow> LegalPolicyVersions { get; } = [];
+
     IQueryable<UserRow> IReadStore.Users => Read(Users);
 
     IQueryable<UserStatusTypeRow> IReadStore.UserStatusTypes => Read(UserStatusTypes);
@@ -93,6 +97,10 @@ public sealed class FakeReadStore : IReadStore
     IQueryable<PartnerRow> IReadStore.Partners => Read(Partners);
 
     IQueryable<FileRow> IReadStore.Files => Read(Files);
+
+    IQueryable<LegalPolicyRow> IReadStore.LegalPolicies => Read(LegalPolicies);
+
+    IQueryable<LegalPolicyVersionRow> IReadStore.LegalPolicyVersions => Read(LegalPolicyVersions);
 
     public int ReadsOf<TRow>()
     {

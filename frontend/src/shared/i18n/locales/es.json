@@ -254,6 +254,10 @@
     "TermsDocumentNameAlreadyExists": "Ya existen unos términos y condiciones con ese nombre.",
     "TermsDocumentInUse": "No se pueden eliminar estos términos y condiciones porque hay eventos que los usan o personas que ya los han aceptado.",
     "TermsDocumentKindInUse": "No se puede cambiar el tipo de estos términos y condiciones porque hay eventos que los usan o personas que ya han decidido sobre ellos.",
+    "LegalPolicyContentRequired": "Escribe el texto de la política.",
+    "LegalPolicyNotFound": "Esta política todavía no se ha publicado.",
+    "LegalPolicyVersionNotFound": "No se encontró esa versión de la política.",
+    "LegalPolicyPublishedConcurrently": "Otra persona acaba de publicar esta política. Recarga la página e inténtalo de nuevo.",
     "ResourceNotFound": "No se encontró el recurso.",
     "ResourceThumbnailNotFound": "No se encontró la imagen del recurso.",
     "ResourceDescriptionRequired": "Los recursos internos deben tener una descripción.",
@@ -407,65 +411,11 @@
     },
     "cookiePolicy": {
       "eyebrow": "// cookies",
-      "title": "Política de cookies",
-      "lead": "Solo usamos cookies propias: las necesarias para que puedas iniciar sesión y usar la web con seguridad y, si lo pides, la que mantiene tu sesión iniciada durante 30 días. No usamos cookies de análisis, de publicidad ni de terceros.",
-      "updated": "Última actualización: 18 de octubre de 2026",
-      "used": {
-        "title": "¿Qué guardamos en tu navegador?",
-        "text": "Todo es propio: lo gestiona Código Activo desde esta web y no lo compartimos con nadie. Si solo navegas, no instalamos ninguna cookie: se crean cuando inicias sesión o envías un formulario.",
-        "purpose": "Para qué sirve",
-        "duration": "Duración",
-        "kinds": {
-          "cookie": "Cookie",
-          "localStorage": "Almacenamiento local",
-          "sessionStorage": "Almacenamiento de sesión"
-        },
-        "session": {
-          "purpose": "Mantiene tu sesión iniciada para que no tengas que identificarte en cada página.",
-          "duration": "Si no marcas «Mantener la sesión iniciada en este dispositivo», hasta que cierres el navegador y, como máximo, 30 días; si la marcas, 30 días. Se borra al cerrar sesión."
-        },
-        "twoFactor": {
-          "purpose": "Recuerda que ya has escrito tu contraseña mientras introduces el código de verificación.",
-          "duration": "Hasta que cierres el navegador. Deja de ser válida a los 10 minutos y se borra al completar el inicio de sesión."
-        },
-        "csrf": {
-          "purpose": "Protege los formularios comprobando que cada envío sale de esta web (protección CSRF).",
-          "duration": "Hasta que cierres el navegador."
-        },
-        "theme": {
-          "purpose": "Recuerda si prefieres el tema claro o el oscuro. No se envía a nuestro servidor.",
-          "duration": "Hasta que borres los datos de este sitio en tu navegador."
-        },
-        "staleBuild": {
-          "purpose": "Evita recargas en bucle cuando publicamos una versión nueva de la web mientras la tienes abierta.",
-          "duration": "Hasta que cierres la pestaña."
-        }
-      },
-      "consent": {
-        "title": "¿Cuándo te pedimos permiso?",
-        "necessary": "Solo guardamos lo necesario para que la web funcione, inicies sesión y protejamos tu cuenta, y una preferencia de presentación que eliges tú, el tema de colores. No usamos cookies de análisis, de publicidad ni de terceros, así que no te mostramos un aviso de cookies: la única que dura más que la sesión del navegador es la que mantiene la sesión iniciada durante 30 días, y solo la guardamos si lo pides.",
-        "keepSignedIn": "La cookie de sesión solo se conserva 30 días si al iniciar sesión marcas «Mantener la sesión iniciada en este dispositivo (guarda una cookie durante 30 días)». Esa casilla nunca aparece marcada. Puedes borrarla en cualquier momento cerrando sesión o borrando las cookies de este sitio; sin ella, la sesión termina al cerrar el navegador."
-      },
-      "manage": {
-        "title": "¿Cómo puedes eliminarlas?",
-        "text": "Desde la configuración de tu navegador. Si bloqueas las de esta web, podrás consultarla, pero no iniciar sesión ni enviar formularios.",
-        "chrome": "Google Chrome",
-        "firefox": "Mozilla Firefox",
-        "safariIos": "Safari en iPhone y iPad",
-        "safariMac": "Safari en Mac",
-        "edge": "Microsoft Edge"
-      },
-      "privacy": {
-        "title": "Protección de datos",
-        "text": "La cookie de sesión contiene, cifrados, el identificador de tu cuenta y de tu sesión, tu nombre y apellidos, tu email, si administras la web y una marca derivada de tu contraseña, que deja de valer cuando la cambias; la de verificación, el identificador de tu cuenta y del inicio de sesión en curso, esa misma marca y si pediste mantener la sesión iniciada. Usarlas supone tratar datos personales. Quién es el responsable, cómo tratamos esos datos y cómo ejercer tus derechos se explica en la {policy}.",
-        "policy": "política de privacidad"
-      }
+      "title": "Política de cookies"
     },
     "privacyPolicy": {
       "eyebrow": "// privacidad",
       "title": "Política de privacidad",
-      "lead": "Qué datos personales tratamos, para qué, con qué base jurídica, durante cuánto tiempo y cómo puedes ejercer tus derechos, conforme al Reglamento (UE) 2016/679, General de Protección de Datos (RGPD), y a la Ley Orgánica 3/2018, de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).",
-      "updated": "Última actualización: 22 de octubre de 2026",
       "controller": {
         "title": "¿Quién es el responsable del tratamiento?",
         "name": "Denominación",
@@ -473,160 +423,7 @@
         "address": "Domicilio",
         "registry": "Inscripción",
         "email": "Correo electrónico",
-        "phone": "Teléfono",
-        "dpo": "No estamos obligados a designar un delegado de protección de datos. Para cualquier cuestión sobre tus datos, escríbenos a {email}."
-      },
-      "processing": {
-        "title": "¿Qué datos tratamos, para qué y con qué base jurídica?",
-        "text": "Tratamos los datos que nos das al usar la web, los que nos facilitas sobre los menores a tu cargo y los que se generan al usarla. No te pedimos datos especialmente protegidos, como los de salud; no los escribas en los campos de texto libre.",
-        "labels": {
-          "data": "Datos",
-          "purpose": "Finalidad",
-          "legalBasis": "Base jurídica",
-          "retention": "Conservación"
-        },
-        "items": {
-          "account": {
-            "title": "Tu cuenta y el acceso a la web",
-            "data": "Nombre, apellidos, email, teléfono y, si lo das, un segundo teléfono; tu contraseña, que guardamos transformada de forma irreversible; el método de verificación en dos pasos y, si usas una aplicación de autenticación, su clave cifrada; el email nuevo que pidas mientras no lo confirmas; las fechas de alta, de última modificación y de último acceso; la fecha en que declaraste ser mayor de edad al registrarte; el estado de la cuenta, si administras la web y tu relación con la asociación (socio, patrocinador o participante), que fija la administración.",
-            "purpose": "Crear y mantener tu cuenta, poder acreditar que quien se registra declaró ser mayor de edad, comprobar que el email es tuyo, permitirte iniciar sesión con verificación en dos pasos y recuperar la contraseña, y que gestiones tus datos desde «Mi cuenta». Tu relación con la asociación decide en qué roles puedes inscribirte y si puedes hacerlo antes que el resto.",
-            "legalBasis": "La prestación del servicio que solicitas al registrarte (art. 6.1.b RGPD), que solo ofrecemos a personas mayores de edad, y, para guardar la fecha en que declaraste serlo, nuestro interés legítimo en poder acreditarlo y defendernos ante reclamaciones (art. 6.1.f RGPD).",
-            "retention": "Mientras mantengas la cuenta. Al eliminarla borramos de inmediato tus datos y los de los menores a tu cargo, salvo la copia bloqueada que se explica más abajo; las anotaciones de los registros de seguridad se borran al cumplir sus plazos, y las copias de seguridad, al sustituirse. Si no confirmas tu email en las 24 horas siguientes al registro, o si antes alguien vuelve a registrarse con ese email, borramos la cuenta y los menores añadidos en ella, que pasan a la copia bloqueada."
-          },
-          "nationalId": {
-            "title": "Identificación de la persona adulta responsable",
-            "data": "El DNI o NIE de las cuentas de personas adultas. Solo comprobamos que el número es válido; no lo cotejamos con el documento.",
-            "purpose": "Que conste quién es la persona adulta responsable de su propia participación y de la de los menores a su cargo, y poder facilitar ese dato a los servicios de emergencia, las Fuerzas y Cuerpos de Seguridad o un juzgado si ocurre una incidencia durante una actividad. Como no lo cotejamos con el documento, no acredita por sí solo tu identidad. Solo lo ve la administración: no figura en los listados de asistencia, las acreditaciones ni los correos.",
-            "legalBasis": "Nuestro interés legítimo en proteger la seguridad de quienes participan, en especial de los menores (art. 6.1.f RGPD).",
-            "retention": "Mientras mantengas la cuenta; si la eliminas, o eliminas a un menor a tu cargo, pasa a la copia bloqueada."
-          },
-          "minors": {
-            "title": "Menores a tu cargo",
-            "data": "Nombre, apellidos, fecha de nacimiento y género de cada menor, que nos facilita su padre, madre o tutor legal, la fecha en que declaró serlo al añadirlo y la fecha en que le avisamos de que el menor iba a cumplir 18 años.",
-            "purpose": "Que puedas inscribirlos en actividades adecuadas a su edad, que sepamos a quién avisar sobre ellos y que podamos acreditar que nos dio sus datos quien declaró ser su padre, madre o tutor legal.",
-            "legalBasis": "La prestación del servicio que solicitas como su padre, madre o tutor legal (art. 6.1.b RGPD) y, para guardar la fecha en que declaraste serlo, nuestro interés legítimo en poder acreditar quién nos dio sus datos y defendernos ante reclamaciones (art. 6.1.f RGPD).",
-            "retention": "Hasta que los quites de tu cuenta o la elimines y, como mucho, hasta que cumplan 18 años: te avisamos por email 30 días antes y ese día los borramos con sus inscripciones. Después, solo la copia bloqueada que se explica más abajo."
-          },
-          "signups": {
-            "title": "Inscripciones, acreditaciones y diplomas",
-            "data": "Las actividades en las que te inscribes o inscribes a los menores a tu cargo, con el rol (participante, voluntariado o liderazgo), el estado de la inscripción y su fecha.",
-            "purpose": "Gestionar las plazas; confirmar o denegar cada inscripción y avisarte por email; preparar los listados de asistencia que usa nuestro equipo durante el evento y las acreditaciones, que cada asistente lleva a la vista y muestran su nombre y apellidos, su relación con la asociación, sus actividades con su lugar y, en las de los menores, el nombre y el teléfono de su padre, madre o tutor; emitir los diplomas de participación, y que quien lidera una actividad pueda contactar con sus asistentes.",
-            "legalBasis": "La prestación del servicio que solicitas al inscribirte (art. 6.1.b RGPD). Mostrar en la acreditación de cada menor el nombre y el teléfono de su padre, madre o tutor, para poder avisarle si el menor se pierde o se encuentra mal, se basa en nuestro interés legítimo en proteger a los menores (art. 6.1.f RGPD).",
-            "retention": "Mientras mantengas la cuenta. Si anulas una inscripción, si eliminamos la actividad o el evento, o si eliminas la cuenta, pasan a la copia bloqueada."
-          },
-          "terms": {
-            "title": "Documentos y autorizaciones de los eventos",
-            "data": "La aceptación o el rechazo de cada documento que pide un evento, para ti y para cada menor que inscribas, con quién lo decidió, la versión del documento que se decidió, la fecha y, si el documento lo exige, la firma dibujada en la pantalla, y el historial de esa decisión: cada aceptación y cada retirada de un consentimiento, con quién la decidió, quién la registró y cuándo. Las condiciones de un menor las decides tú, como su representante, igual que sus consentimientos hasta los 14 años; desde los 14 años sus consentimientos los decide el propio menor.",
-            "purpose": "Recoger las condiciones y autorizaciones necesarias para participar en cada evento y poder demostrarlas. Las firmas solo las ve la administración, y tú en la copia de tus datos.",
-            "legalBasis": "Para los documentos que recogen las condiciones de participación, la prestación del servicio que solicitas (art. 6.1.b RGPD); para los que te piden un consentimiento, que nunca exigimos para inscribirte, ese consentimiento (art. 6.1.a RGPD), y para guardar tu decisión, la obligación de poder demostrarla (arts. 6.1.c y 7.1 RGPD).",
-            "retention": "Mientras exista el evento y mantengas la cuenta; si eliminamos el evento o eliminas la cuenta, pasan a la copia bloqueada. Puedes retirar en cualquier momento un consentimiento que hayas dado en un documento desde «Mi cuenta» o escribiéndonos, sin que afecte a lo hecho antes de retirarlo; la aceptación anterior se conserva en el historial para poder demostrarla. Cuando cambiamos un documento guardamos también su versión anterior, para poder mostrar siempre el texto que se aceptó."
-          },
-          "statistics": {
-            "title": "Estadísticas de participación",
-            "data": "El género que indicas, la edad, el rol y la relación con la asociación de las personas inscritas, en cuántos eventos ha participado cada una, la categoría de los eventos en los que se inscriben, las fechas de alta de las cuentas y las puntuaciones de las valoraciones.",
-            "purpose": "Conocer, con cifras agregadas que solo consulta la administración, el alcance de nuestras actividades, como la participación por edad y género. Como género puedes elegir «Prefiero no decirlo».",
-            "legalBasis": "Nuestro interés legítimo en evaluar y mejorar nuestras actividades (art. 6.1.f RGPD).",
-            "retention": "Las cifras se calculan al consultarlas a partir de los datos anteriores y no se guardan aparte."
-          },
-          "emails": {
-            "title": "Comunicaciones por email",
-            "data": "Tu nombre, tu email y tu preferencia sobre recibir novedades, con la fecha y el medio de cada cambio: el registro, «Mi cuenta», el enlace para darte de baja o el botón de baja de tu programa de correo.",
-            "purpose": "Enviarte los correos que el servicio necesita (verificación del email, códigos de acceso, avisos de seguridad, el estado de tus inscripciones, el aviso de que un menor a tu cargo va a cumplir 18 años e información práctica de los eventos en los que participas) y, solo si lo aceptas, novedades sobre las actividades de la asociación.",
-            "legalBasis": "Para los correos del servicio, su prestación (art. 6.1.b RGPD); para las novedades, tu consentimiento (art. 6.1.a RGPD), que puedes retirar gratis cuando quieras con el enlace para darte de baja que incluye cada novedad o con el botón de baja que muestre tu programa de correo, sin iniciar sesión, desde «Mi cuenta» o escribiéndonos a la dirección que también figura en cada novedad.",
-            "retention": "Cada correo espera en la cola de envío, con el asunto y el contenido cifrados, solo hasta que se entrega o se descarta tras cinco intentos fallidos. Tu preferencia, hasta que la cambies o elimines la cuenta, y la fecha y el medio de cada cambio, mientras mantengas la cuenta, para poder demostrar tu consentimiento; si la eliminas, pasan a la copia bloqueada."
-          },
-          "ratings": {
-            "title": "Valoraciones de los eventos",
-            "data": "La puntuación y las respuestas que escribes al valorar un evento al que habéis asistido tú o los menores a tu cargo.",
-            "purpose": "Mejorar nuestras actividades. Al recibirla comprobamos que tú o un menor a tu cargo teníais una inscripción confirmada en el evento, pero la guardamos sin tu nombre, tu cuenta ni la fecha, así que no sabemos quién la escribió salvo por lo que diga el propio texto o cuando un evento recibe muy pocas valoraciones. No escribas datos personales tuyos ni de otras personas.",
-            "legalBasis": "Nuestro interés legítimo en mejorar nuestras actividades (art. 6.1.f RGPD).",
-            "retention": "Hasta que se elimina el evento. Como no se vinculan a tu cuenta, no se borran al eliminarla, y solo podemos atender tus derechos sobre una valoración si nos das datos que permitan reconocerla (art. 11 RGPD)."
-          },
-          "security": {
-            "title": "Seguridad y registro de actividad",
-            "data": "Cada operación que cambia algo en la web, como registrarte, iniciar sesión, inscribirte o editar tu perfil, con su fecha y hora, la cuenta, la dirección IP desde la que se hace y su resultado; tus sesiones abiertas; los intentos fallidos y los bloqueos, y los errores técnicos, que no incluyen tus datos de contacto ni lo que escribes.",
-            "purpose": "Proteger la web y tu cuenta frente a accesos no autorizados y abusos, investigar incidentes y corregir errores. Solo la administración consulta estos registros; tú puedes descargar desde «Mi cuenta» los que se refieren a tu cuenta y a los menores a tu cargo.",
-            "legalBasis": "Nuestro interés legítimo en garantizar la seguridad de la red y de la información (art. 6.1.f y considerando 49 RGPD).",
-            "retention": "El registro de actividad, 60 días; el de errores, 30 días; cada sesión, hasta que la cierras o caduca, como máximo a los 30 días. Si el servidor está detenido, el borrado se retrasa hasta que vuelve a funcionar, y las copias de seguridad los conservan hasta que se sustituyen."
-          },
-          "socialMedia": {
-            "title": "Nuestros perfiles en redes sociales",
-            "data": "Tu nombre de usuario y lo que publiques o nos envíes en nuestros perfiles de Instagram, Facebook, LinkedIn o YouTube. La web solo enlaza a ellos: no carga nada de esas redes ni les envía tus datos.",
-            "purpose": "Dar a conocer nuestras actividades y responder a tus mensajes. Cada red social trata además tus datos según su propia política de privacidad. De las estadísticas de nuestras páginas de Instagram, Facebook y LinkedIn somos corresponsables con Meta y LinkedIn (art. 26 RGPD): según los acuerdos de corresponsabilidad que publican, ellas asumen la responsabilidad principal de ese tratamiento y de atender tus derechos, y nosotros solo recibimos cifras agregadas.",
-            "legalBasis": "Nuestro interés legítimo en dar a conocer la asociación y atender a quien nos escribe (art. 6.1.f RGPD).",
-            "retention": "Mientras la publicación o el mensaje sigan en la red social o hasta que nos pidas suprimirlos."
-          },
-          "images": {
-            "title": "Fotografías y vídeos de las actividades",
-            "data": "Las fotografías y los vídeos de las actividades en los que se os reconozca a ti o a los menores a tu cargo y, cuando publicamos resultados o premios, el nombre de quien los obtiene.",
-            "purpose": "Dar a conocer nuestras actividades en esta web y en nuestros perfiles de Instagram, Facebook, LinkedIn y YouTube. Solo publicamos la imagen o el nombre de quien lo ha consentido en el documento de uso de imágenes del evento.",
-            "legalBasis": "Tu consentimiento (art. 6.1.a RGPD y arts. 2.2 y 3 de la Ley Orgánica 1/1982). El de un menor de 14 años lo da su padre, madre o tutor legal; a partir de los 14 años, el propio menor (art. 7 LOPDGDD). Puedes retirarlo cuando quieras desde «Mi cuenta» o escribiéndonos, sin que afecte a lo publicado antes.",
-            "retention": "Lo publicado, hasta que se retire el consentimiento: entonces lo quitamos de esta web y de nuestros perfiles. El material que no publicamos lo guardamos en Google Drive para poder usarlo más adelante con el mismo fin, también hasta que se retire el consentimiento. Una imagen que subimos a esta web y no llegamos a usar se borra a los 7 días."
-          },
-          "inquiries": {
-            "title": "Consultas y solicitudes",
-            "data": "Los datos que nos des al escribirnos o llamarnos.",
-            "purpose": "Responder a tu consulta y atender las solicitudes de ejercicio de derechos.",
-            "legalBasis": "Nuestro interés legítimo en responder a quien nos contacta (art. 6.1.f RGPD) y, para las solicitudes de derechos, la obligación legal de atenderlas (art. 6.1.c RGPD).",
-            "retention": "El tiempo necesario para atender tu consulta. Las solicitudes de ejercicio de derechos y nuestra respuesta, tres años desde que las atendemos, para poder acreditarlo (art. 72 LOPDGDD)."
-          },
-          "erasure": {
-            "title": "Copia bloqueada de los datos eliminados",
-            "data": "Al eliminar una cuenta o un menor, una copia de los datos de la persona eliminada y, si es una cuenta, de sus menores; si se elimina solo a un menor, también la identificación de su padre, madre o tutor; sus inscripciones; sus decisiones sobre los documentos de los eventos, con las firmas, su historial y el texto de cada documento tal como estaba al eliminarla; los cambios de su consentimiento para recibir novedades, y quién pidió la eliminación o, si fue automática, su motivo. Al anular una inscripción o eliminar una actividad o un evento, una copia de las inscripciones que se borran y, si es un evento, de las decisiones sobre sus documentos con las firmas, su historial y el texto de cada documento, con el nombre de las personas a las que se refieren o que las decidieron y quién lo eliminó. Nunca incluye contraseñas, códigos ni claves.",
-            "purpose": "Atender las posibles responsabilidades nacidas del tratamiento. Nadie la consulta desde la web: solo puede ponerse a disposición de jueces y tribunales, el Ministerio Fiscal o las administraciones públicas competentes, en particular la Agencia Española de Protección de Datos.",
-            "legalBasis": "La obligación legal de bloquear los datos suprimidos (art. 6.1.c RGPD y art. 32 LOPDGDD).",
-            "retention": "Tres años desde la eliminación, el plazo en que prescriben las infracciones más graves (art. 72 LOPDGDD); después se borra automáticamente. Las copias de seguridad la conservan hasta que se sustituyen."
-          }
-        }
-      },
-      "minors": {
-        "title": "Menores de edad",
-        "text": "Solo las personas mayores de edad pueden crear una cuenta: al registrarte declaras serlo y guardamos la fecha de esa declaración. Los datos de un menor solo puede dárnoslos su padre, madre o tutor legal, que al añadirlo declara serlo (guardamos la fecha de esa declaración) y responde de que los datos sean correctos. Los menores no inician sesión y nunca les pedimos DNI, email ni teléfono.",
-        "rights": "Los derechos de un menor de 14 años los ejerce en su nombre su padre, madre o tutor legal (art. 12.6 LOPDGDD). A partir de los 14 años puede ejercerlos el propio menor escribiéndonos, y es él quien da o retira el consentimiento en lo que se base en él (art. 7 LOPDGDD). Al cumplir 18 años deja de estar a cargo de su padre, madre o tutor y borramos sus datos, salvo la copia bloqueada; desde entonces ejerce sus derechos directamente escribiéndonos y, si quiere seguir participando, puede crear su propia cuenta."
-      },
-      "required": {
-        "title": "¿Estás obligado a darnos tus datos?",
-        "text": "Los datos que el registro pide como obligatorios (nombre, apellidos, DNI o NIE, email, teléfono y contraseña) y tu declaración de ser mayor de edad son necesarios para crear la cuenta: sin ellos no podemos darte de alta. También te pedimos el género, solo para estadísticas, pero puedes elegir «Prefiero no decirlo». El segundo teléfono, los menores y las novedades por email son opcionales. Si añades a un menor, necesitamos su nombre, sus apellidos, su fecha de nacimiento y tu declaración de ser su padre, madre o tutor legal; sin ellos no podemos añadirlo. Si un evento exige aceptar sus condiciones de participación, no podrás inscribirte en él sin aceptarlas; los documentos que solo piden un consentimiento, como el de uso de imágenes, nunca son obligatorios."
-      },
-      "recipients": {
-        "title": "¿Quién puede ver tus datos?",
-        "internal": "Dentro de la asociación solo acceden a tus datos las personas que administran la web, las que atienden cada evento con los listados de asistencia, que incluyen la fecha de nacimiento y los teléfonos de cada asistente y los datos de contacto del padre, madre o tutor de cada menor, y, con el alcance que se indica, las personas voluntarias que lideran una actividad, todas bajo nuestra autoridad y sujetas al deber de confidencialidad (art. 5 LOPDGDD). Quien lidera una actividad ve, mientras no termina, el nombre, el rol y la fecha de inscripción de sus asistentes confirmados, el email y el teléfono de los adultos, y la edad de cada menor con el nombre y los datos de contacto de su padre, madre o tutor; nunca ve el DNI, la fecha de nacimiento ni el segundo teléfono. Además, quien asiste a un evento puede ver las acreditaciones de los demás asistentes.",
-        "processors": "Estos proveedores tratan datos por cuenta nuestra (encargados del tratamiento), con un contrato que les obliga a usarlos solo para prestarnos su servicio y a protegerlos:",
-        "hosting": "IONOS: alojamiento del servidor y de la base de datos, en centros de datos de la Unión Europea.",
-        "email": "Google (Google Workspace): envío y recepción de nuestro correo electrónico y almacenamiento en Google Drive de las fotografías y los vídeos de las actividades.",
-        "disclosures": "Fuera de lo indicado, no vendemos tus datos ni los comunicamos a terceros, salvo cuando una ley nos obligue (por ejemplo, ante un requerimiento de un juzgado, de las Fuerzas y Cuerpos de Seguridad o de la Agencia Española de Protección de Datos) o cuando sea necesario para proteger la vida o la salud de alguien durante una actividad, en cuyo caso podemos facilitarlos a los servicios de emergencia (art. 6.1.d RGPD). Lo que publicamos con consentimiento en esta web o en nuestras redes sociales lo puede ver cualquier persona, y esas redes lo tratan según sus propias políticas."
-      },
-      "transfers": {
-        "title": "Transferencias internacionales",
-        "text": "Google puede tratar datos en Estados Unidos y en otros países donde operan sus subencargados. Esas transferencias se basan en la decisión de adecuación de la Comisión Europea sobre el Marco de Privacidad de Datos UE-EE. UU. (Decisión de Ejecución (UE) 2023/1795), en el que está certificada Google LLC, y, para lo que no cubra o si dejara de estar en vigor, en las cláusulas contractuales tipo aprobadas por la Comisión (art. 46.2.c RGPD), de las que puedes pedirnos una copia. No hacemos ninguna otra transferencia fuera del Espacio Económico Europeo."
-      },
-      "automated": {
-        "title": "Decisiones automatizadas",
-        "text": "No elaboramos perfiles ni tomamos decisiones basadas únicamente en el tratamiento automatizado que produzcan efectos jurídicos en ti o te afecten de forma similar (art. 22 RGPD): cada inscripción la confirma o la deniega una persona de la asociación. La web solo aplica reglas fijas, como el plazo de inscripción anticipada de socios y patrocinadores, los roles que admite cada tipo de cuenta, el rechazo de direcciones de correo temporales o el bloqueo tras varios intentos fallidos."
-      },
-      "rights": {
-        "title": "¿Cuáles son tus derechos?",
-        "list": "Puedes pedirnos, gratis salvo que la solicitud sea manifiestamente infundada o excesiva, acceder a tus datos, rectificarlos, suprimirlos, limitar su tratamiento o recibirlos en un formato estructurado para llevarlos a otro responsable (portabilidad). También puedes retirar los consentimientos que nos hayas dado, sin que ello afecte a lo hecho antes de retirarlos.",
-        "objection": "Puedes oponerte en cualquier momento, por motivos relacionados con tu situación particular, a los tratamientos basados en nuestro interés legítimo, y dejaremos de hacerlos salvo que acreditemos motivos legítimos imperiosos que prevalezcan o los necesitemos para formular, ejercer o defender reclamaciones.",
-        "self": "Desde {account} puedes corregir tus datos y los de los menores a tu cargo, descargar una copia de los datos de tu cuenta y de los menores a tu cargo, cambiar tu preferencia sobre las novedades y eliminar tu cuenta. Nadie más puede cambiar esos datos ni tus decisiones sobre las novedades y sobre los documentos de los eventos, tampoco la administración. La administración sí puede cambiar tu relación con la asociación y la de los menores a tu cargo, darte o quitarte permisos de administración, devolver tu verificación en dos pasos al correo electrónico, inscribirte a ti o a ellos (incluso fuera de plazo y sin pedirte los documentos del evento), confirmar, denegar o anular inscripciones, eliminar eventos y actividades con sus inscripciones y, si elimina un evento, tus decisiones sobre sus documentos, y eliminar tu cuenta o a un menor a tu cargo. Lo que hace sobre tu cuenta, tus menores y sus inscripciones queda anotado durante 60 días en el registro de seguridad que incluye la copia de tus datos; la eliminación de un evento, una actividad o un menor no aparece en ella.",
-        "account": "Mi cuenta",
-        "how": "Para lo demás, escríbenos a {email}, a ser posible desde el email de tu cuenta, o por correo postal al domicilio indicado arriba, diciendo qué derecho quieres ejercer. Solo te pediremos más datos si tenemos dudas razonables sobre tu identidad. Te responderemos en el plazo de un mes. Si la solicitud es compleja o recibimos muchas, podemos ampliarlo dos meses más; en ese caso te lo diremos dentro del primer mes, explicando por qué.",
-        "complaint": "Si consideras que no hemos atendido bien tu solicitud o que tratamos tus datos incumpliendo la normativa, puedes reclamar ante la {authority} (C/ Jorge Juan 6, 28001 Madrid).",
-        "authority": "Agencia Española de Protección de Datos",
-        "deceased": "Si una persona fallece, quienes estaban vinculados a ella por razones familiares o de hecho y sus herederos pueden pedirnos acceder a los datos de la persona fallecida y, en su caso, rectificarlos o suprimirlos, acreditando el fallecimiento y su vínculo con ella, salvo que la persona lo hubiera prohibido expresamente o lo prohíba una ley; esa prohibición no impide a los herederos acceder a sus datos patrimoniales. También pueden hacerlo, según sus instrucciones, las personas o instituciones que hubiera designado expresamente. Si fallece un menor, pueden hacerlo además sus representantes legales y el Ministerio Fiscal, y si fallece una persona con discapacidad, quienes le prestaban apoyo, si esas medidas lo comprenden (art. 3 LOPDGDD). Sobre la imagen de una persona fallecida decide quien ella hubiera designado en su testamento o, si no designó a nadie, su cónyuge, descendientes, ascendientes y hermanos, y a falta de todos ellos el Ministerio Fiscal (art. 4 de la Ley Orgánica 1/1982)."
-      },
-      "security": {
-        "title": "¿Cómo protegemos tus datos?",
-        "text": "Toda la comunicación con la web va cifrada, las contraseñas se guardan con un algoritmo irreversible, cada inicio de sesión exige un segundo factor y solo las personas autorizadas acceden a los datos. Las copias de seguridad solo se usan para recuperar el servicio tras un fallo y conservan los datos hasta que se sustituyen por otras más recientes."
-      },
-      "cookies": {
-        "title": "Cookies",
-        "text": "Lo que guardamos en tu navegador, para qué y durante cuánto tiempo se explica en la {policy}.",
-        "policy": "política de cookies"
-      },
-      "changes": {
-        "title": "Cambios en esta política",
-        "text": "Si cambiamos cómo tratamos tus datos, actualizaremos esta página y su fecha y, si el cambio es importante, te avisaremos por email antes de aplicarlo."
+        "phone": "Teléfono"
       }
     },
     "account": {
@@ -1263,6 +1060,49 @@
           "subtitle": "Catálogos configurables del sistema"
         }
       },
+      "legalPolicies": {
+        "header": {
+          "title": "Textos legales",
+          "subtitle": "La política de privacidad y la de cookies que publica la web. Cada vez que publicas un cambio se crea una versión nueva y se conservan las anteriores."
+        },
+        "tabs": {
+          "Privacy": "Política de privacidad",
+          "Cookies": "Política de cookies"
+        },
+        "privacyHint": "La página pública muestra antes de este texto la identidad y los datos de contacto del responsable del tratamiento, que salen de la configuración del despliegue.",
+        "status": {
+          "published": "Versión {version} en vigor, publicada el {date}.",
+          "unpublished": "Todavía no se ha publicado: la página pública avisa de que no está disponible."
+        },
+        "loadError": "No se pudo cargar la política.",
+        "unpublishedChanges": "Hay cambios sin publicar.",
+        "discard": "Descartar cambios",
+        "publish": {
+          "button": "Publicar versión nueva",
+          "header": "Publicar la política",
+          "message": "Se publicará la versión {version} y la página pública mostrará el texto nuevo desde ahora. La versión actual se conservará en el historial.",
+          "firstMessage": "Se publicará la primera versión y la página pública la mostrará desde ahora.",
+          "accept": "Publicar"
+        },
+        "toasts": {
+          "published": "Política publicada."
+        },
+        "form": {
+          "problems": {
+            "contentRequired": "Escribe el texto de la política."
+          }
+        },
+        "versions": {
+          "title": "Versiones",
+          "empty": "Aún no hay versiones publicadas.",
+          "number": "Versión {version}",
+          "inForce": "En vigor",
+          "view": "Ver",
+          "dialogTitle": "Versión {version}",
+          "publishedAt": "Publicada el {date}.",
+          "restore": "Usar en el editor"
+        }
+      },
       "eventDetail": {
         "back": "Volver a eventos",
         "headerFallback": "Evento",
@@ -1617,6 +1457,7 @@
           "Activity": "Actividad",
           "Event": "Evento",
           "EventCategoryType": "Categoría",
+          "LegalPolicy": "Política legal",
           "NewsItem": "Novedad",
           "Partner": "Patrocinador",
           "Resource": "Recurso",
@@ -1628,6 +1469,7 @@
           "Activity": "Actividad eliminada",
           "Event": "Evento eliminado",
           "EventCategoryType": "Categoría eliminada",
+          "LegalPolicy": "Política legal eliminada",
           "NewsItem": "Novedad eliminada",
           "Partner": "Patrocinador eliminado",
           "Resource": "Recurso eliminado",
@@ -1697,6 +1539,7 @@
           "CreateTermsDocument": "Crear términos y condiciones",
           "DeleteTermsDocument": "Eliminar términos y condiciones",
           "UpdateTermsDocument": "Editar términos y condiciones",
+          "PublishLegalPolicy": "Publicar una política legal",
           "AddChild": "Añadir un menor",
           "ChangeUserType": "Cambiar el tipo de usuario",
           "DeleteUser": "Eliminar un usuario",
@@ -2101,6 +1944,7 @@
         "users": "Usuarios",
         "diagnostics": "Diagnóstico",
         "audit": "Auditoría",
+        "legal": "Textos legales",
         "settings": "Configuración"
       },
       "menuTitle": "Administración",
@@ -2196,6 +2040,10 @@
         "linkResentDetail": "Si tu cuenta sigue pendiente de activar, te hemos enviado un enlace nuevo.",
         "linkResentSummary": "Revisa tu correo"
       }
+    },
+    "legalPolicy": {
+      "updated": "Última actualización: {date} (versión {version})",
+      "unpublished": "Esta política todavía no se ha publicado."
     }
   }
 }

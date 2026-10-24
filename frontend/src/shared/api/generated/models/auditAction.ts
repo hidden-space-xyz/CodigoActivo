@@ -65,6 +65,7 @@ export const AuditAction = {
   CreateTermsDocument: 'CreateTermsDocument',
   DeleteTermsDocument: 'DeleteTermsDocument',
   UpdateTermsDocument: 'UpdateTermsDocument',
+  PublishLegalPolicy: 'PublishLegalPolicy',
   AddChild: 'AddChild',
   ChangeUserType: 'ChangeUserType',
   DeleteUser: 'DeleteUser',

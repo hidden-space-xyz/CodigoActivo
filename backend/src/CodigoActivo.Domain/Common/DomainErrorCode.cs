@@ -288,4 +288,9 @@ public enum DomainErrorCode
     /// The category is the only one of an event, which must keep at least one.
     /// </summary>
     EventCategoryTypeOnlyCategoryOfEvent,
+
+    /// <summary>
+    /// A legal policy was to be published without any text.
+    /// </summary>
+    LegalPolicyContentRequired,
 }

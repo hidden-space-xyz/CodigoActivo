@@ -4,7 +4,9 @@ using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Logs.Contracts;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Legal;
 using CodigoActivo.Infrastructure.Logs;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -319,6 +321,50 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
                     "Marta Miembro"
                 ),
                 new AuditRelatedEntityResponse(AuditEntityType.Event, removedEvent, null)
+            );
+    }
+
+    [Fact]
+    public async Task AuditNamesEachLegalPolicyByItsKind()
+    {
+        var text = RichText.From(
+            """{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Texto"}]}]}"""
+        );
+        var privacy = LegalPolicy.Publish(LegalPolicyKind.Privacy, text, Morning).Value;
+        var cookies = LegalPolicy.Publish(LegalPolicyKind.Cookies, text, Morning).Value;
+        await SeedAsync(
+            privacy,
+            cookies,
+            Audit(
+                Morning,
+                AuditAction.PublishLegalPolicy,
+                TestSeedData.Users.AdminId,
+                privacy.Id.Value,
+                entityType: "LegalPolicy"
+            ),
+            Audit(
+                Morning.AddMinutes(1),
+                AuditAction.PublishLegalPolicy,
+                TestSeedData.Users.AdminId,
+                cookies.Id.Value,
+                entityType: "LegalPolicy"
+            )
+        );
+        var admin = await LoginAsAdminAsync();
+
+        var page = await GetPageAsync<AuditLogEntryResponse>(
+            admin,
+            "/api/logs/audit?action=PublishLegalPolicy"
+        );
+
+        page.Items.Select(entry => (entry.EntityType, entry.EntityName))
+            .Should()
+            .BeEquivalentTo(
+                new (AuditEntityType?, string)[]
+                {
+                    (AuditEntityType.LegalPolicy, "Política de privacidad"),
+                    (AuditEntityType.LegalPolicy, "Política de cookies"),
+                }
             );
     }
 

@@ -1,10 +1,12 @@
 using System.Text.Json;
 using AwesomeAssertions;
+using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
@@ -93,7 +95,29 @@ public sealed class DemoDataSeederTests
         graph.Partners.Should().HaveCount(10);
         graph.CategoryTypes.Should().HaveCount(8);
         graph.TermsDocuments.Should().HaveCount(2);
+        graph.LegalPolicies.Should().HaveCount(2);
         graph.Files.Should().HaveCount(180);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultPublishesOneTextOnlyExampleOfEachLegalPolicy()
+    {
+        graph
+            .LegalPolicies.Select(policy => policy.Kind)
+            .Should()
+            .BeEquivalentTo([LegalPolicyKind.Privacy, LegalPolicyKind.Cookies]);
+        graph
+            .LegalPolicies.Should()
+            .AllSatisfy(policy =>
+            {
+                policy.Version.Should().Be(LegalPolicy.FirstVersion);
+                policy.PublishedAt.Should().Be(clock.UtcNow);
+                RichTextAllowlist
+                    .IsAllowed(policy.Content.Json, allowImages: false)
+                    .Should()
+                    .BeTrue();
+                policy.Content.IsEmpty.Should().BeFalse();
+            });
     }
 
     [Fact]

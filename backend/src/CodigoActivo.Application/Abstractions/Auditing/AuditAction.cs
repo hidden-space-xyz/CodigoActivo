@@ -175,6 +175,9 @@ public enum AuditAction
     /// <summary>Updated a terms document.</summary>
     UpdateTermsDocument,
 
+    /// <summary>Published a new version of a legal policy.</summary>
+    PublishLegalPolicy,
+
     /// <summary>Added a dependent to a household.</summary>
     AddChild,
 

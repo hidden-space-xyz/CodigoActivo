@@ -6,18 +6,18 @@ defineProps<{
   eyebrow: string
   /** Page `<h1>`. */
   title: string
-  /** Summary paragraph below the title. */
-  lead: string
-  /** Line telling when the document last changed. */
-  updated: string
+  /** Summary paragraph below the title; omitted when unset. */
+  lead?: string | undefined
+  /** Line telling when the document last changed; omitted when unset. */
+  updated?: string | undefined
 }>()
 </script>
 
 <template>
   <div>
     <PageHead :eyebrow="eyebrow" :title="title">
-      <p class="legal-document__lead">{{ lead }}</p>
-      <p class="legal-document__updated">{{ updated }}</p>
+      <p v-if="lead" class="legal-document__lead">{{ lead }}</p>
+      <p v-if="updated" class="legal-document__updated">{{ updated }}</p>
     </PageHead>
 
     <div class="legal-document">
