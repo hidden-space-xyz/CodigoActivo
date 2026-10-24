@@ -20,6 +20,7 @@ import {
   confirmAuthenticatorRequest,
   confirmEmailChangeRequest,
   deleteAccountChildRequest,
+  deleteAccountEventRatingRequest,
   deleteAccountRequest,
   disableAuthenticatorRequest,
   forgotPasswordRequest,
@@ -36,8 +37,8 @@ import {
 
 /**
  * Mutation options of the account. Changes to the second factor and a confirmed email change
- * refresh the profile, changes to the household refresh the children and a rating refreshes the
- * history; the rest touch nothing cached, or leave it to the caller.
+ * refresh the profile, changes to the household refresh the children and saving or deleting a
+ * rating refreshes the history; the rest touch nothing cached, or leave it to the caller.
  */
 export const accountMutations = {
   /** Saves the profile of `userId` and resolves to the stored one. */
@@ -102,6 +103,11 @@ export const accountMutations = {
     mutationOptions({
       mutationFn: ({ eventId, input }: { eventId: string; input: EventRatingInput }) =>
         saveAccountEventRatingRequest(eventId, input),
+      meta: { invalidates: [accountKeys.history()] },
+    }),
+  deleteRating: () =>
+    mutationOptions({
+      mutationFn: (eventId: string) => deleteAccountEventRatingRequest(eventId),
       meta: { invalidates: [accountKeys.history()] },
     }),
   /** Registers an adult with their minors; the API answers alike for a known email. */

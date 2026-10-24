@@ -34,7 +34,7 @@ async function renderTab(
 }
 
 describe('EventOpinionsTab', () => {
-  it('lists anonymous ratings with their non-empty answers', async () => {
+  it('lists ratings without their authors and with their non-empty answers', async () => {
     const { wrapper } = await renderTab([
       buildRating({
         mostLiked: 'The people',
@@ -53,7 +53,7 @@ describe('EventOpinionsTab', () => {
     await vi.waitFor(() => expect(wrapper.findAll('li.opinion')).toHaveLength(2))
     expect(wrapper.text()).toContain(tc('pages.admin.eventDetail.opinions.count', 2))
     const [first, second] = wrapper.findAll('li.opinion')
-    expect(first?.text()).toContain(t('pages.admin.eventDetail.opinions.anonymous'))
+    expect(first?.text()).toContain(t('pages.admin.eventDetail.opinions.author'))
     expect(first?.find('.opinion__score').text()).toBe('4/5')
     expect(first?.find('.opinion__date').exists()).toBe(false)
     expect(first?.findAll('dt').map((node) => node.text())).toEqual([

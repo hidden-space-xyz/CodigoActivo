@@ -1537,19 +1537,19 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiEventsEventIdRatingsMutationOptions(options), queryClient);
     }
-    export type postApiEventsEventIdRatingResponse200 = {
+    export type putApiEventsEventIdRatingResponse200 = {
   data: void
   status: 200
 }
 
-export type postApiEventsEventIdRatingResponseSuccess = (postApiEventsEventIdRatingResponse200) & {
+export type putApiEventsEventIdRatingResponseSuccess = (putApiEventsEventIdRatingResponse200) & {
   headers: Headers;
 };
 ;
 
-export type postApiEventsEventIdRatingResponse = (postApiEventsEventIdRatingResponseSuccess)
+export type putApiEventsEventIdRatingResponse = (putApiEventsEventIdRatingResponseSuccess)
 
-export const getPostApiEventsEventIdRatingUrl = (eventId: string,) => {
+export const getPutApiEventsEventIdRatingUrl = (eventId: string,) => {
 
 
 
@@ -1557,8 +1557,8 @@ export const getPostApiEventsEventIdRatingUrl = (eventId: string,) => {
   return `/api/events/${eventId}/rating`
 }
 
-export const postApiEventsEventIdRating = async (eventId: string,
-    saveEventRatingRequest?: SaveEventRatingRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiEventsEventIdRatingResponse> => {
+export const putApiEventsEventIdRating = async (eventId: string,
+    saveEventRatingRequest?: SaveEventRatingRequest, options?: Parameters<typeof httpClient>[1]): Promise<putApiEventsEventIdRatingResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -1574,10 +1574,10 @@ export const postApiEventsEventIdRating = async (eventId: string,
     }
     return headers;
   };
-return httpClient<postApiEventsEventIdRatingResponse>(getPostApiEventsEventIdRatingUrl(eventId),
+return httpClient<putApiEventsEventIdRatingResponse>(getPutApiEventsEventIdRatingUrl(eventId),
   {
     ...options,
-    method: 'POST',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(saveEventRatingRequest)
   }
@@ -1587,45 +1587,129 @@ return httpClient<postApiEventsEventIdRatingResponse>(getPostApiEventsEventIdRat
 
 
 
-export const getPostApiEventsEventIdRatingQueryKey = (eventId: MaybeRefOrGetter<string>,
+export const getPutApiEventsEventIdRatingQueryKey = (eventId: MaybeRefOrGetter<string>,
     saveEventRatingRequest?: MaybeRefOrGetter<SaveEventRatingRequest>,) => {
     return [
-    'POST', 'api','events',eventId,'rating', saveEventRatingRequest
+    'PUT', 'api','events',eventId,'rating', saveEventRatingRequest
     ] as const;
     }
 
 
-export const getPostApiEventsEventIdRatingQueryOptions = <TData = Awaited<ReturnType<typeof postApiEventsEventIdRating>>, TError = unknown>(eventId: MaybeRefOrGetter<string>,
-    saveEventRatingRequest?: MaybeRefOrGetter<SaveEventRatingRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsEventIdRating>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+export const getPutApiEventsEventIdRatingQueryOptions = <TData = Awaited<ReturnType<typeof putApiEventsEventIdRating>>, TError = unknown>(eventId: MaybeRefOrGetter<string>,
+    saveEventRatingRequest?: MaybeRefOrGetter<SaveEventRatingRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiEventsEventIdRating>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  getPostApiEventsEventIdRatingQueryKey(eventId,saveEventRatingRequest);
+  const queryKey =  getPutApiEventsEventIdRatingQueryKey(eventId,saveEventRatingRequest);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEventsEventIdRating>>> = ({ signal }) => postApiEventsEventIdRating(toValue(eventId),toValue(saveEventRatingRequest), { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiEventsEventIdRating>>> = ({ signal }) => putApiEventsEventIdRating(toValue(eventId),toValue(saveEventRatingRequest), { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: computed(() => toValue(eventId) !== null && toValue(eventId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEventsEventIdRating>>, TError, TData>
+   return  { queryKey, queryFn, enabled: computed(() => toValue(eventId) !== null && toValue(eventId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiEventsEventIdRating>>, TError, TData>
 }
 
-export type PostApiEventsEventIdRatingQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEventsEventIdRating>>>
-export type PostApiEventsEventIdRatingQueryError = unknown
+export type PutApiEventsEventIdRatingQueryResult = NonNullable<Awaited<ReturnType<typeof putApiEventsEventIdRating>>>
+export type PutApiEventsEventIdRatingQueryError = unknown
 
 
 
-export function usePostApiEventsEventIdRating<TData = Awaited<ReturnType<typeof postApiEventsEventIdRating>>, TError = unknown>(
+export function usePutApiEventsEventIdRating<TData = Awaited<ReturnType<typeof putApiEventsEventIdRating>>, TError = unknown>(
  eventId: MaybeRefOrGetter<string>,
-    saveEventRatingRequest?: MaybeRefOrGetter<SaveEventRatingRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEventsEventIdRating>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+    saveEventRatingRequest?: MaybeRefOrGetter<SaveEventRatingRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiEventsEventIdRating>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPostApiEventsEventIdRatingQueryOptions(eventId,saveEventRatingRequest,options)
+  const queryOptions = getPutApiEventsEventIdRatingQueryOptions(eventId,saveEventRatingRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type deleteApiEventsEventIdRatingResponse200 = {
+  data: void
+  status: 200
+}
+
+export type deleteApiEventsEventIdRatingResponseSuccess = (deleteApiEventsEventIdRatingResponse200) & {
+  headers: Headers;
+};
+;
+
+export type deleteApiEventsEventIdRatingResponse = (deleteApiEventsEventIdRatingResponseSuccess)
+
+export const getDeleteApiEventsEventIdRatingUrl = (eventId: string,) => {
+
+
+
+
+  return `/api/events/${eventId}/rating`
+}
+
+export const deleteApiEventsEventIdRating = async (eventId: string, options?: Parameters<typeof httpClient>[1]): Promise<deleteApiEventsEventIdRatingResponse> => {
+
+  return httpClient<deleteApiEventsEventIdRatingResponse>(getDeleteApiEventsEventIdRatingUrl(eventId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteApiEventsEventIdRatingQueryKey = (eventId: MaybeRefOrGetter<string>,) => {
+    return [
+    'DELETE', 'api','events',eventId,'rating'
+    ] as const;
+    }
+
+
+export const getDeleteApiEventsEventIdRatingQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiEventsEventIdRating>>, TError = unknown>(eventId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiEventsEventIdRating>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getDeleteApiEventsEventIdRatingQueryKey(eventId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiEventsEventIdRating>>> = ({ signal }) => deleteApiEventsEventIdRating(toValue(eventId), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => toValue(eventId) !== null && toValue(eventId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiEventsEventIdRating>>, TError, TData>
+}
+
+export type DeleteApiEventsEventIdRatingQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiEventsEventIdRating>>>
+export type DeleteApiEventsEventIdRatingQueryError = unknown
+
+
+
+export function useDeleteApiEventsEventIdRating<TData = Awaited<ReturnType<typeof deleteApiEventsEventIdRating>>, TError = unknown>(
+ eventId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiEventsEventIdRating>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteApiEventsEventIdRatingQueryOptions(eventId,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

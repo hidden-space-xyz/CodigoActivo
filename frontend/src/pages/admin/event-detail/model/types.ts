@@ -75,7 +75,7 @@ export interface AttendeeListParams extends AttendeeFilters {
   readonly sort?: string
 }
 
-/** Anonymous rating of an event; unanswered questions are empty. */
+/** Rating of an event without its author; unanswered questions are empty. */
 export interface EventRating {
   readonly id: string
   /** Stars from 1 to 5; `null` when the attendee only wrote answers. */

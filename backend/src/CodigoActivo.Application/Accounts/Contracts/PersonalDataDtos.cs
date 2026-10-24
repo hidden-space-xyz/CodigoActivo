@@ -6,8 +6,8 @@ namespace CodigoActivo.Application.Accounts.Contracts;
 /// <summary>
 /// Represents a copy of the personal data kept about the signed-in user and the minors in their
 /// care, in a structured format they can read or take elsewhere (articles 15 and 20 GDPR).
-/// Ratings are left out because nothing links them to an account, and so are the security
-/// secrets of the account and the other people and things the audit entries touched.
+/// The security secrets of the account and the other people and things the audit entries
+/// touched are left out.
 /// </summary>
 /// <param name="GeneratedAt">When the copy was made.</param>
 /// <param name="Account">The signed-in user's account.</param>
@@ -17,6 +17,7 @@ namespace CodigoActivo.Application.Accounts.Contracts;
 /// <param name="TermsDecisions">
 /// The decisions on the documents of the events about the user and the minors in their care.
 /// </param>
+/// <param name="Ratings">The ratings of events the user wrote.</param>
 /// <param name="Sessions">The user's open sessions.</param>
 /// <param name="SecurityLog">
 /// The audit entries about the user and the minors in their care that the log still holds.
@@ -28,6 +29,7 @@ public sealed record PersonalDataResponse(
     IReadOnlyList<PersonalDataDependentResponse> Dependents,
     IReadOnlyList<PersonalDataSignupResponse> Signups,
     IReadOnlyList<PersonalDataTermsDecisionResponse> TermsDecisions,
+    IReadOnlyList<PersonalDataRatingResponse> Ratings,
     IReadOnlyList<PersonalDataSessionResponse> Sessions,
     IReadOnlyList<AccountAuditEntryResponse> SecurityLog
 );
@@ -136,6 +138,22 @@ public sealed record PersonalDataSignupResponse(
     string Role,
     string Status,
     DateTimeOffset SignedUpAt
+);
+
+/// <summary>
+/// Represents a rating of an event in a copy of personal data.
+/// </summary>
+/// <param name="EventTitle">Title of the rated event.</param>
+/// <param name="Score">Score from 1 to 5, or <see langword="null"/> when the user gave none.</param>
+/// <param name="MostLiked">What the user liked most.</param>
+/// <param name="LeastLiked">What the user liked least.</param>
+/// <param name="Suggestions">Suggestions.</param>
+public sealed record PersonalDataRatingResponse(
+    string EventTitle,
+    int? Score,
+    string? MostLiked,
+    string? LeastLiked,
+    string? Suggestions
 );
 
 /// <summary>

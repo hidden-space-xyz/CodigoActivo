@@ -167,6 +167,15 @@ export function buildPersonalDataResponse(
         ],
       },
     ],
+    ratings: [
+      {
+        eventTitle: 'Hackatón',
+        score: 4,
+        mostLiked: 'El taller',
+        leastLiked: null,
+        suggestions: 'Más horarios',
+      },
+    ],
     sessions: [{ createdAt: '2026-10-18T09:00:00Z', expiresAt: '2026-10-18T21:00:00Z' }],
     securityLog: [
       {

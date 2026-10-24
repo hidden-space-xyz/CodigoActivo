@@ -135,6 +135,10 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
                 ConsentChange(TestSeedData.Users.MemberId, true),
                 ConsentChange(TestSeedData.Users.BlockedId, false)
             );
+            db.EventRatings.AddRange(
+                Rating(TestSeedData.Users.MemberId, 5, "El taller"),
+                Rating(TestSeedData.Users.BlockedId, 1, "De otra cuenta")
+            );
             db.AddRange(
                 Audit(0, AuditAction.Login, null, TestSeedData.Users.MemberId),
                 Audit(
@@ -230,6 +234,20 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
         };
     }
 
+    private static EventRating Rating(Guid userId, int score, string mostLiked)
+    {
+        return EventRating
+            .Submit(
+                Domain.Events.EventId.From(EventId),
+                UserId.From(userId),
+                score,
+                mostLiked,
+                null,
+                null
+            )
+            .Value;
+    }
+
     private static NewsConsentChange ConsentChange(Guid userId, bool granted)
     {
         return Persisted.As<NewsConsentChange>(
@@ -285,6 +303,8 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
         decision
             .Changes.Should()
             .Equal(new PersonalDataTermsDecisionChangeResponse(true, 1, SeededAt, "Marta Miembro"));
+        data.Ratings.Should()
+            .Equal(new PersonalDataRatingResponse("Hackatón", 5, "El taller", null, null));
         data.Sessions.Should().ContainSingle();
         data.SecurityLog.Should()
             .Equal(

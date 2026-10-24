@@ -14,7 +14,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20261024084132_InitialCreate")]
+    [Migration("20261024105437_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -359,11 +359,19 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("suggestions");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
                     b.HasKey("Id")
                         .HasName("pk_event_ratings");
 
-                    b.HasIndex("EventId")
-                        .HasDatabaseName("ix_event_ratings_event_id");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_event_ratings_user_id");
+
+                    b.HasIndex("EventId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_event_ratings_event_id_user_id");
 
                     b.ToTable("event_ratings", (string)null);
                 });
@@ -1842,6 +1850,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_event_ratings_events_event_id");
+
+                    b.HasOne("CodigoActivo.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_ratings_users_user_id");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsDocument", b =>

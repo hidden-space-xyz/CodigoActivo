@@ -11,6 +11,7 @@ namespace CodigoActivo.Application.Participation.Contracts;
 /// <param name="ThumbnailId">Identifier of the thumbnail.</param>
 /// <param name="IsPast">Whether past.</param>
 /// <param name="CanRate">Whether can rate.</param>
+/// <param name="Rating">The signed-in account's rating of the event, if it gave one.</param>
 /// <param name="Activities">The activities value.</param>
 public record EventHistoryResponse(
     Guid EventId,
@@ -21,7 +22,22 @@ public record EventHistoryResponse(
     Guid ThumbnailId,
     bool IsPast,
     bool CanRate,
+    EventHistoryRatingResponse? Rating,
     IReadOnlyList<EventHistoryActivityResponse> Activities
+);
+
+/// <summary>
+/// Contains the signed-in account's own rating of an event in its history.
+/// </summary>
+/// <param name="Score">Score from 1 to 5, or <see langword="null"/> when the account gave none.</param>
+/// <param name="MostLiked">What the account liked most.</param>
+/// <param name="LeastLiked">What the account liked least.</param>
+/// <param name="Suggestions">Suggestions.</param>
+public record EventHistoryRatingResponse(
+    int? Score,
+    string? MostLiked,
+    string? LeastLiked,
+    string? Suggestions
 );
 
 /// <summary>

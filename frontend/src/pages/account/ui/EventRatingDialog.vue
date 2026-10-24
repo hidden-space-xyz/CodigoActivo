@@ -6,17 +6,23 @@ import type { EventRatingInput } from '@/entities/account'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 const props = defineProps<{
-  /** Opens the dialog; each time it opens the form is reset to empty. */
+  /** Opens the dialog; each time it opens the form is reset to `rating`. */
   visible: boolean
   /** Title of the rated event, shown above the form. */
   eventTitle: string
+  /** The account's stored rating of the event, or `null` to start from an empty form. */
+  rating: EventRatingInput | null
   /** Shows a loading state on the save button while the rating is stored. */
   saving: boolean
+  /** Shows a loading state on the delete button while the rating is deleted. */
+  deleting: boolean
 }>()
 
 const emit = defineEmits<{
   /** Fired on submit with the score (`null` without stars) and the free-text answers. */
   submit: [EventRatingInput]
+  /** Fired when the user asks to delete the stored rating. */
+  delete: []
   /** Fired on cancel or when the dialog is dismissed. */
   close: []
 }>()
@@ -30,29 +36,29 @@ const form = reactive({
   suggestions: '',
 })
 
-const rating = computed<EventRatingInput>(() => ({
+const answers = computed<EventRatingInput>(() => ({
   score: form.stars > 0 ? form.stars : null,
   mostLiked: form.mostLiked,
   leastLiked: form.leastLiked,
   suggestions: form.suggestions,
 }))
-const empty = computed(() => isEventRatingEmpty(rating.value))
+const empty = computed(() => isEventRatingEmpty(answers.value))
 
 watch(
   () => props.visible,
   (visible) => {
     if (!visible) return
-    form.stars = 0
-    form.mostLiked = ''
-    form.leastLiked = ''
-    form.suggestions = ''
+    form.stars = props.rating?.score ?? 0
+    form.mostLiked = props.rating?.mostLiked ?? ''
+    form.leastLiked = props.rating?.leastLiked ?? ''
+    form.suggestions = props.rating?.suggestions ?? ''
   },
   { immediate: true },
 )
 
 function onSubmit(): void {
   if (empty.value) return
-  emit('submit', rating.value)
+  emit('submit', answers.value)
 }
 </script>
 
@@ -65,7 +71,7 @@ function onSubmit(): void {
     @update:model-value="(value: boolean) => !value && emit('close')"
   >
     <p class="acc-rating__event">{{ eventTitle }}</p>
-    <p class="acc-rating__notice">{{ $t('pages.account.history.dialog.anonymousNotice') }}</p>
+    <p class="acc-rating__notice">{{ $t('pages.account.history.dialog.notice') }}</p>
 
     <form class="acc-form" @submit.prevent="onSubmit">
       <div class="ca-field acc-form__field">
@@ -124,11 +130,25 @@ function onSubmit(): void {
       </p>
 
       <div class="acc-form__actions">
+        <BrandButton
+          v-if="rating"
+          class="acc-rating__delete"
+          variant="link"
+          type="button"
+          :loading="deleting"
+          @click="emit('delete')"
+        >
+          {{ $t('pages.account.history.dialog.delete') }}
+        </BrandButton>
         <BrandButton variant="link" type="button" @click="emit('close')">
           {{ $t('common.cancel') }}
         </BrandButton>
         <BrandButton variant="primary" type="submit" :disabled="empty" :loading="saving">
-          {{ $t('pages.account.history.dialog.submit') }}
+          {{
+            rating
+              ? $t('pages.account.history.dialog.save')
+              : $t('pages.account.history.dialog.submit')
+          }}
         </BrandButton>
       </div>
     </form>
@@ -180,7 +200,12 @@ function onSubmit(): void {
 .acc-form__actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 8px;
+}
+
+.acc-rating__delete {
+  margin-right: auto;
 }
 </style>

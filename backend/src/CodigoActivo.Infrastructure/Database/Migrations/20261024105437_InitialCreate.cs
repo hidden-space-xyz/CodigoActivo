@@ -706,6 +706,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     event_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     score = table.Column<int>(type: "integer", nullable: true),
                     most_liked = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     least_liked = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
@@ -718,6 +719,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         name: "fk_event_ratings_events_event_id",
                         column: x => x.event_id,
                         principalTable: "events",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "fk_event_ratings_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "users",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1052,9 +1059,15 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_event_ratings_event_id",
+                name: "ix_event_ratings_event_id_user_id",
                 table: "event_ratings",
-                column: "event_id");
+                columns: new[] { "event_id", "user_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_event_ratings_user_id",
+                table: "event_ratings",
+                column: "user_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_event_terms_acceptances_decided_by_id",

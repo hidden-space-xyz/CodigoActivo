@@ -13,7 +13,8 @@ import { BrandButton } from '@/shared/ui/brand-button'
 
 const { t } = useI18n()
 const feedback = useCrudFeedback()
-const { history, entries, upcoming, past, saveRating, isRated } = useAccountHistory()
+const { history, entries, upcoming, past, saveRating, deleteRating, removeRating } =
+  useAccountHistory()
 
 const expanded = ref<Record<string, boolean>>({})
 
@@ -53,6 +54,14 @@ function submitRating(input: EventRatingInput): void {
       },
     },
   )
+}
+
+function deleteTargetRating(): void {
+  const entry = ratingTarget.value
+  if (!entry) return
+  removeRating(entry, () => {
+    ratingTarget.value = null
+  })
 }
 
 const groups = computed(() => [
@@ -103,11 +112,12 @@ const groups = computed(() => [
                 </button>
 
                 <div v-if="entry.canRate" class="acc-history__actions">
-                  <BrandButton v-if="isRated(entry.eventId)" variant="ghost" disabled>
-                    {{ $t('pages.account.history.rated') }}
-                  </BrandButton>
-                  <BrandButton v-else variant="ghost" @click="openRating(entry)">
-                    {{ $t('pages.account.history.rate') }}
+                  <BrandButton variant="ghost" @click="openRating(entry)">
+                    {{
+                      entry.rating
+                        ? $t('pages.account.history.editRating')
+                        : $t('pages.account.history.rate')
+                    }}
                   </BrandButton>
                 </div>
               </div>
@@ -142,8 +152,11 @@ const groups = computed(() => [
     <EventRatingDialog
       :visible="ratingTarget !== null"
       :event-title="ratingTarget?.title ?? ''"
+      :rating="ratingTarget?.rating ?? null"
       :saving="saveRating.isPending.value"
+      :deleting="deleteRating.isPending.value"
       @submit="submitRating"
+      @delete="deleteTargetRating"
       @close="ratingTarget = null"
     />
   </section>

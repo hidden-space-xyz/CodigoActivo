@@ -555,7 +555,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventHistoryAlreadyRatedPastEventKeepsCanRateTrue()
+    public async Task EventHistoryAlreadyRatedPastEventStaysRateableWithTheRating()
     {
         var eventId = await SeedAssignmentAsync(
             TestSeedData.Users.MemberId,
@@ -573,6 +573,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         EventId = eventId,
+                        UserId = TestSeedData.Users.MemberId,
                         Score = 4,
                         MostLiked = "El ambiente",
                     }
@@ -584,6 +585,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         var history = await GetHistoryAsMemberAsync();
 
         var entry = history.Should().ContainSingle().Subject;
-        entry.CanRate.Should().BeTrue("a stored rating is anonymous and never closes the form");
+        entry.CanRate.Should().BeTrue("a stored rating can still be revised");
+        entry.Rating.Should().Be(new EventHistoryRatingResponse(4, "El ambiente", null, null));
     }
 }

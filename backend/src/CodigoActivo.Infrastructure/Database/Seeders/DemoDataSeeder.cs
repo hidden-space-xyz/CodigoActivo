@@ -679,6 +679,7 @@ public sealed class DemoDataSeeder(
                 EventRating
                     .Submit(
                         EventId.From(eventId),
+                        raters[slot],
                         seed.Score,
                         seed.MostLiked,
                         seed.LeastLiked,

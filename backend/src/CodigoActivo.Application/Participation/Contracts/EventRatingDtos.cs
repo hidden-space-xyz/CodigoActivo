@@ -1,8 +1,8 @@
 namespace CodigoActivo.Application.Participation.Contracts;
 
 /// <summary>
-/// Contains the compact event rating list item data returned in list results. The list is anonymous:
-/// it never identifies who submitted a rating.
+/// Contains the compact event rating list item data returned in list results. It never identifies
+/// the author of a rating.
 /// </summary>
 /// <param name="Id">Identifier of the target entity.</param>
 /// <param name="Score">Score from 1 to 5, or <see langword="null"/> when the participant gave none.</param>

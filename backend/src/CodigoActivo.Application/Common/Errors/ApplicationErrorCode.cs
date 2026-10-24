@@ -76,6 +76,11 @@ public enum ApplicationErrorCode
     EventRatingAttendanceRequired,
 
     /// <summary>
+    /// The signed-in account has not rated the event.
+    /// </summary>
+    EventRatingNotFound,
+
+    /// <summary>
     /// Selects the event terms acceptance required option.
     /// </summary>
     EventTermsAcceptanceRequired,

@@ -10,7 +10,10 @@ import {
   postApiAuthTwoFactorAuthenticatorSetup,
   postApiAuthTwoFactorEmail,
 } from '@/shared/api/generated/endpoints/auth/auth'
-import { postApiEventsEventIdRating } from '@/shared/api/generated/endpoints/events/events'
+import {
+  deleteApiEventsEventIdRating,
+  putApiEventsEventIdRating,
+} from '@/shared/api/generated/endpoints/events/events'
 import {
   getApiMeCertificates,
   getApiMeConsents,
@@ -205,14 +208,19 @@ export async function getAccountConsentsRequest(): Promise<readonly AccountConse
 }
 
 /**
- * Submits an anonymous rating for an event (`POST`). Nothing links it to the account, so it cannot
- * be edited afterwards and every accepted call adds another rating.
+ * Saves the account's rating of an event (`PUT`): the first call stores it and later ones replace
+ * it, since an account keeps one rating per event.
  */
 export async function saveAccountEventRatingRequest(
   eventId: string,
   input: EventRatingInput,
 ): Promise<void> {
-  await postApiEventsEventIdRating(eventId, toSaveEventRatingRequest(input))
+  await putApiEventsEventIdRating(eventId, toSaveEventRatingRequest(input))
+}
+
+/** Deletes the account's rating of an event. */
+export async function deleteAccountEventRatingRequest(eventId: string): Promise<void> {
+  await deleteApiEventsEventIdRating(eventId)
 }
 
 /**

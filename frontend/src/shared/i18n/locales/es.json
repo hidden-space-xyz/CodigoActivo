@@ -240,6 +240,7 @@
     "EventRatingNotFinished": "Solo puedes valorar eventos que ya han terminado.",
     "EventRatingAttendanceRequired": "Solo puedes valorar eventos en los que has participado con una inscripción confirmada.",
     "EventRatingEmpty": "Puntúa el evento o responde al menos a una de las preguntas antes de enviar tu valoración.",
+    "EventRatingNotFound": "No has valorado este evento.",
     "EventTermsAcceptanceRequired": "Debes aceptar los términos y condiciones del evento para apuntarte.",
     "EventTermsDocumentDuplicated": "No puedes vincular el mismo documento de términos y condiciones más de una vez.",
     "EventTermsConsentRequired": "Un consentimiento nunca puede ser obligatorio. Quita la marca de obligatorio de los consentimientos del evento.",
@@ -464,7 +465,7 @@
       },
       "consents": {
         "title": "Consentimientos",
-        "lead": "Los consentimientos que se han decidido para ti y para los menores a tu cargo en los documentos de los eventos, como el de uso de imágenes. Puedes retirar los que estén dados cuando quieras: desde ese momento dejamos de usar lo que cubrían y quitamos lo publicado, sin que afecte a lo hecho antes. Desde los 14 años, los de un menor los decide él.",
+        "lead": "Los consentimientos que se han decidido para ti y para los menores a tu cargo en los documentos de los eventos, como el de uso de imágenes. Puedes retirar los que estén dados cuando quieras. Desde los 14 años, los de un menor los decide él.",
         "error": "No se pudieron cargar los consentimientos.",
         "empty": "No hay consentimientos decididos para ti ni para los menores a tu cargo.",
         "decided": "Decidió {name} el {date}",
@@ -474,15 +475,15 @@
         "withdraw": {
           "action": "Retirar",
           "header": "Retirar un consentimiento",
-          "messageSelf": "Vas a retirar tu consentimiento «{document}» para el evento «{event}». Desde ahora dejaremos de usar lo que cubría y quitaremos lo publicado; lo hecho antes sigue siendo válido.",
-          "messageMinor": "Vas a retirar el consentimiento «{document}» de {person} para el evento «{event}». Si {person} tiene 14 años o más, esta decisión es suya: retíralo solo si te lo pide. Desde ahora dejaremos de usar lo que cubría y quitaremos lo publicado; lo hecho antes sigue siendo válido.",
+          "messageSelf": "Vas a retirar tu consentimiento «{document}» para el evento «{event}».",
+          "messageMinor": "Vas a retirar el consentimiento «{document}» de {person} para el evento «{event}». Si {person} tiene 14 años o más, esta decisión es suya: retíralo solo si te lo pide.",
           "confirm": "Retirar",
           "done": "Consentimiento retirado."
         }
       },
       "personalData": {
         "title": "Tus datos",
-        "lead": "Descarga una copia de los datos de tu cuenta y de los menores a tu cargo: tu perfil y el historial de tu preferencia sobre las novedades, los menores, las inscripciones, tus decisiones y firmas en los documentos de los eventos con su historial, tus sesiones abiertas y el registro de seguridad de los últimos 60 días, con tus accesos y lo que la administración ha hecho sobre tu cuenta. Es un fichero JSON que puedes leer o llevar a otro servicio. Para el resto de tus datos, como las fotografías de las actividades, escríbenos.",
+        "lead": "Descarga en un fichero JSON una copia de los datos de tu cuenta y de los menores a tu cargo.",
         "download": "Descargar mis datos",
         "fileName": "codigo-activo-mis-datos-{date}.json",
         "sources": {
@@ -500,7 +501,7 @@
       },
       "deleteAccount": {
         "title": "Eliminar mi cuenta",
-        "lead": "Al eliminar tu cuenta, tú y los menores a tu cargo perderéis el acceso para siempre: se anularán vuestras inscripciones y ya no podrás consultar vuestros diplomas. No podrás recuperar la cuenta después. Guardaremos una copia bloqueada de vuestros datos durante tres años, solo para atender posibles responsabilidades, como explica la política de privacidad.",
+        "lead": "Al eliminar tu cuenta, tú y los menores a tu cargo perderéis el acceso para siempre: se anularán vuestras inscripciones y ya no podrás consultar vuestros diplomas. No podrás recuperar la cuenta después.",
         "initialAdminNote": "Esta es la cuenta genérica de administración, así que no se puede eliminar.",
         "action": "Eliminar mi cuenta",
         "dialogHeader": "Eliminar mi cuenta",
@@ -531,16 +532,21 @@
         "past": "Eventos anteriores",
         "activityCount": "ninguna actividad | 1 actividad | {count} actividades",
         "rate": "Valorar",
-        "rated": "Valorado",
+        "editRating": "Editar valoración",
         "savedDetail": "Gracias por compartir tu opinión.",
         "savedSummary": "Valoración guardada",
+        "deletedDetail": "Tu valoración se ha borrado.",
         "dialog": {
           "header": "Valorar evento",
-          "anonymousNotice": "Tu valoración no se vincula a tu cuenta: no guardamos tu nombre ni la fecha, así que no podrás modificarla ni retirarla desde la web una vez enviada. Si quieres que la borremos, escríbenos a la dirección de la política de privacidad indicando el evento y lo que escribiste; si solo diste una puntuación, puede que no podamos reconocerla. No escribas datos personales.",
+          "notice": "Guardamos tu valoración con tu cuenta para que puedas cambiarla o borrarla cuando quieras, y la usamos para mejorar los eventos.",
           "score": "Tu puntuación (opcional)",
           "clearScore": "Quitar puntuación",
           "emptyHint": "Puntúa el evento o responde al menos a una pregunta para enviar tu valoración.",
-          "submit": "Enviar valoración"
+          "submit": "Enviar valoración",
+          "save": "Guardar cambios",
+          "delete": "Borrar valoración",
+          "deleteHeader": "Borrar valoración",
+          "deleteMessage": "¿Seguro que quieres borrar tu valoración de {event}?"
         }
       },
       "minors": {
@@ -552,7 +558,7 @@
         "editHeader": "Editar menor",
         "declaration": "Al añadirlo declaras ser su padre, madre o tutor legal.",
         "deleteHeader": "Eliminar menor",
-        "deleteConfirm": "¿Seguro que quieres eliminar a {name}? Esta acción no se puede deshacer: se anularán sus inscripciones y ya no podrás consultar sus diplomas. Guardaremos una copia bloqueada de sus datos y de tu identificación como su padre, madre o tutor durante tres años, solo para atender posibles responsabilidades, como explica la política de privacidad.",
+        "deleteConfirm": "¿Seguro que quieres eliminar a {name}? Esta acción no se puede deshacer: se anularán sus inscripciones y ya no podrás consultar sus diplomas.",
         "addedDetail": "El menor se ha registrado a tu cargo.",
         "addedSummary": "Menor añadido",
         "updatedDetail": "Los datos del menor se han guardado.",
@@ -1121,7 +1127,7 @@
         "opinions": {
           "empty": "Este evento todavía no tiene valoraciones.",
           "count": "Ninguna valoración | 1 valoración | {count} valoraciones",
-          "anonymous": "Valoración anónima",
+          "author": "Valoración de un asistente",
           "noScore": "Sin puntuación",
           "noAnswers": "Sin comentarios."
         },
@@ -1146,7 +1152,7 @@
           "withdraw": {
             "action": "Registrar retirada",
             "header": "Registrar la retirada de un consentimiento",
-            "message": "Vas a registrar que se retira el consentimiento «{document}» de {name}. Hazlo solo si te lo ha pedido quien lo decide. Desde ahora no podréis usar lo que cubría; lo hecho antes sigue siendo válido y la aceptación queda en el historial. Se avisará por correo a la dirección legal de la asociación.",
+            "message": "Vas a registrar que se retira el consentimiento «{document}» de {name}. Hazlo solo si te lo ha pedido quien lo decide.",
             "confirm": "Registrar retirada",
             "done": "Retirada registrada."
           },
@@ -1676,7 +1682,7 @@
       "title": "Darte de baja de las novedades",
       "unsubscribing": "Estamos dándote de baja…",
       "successTitle": "Te has dado de baja",
-      "successText": "Ya no te enviaremos novedades sobre las actividades de la asociación. Seguirás recibiendo los correos que el servicio necesita, como los códigos de acceso o el estado de tus inscripciones. Si cambias de opinión, puedes volver a aceptarlas desde «Mi cuenta».",
+      "successText": "Ya no te enviaremos novedades sobre las actividades de la asociación.",
       "errorTitle": "No hemos podido darte de baja",
       "incompleteLink": "El enlace para darte de baja no es válido o está incompleto.",
       "hint": "También puedes dejar de recibir novedades desde «Mi cuenta» o escribiéndonos a {email}."

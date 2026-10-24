@@ -42,7 +42,12 @@ public sealed class AccountErasureStore(CodigoActivoDbContext context) : IAccoun
             FROM event_terms_acceptances AS t
             JOIN users AS u ON u.id = t.user_id
             WHERE u.id = {accountId.Value} OR u.parent_id = {accountId.Value}
-            FOR UPDATE OF t
+            FOR UPDATE OF t;
+            SELECT r.id
+            FROM event_ratings AS r
+            JOIN users AS u ON u.id = r.user_id
+            WHERE u.id = {accountId.Value} OR u.parent_id = {accountId.Value}
+            FOR UPDATE OF r
             """,
             ct
         );

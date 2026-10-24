@@ -166,8 +166,7 @@ owner over HTTPS and never logged.
 /api/me/deletion` (email code via `POST /api/me/deletion/code`, or the authenticator code). The emailed deletion
 code is the login code: same stored code, lifetime and cooldown, so a code sent for either flow is accepted by
 the other, and each still needs the password. Deletion signs the caller out, cascades to remove the user, their dependents
-and their signups and terms decisions (past ratings stay, see [Event rating
-anonymity](#event-rating-anonymity)), and is refused only to the initial administrator
+and their signups, terms decisions and [event ratings](#event-ratings), and is refused only to the initial administrator
 (`UserDeleteInitialAdminForbidden`), before the password is checked. `GET /api/me/deletion` tells the caller
 whether they may delete their account, so the SPA hides the action from the initial administrator. `DELETE
 /api/users/{id}` refuses the initial administrator and the caller's own id
@@ -182,7 +181,7 @@ a guardian's, that of an unverified account whose email another account claims, 
 verified within 24 hours, or that of a dependent who came of age — first stores one JSON
 copy in `deleted_accounts` (`id` is the former user id with no foreign key, `deleted_at`, `data` as
 `jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
-their dependents and the household's signups and terms decisions, and then deletes them; a failed deletion
+their dependents and the household's signups, terms decisions and ratings, and then deletes them; a failed deletion
 keeps no copy, a concurrent signup, status change or cancellation cannot slip in between, and an erasure that
 PostgreSQL aborts to resolve a deadlock is attempted up to three times in total. The copy holds the personal data of the
 account and each dependent, the guardian's identification when
@@ -190,8 +189,8 @@ a dependent is deleted alone, every signup of the household with activity, event
 time, every terms decision (accepted or rejected, with who decided and its handwritten signature as base64
 PNG, and its history: every acceptance, rejection and withdrawal with who decided it, who recorded it, when and
 the signature it was accepted with) about the household — or about the guardian for the dependent's events — with each document's text as it stood at
-deletion and the earlier versions any of those decisions was taken on, every change of each person's news consent with its instant
-and source, and who asked
+deletion and the earlier versions any of those decisions was taken on, every rating the household wrote with its event,
+every change of each person's news consent with its instant and source, and who asked
 for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
 secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
 data is plain JSON protected only by database access. The `DeletedAccountPurgeWorker` hosted service runs
@@ -203,16 +202,18 @@ deletes a user without its copy or changes a stored copy.
 The SPA only tells users that they and their dependents lose access and cannot recover the account; the
 privacy policy (`/privacy`) states the three-year retention.
 
-**Blocked copy of removed participation** (LOPDGDD article 32): deleting an event (`DeleteEvent`) or an activity
-(`DeleteActivity`), or cancelling a signup (`UnassignActivity`), commits through `ParticipationEraser`, which in
-the same transaction locks (`FOR UPDATE`) what the removal takes away — the event, its activities, their
-signups and its terms decisions; the activity and its signups; or the one signup — so no signup or decision
-added meanwhile escapes the copy, stores one JSON copy in `deleted_participations` (`id`, `deleted_at`, `data` as
-`jsonb`, no foreign key) and then removes it; a deadlock is retried as for accounts. The copy holds what was
-removed (`EventDeleted`, `ActivityDeleted` or `SignupCancelled`), who removed it, the event's title and dates,
-the signups removed with activity, role, status and signup time, and, when the event goes, its terms decisions
-with who decided, the signature, the history, each document's text and the earlier versions they were taken on, plus the first and last names of the
-people they are about or who decided them. A removal that takes away no signup or decision stores nothing.
+**Blocked copy of removed participation** (LOPDGDD article 32): deleting an event (`DeleteEvent`), an activity
+(`DeleteActivity`) or one's own rating (`DeleteEventRating`), or cancelling a signup (`UnassignActivity`), commits
+through `ParticipationEraser`, which in the same transaction locks (`FOR UPDATE`) what the removal takes away — the
+event, its activities, their signups, its terms decisions and its ratings; the activity and its signups; the one
+signup; or the one rating — so nothing added meanwhile escapes the copy, stores one JSON copy in
+`deleted_participations` (`id`, `deleted_at`, `data` as `jsonb`, no foreign key) and then removes it; a deadlock is
+retried as for accounts. The copy holds what was removed (`EventDeleted`, `ActivityDeleted`, `SignupCancelled` or
+`RatingDeleted`), who removed it, the event's title and dates, the signups removed with activity, role, status and
+signup time, the ratings removed with their author, and, when the event goes, its terms decisions with who
+decided, the signature, the history, each document's text and the earlier versions they were taken on, plus the
+first and last names of the people they are about, who decided them or who wrote them. A removal that takes away
+no signup, rating or decision stores nothing.
 Like the account copies, nothing in the application reads it, `DeletedAccountGuard` refuses any change to a stored
 copy, and `DeletedAccountPurgeWorker` runs `PurgeDeletedParticipations`, which deletes each copy three years after
 `deleted_at`.
@@ -359,12 +360,11 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
 - `GET /api/me/personal-data` (report rate limit) gives the signed-in user a copy of their own and their
   dependents' personal data (articles 15 and 20 GDPR), which «Mi cuenta» saves as a JSON file with Spanish
   names and labels: the account with any unconfirmed new email, the news consent history, the dependents, the
-  household's signups, the terms decisions about the household with who took them, their signatures and their history, the open sessions and the audit
+  household's signups, the terms decisions about the household with who took them, their signatures and their history, the user's event ratings, the open sessions and the audit
   entries the user ran or that name a household member as main or related entity, logins before the session
   included (time, action, outcome, kind of actor and client IP, without the IP when an administrator ran it
   and never what else the entry touched). It reads only the caller's household and never holds password or
-  code hashes, authenticator secrets, the login challenge or lockout counters. It leaves out ratings, which
-  nothing links to an account (article 11 GDPR); blocked copies, which nobody may use (LOPDGDD article 32); the
+  code hashes, authenticator secrets, the login challenge or lockout counters. It leaves out blocked copies, which nobody may use (LOPDGDD article 32); the
   email outbox, which only holds a message until it is delivered and may carry one-time codes; and the
   authorship of content, which is answered on request. Add a new
   personal field or table to it.
@@ -434,30 +434,23 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   never send to the server; the page reads and removes it from the address bar, so a reload needs the
   emailed link again.
 
-### Event rating anonymity
+### Event ratings
 
-`event_ratings` stores the answer under a random v4 `Guid`, with no user id or timestamps: `id`, `event_id`,
-`score` (1–5, or null when only answers were written), `most_liked`, `least_liked`, `suggestions`.
-`POST /api/events/{eventId}/rating` requires the event to exist and have ended, the caller (or a dependent) to
-have confirmed attendance and the rating to carry a score or an answer (`EventRatingEmpty`), but does not
-track who already rated an event: the same attendee may submit more than once, and every accepted call
-appends one row through the standard repository-plus-`IUnitOfWork` write path. There is no per-user
-submission cap besides the general 300-requests/minute-per-authenticated-user budget described above; every
-accepted submission, repeats included, counts toward that event's rating count, and the scored ones toward
-its average. The SPA can only stop a second submission while the history stays open.
+`event_ratings` keeps one rating per account and event (unique `event_id`, `user_id`) and no timestamps: `id`
+(random v4), `event_id`, `user_id`, `score` (1–5, or null when only answers were written), `most_liked`,
+`least_liked`, `suggestions`. The account that wrote it is its author, also when it rates for a dependent.
+`PUT /api/events/{eventId}/rating` requires the event to exist and have ended, the caller (or a dependent) to
+have confirmed attendance and the rating to carry a score or an answer (`EventRatingEmpty`); the first call
+stores the rating and later ones replace it, and a concurrent first save answers `ConcurrentUpdate`.
+`DELETE /api/events/{eventId}/rating` removes the caller's own rating at any time (`EventRatingNotFound`
+without one), keeping a blocked copy of removed participation. The history (`GET /api/me/event-history`)
+returns the caller's rating of each event so the form reopens with it, and the personal data copy includes
+them. Account deletion removes the account's ratings with it, after copying them into its blocked copy.
 
-Account deletion keeps past ratings, since their content carries no author reference. Ratings are plain
-inserts, so `event_ratings`' physical row order (and `xmin`) reflects write order.
-
-**Known limitations:** PostgreSQL write-ahead log access (`pg_wal`, in volume copies and point-in-time
-recovery); dead tuples until the next `VACUUM`; differential observation of two dumps taken before/after a
-submission; and, for events with one or two ratings, deducible authorship from count or free-text content (no
-minimum-rating threshold exists). Saving a rating is never audited (`SaveEventRatingCommand` is `IUnaudited`)
-and the diagnostic log carries no client IP, requested path or user id, so no stored log ties a rating to an
-account (see [Logging](#logging)). The audit log does record, with their instants, the other commands of the
-same person, such as the login before the rating: someone with database access could still match the
-physical order (`xmin`) of `event_ratings` against those instants. The stored rating content still carries no
-author reference.
+Administrators read ratings (`GET /api/events/{eventId}/ratings` and the event statistics) without their
+authors: no response projects `user_id`. Saving or deleting a rating is never audited (`IUnaudited`), since
+an audit entry would tie the account to the event or the rating id the list returns. Anyone with database
+access can still read the author.
 
 ### Logging
 
@@ -547,7 +540,7 @@ it named by type and GUID, how it ended (succeeded, rejected with the error code
 that error responses show as their reference. It never stores anything typed by the client: names, emails,
 passwords, one-time codes, signatures, secrets and free text stay out, and so does the requested path. Login,
 password reset and verification requests record the account the email belongs to, so failed logins are
-attributed to their account. Saving an event rating is never recorded, and the scheduled purges are recorded
+attributed to their account. Saving or deleting an event rating is never recorded, and the scheduled purges are recorded
 only when they removed something. The account ids have no foreign key, so an erased account's entries remain
 until the audit retention ends; they are not part of its legal copy.
 

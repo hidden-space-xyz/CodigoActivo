@@ -15,7 +15,8 @@ using EventId = CodigoActivo.Domain.Events.EventId;
 namespace CodigoActivo.API.Participation;
 
 /// <summary>
-/// Exposes HTTP endpoints for the anonymous ratings attendees give to the events they took part in.
+/// Exposes HTTP endpoints for the ratings attendees give to the events they took part in. Each
+/// account keeps one rating per event; administrators read them without their authors.
 /// </summary>
 [ApiController]
 [Route("api/events")]
@@ -49,15 +50,15 @@ public class EventRatingsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the save rating endpoint for events. Each call stores one more anonymous rating, so
-    /// an attendee may rate the same event as many times as they want.
+    /// Executes the save rating endpoint for events. The first call stores the signed-in account's
+    /// rating of the event and later ones replace it.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an action, or an error response.</returns>
-    [HttpPost("{eventId:guid}/rating")]
+    [HttpPut("{eventId:guid}/rating")]
     [Authorize]
     public async Task<IActionResult> SaveRatingAsync(
         Guid eventId,
@@ -67,5 +68,26 @@ public class EventRatingsController : ApiControllerBase
     )
     {
         return ToNoContent(await handler.HandleAsync(request.ToCommand(EventId.From(eventId)), ct));
+    }
+
+    /// <summary>
+    /// Executes the delete rating endpoint for events: removes the signed-in account's rating of
+    /// the event.
+    /// </summary>
+    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpDelete("{eventId:guid}/rating")]
+    [Authorize]
+    public async Task<IActionResult> DeleteRatingAsync(
+        Guid eventId,
+        [FromServices] ICommandHandler<DeleteEventRatingCommand, Result> handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(
+            await handler.HandleAsync(new DeleteEventRatingCommand(EventId.From(eventId)), ct)
+        );
     }
 }

@@ -31,7 +31,17 @@ public sealed class ParticipationArchive(CodigoActivoDbContext context) : IParti
                 JOIN activities AS ac ON ac.id = a.activity_id
                 WHERE ac.event_id = {eventId}
                 FOR UPDATE OF a;
-                SELECT user_id FROM event_terms_acceptances WHERE event_id = {eventId} FOR UPDATE
+                SELECT user_id FROM event_terms_acceptances WHERE event_id = {eventId} FOR UPDATE;
+                SELECT id FROM event_ratings WHERE event_id = {eventId} FOR UPDATE
+                """,
+                ct
+            ),
+            ParticipationDeletionOrigin.RatingDeleted => context.Database.ExecuteSqlAsync(
+                $"""
+                SELECT id
+                FROM event_ratings
+                WHERE event_id = {eventId} AND user_id = {personId}
+                FOR UPDATE
                 """,
                 ct
             ),

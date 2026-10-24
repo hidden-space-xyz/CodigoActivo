@@ -2,7 +2,7 @@ namespace CodigoActivo.Application.Abstractions.Auditing;
 
 /// <summary>
 /// Marks a command the audit log never records, because recording it would undo a promise of the
-/// application, such as the anonymity of event ratings.
+/// application, such as never showing administrators who wrote an event rating.
 /// </summary>
 public interface IUnaudited;
 

@@ -3,8 +3,8 @@ import { useServerTable } from '@/shared/lib/paging'
 import { ratingList } from '../api/queries'
 
 /**
- * Opinions tab of an event's admin page: its anonymous ratings, best scores first. The list only
- * loads while the tab is `active`. Call it in `setup`.
+ * Opinions tab of an event's admin page: its ratings without their authors, best scores first.
+ * The list only loads while the tab is `active`. Call it in `setup`.
  *
  * @param eventId - Getter so the list follows route changes.
  * @param active - Getter telling whether the tab is selected.

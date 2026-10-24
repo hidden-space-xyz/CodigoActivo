@@ -24,7 +24,7 @@ public interface IParticipationArchive
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result is the JSON document of the copy, or <see langword="null"/> when the
-    /// removal takes away no signup or terms decision.
+    /// removal takes away no signup, rating or terms decision.
     /// </returns>
     public Task<string?> CaptureCopyAsync(
         ParticipationDeletion deletion,

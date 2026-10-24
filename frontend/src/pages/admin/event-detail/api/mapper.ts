@@ -68,7 +68,7 @@ export function toEventAttendee(attendee: EventAttendeeResponse): EventAttendee 
   }
 }
 
-/** Maps an anonymous rating of the event. */
+/** Maps a rating of the event, which never names its author. */
 export function toEventRating(rating: EventRatingListItemResponse): EventRating {
   return {
     id: rating.id,

@@ -34,7 +34,7 @@ export async function getEventAttendeesPageRequest({
   return toPage(await getApiReportsEventsEventIdAttendees(eventId, params), toEventAttendee)
 }
 
-/** Fetches one page of the anonymous ratings of an event. */
+/** Fetches one page of the ratings of an event, without their authors. */
 export async function getEventRatingsPageRequest({
   eventId,
   ...params
