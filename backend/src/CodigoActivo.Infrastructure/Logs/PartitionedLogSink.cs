@@ -9,11 +9,14 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// <summary>
 /// Writes batches of log events into a partitioned log table with one binary <c>COPY</c>. The
 /// batching sink of Serilog calls it from its own background loop, so nothing here ever runs on a
-/// request. A batch the database refuses for its data is written again row by row and only the
-/// refused rows are dropped; a batch that finds no partition for its day creates the partitions of
-/// the batch that are still inside the retention window and is written once more. Any other
-/// failure, such as an unreachable database, is thrown so Serilog retries the whole batch with
-/// backoff until its retry limit.
+/// request. Before the first batch of each day it creates the partitions the batch needs that are
+/// still inside the retention window, so a history of past days, such as the one of demo mode, or
+/// a start after the partitions ahead ran out is written without a failed copy first. A batch the
+/// database refuses for its data is written again row by row and only the refused rows are
+/// dropped; a batch that still finds no partition for its day, because one was dropped since,
+/// creates the partitions of the batch and is written once more. Any other failure, such as an
+/// unreachable database, is thrown so Serilog retries the whole batch with backoff until its retry
+/// limit.
 /// </summary>
 /// <typeparam name="TRow">Row type the events become.</typeparam>
 /// <param name="database">Connections of the log tables, owned by the host.</param>
@@ -28,6 +31,8 @@ public abstract class PartitionedLogSink<TRow>(
     private const string NoPartitionForRow = "23514";
     private const string DataExceptionClass = "22";
     private const string IntegrityViolationClass = "23";
+
+    private readonly HashSet<DateOnly> preparedDays = [];
 
     /// <summary>
     /// Gets the <c>COPY … FROM STDIN (FORMAT BINARY)</c> statement that names the columns in the
@@ -88,6 +93,7 @@ public abstract class PartitionedLogSink<TRow>(
         }
 
         await using var connection = await database.OpenConnectionAsync();
+        await PrepareDaysAsync(connection, rows);
         try
         {
             await CopyAsync(connection, rows);
@@ -95,8 +101,7 @@ public abstract class PartitionedLogSink<TRow>(
         }
         catch (PostgresException ex) when (ex.SqlState is NoPartitionForRow)
         {
-            var days = rows.Select(row => LogPartitions.DayOf(OccurredAtOf(row)));
-            if (!await partitions.EnsurePartitionsAsync(connection, table, days))
+            if (!await partitions.EnsurePartitionsAsync(connection, table, DaysOf(rows)))
             {
                 await CopyEachAsync(connection, rows);
                 return;
@@ -147,6 +152,23 @@ public abstract class PartitionedLogSink<TRow>(
         }
 
         return rows;
+    }
+
+    private IEnumerable<DateOnly> DaysOf(List<TRow> rows)
+    {
+        return rows.Select(row => LogPartitions.DayOf(OccurredAtOf(row)));
+    }
+
+    private async Task PrepareDaysAsync(NpgsqlConnection connection, List<TRow> rows)
+    {
+        var days = DaysOf(rows).Except(preparedDays).ToList();
+        if (days.Count is 0)
+        {
+            return;
+        }
+
+        await partitions.EnsurePartitionsAsync(connection, table, days);
+        preparedDays.UnionWith(days);
     }
 
     private async Task CopyEachAsync(NpgsqlConnection connection, List<TRow> rows)
