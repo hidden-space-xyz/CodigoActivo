@@ -3,6 +3,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
@@ -33,6 +34,7 @@ public static class CacheTagsByEvent
         [typeof(EventCategoryTypeRenamed)] = [CacheTags.EventCategoryTypes, CacheTags.Events],
         [typeof(EventCategoryTypeDeleted)] = [CacheTags.EventCategoryTypes, CacheTags.Events],
         [typeof(TermsDocumentRewritten)] = [CacheTags.Events],
+        [typeof(LegalPolicyPublished)] = [CacheTags.LegalPolicies],
         [typeof(EventCreated)] = [CacheTags.Events],
         [typeof(EventUpdated)] = [CacheTags.Events],
         [typeof(EventDeleted)] = [CacheTags.Events, CacheTags.Activities],

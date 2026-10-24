@@ -4,6 +4,7 @@ using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.API.Legal.Contracts;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Legal.Commands;
 using CodigoActivo.Application.Legal.Contracts;
 using CodigoActivo.Application.Legal.Queries;
@@ -24,7 +25,8 @@ namespace CodigoActivo.API.Legal;
 public class LegalPoliciesController : ApiControllerBase
 {
     /// <summary>
-    /// Returns the version in force of a legal policy.
+    /// Returns the version in force of a legal policy; anonymous answers are output cached until a
+    /// new version is published.
     /// </summary>
     /// <param name="kind">Which policy to read.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -32,7 +34,7 @@ public class LegalPoliciesController : ApiControllerBase
     /// <returns>An HTTP response containing the policy, or an error response when none was published yet.</returns>
     [HttpGet("{kind}")]
     [AllowAnonymous]
-    [OutputCache(NoStore = true)]
+    [OutputCache(PolicyName = CacheTags.LegalPolicies)]
     public async Task<ActionResult<LegalPolicyResponse>> GetAsync(
         [EnumDataType(typeof(LegalPolicyKind))] LegalPolicyKind kind,
         [FromServices] IQueryHandler<GetLegalPolicyQuery, Result<LegalPolicyResponse>> handler,

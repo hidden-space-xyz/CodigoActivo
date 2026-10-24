@@ -286,7 +286,8 @@ policy text; demo mode seeds a short generic example of each. `PublishLegalPolic
 (`PUT /api/legal-policies/{kind}`) locks the policy and creates it on its first publication; later ones keep the
 version they replace as a `LegalPolicyVersion` with its publication date, and the same content changes nothing.
 Anyone reads the version in force from `GET /api/legal-policies/{kind}` (404 `LegalPolicyNotFound` until it is
-published); administrators list every version under `/versions` and read one under `/versions/{version}`.
+published), output cached under the `legal-policies` tag that `LegalPolicyPublished` evicts; administrators
+list every version under `/versions` and read one under `/versions/{version}`.
 
 ### Caching
 

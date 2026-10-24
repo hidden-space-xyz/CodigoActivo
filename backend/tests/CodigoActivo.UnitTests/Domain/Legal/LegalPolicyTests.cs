@@ -29,6 +29,7 @@ public sealed class LegalPolicyTests
         policy.Content.Should().Be(Text("Primera"));
         policy.PublishedAt.Should().Be(Monday);
         policy.PreviousVersions.Should().BeEmpty();
+        policy.PullDomainEvents().Should().Equal(new LegalPolicyPublished(policy.Id));
     }
 
     [Fact]
@@ -43,9 +44,11 @@ public sealed class LegalPolicyTests
     public void ReviseNewContentKeepsTheReplacedVersion()
     {
         var policy = LegalPolicy.Publish(LegalPolicyKind.Cookies, Text("Primera"), Monday).Value;
+        policy.PullDomainEvents();
 
         policy.Revise(Text("Segunda"), Friday).IsSuccess.Should().BeTrue();
 
+        policy.PullDomainEvents().Should().Equal(new LegalPolicyPublished(policy.Id));
         policy.Version.Should().Be(2);
         policy.Content.Should().Be(Text("Segunda"));
         policy.PublishedAt.Should().Be(Friday);
@@ -61,6 +64,7 @@ public sealed class LegalPolicyTests
     public void ReviseSameContentLaidOutDifferentlyChangesNothing()
     {
         var policy = LegalPolicy.Publish(LegalPolicyKind.Privacy, Text("Igual"), Monday).Value;
+        policy.PullDomainEvents();
 
         policy
             .Revise(
@@ -75,17 +79,20 @@ public sealed class LegalPolicyTests
         policy.Version.Should().Be(LegalPolicy.FirstVersion);
         policy.PublishedAt.Should().Be(Monday);
         policy.PreviousVersions.Should().BeEmpty();
+        policy.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
     public void ReviseWithoutTextIsRefusedAndKeepsTheVersionInForce()
     {
         var policy = LegalPolicy.Publish(LegalPolicyKind.Privacy, Text("Vigente"), Monday).Value;
+        policy.PullDomainEvents();
 
         policy
             .Revise(RichText.Empty, Friday)
             .ShouldFail(ErrorKind.Validation, DomainErrorCode.LegalPolicyContentRequired);
 
+        policy.PullDomainEvents().Should().BeEmpty();
         policy.Version.Should().Be(LegalPolicy.FirstVersion);
         policy.Content.Should().Be(Text("Vigente"));
         policy.PreviousVersions.Should().BeEmpty();

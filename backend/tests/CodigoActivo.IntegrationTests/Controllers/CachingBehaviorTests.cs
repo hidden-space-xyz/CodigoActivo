@@ -3,6 +3,7 @@ using AwesomeAssertions;
 using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.API.EventCategories.Contracts;
 using CodigoActivo.API.Events.Contracts;
+using CodigoActivo.API.Legal.Contracts;
 using CodigoActivo.API.News.Contracts;
 using CodigoActivo.API.TermsDocuments.Contracts;
 using CodigoActivo.Application.Abstractions.Querying;
@@ -11,6 +12,7 @@ using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.Files.Contracts;
+using CodigoActivo.Application.Legal.Contracts;
 using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Application.TermsDocuments.Contracts;
@@ -327,6 +329,38 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         localCacheOptions.SizeLimit.Should().Be(CacheLimits.LocalCacheSizeBytes);
         localCache.Count.Should().BeGreaterThan(before);
+    }
+
+    [Fact]
+    public async Task PublishAfterAnonymousPolicyCachedPolicyShowsNewVersion()
+    {
+        var admin = await LoginAsAdminAsync();
+        await PublishPolicyAsync(admin, "Primera");
+        var anonymous = CreateClient();
+
+        using var warm = await anonymous.GetAsync(TestUri.Rel("/api/legal-policies/Privacy"), Ct);
+        using var cached = await anonymous.GetAsync(TestUri.Rel("/api/legal-policies/Privacy"), Ct);
+        await PublishPolicyAsync(admin, "Segunda");
+        using var after = await anonymous.GetAsync(TestUri.Rel("/api/legal-policies/Privacy"), Ct);
+
+        warm.StatusCode.Should().Be(HttpStatusCode.OK);
+        cached.Headers.Age.Should().NotBeNull();
+        after.Headers.Age.Should().BeNull();
+        var policy = await after.ReadJsonAsync<LegalPolicyResponse>(Ct);
+        policy!.Version.Should().Be(2);
+        policy.Content.Should().Contain("Segunda");
+    }
+
+    private static async Task PublishPolicyAsync(HttpClient admin, string text)
+    {
+        using var response = await admin.PutJsonAsync(
+            "/api/legal-policies/Privacy",
+            new PublishLegalPolicyRequest(
+                $$"""{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"{{text}}"}]}]}"""
+            ),
+            Ct
+        );
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
