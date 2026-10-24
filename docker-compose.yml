@@ -81,7 +81,7 @@ services:
       LEGAL_REGISTRY: ${LEGAL_REGISTRY}
       LEGAL_EMAIL: ${LEGAL_EMAIL}
       LEGAL_PHONE: ${LEGAL_PHONE:-}
-    secrets: [postgres_password, data_protection_certificate_password, smtp_password]
+    secrets: [postgres_password, data_protection_key, smtp_password]
     volumes:
       - api-files:/app/files
       - api-dataprotection:/home/app/.aspnet/DataProtection-Keys
@@ -135,7 +135,7 @@ volumes:
 secrets:
   postgres_password:
     file: ./secrets/postgres_password
-  data_protection_certificate_password:
-    file: ./secrets/data_protection_certificate_password
+  data_protection_key:
+    file: ./secrets/data_protection_key
   smtp_password:
     file: ./secrets/smtp_password

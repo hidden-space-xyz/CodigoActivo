@@ -66,16 +66,20 @@ internal static class PlatformRegistration
             .AddDataProtection()
             .SetApplicationName("CodigoActivo")
             .ProtectPayloadsWithAesGcm();
-        var oneTimeCodeKey = production
-            ? dataProtection
-                .ProtectKeysWithEd25519Certificate(
-                    services,
-                    new DirectoryInfo(KeysDirectory),
-                    settings.Verbatim("DATA_PROTECTION_CERTIFICATE_PASSWORD"),
-                    new SystemClock(TimeZoneInfo.Utc)
-                )
-                .DeriveKey(HmacOneTimeCodeHasher.KeyPurpose, HmacOneTimeCodeHasher.KeySize)
-            : RandomNumberGenerator.GetBytes(HmacOneTimeCodeHasher.KeySize);
+        byte[] oneTimeCodeKey;
+        if (production)
+        {
+            var rootKey = DataProtectionRootKey.Parse(settings.Verbatim("DATA_PROTECTION_KEY"));
+            dataProtection.ProtectKeysWithRootKey(new DirectoryInfo(KeysDirectory), rootKey);
+            oneTimeCodeKey = rootKey.DeriveKey(
+                HmacOneTimeCodeHasher.KeyPurpose,
+                HmacOneTimeCodeHasher.KeySize
+            );
+        }
+        else
+        {
+            oneTimeCodeKey = RandomNumberGenerator.GetBytes(HmacOneTimeCodeHasher.KeySize);
+        }
 
         services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
         services.AddSingleton<IOneTimeCodeHasher>(new HmacOneTimeCodeHasher(oneTimeCodeKey));

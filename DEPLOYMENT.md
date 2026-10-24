@@ -26,7 +26,7 @@ clients only: see [TLS and proxy boundary](#tls-and-proxy-boundary).
 | -------------------- | ------------------------------------------------------------------ |
 | `db-data`            | PostgreSQL data, including the API's diagnostic and audit logs     |
 | `api-files`          | Uploaded images, re-encoded as two WebP variants each              |
-| `api-dataprotection` | ASP.NET Data Protection keys and the generated Ed25519 certificate |
+| `api-dataprotection` | ASP.NET Data Protection keys, encrypted with `DATA_PROTECTION_KEY` |
 | `api-state`          | The immutable demo/normal deployment-mode choice                   |
 | `logs-db`            | PostgreSQL log files, one per weekday                              |
 
@@ -62,7 +62,7 @@ curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/ma
 # Edit .env and replace all required or placeholder values.
 mkdir -m 700 secrets
 openssl rand -base64 32 | tr -d '\r\n' > secrets/postgres_password
-openssl rand -base64 48 | tr -d '\r\n' > secrets/data_protection_certificate_password
+openssl rand -base64 32 | tr -d '\r\n' > secrets/data_protection_key
 touch secrets/smtp_password
 docker compose up -d
 docker compose ps
@@ -83,7 +83,8 @@ Every login is completed with a one-time code, emailed unless the user enrolled 
 startup fails everywhere when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing or `SMTP_PORT` is outside 1-65535.
 Production startup (`ProductionConfiguration`) also fails when:
 
-- `POSTGRES_PASSWORD` has fewer than 16 characters or `DATA_PROTECTION_CERTIFICATE_PASSWORD` fewer than 32;
+- `POSTGRES_PASSWORD` has fewer than 16 characters or `DATA_PROTECTION_KEY` is not 32 random bytes in Base64
+  (bytes that are all printable, as in an encoded password, or all equal are refused);
 - `APP_BASE_URL` is not a clean HTTPS origin on a public DNS name (IP addresses, localhost and reserved
   example/test domains are rejected);
 - the SMTP host or sender is invalid, `SMTP_SECURITY` is `None` or `Auto`, or only one of `SMTP_USERNAME` and
@@ -93,9 +94,8 @@ Production startup (`ProductionConfiguration`) also fails when:
 These settings and every application setting are checked before anything is written to `api-state` or the
 database. `BOOTSTRAP_ADMIN_EMAIL` is checked once the database is migrated and the deployment mode is locked
 only after that check, so a start it stops leaves a migrated database but no mode lock. Demo seeding runs after
-the lock; a start it stops keeps the lock and seeds again on the next start. On a first Production start,
-the Data Protection certificate is created in `api-dataprotection` after the checks above but before the
-application settings are validated.
+the lock; a start it stops keeps the lock and seeds again on the next start. A Production start also stops,
+before anything is written, when `api-dataprotection` holds a key that `DATA_PROTECTION_KEY` does not decrypt.
 
 ### TLS and proxy boundary
 
@@ -168,11 +168,11 @@ mounted at `/run/secrets/<name>`, and the API reads it as the configuration key 
 (`postgres_password` is `POSTGRES_PASSWORD`); a secret file wins over an environment variable with the same
 name.
 
-| File                                           | Meaning                                                                                          |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `secrets/postgres_password`                    | Database password, read by PostgreSQL on its first initialization and by the API; 16+ characters |
-| `secrets/data_protection_certificate_password` | Encrypts the Ed25519 private key and the key ring; 32+ characters, not rotatable                 |
-| `secrets/smtp_password`                        | SMTP password; empty when the server needs no login                                              |
+| File                          | Meaning                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| `secrets/postgres_password`   | Database password, read by PostgreSQL on its first initialization and by the API; 16+ characters  |
+| `secrets/data_protection_key` | 32 random bytes in Base64; encrypts the key ring and derives the one-time code key; not rotatable |
+| `secrets/smtp_password`       | SMTP password; empty when the server needs no login                                               |
 
 All three files must exist. A single trailing newline is ignored, but a carriage return is not: PostgreSQL
 strips it from its password and the API keeps it, so a CRLF file (as Windows tools write) fails the database

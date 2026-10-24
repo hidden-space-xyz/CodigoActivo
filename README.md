@@ -64,7 +64,7 @@ cp .env.example .env
 # Set BOOTSTRAP_ADMIN_EMAIL, then set its password with the password reset caught by Mailpit.
 mkdir -m 700 secrets
 openssl rand -base64 32 | tr -d '\r\n' > secrets/postgres_password
-touch secrets/data_protection_certificate_password secrets/smtp_password
+touch secrets/data_protection_key secrets/smtp_password
 docker compose up --build
 ```
 

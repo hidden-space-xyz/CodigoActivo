@@ -6,18 +6,18 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Infrastructure.Security;
 
 /// <summary>
-/// Reads the key ring through another repository and keeps only the keys whose secrets the Ed25519
-/// certificate protects: every encrypted secret of the key must name
-/// <see cref="Ed25519AesGcmXmlDecryptor"/>, and no master key may be stored in clear. Otherwise
-/// anyone able to write to the key volume, without knowing the certificate password, could plant a
-/// key in clear and have it used to protect sessions and stored secrets. Elements that are not keys,
-/// such as revocations, are kept unchanged, and storing is delegated as is.
+/// Reads the key ring through another repository and keeps only the keys whose secrets
+/// <see cref="AesGcmKeyRingProtection"/> protects: every encrypted secret of the key must name
+/// <see cref="AesGcmXmlDecryptor"/>, and no master key may be stored in clear. Otherwise anyone able
+/// to write to the key volume, without knowing the root key, could plant a key in clear and have it
+/// used to protect sessions and stored secrets. Elements that are not keys, such as revocations, are
+/// kept unchanged, and storing is delegated as is.
 /// </summary>
 /// <param name="inner">Repository that stores the key ring.</param>
 /// <param name="logger">Logger used to record the keys that are ignored.</param>
-public sealed class Ed25519KeyRingRepository(
+public sealed class ProtectedKeyRingRepository(
     IXmlRepository inner,
-    ILogger<Ed25519KeyRingRepository> logger
+    ILogger<ProtectedKeyRingRepository> logger
 ) : IXmlRepository
 {
     private const string MasterKeyName = "masterKey";
@@ -29,13 +29,13 @@ public sealed class Ed25519KeyRingRepository(
     private static readonly XName EncryptedSecretName = DataProtectionNamespace + "encryptedSecret";
     private static readonly XName RequiresEncryptionName =
         DataProtectionNamespace + "requiresEncryption";
-    private static readonly string DecryptorTypeName = typeof(Ed25519AesGcmXmlDecryptor).FullName!;
-    private static readonly string DecryptorAssemblyName = typeof(Ed25519AesGcmXmlDecryptor)
+    private static readonly string DecryptorTypeName = typeof(AesGcmXmlDecryptor).FullName!;
+    private static readonly string DecryptorAssemblyName = typeof(AesGcmXmlDecryptor)
         .Assembly.GetName()
         .Name!;
 
     /// <summary>
-    /// Reads every element of the key ring except the keys the certificate does not protect.
+    /// Reads every element of the key ring except the keys the root key does not protect.
     /// </summary>
     /// <returns>The accepted elements.</returns>
     public IReadOnlyCollection<XElement> GetAllElements()
@@ -69,11 +69,11 @@ public sealed class Ed25519KeyRingRepository(
 
         var secrets = element.Descendants(EncryptedSecretName).ToList();
         return secrets.Count > 0
-            && secrets.TrueForAll(IsDecryptedByTheCertificate)
+            && secrets.TrueForAll(IsDecryptedWithTheRootKey)
             && !element.Descendants().Any(IsSecretInClear);
     }
 
-    private static bool IsDecryptedByTheCertificate(XElement secret)
+    private static bool IsDecryptedWithTheRootKey(XElement secret)
     {
         var parts = ((string?)secret.Attribute(DecryptorTypeAttributeName))?.Split(',');
         return parts is { Length: >= 2 }

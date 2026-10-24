@@ -243,9 +243,8 @@ failure count, so it is not timed exactly like an unknown address.
 Emailed one-time codes and link tokens (login and account-deletion codes, verification, password reset and
 email-change links) are random, short-lived and stored only as HMAC-SHA256 under a server-side key
 (`HmacOneTimeCodeHasher`), so a copy of the database alone cannot test guesses against them. Production
-derives that key with HKDF-SHA256 from the Data Protection certificate's private key, so it exists only in
-`api-dataprotection`; other environments use a random key per process, so a restart invalidates pending codes
-and links.
+derives that key with HKDF-SHA256 from `DATA_PROTECTION_KEY`, so it is never stored; other environments use a
+random key per process, so a restart invalidates pending codes and links.
 
 Five consecutive wrong passwords for the same account — counted together by `PasswordAttemptGuard` across the
 login password step and every route that asks for a password again — lock the account.
@@ -561,24 +560,21 @@ internal `backend` network. Rotating the database password must update both the 
 ### Data Protection and containers
 
 Production persists ASP.NET Data Protection keys in `api-dataprotection`. Every key ring element is stored
-as an `urn:codigoactivo:data-protection:aes-gcm:v1` XML element carrying a salt, nonce, authentication tag,
-ciphertext and an Ed25519 signature; decryption first verifies that signature against the certificate pinned
-in the volume, then derives the AES-256-GCM key from `DATA_PROTECTION_CERTIFICATE_PASSWORD` with Argon2id
-(`Argon2idKeyDerivation`: 3 iterations, 64 MiB, 4 lanes, a 16-byte salt — the same parameters and code path
-that hash passwords) before decrypting with `System.Security.Cryptography.AesGcm`. Reading the ring ignores,
-and logs as `DataProtectionKeysIgnored`, any key whose secret is stored in clear or names another decryptor,
-so whoever can write to the volume without the password cannot plant a usable key. The locally generated
-Ed25519 certificate's own private key is stored the same way, in a fixed-size binary container (version,
-salt, nonce, tag, ciphertext) with the certificate's DER bytes as associated data. BouncyCastle is used only
-to generate and parse the Ed25519 certificate and to sign/verify; it performs no encryption. Since the
-certificate password derives the key-wrapping key, there is no rotation procedure: changing it means
-recreating the volume, which invalidates every session, every stored authenticator secret and every pending
-one-time code or link. Outside Production the key ring is unencrypted on disk, but every environment protects
-Data Protection payloads themselves — session and two-factor cookies, antiforgery tokens, authenticator
-secrets and the email outbox content described below — with AES-256-GCM. Application containers run as
-non-root, drop all capabilities, enable `no-new-privileges` and use read-only root filesystems; PostgreSQL
-drops every capability its entrypoint does not need and is reachable only on the internal backend network.
-The development override removes parts of this boundary and must not be deployed.
+as an `urn:codigoactivo:data-protection:aes-gcm:v1` XML element carrying a random nonce, the authentication
+tag and the ciphertext of `System.Security.Cryptography.AesGcm`. Its AES-256-GCM key is derived with
+HKDF-SHA256 from `DATA_PROTECTION_KEY` (`DataProtectionRootKey`), 32 random bytes that never reach the volume
+and need no stretching; the one-time code key comes from the same root key under another purpose label.
+Reading the ring ignores, and logs as `DataProtectionKeysIgnored`, any key whose secret is stored in clear or
+names another decryptor, so whoever can write to the volume without `DATA_PROTECTION_KEY` cannot plant a
+usable key. A Production start fails when the volume holds an element that `DATA_PROTECTION_KEY` does not
+decrypt, so a wrong key never replaces the ring. There is no rotation procedure: changing
+`DATA_PROTECTION_KEY` means recreating the volume, which invalidates every session, every stored authenticator
+secret and every pending one-time code or link. Outside Production the key ring is unencrypted on disk, but
+every environment protects Data Protection payloads themselves — session and two-factor cookies, antiforgery
+tokens, authenticator secrets and the email outbox content described below — with AES-256-GCM. Application
+containers run as non-root, drop all capabilities, enable `no-new-privileges` and use read-only root
+filesystems; PostgreSQL drops every capability its entrypoint does not need and is reachable only on the
+internal backend network. The development override removes parts of this boundary and must not be deployed.
 
 ### Files and multipart requests
 
