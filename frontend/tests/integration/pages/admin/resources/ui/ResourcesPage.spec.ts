@@ -141,17 +141,18 @@ describe('admin resources page', () => {
     wrapper
       .findComponent(ColumnFilterDate)
       .vm.$emit('update:modelValue', [new Date(2025, 0, 1), null])
-    await flushPromises()
 
-    expect(queryOf(urls.at(-1) ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      sort: '-createdAt',
-      search: 'vue',
-      url: 'vuejs.org',
-      resourceTypeId: 'type-link',
-      createdFrom: '2025-01-01',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: '-createdAt',
+        search: 'vue',
+        url: 'vuejs.org',
+        resourceTypeId: 'type-link',
+        createdFrom: '2025-01-01',
+      }),
+    )
     expect(wrapper.findComponent(ColumnFilterSelect).props('options')).toEqual([
       { label: 'Artículo', value: 'type-article' },
       { label: 'Enlace', value: 'type-link' },
@@ -165,7 +166,9 @@ describe('admin resources page', () => {
 
     await click(findButton(t('table.clearFilters'), wrapper.element))
 
-    expect(queryOf(urls.at(-1) ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-createdAt' })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-createdAt' }),
+    )
     expect(search.element.value).toBe('')
     expect(wrapper.find('.data-table__chips').exists()).toBe(false)
   })

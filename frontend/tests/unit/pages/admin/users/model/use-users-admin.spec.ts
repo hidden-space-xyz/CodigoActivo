@@ -83,51 +83,55 @@ describe('useUsersAdmin', () => {
     result.table.columnFilter('newsConsent').value = true
     result.table.columnFilter('type').value = 'type-member'
     result.table.onSortChange({ prop: 'email', order: 'descending' })
-    await flushPromises()
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({
-      userStatusTypeId: 'status-active',
-      email: 'ada',
-      sort: '-email',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toMatchObject({
+        userStatusTypeId: 'status-active',
+        email: 'ada',
+        sort: '-email',
+      }),
+    )
 
     result.setScope('dependent')
-    await flushPromises()
     expect(result.scope.value).toBe('dependent')
     expect(result.showsField('email')).toBe(false)
     expect(result.showsField('birthDate')).toBe(true)
-    expect(queryOf(urls.at(-1) ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      sort: 'firstName',
-      scope: 'Dependent',
-      userTypeId: 'type-member',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: 'firstName',
+        scope: 'Dependent',
+        userTypeId: 'type-member',
+      }),
+    )
 
     result.table.onSortChange({ prop: 'type', order: 'descending' })
     result.setScope('dependent')
-    await flushPromises()
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ sort: '-type' })
+    await vi.waitFor(() => expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ sort: '-type' }))
 
     result.table.columnFilter('birthDate').value = ['2015-01-01', '2016-12-31']
-    await flushPromises()
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ birthDateFrom: '2015-01-01' })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ birthDateFrom: '2015-01-01' }),
+    )
     result.setScope('independent')
-    await flushPromises()
-    expect(queryOf(urls.at(-1) ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      sort: '-type',
-      scope: 'Independent',
-      userTypeId: 'type-member',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: '-type',
+        scope: 'Independent',
+        userTypeId: 'type-member',
+      }),
+    )
 
     result.showGuardianOf(toUser(buildDependentResponse()))
     await flushPromises()
     result.setScope('all')
-    await flushPromises()
     expect(['email', 'birthDate'].map((field) => result.showsField(field))).toEqual([true, true])
     expect(result.relationChips.value).toEqual([])
-    expect(queryOf(urls.at(-1) ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-type' })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-type' }),
+    )
   })
 
   it('lists the relation filter as a table chip that removes it', async () => {

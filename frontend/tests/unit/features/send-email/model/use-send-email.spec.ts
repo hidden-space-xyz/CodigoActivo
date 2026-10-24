@@ -186,7 +186,7 @@ function setupDialog(
 
 describe('useSendEmailDialog', () => {
   it('targets the whole audience or a single recipient when opened', async () => {
-    const { result } = await setupDialog()
+    const { result, userAudienceQueries } = await setupDialog()
 
     expect(result.visible.value).toBe(false)
     expect(result.target.value).toBe('everyone')
@@ -194,6 +194,7 @@ describe('useSendEmailDialog', () => {
     result.open({ id: 'user-1', name: 'Ada' })
     expect(result.visible.value).toBe(true)
     expect(result.target.value).toBe('one:Ada')
+    await vi.waitFor(() => expect(userAudienceQueries).toEqual([{ id: 'user-1' }]))
 
     result.open(null)
     expect(result.target.value).toBe('everyone')
