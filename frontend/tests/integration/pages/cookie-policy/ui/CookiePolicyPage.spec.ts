@@ -1,80 +1,33 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { registerStaleBuildReload } from '@/app/config'
-
 import { renderApp, t } from '../../../../support/render'
-import { useTheme } from '@/shared/lib/theme'
-
-function triggerStaleBuildReload(): void {
-  const events = new EventTarget()
-  registerStaleBuildReload({
-    addEventListener: events.addEventListener.bind(events),
-    sessionStorage,
-    navigator: { onLine: true },
-    location: { reload: vi.fn() },
-  } as unknown as Window)
-  events.dispatchEvent(new Event('vite:preloadError', { cancelable: true }))
-}
+import { apiError, http, HttpResponse, server } from '../../../../support/server'
+import { buildLegalPolicy, richText } from '../../../../support/builders'
 
 describe('cookie policy page', () => {
-  it('lists every cookie and browser storage entry with its purpose and duration', async () => {
+  it('shows the cookie policy in force with its version and date', async () => {
+    server.use(
+      http.get('/api/legal-policies/Cookies', () =>
+        HttpResponse.json(
+          buildLegalPolicy({
+            kind: 'Cookies',
+            version: 4,
+            content: richText('Solo cookies propias'),
+          }),
+        ),
+      ),
+    )
+
     const { wrapper } = await renderApp('/cookies')
 
     expect(wrapper.get('h1').text()).toBe(t('pages.cookiePolicy.title'))
-    const entries = wrapper.findAll('.legal-entry')
-    expect(entries.map((entry) => entry.get('.cookie-policy__name').text())).toEqual([
-      '__Host-CodigoActivo.Session',
-      '__Host-CodigoActivo.TwoFactor',
-      '__Host-CodigoActivo.Csrf',
-      'ca-theme',
-      'ca:stale-build-reload',
-    ])
-    for (const entry of entries) {
-      const values = entry.findAll('.legal-entry__value').map((value) => value.text())
-      expect(values).toHaveLength(2)
-      expect(values.every((value) => value.length > 0)).toBe(true)
-    }
-    expect(entries[0]?.text()).toContain(t('pages.cookiePolicy.used.session.duration'))
     expect(document.title).toContain(t('seo.routes.cookiePolicy.title'))
-  })
-
-  it('names every key the application writes to browser storage', async () => {
-    useTheme().setTheme('light')
-    triggerStaleBuildReload()
-    const written = [...Object.keys(localStorage), ...Object.keys(sessionStorage)]
-
-    const { wrapper } = await renderApp('/cookies')
-
-    const listed = wrapper.findAll('.cookie-policy__name').map((name) => name.text())
-    expect(written).toEqual(['ca-theme', 'ca:stale-build-reload'])
-    expect(listed).toEqual(expect.arrayContaining(written))
-  })
-
-  it('links to browser help and explains the opt-in persistent session', async () => {
-    const { wrapper } = await renderApp('/cookies')
-
-    const main = wrapper.get('main')
-    const hrefs = main.findAll('a').map((link) => link.attributes('href'))
-    expect(hrefs).toContain('https://support.google.com/chrome/answer/95647?hl=es')
-    expect(main.findAll('.cookie-policy__guides a')).toHaveLength(5)
-    for (const link of main.findAll('a[target="_blank"]')) {
-      expect(link.attributes('rel')).toBe('noopener')
-    }
-    expect(main.text()).toContain(t('pages.cookiePolicy.consent.necessary'))
-    expect(main.text()).toContain(t('pages.cookiePolicy.consent.keepSignedIn'))
-  })
-
-  it('points to the privacy policy for the personal data the cookies carry', async () => {
-    const { wrapper, router } = await renderApp('/cookies')
-
-    const section = wrapper.get('[aria-labelledby="cookie-policy-privacy"]')
-    expect(section.get('h2').text()).toBe(t('pages.cookiePolicy.privacy.title'))
-    expect(section.get('a').attributes('href')).toBe(
-      router.resolve({ name: 'privacy-policy' }).href,
-    )
+    await vi.waitFor(() => expect(wrapper.get('.legal-policy').text()).toBe('Solo cookies propias'))
+    expect(wrapper.get('.legal-document__updated').text()).toContain('4')
   })
 
   it('opens from the footer link', async () => {
+    server.use(http.get('/api/legal-policies/Cookies', () => apiError(404)))
     const { wrapper, router } = await renderApp('/about')
 
     const href = router.resolve({ name: 'cookie-policy' }).href
@@ -86,5 +39,6 @@ describe('cookie policy page', () => {
     await vi.waitFor(() => expect(wrapper.get('h1').text()).toBe(t('pages.cookiePolicy.title')), {
       timeout: 10_000,
     })
+    await vi.waitFor(() => expect(wrapper.text()).toContain(t('entities.legalPolicy.unpublished')))
   }, 20_000)
 })

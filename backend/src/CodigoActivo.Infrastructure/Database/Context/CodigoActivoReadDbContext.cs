@@ -86,6 +86,13 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
     public IQueryable<FileRow> Files => Set<FileRow>().AsNoTracking();
 
     /// <inheritdoc />
+    public IQueryable<LegalPolicyRow> LegalPolicies => Set<LegalPolicyRow>().AsNoTracking();
+
+    /// <inheritdoc />
+    public IQueryable<LegalPolicyVersionRow> LegalPolicyVersions =>
+        Set<LegalPolicyVersionRow>().AsNoTracking();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -233,6 +240,16 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
 
         Table<PartnerRow>(modelBuilder, "partners").HasKey(p => p.Id);
         Table<FileRow>(modelBuilder, "files").HasKey(f => f.Id);
+
+        var policies = Table<LegalPolicyRow>(modelBuilder, "legal_policies");
+        policies.HasKey(p => p.Id);
+        policies.Property(p => p.Kind).HasConversion<string>();
+        policies.Property(p => p.Content).HasColumnType("jsonb");
+
+        var versions = Table<LegalPolicyVersionRow>(modelBuilder, "legal_policy_versions");
+        versions.HasKey(v => new { v.LegalPolicyId, v.Number });
+        versions.Property(v => v.Content).HasColumnType("jsonb");
+        versions.HasOne(v => v.LegalPolicy).WithMany().HasForeignKey(v => v.LegalPolicyId);
     }
 
     private static void ConfigureLogs(ModelBuilder modelBuilder)

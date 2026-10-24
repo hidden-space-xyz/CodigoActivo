@@ -228,6 +228,9 @@ export const routes: readonly RouteRecordRaw[] = [
   adminRoute('/admin/catalogs', 'admin-catalogs', () =>
     import('@/pages/admin/catalogs').then((m) => m.CatalogsPage),
   ),
+  adminRoute('/admin/legal', 'admin-legal-policies', () =>
+    import('@/pages/admin/legal-policies').then((m) => m.LegalPoliciesPage),
+  ),
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

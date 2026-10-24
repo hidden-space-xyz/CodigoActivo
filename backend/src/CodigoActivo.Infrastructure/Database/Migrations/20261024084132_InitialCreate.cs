@@ -155,6 +155,21 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "legal_policies",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    kind = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    version = table.Column<int>(type: "integer", nullable: false),
+                    content = table.Column<string>(type: "jsonb", nullable: false),
+                    published_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_legal_policies", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "resource_types",
                 columns: table => new
                 {
@@ -264,6 +279,26 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         principalTable: "email_outbox_contents",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "legal_policy_versions",
+                columns: table => new
+                {
+                    legal_policy_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    number = table.Column<int>(type: "integer", nullable: false),
+                    content = table.Column<string>(type: "jsonb", nullable: false),
+                    published_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_legal_policy_versions", x => new { x.legal_policy_id, x.number });
+                    table.ForeignKey(
+                        name: "fk_legal_policy_versions_legal_policies_legal_policy_id",
+                        column: x => x.legal_policy_id,
+                        principalTable: "legal_policies",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -1079,6 +1114,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "uploaded_by");
 
             migrationBuilder.CreateIndex(
+                name: "ix_legal_policies_kind",
+                table: "legal_policies",
+                column: "kind",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_news_created_at",
                 table: "news",
                 column: "created_at");
@@ -1266,6 +1307,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "event_terms_documents");
 
             migrationBuilder.DropTable(
+                name: "legal_policy_versions");
+
+            migrationBuilder.DropTable(
                 name: "news");
 
             migrationBuilder.DropTable(
@@ -1300,6 +1344,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             migrationBuilder.DropTable(
                 name: "event_category_types");
+
+            migrationBuilder.DropTable(
+                name: "legal_policies");
 
             migrationBuilder.DropTable(
                 name: "resource_types");

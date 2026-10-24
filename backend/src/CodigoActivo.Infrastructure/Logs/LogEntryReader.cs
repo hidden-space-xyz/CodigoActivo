@@ -3,6 +3,8 @@ using System.Net;
 using System.Text.Json;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Logs;
 using CodigoActivo.Application.Logs.Contracts;
@@ -348,6 +350,14 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
             AuditEntityType.EventCategoryType => context
                 .EventCategoryTypes.Where(row => ids.Contains(row.Id))
                 .Select(row => new NamedEntity(row.Id, row.Name)),
+            AuditEntityType.LegalPolicy => context
+                .LegalPolicies.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(
+                    row.Id,
+                    row.Kind == LegalPolicyKind.Privacy
+                        ? AppStrings.LegalPoliciesPrivacy
+                        : AppStrings.LegalPoliciesCookies
+                )),
             AuditEntityType.NewsItem => context
                 .News.Where(row => ids.Contains(row.Id))
                 .Select(row => new NamedEntity(row.Id, row.Title)),

@@ -73,6 +73,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'CreateTermsDocument',
   'DeleteTermsDocument',
   'UpdateTermsDocument',
+  'PublishLegalPolicy',
   'AddChild',
   'ChangeUserType',
   'DeleteUser',
@@ -98,6 +99,7 @@ export const AUDIT_ENTITY_TYPES: readonly AuditEntityType[] = [
   'Resource',
   'Partner',
   'StoredFile',
+  'LegalPolicy',
 ]
 
 /** Every outcome, in the order the outcome filter lists them. */

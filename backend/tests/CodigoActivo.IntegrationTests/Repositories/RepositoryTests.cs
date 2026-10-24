@@ -5,6 +5,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
@@ -17,6 +18,7 @@ using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.Infrastructure.EventCategories;
 using CodigoActivo.Infrastructure.Events;
 using CodigoActivo.Infrastructure.Files;
+using CodigoActivo.Infrastructure.Legal;
 using CodigoActivo.Infrastructure.News;
 using CodigoActivo.Infrastructure.Partners;
 using CodigoActivo.Infrastructure.TermsDecisions;
@@ -756,6 +758,64 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
                 resourceEmbeddedFileId,
                 termsEmbeddedFileId,
             ]);
+    }
+
+    [Fact]
+    public async Task GetInUseAsyncLegalPolicyReferenceInEveryVersionDetectsUsage()
+    {
+        await using var ctx = postgres.CreateContext();
+        var inForceFileId = Guid.NewGuid();
+        var replacedFileId = Guid.NewGuid();
+        var policy = LegalPolicy
+            .Publish(LegalPolicyKind.Privacy, PolicyText(replacedFileId), Fixed)
+            .Value;
+        policy.Revise(PolicyText(inForceFileId), Fixed.AddDays(1)).IsSuccess.Should().BeTrue();
+        ctx.Add(policy);
+        await ctx.SaveChangesAsync(Ct);
+        var repo = new StoredFileRepository(ctx);
+
+        var inUse = await repo.GetInUseAsync(
+            [
+                StoredFileId.From(inForceFileId),
+                StoredFileId.From(replacedFileId),
+                StoredFileId.New(),
+            ],
+            Ct
+        );
+
+        inUse.Select(id => id.Value).Should().BeEquivalentTo([inForceFileId, replacedFileId]);
+    }
+
+    private static RichText PolicyText(Guid fileId)
+    {
+        return RichText.From(
+            $$"""{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"/api/files/{{fileId}}/content"}]}]}"""
+        );
+    }
+
+    [Fact]
+    public async Task LockAsyncPublishedPolicyLoadsItAndUnpublishedOneIsNull()
+    {
+        await using (var seed = postgres.CreateContext())
+        {
+            seed.Add(
+                LegalPolicy
+                    .Publish(LegalPolicyKind.Cookies, PolicyText(Guid.NewGuid()), Fixed)
+                    .Value
+            );
+            await seed.SaveChangesAsync(Ct);
+        }
+
+        await using var ctx = postgres.CreateContext();
+        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
+        var repo = new LegalPolicyRepository(ctx);
+
+        var cookies = await repo.LockAsync(LegalPolicyKind.Cookies, Ct);
+        var privacy = await repo.LockAsync(LegalPolicyKind.Privacy, Ct);
+
+        cookies!.Kind.Should().Be(LegalPolicyKind.Cookies);
+        cookies.PublishedAt.Should().Be(Fixed);
+        privacy.Should().BeNull();
     }
 
     [Fact]

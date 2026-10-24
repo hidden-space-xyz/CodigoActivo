@@ -486,6 +486,16 @@ public static class AppStrings
     public static string FilesFallbackFileName => Get("files.fallbackFileName");
 
     /// <summary>
+    /// Gets the name of the cookie policy.
+    /// </summary>
+    public static string LegalPoliciesCookies => Get("legal.policies.cookies");
+
+    /// <summary>
+    /// Gets the name of the privacy policy.
+    /// </summary>
+    public static string LegalPoliciesPrivacy => Get("legal.policies.privacy");
+
+    /// <summary>
     /// Formats the localized emails account deletion code expiry html text with the supplied values.
     /// </summary>
     /// <param name="minutes">The minutes value.</param>

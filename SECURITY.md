@@ -344,16 +344,18 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
   `localStorage` and is never sent to the server, and `sessionStorage` only holds the stale-build reload mark.
   They are all needed to run the site or keep a preference the user picks, and only the persistent session,
   behind its unticked checkbox, outlives the browser session, so the site shows no cookie banner. The
-  `/cookies` page
-  (`frontend/src/pages/cookie-policy`) lists every cookie and storage key with its purpose and duration;
-  change it with them. `Referrer-Policy: same-origin` keeps page URLs out of
+  `/cookies` page shows the cookie policy the administrators publish, which must list every cookie and storage
+  key with its purpose and duration; ask them to publish a new version with any change to them.
+  `Referrer-Policy: same-origin` keeps page URLs out of
   requests to external sites, and `X-DNS-Prefetch-Control: off` stops browsers from pre-resolving link
   destinations. API responses whose body is `application/json` or `application/problem+json` also carry
   `X-Robots-Tag: noindex, nofollow`, so search engines do not index API payloads.
-- The `/privacy` page (`frontend/src/pages/privacy-policy`) states, for each processing of personal data,
-  the data, purpose, legal basis and retention, plus the processors, transfers and rights; the registration
-  form shows its first layer (`PrivacyNotice`). Change them with any new personal field, processor, recipient
-  or retention.
+- The `/privacy` page shows the data controller from the `LEGAL_*` settings and then the privacy policy the
+  administrators publish, which must state, for each processing of personal data, the data, purpose, legal
+  basis and retention, plus the processors, transfers and rights; the registration form shows its first layer
+  (`PrivacyNotice`). Change the notice and ask for a new version of the policy with any new personal field,
+  processor, recipient or retention. Both policies keep every published version (`legal_policy_versions`),
+  so the text in force on any date can be shown.
 - `GET /api/me/personal-data` (report rate limit) gives the signed-in user a copy of their own and their
   dependents' personal data (articles 15 and 20 GDPR), which «Mi cuenta» saves as a JSON file with Spanish
   names and labels: the account with any unconfirmed new email, the news consent history, the dependents, the

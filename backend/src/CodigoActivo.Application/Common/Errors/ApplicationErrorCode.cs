@@ -116,6 +116,21 @@ public enum ApplicationErrorCode
     TermsDocumentKindInUse,
 
     /// <summary>
+    /// No policy of that kind was published yet.
+    /// </summary>
+    LegalPolicyNotFound,
+
+    /// <summary>
+    /// The policy has no version with that number.
+    /// </summary>
+    LegalPolicyVersionNotFound,
+
+    /// <summary>
+    /// Another administrator published the first version of the same policy at the same time.
+    /// </summary>
+    LegalPolicyPublishedConcurrently,
+
+    /// <summary>
     /// Selects the resource not found option.
     /// </summary>
     ResourceNotFound,

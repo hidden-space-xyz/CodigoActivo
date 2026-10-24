@@ -361,4 +361,10 @@ Equipo de Código Activo</value>
   <data name="files.fallbackFileName" xml:space="preserve">
     <value>file</value>
   </data>
+  <data name="legal.policies.cookies" xml:space="preserve">
+    <value>Política de cookies</value>
+  </data>
+  <data name="legal.policies.privacy" xml:space="preserve">
+    <value>Política de privacidad</value>
+  </data>
 </root>

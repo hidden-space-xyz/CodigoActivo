@@ -147,9 +147,13 @@ variables (the site through `GET /api/legal-entity`); a `LEGAL_EMAIL` that is no
 `LEGAL_PHONE` that is not a phone number of 7 to 15 digits stops the start. They are deployment settings
 rather than code so that personal details, such as a home address or a private phone, never reach the public
 repository; the association's public identity (name, domain, social profiles) is code, in `Organization`
-(backend) and `shared/config` (frontend). The privacy policy texts state
-the log retentions and the hosting, email and file storage providers; change those texts in the same release
-as any of them.
+(backend) and `shared/config` (frontend).
+
+The privacy and cookie policies are not in the repository: administrators write and publish them in «Textos
+legales» of the administration panel, and the database keeps every version. A new installation without demo
+data starts without them, and `/privacy` and `/cookies` say they are not published yet, so publish both before
+opening the site. They state the log retentions, the cookies and the hosting, email and file storage
+providers; publish new versions in the same release as any change to them.
 
 Neither the template nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
 volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the PostgreSQL log files
@@ -205,9 +209,9 @@ Kestrel refuses request bodies above 2 MiB except on the upload and manual-email
 upload limit plus 64 KiB of multipart overhead; nginx separately limits request bodies to `12m`. Manual-email
 attachments are never stored in `api-files`.
 
-The cookie and privacy policies and the login checkbox (`pages.login.keepSignedIn`) state the session and
-challenge lifetimes and the retentions; changing one requires updating them in
-`frontend/src/shared/i18n/locales/es.json`.
+The login checkbox (`pages.login.keepSignedIn` in `frontend/src/shared/i18n/locales/es.json`) and the
+published cookie and privacy policies state the session and challenge lifetimes and the retentions; changing
+one requires updating the checkbox and publishing new versions of the policies.
 
 ## Email delivery
 

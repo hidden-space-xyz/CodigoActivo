@@ -1,18 +1,21 @@
 using CodigoActivo.Application.Legal;
 using CodigoActivo.Composition.Configuration;
+using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Legal;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodigoActivo.Composition.Legal;
 
 /// <summary>
-/// Registers the legal identity of the association, read from the <c>LEGAL_*</c> settings.
+/// Registers the legal identity of the association, read from the <c>LEGAL_*</c> settings, and the
+/// store of the legal policies.
 /// </summary>
 internal static class LegalRegistration
 {
     /// <summary>
-    /// Adds the legal identity options; a value longer than
+    /// Adds the legal policy repository and the legal identity options; a value longer than
     /// <see cref="LegalEntityOptions.MaxLength"/> stops the start.
     /// </summary>
     /// <param name="services">Service collection to add to.</param>
@@ -23,6 +26,7 @@ internal static class LegalRegistration
         IConfiguration configuration
     )
     {
+        services.AddScoped<ILegalPolicyRepository, LegalPolicyRepository>();
         var settings = new Settings(configuration);
         services.AddValidatedOptions<LegalEntityOptions>(
             options =>

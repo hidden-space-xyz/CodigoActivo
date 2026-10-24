@@ -12,6 +12,7 @@ export const AuditEntityType = {
   Activity: 'Activity',
   Event: 'Event',
   EventCategoryType: 'EventCategoryType',
+  LegalPolicy: 'LegalPolicy',
   NewsItem: 'NewsItem',
   Partner: 'Partner',
   Resource: 'Resource',

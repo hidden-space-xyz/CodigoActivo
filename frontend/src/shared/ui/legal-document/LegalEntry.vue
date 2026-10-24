@@ -2,16 +2,13 @@
 import type { LegalFact } from './legal-fact'
 
 defineProps<{
-  /** Labelled values listed under the head, in order. */
+  /** Labelled values, in order. */
   facts: readonly LegalFact[]
 }>()
 </script>
 
 <template>
   <li class="legal-entry">
-    <div v-if="$slots.head" class="legal-entry__head">
-      <slot name="head" />
-    </div>
     <dl class="legal-entry__facts">
       <template v-for="fact in facts" :key="fact.label">
         <dt class="legal-entry__label">{{ fact.label }}</dt>
@@ -29,23 +26,11 @@ defineProps<{
   padding: 18px 20px;
 }
 
-.legal-entry__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-}
-
 .legal-entry__facts {
   display: grid;
   grid-template-columns: 130px minmax(0, 1fr);
   gap: 8px 16px;
   margin: 0;
-}
-
-.legal-entry__head + .legal-entry__facts {
-  margin-top: 14px;
 }
 
 .legal-entry__label {

@@ -1,4 +1,5 @@
 using GenderContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using LegalPolicyKindContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.LegalPolicyKind;
 using TermsDocumentKindContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.Application.Common.Mapping;
@@ -29,5 +30,15 @@ public static class ContractEnums
     )
     {
         return (Domain.TermsDocuments.TermsDocumentKind)(int)kind;
+    }
+
+    /// <summary>
+    /// Gets the domain kind of a legal policy kind sent by a client.
+    /// </summary>
+    /// <param name="kind">Kind as clients send it.</param>
+    /// <returns>The domain kind.</returns>
+    public static Domain.Legal.LegalPolicyKind ToDomain(this LegalPolicyKindContract kind)
+    {
+        return (Domain.Legal.LegalPolicyKind)(int)kind;
     }
 }

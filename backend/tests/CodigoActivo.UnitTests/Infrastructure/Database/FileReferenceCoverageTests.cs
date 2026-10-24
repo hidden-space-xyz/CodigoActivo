@@ -30,6 +30,8 @@ public sealed class FileReferenceCoverageTests : IDisposable
     private static readonly string[] CheckedRichTextColumns =
     [
         "events.description",
+        "legal_policies.content",
+        "legal_policy_versions.content",
         "news.description",
         "resources.description",
         "terms_documents.description",

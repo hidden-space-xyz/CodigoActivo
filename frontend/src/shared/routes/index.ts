@@ -46,6 +46,7 @@ interface RouteNamedMap {
   'admin-diagnostics': NamedRoute<'admin-diagnostics', '/admin/diagnostics'>
   'admin-audit': NamedRoute<'admin-audit', '/admin/audit'>
   'admin-catalogs': NamedRoute<'admin-catalogs', '/admin/catalogs'>
+  'admin-legal-policies': NamedRoute<'admin-legal-policies', '/admin/legal'>
   'not-found': RouteRecordInfo<
     'not-found',
     '/:pathMatch(.*)*',

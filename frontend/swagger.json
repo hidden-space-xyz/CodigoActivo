@@ -2684,6 +2684,141 @@
         }
       }
     },
+    "/api/legal-policies/{kind}": {
+      "get": {
+        "tags": [
+          "Legal"
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LegalPolicyKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalPolicyResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Legal"
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LegalPolicyKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishLegalPolicyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalPolicyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/legal-policies/{kind}/versions": {
+      "get": {
+        "tags": [
+          "Legal"
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LegalPolicyKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LegalPolicyVersionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/legal-policies/{kind}/versions/{version}": {
+      "get": {
+        "tags": [
+          "Legal"
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LegalPolicyKind"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalPolicyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/logs/diagnostics": {
       "get": {
         "tags": [
@@ -5060,6 +5195,7 @@
           "CreateTermsDocument",
           "DeleteTermsDocument",
           "UpdateTermsDocument",
+          "PublishLegalPolicy",
           "AddChild",
           "ChangeUserType",
           "DeleteUser",
@@ -5085,6 +5221,7 @@
           "Activity",
           "Event",
           "EventCategoryType",
+          "LegalPolicy",
           "NewsItem",
           "Partner",
           "Resource",
@@ -6130,6 +6267,10 @@
           "TermsDocumentNameAlreadyExists",
           "TermsDocumentInUse",
           "TermsDocumentKindInUse",
+          "LegalPolicyContentRequired",
+          "LegalPolicyNotFound",
+          "LegalPolicyVersionNotFound",
+          "LegalPolicyPublishedConcurrently",
           "ResourceNotFound",
           "ResourceThumbnailNotFound",
           "ResourceDescriptionRequired",
@@ -7721,6 +7862,57 @@
         },
         "additionalProperties": false
       },
+      "LegalPolicyKind": {
+        "enum": [
+          "Privacy",
+          "Cookies"
+        ],
+        "type": "string"
+      },
+      "LegalPolicyResponse": {
+        "required": [
+          "content",
+          "kind",
+          "publishedAt",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LegalPolicyKind"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LegalPolicyVersionResponse": {
+        "required": [
+          "publishedAt",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "LoginChallengeResponse": {
         "required": [
           "method"
@@ -8312,6 +8504,18 @@
             "items": {
               "$ref": "#/components/schemas/PersonalDataTermsDecisionChangeResponse"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublishLegalPolicyRequest": {
+        "required": [
+          "content"
+        ],
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
           }
         },
         "additionalProperties": false

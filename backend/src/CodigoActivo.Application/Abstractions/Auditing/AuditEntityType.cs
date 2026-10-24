@@ -17,6 +17,9 @@ public enum AuditEntityType
     /// <summary>An event category.</summary>
     EventCategoryType,
 
+    /// <summary>A legal policy.</summary>
+    LegalPolicy,
+
     /// <summary>A news item.</summary>
     NewsItem,
 

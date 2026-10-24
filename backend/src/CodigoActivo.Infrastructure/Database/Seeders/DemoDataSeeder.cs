@@ -10,6 +10,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
@@ -136,6 +137,7 @@ public sealed class DemoDataSeeder(
             context.News.AddRange(graph.News);
             context.Resources.AddRange(graph.Resources);
             context.Partners.AddRange(graph.Partners);
+            context.LegalPolicies.AddRange(graph.LegalPolicies);
             await context.SaveChangesAsync(ct);
 
             await transaction.CommitAsync(ct);
@@ -167,6 +169,7 @@ public sealed class DemoDataSeeder(
         var news = BuildNews(now, files);
         var resources = BuildResources(now, files);
         var partners = BuildPartners(clock, now, files);
+        var legalPolicies = BuildLegalPolicies(now);
 
         return new DemoGraph(
             users,
@@ -178,7 +181,8 @@ public sealed class DemoDataSeeder(
             schedule.Ratings,
             news,
             resources,
-            partners
+            partners,
+            legalPolicies
         );
     }
 
@@ -528,6 +532,50 @@ public sealed class DemoDataSeeder(
                 }
             )
             .ToList();
+    }
+
+    private static List<LegalPolicy> BuildLegalPolicies(DateTimeOffset now)
+    {
+        return DemoLegalPolicies
+            .Select(seed =>
+                LegalPolicy
+                    .Publish(seed.Kind, RichText.From(BuildPolicyText(seed.Sections)), now)
+                    .Value
+            )
+            .ToList();
+    }
+
+    private static string BuildPolicyText((string? Heading, string Text)[] sections)
+    {
+        var content = new JsonArray();
+        foreach (var (heading, text) in sections)
+        {
+            if (heading is not null)
+            {
+                content.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "heading",
+                        ["attrs"] = new JsonObject { ["level"] = 2 },
+                        ["content"] = new JsonArray(
+                            new JsonObject { ["type"] = "text", ["text"] = heading }
+                        ),
+                    }
+                );
+            }
+
+            content.Add(
+                new JsonObject
+                {
+                    ["type"] = "paragraph",
+                    ["content"] = new JsonArray(
+                        new JsonObject { ["type"] = "text", ["text"] = text }
+                    ),
+                }
+            );
+        }
+
+        return new JsonObject { ["type"] = "doc", ["content"] = content }.ToJsonString();
     }
 
     private static DateTimeOffset SpreadCreatedAt(
@@ -923,6 +971,11 @@ public sealed class DemoDataSeeder(
 
     private sealed record ExternalResourceSeed(string Title, string Subtitle, string Url);
 
+    private sealed record LegalPolicySeed(
+        LegalPolicyKind Kind,
+        (string? Heading, string Text)[] Sections
+    );
+
     private sealed record PartnerSeed(string Name, int Tier, string? Web);
 
     private sealed record DemoSchedule(
@@ -1066,6 +1119,59 @@ public sealed class DemoDataSeeder(
             ],
             TermsDocumentKind.Consent,
             RequiresSignature: true
+        ),
+    ];
+
+    private static readonly LegalPolicySeed[] DemoLegalPolicies =
+    [
+        new(
+            LegalPolicyKind.Privacy,
+            [
+                (
+                    null,
+                    "Esta política de privacidad es un ejemplo de la demostración. En una instalación real, "
+                        + "la administración publica la suya desde el panel de administración."
+                ),
+                (
+                    "¿Qué datos tratamos?",
+                    "Los datos de tu cuenta (nombre, email y teléfono), los de los menores que añadas y tus "
+                        + "inscripciones en las actividades."
+                ),
+                (
+                    "¿Para qué los usamos?",
+                    "Para gestionar tu cuenta y tus inscripciones y avisarte de lo que necesites saber sobre ellas."
+                ),
+                (
+                    "¿Cuánto tiempo los conservamos?",
+                    "Mientras mantengas la cuenta. Puedes eliminarla cuando quieras desde «Mi cuenta»."
+                ),
+                (
+                    "¿Cuáles son tus derechos?",
+                    "Puedes acceder a tus datos, rectificarlos, suprimirlos, limitar u oponerte a su tratamiento "
+                        + "y pedir su portabilidad escribiéndonos. También puedes reclamar ante la Agencia "
+                        + "Española de Protección de Datos."
+                ),
+            ]
+        ),
+        new(
+            LegalPolicyKind.Cookies,
+            [
+                (
+                    null,
+                    "Esta política de cookies es un ejemplo de la demostración. En una instalación real, la "
+                        + "administración publica la suya desde el panel de administración."
+                ),
+                (
+                    "¿Qué cookies usamos?",
+                    "Solo cookies propias, necesarias para iniciar sesión y proteger los formularios. No usamos "
+                        + "cookies de análisis, de publicidad ni de terceros."
+                ),
+                (
+                    "¿Cómo puedes eliminarlas?",
+                    "Desde la configuración de tu navegador. Si las bloqueas, podrás consultar la web, pero no "
+                        + "iniciar sesión."
+                ),
+            ]
         ),
     ];
 
@@ -2595,5 +2701,6 @@ internal sealed record DemoGraph(
     List<EventRating> Ratings,
     List<NewsItem> News,
     List<Resource> Resources,
-    List<Partner> Partners
+    List<Partner> Partners,
+    List<LegalPolicy> LegalPolicies
 );

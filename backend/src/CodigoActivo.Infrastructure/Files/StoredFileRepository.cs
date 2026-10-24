@@ -154,6 +154,12 @@ public class StoredFileRepository(CodigoActivoDbContext context)
                 UNION ALL
                 SELECT regexp_matches(description::text, {RichTextFileReferences.ContentUrlPattern}, 'g') AS match
                 FROM terms_document_versions
+                UNION ALL
+                SELECT regexp_matches(content::text, {RichTextFileReferences.ContentUrlPattern}, 'g') AS match
+                FROM legal_policies
+                UNION ALL
+                SELECT regexp_matches(content::text, {RichTextFileReferences.ContentUrlPattern}, 'g') AS match
+                FROM legal_policy_versions
             ) AS refs
             """;
         var embeddedRefs = await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct);

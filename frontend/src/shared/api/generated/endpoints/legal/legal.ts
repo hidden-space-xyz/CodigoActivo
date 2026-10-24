@@ -5,17 +5,36 @@
  * OpenAPI spec version: 1.0
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/vue-query';
 import type {
+  DataTag,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
   UseMutationOptions,
-  UseMutationReturnType
+  UseMutationReturnType,
+  UseQueryOptions,
+  UseQueryReturnType
 } from '@tanstack/vue-query';
 
+import {
+  computed,
+  toValue,
+  unref
+} from 'vue';
 import type {
-  LegalEntityResponse
+  MaybeRefOrGetter
+} from 'vue';
+
+import type {
+  LegalEntityResponse,
+  LegalPolicyKind,
+  LegalPolicyResponse,
+  LegalPolicyVersionResponse,
+  PublishLegalPolicyRequest
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
@@ -103,4 +122,345 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getGetApiLegalEntityMutationOptions(options), queryClient);
+    }
+    export type getApiLegalPoliciesKindResponse200 = {
+  data: LegalPolicyResponse
+  status: 200
+}
+
+export type getApiLegalPoliciesKindResponseSuccess = (getApiLegalPoliciesKindResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiLegalPoliciesKindResponse = (getApiLegalPoliciesKindResponseSuccess)
+
+export const getGetApiLegalPoliciesKindUrl = (kind: LegalPolicyKind,) => {
+
+
+
+
+  return `/api/legal-policies/${kind}`
+}
+
+export const getApiLegalPoliciesKind = async (kind: LegalPolicyKind, options?: Parameters<typeof httpClient>[1]): Promise<getApiLegalPoliciesKindResponse> => {
+
+  return httpClient<getApiLegalPoliciesKindResponse>(getGetApiLegalPoliciesKindUrl(kind),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiLegalPoliciesKindMutationKey = () => ['getApiLegalPoliciesKind'] as const;
+
+export const getGetApiLegalPoliciesKindMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiLegalPoliciesKind>>, TError,GetApiLegalPoliciesKindMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiLegalPoliciesKind>>, TError,GetApiLegalPoliciesKindMutationVariables, TContext> => {
+
+const mutationKey = getGetApiLegalPoliciesKindMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiLegalPoliciesKind>>, GetApiLegalPoliciesKindMutationVariables> = (props) => {
+          const {kind} = props ?? {};
+
+          return  getApiLegalPoliciesKind(kind,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiLegalPoliciesKindMutationResult = NonNullable<Awaited<ReturnType<typeof getApiLegalPoliciesKind>>>
+
+    export type GetApiLegalPoliciesKindMutationError = unknown
+    export type GetApiLegalPoliciesKindMutationVariables = {kind: LegalPolicyKind}
+
+    export const useGetApiLegalPoliciesKind = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiLegalPoliciesKind>>, TError,GetApiLegalPoliciesKindMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiLegalPoliciesKind>>,
+        TError,
+        GetApiLegalPoliciesKindMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetApiLegalPoliciesKindMutationOptions(options), queryClient);
+    }
+    export type putApiLegalPoliciesKindResponse200 = {
+  data: LegalPolicyResponse
+  status: 200
+}
+
+export type putApiLegalPoliciesKindResponseSuccess = (putApiLegalPoliciesKindResponse200) & {
+  headers: Headers;
+};
+;
+
+export type putApiLegalPoliciesKindResponse = (putApiLegalPoliciesKindResponseSuccess)
+
+export const getPutApiLegalPoliciesKindUrl = (kind: LegalPolicyKind,) => {
+
+
+
+
+  return `/api/legal-policies/${kind}`
+}
+
+export const putApiLegalPoliciesKind = async (kind: LegalPolicyKind,
+    publishLegalPolicyRequest?: PublishLegalPolicyRequest, options?: Parameters<typeof httpClient>[1]): Promise<putApiLegalPoliciesKindResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<putApiLegalPoliciesKindResponse>(getPutApiLegalPoliciesKindUrl(kind),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(publishLegalPolicyRequest)
+  }
+);}
+
+
+
+
+
+export const getPutApiLegalPoliciesKindQueryKey = (kind: MaybeRefOrGetter<LegalPolicyKind>,
+    publishLegalPolicyRequest?: MaybeRefOrGetter<PublishLegalPolicyRequest>,) => {
+    return [
+    'PUT', 'api','legal-policies',kind, publishLegalPolicyRequest
+    ] as const;
+    }
+
+
+export const getPutApiLegalPoliciesKindQueryOptions = <TData = Awaited<ReturnType<typeof putApiLegalPoliciesKind>>, TError = unknown>(kind: MaybeRefOrGetter<LegalPolicyKind>,
+    publishLegalPolicyRequest?: MaybeRefOrGetter<PublishLegalPolicyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiLegalPoliciesKind>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPutApiLegalPoliciesKindQueryKey(kind,publishLegalPolicyRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiLegalPoliciesKind>>> = ({ signal }) => putApiLegalPoliciesKind(toValue(kind),toValue(publishLegalPolicyRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => toValue(kind) !== null && toValue(kind) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiLegalPoliciesKind>>, TError, TData>
+}
+
+export type PutApiLegalPoliciesKindQueryResult = NonNullable<Awaited<ReturnType<typeof putApiLegalPoliciesKind>>>
+export type PutApiLegalPoliciesKindQueryError = unknown
+
+
+
+export function usePutApiLegalPoliciesKind<TData = Awaited<ReturnType<typeof putApiLegalPoliciesKind>>, TError = unknown>(
+ kind: MaybeRefOrGetter<LegalPolicyKind>,
+    publishLegalPolicyRequest?: MaybeRefOrGetter<PublishLegalPolicyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiLegalPoliciesKind>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPutApiLegalPoliciesKindQueryOptions(kind,publishLegalPolicyRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type getApiLegalPoliciesKindVersionsResponse200 = {
+  data: LegalPolicyVersionResponse[]
+  status: 200
+}
+
+export type getApiLegalPoliciesKindVersionsResponseSuccess = (getApiLegalPoliciesKindVersionsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiLegalPoliciesKindVersionsResponse = (getApiLegalPoliciesKindVersionsResponseSuccess)
+
+export const getGetApiLegalPoliciesKindVersionsUrl = (kind: LegalPolicyKind,) => {
+
+
+
+
+  return `/api/legal-policies/${kind}/versions`
+}
+
+export const getApiLegalPoliciesKindVersions = async (kind: LegalPolicyKind, options?: Parameters<typeof httpClient>[1]): Promise<getApiLegalPoliciesKindVersionsResponse> => {
+
+  return httpClient<getApiLegalPoliciesKindVersionsResponse>(getGetApiLegalPoliciesKindVersionsUrl(kind),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiLegalPoliciesKindVersionsMutationKey = () => ['getApiLegalPoliciesKindVersions'] as const;
+
+export const getGetApiLegalPoliciesKindVersionsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersions>>, TError,GetApiLegalPoliciesKindVersionsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersions>>, TError,GetApiLegalPoliciesKindVersionsMutationVariables, TContext> => {
+
+const mutationKey = getGetApiLegalPoliciesKindVersionsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersions>>, GetApiLegalPoliciesKindVersionsMutationVariables> = (props) => {
+          const {kind} = props ?? {};
+
+          return  getApiLegalPoliciesKindVersions(kind,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiLegalPoliciesKindVersionsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersions>>>
+
+    export type GetApiLegalPoliciesKindVersionsMutationError = unknown
+    export type GetApiLegalPoliciesKindVersionsMutationVariables = {kind: LegalPolicyKind}
+
+    export const useGetApiLegalPoliciesKindVersions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersions>>, TError,GetApiLegalPoliciesKindVersionsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiLegalPoliciesKindVersions>>,
+        TError,
+        GetApiLegalPoliciesKindVersionsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetApiLegalPoliciesKindVersionsMutationOptions(options), queryClient);
+    }
+    export type getApiLegalPoliciesKindVersionsVersionResponse200 = {
+  data: LegalPolicyResponse
+  status: 200
+}
+
+export type getApiLegalPoliciesKindVersionsVersionResponseSuccess = (getApiLegalPoliciesKindVersionsVersionResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiLegalPoliciesKindVersionsVersionResponse = (getApiLegalPoliciesKindVersionsVersionResponseSuccess)
+
+export const getGetApiLegalPoliciesKindVersionsVersionUrl = (kind: LegalPolicyKind,
+    version: number,) => {
+
+
+
+
+  return `/api/legal-policies/${kind}/versions/${version}`
+}
+
+export const getApiLegalPoliciesKindVersionsVersion = async (kind: LegalPolicyKind,
+    version: number, options?: Parameters<typeof httpClient>[1]): Promise<getApiLegalPoliciesKindVersionsVersionResponse> => {
+
+  return httpClient<getApiLegalPoliciesKindVersionsVersionResponse>(getGetApiLegalPoliciesKindVersionsVersionUrl(kind,version),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiLegalPoliciesKindVersionsVersionMutationKey = () => ['getApiLegalPoliciesKindVersionsVersion'] as const;
+
+export const getGetApiLegalPoliciesKindVersionsVersionMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersionsVersion>>, TError,GetApiLegalPoliciesKindVersionsVersionMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersionsVersion>>, TError,GetApiLegalPoliciesKindVersionsVersionMutationVariables, TContext> => {
+
+const mutationKey = getGetApiLegalPoliciesKindVersionsVersionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersionsVersion>>, GetApiLegalPoliciesKindVersionsVersionMutationVariables> = (props) => {
+          const {kind,version} = props ?? {};
+
+          return  getApiLegalPoliciesKindVersionsVersion(kind,version,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiLegalPoliciesKindVersionsVersionMutationResult = NonNullable<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersionsVersion>>>
+
+    export type GetApiLegalPoliciesKindVersionsVersionMutationError = unknown
+    export type GetApiLegalPoliciesKindVersionsVersionMutationVariables = {kind: LegalPolicyKind;version: number}
+
+    export const useGetApiLegalPoliciesKindVersionsVersion = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiLegalPoliciesKindVersionsVersion>>, TError,GetApiLegalPoliciesKindVersionsVersionMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiLegalPoliciesKindVersionsVersion>>,
+        TError,
+        GetApiLegalPoliciesKindVersionsVersionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetApiLegalPoliciesKindVersionsVersionMutationOptions(options), queryClient);
     }

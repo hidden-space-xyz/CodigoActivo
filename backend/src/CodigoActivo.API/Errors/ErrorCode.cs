@@ -233,6 +233,27 @@ public enum ErrorCode
     TermsDocumentKindInUse,
 
     /// <summary>
+    /// A legal policy was to be published without any text.
+    /// </summary>
+    LegalPolicyContentRequired,
+
+    /// <summary>
+    /// No policy of that kind was published yet.
+    /// </summary>
+    LegalPolicyNotFound,
+
+    /// <summary>
+    /// The policy has no version with that number.
+    /// </summary>
+    LegalPolicyVersionNotFound,
+
+    /// <summary>
+    /// Another administrator published the first version of the same policy at the same time; the
+    /// change can be sent again.
+    /// </summary>
+    LegalPolicyPublishedConcurrently,
+
+    /// <summary>
     /// Selects the resource not found option.
     /// </summary>
     ResourceNotFound,
