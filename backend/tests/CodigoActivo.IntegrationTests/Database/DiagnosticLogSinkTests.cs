@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Infrastructure.Diagnostics;
@@ -72,13 +73,30 @@ public sealed class DiagnosticLogSinkTests(PostgresContainerFixture postgres) : 
     }
 
     [Fact]
-    public async Task EmitBatchAsyncCreatesTheMissingPartitionOfARecentDay()
+    public async Task EmitBatchAsyncCreatesTheMissingPartitionOfARecentDayBeforeWriting()
     {
         var yesterday = new DateOnly(2026, 7, 3);
         await LogTables.DropPartitionAsync(postgres, LogTable.Diagnostics, yesterday);
+        var failedCopies = 0;
+        void CountFailedCopy(object? sender, FirstChanceExceptionEventArgs args)
+        {
+            if (args.Exception is PostgresException { SqlState: PostgresErrorCodes.CheckViolation })
+            {
+                Interlocked.Increment(ref failedCopies);
+            }
+        }
 
-        await Sink.EmitBatchAsync([Event(Now.AddDays(-1), "late"), Event(Now, "today")]);
+        AppDomain.CurrentDomain.FirstChanceException += CountFailedCopy;
+        try
+        {
+            await Sink.EmitBatchAsync([Event(Now.AddDays(-1), "late"), Event(Now, "today")]);
+        }
+        finally
+        {
+            AppDomain.CurrentDomain.FirstChanceException -= CountFailedCopy;
+        }
 
+        failedCopies.Should().Be(0);
         (await LogTables.PartitionsAsync(postgres, LogTable.Diagnostics))
             .Should()
             .Contain(LogPartitions.NameOf(LogTable.Diagnostics, yesterday));
@@ -86,6 +104,26 @@ public sealed class DiagnosticLogSinkTests(PostgresContainerFixture postgres) : 
             .Select(entry => entry.Message)
             .Should()
             .Equal("Stored late", "Stored today");
+    }
+
+    [Fact]
+    public async Task EmitBatchAsyncRecreatesAPartitionDroppedAfterItsDayWasPrepared()
+    {
+        var sink = Sink;
+        await sink.EmitBatchAsync([Event(Now, "first")]);
+        await LogTables.DropPartitionAsync(
+            postgres,
+            LogTable.Diagnostics,
+            new DateOnly(2026, 7, 4)
+        );
+
+        await sink.EmitBatchAsync([Event(Now.AddMinutes(1), "second")]);
+
+        (await LogTables.DiagnosticEntriesAsync(postgres))
+            .Should()
+            .ContainSingle()
+            .Which.Message.Should()
+            .Be("Stored second");
     }
 
     [Fact]
