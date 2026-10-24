@@ -77,6 +77,24 @@ public sealed class GetEventHistoryQueryHandler(
             return [];
         }
 
+        var ratings = (
+            await executor.ToListAsync(
+                readStore
+                    .EventRatings.Where(r => r.UserId == userId)
+                    .Select(r => new
+                    {
+                        r.EventId,
+                        Rating = new EventHistoryRatingResponse(
+                            r.Score,
+                            r.MostLiked,
+                            r.LeastLiked,
+                            r.Suggestions
+                        ),
+                    }),
+                ct
+            )
+        ).ToDictionary(r => r.EventId, r => r.Rating);
+
         var today = clock.Today;
         var upcoming = new List<EventHistoryResponse>();
         var past = new List<EventHistoryResponse>();
@@ -93,7 +111,9 @@ public sealed class GetEventHistoryQueryHandler(
                 continue;
             }
 
-            (isPast ? past : upcoming).Add(ToHistoryEntry(visible, isPast, userId));
+            (isPast ? past : upcoming).Add(
+                ToHistoryEntry(visible, isPast, ratings.GetValueOrDefault(group.Key), userId)
+            );
         }
 
         return
@@ -106,6 +126,7 @@ public sealed class GetEventHistoryQueryHandler(
     private static EventHistoryResponse ToHistoryEntry(
         IReadOnlyList<HistoryRow> rows,
         bool isPast,
+        EventHistoryRatingResponse? rating,
         Guid userId
     )
     {
@@ -119,6 +140,7 @@ public sealed class GetEventHistoryQueryHandler(
             first.ThumbnailId,
             isPast,
             isPast,
+            rating,
             [
                 .. rows.Select(row => new EventHistoryActivityResponse(
                     row.ActivityId,

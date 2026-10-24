@@ -40,6 +40,7 @@ export const ErrorCode = {
   EventRatingNotFinished: 'EventRatingNotFinished',
   EventRatingAttendanceRequired: 'EventRatingAttendanceRequired',
   EventRatingEmpty: 'EventRatingEmpty',
+  EventRatingNotFound: 'EventRatingNotFound',
   EventTermsAcceptanceRequired: 'EventTermsAcceptanceRequired',
   EventTermsSignatureRequired: 'EventTermsSignatureRequired',
   EventTermsSignatureNotFound: 'EventTermsSignatureNotFound',

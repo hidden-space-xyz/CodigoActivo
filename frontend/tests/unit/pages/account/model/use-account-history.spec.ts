@@ -1,11 +1,26 @@
+import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useAccountHistory } from '@/pages/account/model/use-account-history'
 import type { EventHistoryResponse } from '@/shared/api/generated/models'
 
-import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
+import {
+  apiError,
+  http,
+  HttpResponse,
+  noContent,
+  server,
+  TEST_CSRF_TOKEN,
+} from '../../../../support/server'
 import { buildHistoryActivityResponse, buildHistoryResponse } from '../../../../support/builders'
-import { mountComposable } from '../../../../support/render'
+import {
+  acceptMessageBox,
+  cancelMessageBox,
+  expectNotification,
+  messageBox,
+  textOf,
+} from '../../../../support/dom'
+import { mountComposable, t } from '../../../../support/render'
 
 describe('useAccountHistory', () => {
   it('does not request the history without a signed-in user', async () => {
@@ -69,10 +84,10 @@ describe('useAccountHistory', () => {
         historyRequests += 1
         return HttpResponse.json([buildHistoryResponse({ isPast: true, canRate: true })])
       }),
-      http.post('/api/events/:eventId/rating', async ({ request, params }) => {
+      http.put('/api/events/:eventId/rating', async ({ request, params }) => {
         received = { body: await request.json(), csrf: request.headers.get('X-CSRF-TOKEN') }
         expect(params.eventId).toBe('event-1')
-        return new HttpResponse(null, { status: 204 })
+        return noContent()
       }),
     )
 
@@ -92,38 +107,10 @@ describe('useAccountHistory', () => {
     await vi.waitFor(() => expect(historyRequests).toBe(2))
   })
 
-  it('remembers the events rated while it is in use, and only after the rating is saved', async () => {
-    server.use(
-      http.get('/api/me/event-history', () => HttpResponse.json([])),
-      http.post('/api/events/:eventId/rating', ({ params }) =>
-        params.eventId === 'event-1'
-          ? new HttpResponse(null, { status: 204 })
-          : apiError(400, 'EventRatingEmpty'),
-      ),
-    )
-
-    const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
-    expect(result.isRated('event-1')).toBe(false)
-
-    await result.saveRating.mutateAsync({
-      eventId: 'event-1',
-      input: { score: 5, mostLiked: '', leastLiked: '', suggestions: '' },
-    })
-    await expect(
-      result.saveRating.mutateAsync({
-        eventId: 'event-2',
-        input: { score: null, mostLiked: 'Todo', leastLiked: '', suggestions: '' },
-      }),
-    ).rejects.toMatchObject({ code: 'EventRatingEmpty' })
-
-    expect(result.isRated('event-1')).toBe(true)
-    expect(result.isRated('event-2')).toBe(false)
-  })
-
   it('exposes the error when the rating cannot be saved', async () => {
     server.use(
       http.get('/api/me/event-history', () => HttpResponse.json([])),
-      http.post('/api/events/:eventId/rating', () => apiError(400, 'EventNotFound')),
+      http.put('/api/events/:eventId/rating', () => apiError(400, 'EventNotFound')),
     )
 
     const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
@@ -136,34 +123,62 @@ describe('useAccountHistory', () => {
     ).rejects.toMatchObject({ status: 400, code: 'EventNotFound' })
   })
 
-  it('refetches the history after each of several ratings for the same event', async () => {
+  it('deletes the rating only once confirmed, then notifies and refetches the history', async () => {
     let historyRequests = 0
-    let ratingRequests = 0
+    const deleted: string[] = []
     server.use(
       http.get('/api/me/event-history', () => {
         historyRequests += 1
         return HttpResponse.json([buildHistoryResponse({ isPast: true, canRate: true })])
       }),
-      http.post('/api/events/:eventId/rating', () => {
-        ratingRequests += 1
-        return new HttpResponse(null, { status: 204 })
+      http.delete('/api/events/:eventId/rating', ({ params }) => {
+        deleted.push(String(params.eventId))
+        return noContent()
       }),
     )
-
     const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
-    await vi.waitFor(() => expect(historyRequests).toBe(1))
+    await vi.waitFor(() => expect(result.past.value).toHaveLength(1))
+    const [entry] = result.past.value
+    const then = vi.fn()
 
-    await result.saveRating.mutateAsync({
-      eventId: 'event-1',
-      input: { score: 5, mostLiked: 'Todo', leastLiked: '', suggestions: '' },
-    })
+    result.removeRating(entry!, then)
+    await flushPromises()
+    expect(textOf(messageBox().querySelector('.el-message-box__title'))).toBe(
+      t('pages.account.history.dialog.deleteHeader'),
+    )
+    expect(messageBox().textContent).toContain(
+      t('pages.account.history.dialog.deleteMessage', { event: 'Hackathon de Primavera' }),
+    )
+    await cancelMessageBox()
+    await flushPromises()
+    expect(deleted).toEqual([])
+
+    result.removeRating(entry!, then)
+    await flushPromises()
+    await acceptMessageBox()
+
+    await expectNotification(t('pages.account.history.deletedDetail'))
+    expect(deleted).toEqual(['event-1'])
+    expect(then).toHaveBeenCalledOnce()
     await vi.waitFor(() => expect(historyRequests).toBe(2))
-    await result.saveRating.mutateAsync({
-      eventId: 'event-1',
-      input: { score: 2, mostLiked: 'Otra cosa', leastLiked: '', suggestions: '' },
-    })
+  })
 
-    expect(ratingRequests).toBe(2)
-    await vi.waitFor(() => expect(historyRequests).toBe(3))
+  it('notifies and keeps going when the rating cannot be deleted', async () => {
+    server.use(
+      http.get('/api/me/event-history', () =>
+        HttpResponse.json([buildHistoryResponse({ isPast: true, canRate: true })]),
+      ),
+      http.delete('/api/events/:eventId/rating', () => apiError(404, 'EventRatingNotFound')),
+    )
+    const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
+    await vi.waitFor(() => expect(result.past.value).toHaveLength(1))
+    const then = vi.fn()
+
+    result.removeRating(result.past.value[0]!, then)
+    await flushPromises()
+    await acceptMessageBox()
+
+    await expectNotification(t('errors.EventRatingNotFound'))
+    expect(then).not.toHaveBeenCalled()
   })
 })

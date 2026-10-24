@@ -63,7 +63,12 @@ public sealed class LegalCopyTests
 
     private static LegalCopyEvent Event(Guid id, string title, DateOnly startsOn)
     {
-        return new LegalCopyEvent(id, title, startsOn, startsOn.AddDays(1), [], []);
+        return new LegalCopyEvent(id, title, startsOn, startsOn.AddDays(1), [], [], []);
+    }
+
+    private static LegalCopyRating Rating(Guid id, Guid authorId)
+    {
+        return new LegalCopyRating(id, authorId, 4, "El taller", null, "Más horarios");
     }
 
     private static LegalCopyTermsDocument Document(Guid id, string name)
@@ -118,7 +123,8 @@ public sealed class LegalCopyTests
         IReadOnlyCollection<(Guid EventId, LegalCopyDecision Decision)>? decisions = null,
         IReadOnlyCollection<LegalCopyTermsDocument>? documents = null,
         IReadOnlyCollection<LegalCopyEvent>? events = null,
-        LegalCopyGuardian? guardian = null
+        LegalCopyGuardian? guardian = null,
+        IReadOnlyCollection<(Guid EventId, LegalCopyRating Rating)>? ratings = null
     )
     {
         return LegalCopy.Compose(
@@ -128,6 +134,7 @@ public sealed class LegalCopyTests
             guardian,
             signups ?? [],
             decisions ?? [],
+            ratings ?? [],
             documents ?? [],
             events ?? []
         );
@@ -385,5 +392,27 @@ public sealed class LegalCopyTests
         copy.Events[1].TermsDecisions.Should().Equal(congressDecision);
         copy.Events[1].Activities.Should().Equal(congressSignup);
         copy.TermsDocuments.Should().Equal(terms);
+    }
+
+    [Fact]
+    public void ComposeKeepsEveryRatingUnderItsEventEvenWithoutASignup()
+    {
+        var account = Person(AccountId, "Ana", "Ruiz");
+        var fair = Event(Id(10), "Feria", FirstDay);
+        var congress = Event(Id(11), "Congreso", FirstDay.AddMonths(1));
+        var unrelated = Event(Id(12), "Jornada", FirstDay.AddMonths(2));
+        var fairRating = Rating(Id(40), AccountId);
+        var congressRating = Rating(Id(41), AccountId);
+
+        var copy = Compose(
+            [account],
+            events: [unrelated, congress, fair],
+            ratings: [(congress.Id, congressRating), (fair.Id, fairRating)]
+        );
+
+        copy.Events.Select(ev => ev.Id).Should().Equal(fair.Id, congress.Id);
+        copy.Events[0].Ratings.Should().Equal(fairRating);
+        copy.Events[0].Activities.Should().BeEmpty();
+        copy.Events[1].Ratings.Should().Equal(congressRating);
     }
 }

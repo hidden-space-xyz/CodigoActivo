@@ -5,12 +5,15 @@ namespace CodigoActivo.Domain.Activities;
 
 /// <summary>
 /// Describes one removal of participation data: what is removed, who removes it and when. The
-/// scope is the whole event, one of its activities, or the signup of one person to an activity.
+/// scope is the whole event, one of its activities, the signup of one person to an activity, or
+/// the rating one account gave the event.
 /// </summary>
 /// <param name="Origin">What removes the participation.</param>
 /// <param name="EventId">Identifier of the event the participation belongs to.</param>
-/// <param name="ActivityId">Identifier of the activity, unless the whole event is removed.</param>
-/// <param name="PersonId">Identifier of the person whose signup is cancelled, for a cancellation.</param>
+/// <param name="ActivityId">Identifier of the activity, for an activity or a signup.</param>
+/// <param name="PersonId">
+/// Identifier of the person whose signup is cancelled, or of the author of the deleted rating.
+/// </param>
 /// <param name="ActorId">Identifier of the user who removes it.</param>
 /// <param name="DeletedAt">UTC timestamp of the removal.</param>
 public sealed record ParticipationDeletion(
@@ -89,6 +92,26 @@ public sealed record ParticipationDeletion(
             activity.Id,
             personId,
             actorId,
+            now
+        );
+    }
+
+    /// <summary>
+    /// Describes the deletion of a rating by its author.
+    /// </summary>
+    /// <param name="rating">Rating being deleted.</param>
+    /// <param name="now">Current time.</param>
+    /// <returns>The description of the removal.</returns>
+    public static ParticipationDeletion OfRating(EventRating rating, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(rating);
+
+        return new ParticipationDeletion(
+            ParticipationDeletionOrigin.RatingDeleted,
+            rating.EventId,
+            null,
+            rating.UserId,
+            rating.UserId,
             now
         );
     }

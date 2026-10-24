@@ -2378,7 +2378,7 @@
       }
     },
     "/api/events/{eventId}/rating": {
-      "post": {
+      "put": {
         "tags": [
           "Events"
         ],
@@ -2402,6 +2402,27 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -6253,6 +6274,7 @@
           "EventRatingNotFinished",
           "EventRatingAttendanceRequired",
           "EventRatingEmpty",
+          "EventRatingNotFound",
           "EventTermsAcceptanceRequired",
           "EventTermsSignatureRequired",
           "EventTermsSignatureNotFound",
@@ -6812,6 +6834,29 @@
         },
         "additionalProperties": false
       },
+      "EventHistoryRatingResponse": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "mostLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "leastLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "suggestions": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "EventHistoryResponse": {
         "required": [
           "activities",
@@ -6853,6 +6898,9 @@
           },
           "canRate": {
             "type": "boolean"
+          },
+          "rating": {
+            "$ref": "#/components/schemas/EventHistoryRatingResponse"
           },
           "activities": {
             "type": "array",
@@ -8333,12 +8381,42 @@
         },
         "additionalProperties": false
       },
+      "PersonalDataRatingResponse": {
+        "required": [
+          "eventTitle"
+        ],
+        "type": "object",
+        "properties": {
+          "eventTitle": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "mostLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "leastLiked": {
+            "type": "string",
+            "nullable": true
+          },
+          "suggestions": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "PersonalDataResponse": {
         "required": [
           "account",
           "dependents",
           "generatedAt",
           "newsConsentChanges",
+          "ratings",
           "securityLog",
           "sessions",
           "signups",
@@ -8375,6 +8453,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PersonalDataTermsDecisionResponse"
+            }
+          },
+          "ratings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataRatingResponse"
             }
           },
           "sessions": {

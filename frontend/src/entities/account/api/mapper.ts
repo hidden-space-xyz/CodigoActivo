@@ -127,7 +127,7 @@ function toAccountHistoryActivity(activity: EventHistoryActivityResponse): Accou
 
 /**
  * Maps an attended event with its activities for the account history, joining participant names.
- * Ratings are anonymous and unlimited, so a past entry stays rateable however many were sent.
+ * The account's own rating comes as form values, with missing answers as `''`, so it can be edited.
  */
 export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHistoryEntry {
   return {
@@ -139,6 +139,14 @@ export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHisto
     thumbnailId: entry.thumbnailId,
     isPast: entry.isPast,
     canRate: entry.canRate,
+    rating: entry.rating
+      ? {
+          score: entry.rating.score ?? null,
+          mostLiked: entry.rating.mostLiked ?? '',
+          leastLiked: entry.rating.leastLiked ?? '',
+          suggestions: entry.rating.suggestions ?? '',
+        }
+      : null,
     activities: entry.activities.map(toAccountHistoryActivity),
   }
 }
@@ -277,6 +285,13 @@ export function toPersonalDataFile(data: PersonalDataResponse, t: Translate): Pe
         fecha: change.changedAt,
         decidioPor: change.decidedByName,
       })),
+    })),
+    valoraciones: data.ratings.map((rating) => ({
+      evento: rating.eventTitle,
+      puntuacion: rating.score ?? null,
+      loQueMasGusto: rating.mostLiked ?? null,
+      loQueMenosGusto: rating.leastLiked ?? null,
+      sugerencias: rating.suggestions ?? null,
     })),
     sesionesAbiertas: data.sessions.map((session) => ({
       abiertaEl: session.createdAt,

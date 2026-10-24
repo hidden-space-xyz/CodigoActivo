@@ -346,6 +346,28 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     SeededAt
                 )
             );
+            db.EventRatings.AddRange(
+                EventRating
+                    .Submit(
+                        EventId.From(CampId),
+                        UserId.From(TestSeedData.Users.MemberId),
+                        4,
+                        "La escalada",
+                        null,
+                        "Más sombra"
+                    )
+                    .Value,
+                EventRating
+                    .Submit(
+                        EventId.From(ConferenceId),
+                        UserId.From(TestSeedData.Users.BlockedId),
+                        2,
+                        null,
+                        null,
+                        null
+                    )
+                    .Value
+            );
         });
     }
 
@@ -494,6 +516,9 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 .Should()
                 .Equal(UserId.From(TestSeedData.Users.BlockedId));
             (await db.NewsConsentChanges.AnyAsync(Ct)).Should().BeFalse();
+            (await db.EventRatings.Select(r => r.UserId).ToListAsync(Ct))
+                .Should()
+                .Equal(UserId.From(TestSeedData.Users.BlockedId));
             return true;
         });
 
@@ -502,7 +527,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
 
         var copy = await CopyOfAsync(TestSeedData.Users.MemberId);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(8);
+        copy.GetProperty("schemaVersion").GetInt32().Should().Be(9);
         copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Self");
         IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.MemberId);
         copy.GetProperty("guardian").ValueKind.Should().Be(JsonValueKind.Null);
@@ -675,6 +700,12 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .Should()
             .Be(new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero));
         campActivities[2].GetProperty("modality").GetString().Should().Be("Online");
+        var campRating = Items(camp.GetProperty("ratings")).Should().ContainSingle().Subject;
+        IdOf(campRating, "authorId").Should().Be(TestSeedData.Users.MemberId);
+        campRating.GetProperty("score").GetInt32().Should().Be(4);
+        campRating.GetProperty("mostLiked").GetString().Should().Be("La escalada");
+        campRating.GetProperty("leastLiked").ValueKind.Should().Be(JsonValueKind.Null);
+        campRating.GetProperty("suggestions").GetString().Should().Be("Más sombra");
 
         var trip = events[1];
         Items(trip.GetProperty("termsDecisions"))
@@ -682,6 +713,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .Should()
             .Equal(TripRulesId);
         Items(trip.GetProperty("activities")).Should().BeEmpty();
+        Items(trip.GetProperty("ratings")).Should().BeEmpty();
     }
 
     [Fact]

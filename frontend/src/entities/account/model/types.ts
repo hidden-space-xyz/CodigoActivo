@@ -1,5 +1,7 @@
 import type { Gender } from '@/entities/user/@x/account'
 
+import type { EventRatingInput } from './account-inputs'
+
 /** Signed-in user's own data shown and edited on the account page. */
 export interface AccountProfile {
   readonly id: string
@@ -92,6 +94,8 @@ export interface AccountHistoryEntry {
   readonly thumbnailId: string
   readonly isPast: boolean
   readonly canRate: boolean
+  /** The account's own rating of the event, or `null` while it has not rated it. */
+  readonly rating: EventRatingInput | null
   readonly activities: readonly AccountHistoryActivity[]
 }
 
@@ -165,6 +169,13 @@ export interface PersonalDataFile {
       readonly fecha: string
       readonly decidioPor: string
     }[]
+  }[]
+  readonly valoraciones: readonly {
+    readonly evento: string
+    readonly puntuacion: number | null
+    readonly loQueMasGusto: string | null
+    readonly loQueMenosGusto: string | null
+    readonly sugerencias: string | null
   }[]
   readonly sesionesAbiertas: readonly {
     readonly abiertaEl: string

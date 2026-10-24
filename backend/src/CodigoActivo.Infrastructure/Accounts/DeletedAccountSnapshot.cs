@@ -23,7 +23,7 @@ internal static class DeletedAccountSnapshot
     /// <summary>
     /// Version of the JSON layout, stored in every copy.
     /// </summary>
-    internal const int SchemaVersion = 8;
+    internal const int SchemaVersion = 9;
 
     /// <summary>
     /// Serialization of the blocked copies, shared with <c>DeletedParticipationSnapshot</c>: web
@@ -285,9 +285,26 @@ internal static class DeletedAccountSnapshot
             ]
         ));
 
+        var ratingRows = await context
+            .EventRatings.AsNoTracking()
+            .Where(rating => householdIds.Contains(rating.UserId))
+            .ToListAsync(ct);
+        var ratings = ratingRows.ConvertAll(rating => new EventRatingCopy(
+            rating.EventId.Value,
+            new LegalCopyRating(
+                rating.Id.Value,
+                rating.UserId.Value,
+                rating.Score,
+                rating.MostLiked,
+                rating.LeastLiked,
+                rating.Suggestions
+            )
+        ));
+
         var eventIds = signupRows
             .Select(row => row.EventId)
             .Union(decisionRows.Select(row => row.EventId))
+            .Union(ratingRows.Select(rating => rating.EventId))
             .ToList();
         var eventRows = await context
             .Events.AsNoTracking()
@@ -306,7 +323,8 @@ internal static class DeletedAccountSnapshot
             row.StartsAt,
             row.EndsAt,
             new List<LegalCopyDecision>(),
-            new List<LegalCopyActivity>()
+            new List<LegalCopyActivity>(),
+            new List<LegalCopyRating>()
         ));
 
         var copy = LegalCopy.Compose(
@@ -316,6 +334,7 @@ internal static class DeletedAccountSnapshot
             guardian,
             [.. signups.Select(s => (s.EventId, s.Activity))],
             [.. decisions.Select(d => (d.EventId, d.Decision))],
+            [.. ratings.Select(r => (r.EventId, r.Rating))],
             documents,
             events
         );
@@ -337,6 +356,8 @@ internal static class DeletedAccountSnapshot
     private sealed record EventSignup(Guid EventId, LegalCopyActivity Activity);
 
     private sealed record EventDecision(Guid EventId, LegalCopyDecision Decision);
+
+    private sealed record EventRatingCopy(Guid EventId, LegalCopyRating Rating);
 
     private sealed record Snapshot(
         int SchemaVersion,

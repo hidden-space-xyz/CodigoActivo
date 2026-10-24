@@ -9,6 +9,7 @@ import { renderWithProviders, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
 import { buildHistoryActivityResponse, buildHistoryResponse } from '../../../../support/builders'
 import {
+  acceptMessageBox,
   click,
   findButton,
   findButtons,
@@ -208,32 +209,46 @@ describe('HistorySection', () => {
     }
   })
 
-  it('marks the event as rated once its rating is saved and the history refreshed', async () => {
-    const history = serveHistory()
+  it('offers to edit a stored rating, opens it filled in and deletes it once confirmed', async () => {
+    const history = serveHistory([
+      buildHistoryResponse({
+        ...PAST_WITH_ACTIVITY,
+        rating: { score: 4, mostLiked: 'Los retos', leastLiked: null, suggestions: null },
+      }),
+      PAST_WITHOUT_ACTIVITIES,
+    ])
+    const deleted: unknown[] = []
     server.use(
-      http.post('/api/events/:eventId/rating', () => new HttpResponse(null, { status: 204 })),
+      http.delete('/api/events/:eventId/rating', ({ params }) => {
+        deleted.push(params.eventId)
+        return new HttpResponse(null, { status: 204 })
+      }),
     )
     await renderSection()
 
-    await click(findButton(t('pages.account.history.rate'), eventItem('Taller de otoño')))
+    const rated = eventItem('Hackathon de Primavera')
+    expect(findButtons(t('pages.account.history.rate'), rated)).toHaveLength(0)
+    expect(findButton(t('pages.account.history.rate'), eventItem('Taller de otoño'))).toBeTruthy()
+    await click(findButton(t('pages.account.history.editRating'), rated))
     const dialog = openDialog(t('pages.account.history.dialog.header'))
-    await typeInto('#rating-most', 'Todo', dialog)
-    await click(findButton(t('pages.account.history.dialog.submit'), dialog))
+    expect(dialog.querySelector<HTMLTextAreaElement>('#rating-most')?.value).toBe('Los retos')
+    expect(findButton(t('pages.account.history.dialog.save'), dialog)).toBeTruthy()
 
+    await click(findButton(t('pages.account.history.dialog.delete'), dialog))
+    await flushPromises()
+    await acceptMessageBox()
+
+    await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
+    expect(deleted).toEqual(['past-1'])
+    expect(notificationTexts().join()).toContain(t('pages.account.history.deletedDetail'))
     await vi.waitFor(() => expect(history.count()).toBe(2))
-    const entry = eventItem('Taller de otoño')
-    expect(findButtons(t('pages.account.history.rate'), entry)).toHaveLength(0)
-    expect(findButton(t('pages.account.history.rated'), entry).disabled).toBe(true)
-    expect(
-      findButton(t('pages.account.history.rate'), eventItem('Hackathon de Primavera')),
-    ).toBeTruthy()
   })
 
   it('opens the dialog empty, saves the rating, confirms it and refreshes the history', async () => {
     const history = serveHistory()
     let received: { eventId: unknown; body: unknown } | undefined
     server.use(
-      http.post('/api/events/:eventId/rating', async ({ params, request }) => {
+      http.put('/api/events/:eventId/rating', async ({ params, request }) => {
         received = { eventId: params.eventId, body: await request.json() }
         return new HttpResponse(null, { status: 204 })
       }),
@@ -243,7 +258,7 @@ describe('HistorySection', () => {
     await click(findButton(t('pages.account.history.rate'), eventItem('Taller de otoño')))
     const dialog = openDialog(t('pages.account.history.dialog.header'))
     expect(dialog.textContent).toContain('Taller de otoño')
-    expect(dialog.textContent).toContain(t('pages.account.history.dialog.anonymousNotice'))
+    expect(dialog.textContent).toContain(t('pages.account.history.dialog.notice'))
     expect(dialog.querySelector<HTMLTextAreaElement>('#rating-most')?.value).toBe('')
     await click(dialog.querySelectorAll('.el-rate__item')[2] as Element)
     await typeInto('#rating-most', '  Los retos  ', dialog)
@@ -262,7 +277,7 @@ describe('HistorySection', () => {
 
   it('keeps the dialog open and notifies when the rating cannot be saved', async () => {
     serveHistory()
-    server.use(http.post('/api/events/:eventId/rating', () => apiError(404, 'EventNotFound')))
+    server.use(http.put('/api/events/:eventId/rating', () => apiError(404, 'EventNotFound')))
     await renderSection()
 
     await click(findButton(t('pages.account.history.rate'), eventItem('Taller de otoño')))
@@ -294,7 +309,7 @@ describe('HistorySection', () => {
       buildHistoryResponse({ eventId: '', title: 'Sin id', isPast: true, canRate: true }),
     ])
     server.use(
-      http.post('/api/events/:eventId/rating', () => {
+      http.put('/api/events/:eventId/rating', () => {
         saved()
         return new HttpResponse(null, { status: 204 })
       }),

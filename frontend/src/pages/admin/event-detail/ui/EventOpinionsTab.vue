@@ -5,7 +5,7 @@ import { ratingAnswers } from '../lib/rating-answers'
 import { useEventRatings } from '../model/use-event-ratings'
 
 const props = defineProps<{
-  /** Event whose anonymous ratings and written feedback are listed. */
+  /** Event whose ratings and written feedback are listed, without their authors. */
   eventId: string
   /** Whether this tab is selected; ratings are only fetched while it is. */
   active: boolean
@@ -32,9 +32,7 @@ const table = useEventRatings(
       <ul class="opinions">
         <li v-for="rating in table.items.value" :key="rating.id" class="opinion">
           <div class="opinion__head">
-            <span class="opinion__author">{{
-              $t('pages.admin.eventDetail.opinions.anonymous')
-            }}</span>
+            <span class="opinion__author">{{ $t('pages.admin.eventDetail.opinions.author') }}</span>
             <template v-if="rating.score !== null">
               <el-rate :model-value="rating.score" disabled :max="5" class="opinion__stars" />
               <span class="opinion__score">{{ rating.score }}/5</span>

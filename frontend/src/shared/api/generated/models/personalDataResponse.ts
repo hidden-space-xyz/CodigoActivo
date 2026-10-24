@@ -8,6 +8,7 @@ import type { AccountAuditEntryResponse } from './accountAuditEntryResponse';
 import type { PersonalDataAccountResponse } from './personalDataAccountResponse';
 import type { PersonalDataConsentChangeResponse } from './personalDataConsentChangeResponse';
 import type { PersonalDataDependentResponse } from './personalDataDependentResponse';
+import type { PersonalDataRatingResponse } from './personalDataRatingResponse';
 import type { PersonalDataSessionResponse } from './personalDataSessionResponse';
 import type { PersonalDataSignupResponse } from './personalDataSignupResponse';
 import type { PersonalDataTermsDecisionResponse } from './personalDataTermsDecisionResponse';
@@ -19,6 +20,7 @@ export interface PersonalDataResponse {
   dependents: PersonalDataDependentResponse[];
   signups: PersonalDataSignupResponse[];
   termsDecisions: PersonalDataTermsDecisionResponse[];
+  ratings: PersonalDataRatingResponse[];
   sessions: PersonalDataSessionResponse[];
   securityLog: AccountAuditEntryResponse[];
 }

@@ -98,7 +98,7 @@ describe('account mapper', () => {
       }),
     )
 
-    expect(entry).toMatchObject({ eventId: 'event-1', isPast: true, canRate: true })
+    expect(entry).toMatchObject({ eventId: 'event-1', isPast: true, canRate: true, rating: null })
     expect(entry.activities).toEqual([
       {
         activityId: 'activity-1',
@@ -112,6 +112,21 @@ describe('account mapper', () => {
         statusName: 'Confirmada',
       },
     ])
+  })
+
+  it('turns the stored rating into form values with missing answers as empty text', () => {
+    const entry = toAccountHistoryEntry(
+      buildHistoryResponse({
+        rating: { score: null, mostLiked: 'El taller', leastLiked: null, suggestions: null },
+      }),
+    )
+
+    expect(entry.rating).toEqual({
+      score: null,
+      mostLiked: 'El taller',
+      leastLiked: '',
+      suggestions: '',
+    })
   })
 
   it('maps a certificate', () => {
@@ -250,6 +265,15 @@ describe('toPersonalDataFile', () => {
             decidioPor: 'Ada Lovelace',
           },
         ],
+      },
+    ])
+    expect(file.valoraciones).toEqual([
+      {
+        evento: 'Hackatón',
+        puntuacion: 4,
+        loQueMasGusto: 'El taller',
+        loQueMenosGusto: null,
+        sugerencias: 'Más horarios',
       },
     ])
     expect(file.sesionesAbiertas).toEqual([

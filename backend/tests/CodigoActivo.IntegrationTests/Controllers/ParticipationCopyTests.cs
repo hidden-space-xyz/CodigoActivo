@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using AwesomeAssertions;
+using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Events;
@@ -99,6 +100,18 @@ public sealed class ParticipationCopyTests(CodigoActivoWebAppFactory factory)
                         accepted: true,
                         HandwrittenSignature.FromStored(TestSeedData.ValidPng())
                     )
+                );
+                db.EventRatings.Add(
+                    EventRating
+                        .Submit(
+                            EventId.From(eventId),
+                            UserId.From(Member),
+                            4,
+                            "La escalada",
+                            null,
+                            null
+                        )
+                        .Value
                 );
             }
 
@@ -210,7 +223,7 @@ public sealed class ParticipationCopyTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var (stored, copy) = await SingleCopyAsync();
         stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(2);
+        copy.GetProperty("schemaVersion").GetInt32().Should().Be(3);
         var deletion = copy.GetProperty("deletion");
         deletion.GetProperty("origin").GetString().Should().Be("EventDeleted");
         IdOf(deletion, "actorId").Should().Be(TestSeedData.Users.AdminId);
@@ -269,9 +282,16 @@ public sealed class ParticipationCopyTests(CodigoActivoWebAppFactory factory)
                 (climbingId, Member, "Confirmada"),
                 (workshopId, Child, "Confirmada"),
             ]);
+        var rating = Items(ev.GetProperty("ratings")).Should().ContainSingle().Subject;
+        IdOf(rating, "authorId").Should().Be(Member);
+        rating.GetProperty("score").GetInt32().Should().Be(4);
+        rating.GetProperty("mostLiked").GetString().Should().Be("La escalada");
         await Factory.QueryAsync(async db =>
         {
             (await db.EventTermsAcceptances.AnyAsync(a => a.EventId == EventId.From(eventId), Ct))
+                .Should()
+                .BeFalse();
+            (await db.EventRatings.AnyAsync(r => r.EventId == EventId.From(eventId), Ct))
                 .Should()
                 .BeFalse();
             (await db.Assignments.AnyAsync(a => a.UserId == UserId.From(Child), Ct))
@@ -297,6 +317,7 @@ public sealed class ParticipationCopyTests(CodigoActivoWebAppFactory factory)
         Items(copy.GetProperty("termsDocuments")).Should().BeEmpty();
         var ev = copy.GetProperty("event");
         Items(ev.GetProperty("termsDecisions")).Should().BeEmpty();
+        Items(ev.GetProperty("ratings")).Should().BeEmpty();
         Items(ev.GetProperty("activities"))
             .Select(a => (IdOf(a), IdOf(a, "participantId")))
             .Should()
@@ -332,6 +353,54 @@ public sealed class ParticipationCopyTests(CodigoActivoWebAppFactory factory)
             .Select(a => (IdOf(a), IdOf(a, "participantId")))
             .Should()
             .Equal((workshopId, Child));
+        Items(copy.GetProperty("event").GetProperty("ratings")).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteOwnRatingKeepsACopyOfThatRatingOnly()
+    {
+        await SeedEventAsync();
+        var member = await LoginAsMemberAsync();
+
+        using var response = await member.DeleteWithCsrfAsync($"/api/events/{eventId}/rating", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var (_, copy) = await SingleCopyAsync();
+        var deletion = copy.GetProperty("deletion");
+        deletion.GetProperty("origin").GetString().Should().Be("RatingDeleted");
+        IdOf(deletion, "actorId").Should().Be(Member);
+        IdOf(deletion, "personId").Should().Be(Member);
+        deletion.GetProperty("activityId").ValueKind.Should().Be(JsonValueKind.Null);
+        Items(copy.GetProperty("people")).Select(person => IdOf(person)).Should().Equal(Member);
+        Items(copy.GetProperty("termsDocuments")).Should().BeEmpty();
+        var ev = copy.GetProperty("event");
+        Items(ev.GetProperty("activities")).Should().BeEmpty();
+        Items(ev.GetProperty("termsDecisions")).Should().BeEmpty();
+        var rating = Items(ev.GetProperty("ratings")).Should().ContainSingle().Subject;
+        IdOf(rating, "authorId").Should().Be(Member);
+        rating.GetProperty("mostLiked").GetString().Should().Be("La escalada");
+        await Factory.QueryAsync(async db =>
+        {
+            (await db.EventRatings.AnyAsync(r => r.EventId == EventId.From(eventId), Ct))
+                .Should()
+                .BeFalse();
+            (await db.Assignments.CountAsync(a => a.UserId == UserId.From(Child), Ct))
+                .Should()
+                .Be(2);
+            return true;
+        });
+    }
+
+    [Fact]
+    public async Task DeleteOwnRatingWithoutOneReturnsNotFoundAndKeepsNoCopy()
+    {
+        await SeedEventAsync(withParticipation: false);
+        var member = await LoginAsMemberAsync();
+
+        using var response = await member.DeleteWithCsrfAsync($"/api/events/{eventId}/rating", Ct);
+
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventRatingNotFound);
+        (await Factory.QueryAsync(db => db.DeletedParticipations.AnyAsync(Ct))).Should().BeFalse();
     }
 
     [Fact]

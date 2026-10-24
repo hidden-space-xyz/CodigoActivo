@@ -10,7 +10,14 @@ import { click, findButton, findButtons, openDialogs, typeInto } from '../../../
 async function renderDialog(props: Partial<Record<string, unknown>> = {}) {
   const { wrapper } = await renderWithProviders(EventRatingDialog, {
     attach: true,
-    props: { visible: true, eventTitle: 'Hackathon', saving: false, ...props },
+    props: {
+      visible: true,
+      eventTitle: 'Hackathon',
+      rating: null,
+      saving: false,
+      deleting: false,
+      ...props,
+    },
   })
   return wrapper
 }
@@ -22,19 +29,20 @@ function field(id: string): HTMLTextAreaElement {
 }
 
 describe('EventRatingDialog', () => {
-  it('shows the event title and the anonymity notice, and opens with an empty form it does not send', async () => {
+  it('shows the event title and the notice, and opens with an empty form it does not send', async () => {
     const wrapper = await renderDialog()
 
     const [dialog] = openDialogs()
     expect(dialog?.textContent).toContain(t('pages.account.history.dialog.header'))
     expect(dialog?.textContent).toContain('Hackathon')
-    expect(dialog?.textContent).toContain(t('pages.account.history.dialog.anonymousNotice'))
+    expect(dialog?.textContent).toContain(t('pages.account.history.dialog.notice'))
     expect(field('rating-most').value).toBe('')
     expect(field('rating-least').value).toBe('')
     expect(field('rating-suggestions').value).toBe('')
     expect(findButtons(t('pages.account.history.dialog.clearScore'), document.body)).toHaveLength(0)
     expect(dialog?.textContent).toContain(t('pages.account.history.dialog.emptyHint'))
     expect(findButton(t('pages.account.history.dialog.submit'), document.body).disabled).toBe(true)
+    expect(findButtons(t('pages.account.history.dialog.delete'), document.body)).toHaveLength(0)
 
     await wrapper.find('form').trigger('submit')
 
@@ -108,5 +116,37 @@ describe('EventRatingDialog', () => {
     const save = findButton(t('pages.account.history.dialog.submit'), document.body)
     expect(save.getAttribute('aria-busy')).toBe('true')
     expect(save.disabled).toBe(true)
+  })
+
+  it('opens with the stored rating, saves the changes and asks to delete it', async () => {
+    const wrapper = await renderDialog({
+      rating: { score: 3, mostLiked: 'El taller', leastLiked: '', suggestions: 'Más horarios' },
+    })
+
+    expect(document.querySelector('.el-rate')?.getAttribute('aria-valuenow')).toBe('3')
+    expect(field('rating-most').value).toBe('El taller')
+    expect(field('rating-least').value).toBe('')
+    expect(field('rating-suggestions').value).toBe('Más horarios')
+    expect(findButtons(t('pages.account.history.dialog.submit'), document.body)).toHaveLength(0)
+
+    await typeInto('#rating-least', 'El calor', document)
+    await click(findButton(t('pages.account.history.dialog.save'), document.body))
+    await click(findButton(t('pages.account.history.dialog.delete'), document.body))
+
+    expect(wrapper.emitted('submit')).toEqual([
+      [{ score: 3, mostLiked: 'El taller', leastLiked: 'El calor', suggestions: 'Más horarios' }],
+    ])
+    expect(wrapper.emitted('delete')).toHaveLength(1)
+  })
+
+  it('shows a busy delete button while the rating is deleted', async () => {
+    await renderDialog({
+      rating: { score: 3, mostLiked: '', leastLiked: '', suggestions: '' },
+      deleting: true,
+    })
+
+    expect(
+      findButton(t('pages.account.history.dialog.delete'), document.body).getAttribute('aria-busy'),
+    ).toBe('true')
   })
 })

@@ -11,17 +11,17 @@ namespace CodigoActivo.Infrastructure.Activities;
 
 /// <summary>
 /// Reads the participation a removal takes away and serializes it as the JSON stored in
-/// <see cref="DeletedParticipation.Data"/>, with the version of its layout: the signups removed
-/// and, when the whole event goes, its terms decisions with their history and the text of their
-/// documents, plus the names of the people they are about or who decided them. It reuses the
-/// records and the serialization of the account copy.
+/// <see cref="DeletedParticipation.Data"/>, with the version of its layout: the signups and
+/// ratings removed and, when the whole event goes, its terms decisions with their history and the
+/// text of their documents, plus the names of the people they are about, who decided them or who
+/// wrote them. It reuses the records and the serialization of the account copy.
 /// </summary>
 internal static class DeletedParticipationSnapshot
 {
     /// <summary>
     /// Version of the JSON layout, stored in every copy.
     /// </summary>
-    internal const int SchemaVersion = 2;
+    internal const int SchemaVersion = 3;
 
     /// <summary>
     /// Reads everything the removal takes away and serializes the copy. Call it inside the
@@ -32,7 +32,7 @@ internal static class DeletedParticipationSnapshot
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result contains the serialized copy, or <see langword="null"/> when the removal
-    /// takes away no signup or terms decision.
+    /// takes away no signup, rating or terms decision.
     /// </returns>
     internal static async Task<string?> BuildAsync(
         CodigoActivoDbContext context,
@@ -73,7 +73,22 @@ internal static class DeletedParticipationSnapshot
             signupQuery = signupQuery.Where(row => row.UserId == personId);
         }
 
-        var signupRows = await signupQuery.ToListAsync(ct);
+        var signupRows =
+            deletion.Origin is ParticipationDeletionOrigin.RatingDeleted
+                ? []
+                : await signupQuery.ToListAsync(ct);
+
+        var ratingQuery = context.EventRatings.AsNoTracking().Where(r => r.EventId == eventId);
+        if (deletion.PersonId is { } authorId)
+        {
+            ratingQuery = ratingQuery.Where(r => r.UserId == authorId);
+        }
+
+        var ratingRows = deletion.Origin
+            is ParticipationDeletionOrigin.EventDeleted
+                or ParticipationDeletionOrigin.RatingDeleted
+            ? await ratingQuery.ToListAsync(ct)
+            : [];
 
         var decisionRows =
             deletion.Origin is ParticipationDeletionOrigin.EventDeleted
@@ -95,7 +110,7 @@ internal static class DeletedParticipationSnapshot
                     }
                 ).ToListAsync(ct)
                 : [];
-        if (signupRows.Count == 0 && decisionRows.Count == 0)
+        if (signupRows.Count == 0 && decisionRows.Count == 0 && ratingRows.Count == 0)
         {
             return null;
         }
@@ -118,6 +133,7 @@ internal static class DeletedParticipationSnapshot
             .Union(decisionRows.Select(row => row.UserId))
             .Union(decisionRows.Select(row => row.DecidedById))
             .Union(changes.SelectMany(group => group).Select(change => change.DecidedById))
+            .Union(ratingRows.Select(rating => rating.UserId))
             .ToList();
         var people = await context
             .Users.AsNoTracking()
@@ -237,6 +253,19 @@ internal static class DeletedParticipationSnapshot
                         .ThenBy(activity => activity.Title, StringComparer.Ordinal)
                         .ThenBy(activity => activity.Id)
                         .ThenBy(activity => activity.ParticipantId),
+                ],
+                [
+                    .. ratingRows
+                        .Select(rating => new LegalCopyRating(
+                            rating.Id.Value,
+                            rating.UserId.Value,
+                            rating.Score,
+                            rating.MostLiked,
+                            rating.LeastLiked,
+                            rating.Suggestions
+                        ))
+                        .OrderBy(rating => rating.AuthorId)
+                        .ThenBy(rating => rating.Id),
                 ]
             )
         );

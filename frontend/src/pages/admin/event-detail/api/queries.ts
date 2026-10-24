@@ -45,7 +45,7 @@ export const attendeeList: ServerTableSource<EventAttendee, AttendeeListParams> 
   fetchPage: (params) => getEventAttendeesPageRequest(params),
 }
 
-/** Anonymous ratings of an event, paged and sorted by the API. */
+/** Ratings of an event without their authors, paged and sorted by the API. */
 export const ratingList: ServerTableSource<EventRating, RatingListParams> = {
   queryKey: eventReportKeys.ratings(),
   fetchPage: (params) => getEventRatingsPageRequest(params),

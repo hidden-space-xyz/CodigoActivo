@@ -3,8 +3,8 @@ namespace CodigoActivo.Application.Abstractions.Auditing;
 /// <summary>
 /// Names the kind of thing an audit entry points at: one member per typed identifier, named after
 /// it without the <c>Id</c> suffix. Sessions, login challenges and event ratings are never
-/// recorded: the first two are credentials and a rating is anonymous. Entries store the member
-/// name, so members are only ever added.
+/// recorded: the first two are credentials and administrators never learn who wrote a rating.
+/// Entries store the member name, so members are only ever added.
 /// </summary>
 public enum AuditEntityType
 {

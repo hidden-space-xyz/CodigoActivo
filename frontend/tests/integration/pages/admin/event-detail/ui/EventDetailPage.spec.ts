@@ -428,7 +428,7 @@ describe('EventDetailPage', () => {
 
     await wrapper.find('#tab-opinions').trigger('click')
     await vi.waitFor(() =>
-      expect(wrapper.text()).toContain(t('pages.admin.eventDetail.opinions.anonymous')),
+      expect(wrapper.text()).toContain(t('pages.admin.eventDetail.opinions.author')),
     )
     expect(ratingRequests).toBe(1)
   })

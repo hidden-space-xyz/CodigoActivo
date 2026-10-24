@@ -4,8 +4,9 @@ namespace CodigoActivo.Domain.Users.Erasure;
 /// Copy of an erased account that the law requires to keep for
 /// <see cref="DeletedAccount.RetentionYears"/> years: the account and its dependents, the guardian
 /// of a dependent, every activity signup of the household and the terms decisions behind them,
-/// with the signatures drawn to accept them and who decided each one, grouped by event because
-/// terms are decided per event, and every change of the news consent.
+/// with the signatures drawn to accept them and who decided each one, and the ratings the
+/// household wrote, grouped by event because terms are decided and ratings given per event, and
+/// every change of the news consent.
 /// Catalog values, titles and document texts are copied by value, since the rows they come from
 /// may change or disappear later. Credentials, one-time codes, unconfirmed email changes,
 /// authenticator secrets and lockout counters are never copied.
@@ -71,7 +72,7 @@ public sealed record LegalCopy(
     /// Composes the copy of an account from what is stored about its household. Decisions about the
     /// household are kept; decisions about the guardian of a dependent, which covered their
     /// dependents before decisions were taken per person, only for the events where the household
-    /// signed up. Only the documents and events those decisions and signups refer to
+    /// signed up. Only the documents and events those decisions, signups and ratings refer to
     /// are kept.
     /// </summary>
     /// <param name="accountId">Identifier of the erased account.</param>
@@ -80,8 +81,11 @@ public sealed record LegalCopy(
     /// <param name="guardian">Guardian of the account when it is a dependent.</param>
     /// <param name="signups">Signups of the household, with the event of each activity.</param>
     /// <param name="decisions">Terms decisions about the household and its guardian, with their event.</param>
+    /// <param name="ratings">Ratings the household wrote, with the rated event.</param>
     /// <param name="documents">Terms documents the decisions refer to.</param>
-    /// <param name="events">Events the signups and decisions refer to, without decisions or signups.</param>
+    /// <param name="events">
+    /// Events the signups, decisions and ratings refer to, without decisions, signups or ratings.
+    /// </param>
     /// <returns>The copy.</returns>
     public static LegalCopy Compose(
         UserId accountId,
@@ -90,6 +94,7 @@ public sealed record LegalCopy(
         LegalCopyGuardian? guardian,
         IReadOnlyCollection<(Guid EventId, LegalCopyActivity Activity)> signups,
         IReadOnlyCollection<(Guid EventId, LegalCopyDecision Decision)> decisions,
+        IReadOnlyCollection<(Guid EventId, LegalCopyRating Rating)> ratings,
         IReadOnlyCollection<LegalCopyTermsDocument> documents,
         IReadOnlyCollection<LegalCopyEvent> events
     )
@@ -98,6 +103,7 @@ public sealed record LegalCopy(
         ArgumentNullException.ThrowIfNull(household);
         ArgumentNullException.ThrowIfNull(signups);
         ArgumentNullException.ThrowIfNull(decisions);
+        ArgumentNullException.ThrowIfNull(ratings);
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(events);
 
@@ -114,7 +120,10 @@ public sealed record LegalCopy(
             )
             .ToList();
         var documentIds = kept.Select(decision => decision.Decision.DocumentId).ToHashSet();
-        var eventIds = signupEventIds.Union(kept.Select(decision => decision.EventId)).ToHashSet();
+        var eventIds = signupEventIds
+            .Union(kept.Select(decision => decision.EventId))
+            .Union(ratings.Select(rating => rating.EventId))
+            .ToHashSet();
 
         return new LegalCopy(
             new LegalCopyDeletion(erasure.Origin, erasure.ActorId.Value),
@@ -163,6 +172,14 @@ public sealed record LegalCopy(
                                     .ThenBy(activity => activity.Title, StringComparer.Ordinal)
                                     .ThenBy(activity => activity.Id)
                                     .ThenBy(activity => activity.ParticipantId),
+                            ],
+                            Ratings =
+                            [
+                                .. ratings
+                                    .Where(rating => rating.EventId == ev.Id)
+                                    .Select(rating => rating.Rating)
+                                    .OrderBy(rating => rating.AuthorId)
+                                    .ThenBy(rating => rating.Id),
                             ],
                         }
                     ),

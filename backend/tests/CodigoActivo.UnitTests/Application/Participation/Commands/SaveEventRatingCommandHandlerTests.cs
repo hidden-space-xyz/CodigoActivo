@@ -31,6 +31,7 @@ public sealed class SaveEventRatingCommandHandlerTests
     private readonly IEventRatingRepository ratings = Substitute.For<IEventRatingRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
+    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestCurrentUser currentUser = new(
         global::CodigoActivo.Domain.Users.UserId.From(UserId)
     );
@@ -44,6 +45,7 @@ public sealed class SaveEventRatingCommandHandlerTests
             ratings,
             activities,
             users,
+            uow,
             currentUser,
             clock
         );
@@ -103,6 +105,28 @@ public sealed class SaveEventRatingCommandHandlerTests
                 Arg.Any<CancellationToken>()
             )
             .Returns([Persisted.As<User>(new { Id = childId, ParentId = UserId })]);
+    }
+
+    private EventRating SeedStoredRating()
+    {
+        var stored = EventRating
+            .Submit(
+                global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                global::CodigoActivo.Domain.Users.UserId.From(UserId),
+                3,
+                "Bien",
+                "La cola",
+                "Más talleres"
+            )
+            .Value;
+        ratings
+            .GetByAuthorAsync(
+                global::CodigoActivo.Domain.Events.EventId.From(EventId),
+                global::CodigoActivo.Domain.Users.UserId.From(UserId),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(stored);
+        return stored;
     }
 
     [Fact]
@@ -172,7 +196,7 @@ public sealed class SaveEventRatingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncValidSubmissionAddsAnonymousRatingAndCommits()
+    public async Task HandleAsyncFirstSubmissionAddsTheRatingOfTheAccountAndCommits()
     {
         SeedFinishedEvent();
         SeedConfirmedAssignment(UserId);
@@ -188,6 +212,7 @@ public sealed class SaveEventRatingCommandHandlerTests
             .AddAsync(
                 Arg.Is<EventRating>(r =>
                     r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId)
+                    && r.UserId == global::CodigoActivo.Domain.Users.UserId.From(UserId)
                     && r.Score == 5
                     && r.MostLiked == "Bien"
                     && r.LeastLiked == "La cola"
@@ -195,28 +220,72 @@ public sealed class SaveEventRatingCommandHandlerTests
                 ),
                 Arg.Any<CancellationToken>()
             );
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task HandleAsyncRepeatedSubmissionAddsAnotherRating()
+    public async Task HandleAsyncStoredRatingIsRevisedWithoutAddingAnother()
     {
         SeedFinishedEvent();
         SeedConfirmedAssignment(UserId);
+        var stored = SeedStoredRating();
 
-        var first = await sut.HandleAsync(
-            ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
-            TestContext.Current.CancellationToken
-        );
-        var second = await sut.HandleAsync(
+        var result = await sut.HandleAsync(
             new SaveEventRatingRequest(1, "Otra cosa", null, null).ToCommand(
                 global::CodigoActivo.Domain.Events.EventId.From(EventId)
             ),
             TestContext.Current.CancellationToken
         );
 
-        first.IsSuccess.Should().BeTrue();
-        second.IsSuccess.Should().BeTrue();
-        await ratings.Received(2).AddAsync(Arg.Any<EventRating>(), Arg.Any<CancellationToken>());
+        result.IsSuccess.Should().BeTrue();
+        stored.Score.Should().Be(1);
+        stored.MostLiked.Should().Be("Otra cosa");
+        stored.LeastLiked.Should().BeNull();
+        stored.Suggestions.Should().BeNull();
+        await ratings.DidNotReceiveWithAnyArgs().AddAsync(default!, Arg.Any<CancellationToken>());
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncEmptyRevisionReturnsValidationErrorAndKeepsTheRating()
+    {
+        SeedFinishedEvent();
+        SeedConfirmedAssignment(UserId);
+        var stored = SeedStoredRating();
+
+        var result = await sut.HandleAsync(
+            new SaveEventRatingRequest(null, " ", null, null).ToCommand(
+                global::CodigoActivo.Domain.Events.EventId.From(EventId)
+            ),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventRatingEmpty);
+        stored.Score.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task HandleAsyncConcurrentFirstRatingThrowsConcurrentUpdate()
+    {
+        SeedFinishedEvent();
+        SeedConfirmedAssignment(UserId);
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<int>(_ =>
+                throw new UniqueConstraintViolationException(
+                    typeof(EventRating),
+                    new InvalidOperationException()
+                )
+            );
+
+        var act = () =>
+            sut.HandleAsync(
+                ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
+                TestContext.Current.CancellationToken
+            );
+
+        (await act.Should().ThrowAsync<ConcurrentUpdateException>())
+            .Which.EntityType.Should()
+            .Be<EventRating>();
     }
 
     [Fact]

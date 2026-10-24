@@ -63,13 +63,13 @@ public sealed class AuditConventionTests
     }
 
     [Fact]
-    public void OnlyTheRatingIsUnauditedAndOnlyThePurgesAreScheduled()
+    public void OnlyTheRatingCommandsAreUnauditedAndOnlyThePurgesAreScheduled()
     {
         Commands()
             .Where(typeof(IUnaudited).IsAssignableFrom)
             .Select(command => command.Name)
             .Should()
-            .BeEquivalentTo("SaveEventRatingCommand");
+            .BeEquivalentTo("SaveEventRatingCommand", "DeleteEventRatingCommand");
         Commands()
             .Where(typeof(IScheduledCommand).IsAssignableFrom)
             .Select(command => command.Name)

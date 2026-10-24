@@ -610,15 +610,36 @@ public sealed class EventTests
         ev.UpdatedBy.Should().BeNull();
     }
 
+    private static Result<EventRating> SubmitRating(
+        int? score,
+        string? mostLiked,
+        string? leastLiked,
+        string? suggestions
+    )
+    {
+        return EventRating.Submit(
+            EventId.From(Guid.NewGuid()),
+            UserId.From(Guid.NewGuid()),
+            score,
+            mostLiked,
+            leastLiked,
+            suggestions
+        );
+    }
+
     [Fact]
     public void RatingSubmitBlankAnswersStoresThemAsMissing()
     {
         var eventId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
 
-        var rating = EventRating.Submit(EventId.From(eventId), 4, "   ", string.Empty, null).Value;
+        var rating = EventRating
+            .Submit(EventId.From(eventId), UserId.From(userId), 4, "   ", string.Empty, null)
+            .Value;
 
         rating.Id.Value.Should().NotBeEmpty();
         rating.EventId.Value.Should().Be(eventId);
+        rating.UserId.Value.Should().Be(userId);
         rating.Score.Should().Be(4);
         rating.MostLiked.Should().BeNull();
         rating.LeastLiked.Should().BeNull();
@@ -628,9 +649,7 @@ public sealed class EventTests
     [Fact]
     public void RatingSubmitAnswersWithSpacesStoresThemTrimmed()
     {
-        var rating = EventRating
-            .Submit(EventId.From(Guid.NewGuid()), 5, " Bien ", "La cola  ", "  Más talleres")
-            .Value;
+        var rating = SubmitRating(5, " Bien ", "La cola  ", "  Más talleres").Value;
 
         rating.MostLiked.Should().Be("Bien");
         rating.LeastLiked.Should().Be("La cola");
@@ -640,9 +659,7 @@ public sealed class EventTests
     [Fact]
     public void RatingSubmitWithoutScoreKeepsTheAnswers()
     {
-        var rating = EventRating
-            .Submit(EventId.From(Guid.NewGuid()), null, null, null, "Más talleres")
-            .Value;
+        var rating = SubmitRating(null, null, null, "Más talleres").Value;
 
         rating.Score.Should().BeNull();
         rating.Suggestions.Should().Be("Más talleres");
@@ -651,13 +668,7 @@ public sealed class EventTests
     [Fact]
     public void RatingSubmitWithoutScoreOrAnswersReturnsEmptyError()
     {
-        var result = EventRating.Submit(
-            EventId.From(Guid.NewGuid()),
-            null,
-            "  ",
-            string.Empty,
-            null
-        );
+        var result = SubmitRating(null, "  ", string.Empty, null);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
@@ -669,7 +680,7 @@ public sealed class EventTests
     [InlineData(EventRating.MaxScore + 1)]
     public void RatingSubmitScoreOutsideTheScaleReturnsScoreOutOfRange(int score)
     {
-        var result = EventRating.Submit(EventId.From(Guid.NewGuid()), score, "Todo", null, null);
+        var result = SubmitRating(score, "Todo", null, null);
 
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventRatingScoreOutOfRange);
     }
@@ -683,13 +694,7 @@ public sealed class EventTests
         string?[] answers = [null, null, null];
         answers[answerIndex] = new string('a', EventRating.MaxAnswerLength + 1);
 
-        var result = EventRating.Submit(
-            EventId.From(Guid.NewGuid()),
-            EventRating.MaxScore,
-            answers[0],
-            answers[1],
-            answers[2]
-        );
+        var result = SubmitRating(EventRating.MaxScore, answers[0], answers[1], answers[2]);
 
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventRatingAnswerTooLong);
     }
@@ -699,7 +704,7 @@ public sealed class EventTests
     [InlineData(EventRating.MaxScore)]
     public void RatingSubmitScoreAtAnEndOfTheScaleIsAccepted(int score)
     {
-        var result = EventRating.Submit(EventId.From(Guid.NewGuid()), score, null, null, null);
+        var result = SubmitRating(score, null, null, null);
 
         result.Value.Score.Should().Be(score);
     }
@@ -709,9 +714,58 @@ public sealed class EventTests
     {
         var answer = $"  {new string('a', EventRating.MaxAnswerLength)}  ";
 
-        var result = EventRating.Submit(EventId.From(Guid.NewGuid()), null, answer, null, null);
+        var result = SubmitRating(null, answer, null, null);
 
         result.Value.MostLiked.Should().HaveLength(EventRating.MaxAnswerLength);
+    }
+
+    [Fact]
+    public void RatingReviseReplacesTheScoreAndEveryAnswer()
+    {
+        var rating = SubmitRating(2, "Bien", "La cola", "Más talleres").Value;
+
+        var result = rating.Revise(5, " Todo ", null, "  ");
+
+        result.IsSuccess.Should().BeTrue();
+        rating.Score.Should().Be(5);
+        rating.MostLiked.Should().Be("Todo");
+        rating.LeastLiked.Should().BeNull();
+        rating.Suggestions.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(EventRating.MaxScore + 1, "Todo", DomainErrorCode.EventRatingScoreOutOfRange)]
+    [InlineData(null, " ", DomainErrorCode.EventRatingEmpty)]
+    public void RatingReviseRefusedKeepsTheStoredAnswers(
+        int? score,
+        string mostLiked,
+        DomainErrorCode code
+    )
+    {
+        var rating = SubmitRating(3, "Bien", null, null).Value;
+
+        var result = rating.Revise(score, mostLiked, null, null);
+
+        result.ShouldFail(ErrorKind.Validation, code);
+        rating.Score.Should().Be(3);
+        rating.MostLiked.Should().Be("Bien");
+    }
+
+    [Fact]
+    public void RatingReviseAnswerTooLongKeepsTheStoredAnswers()
+    {
+        var rating = SubmitRating(3, "Bien", null, null).Value;
+
+        var result = rating.Revise(
+            4,
+            "Todo",
+            new string('a', EventRating.MaxAnswerLength + 1),
+            null
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventRatingAnswerTooLong);
+        rating.Score.Should().Be(3);
+        rating.LeastLiked.Should().BeNull();
     }
 
     [Fact]

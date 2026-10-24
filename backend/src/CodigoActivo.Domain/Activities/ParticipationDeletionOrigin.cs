@@ -19,4 +19,9 @@ public enum ParticipationDeletionOrigin
     /// The person, their guardian or an administrator cancelled one signup.
     /// </summary>
     SignupCancelled = 3,
+
+    /// <summary>
+    /// The author of a rating of the event deleted it.
+    /// </summary>
+    RatingDeleted = 4,
 }

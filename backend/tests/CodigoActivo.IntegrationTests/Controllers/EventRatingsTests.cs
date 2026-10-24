@@ -124,6 +124,34 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         });
     }
 
+    private static Guid Member => TestSeedData.Users.MemberId;
+
+    private static Guid Admin => TestSeedData.Users.AdminId;
+
+    private static Guid Pending => TestSeedData.Users.PendingId;
+
+    private static EventRating Rating(Guid userId, int? score, string? suggestions = null)
+    {
+        return Persisted.As<EventRating>(
+            new
+            {
+                EventId = EventId,
+                UserId = userId,
+                Score = score,
+                Suggestions = suggestions,
+            }
+        );
+    }
+
+    private Task<List<EventRating>> StoredRatingsAsync()
+    {
+        return Factory.QueryAsync(db =>
+            db.EventRatings.AsNoTracking()
+                .Where(r => r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId))
+                .ToListAsync(Ct)
+        );
+    }
+
     private static StoredFile Thumbnail(Guid id)
     {
         return Persisted.As<StoredFile>(
@@ -144,7 +172,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = CreateClient();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
             Ct
@@ -158,7 +186,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     {
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{Guid.NewGuid()}/rating",
             ValidRating,
             Ct
@@ -173,7 +201,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(FutureStart, FutureEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
             Ct
@@ -188,7 +216,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Requested);
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
             Ct
@@ -203,7 +231,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             new SaveEventRatingRequest(6, null, null, null),
             Ct
@@ -218,7 +246,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             new SaveEventRatingRequest(0, "Bien", null, null),
             Ct
@@ -233,7 +261,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             new SaveEventRatingRequest(null, " ", null, null),
             Ct
@@ -260,7 +288,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             new SaveEventRatingRequest(null, null, null, "Más talleres"),
             Ct
@@ -280,32 +308,24 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRatingPastEventWithConfirmedAssignmentReturnsNoContentAndPersistsAnonymousRating()
+    public async Task SaveRatingPastEventWithConfirmedAssignmentReturnsNoContentAndPersistsTheRatingOfTheAccount()
     {
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
             Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await Factory.QueryAsync(async db =>
-        {
-            var ratings = await db
-                .EventRatings.Where(r =>
-                    r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId)
-                )
-                .ToListAsync(Ct);
-            var rating = ratings.Should().ContainSingle().Subject;
-            rating.Score.Should().Be(5);
-            rating.MostLiked.Should().Be("La organización");
-            rating.LeastLiked.Should().Be("La cola de la comida");
-            rating.Suggestions.Should().Be("Más talleres de robótica");
-            return true;
-        });
+        var rating = (await StoredRatingsAsync()).Should().ContainSingle().Subject;
+        rating.UserId.Value.Should().Be(Member);
+        rating.Score.Should().Be(5);
+        rating.MostLiked.Should().Be("La organización");
+        rating.LeastLiked.Should().Be("La cola de la comida");
+        rating.Suggestions.Should().Be("Más talleres de robótica");
     }
 
     [Fact]
@@ -319,7 +339,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         );
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
             Ct
@@ -351,7 +371,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         );
         var client = await LoginAsMemberAsync();
 
-        using var response = await client.PostJsonAsync(
+        using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
             Ct
@@ -361,38 +381,120 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SaveRatingCalledTwiceBySameUserStoresBothAnonymousRatings()
+    public async Task SaveRatingCalledTwiceBySameAccountReplacesTheRating()
     {
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
-        using var first = await client.PostJsonAsync(
+        using var first = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
             ValidRating,
             Ct
         );
-        using var second = await client.PostJsonAsync(
+        var firstId = (await StoredRatingsAsync()).Single().Id;
+        using var second = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
-            new SaveEventRatingRequest(1, "Otra cosa", "Otra más", "Otra sugerencia"),
+            new SaveEventRatingRequest(1, "Otra cosa", null, null),
             Ct
         );
 
         first.StatusCode.Should().Be(HttpStatusCode.NoContent);
         second.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await Factory.QueryAsync(async db =>
+        var rating = (await StoredRatingsAsync())
+            .Should()
+            .ContainSingle("an account keeps one rating per event")
+            .Subject;
+        rating.Id.Should().Be(firstId);
+        rating.Score.Should().Be(1);
+        rating.MostLiked.Should().Be("Otra cosa");
+        rating.LeastLiked.Should().BeNull();
+        rating.Suggestions.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SaveRatingEmptyRevisionReturnsEmptyErrorAndKeepsTheRating()
+    {
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
+        var client = await LoginAsMemberAsync();
+        using var first = await client.PutJsonAsync(
+            $"/api/events/{EventId}/rating",
+            ValidRating,
+            Ct
+        );
+
+        using var response = await client.PutJsonAsync(
+            $"/api/events/{EventId}/rating",
+            new SaveEventRatingRequest(null, null, " ", null),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EventRatingEmpty);
+        (await StoredRatingsAsync()).Should().ContainSingle().Which.Score.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task EventHistoryReturnsTheOwnRatingOfThePastEvent()
+    {
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
+        await Factory.SeedAsync(db =>
         {
-            var ratings = await db
-                .EventRatings.Where(r =>
-                    r.EventId == global::CodigoActivo.Domain.Events.EventId.From(EventId)
-                )
-                .ToListAsync(Ct);
-            ratings
-                .Should()
-                .HaveCount(2, "a second opinion is stored next to the first, not over it");
-            ratings.Select(r => r.Score).Should().BeEquivalentTo([5, 1]);
-            ratings.Select(r => r.Id).Should().OnlyHaveUniqueItems();
-            return true;
+            db.EventRatings.Add(Rating(Admin, 2, "De otra cuenta"));
+            return Task.CompletedTask;
         });
+        var client = await LoginAsMemberAsync();
+        var before = await client.GetAsync(TestUri.Rel("/api/me/event-history"), Ct);
+        using var saved = await client.PutJsonAsync(
+            $"/api/events/{EventId}/rating",
+            ValidRating,
+            Ct
+        );
+
+        var after = await client.GetAsync(TestUri.Rel("/api/me/event-history"), Ct);
+
+        (await before.ReadJsonAsync<List<EventHistoryResponse>>(Ct))!
+            .Should()
+            .ContainSingle()
+            .Which.Rating.Should()
+            .BeNull();
+        (await after.ReadJsonAsync<List<EventHistoryResponse>>(Ct))!
+            .Should()
+            .ContainSingle()
+            .Which.Rating.Should()
+            .Be(
+                new EventHistoryRatingResponse(
+                    5,
+                    "La organización",
+                    "La cola de la comida",
+                    "Más talleres de robótica"
+                )
+            );
+    }
+
+    [Fact]
+    public async Task DeleteRatingAnonymousReturnsUnauthorized()
+    {
+        var client = CreateClient();
+
+        using var response = await client.DeleteWithCsrfAsync($"/api/events/{EventId}/rating", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task DeleteRatingRemovesOnlyTheOwnRating()
+    {
+        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
+        await Factory.SeedAsync(db =>
+        {
+            db.EventRatings.AddRange(Rating(Member, 4), Rating(Admin, 2));
+            return Task.CompletedTask;
+        });
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.DeleteWithCsrfAsync($"/api/events/{EventId}/rating", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await StoredRatingsAsync()).Should().ContainSingle().Which.UserId.Value.Should().Be(Admin);
     }
 
     [Fact]
@@ -420,7 +522,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task RatingsAdminReturnsAnonymousOpinionsWithoutDateFields()
+    public async Task RatingsAdminReturnsOpinionsWithoutTheirAuthors()
     {
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
@@ -430,6 +532,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         EventId = EventId,
+                        UserId = Member,
                         Score = 3,
                         MostLiked = "El taller",
                     }
@@ -447,7 +550,8 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             .NotContainAny(
                 "Marta",
                 "Miembro",
-                TestSeedData.Users.MemberId.ToString(),
+                Member.ToString(),
+                "userId",
                 "createdAt",
                 "updatedAt"
             );
@@ -464,11 +568,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
-            db.EventRatings.AddRange(
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 1 }),
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 }),
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 3 })
-            );
+            db.EventRatings.AddRange(Rating(Member, 1), Rating(Admin, 5), Rating(Pending, 3));
             return Task.CompletedTask;
         });
         var client = await LoginAsAdminAsync();
@@ -486,11 +586,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
-            db.EventRatings.AddRange(
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 1 }),
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 }),
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 3 })
-            );
+            db.EventRatings.AddRange(Rating(Member, 1), Rating(Admin, 5), Rating(Pending, 3));
             return Task.CompletedTask;
         });
         var client = await LoginAsAdminAsync();
@@ -506,7 +602,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventRatingsTableHasNoUserOrDateColumns()
+    public async Task EventRatingsTableHasNoDateColumns()
     {
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
 
@@ -545,15 +641,10 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
 
         columns
             .Should()
-            .NotBeEmpty()
-            .And.NotContain("user_id")
-            .And.NotContain("created_at")
-            .And.NotContain("updated_at");
-        columns
-            .Should()
             .BeEquivalentTo([
                 "id",
                 "event_id",
+                "user_id",
                 "score",
                 "most_liked",
                 "least_liked",
@@ -567,10 +658,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
-            db.EventRatings.AddRange(
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 }),
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 2 })
-            );
+            db.EventRatings.AddRange(Rating(Member, 5), Rating(Admin, 2));
             return Task.CompletedTask;
         });
         var client = await LoginAsAdminAsync();
@@ -593,10 +681,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         await Factory.SeedAsync(db =>
         {
-            db.EventRatings.AddRange(
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 4 }),
-                Persisted.As<EventRating>(new { EventId = EventId, Suggestions = "Más talleres" })
-            );
+            db.EventRatings.AddRange(Rating(Member, 4), Rating(Admin, null, "Más talleres"));
             return Task.CompletedTask;
         });
         var client = await LoginAsAdminAsync();
@@ -620,9 +705,9 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.EventRatings.AddRange(
-                Persisted.As<EventRating>(new { EventId = EventId, Suggestions = "Sin nota" }),
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 2 }),
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 })
+                Rating(Member, null, "Sin nota"),
+                Rating(Admin, 2),
+                Rating(Pending, 5)
             );
             return Task.CompletedTask;
         });

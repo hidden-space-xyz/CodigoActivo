@@ -70,7 +70,7 @@ export function buildEventResponse(overrides: Partial<EventResponse> = {}): Even
   }
 }
 
-/** Anonymous rating of an event, as the admin opinions tab lists it. */
+/** Rating of an event without its author, as the admin opinions tab lists it. */
 export function buildRating(
   overrides: Partial<EventRatingListItemResponse> = {},
 ): EventRatingListItemResponse {

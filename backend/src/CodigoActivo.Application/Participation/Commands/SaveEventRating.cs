@@ -14,8 +14,9 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Participation.Commands;
 
 /// <summary>
-/// Carries the input required to save event rating. It is never audited: a rating stores no author
-/// and an audit entry would name one.
+/// Carries the input required to save the signed-in account's rating of an event. It is never
+/// audited: the audit log, which administrators read, would tie the account to the rating, whose
+/// author they are never shown.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Score">Score from 1 to 5, if any.</param>
@@ -31,16 +32,17 @@ public sealed record SaveEventRatingCommand(
 ) : ICommand<Result>, IUnaudited;
 
 /// <summary>
-/// Executes the command to save event rating. Every accepted call appends one anonymous rating row:
-/// nothing records who wrote it, so an attendee may rate the same event more than once and no
-/// answer is ever overwritten. Only someone whose household attended the event may rate it: the
-/// rater or a dependent in their care (<see cref="Household.MemberIds"/>) had a confirmed place in
-/// one of its activities.
+/// Executes the command to save the signed-in account's rating of an event: the first call
+/// stores it and later ones replace its score and answers, so an account keeps one rating per
+/// event. Only someone whose household attended the event may rate it: the rater or a dependent
+/// in their care (<see cref="Household.MemberIds"/>) had a confirmed place in one of its
+/// activities.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="ratings">Repository used to persist and retrieve ratings.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="users">Repository used to retrieve the dependents of the rater.</param>
+/// <param name="uow">Unit of work used to commit a new rating.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class SaveEventRatingCommandHandler(
@@ -48,6 +50,7 @@ public sealed class SaveEventRatingCommandHandler(
     IEventRatingRepository ratings,
     IActivityRepository activities,
     IUserRepository users,
+    IUnitOfWork uow,
     ICurrentUser currentUser,
     IClock clock
 ) : ICommandHandler<SaveEventRatingCommand, Result>
@@ -58,6 +61,9 @@ public sealed class SaveEventRatingCommandHandler(
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <exception cref="ConcurrentUpdateException">
+    /// A concurrent request of the same account stored its first rating of the event meanwhile.
+    /// </exception>
     public async Task<Result> HandleAsync(
         SaveEventRatingCommand command,
         CancellationToken ct = default
@@ -83,8 +89,20 @@ public sealed class SaveEventRatingCommandHandler(
             return Error.Conflict(ApplicationErrorCode.EventRatingAttendanceRequired);
         }
 
+        var stored = await ratings.GetByAuthorAsync(ev.Id, raterId, ct);
+        if (stored is not null)
+        {
+            return stored.Revise(
+                command.Score,
+                command.MostLiked,
+                command.LeastLiked,
+                command.Suggestions
+            );
+        }
+
         var rating = EventRating.Submit(
             ev.Id,
+            raterId,
             command.Score,
             command.MostLiked,
             command.LeastLiked,
@@ -96,6 +114,15 @@ public sealed class SaveEventRatingCommandHandler(
         }
 
         await ratings.AddAsync(rating.Value, ct);
+        try
+        {
+            await uow.SaveChangesAsync(ct);
+        }
+        catch (UniqueConstraintViolationException ex) when (ex.EntityType == typeof(EventRating))
+        {
+            throw new ConcurrentUpdateException(typeof(EventRating), ex);
+        }
+
         return Result.Success();
     }
 }

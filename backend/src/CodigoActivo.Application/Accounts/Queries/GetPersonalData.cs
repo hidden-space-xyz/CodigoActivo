@@ -18,8 +18,9 @@ public sealed record GetPersonalDataQuery : IQuery<Result<PersonalDataResponse>>
 /// <summary>
 /// Executes the query that copies the personal data kept about the signed-in user and the minors
 /// in their care: the account, the news consent history, the minors, the signups of the
-/// household, the decisions on event documents about the household with their signatures, the open sessions
-/// and the audit entries about the household that the log still holds.
+/// household, the decisions on event documents about the household with their signatures, the
+/// ratings the user wrote, the open sessions and the audit entries about the household that the
+/// log still holds.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -158,6 +159,21 @@ public sealed class GetPersonalDataQueryHandler(
                 )),
             ct
         );
+        var ratings = await executor.ToListAsync(
+            readStore
+                .EventRatings.Where(r => r.UserId == userId)
+                .OrderBy(r => r.Event.EventStartsAt)
+                .ThenBy(r => r.Event.Title)
+                .ThenBy(r => r.Id)
+                .Select(r => new PersonalDataRatingResponse(
+                    r.Event.Title,
+                    r.Score,
+                    r.MostLiked,
+                    r.LeastLiked,
+                    r.Suggestions
+                )),
+            ct
+        );
         var sessions = await executor.ToListAsync(
             readStore
                 .UserSessions.Where(s => s.UserId == userId)
@@ -178,6 +194,7 @@ public sealed class GetPersonalDataQueryHandler(
             dependents,
             signups,
             decisions,
+            ratings,
             sessions,
             securityLog
         );

@@ -33,6 +33,7 @@ public sealed class DeletedAccountCoverageTests : IDisposable
     private static readonly string[] CopiedReferences =
     [
         "Assignment.UserId",
+        "EventRating.UserId",
         "EventTermsAcceptance.DecidedById",
         "EventTermsAcceptance.UserId",
         "NewsConsentChange.UserId",
@@ -205,6 +206,26 @@ public sealed class DeletedAccountCoverageTests : IDisposable
         PropertiesOf<EventTermsAcceptance>()
             .Should()
             .BeEquivalentTo(CopiedDecisionProperties, Decide);
+    }
+
+    [Fact]
+    public void EveryEventRatingPropertyIsCopied()
+    {
+        PropertiesOf<EventRating>()
+            .Should()
+            .BeEquivalentTo(
+                [
+                    .. typeof(LegalCopyRating)
+                        .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                        .Select(property =>
+                            property.Name == nameof(LegalCopyRating.AuthorId)
+                                ? nameof(EventRating.UserId)
+                                : property.Name
+                        ),
+                    nameof(EventRating.EventId),
+                ],
+                Decide
+            );
     }
 
     [Fact]

@@ -4,9 +4,9 @@ using CodigoActivo.Domain.Users.Erasure;
 namespace CodigoActivo.Domain.Activities;
 
 /// <summary>
-/// Blocked copy of the participation data that deleting an event or an activity, or cancelling a
-/// signup, removes: the signups and, for an event, the terms decisions with their signatures and
-/// history, as they stood then. Like a <see cref="DeletedAccount"/>, nothing in the application
+/// Blocked copy of the participation data that deleting an event, an activity or a rating, or
+/// cancelling a signup, removes: the signups, the ratings and, for an event, the terms decisions
+/// with their signatures and history, as they stood then. Like a <see cref="DeletedAccount"/>, nothing in the application
 /// reads it; the row is only reachable directly in the database and is purged once
 /// <see cref="RetentionYears"/> have passed.
 /// </summary>

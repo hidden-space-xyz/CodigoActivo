@@ -26,7 +26,7 @@ public interface IReadStore
     /// <summary>Gets the stored events.</summary>
     public IQueryable<EventRow> Events { get; }
 
-    /// <summary>Gets the anonymous event ratings.</summary>
+    /// <summary>Gets the event ratings.</summary>
     public IQueryable<EventRatingRow> EventRatings { get; }
 
     /// <summary>Gets the event category types.</summary>

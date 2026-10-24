@@ -4,10 +4,11 @@ using CodigoActivo.Domain.Activities;
 namespace CodigoActivo.Application.Activities.Erasure;
 
 /// <summary>
-/// Commits the removal of participation data staged in the unit of work (an event or an activity
-/// removed, or a signup cancelled) in one transaction with the blocked copy the law requires of
-/// what it takes away (LOPDGDD article 32): the signups and, for an event, the terms decisions with
-/// their signatures and history. A removal that takes away none of them stores no copy.
+/// Commits the removal of participation data staged in the unit of work (an event, an activity or
+/// a rating removed, or a signup cancelled) in one transaction with the blocked copy the law
+/// requires of what it takes away (LOPDGDD article 32): the signups, the ratings and, for an
+/// event, the terms decisions with their signatures and history. A removal that takes away none
+/// of them stores no copy.
 /// </summary>
 /// <param name="archive">Storage steps that lock and copy the participation.</param>
 /// <param name="deletedParticipations">Repository of the blocked copies.</param>

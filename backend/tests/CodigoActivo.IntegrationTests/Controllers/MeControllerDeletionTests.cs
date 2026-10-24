@@ -131,6 +131,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         EventId = EventId,
+                        UserId = TestSeedData.Users.MemberId,
                         Score = 5,
                         MostLiked = "El ambiente",
                     }
@@ -248,10 +249,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
             (await db.Assignments.CountAsync(Ct)).Should().Be(0);
             (await db.EventRatings.CountAsync(Ct))
                 .Should()
-                .Be(
-                    1,
-                    "the rating content is anonymous and carries no reference to the deleted user"
-                );
+                .Be(0, "the ratings of the account go with it, into its blocked copy");
             (await db.EventTermsAcceptances.CountAsync(Ct)).Should().Be(0);
             return true;
         });

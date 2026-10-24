@@ -131,9 +131,30 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 )
             );
             db.EventRatings.AddRange(
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 4 }),
-                Persisted.As<EventRating>(new { EventId = EventId, Score = 5 }),
-                Persisted.As<EventRating>(new { EventId = EventId, MostLiked = "Todo" })
+                Persisted.As<EventRating>(
+                    new
+                    {
+                        EventId = EventId,
+                        UserId = TestSeedData.Users.MemberId,
+                        Score = 4,
+                    }
+                ),
+                Persisted.As<EventRating>(
+                    new
+                    {
+                        EventId = EventId,
+                        UserId = TestSeedData.Users.AdminId,
+                        Score = 5,
+                    }
+                ),
+                Persisted.As<EventRating>(
+                    new
+                    {
+                        EventId = EventId,
+                        UserId = TestSeedData.Users.PendingId,
+                        MostLiked = "Todo",
+                    }
+                )
             );
             db.Files.Add(Thumbnail(ActivityCThumbnailId));
             db.Activities.Add(

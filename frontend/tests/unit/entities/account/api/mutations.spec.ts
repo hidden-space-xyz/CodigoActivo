@@ -54,12 +54,13 @@ describe('accountMutations', () => {
     }
   })
 
-  it('refreshes the profile after a second-factor or email change and the history after a rating', async () => {
+  it('refreshes the profile after a second-factor or email change and the history after saving or deleting a rating', async () => {
     server.use(
       http.post('/api/auth/two-factor/authenticator/confirm', () => noContent()),
       http.post('/api/auth/two-factor/email', () => noContent()),
       http.patch('/api/auth/:userId/confirm-email', () => noContent()),
-      http.post('/api/events/:eventId/rating', () => noContent()),
+      http.put('/api/events/:eventId/rating', () => noContent()),
+      http.delete('/api/events/:eventId/rating', () => noContent()),
     )
 
     const confirmed = cachedAccount()
@@ -81,9 +82,13 @@ describe('accountMutations', () => {
       input: { score: 5, mostLiked: '', leastLiked: '', suggestions: '' },
     })
 
+    const unrated = cachedAccount()
+    await new MutationObserver(unrated.client, accountMutations.deleteRating()).mutate('event-1')
+
     expect(confirmed.invalidated()).toEqual([true, false, false, false])
     expect(disabled.invalidated()).toEqual([true, false, false, false])
     expect(emailConfirmed.invalidated()).toEqual([true, false, false, false])
     expect(rated.invalidated()).toEqual([false, false, true, false])
+    expect(unrated.invalidated()).toEqual([false, false, true, false])
   })
 })

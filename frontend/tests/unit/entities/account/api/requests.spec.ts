@@ -7,6 +7,7 @@ import {
   confirmAuthenticatorRequest,
   confirmEmailChangeRequest,
   deleteAccountChildRequest,
+  deleteAccountEventRatingRequest,
   deleteAccountRequest,
   disableAuthenticatorRequest,
   getAccountCertificatesRequest,
@@ -397,11 +398,11 @@ describe('account requests', () => {
     ])
   })
 
-  it('posts an event rating with trimmed comments and resolves without a body', async () => {
+  it('puts an event rating with trimmed comments and resolves without a body', async () => {
     let body: unknown
     let method = ''
     server.use(
-      http.post('/api/events/event-1/rating', async ({ request }) => {
+      http.put('/api/events/event-1/rating', async ({ request }) => {
         method = request.method
         body = await request.json()
         return new HttpResponse(null, { status: 204 })
@@ -417,13 +418,13 @@ describe('account requests', () => {
       }),
     ).resolves.toBeUndefined()
 
-    expect(method).toBe('POST')
+    expect(method).toBe('PUT')
     expect(body).toEqual({ score: 5, mostLiked: 'Todo', leastLiked: null, suggestions: null })
   })
 
   it('surfaces the conflict when the event has not finished yet', async () => {
     server.use(
-      http.post('/api/events/event-1/rating', () => apiError(409, 'EventRatingNotFinished')),
+      http.put('/api/events/event-1/rating', () => apiError(409, 'EventRatingNotFinished')),
     )
 
     await expect(
@@ -434,6 +435,20 @@ describe('account requests', () => {
         suggestions: '',
       }),
     ).rejects.toMatchObject({ status: 409, code: 'EventRatingNotFinished' })
+  })
+
+  it('deletes the event rating of the account', async () => {
+    let method = ''
+    server.use(
+      http.delete('/api/events/event-1/rating', ({ request }) => {
+        method = request.method
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await expect(deleteAccountEventRatingRequest('event-1')).resolves.toBeUndefined()
+
+    expect(method).toBe('DELETE')
   })
   it('registers an adult with minors and resends the verification link to the email', async () => {
     let registered: unknown

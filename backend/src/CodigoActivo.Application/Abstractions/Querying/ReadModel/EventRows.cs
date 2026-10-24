@@ -56,12 +56,13 @@ public sealed class EventRow
     /// <summary>Gets the categories of the event.</summary>
     public ICollection<EventCategoryRow> Categories { get; init; } = [];
 
-    /// <summary>Gets the anonymous ratings of the event.</summary>
+    /// <summary>Gets the ratings of the event.</summary>
     public ICollection<EventRatingRow> Ratings { get; init; } = [];
 }
 
 /// <summary>
-/// Stored anonymous event rating as the queries read it.
+/// Stored event rating as the queries read it. Only the queries of its author read
+/// <see cref="UserId"/>; the lists for administrators never project it.
 /// </summary>
 public sealed class EventRatingRow
 {
@@ -73,6 +74,9 @@ public sealed class EventRatingRow
 
     /// <summary>Gets the rated event.</summary>
     public EventRow Event { get; init; } = null!;
+
+    /// <summary>Gets the identifier of the account that wrote the rating.</summary>
+    public Guid UserId { get; init; }
 
     /// <summary>Gets the score, or <see langword="null"/> when the participant gave none.</summary>
     public int? Score { get; init; }
