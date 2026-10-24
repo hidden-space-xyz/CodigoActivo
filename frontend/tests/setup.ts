@@ -20,7 +20,7 @@ function defineGlobal(name: 'Blob' | 'File' | 'FormData', value: unknown): void 
 }
 
 beforeAll(() => {
-  server.listen({ onUnhandledRequest: 'error' })
+  server.listen({ onUnhandledFrame: 'error' })
 })
 
 enableAutoUnmount(afterEach)

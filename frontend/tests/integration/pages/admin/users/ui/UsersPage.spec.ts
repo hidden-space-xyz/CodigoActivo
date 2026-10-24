@@ -285,23 +285,24 @@ describe('admin users page', () => {
     status.vm.$emit('update:modelValue', 'status-active')
     type.vm.$emit('update:modelValue', 'type-member')
     admin.vm.$emit('update:modelValue', false)
-    await flushPromises()
 
-    expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      sort: 'firstName',
-      name: 'ada',
-      email: 'example',
-      phone: '600',
-      nationalId: 'x123',
-      newsConsent: 'true',
-      birthDateFrom: '1980-01-01',
-      birthDateTo: '2000-12-31',
-      userStatusTypeId: 'status-active',
-      userTypeId: 'type-member',
-      isAdmin: 'false',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: 'firstName',
+        name: 'ada',
+        email: 'example',
+        phone: '600',
+        nationalId: 'x123',
+        newsConsent: 'true',
+        birthDateFrom: '1980-01-01',
+        birthDateTo: '2000-12-31',
+        userStatusTypeId: 'status-active',
+        userTypeId: 'type-member',
+        isAdmin: 'false',
+      }),
+    )
     expect(status.props('options')).toEqual([
       { label: 'Active', value: 'status-active' },
       { label: 'Blocked', value: 'status-blocked' },
@@ -331,13 +332,15 @@ describe('admin users page', () => {
     const tutorOf = t('pages.admin.users.relation.tutorOf', { fullName: 'Tim Lovelace' })
     expect(chipLabels(wrapper)).toEqual([tutorOf])
     expect(wrapper.find<HTMLInputElement>('.data-table__search input').element.value).toBe('')
-    expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      sort: 'firstName',
-      scope: 'Independent',
-      id: 'user-1',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: 'firstName',
+        scope: 'Independent',
+        id: 'user-1',
+      }),
+    )
 
     await click(
       findButton(t('pages.admin.users.dependentsLabel', { count: 2 }), rowElement(wrapper, 0)),
@@ -345,19 +348,23 @@ describe('admin users page', () => {
     const dependentsOf = t('pages.admin.users.relation.dependentsOf', { fullName: 'Ada Lovelace' })
     expect(chipLabels(wrapper)).toEqual([dependentsOf])
     expect(selectedScope(wrapper)).toBe(t('pages.admin.users.scope.dependent'))
-    expect(queryOf(recorded.list.at(-1) ?? '')).toMatchObject({
-      scope: 'Dependent',
-      parentId: 'user-1',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(recorded.list.at(-1) ?? '')).toMatchObject({
+        scope: 'Dependent',
+        parentId: 'user-1',
+      }),
+    )
 
     await click(findButton(t('table.removeFilter', { label: dependentsOf })))
     expect(wrapper.find('.filter-chip').exists()).toBe(false)
-    expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      sort: 'firstName',
-      scope: 'Dependent',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: 'firstName',
+        scope: 'Dependent',
+      }),
+    )
   })
 
   it('switches between independent accounts, dependents and everyone', async () => {

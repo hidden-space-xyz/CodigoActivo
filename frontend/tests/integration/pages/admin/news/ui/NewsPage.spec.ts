@@ -1,4 +1,4 @@
-import { flushPromises, type VueWrapper } from '@vue/test-utils'
+import type { VueWrapper } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
 import { NewsPage } from '@/pages/admin/news'
@@ -158,16 +158,17 @@ describe('admin news page', () => {
     wrapper
       .findComponent(ColumnFilterDate)
       .vm.$emit('update:modelValue', [new Date(2025, 2, 1), new Date(2025, 2, 31)])
-    await flushPromises()
 
-    expect(queryOf(urls.at(-1) ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      sort: '-createdAt',
-      search: 'hack',
-      createdFrom: '2025-03-01',
-      createdTo: '2025-03-31',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: '-createdAt',
+        search: 'hack',
+        createdFrom: '2025-03-01',
+        createdTo: '2025-03-31',
+      }),
+    )
     const chips = wrapper.findAll('.filter-chip')
     expect(chips).toHaveLength(1)
     expect(chips[0]?.text()).toContain(t('pages.admin.news.columns.created'))

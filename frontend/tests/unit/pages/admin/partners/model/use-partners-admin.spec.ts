@@ -37,8 +37,7 @@ describe('usePartnersAdmin', () => {
     expect(result.table.filterParams.value).toEqual({})
 
     result.table.columnFilter('tier').value = '3'
-    await flushPromises()
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ tier: '3' })
+    await vi.waitFor(() => expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ tier: '3' }))
   })
 
   it('creates a partner when none is edited and replaces the edited one, closing the dialog', async () => {

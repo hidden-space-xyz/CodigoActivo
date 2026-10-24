@@ -1,6 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { ElDatePicker, ElInputNumber } from 'element-plus'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { Partner } from '@/entities/partner'
 import PartnerFormDialog from '@/pages/admin/partners/ui/PartnerFormDialog.vue'
@@ -99,7 +99,7 @@ describe('PartnerFormDialog', () => {
     await pickFiles(fileInput(dialog), [new File(['x'], 'logo.png', { type: 'image/png' })])
     await click(findButton(t('common.save'), dialog))
 
-    expect(dialog.textContent).toContain(t('common.imageUploadFailed'))
+    await vi.waitFor(() => expect(dialog.textContent).toContain(t('common.imageUploadFailed')))
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 

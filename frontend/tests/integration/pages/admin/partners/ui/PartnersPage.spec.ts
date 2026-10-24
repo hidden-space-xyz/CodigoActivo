@@ -169,26 +169,29 @@ describe('admin partners page', () => {
       .vm.$emit('update:modelValue', [new Date(2024, 0, 1), new Date(2024, 11, 31)])
     await flushPromises()
     wrapper.findComponent(ElTable).vm.$emit('sort-change', { prop: 'name', order: 'descending' })
-    await flushPromises()
 
-    expect(queryOf(urls.at(-1) ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      name: 'acme',
-      tier: '2',
-      website: 'acme.test',
-      fromDateFrom: '2024-01-01',
-      fromDateTo: '2024-12-31',
-      sort: '-name',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        name: 'acme',
+        tier: '2',
+        website: 'acme.test',
+        fromDateFrom: '2024-01-01',
+        fromDateTo: '2024-12-31',
+        sort: '-name',
+      }),
+    )
 
     const pagination = wrapper.findComponent(ElPagination)
     pagination.vm.$emit('size-change', 50)
-    await flushPromises()
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ page: '1', pageSize: '50' })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ page: '1', pageSize: '50' }),
+    )
     pagination.vm.$emit('current-change', 3)
-    await flushPromises()
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ page: '3', pageSize: '50' })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ page: '3', pageSize: '50' }),
+    )
   })
 
   it('shows a chip per header filter and clears every filter at once', async () => {
@@ -213,7 +216,9 @@ describe('admin partners page', () => {
 
     await click(findButton(t('table.clearFilters')))
 
-    expect(queryOf(urls.at(-1) ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'tier' })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'tier' }),
+    )
     expect(wrapper.find('.filter-chip').exists()).toBe(false)
     expect(wrapper.find<HTMLInputElement>('.data-table__search input').element.value).toBe('')
   })

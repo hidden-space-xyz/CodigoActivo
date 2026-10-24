@@ -97,14 +97,15 @@ describe('EventCategoriesSection', () => {
     const search = wrapper.findComponent(SearchInput)
     expect(search.props('label')).toBe(t('pages.admin.catalogs.eventCategories.search.name'))
     search.vm.$emit('update:modelValue', 'work')
-    await flushPromises()
 
-    expect(queryOf(urls.at(-1) ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      sort: 'name',
-      name: 'work',
-    })
+    await vi.waitFor(() =>
+      expect(queryOf(urls.at(-1) ?? '')).toEqual({
+        page: '1',
+        pageSize: '25',
+        sort: 'name',
+        name: 'work',
+      }),
+    )
     expect(wrapper.find('.filter-chip').exists()).toBe(false)
     expect(wrapper.find('.data-table__clear').exists()).toBe(true)
   })
