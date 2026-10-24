@@ -41,6 +41,11 @@ public static class CacheTags
     public const string Files = "files";
 
     /// <summary>
+    /// Identifies the legal policies, whose version in force is output cached.
+    /// </summary>
+    public const string LegalPolicies = "legal-policies";
+
+    /// <summary>
     /// Identifies the users configuration or policy value.
     /// </summary>
     public const string Users = "users";
@@ -83,13 +88,19 @@ public static class CacheTags
         Partners,
         Activities,
         Files,
+        LegalPolicies,
     ];
 
     /// <summary>
     /// Stores the tags invalidated when an account is erased: its user rows and participation, and
-    /// every cached content type, whose author credits may pass to the initial administrator.
+    /// every cached content type, whose author credits may pass to the initial administrator. Legal
+    /// policies credit no author.
     /// </summary>
-    public static readonly IReadOnlyList<string> Erasure = [.. OutputCached, Users];
+    public static readonly IReadOnlyList<string> Erasure =
+    [
+        .. OutputCached.Except([LegalPolicies]),
+        Users,
+    ];
 
     /// <summary>
     /// Stores the shared all value.
@@ -103,6 +114,7 @@ public static class CacheTags
         Partners,
         Activities,
         Files,
+        LegalPolicies,
         Users,
         Catalogs,
     ];

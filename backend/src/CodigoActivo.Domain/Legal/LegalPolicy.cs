@@ -64,12 +64,14 @@ public class LegalPolicy : AggregateRoot<LegalPolicyId>
             return Error.Validation(DomainErrorCode.LegalPolicyContentRequired);
         }
 
-        return new LegalPolicy
+        var policy = new LegalPolicy
         {
             Kind = kind,
             Content = content,
             PublishedAt = publishedAt,
         };
+        policy.Raise(new LegalPolicyPublished(policy.Id));
+        return policy;
     }
 
     /// <summary>
@@ -98,6 +100,7 @@ public class LegalPolicy : AggregateRoot<LegalPolicyId>
         Version++;
         Content = content;
         PublishedAt = publishedAt;
+        Raise(new LegalPolicyPublished(Id));
         return Result.Success();
     }
 }
