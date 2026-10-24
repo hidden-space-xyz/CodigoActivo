@@ -27,8 +27,7 @@ public static class DependencyInjection
     /// <param name="services">Service collection to add to.</param>
     /// <param name="configuration">Configuration of the application.</param>
     /// <param name="production">
-    /// Whether the application runs in production, where the data protection keys are kept
-    /// encrypted at rest and the production rules apply.
+    /// Whether the application runs in production, where the production rules apply.
     /// </param>
     /// <returns>The same service collection.</returns>
     public static IServiceCollection AddCodigoActivo(
@@ -43,7 +42,7 @@ public static class DependencyInjection
         }
 
         return services
-            .AddPlatform(configuration, production)
+            .AddPlatform(configuration)
             .AddLegal(configuration)
             .AddPersistence(configuration)
             .AddLogs(configuration)

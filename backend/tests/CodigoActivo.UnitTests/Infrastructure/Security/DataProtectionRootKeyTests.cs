@@ -12,8 +12,8 @@ public sealed class DataProtectionRootKeyTests
     [Fact]
     public void DeriveKeyKnownRootKeyReturnsHkdfSha256OfThePurpose()
     {
-        var key = DataProtectionRootKey
-            .Parse(SequentialRootKey)
+        var key = DataProtectionRootKeys
+            .FromBase64(SequentialRootKey)
             .DeriveKey("CodigoActivo.Tests.v1", 32);
 
         Convert
@@ -25,7 +25,7 @@ public sealed class DataProtectionRootKeyTests
     [Fact]
     public void DeriveKeyOtherPurposeOrRootKeyReturnsAnIndependentKey()
     {
-        var rootKey = DataProtectionRootKey.Parse(SequentialRootKey);
+        var rootKey = DataProtectionRootKeys.FromBase64(SequentialRootKey);
         var key = rootKey.DeriveKey("first-purpose", 32);
 
         rootKey.DeriveKey("first-purpose", 32).Should().Equal(key);
@@ -39,7 +39,7 @@ public sealed class DataProtectionRootKeyTests
     [InlineData(" ")]
     public void DeriveKeyBlankPurposeThrows(string purpose)
     {
-        var rootKey = DataProtectionRootKey.Parse(SequentialRootKey);
+        var rootKey = DataProtectionRootKeys.FromBase64(SequentialRootKey);
 
         var act = () => rootKey.DeriveKey(purpose, 32);
 
@@ -70,9 +70,5 @@ public sealed class DataProtectionRootKeyTests
         DataProtectionRootKey.TryParse(encoded, out var rootKey).Should().BeFalse();
 
         rootKey.Should().BeNull();
-        FluentActions
-            .Invoking(() => DataProtectionRootKey.Parse(encoded))
-            .Should()
-            .Throw<FormatException>();
     }
 }

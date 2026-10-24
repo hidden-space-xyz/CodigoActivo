@@ -15,8 +15,10 @@ namespace CodigoActivo.UnitTests.Infrastructure.Security;
 public sealed class DataProtectionKeyProtectionTests : IDisposable
 {
     private readonly DataProtectionRootKey rootKey = DataProtectionRootKeys.Random();
-    private readonly DirectoryInfo keysDirectory = new(
-        Path.Join(Path.GetTempPath(), "codigoactivo-keyring-tests", Guid.NewGuid().ToString("N"))
+    private readonly string keysDirectory = Path.Join(
+        Path.GetTempPath(),
+        "codigoactivo-keyring-tests",
+        Guid.NewGuid().ToString("N")
     );
 
     [Fact]
@@ -24,8 +26,12 @@ public sealed class DataProtectionKeyProtectionTests : IDisposable
     {
         var protectedValue = Protect(rootKey, "session-payload");
 
-        var keyFile = keysDirectory.GetFiles("key-*.xml").Should().ContainSingle().Subject;
-        var persistedXml = File.ReadAllText(keyFile.FullName);
+        var keyFile = Directory
+            .GetFiles(keysDirectory, "key-*.xml")
+            .Should()
+            .ContainSingle()
+            .Subject;
+        var persistedXml = File.ReadAllText(keyFile);
         persistedXml.Should().Contain("urn:codigoactivo:data-protection:aes-gcm:v1");
         persistedXml.Should().Contain(typeof(AesGcmXmlDecryptor).FullName);
         persistedXml.Should().Contain("AES_256_GCM");
@@ -41,23 +47,38 @@ public sealed class DataProtectionKeyProtectionTests : IDisposable
     }
 
     [Fact]
-    public void ProtectKeysWithRootKeyAnotherRootKeyStopsTheRegistration()
+    public void VerifyKeyRingOtherRootKeyThrows()
     {
         Protect(rootKey, "session-payload");
 
-        var act = () => BuildProvider(DataProtectionRootKeys.Random());
-
-        act.Should()
+        new AesGcmKeyRingProtection(rootKey)
+            .Invoking(protection => protection.VerifyKeyRing(keysDirectory))
+            .Should()
+            .NotThrow();
+        new AesGcmKeyRingProtection(DataProtectionRootKeys.Random())
+            .Invoking(protection => protection.VerifyKeyRing(keysDirectory))
+            .Should()
             .Throw<CryptographicException>()
-            .WithMessage("DATA_PROTECTION_KEY does not decrypt the key ring*");
-        keysDirectory.GetFiles("key-*.xml").Should().ContainSingle();
+            .WithMessage("DATA_PROTECTION_KEY does not decrypt the Data Protection key ring.");
+    }
+
+    [Fact]
+    public void VerifyKeyRingMissingDirectoryPasses()
+    {
+        new AesGcmKeyRingProtection(rootKey)
+            .Invoking(protection => protection.VerifyKeyRing(keysDirectory))
+            .Should()
+            .NotThrow();
     }
 
     [Fact]
     public void ProtectPayloadsWithAesGcmConfiguresAes256GcmForEveryEnvironment()
     {
         var services = new ServiceCollection();
-        var dataProtection = services.AddDataProtection().SetApplicationName("CodigoActivo");
+        var dataProtection = services
+            .AddDataProtection()
+            .SetApplicationName("CodigoActivo")
+            .PersistKeysToFileSystem(new DirectoryInfo(keysDirectory));
 
         dataProtection.ProtectPayloadsWithAesGcm();
 
@@ -81,9 +102,9 @@ public sealed class DataProtectionKeyProtectionTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(keysDirectory.FullName))
+        if (Directory.Exists(keysDirectory))
         {
-            keysDirectory.Delete(recursive: true);
+            Directory.Delete(keysDirectory, recursive: true);
         }
     }
 
@@ -99,11 +120,13 @@ public sealed class DataProtectionKeyProtectionTests : IDisposable
     private ServiceProvider BuildProvider(DataProtectionRootKey key)
     {
         var services = new ServiceCollection();
+        services.AddSingleton(key);
+        services.AddSingleton(new KeyRingOptions { DirectoryPath = keysDirectory });
         services
             .AddDataProtection()
             .SetApplicationName("CodigoActivo")
             .ProtectPayloadsWithAesGcm()
-            .ProtectKeysWithRootKey(keysDirectory, key);
+            .ProtectKeysWithRootKey();
         return services.BuildServiceProvider();
     }
 }

@@ -50,20 +50,18 @@ public sealed class AesGcmKeyRingProtection
     /// does not open the existing ring stops the start instead of letting Data Protection replace the
     /// ring with new keys.
     /// </summary>
-    /// <param name="keysDirectory">Directory holding the key ring.</param>
+    /// <param name="keysDirectory">Directory holding the key ring; a missing one holds no key yet.</param>
     /// <exception cref="CryptographicException">A stored element does not decrypt with the root key.</exception>
-    internal void VerifyKeyRing(DirectoryInfo keysDirectory)
+    public void VerifyKeyRing(string keysDirectory)
     {
-        if (!keysDirectory.Exists)
+        if (!Directory.Exists(keysDirectory))
         {
             return;
         }
 
-        foreach (var file in keysDirectory.EnumerateFiles("*.xml"))
+        foreach (var file in Directory.EnumerateFiles(keysDirectory, "*.xml"))
         {
-            foreach (
-                var element in XElement.Load(file.FullName).Descendants(Namespace + ElementName)
-            )
+            foreach (var element in XElement.Load(file).Descendants(Namespace + ElementName))
             {
                 try
                 {
@@ -72,7 +70,7 @@ public sealed class AesGcmKeyRingProtection
                 catch (CryptographicException ex)
                 {
                     throw new CryptographicException(
-                        "DATA_PROTECTION_KEY does not decrypt the key ring in api-dataprotection.",
+                        "DATA_PROTECTION_KEY does not decrypt the Data Protection key ring.",
                         ex
                     );
                 }

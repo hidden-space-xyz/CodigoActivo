@@ -25,20 +25,23 @@ with Compose, then provide the API configuration as process environment variable
 cp .env.example .env
 mkdir -m 700 secrets
 openssl rand -base64 32 | tr -d '\r\n' > secrets/postgres_password
-touch secrets/data_protection_key secrets/smtp_password
+openssl rand -base64 32 | tr -d '\r\n' > secrets/data_protection_key
+touch secrets/smtp_password
 docker compose up -d db mailpit
 
 export POSTGRES_PASSWORD="$(cat secrets/postgres_password)"
+export DATA_PROTECTION_KEY="$(cat secrets/data_protection_key)"
 export BOOTSTRAP_ADMIN_EMAIL=admin@example.test
 export SMTP_HOST=localhost SMTP_PORT=1025 SMTP_SECURITY=None SMTP_FROM_ADDRESS=no-reply@codigoactivo.local
 cd backend
 dotnet run --project src/CodigoActivo.API
 ```
 
-Compose needs all three [secret files](DEPLOYMENT.md#secrets) even though Development ignores the Data
-Protection password. In PowerShell, set the same variables with `$env:NAME="..."`. Mailpit catches every email
-at <http://localhost:8025>: login codes, verification links and the password reset that sets the bootstrap
-administrator's first password.
+Compose needs all three [secret files](DEPLOYMENT.md#secrets). As in the container, the API keeps its Data
+Protection key ring in `/home/app/.aspnet/DataProtection-Keys` (`C:\home\app\.aspnet\DataProtection-Keys` on
+Windows); delete that folder after changing `DATA_PROTECTION_KEY`. In PowerShell, set the same variables with
+`$env:NAME="..."`. Mailpit catches every email at <http://localhost:8025>: login codes, verification links
+and the password reset that sets the bootstrap administrator's first password.
 
 The API listens on <http://localhost:5150> (the `https` launch profile adds <https://localhost:7039>) and
 serves Swagger at `/swagger` in Development, where it logs to the console as well as to the log tables of its

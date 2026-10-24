@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using CodigoActivo.API.Security;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Caching;
@@ -14,6 +15,7 @@ using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.Infrastructure.Files;
 using CodigoActivo.Infrastructure.Logs;
+using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.Infrastructure.Users;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -33,6 +35,10 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     private readonly PostgresContainerFixture postgres;
     private readonly string fileStorageRoot = CreateFileStorageRoot();
     private readonly string deploymentModeFile = CreateDeploymentModeFilePath();
+    private readonly string keyRingDirectory = CreateKeyRingDirectoryPath();
+    private readonly string dataProtectionKey = Convert.ToBase64String(
+        RandomNumberGenerator.GetBytes(DataProtectionRootKey.Size)
+    );
     private readonly List<WebApplicationFactory<Program>> derived = [];
 
     /// <summary>
@@ -121,6 +127,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         builder.UseSetting("DEMO_MODE", "false");
         builder.UseSetting("DOTNET_RUNNING_IN_CONTAINER", "true");
         builder.UseSetting("BOOTSTRAP_ADMIN_EMAIL", "bootstrap@codigoactivo.test");
+        builder.UseSetting("DATA_PROTECTION_KEY", dataProtectionKey);
         builder.UseSetting("SMTP_HOST", "smtp.test");
         builder.UseSetting("SMTP_FROM_ADDRESS", "no-reply@codigoactivo.test");
         builder.UseSetting("LEGAL_NAME", "Asociación Código Activo");
@@ -178,6 +185,9 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<FileStorageOptions>();
             services.AddSingleton(new FileStorageOptions { RootPath = fileStorageRoot });
+
+            services.RemoveAll<KeyRingOptions>();
+            services.AddSingleton(new KeyRingOptions { DirectoryPath = keyRingDirectory });
         });
     }
 
@@ -332,6 +342,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     {
         await base.DisposeAsync();
         TryDeleteDirectory(fileStorageRoot);
+        TryDeleteDirectory(keyRingDirectory);
         var deploymentStateRoot = Path.GetDirectoryName(deploymentModeFile);
         if (deploymentStateRoot is not null)
         {
@@ -348,6 +359,11 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         );
         Directory.CreateDirectory(root);
         return root;
+    }
+
+    private static string CreateKeyRingDirectoryPath()
+    {
+        return Path.Join(Path.GetTempPath(), "codigoactivo-tests", Guid.NewGuid().ToString("N"));
     }
 
     private static string CreateDeploymentModeFilePath()

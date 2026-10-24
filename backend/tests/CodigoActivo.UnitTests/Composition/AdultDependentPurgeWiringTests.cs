@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Composition;
 using CodigoActivo.Infrastructure.Users;
+using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,6 +20,7 @@ public sealed class AdultDependentPurgeWiringTests
                 {
                     ["SMTP_HOST"] = "smtp.example.test",
                     ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
+                    ["DATA_PROTECTION_KEY"] = DataProtectionRootKeys.RandomBase64(),
                 }
             )
             .Build();

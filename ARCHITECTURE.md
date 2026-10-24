@@ -344,7 +344,7 @@ a setting that is present but unusable stops the application at start with a mes
 abuse and retention values are fixed in their `*Options` classes, registered with `AddFixedOptions` so no
 setting reaches them (tests replace the instance). The association's public identity is `Organization`
 (Domain) and `shared/config/organization.ts` (frontend); user-facing text is in the i18n resources. Data protection is registered there once, with the
-keys protected at rest in production. User-facing backend text comes from `Application/Common/Localization/AppStrings.resx`; logs and
+keys protected at rest in every environment. User-facing backend text comes from `Application/Common/Localization/AppStrings.resx`; logs and
 seeded content are not UI localization resources.
 
 ### Email boundaries

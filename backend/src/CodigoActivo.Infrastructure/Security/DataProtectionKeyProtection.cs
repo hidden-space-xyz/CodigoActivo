@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.DataProtection.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -33,43 +34,38 @@ public static class DataProtectionKeyProtection
     }
 
     /// <summary>
-    /// Persists the key ring to <paramref name="keysDirectory"/> and encrypts every key with
-    /// <see cref="AesGcmKeyRingProtection"/> under <paramref name="rootKey"/>. Keys found in the
-    /// directory that this protection does not cover are ignored when the ring is read, and a
-    /// stored element that the root key does not decrypt stops the registration.
+    /// Keeps the key ring in the directory of the registered <see cref="KeyRingOptions"/> and
+    /// encrypts every key with <see cref="AesGcmKeyRingProtection"/> under the registered
+    /// <see cref="DataProtectionRootKey"/>. Keys found in the directory that this protection does not
+    /// cover are ignored when the ring is read.
     /// </summary>
     /// <param name="dataProtection">Data Protection builder to configure.</param>
-    /// <param name="keysDirectory">Directory holding the key ring.</param>
-    /// <param name="rootKey">Root key the key ring key is derived from.</param>
     /// <returns>The same builder.</returns>
-    /// <exception cref="System.Security.Cryptography.CryptographicException">
-    /// A stored element does not decrypt with <paramref name="rootKey"/>.
-    /// </exception>
     public static IDataProtectionBuilder ProtectKeysWithRootKey(
-        this IDataProtectionBuilder dataProtection,
-        DirectoryInfo keysDirectory,
-        DataProtectionRootKey rootKey
+        this IDataProtectionBuilder dataProtection
     )
     {
         ArgumentNullException.ThrowIfNull(dataProtection);
-        ArgumentNullException.ThrowIfNull(keysDirectory);
 
-        var protection = new AesGcmKeyRingProtection(rootKey);
-        protection.VerifyKeyRing(keysDirectory);
-        dataProtection.Services.AddSingleton(protection);
-        dataProtection.PersistKeysToFileSystem(keysDirectory);
-        dataProtection.Services.Configure<KeyManagementOptions>(options =>
-            options.XmlEncryptor = new AesGcmXmlEncryptor(protection)
-        );
+        dataProtection.Services.AddSingleton<AesGcmKeyRingProtection>();
         dataProtection
             .Services.AddOptions<KeyManagementOptions>()
-            .PostConfigure<IServiceProvider>(
+            .Configure<IServiceProvider>(
                 (options, provider) =>
+                {
+                    var loggers =
+                        provider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+                    var directory = new DirectoryInfo(
+                        provider.GetRequiredService<KeyRingOptions>().DirectoryPath
+                    );
                     options.XmlRepository = new ProtectedKeyRingRepository(
-                        options.XmlRepository!,
-                        provider.GetService<ILogger<ProtectedKeyRingRepository>>()
-                            ?? NullLogger<ProtectedKeyRingRepository>.Instance
-                    )
+                        new FileSystemXmlRepository(directory, loggers),
+                        loggers.CreateLogger<ProtectedKeyRingRepository>()
+                    );
+                    options.XmlEncryptor = new AesGcmXmlEncryptor(
+                        provider.GetRequiredService<AesGcmKeyRingProtection>()
+                    );
+                }
             );
         return dataProtection;
     }

@@ -81,10 +81,11 @@ everything else the API logs is on the «Diagnóstico» page.
 
 Every login is completed with a one-time code, emailed unless the user enrolled an authenticator app, so
 startup fails everywhere when `SMTP_HOST` or `SMTP_FROM_ADDRESS` is missing or `SMTP_PORT` is outside 1-65535.
-Production startup (`ProductionConfiguration`) also fails when:
+It also fails everywhere when `DATA_PROTECTION_KEY` is not 32 random bytes in Base64 (bytes that are all
+printable, as in an encoded password, or all equal are refused) or does not decrypt a key already in the key
+ring. Production startup (`ProductionConfiguration`) also fails when:
 
-- `POSTGRES_PASSWORD` has fewer than 16 characters or `DATA_PROTECTION_KEY` is not 32 random bytes in Base64
-  (bytes that are all printable, as in an encoded password, or all equal are refused);
+- `POSTGRES_PASSWORD` has fewer than 16 characters;
 - `APP_BASE_URL` is not a clean HTTPS origin on a public DNS name (IP addresses, localhost and reserved
   example/test domains are rejected);
 - the SMTP host or sender is invalid, `SMTP_SECURITY` is `None` or `Auto`, or only one of `SMTP_USERNAME` and
@@ -94,8 +95,7 @@ Production startup (`ProductionConfiguration`) also fails when:
 These settings and every application setting are checked before anything is written to `api-state` or the
 database. `BOOTSTRAP_ADMIN_EMAIL` is checked once the database is migrated and the deployment mode is locked
 only after that check, so a start it stops leaves a migrated database but no mode lock. Demo seeding runs after
-the lock; a start it stops keeps the lock and seeds again on the next start. A Production start also stops,
-before anything is written, when `api-dataprotection` holds a key that `DATA_PROTECTION_KEY` does not decrypt.
+the lock; a start it stops keeps the lock and seeds again on the next start.
 
 ### TLS and proxy boundary
 

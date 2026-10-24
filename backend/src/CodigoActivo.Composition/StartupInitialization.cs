@@ -3,6 +3,7 @@ using CodigoActivo.Composition.Platform;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.Infrastructure.Logs;
+using CodigoActivo.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,9 +14,9 @@ using Microsoft.Extensions.Options;
 namespace CodigoActivo.Composition;
 
 /// <summary>
-/// Runs the start-up steps from a service scope: the configuration check, schema migrations,
-/// log table maintenance, catalog seeding, the initial administrator, the deployment mode lock and
-/// the optional demo data and log history.
+/// Runs the start-up steps from a service scope: the configuration and key ring checks, schema
+/// migrations, log table maintenance, catalog seeding, the initial administrator, the deployment
+/// mode lock and the optional demo data and log history.
 /// </summary>
 public static class StartupInitialization
 {
@@ -27,6 +28,18 @@ public static class StartupInitialization
     public static void ValidateConfiguration(this IServiceProvider services)
     {
         services.GetRequiredService<IStartupValidator>().Validate();
+    }
+
+    /// <summary>
+    /// Checks that <c>DATA_PROTECTION_KEY</c> is usable and decrypts every key already in the key
+    /// ring, so a wrong key stops the start before Data Protection replaces the ring with new keys.
+    /// </summary>
+    /// <param name="services">Service provider.</param>
+    public static void VerifyKeyRing(this IServiceProvider services)
+    {
+        services
+            .GetRequiredService<AesGcmKeyRingProtection>()
+            .VerifyKeyRing(services.GetRequiredService<KeyRingOptions>().DirectoryPath);
     }
 
     /// <summary>
