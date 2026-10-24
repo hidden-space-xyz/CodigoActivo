@@ -12,6 +12,7 @@ internal static class ApplicationInitializer
         await using var scope = app.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
         services.ValidateConfiguration();
+        services.VerifyKeyRing();
 
         await services.MigrateDatabaseAsync(cancellationToken);
         await services.MaintainLogTablesAsync(cancellationToken);

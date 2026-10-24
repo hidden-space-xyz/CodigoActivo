@@ -6,7 +6,7 @@ namespace CodigoActivo.Infrastructure.Security;
 
 /// <summary>
 /// Hashes one-time codes with HMAC-SHA256 under a server-side key that is never stored in the
-/// database, and encodes the result in Base64. Production derives the key from
+/// database, and encodes the result in Base64. The key is derived from
 /// <see cref="DataProtectionRootKey"/> with <see cref="KeyPurpose"/>; changing the key only
 /// invalidates the codes still pending.
 /// </summary>

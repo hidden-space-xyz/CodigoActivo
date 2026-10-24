@@ -6,6 +6,7 @@ using CodigoActivo.Application.Emails;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -145,6 +146,7 @@ public sealed class EmailSenderWiringTests
             {
                 ["SMTP_HOST"] = host,
                 ["SMTP_FROM_ADDRESS"] = from,
+                ["DATA_PROTECTION_KEY"] = DataProtectionRootKeys.RandomBase64(),
             }
         );
 
@@ -161,6 +163,7 @@ public sealed class EmailSenderWiringTests
         {
             ["SMTP_HOST"] = "smtp.example.test",
             ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
+            ["DATA_PROTECTION_KEY"] = DataProtectionRootKeys.RandomBase64(),
         };
         foreach (var (key, value) in settings ?? [])
         {

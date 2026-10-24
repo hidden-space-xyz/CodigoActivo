@@ -33,6 +33,22 @@ internal sealed class Settings(IConfiguration configuration)
     }
 
     /// <summary>
+    /// Reads a setting that has no default, exactly as written.
+    /// </summary>
+    /// <typeparam name="T">Value read.</typeparam>
+    /// <param name="key">Configuration key.</param>
+    /// <param name="parse">Turns the text into the value, or returns null when it cannot.</param>
+    /// <param name="expected">What the setting must be, as the error message names it.</param>
+    /// <returns>The value.</returns>
+    /// <exception cref="InvalidOperationException">The setting is missing or cannot be used.</exception>
+    public T Required<T>(string key, Func<string, T?> parse, string expected)
+        where T : class
+    {
+        var value = configuration[key];
+        return (value is null ? null : parse(value)) ?? throw Invalid(key, expected);
+    }
+
+    /// <summary>
     /// Reads a positive whole number.
     /// </summary>
     /// <param name="key">Configuration key.</param>

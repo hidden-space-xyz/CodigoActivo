@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common;
@@ -19,21 +18,14 @@ namespace CodigoActivo.Composition.Platform;
 internal static class PlatformRegistration
 {
     /// <summary>
-    /// Folder that keeps the data protection keys in production.
-    /// </summary>
-    private const string KeysDirectory = "/home/app/.aspnet/DataProtection-Keys";
-
-    /// <summary>
     /// Adds the platform services.
     /// </summary>
     /// <param name="services">Service collection to add to.</param>
     /// <param name="configuration">Configuration of the application.</param>
-    /// <param name="production">Whether the application runs in production.</param>
     /// <returns>The same service collection.</returns>
     public static IServiceCollection AddPlatform(
         this IServiceCollection services,
-        IConfiguration configuration,
-        bool production
+        IConfiguration configuration
     )
     {
         var settings = new Settings(configuration);
@@ -52,36 +44,31 @@ internal static class PlatformRegistration
         );
 
         services.AddSingleton<DeploymentModeLock>();
-        AddDataProtection(services, settings, production);
+        AddDataProtection(services, settings);
         return services;
     }
 
-    private static void AddDataProtection(
-        IServiceCollection services,
-        Settings settings,
-        bool production
-    )
+    private static void AddDataProtection(IServiceCollection services, Settings settings)
     {
-        var dataProtection = services
+        services.AddSingleton(_ =>
+            settings.Required(
+                "DATA_PROTECTION_KEY",
+                value => DataProtectionRootKey.TryParse(value, out var rootKey) ? rootKey : null,
+                $"{DataProtectionRootKey.Size} random bytes encoded in Base64"
+            )
+        );
+        services.AddFixedOptions<KeyRingOptions>();
+        services
             .AddDataProtection()
             .SetApplicationName("CodigoActivo")
-            .ProtectPayloadsWithAesGcm();
-        byte[] oneTimeCodeKey;
-        if (production)
-        {
-            var rootKey = DataProtectionRootKey.Parse(settings.Verbatim("DATA_PROTECTION_KEY"));
-            dataProtection.ProtectKeysWithRootKey(new DirectoryInfo(KeysDirectory), rootKey);
-            oneTimeCodeKey = rootKey.DeriveKey(
-                HmacOneTimeCodeHasher.KeyPurpose,
-                HmacOneTimeCodeHasher.KeySize
-            );
-        }
-        else
-        {
-            oneTimeCodeKey = RandomNumberGenerator.GetBytes(HmacOneTimeCodeHasher.KeySize);
-        }
+            .ProtectPayloadsWithAesGcm()
+            .ProtectKeysWithRootKey();
 
         services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
-        services.AddSingleton<IOneTimeCodeHasher>(new HmacOneTimeCodeHasher(oneTimeCodeKey));
+        services.AddSingleton<IOneTimeCodeHasher>(provider => new HmacOneTimeCodeHasher(
+            provider
+                .GetRequiredService<DataProtectionRootKey>()
+                .DeriveKey(HmacOneTimeCodeHasher.KeyPurpose, HmacOneTimeCodeHasher.KeySize)
+        ));
     }
 }

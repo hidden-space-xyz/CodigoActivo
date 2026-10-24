@@ -136,12 +136,11 @@ public sealed class ProtectedKeyRingRepositoryTests : IDisposable
     }
 
     [Fact]
-    public void ProductionWiringIgnoresAKeyPlantedWithoutTheRootKey()
+    public void ProtectKeysWithRootKeyIgnoresAKeyPlantedWithoutTheRootKey()
     {
-        var keysDirectory = new DirectoryInfo(directory);
         var rootKey = DataProtectionRootKeys.Random();
         Guid protectedKeyId;
-        using (var provider = BuildProductionLikeProvider(keysDirectory, rootKey))
+        using (var provider = BuildProtectedProvider(rootKey))
         {
             protectedKeyId = provider
                 .GetRequiredService<IKeyManager>()
@@ -150,7 +149,7 @@ public sealed class ProtectedKeyRingRepositoryTests : IDisposable
         }
 
         Guid plantedKeyId;
-        using (var rogue = BuildRogueProvider(keysDirectory))
+        using (var rogue = BuildRogueProvider())
         {
             plantedKeyId = rogue
                 .GetRequiredService<IKeyManager>()
@@ -158,7 +157,7 @@ public sealed class ProtectedKeyRingRepositoryTests : IDisposable
                 .KeyId;
         }
 
-        using var reloaded = BuildProductionLikeProvider(keysDirectory, rootKey);
+        using var reloaded = BuildProtectedProvider(rootKey);
         var keyIds = reloaded
             .GetRequiredService<IKeyManager>()
             .GetAllKeys()
@@ -176,27 +175,26 @@ public sealed class ProtectedKeyRingRepositoryTests : IDisposable
         }
     }
 
-    private static ServiceProvider BuildProductionLikeProvider(
-        DirectoryInfo keysDirectory,
-        DataProtectionRootKey rootKey
-    )
+    private ServiceProvider BuildProtectedProvider(DataProtectionRootKey rootKey)
     {
         var services = new ServiceCollection();
+        services.AddSingleton(rootKey);
+        services.AddSingleton(new KeyRingOptions { DirectoryPath = directory });
         services
             .AddDataProtection()
             .SetApplicationName("CodigoActivo")
             .ProtectPayloadsWithAesGcm()
-            .ProtectKeysWithRootKey(keysDirectory, rootKey);
+            .ProtectKeysWithRootKey();
         return services.BuildServiceProvider();
     }
 
-    private static ServiceProvider BuildRogueProvider(DirectoryInfo keysDirectory)
+    private ServiceProvider BuildRogueProvider()
     {
         var services = new ServiceCollection();
         services
             .AddDataProtection()
             .SetApplicationName("CodigoActivo")
-            .PersistKeysToFileSystem(keysDirectory);
+            .PersistKeysToFileSystem(new DirectoryInfo(directory));
         services.Configure<KeyManagementOptions>(options =>
             options.XmlEncryptor = new NullXmlEncryptor()
         );

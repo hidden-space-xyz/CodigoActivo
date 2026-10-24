@@ -57,21 +57,6 @@ public sealed class DataProtectionRootKey
     }
 
     /// <summary>
-    /// Reads a root key encoded in Base64.
-    /// </summary>
-    /// <param name="encoded">Base64 text of exactly <see cref="Size"/> bytes.</param>
-    /// <returns>The root key.</returns>
-    /// <exception cref="FormatException">The text is refused by <see cref="TryParse"/>.</exception>
-    public static DataProtectionRootKey Parse(string? encoded)
-    {
-        return TryParse(encoded, out var rootKey)
-            ? rootKey
-            : throw new FormatException(
-                $"The data protection key must be {Size} random bytes encoded in Base64."
-            );
-    }
-
-    /// <summary>
     /// Derives the key of <paramref name="purpose"/> with HKDF-SHA256. Each purpose gets an
     /// independent key that reveals nothing about the root key or about the other purposes.
     /// </summary>

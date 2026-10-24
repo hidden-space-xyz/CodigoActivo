@@ -2,6 +2,8 @@ using AwesomeAssertions;
 using CodigoActivo.Composition;
 using CodigoActivo.Composition.Accounts;
 using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Security;
+using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -45,6 +47,28 @@ public sealed class StartupInitializationTests
 
         act.Should().NotThrow();
         provider.GetRequiredService<SmtpOptions>().Port.Should().Be(65_535);
+    }
+
+    [Fact]
+    public void VerifyKeyRingMissingDataProtectionKeyStopsTheStart()
+    {
+        using var provider = BuildProvider(("DATA_PROTECTION_KEY", null));
+
+        var act = () => provider.VerifyKeyRing();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*DATA_PROTECTION_KEY*");
+    }
+
+    [Fact]
+    public void VerifyKeyRingUsableKeyAndNoKeyRingIsAccepted()
+    {
+        using var provider = BuildProvider(
+            ("DATA_PROTECTION_KEY", DataProtectionRootKeys.RandomBase64())
+        );
+
+        var act = () => provider.VerifyKeyRing();
+
+        act.Should().NotThrow();
     }
 
     [Theory]
@@ -93,6 +117,16 @@ public sealed class StartupInitializationTests
             .AddSingleton<IConfiguration>(configuration)
             .AddSingleton(environment)
             .AddCodigoActivo(configuration)
+            .AddSingleton(
+                new KeyRingOptions
+                {
+                    DirectoryPath = Path.Join(
+                        Path.GetTempPath(),
+                        "codigoactivo-keyring-tests",
+                        Guid.NewGuid().ToString("N")
+                    ),
+                }
+            )
             .BuildServiceProvider();
     }
 }

@@ -10,6 +10,7 @@ using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Files;
 using CodigoActivo.Infrastructure.Logs;
+using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.Infrastructure.Users;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,7 @@ public sealed class FixedOptionsTests : IDisposable
                     ["DisposableEmailDomains:SourceUrl"] = "https://lists.example.test/empty.conf",
                     ["FileStorage:MaxSizeBytes"] = "1099511627776",
                     ["FileStorage:RootPath"] = "/tmp",
+                    ["KeyRing:DirectoryPath"] = "/tmp",
                     ["ManualEmail:MaxRecipients"] = "1000000",
                     ["EmailGuard:RecipientPerDay"] = "1000000",
                     ["EmailGuard:GlobalPerHour"] = "1000000",
@@ -73,6 +75,7 @@ public sealed class FixedOptionsTests : IDisposable
         Fixed<DisposableEmailDomainOptions>();
         Fixed<FileUploadOptions>();
         Fixed<FileStorageOptions>();
+        Fixed<KeyRingOptions>();
         Fixed<ManualEmailOptions>();
         Fixed<EmailGuardOptions>();
         Fixed<EmailQueueOptions>();
