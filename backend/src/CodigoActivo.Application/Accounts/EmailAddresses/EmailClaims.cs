@@ -1,14 +1,13 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Application.Accounts.EmailAddresses;
 
 /// <summary>
 /// Commits an account that takes an email: a new registration, or an account whose holder confirmed
 /// the address as their new email. An account nobody verified that held the address is erased in
-/// the same transaction, keeping its legal copy; one that <see cref="User.OwnsEmail"/> is never
+/// the same transaction, keeping its data history; one that <see cref="User.OwnsEmail"/> is never
 /// erased, so callers turn such claims away first. The holder is locked and reloaded before it is
 /// erased, so a holder verified or moved to another address meanwhile is seen as it is now: one
 /// that verified the address keeps it and the claim is refused, and one that no longer holds it is
@@ -24,7 +23,6 @@ public sealed class EmailClaims(IUserRepository users, AccountEraser eraser, IUn
     /// </summary>
     /// <param name="claimant">Account that takes the email, staged in the unit of work.</param>
     /// <param name="unverifiedHolder">Account nobody verified that holds the email, if any.</param>
-    /// <param name="now">Current time.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result is <see langword="false"/> when another account took the email first
@@ -34,7 +32,6 @@ public sealed class EmailClaims(IUserRepository users, AccountEraser eraser, IUn
     public async Task<bool> TryCommitAsync(
         User claimant,
         User? unverifiedHolder,
-        DateTimeOffset now,
         CancellationToken ct
     )
     {
@@ -51,7 +48,7 @@ public sealed class EmailClaims(IUserRepository users, AccountEraser eraser, IUn
         try
         {
             claimed = await uow.ExecuteInTransactionAsync(
-                attempt => ClaimAsync(claimant, unverifiedHolder, now, attempt),
+                attempt => ClaimAsync(claimant, unverifiedHolder, attempt),
                 ct
             );
         }
@@ -68,12 +65,7 @@ public sealed class EmailClaims(IUserRepository users, AccountEraser eraser, IUn
         return claimed;
     }
 
-    private async Task<bool> ClaimAsync(
-        User claimant,
-        User? holder,
-        DateTimeOffset now,
-        CancellationToken ct
-    )
+    private async Task<bool> ClaimAsync(User claimant, User? holder, CancellationToken ct)
     {
         if (
             holder is not null
@@ -86,13 +78,7 @@ public sealed class EmailClaims(IUserRepository users, AccountEraser eraser, IUn
                 return false;
             }
 
-            if (
-                await eraser.EraseAsync(
-                    holder,
-                    AccountErasure.ForClaimedEmail(claimant.Id, now),
-                    ct
-                )
-            )
+            if (await eraser.EraseAsync(holder, ct))
             {
                 return true;
             }

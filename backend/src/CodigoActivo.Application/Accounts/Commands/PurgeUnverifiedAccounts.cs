@@ -5,7 +5,6 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Application.Accounts.Commands;
 
@@ -15,12 +14,12 @@ namespace CodigoActivo.Application.Accounts.Commands;
 public sealed record PurgeUnverifiedAccountsCommand : ICommand<Result<int>>, IScheduledCommand;
 
 /// <summary>
-/// Executes the command that erases, with their dependents and a blocked copy, the accounts still
+/// Executes the command that erases, with their dependents, the accounts still
 /// unverified <see cref="User.UnverifiedRetentionDays"/> after their registration. Each account is
 /// locked and checked again in its own transaction, so one verified meanwhile is kept.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="eraser">Eraser that deletes an account through its blocked copy.</param>
+/// <param name="eraser">Eraser that deletes an account and keeps its data history.</param>
 /// <param name="uow">Unit of work that runs each erasure in its own transaction.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class PurgeUnverifiedAccountsCommandHandler(
@@ -72,10 +71,6 @@ public sealed class PurgeUnverifiedAccountsCommandHandler(
     {
         return await users.LockAsync(account, ct)
             && account.HasVerificationExpired(now)
-            && await eraser.EraseAsync(
-                account,
-                AccountErasure.ForExpiredVerification(account, now),
-                ct
-            );
+            && await eraser.EraseAsync(account, ct);
     }
 }

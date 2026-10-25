@@ -9,7 +9,6 @@ using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -841,7 +840,10 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             .Email!.Value.Should()
             .Be(TestSeedData.PendingEmail);
         (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().BeNull();
-        (await FindAsync<DeletedAccount>(TestSeedData.Users.PendingId)).Should().NotBeNull();
+        (await ErasedUsersAsync())
+            .Select(user => user.UserId)
+            .Should()
+            .Contain(TestSeedData.Users.PendingId);
     }
 
     [Fact]

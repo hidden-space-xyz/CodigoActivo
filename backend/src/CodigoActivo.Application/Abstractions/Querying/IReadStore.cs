@@ -76,4 +76,7 @@ public interface IReadStore
 
     /// <summary>Gets the versions the legal policies replaced.</summary>
     public IQueryable<LegalPolicyVersionRow> LegalPolicyVersions { get; }
+
+    /// <summary>Gets the consultations of the blocked data.</summary>
+    public IQueryable<BlockedDataConsultationRow> BlockedDataConsultations { get; }
 }

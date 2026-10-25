@@ -85,9 +85,6 @@ public enum AuditAction
     /// <summary>Deleted an activity.</summary>
     DeleteActivity,
 
-    /// <summary>Purged the blocked copies of removed participation past their retention.</summary>
-    PurgeDeletedParticipations,
-
     /// <summary>Withdrew a signup.</summary>
     UnassignActivity,
 
@@ -190,9 +187,6 @@ public enum AuditAction
     /// <summary>Erased the dependents who came of age.</summary>
     PurgeAdultDependents,
 
-    /// <summary>Purged the legal copies past their retention.</summary>
-    PurgeDeletedAccounts,
-
     /// <summary>Reset the second factor of a user.</summary>
     ResetTwoFactor,
 
@@ -204,4 +198,16 @@ public enum AuditAction
 
     /// <summary>Updated a user.</summary>
     UpdateUser,
+
+    /// <summary>Purged the data history and the consultations past their retention.</summary>
+    PurgeDataHistory,
+
+    /// <summary>Opened a consultation of the blocked data.</summary>
+    OpenBlockedDataConsultation,
+
+    /// <summary>Looked accounts up in a consultation of the blocked data.</summary>
+    SearchBlockedData,
+
+    /// <summary>Took an extract of the blocked data about an account.</summary>
+    ExportBlockedData,
 }

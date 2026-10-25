@@ -4,7 +4,7 @@ namespace CodigoActivo.Domain.Users;
 
 /// <summary>
 /// Stores and loads accounts. Removing an account is only valid inside an account erasure, which
-/// keeps the legal copy.
+/// keeps its data history.
 /// </summary>
 public interface IUserRepository : IRepository<User>
 {

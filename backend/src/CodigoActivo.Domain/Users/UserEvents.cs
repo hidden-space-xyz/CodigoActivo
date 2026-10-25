@@ -94,7 +94,7 @@ public sealed record AdministratorRightsChanged(UserId UserId, bool IsAdmin) : I
 public sealed record UserTypeChanged(UserId UserId) : IDomainEvent;
 
 /// <summary>
-/// An account was erased, keeping only the legal copy of its data.
+/// An account was erased, keeping only the data history of its rows.
 /// </summary>
 /// <param name="UserId">Identifier of the erased account.</param>
 public sealed record AccountErased(UserId UserId) : IDomainEvent;

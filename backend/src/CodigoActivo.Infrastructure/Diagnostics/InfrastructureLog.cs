@@ -149,15 +149,27 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
-    /// Records that the periodic purge of deleted account copies failed.
+    /// Records that the periodic purge of the data history failed.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure that ended the run.</param>
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "The deleted account purge run failed; the next run will retry"
+        Message = "The data history purge run failed; the next run will retry"
     )]
-    public static partial void DeletedAccountPurgeFailed(this ILogger logger, Exception exception);
+    public static partial void DataHistoryPurgeFailed(this ILogger logger, Exception exception);
+
+    /// <summary>
+    /// Records that an entry of the data history could not be decrypted: it was altered or its key
+    /// is no longer in the Data Protection key ring.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure that prevented reading it.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "A data history entry could not be decrypted; it was altered or its key was lost"
+    )]
+    public static partial void DataHistoryEntryUnreadable(this ILogger logger, Exception exception);
 
     /// <summary>
     /// Records that the periodic erasure of the accounts nobody verified in time failed.

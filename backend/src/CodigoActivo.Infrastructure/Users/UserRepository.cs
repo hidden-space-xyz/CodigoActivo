@@ -11,7 +11,7 @@ namespace CodigoActivo.Infrastructure.Users;
 
 /// <summary>
 /// Stores and loads accounts. Accounts are only deleted through the account erasure, which keeps
-/// the legal copy.
+/// its data history.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 /// <param name="unitOfWork">Unit of work that publishes the events of the lockouts stored here.</param>

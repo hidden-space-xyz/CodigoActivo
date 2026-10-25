@@ -43,7 +43,6 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'ChangeAssignmentStatus',
   'CreateActivity',
   'DeleteActivity',
-  'PurgeDeletedParticipations',
   'UnassignActivity',
   'UpdateActivity',
   'SendEmailToEventAttendees',
@@ -78,11 +77,14 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'ChangeUserType',
   'DeleteUser',
   'PurgeAdultDependents',
-  'PurgeDeletedAccounts',
   'ResetTwoFactor',
   'SendComingOfAgeNotices',
   'SetAdmin',
   'UpdateUser',
+  'PurgeDataHistory',
+  'OpenBlockedDataConsultation',
+  'SearchBlockedData',
+  'ExportBlockedData',
 ]
 
 /** Every kind of actor, in the order the actor filter lists them. */
@@ -100,6 +102,7 @@ export const AUDIT_ENTITY_TYPES: readonly AuditEntityType[] = [
   'Partner',
   'StoredFile',
   'LegalPolicy',
+  'BlockedDataConsultation',
 ]
 
 /** Every outcome, in the order the outcome filter lists them. */

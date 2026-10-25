@@ -52,6 +52,7 @@ public sealed class HandlerRegistrationTests
                     ["SMTP_HOST"] = "smtp.example.test",
                     ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
                     ["DATA_PROTECTION_KEY"] = DataProtectionRootKeys.RandomBase64(),
+                    ["PRIVACY_OFFICER_EMAIL"] = "officer@example.test",
                 }
             )
             .Build();

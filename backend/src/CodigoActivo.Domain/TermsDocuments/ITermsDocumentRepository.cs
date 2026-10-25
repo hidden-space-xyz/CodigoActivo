@@ -8,7 +8,7 @@ namespace CodigoActivo.Domain.TermsDocuments;
 public interface ITermsDocumentRepository : IRepository<TermsDocument>
 {
     /// <summary>
-    /// Loads a terms document to change it.
+    /// Loads a terms document to change or delete it, with its previous versions.
     /// </summary>
     /// <param name="id">Identifier of the document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

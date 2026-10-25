@@ -654,4 +654,29 @@ public enum ErrorCode
     /// Selects the unexpected error option.
     /// </summary>
     UnexpectedError,
+
+    /// <summary>
+    /// The consultation of the blocked data does not exist or another account opened it.
+    /// </summary>
+    BlockedDataConsultationNotFound,
+
+    /// <summary>
+    /// The consultation of the blocked data is over; a new one must be opened.
+    /// </summary>
+    BlockedDataConsultationExpired,
+
+    /// <summary>
+    /// No search of the consultation found the account.
+    /// </summary>
+    BlockedDataAccountNotFound,
+
+    /// <summary>
+    /// Only the administrator designated for data protection may consult the blocked data.
+    /// </summary>
+    BlockedDataOfficerOnly,
+
+    /// <summary>
+    /// The account designated for data protection must use an authenticator app.
+    /// </summary>
+    BlockedDataAuthenticatorRequired,
 }

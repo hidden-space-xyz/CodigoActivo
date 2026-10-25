@@ -17,6 +17,7 @@ public class PartnerConfiguration : IEntityTypeConfiguration<Partner>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Partner> builder)
     {
+        builder.HasHistory();
         builder.HasKey(p => p.Id);
 
         builder.Property(p => p.Name).IsRequired();

@@ -1,10 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 
@@ -17,17 +14,13 @@ namespace CodigoActivo.Application.Activities.Commands;
 public sealed record DeleteActivityCommand(ActivityId ActivityId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the activity with its signups, keeping their blocked copy first.
+/// Executes the command to delete the activity with its signups, keeping their data history.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="eraser">Service that commits the removal with the blocked copy.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="eraser">Service that commits the removal with its data history.</param>
 public sealed class DeleteActivityCommandHandler(
     IActivityRepository activities,
-    ParticipationEraser eraser,
-    ICurrentUser currentUser,
-    IClock clock
+    ParticipationEraser eraser
 ) : ICommandHandler<DeleteActivityCommand, Result>
 {
     /// <summary>
@@ -51,10 +44,7 @@ public sealed class DeleteActivityCommandHandler(
 
         activity.Delete();
         activities.Remove(activity);
-        await eraser.EraseAsync(
-            ParticipationDeletion.OfActivity(activity, currentUser.RequiredId(), clock.UtcNow),
-            ct
-        );
+        await eraser.EraseAsync(ParticipationDeletion.OfActivity(activity), ct);
         return Result.Success();
     }
 }

@@ -93,6 +93,10 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         Set<LegalPolicyVersionRow>().AsNoTracking();
 
     /// <inheritdoc />
+    public IQueryable<BlockedDataConsultationRow> BlockedDataConsultations =>
+        Set<BlockedDataConsultationRow>().AsNoTracking();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -103,6 +107,7 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         ConfigureActivities(modelBuilder);
         ConfigureContent(modelBuilder);
         ConfigureLogs(modelBuilder);
+        ConfigureBlockedData(modelBuilder);
     }
 
     private static EntityTypeBuilder<TRow> Table<TRow>(ModelBuilder modelBuilder, string name)
@@ -267,5 +272,29 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         audit.Property(r => r.Outcome).HasConversion<string>();
         audit.Property(r => r.ClientIp).HasColumnType("inet");
         audit.Property(r => r.Related).HasColumnType("jsonb");
+    }
+
+    private static void ConfigureBlockedData(ModelBuilder modelBuilder)
+    {
+        var consultations = Table<BlockedDataConsultationRow>(
+            modelBuilder,
+            "blocked_data_consultations"
+        );
+        consultations.HasKey(c => c.Id);
+        consultations.Property(c => c.Authority).HasConversion<string>();
+
+        var findings = Table<BlockedDataFindingRow>(modelBuilder, "blocked_data_findings");
+        findings.HasKey(f => new { f.ConsultationId, f.AccountId });
+        findings
+            .HasOne<BlockedDataConsultationRow>()
+            .WithMany(c => c.Findings)
+            .HasForeignKey(f => f.ConsultationId);
+
+        var extracts = Table<BlockedDataExtractRow>(modelBuilder, "blocked_data_extracts");
+        extracts.HasKey(e => e.Id);
+        extracts
+            .HasOne<BlockedDataConsultationRow>()
+            .WithMany(c => c.Extracts)
+            .HasForeignKey(e => e.ConsultationId);
     }
 }

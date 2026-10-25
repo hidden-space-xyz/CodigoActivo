@@ -2,6 +2,7 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,6 +20,7 @@ public sealed class EventTermsAcceptanceConfiguration
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<EventTermsAcceptance> builder)
     {
+        builder.HasHistory();
         builder.HasKey(x => new
         {
             x.EventId,
@@ -30,19 +32,19 @@ public sealed class EventTermsAcceptanceConfiguration
             .HasOne<Event>()
             .WithMany()
             .HasForeignKey(x => x.EventId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
 
         builder
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
 
         builder
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.DecidedById)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
 
         builder
             .HasOne<TermsDocument>()

@@ -1,4 +1,5 @@
 using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,6 +16,7 @@ public sealed class EmailOutboxContentConfiguration : IEntityTypeConfiguration<E
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<EmailOutboxContent> builder)
     {
+        builder.HasNoHistory();
         builder.HasKey(content => content.Id);
 
         builder.Property(content => content.Subject).IsRequired();

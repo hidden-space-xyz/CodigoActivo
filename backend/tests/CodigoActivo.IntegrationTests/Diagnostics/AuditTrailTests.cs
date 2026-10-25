@@ -6,7 +6,7 @@ using CodigoActivo.API.Participation.Contracts;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
+using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -103,10 +103,10 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task ScheduledPurgeIsRecordedAsTheSystemOnlyWhenItRemovedSomething()
     {
-        var purger = new DeletedAccountPurgeWorker(
+        var purger = new DataHistoryPurgeWorker(
             Factory.Services.GetRequiredService<IServiceScopeFactory>(),
-            new DeletedAccountPurgeOptions(),
-            NullLogger<DeletedAccountPurgeWorker>.Instance
+            new DataHistoryRetentionOptions(),
+            NullLogger<DataHistoryPurgeWorker>.Instance
         );
 
         await purger.PurgeAsync(Ct);
@@ -114,17 +114,21 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
 
         await Factory.SeedAsync(db =>
         {
-            db.DeletedAccounts.Add(
-                Persisted.As<DeletedAccount>(
-                    new { Id = Guid.NewGuid(), DeletedAt = Factory.Clock.UtcNow.AddYears(-4) }
-                )
+            db.DataHistory.Add(
+                new DataHistoryEntry
+                {
+                    Id = Guid.CreateVersion7(),
+                    Entity = "User",
+                    OccurredAt = Factory.Clock.UtcNow.AddYears(-6),
+                    Payload = [1],
+                }
             );
             return Task.CompletedTask;
         });
         await purger.PurgeAsync(Ct);
 
         var record = Factory.Audit.Records.Should().ContainSingle().Subject;
-        record.Action.Should().Be(AuditAction.PurgeDeletedAccounts);
+        record.Action.Should().Be(AuditAction.PurgeDataHistory);
         record.ActorType.Should().Be(AuditActorType.System);
         record.ClientAddress.Should().BeNull();
     }

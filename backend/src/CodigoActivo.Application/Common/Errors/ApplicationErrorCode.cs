@@ -372,4 +372,25 @@ public enum ApplicationErrorCode
     /// dependents, without being an administrator.
     /// </summary>
     ActingForAnotherUserForbidden,
+
+    /// <summary>
+    /// Only the administrator designated for data protection may consult the blocked data.
+    /// </summary>
+    BlockedDataOfficerOnly,
+
+    /// <summary>
+    /// The account designated for data protection must use an authenticator app to consult the
+    /// blocked data.
+    /// </summary>
+    BlockedDataAuthenticatorRequired,
+
+    /// <summary>
+    /// An extract was narrowed to a kind of data that keeps no history.
+    /// </summary>
+    BlockedDataEntityUnknown,
+
+    /// <summary>
+    /// An extract was narrowed to days whose first one comes after the last one.
+    /// </summary>
+    BlockedDataPeriodInvalid,
 }

@@ -1,7 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
+using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -76,11 +76,16 @@ public sealed class AdultDependentPurgeWorkerTests(CodigoActivoWebAppFactory fac
         await Factory.DrainEmailOutboxAsync();
 
         (await FindAsync(adultId)).Should().BeNull();
-        var copy = await Factory.QueryAsync(db =>
-            db.DeletedAccounts.SingleAsync(deleted => deleted.Id == UserId.From(adultId), Ct)
+        (await ErasedUsersAsync())
+            .Should()
+            .Equal(new List<(Guid, string?, Guid?)> { (adultId, "PurgeAdultDependents", null) });
+        var erased = (await DataHistoryAsync()).Single(item =>
+            item.Entry.Entity == nameof(User)
+            && item.Record.Operation is DataHistoryOperation.Deleted
         );
-        copy.Data.Should().Contain(nameof(AccountDeletionOrigin.CameOfAge));
-        copy.Data.Should().Contain(TestSeedData.Users.MemberId.ToString());
+        erased
+            .Entry.SubjectIds.Should()
+            .Contain(TestSeedData.Users.MemberId, "it names the guardian");
         var soon = await FindAsync(soonId);
         soon!.ComingOfAgeNoticeSentAt.Should().Be(Factory.Clock.UtcNow);
         (await FindAsync(TestSeedData.Users.MemberChildId)).Should().NotBeNull();

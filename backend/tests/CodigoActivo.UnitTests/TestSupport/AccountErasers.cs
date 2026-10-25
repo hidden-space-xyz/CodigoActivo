@@ -1,18 +1,14 @@
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using NSubstitute;
 
 namespace CodigoActivo.UnitTests.TestSupport;
 
 public static class AccountErasers
 {
-    public const string LegalCopy = "{\"account\":{}}";
-
     public static AccountEraser Create(
         IUserRepository users,
-        IDeletedAccountRepository deletedAccounts,
         IAccountErasureStore erasureStore,
         IUnitOfWork uow
     )
@@ -20,13 +16,6 @@ public static class AccountErasers
         erasureStore
             .LockHouseholdAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>())
             .Returns(true);
-        erasureStore
-            .CaptureLegalCopyAsync(
-                Arg.Any<UserId>(),
-                Arg.Any<AccountErasure>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(LegalCopy);
-        return new AccountEraser(users, deletedAccounts, erasureStore, uow.RunsTransactions());
+        return new AccountEraser(users, erasureStore, uow.RunsTransactions());
     }
 }

@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,6 +16,7 @@ public sealed class EventCategoryTypeConfiguration : IEntityTypeConfiguration<Ev
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<EventCategoryType> builder)
     {
+        builder.HasNoHistory();
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).IsRequired();
         builder.Property(x => x.Color).IsRequired().HasMaxLength(9);

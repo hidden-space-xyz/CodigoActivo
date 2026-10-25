@@ -32,10 +32,24 @@ public static class CommandAudit
 
         return
             command.Name.EndsWith(CommandSuffix, StringComparison.Ordinal)
-            && Enum.TryParse<AuditAction>(command.Name[..^CommandSuffix.Length], out var action)
+            && Enum.TryParse<AuditAction>(NameOf(command), out var action)
             && Enum.IsDefined(action)
             ? action
             : null;
+    }
+
+    /// <summary>
+    /// Gets the name of a command type without its <c>Command</c> suffix.
+    /// </summary>
+    /// <param name="command">Command type.</param>
+    /// <returns>The name.</returns>
+    public static string NameOf(Type command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return command.Name.EndsWith(CommandSuffix, StringComparison.Ordinal)
+            ? command.Name[..^CommandSuffix.Length]
+            : command.Name;
     }
 
     /// <summary>

@@ -111,6 +111,7 @@ internal static class CatalogEntryMapping
         where TEntry : CatalogEntry<TValue>
         where TValue : struct, Enum
     {
+        builder.HasNoHistory();
         builder.HasKey(x => x.Id);
         builder
             .Property(x => x.Id)

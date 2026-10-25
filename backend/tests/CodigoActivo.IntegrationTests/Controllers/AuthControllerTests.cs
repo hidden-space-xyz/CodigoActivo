@@ -9,7 +9,6 @@ using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
@@ -360,7 +359,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task RegisterEmailOfAnUnverifiedAccountReplacesItAndKeepsItsLegalCopy()
+    public async Task RegisterEmailOfAnUnverifiedAccountReplacesItAndKeepsItsDataHistory()
     {
         var client = CreateClient();
 
@@ -375,7 +374,10 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var replacement = await FindByEmailAsync(TestSeedData.PendingEmail);
         replacement!.FirstName.Should().Be("Nadia");
         replacement.Status.Should().Be(UserStatus.Pending);
-        (await FindAsync<DeletedAccount>(TestSeedData.Users.PendingId)).Should().NotBeNull();
+        (await ErasedUsersAsync())
+            .Select(user => user.UserId)
+            .Should()
+            .Contain(TestSeedData.Users.PendingId);
         Factory
             .EmailSender.Sent.Should()
             .ContainSingle()

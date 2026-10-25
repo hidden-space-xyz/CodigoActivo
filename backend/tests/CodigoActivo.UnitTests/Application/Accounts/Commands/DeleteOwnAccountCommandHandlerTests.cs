@@ -8,7 +8,6 @@ using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -24,8 +23,6 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     private const string Secret = "JBSWY3DPEHPK3PXP";
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IDeletedAccountRepository deletedAccounts =
-        Substitute.For<IDeletedAccountRepository>();
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestCurrentUser currentUser = new();
@@ -40,7 +37,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         sut = new DeleteOwnAccountCommandHandler(
             users,
             currentUser,
-            AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
+            AccountErasers.Create(users, erasureStore, uow),
             uow,
             clock,
             PasswordGuards.Create(hasher, uow, clock),
@@ -110,33 +107,12 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     private void AssertNothingRemoved()
     {
         users.DidNotReceiveWithAnyArgs().Remove(Arg.Any<User>());
-        _ = erasureStore
-            .DidNotReceiveWithAnyArgs()
-            .CaptureLegalCopyAsync(default, default!, default);
-        _ = deletedAccounts.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
+        _ = erasureStore.DidNotReceiveWithAnyArgs().LoadHouseholdAsync(default, default);
     }
 
     private async Task AssertErasedAsync(User user)
     {
-        await erasureStore
-            .Received(1)
-            .CaptureLegalCopyAsync(
-                user.Id,
-                Arg.Is<AccountErasure>(erasure =>
-                    erasure.Origin == AccountDeletionOrigin.Self
-                    && erasure.ActorId == user.Id
-                    && erasure.DeletedAt == clock.UtcNow
-                ),
-                Arg.Any<CancellationToken>()
-            );
-        await deletedAccounts
-            .Received(1)
-            .AddAsync(
-                Arg.Is<DeletedAccount>(copy =>
-                    copy.Id == user.Id && copy.Data == AccountErasers.LegalCopy
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        await erasureStore.Received(1).LoadHouseholdAsync(user.Id, Arg.Any<CancellationToken>());
         users.Received(1).Remove(user);
     }
 

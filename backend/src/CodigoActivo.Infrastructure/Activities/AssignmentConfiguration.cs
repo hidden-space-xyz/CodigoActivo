@@ -2,6 +2,7 @@ using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Catalogs;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Conversions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -19,6 +20,7 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Assignment> builder)
     {
+        builder.HasHistory();
         builder.HasKey(x => new { x.UserId, x.ActivityId });
 
         builder
@@ -34,13 +36,13 @@ public class AssignmentConfiguration : IEntityTypeConfiguration<Assignment>
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
 
         builder
             .HasOne<Activity>()
             .WithMany(a => a.Assignments)
             .HasForeignKey(x => x.ActivityId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
 
         builder
             .HasOne<ActivityRoleEntry>()

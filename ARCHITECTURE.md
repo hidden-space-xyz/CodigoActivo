@@ -65,8 +65,7 @@ check enforces.
   value objects.
 - Aggregates have a typed identifier (`UserId`, `EventId`, `ActivityId`, `PartnerId`, `StoredFileId`...), a
   `readonly record struct` over a `Guid` with no implicit conversion, so an identifier of one aggregate can never
-  be passed for another; `EventTermsAcceptance` is keyed by event, user and document, and `DeletedAccount` by
-  the former `UserId`. Values with rules are value objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`,
+  be passed for another; `EventTermsAcceptance` is keyed by event, user and document. Values with rules are value objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`,
   `RichText`, `DateRange` (the event calendar), `SignupWindow`, `ActivitySchedule`, `HandwrittenSignature`, and
   the security state of `User`: `OneTimeCode` (verification, password reset and login codes), `EmailChange`,
   `Authenticator`, `LoginChallenge`, `PasswordLockout` and `TwoFactorLockout`. EF Core maps them onto plain
@@ -75,8 +74,9 @@ check enforces.
   `DateRange.InstantsIn` gives the UTC bounds of the event days that both `DateRange.Covers` (a new activity
   schedule) and `IActivityRepository.AnyOutsideRangeAsync` (a shortened event) compare activities against.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
-  `DeletedAccount`, `Event` (with its categories and terms links), `Activity` (with its role capacities and
-  signups), `EventTermsAcceptance`, `EventRating`, `NewsItem`, `Resource`, `Partner`, `TermsDocument`,
+  `BlockedDataConsultation` (with its findings and extracts), `Event` (with its categories and terms links),
+  `Activity` (with its role capacities and signups), `EventTermsAcceptance`, `EventRating`, `NewsItem`,
+  `Resource`, `Partner`, `TermsDocument`,
   `LegalPolicy`, `EventCategoryType` and `StoredFile`. Their state has private setters: factories create them, returning
   `Result<T>` when a rule can fail, and behavior methods own the invariants and the transitions
   (`User.Verify`, `User.RecordPasswordFailure`, `Activity.RequestAssignment`, `Activity.ChangeAssignmentStatus`,
@@ -101,8 +101,8 @@ check enforces.
   variants (`FileVariant`), the content that pages and rich text show and the thumbnail at
   `/api/files/{id}/thumbnail` that lists, cards and logos show.
 - Rules that span aggregates are domain policies (`SignupEligibility`, `SignupRoles`, `EarlySignup`,
-  `EventTimeline`, `AssignmentDecisions`, `TermsConsent`, `FeaturedSelection`, `AccountErasure`,
-  `InitialAdministrator`, `LegalCopy`, `Household`); `EventTimeline` also decides the stage the read side
+  `EventTimeline`, `AssignmentDecisions`, `TermsConsent`, `FeaturedSelection`,
+  `InitialAdministrator`, `Household`); `EventTimeline` also decides the stage the read side
   shows, so it always agrees with signup.
   Handlers load and call the domain; the commit and the effects that follow it belong to the decorators and the
   domain events; Application collaborators only load what a policy needs or run the checks that need I/O
@@ -156,21 +156,24 @@ check enforces.
   its last category.
 - Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
   which replaces an unverified account whose email a registration or a confirmed email change takes. In one
-  such transaction it locks the household, stores the legal copy (composed by `LegalCopy` and serialized by
-  Infrastructure as JSON with `SchemaVersion` 8), hands the content credited to the household over to the
-  initial administrator and removes the account; any other change staged in the unit of work commits with it.
-  `DeletedAccountGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, is the safety
-  net that refuses any other user deletion, any deletion of the initial administrator and any change to a
-  stored copy. Deleting an event or an activity, or cancelling a signup, commits through `ParticipationEraser`,
-  which locks what the removal takes away and stores its blocked copy (`DeletedParticipation`, built by
-  `IParticipationArchive` with the records of the legal copy) in the same transaction. The
-  `PurgeDeletedAccounts`, `PurgeDeletedParticipations`, `PurgeUnverifiedAccounts`, `PurgeAdultDependents`,
-  `PurgeUnusedFiles` and `RemoveExpiredSessions` commands delete legal copies past their retention, accounts nobody verified within
+  such transaction it locks and loads the household and what belongs to it (`IAccountErasureStore`), hands the
+  content credited to the household over to the initial administrator and removes the account; any other change
+  staged in the unit of work commits with it. `InitialAdministratorGuard`, a `SaveChangesInterceptor` that
+  `CodigoActivoDbContext` adds to itself, refuses any deletion of the initial administrator. Deleting an event or
+  an activity, or cancelling a signup, commits through `ParticipationEraser`, which locks and loads what the
+  removal takes away (`IParticipationErasureStore`) in the same transaction.
+- Historized entities change only through the change tracker: `DataHistoryRecorder`, the other interceptor
+  `CodigoActivoDbContext` adds to itself, keeps the previous state of every historized row a save changes or
+  deletes, encrypted, in `data_history`, so their dependents use `ClientCascade` and are loaded before their
+  principal is deleted, and no bulk write or raw SQL touches them (`DataHistoryConventionTests`). The
+  `PurgeDataHistory`, `PurgeUnverifiedAccounts`, `PurgeAdultDependents`,
+  `PurgeUnusedFiles` and `RemoveExpiredSessions` commands delete the history and consultations past their
+  retention, accounts nobody verified within
   24 hours and dependents who came of age (both through `AccountEraser`), uploads no content used within 7 days
   (through `IOrphanFileCleaner`), stored content no file row owns an hour after it was written and expired
   sessions, and `SendComingOfAgeNotices` warns guardians 30 days
-  before; hosted services in Infrastructure only run them on a schedule. What the copy holds and how
-  long it is kept is in [SECURITY.md](SECURITY.md#two-factor-authentication).
+  before; hosted services in Infrastructure only run them on a schedule. What the history holds, how
+  long it is kept and who reads it is in [SECURITY.md](SECURITY.md#data-history).
 - Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
   `IFileStorage`, `IAuditTrail`, `IRequestOrigin`, the email, persistence and read ports) live in
   `Application/Abstractions` or in the feature

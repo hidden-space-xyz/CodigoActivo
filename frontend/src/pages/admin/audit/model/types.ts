@@ -29,7 +29,6 @@ export type AuditAction =
   | 'ChangeAssignmentStatus'
   | 'CreateActivity'
   | 'DeleteActivity'
-  | 'PurgeDeletedParticipations'
   | 'UnassignActivity'
   | 'UpdateActivity'
   | 'SendEmailToEventAttendees'
@@ -64,15 +63,19 @@ export type AuditAction =
   | 'ChangeUserType'
   | 'DeleteUser'
   | 'PurgeAdultDependents'
-  | 'PurgeDeletedAccounts'
   | 'ResetTwoFactor'
   | 'SendComingOfAgeNotices'
   | 'SetAdmin'
   | 'UpdateUser'
+  | 'PurgeDataHistory'
+  | 'OpenBlockedDataConsultation'
+  | 'SearchBlockedData'
+  | 'ExportBlockedData'
 
 /** Kind of thing an audit entry points at. */
 export type AuditEntityType =
   | 'Activity'
+  | 'BlockedDataConsultation'
   | 'Event'
   | 'EventCategoryType'
   | 'LegalPolicy'

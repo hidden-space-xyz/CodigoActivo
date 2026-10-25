@@ -17,7 +17,8 @@ public class TermsDocumentRepository(CodigoActivoDbContext context)
     /// <inheritdoc />
     public Task<TermsDocument?> GetByIdAsync(TermsDocumentId id, CancellationToken ct = default)
     {
-        return Set.FirstOrDefaultAsync(document => document.Id == id, ct);
+        return Set.Include(document => document.PreviousVersions)
+            .FirstOrDefaultAsync(document => document.Id == id, ct);
     }
 
     /// <inheritdoc />

@@ -1,10 +1,7 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -19,19 +16,15 @@ public sealed record DeleteEventCommand(EventId EventId) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to delete the event together with its activities, their signups and the
-/// terms decisions taken about it, keeping their blocked copy first.
+/// terms decisions taken about it, keeping their data history.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="eraser">Service that commits the removal with the blocked copy.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="eraser">Service that commits the removal with its data history.</param>
 public sealed class DeleteEventCommandHandler(
     IEventRepository events,
     IActivityRepository activities,
-    ParticipationEraser eraser,
-    ICurrentUser currentUser,
-    IClock clock
+    ParticipationEraser eraser
 ) : ICommandHandler<DeleteEventCommand, Result>
 {
     /// <summary>
@@ -55,10 +48,7 @@ public sealed class DeleteEventCommandHandler(
 
         ev.Delete(await activities.ListThumbnailIdsAsync(command.EventId, ct));
         events.Remove(ev);
-        await eraser.EraseAsync(
-            ParticipationDeletion.OfEvent(ev.Id, currentUser.RequiredId(), clock.UtcNow),
-            ct
-        );
+        await eraser.EraseAsync(ParticipationDeletion.OfEvent(ev.Id), ct);
         return Result.Success();
     }
 }

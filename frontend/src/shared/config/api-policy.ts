@@ -1,6 +1,12 @@
 /** Longest search term or text filter a list query accepts (`PageQuery.MaxTextLength`). */
 export const MAX_SEARCH_LENGTH = 200
 
+/** Fewest characters a search of the blocked data takes (`SearchBlockedDataCommand.MinQueryLength`). */
+export const BLOCKED_DATA_MIN_SEARCH_LENGTH = 3
+
+/** Longest reference of a blocked data consultation (`BlockedDataConsultation.ReferenceMaxLength`). */
+export const BLOCKED_DATA_REFERENCE_MAX_LENGTH = 200
+
 /** Largest page a list query returns (`PageQuery.MaxPageSize`). */
 export const MAX_PAGE_SIZE = 100
 

@@ -100,13 +100,15 @@ public sealed class UnitOfWorkCommandDecorator<TCommand, TResult>(
 /// identifier of the command; every other identifier it names is related. Auditing never changes
 /// the outcome of a command: a failure to record is logged, and the result or exception of the
 /// command goes on as is. Commands marked <see cref="IUnaudited"/> are never recorded, and a
-/// <see cref="IScheduledCommand"/> only when it changed something.
+/// <see cref="IScheduledCommand"/> only when it changed something. Every command, audited or not,
+/// runs inside <see cref="ICommandScope"/>, so the data history names it.
 /// </summary>
 /// <typeparam name="TCommand">Type of command handled.</typeparam>
 /// <typeparam name="TResult">Result type of the command.</typeparam>
 /// <param name="inner">Decorated handler.</param>
 /// <param name="trail">Audit log the entries are queued to.</param>
 /// <param name="subject">Main thing the handler named, if any.</param>
+/// <param name="commandScope">Name of the running command for the data history.</param>
 /// <param name="currentUser">Signed-in user, if any.</param>
 /// <param name="origin">Origin of the request, if any.</param>
 /// <param name="logger">Logger of entries that could not be recorded.</param>
@@ -114,6 +116,7 @@ public sealed class AuditCommandDecorator<TCommand, TResult>(
     ICommandHandler<TCommand, TResult> inner,
     IAuditTrail trail,
     IAuditSubject subject,
+    ICommandScope commandScope,
     ICurrentUser currentUser,
     IRequestOrigin origin,
     ILogger<AuditCommandDecorator<TCommand, TResult>> logger
@@ -123,6 +126,8 @@ public sealed class AuditCommandDecorator<TCommand, TResult>(
 {
     private const string ConcurrentUpdate = "ConcurrentUpdate";
     private const string UniqueConstraintViolation = "UniqueConstraintViolation";
+
+    private static readonly string CommandName = CommandAudit.NameOf(typeof(TCommand));
 
     private static readonly AuditAction? Action = typeof(IUnaudited).IsAssignableFrom(
         typeof(TCommand)
@@ -143,6 +148,7 @@ public sealed class AuditCommandDecorator<TCommand, TResult>(
     {
         ArgumentNullException.ThrowIfNull(command);
 
+        using var running = commandScope.Enter(CommandName);
         if (Action is not { } action)
         {
             return await inner.HandleAsync(command, ct);
@@ -245,6 +251,33 @@ public sealed class AuditSubject : IAuditSubject
     public void Clear()
     {
         Entity = null;
+    }
+}
+
+/// <summary>
+/// Holds the name of the running command for one scope.
+/// </summary>
+public sealed class CommandScope : ICommandScope
+{
+    /// <inheritdoc />
+    public string? Command { get; private set; }
+
+    /// <inheritdoc />
+    public IDisposable Enter(string command)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(command);
+
+        var previous = Command;
+        Command = command;
+        return new Exit(this, previous);
+    }
+
+    private sealed class Exit(CommandScope scope, string? previous) : IDisposable
+    {
+        public void Dispose()
+        {
+            scope.Command = previous;
+        }
     }
 }
 

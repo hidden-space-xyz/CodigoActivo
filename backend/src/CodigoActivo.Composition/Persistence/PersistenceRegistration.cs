@@ -4,6 +4,7 @@ using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
+using CodigoActivo.Infrastructure.DataHistory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -27,6 +28,8 @@ internal static class PersistenceRegistration
     )
     {
         var connectionString = BuildConnectionString(new Settings(configuration));
+        services.AddSingleton<DataHistoryProtector>();
+        services.AddScoped<DataHistoryRecorder>();
         services.AddDbContext<CodigoActivoDbContext>(options =>
             options.UseWriteDatabase(connectionString)
         );

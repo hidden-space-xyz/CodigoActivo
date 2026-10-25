@@ -49,6 +49,8 @@ from a clone, use `docker compose -f docker-compose.yml ...` so the override is 
 - New accounts always confirm their email before the first login; there is no configuration switch.
 - An empty database requires a valid `BOOTSTRAP_ADMIN_EMAIL`. That administrator gets a discarded random
   password and sets the first one through password reset; there is no bootstrap password.
+- `PRIVACY_OFFICER_EMAIL` is always required at startup: it designates the only administrator who may consult
+  the blocked data history; the Compose development override defaults it to `BOOTSTRAP_ADMIN_EMAIL`.
 - Production nginx is published on host port `8080` on all IPv4 interfaces, not only loopback; IPv6 is not
   supported.
 - A value belongs in `.env` only when a deployment must change it without a release (addresses, SMTP, the

@@ -82,7 +82,7 @@ public static class AppStrings
         Get("emails.activityDecision.signupPhraseSelf");
 
     /// <summary>
-    /// Gets the emails coming of age blocked copy note value.
+    /// Gets the emails coming of age blocked data note value.
     /// </summary>
     public static string EmailsComingOfAgeBlockedCopyNote =>
         Get("emails.comingOfAge.blockedCopyNote");
@@ -116,6 +116,54 @@ public static class AppStrings
     /// Gets the emails consent withdrawn action value.
     /// </summary>
     public static string EmailsConsentWithdrawnAction => Get("emails.consentWithdrawn.action");
+
+    /// <summary>
+    /// Gets the subject of the notice of a consultation of the blocked data.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationSubject =>
+        Get("emails.blockedDataConsultation.subject");
+
+    /// <summary>
+    /// Gets the heading of the notice of a consultation of the blocked data.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationHeading =>
+        Get("emails.blockedDataConsultation.heading");
+
+    /// <summary>
+    /// Gets the closing note of the notice of a consultation of the blocked data.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationNote =>
+        Get("emails.blockedDataConsultation.note");
+
+    /// <summary>
+    /// Gets the name of a court as the authority of a consultation of the blocked data.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationAuthorityCourt =>
+        Get("emails.blockedDataConsultation.authority.Court");
+
+    /// <summary>
+    /// Gets the name of the public prosecutor as the authority of a consultation.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationAuthorityProsecutor =>
+        Get("emails.blockedDataConsultation.authority.Prosecutor");
+
+    /// <summary>
+    /// Gets the name of the data protection authority as the authority of a consultation.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationAuthorityDataProtectionAuthority =>
+        Get("emails.blockedDataConsultation.authority.DataProtectionAuthority");
+
+    /// <summary>
+    /// Gets the name of another public administration as the authority of a consultation.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationAuthorityPublicAdministration =>
+        Get("emails.blockedDataConsultation.authority.PublicAdministration");
+
+    /// <summary>
+    /// Gets the name of a claim against the association as the reason of a consultation.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationAuthorityClaim =>
+        Get("emails.blockedDataConsultation.authority.Claim");
 
     /// <summary>
     /// Gets the emails consent withdrawn heading value.
@@ -601,6 +649,58 @@ public static class AppStrings
     )
     {
         return Format("emails.consentWithdrawn.introHtml", personName, documentName, eventTitle);
+    }
+
+    /// <summary>
+    /// Formats the opening line of the notice of a consultation of the blocked data, as text.
+    /// </summary>
+    /// <param name="officerName">Name of the account that opened it.</param>
+    /// <param name="authority">Who the data is made available to, already named.</param>
+    /// <param name="reference">Reference of the request.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsBlockedDataConsultationIntroText(
+        string officerName,
+        string authority,
+        string reference
+    )
+    {
+        return Format(
+            "emails.blockedDataConsultation.introText",
+            officerName,
+            authority,
+            reference
+        );
+    }
+
+    /// <summary>
+    /// Formats the opening line of the notice of a consultation of the blocked data, as HTML.
+    /// </summary>
+    /// <param name="officerName">Name of the account that opened it, already encoded.</param>
+    /// <param name="authority">Who the data is made available to, already encoded.</param>
+    /// <param name="reference">Reference of the request, already encoded.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsBlockedDataConsultationIntroHtml(
+        string officerName,
+        string authority,
+        string reference
+    )
+    {
+        return Format(
+            "emails.blockedDataConsultation.introHtml",
+            officerName,
+            authority,
+            reference
+        );
+    }
+
+    /// <summary>
+    /// Formats when a consultation of the blocked data was opened.
+    /// </summary>
+    /// <param name="openedAt">When it was opened, already formatted.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsBlockedDataConsultationOpened(string openedAt)
+    {
+        return Format("emails.blockedDataConsultation.opened", openedAt);
     }
 
     /// <summary>

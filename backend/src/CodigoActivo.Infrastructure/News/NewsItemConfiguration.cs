@@ -17,6 +17,7 @@ public class NewsItemConfiguration : IEntityTypeConfiguration<NewsItem>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<NewsItem> builder)
     {
+        builder.HasHistory();
         builder.HasKey(a => a.Id);
 
         builder.Property(a => a.Title).IsRequired();

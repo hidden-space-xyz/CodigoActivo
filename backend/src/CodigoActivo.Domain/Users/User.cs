@@ -318,6 +318,14 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
+    /// Marks the account as erased, so what depends on it reacts once the erasure commits.
+    /// </summary>
+    public void Erase()
+    {
+        Raise(new AccountErased(Id));
+    }
+
+    /// <summary>
     /// Applies a change planned for this account by <see cref="PlanProfileChange"/>. A new email
     /// replaces the stored one at once and drops any email change still waiting for confirmation.
     /// A changed news consent is recorded as decided in the profile.

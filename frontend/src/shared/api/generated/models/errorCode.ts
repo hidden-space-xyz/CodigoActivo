@@ -137,4 +137,9 @@ export const ErrorCode = {
   RequestValidationFailed: 'RequestValidationFailed',
   ConcurrentUpdate: 'ConcurrentUpdate',
   UnexpectedError: 'UnexpectedError',
+  BlockedDataConsultationNotFound: 'BlockedDataConsultationNotFound',
+  BlockedDataConsultationExpired: 'BlockedDataConsultationExpired',
+  BlockedDataAccountNotFound: 'BlockedDataAccountNotFound',
+  BlockedDataOfficerOnly: 'BlockedDataOfficerOnly',
+  BlockedDataAuthenticatorRequired: 'BlockedDataAuthenticatorRequired',
 } as const;

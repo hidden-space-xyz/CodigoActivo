@@ -1,5 +1,6 @@
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,6 +17,7 @@ public class EventRatingConfiguration : IEntityTypeConfiguration<EventRating>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<EventRating> builder)
     {
+        builder.HasHistory();
         builder.HasKey(r => r.Id);
 
         builder.Property(r => r.MostLiked).HasMaxLength(EventRating.MaxAnswerLength);
@@ -29,12 +31,12 @@ public class EventRatingConfiguration : IEntityTypeConfiguration<EventRating>
             .HasOne<Event>()
             .WithMany()
             .HasForeignKey(r => r.EventId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
 
         builder
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(r => r.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
     }
 }

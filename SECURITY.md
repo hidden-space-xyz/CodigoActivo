@@ -60,12 +60,12 @@ authentication are not supported.
   valid request: a new address gets the verification link; an address whose account was verified gets a
   notice instead, saying that it already has an account and that nothing changed, and nothing is created;
   an address held by an account nobody verified gets the link of a new account that replaces it, erased
-  with its blocked copy, so registering someone else's email reserves nothing. The notice is budgeted as the
+  keeping its data history, so registering someone else's email reserves nothing. The notice is budgeted as the
   verification mail it replaces. `POST /api/auth/resend-verification` (by email) and `forgot-password` also
   answer 204 alike. Registration refuses a disposable domain first (`DisposableEmailNotAllowed`), which depends
   only on the domain, and then hashes the password before looking the address up, so every other outcome costs
   the same Argon2 work. An account still unverified 24 hours after registering is erased with its
-  dependents and blocked copy by `PurgeUnverifiedAccounts`, which `UnverifiedAccountPurgeWorker` runs 30 seconds
+  dependents, keeping their data history, by `PurgeUnverifiedAccounts`, which `UnverifiedAccountPurgeWorker` runs 30 seconds
   after startup and then hourly; each account is locked and checked again before its erasure.
 - Only someone who knows an account's password learns its state: after a correct password, the password step
   answers a blocked account with `UserAccountBlocked`, an unverified one with `UserAccountPendingVerification`
@@ -95,7 +95,7 @@ authentication are not supported.
   (`OtpResendCooldownActive`, `EmailSendFailed`), and a newer request replaces the pending one. When the new
   address belongs to a verified account, its holder gets the same notice as registration instead of the link,
   so the answer never tells whether the address is in use; an account nobody verified that holds it is
-  erased, with its blocked copy, when the link is confirmed, and one verified in the meantime keeps it
+  erased, keeping its data history, when the link is confirmed, and one verified in the meantime keeps it
   (`UserEmailAlreadyInUse`). The stored account,
   never the request, decides the rest: an account that is not already a dependent is refused a guardian
   (`UserParentNotAllowedForAdult`) and any birth date (`UserBirthDateNotAllowedForAdult`), must supply a
@@ -174,49 +174,75 @@ whether they may delete their account, so the SPA hides the action from the init
 any other administrator without re-entering a password, as with any other user. Every deletion credits the
 initial administrator instead of the household as author, last editor or uploader of events, activities, news,
 partners, resources and files, and as the account that recorded a terms decision about someone else, in the same
-transaction; the original credit is not kept anywhere.
+transaction; the [data history](#data-history) keeps the original credit. Users are deleted only through
+`AccountEraser`, which locks (`FOR UPDATE`) the user, their dependents and the household's signups, terms
+decisions and ratings, loads them and deletes them in one transaction, so a concurrent signup, status change or
+cancellation cannot slip in between; an erasure that PostgreSQL aborts to resolve a deadlock is attempted up to
+three times in total. `AccountEraser` and `InitialAdministratorGuard` refuse to delete the initial administrator.
+Deleting an event (`DeleteEvent`), an activity (`DeleteActivity`) or one's own rating (`DeleteEventRating`), or
+cancelling a signup (`UnassignActivity`), commits through `ParticipationEraser`, which locks and loads what the
+removal takes away the same way. The SPA only tells users that they and their dependents lose access and cannot
+recover the account.
 
-**Blocked copy of deleted accounts** (LOPDGDD article 32): every deletion — self-service, an administrator's,
-a guardian's, that of an unverified account whose email another account claims, that of one nobody
-verified within 24 hours, or that of a dependent who came of age — first stores one JSON
-copy in `deleted_accounts` (`id` is the former user id with no foreign key, `deleted_at`, `data` as
-`jsonb`), in the same transaction that locks (`FOR UPDATE`) the user,
-their dependents and the household's signups, terms decisions and ratings, and then deletes them; a failed deletion
-keeps no copy, a concurrent signup, status change or cancellation cannot slip in between, and an erasure that
-PostgreSQL aborts to resolve a deadlock is attempted up to three times in total. The copy holds the personal data of the
-account and each dependent, the guardian's identification when
-a dependent is deleted alone, every signup of the household with activity, event, role, status and signup
-time, every terms decision (accepted or rejected, with who decided and its handwritten signature as base64
-PNG, and its history: every acceptance, rejection and withdrawal with who decided it, who recorded it, when and
-the signature it was accepted with) about the household — or about the guardian for the dependent's events — with each document's text as it stood at
-deletion and the earlier versions any of those decisions was taken on, every rating the household wrote with its event,
-every change of each person's news consent with its instant and source, and who asked
-for the deletion. It never holds password or code hashes, an unconfirmed email change, authenticator
-secrets, the login challenge, lockout counters or sessions. Nothing in the application reads the table: the
-data is plain JSON protected only by database access. The `DeletedAccountPurgeWorker` hosted service runs
-`PurgeDeletedAccounts`, which deletes
-each copy three years after `deleted_at`, when the very serious infringements prescribe (LOPDGDD article 72), 30
-seconds after startup and then hourly. Users are deleted only
-through `AccountEraser`, and `DeletedAccountGuard` refuses any commit that deletes the initial administrator,
-deletes a user without its copy or changes a stored copy.
-The SPA only tells users that they and their dependents lose access and cannot recover the account; the
-privacy policy (`/privacy`) states the three-year retention.
+### Data history
 
-**Blocked copy of removed participation** (LOPDGDD article 32): deleting an event (`DeleteEvent`), an activity
-(`DeleteActivity`) or one's own rating (`DeleteEventRating`), or cancelling a signup (`UnassignActivity`), commits
-through `ParticipationEraser`, which in the same transaction locks (`FOR UPDATE`) what the removal takes away — the
-event, its activities, their signups, its terms decisions and its ratings; the activity and its signups; the one
-signup; or the one rating — so nothing added meanwhile escapes the copy, stores one JSON copy in
-`deleted_participations` (`id`, `deleted_at`, `data` as `jsonb`, no foreign key) and then removes it; a deadlock is
-retried as for accounts. The copy holds what was removed (`EventDeleted`, `ActivityDeleted`, `SignupCancelled` or
-`RatingDeleted`), who removed it, the event's title and dates, the signups removed with activity, role, status and
-signup time, the ratings removed with their author, and, when the event goes, its terms decisions with who
-decided, the signature, the history, each document's text and the earlier versions they were taken on, plus the
-first and last names of the people they are about, who decided them or who wrote them. A removal that takes away
-no signup, rating or decision stores nothing.
-Like the account copies, nothing in the application reads it, `DeletedAccountGuard` refuses any change to a stored
-copy, and `DeletedAccountPurgeWorker` runs `PurgeDeletedParticipations`, which deletes each copy three years after
-`deleted_at`.
+The blocked data (LOPDGDD article 32) is the data history: `DataHistoryRecorder`, a `SaveChangesInterceptor` that
+`CodigoActivoDbContext` adds to itself, adds to every save one `data_history` entry per row of a historized
+entity the save changes or deletes, with the row as it was before, in the same transaction. A change never
+commits without its history and the history never keeps a change that did not commit. Additions record nothing,
+since the row itself is the record, and neither does a change of excluded properties alone.
+
+- **What**: each configuration declares `HasHistory()` or `HasNoHistory()` (`DataHistoryModelTests`).
+  Historized: users, signups, terms decisions and their history, news consent changes, ratings, events,
+  activities, terms documents and their versions, news, partners, resources and file metadata (never the file).
+  `ExcludedFromHistory()` keeps out the password hash, every code, the unconfirmed email change, authenticator
+  secrets, the login challenge, lockouts, the last login and the row version.
+- **Coverage**: the interceptor only sees the change tracker, so the foreign keys of historized dependents use
+  `ClientCascade` (the database refuses to delete a row whose historized dependents were not loaded) and
+  `DataHistoryConventionTests` forbids `ExecuteUpdate`/`ExecuteDelete` on historized types, except the password
+  state `UserRepository` writes, which is excluded, and limits raw SQL to a reviewed list of types that only lock,
+  read or write tables without history.
+- **Entry**: `id` (UUID v7), `entity`, `occurred_at`, `subject_ids` (every `UserId` the row holds, as GUIDs:
+  the account it is, the person a signup or decision is for, whoever decided, recorded or authored it; never
+  the signed-in account that changed it, so an extract about an administrator does not carry every row they
+  changed about others) and `payload`: the operation, the actor, the
+  command (`ICommandScope`, set by the audit decorator) and the previous values, encrypted with the Data
+  Protection key ring under `CodigoActivo.DataHistory.v1` and the entry id, so a payload moved to another row
+  does not decrypt. A copy of the database without `DATA_PROTECTION_KEY` and the key ring reveals nothing.
+- **Retention** (`DataHistoryRetentionOptions`): five years, the personal actions on the event conditions
+  (Civil Code article 1964.2), which also outlast image and honor claims (LO 1/1982 article 9.5); three years for
+  news consent changes and ratings, when the very serious infringements prescribe (LOPDGDD article 72).
+  `DataHistoryPurgeWorker` runs `PurgeDataHistory` 30 seconds after startup and then hourly; it also removes the
+  consultations kept five years. Nothing else deletes entries, and the recorder refuses to change one.
+
+### Blocked data consultations
+
+Only the [person designated for data protection](DEPLOYMENT.md#environment-variables) reads the history: the active
+administrator whose email is `PRIVACY_OFFICER_EMAIL` (`PrivacyOfficer`), only while the account uses an
+authenticator app (`BlockedDataAuthenticatorRequired`), since with emailed codes whoever reads the mailbox holds
+both factors. No administrator can grant it from the application. `GET /api/blocked-data/access` tells the
+signed-in administrator whether they are that person.
+
+- `POST /api/blocked-data/consultations` (credentials rate limit) opens a consultation for 15 minutes with the
+  authority it is for (court, prosecutor, data protection authority, another public administration or a claim
+  against the association) and the reference of the request, after the current password and an authenticator
+  code, counted like logins. `BlockedDataConsultationNotification` then emails `LEGAL_EMAIL`, so an access nobody
+  expected is noticed.
+- `POST .../{id}/searches` takes an identifier, email, DNI/NIE, phone or part of the name (at least three
+  characters) in the body, never in the URL; finds existing accounts and, decrypting only past states of
+  accounts, erased ones; adds their minors; and returns each with only its name, whether it exists and how many
+  entries concern it, counted without decrypting. The consultation, locked meanwhile, records the accounts
+  found, never the text.
+- `POST .../{id}/extracts` decrypts the entries about an account the consultation found and its minors, narrowed
+  to days and kinds of data, adds the current personal data of an existing account and records the extract
+  (account, filters, moment and number of entries, enough to find the same entries again). An entry that no longer
+  decrypts is returned without content and logged (`DataHistoryEntryUnreadable`).
+- `GET /api/blocked-data/consultations` lists who consulted, when, for what request, how many accounts were found
+  and how many extracts taken, to every administrator, without any of the data. A consultation keeps its
+  officer without a foreign key, so it stays listed after that account is erased.
+
+Only the consultation handlers use `IDataHistoryReader` (`DataHistoryConventionTests`), and the personal data
+copy of «Mi cuenta» leaves the history out.
 
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also clears any
@@ -366,21 +392,21 @@ code cite only these laws.
   entries the user ran or that name a household member as main or related entity, logins before the session
   included (time, action, outcome, kind of actor and client IP, without the IP when an administrator ran it
   and never what else the entry touched). It reads only the caller's household and never holds password or
-  code hashes, authenticator secrets, the login challenge or lockout counters. It leaves out blocked copies, which nobody may use (LOPDGDD article 32); the
+  code hashes, authenticator secrets, the login challenge or lockout counters. It leaves out the data history, which nobody may use (LOPDGDD article 32); the
   email outbox, which only holds a message until it is delivered and may carry one-time codes; and the
   authorship of content, which is answered on request. Add a new
   personal field or table to it.
 - News consent (articles 6.1.a and 7 GDPR) is changed only by its holder: at
   registration, in «Mi cuenta», or through the unsubscribe link of a news email or its mail client's
   unsubscribe button. `User` appends every change to `news_consent_changes` with its instant and source
-  (`Registration`, `Profile`, `UnsubscribeLink`, `OneClickUnsubscribe`) and the blocked copy keeps them. Consents stored before that table existed have no
+  (`Registration`, `Profile`, `UnsubscribeLink`, `OneClickUnsubscribe`) and the data history keeps them once deleted. Consents stored before that table existed have no
   recorded change.
 - Only adults register, and only a parent or legal guardian, who represents the minor (Civil Code articles
   162 and 225), adds a minor: `POST /api/auth/register` refuses a body without `declaresAdult`
   (`UserAdultDeclarationRequired`) before looking the address up, and every minor, added at registration or
   through `POST /api/users/{id}/children`, needs `declaresGuardianship` (`UserGuardianshipDeclarationRequired`).
   `users.adult_declared_at` and `users.guardianship_declared_at` keep when each was declared, also in the
-  blocked copy. The SPA sends the first once the visitor confirms being of age at its age gate and the second
+  data history. The SPA sends the first once the visitor confirms being of age at its age gate and the second
   with every minor, since each form that adds one states that adding it is that declaration. Accounts and
   minors added before they were recorded have none.
 - A terms document holds either conditions or a consent (`terms_documents.kind`). Decisions are recorded per
@@ -399,9 +425,8 @@ code cite only these laws.
   when an administrator signs up someone else; `AssignHousehold` runs it for every member it signs up, each
   with their own decisions. Decisions stored before they were per person name the deciding guardian as the
   person; documents stored before they had a kind are conditions; decisions stored before the history began
-  with one change, their state then, recorded by who decided it. The rows and their history cascade away with
-  the person or the decider, once the blocked copy of that account holds them, and with the event, once the
-  blocked copy of removed participation does.
+  with one change, their state then, recorded by who decided it. The rows and their history go with
+  the person or the decider and with the event, each leaving its data history.
 - A consent is withdrawn (article 7.3 GDPR) through
   `POST /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw` (`[AllowOnlySelf]`): by the
   person, by their guardian, or by an administrator who records a withdrawal asked for by email. Conditions are
@@ -445,9 +470,9 @@ code cite only these laws.
 have confirmed attendance and the rating to carry a score or an answer (`EventRatingEmpty`); the first call
 stores the rating and later ones replace it, and a concurrent first save answers `ConcurrentUpdate`.
 `DELETE /api/events/{eventId}/rating` removes the caller's own rating at any time (`EventRatingNotFound`
-without one), keeping a blocked copy of removed participation. The history (`GET /api/me/event-history`)
+without one), keeping its data history. The history (`GET /api/me/event-history`)
 returns the caller's rating of each event so the form reopens with it, and the personal data copy includes
-them. Account deletion removes the account's ratings with it, after copying them into its blocked copy.
+them. Account deletion removes the account's ratings with it, leaving their data history.
 
 Administrators read ratings (`GET /api/events/{eventId}/ratings` and the event statistics) without their
 authors: no response projects `user_id`. Saving or deleting a rating is never audited (`IUnaudited`), since
@@ -544,7 +569,7 @@ passwords, one-time codes, signatures, secrets and free text stay out, and so do
 password reset and verification requests record the account the email belongs to, so failed logins are
 attributed to their account. Saving or deleting an event rating is never recorded, and the scheduled purges are recorded
 only when they removed something. The account ids have no foreign key, so an erased account's entries remain
-until the audit retention ends; they are not part of its legal copy.
+until the audit retention ends; they are not part of the data history.
 
 Only administrators read either log: `GET /api/logs/diagnostics`, `/api/logs/diagnostics/{id}` and
 `/api/logs/audit` require the administrator role and share the report rate limit.
@@ -572,9 +597,9 @@ key whose secret is stored in clear or names another decryptor, so whoever can w
 `DATA_PROTECTION_KEY` cannot plant a usable key. A start fails when the ring holds an element that
 `DATA_PROTECTION_KEY` does not decrypt, so a wrong key never replaces the ring. There is no rotation
 procedure: changing `DATA_PROTECTION_KEY` means recreating the volume, which invalidates every session, every
-stored authenticator secret and every pending one-time code or link. Data Protection payloads themselves —
-session and two-factor cookies, antiforgery tokens, authenticator secrets and the email outbox content
-described below — are encrypted with AES-256-GCM. Application containers run as non-root, drop all
+stored authenticator secret and every pending one-time code or link, and leaves the data history unreadable.
+Data Protection payloads themselves — session and two-factor cookies, antiforgery tokens, authenticator
+secrets, the email outbox content described below and the data history — are encrypted with AES-256-GCM. Application containers run as non-root, drop all
 capabilities, enable `no-new-privileges` and use read-only root filesystems; PostgreSQL drops every capability
 its entrypoint does not need and is reachable only on the internal backend network. The development override
 removes parts of this boundary and must not be deployed.

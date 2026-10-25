@@ -21,6 +21,7 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Activity> builder)
     {
+        builder.HasHistory();
         builder.HasKey(a => a.Id);
 
         builder.Property(a => a.Title).IsRequired();
@@ -44,7 +45,7 @@ public class ActivityConfiguration : IEntityTypeConfiguration<Activity>
             .HasOne<Event>()
             .WithMany()
             .HasForeignKey(a => a.EventId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
 
         builder
             .HasOne<ActivityModalityEntry>()

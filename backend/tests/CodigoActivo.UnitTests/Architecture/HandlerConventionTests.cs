@@ -7,8 +7,11 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Signups;
+using CodigoActivo.Application.BlockedData;
+using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Emails.Commands;
@@ -363,6 +366,10 @@ public sealed class HandlerConventionTests
                 typeof(ActingUserPolicy),
                 typeof(ActivitySignupNotifier),
                 typeof(ConsentWithdrawalNotification),
+                typeof(PersonalDataReader),
+                typeof(SearchBlockedDataCommandHandler),
+                typeof(ExportBlockedDataCommandHandler),
+                typeof(BlockedDataConsultationNotification),
             ]);
     }
 

@@ -11,7 +11,6 @@ using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -25,8 +24,6 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
     private const string Code = "the-real-code";
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IDeletedAccountRepository deletedAccounts =
-        Substitute.For<IDeletedAccountRepository>();
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
@@ -54,7 +51,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
             new OtpValidator(new FakeOneTimeCodeHasher()),
             new EmailClaims(
                 users.LocksEveryAccount(),
-                AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
+                AccountErasers.Create(users, erasureStore, uow),
                 uow
             )
         );
@@ -205,16 +202,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.Email!.Value.Should().Be("new@test.com");
         users.Received(1).Remove(holder);
-        await erasureStore
-            .Received(1)
-            .CaptureLegalCopyAsync(
-                holder.Id,
-                Arg.Is<AccountErasure>(erasure =>
-                    erasure.Origin == AccountDeletionOrigin.EmailClaimed
-                    && erasure.ActorId == user.Id
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        await erasureStore.Received(1).LoadHouseholdAsync(holder.Id, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

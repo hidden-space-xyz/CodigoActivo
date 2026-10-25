@@ -20,6 +20,7 @@ public class ResourceConfiguration : IEntityTypeConfiguration<Resource>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Resource> builder)
     {
+        builder.HasHistory();
         builder.HasKey(r => r.Id);
 
         builder.Property(r => r.Title).IsRequired();

@@ -53,6 +53,7 @@ public static class UseCaseRegistration
         services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
         services.AddScoped<MessageValidator>();
         services.AddScoped<IAuditSubject, AuditSubject>();
+        services.AddScoped<ICommandScope, CommandScope>();
 
         services.Decorate(typeof(ICommandHandler<,>), typeof(UnitOfWorkCommandDecorator<,>));
         services.Decorate(typeof(ICommandHandler<,>), typeof(ValidationCommandDecorator<,>));

@@ -3,7 +3,6 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -14,8 +13,6 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 public sealed class PurgeUnverifiedAccountsCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IDeletedAccountRepository deletedAccounts =
-        Substitute.For<IDeletedAccountRepository>();
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
@@ -25,7 +22,7 @@ public sealed class PurgeUnverifiedAccountsCommandHandlerTests
     {
         sut = new PurgeUnverifiedAccountsCommandHandler(
             users,
-            AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
+            AccountErasers.Create(users, erasureStore, uow),
             uow.RunsTransactions(),
             clock
         );
@@ -75,20 +72,7 @@ public sealed class PurgeUnverifiedAccountsCommandHandlerTests
             );
         users.Received(1).Remove(first);
         users.Received(1).Remove(second);
-        await erasureStore
-            .Received(1)
-            .CaptureLegalCopyAsync(
-                first.Id,
-                Arg.Is<AccountErasure>(erasure =>
-                    erasure.Origin == AccountDeletionOrigin.VerificationExpired
-                    && erasure.ActorId == first.Id
-                    && erasure.DeletedAt == clock.UtcNow
-                ),
-                Arg.Any<CancellationToken>()
-            );
-        await deletedAccounts
-            .Received(2)
-            .AddAsync(Arg.Any<DeletedAccount>(), Arg.Any<CancellationToken>());
+        await erasureStore.Received(1).LoadHouseholdAsync(first.Id, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -102,9 +86,6 @@ public sealed class PurgeUnverifiedAccountsCommandHandlerTests
 
         result.Value.Should().Be(0);
         users.DidNotReceiveWithAnyArgs().Remove(default!);
-        await deletedAccounts
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]

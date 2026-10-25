@@ -13,6 +13,7 @@ using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
+using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Files;
 using CodigoActivo.Infrastructure.Logs;
 using CodigoActivo.Infrastructure.Security;
@@ -138,12 +139,13 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
             "Registro de Asociaciones de Castilla y León, n.º 0000"
         );
         builder.UseSetting("LEGAL_EMAIL", "contacto@codigoactivo.test");
+        builder.UseSetting("PRIVACY_OFFICER_EMAIL", TestSeedData.AdminEmail);
         builder.UseSetting("LEGAL_PHONE", "987 00 00 00");
 
         builder.ConfigureTestServices(services =>
         {
             RemoveHostedService<ExpiredSessionCleanupWorker>(services);
-            RemoveHostedService<DeletedAccountPurgeWorker>(services);
+            RemoveHostedService<DataHistoryPurgeWorker>(services);
             RemoveHostedService<UnverifiedAccountPurgeWorker>(services);
             RemoveHostedService<AdultDependentPurgeWorker>(services);
             RemoveHostedService<UnusedFilePurgeWorker>(services);

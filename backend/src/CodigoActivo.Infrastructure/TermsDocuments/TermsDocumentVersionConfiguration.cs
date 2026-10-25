@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -18,6 +19,7 @@ public sealed class TermsDocumentVersionConfiguration
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<TermsDocumentVersion> builder)
     {
+        builder.HasHistory();
         builder.HasKey(x => new { x.TermsDocumentId, x.Number });
         builder.Property(x => x.Number).ValueGeneratedNever();
         builder.Property(x => x.Name).IsRequired();
@@ -29,6 +31,6 @@ public sealed class TermsDocumentVersionConfiguration
             .HasOne<TermsDocument>()
             .WithMany(x => x.PreviousVersions)
             .HasForeignKey(x => x.TermsDocumentId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
     }
 }

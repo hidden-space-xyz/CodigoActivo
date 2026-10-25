@@ -57,6 +57,7 @@ internal static class AccountsRegistration
         services.AddScoped<EmailClaims>();
         services.AddScoped<IAccountErasureStore, AccountErasureStore>();
         services.AddScoped<AccountEraser>();
+        services.AddScoped<PersonalDataReader>();
         services.AddScoped<AuthenticatorCodeVerifier>();
         services.AddScoped<DisposableEmailChecker>();
         services.AddHostedService<ExpiredSessionCleanupWorker>();

@@ -11,7 +11,6 @@ using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Application.Accounts.Commands;
 
@@ -27,7 +26,7 @@ public sealed record DeleteOwnAccountCommand(
 
 /// <summary>
 /// Executes the command that erases the signed-in user, every minor under their guardianship and
-/// all their participation rows, keeping the blocked copy the law requires and handing the content
+/// all their participation rows, keeping their data history blocked and handing the content
 /// credited to the account over to the initial administrator. Because the deletion cannot be undone
 /// it demands both the current password and the account's second factor, and wrong codes count
 /// towards the same lockout as logins, checked with the account row locked. The initial
@@ -87,8 +86,7 @@ public sealed class DeleteOwnAccountCommandHandler(
             return verified;
         }
 
-        var erasure = AccountErasure.For(user, user.Id, clock.UtcNow);
-        if (!await accountEraser.EraseAsync(user, erasure, ct))
+        if (!await accountEraser.EraseAsync(user, ct))
         {
             return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }

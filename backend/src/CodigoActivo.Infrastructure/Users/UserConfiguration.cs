@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Catalogs;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Conversions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -26,8 +27,15 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<User> builder)
     {
+        builder.HasHistory();
         builder.HasKey(u => u.Id);
-        builder.Property<uint>(RowVersion).IsRowVersion().HasColumnName("xmin");
+        builder
+            .Property<uint>(RowVersion)
+            .IsRowVersion()
+            .HasColumnName("xmin")
+            .ExcludedFromHistory();
+        builder.Property(u => u.PasswordHash).ExcludedFromHistory();
+        builder.Property(u => u.LastLoginAt).ExcludedFromHistory();
 
         builder.Property(u => u.FirstName).IsRequired();
         builder.Property(u => u.LastName).IsRequired();
@@ -45,6 +53,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             u => u.EmailChange,
             change =>
             {
+                change.ExcludedFromHistory();
                 change.Property(c => c.NewEmail).HasColumnName("pending_email");
                 change.Property(c => c.CodeHash).HasColumnName("email_change_code_hash");
                 change.Property(c => c.ExpiresAt).HasColumnName("email_change_expires_at");
@@ -78,6 +87,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             u => u.Authenticator,
             authenticator =>
             {
+                authenticator.ExcludedFromHistory();
                 authenticator.Property(a => a.Key).HasColumnName("authenticator_key");
                 authenticator
                     .Property(a => a.LastUsedStep)
@@ -94,6 +104,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             u => u.LoginChallenge,
             challenge =>
             {
+                challenge.ExcludedFromHistory();
                 challenge.Property(c => c.Id).HasColumnName("login_challenge_id");
                 challenge.Property(c => c.StartedAt).HasColumnName("login_challenge_started_at");
             }
@@ -102,6 +113,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             u => u.TwoFactorLockout,
             lockout =>
             {
+                lockout.ExcludedFromHistory();
                 lockout.Property(l => l.FailedAttempts).HasColumnName("two_factor_failed_attempts");
                 lockout.Property(l => l.LockedUntil).HasColumnName("two_factor_locked_until");
             }
@@ -110,6 +122,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             u => u.PasswordLockout,
             lockout =>
             {
+                lockout.ExcludedFromHistory();
                 lockout.Property(l => l.FailedAttempts).HasColumnName("password_failed_attempts");
                 lockout.Property(l => l.LockedAt).HasColumnName("password_locked_at");
             }
@@ -143,7 +156,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(u => u.ParentId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
     }
 
     private static void MapOneTimeCode(
@@ -153,6 +166,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         string lastSentAtColumn
     )
     {
+        code.ExcludedFromHistory();
         code.Property(c => c.Hash).HasColumnName(hashColumn);
         code.Property(c => c.ExpiresAt).HasColumnName(expiresAtColumn);
         code.Property(c => c.LastSentAt).HasColumnName(lastSentAtColumn);

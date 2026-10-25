@@ -4,9 +4,8 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Domain.Activities;
 
 /// <summary>
-/// Describes one removal of participation data: what is removed, who removes it and when. The
-/// scope is the whole event, one of its activities, the signup of one person to an activity, or
-/// the rating one account gave the event.
+/// Describes what one removal of participation data takes away: the whole event, one of its
+/// activities, the signup of one person to an activity, or the rating one account gave the event.
 /// </summary>
 /// <param name="Origin">What removes the participation.</param>
 /// <param name="EventId">Identifier of the event the participation belongs to.</param>
@@ -14,33 +13,26 @@ namespace CodigoActivo.Domain.Activities;
 /// <param name="PersonId">
 /// Identifier of the person whose signup is cancelled, or of the author of the deleted rating.
 /// </param>
-/// <param name="ActorId">Identifier of the user who removes it.</param>
-/// <param name="DeletedAt">UTC timestamp of the removal.</param>
 public sealed record ParticipationDeletion(
     ParticipationDeletionOrigin Origin,
     EventId EventId,
     ActivityId? ActivityId,
-    UserId? PersonId,
-    UserId ActorId,
-    DateTimeOffset DeletedAt
+    UserId? PersonId
 )
 {
     /// <summary>
-    /// Describes the deletion of an event with its activities, signups and terms decisions.
+    /// Describes the deletion of an event with its activities, signups, terms decisions and
+    /// ratings.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
-    /// <param name="actorId">Identifier of the user who deletes it.</param>
-    /// <param name="now">Current time.</param>
     /// <returns>The description of the removal.</returns>
-    public static ParticipationDeletion OfEvent(EventId eventId, UserId actorId, DateTimeOffset now)
+    public static ParticipationDeletion OfEvent(EventId eventId)
     {
         return new ParticipationDeletion(
             ParticipationDeletionOrigin.EventDeleted,
             eventId,
             null,
-            null,
-            actorId,
-            now
+            null
         );
     }
 
@@ -48,14 +40,8 @@ public sealed record ParticipationDeletion(
     /// Describes the deletion of an activity with its signups.
     /// </summary>
     /// <param name="activity">Activity being deleted.</param>
-    /// <param name="actorId">Identifier of the user who deletes it.</param>
-    /// <param name="now">Current time.</param>
     /// <returns>The description of the removal.</returns>
-    public static ParticipationDeletion OfActivity(
-        Activity activity,
-        UserId actorId,
-        DateTimeOffset now
-    )
+    public static ParticipationDeletion OfActivity(Activity activity)
     {
         ArgumentNullException.ThrowIfNull(activity);
 
@@ -63,9 +49,7 @@ public sealed record ParticipationDeletion(
             ParticipationDeletionOrigin.ActivityDeleted,
             activity.EventId,
             activity.Id,
-            null,
-            actorId,
-            now
+            null
         );
     }
 
@@ -74,15 +58,8 @@ public sealed record ParticipationDeletion(
     /// </summary>
     /// <param name="activity">Activity the person was signed up to.</param>
     /// <param name="personId">Identifier of the person whose signup is cancelled.</param>
-    /// <param name="actorId">Identifier of the user who cancels it.</param>
-    /// <param name="now">Current time.</param>
     /// <returns>The description of the removal.</returns>
-    public static ParticipationDeletion OfSignup(
-        Activity activity,
-        UserId personId,
-        UserId actorId,
-        DateTimeOffset now
-    )
+    public static ParticipationDeletion OfSignup(Activity activity, UserId personId)
     {
         ArgumentNullException.ThrowIfNull(activity);
 
@@ -90,9 +67,7 @@ public sealed record ParticipationDeletion(
             ParticipationDeletionOrigin.SignupCancelled,
             activity.EventId,
             activity.Id,
-            personId,
-            actorId,
-            now
+            personId
         );
     }
 
@@ -100,9 +75,8 @@ public sealed record ParticipationDeletion(
     /// Describes the deletion of a rating by its author.
     /// </summary>
     /// <param name="rating">Rating being deleted.</param>
-    /// <param name="now">Current time.</param>
     /// <returns>The description of the removal.</returns>
-    public static ParticipationDeletion OfRating(EventRating rating, DateTimeOffset now)
+    public static ParticipationDeletion OfRating(EventRating rating)
     {
         ArgumentNullException.ThrowIfNull(rating);
 
@@ -110,9 +84,7 @@ public sealed record ParticipationDeletion(
             ParticipationDeletionOrigin.RatingDeleted,
             rating.EventId,
             null,
-            rating.UserId,
-            rating.UserId,
-            now
+            rating.UserId
         );
     }
 }
