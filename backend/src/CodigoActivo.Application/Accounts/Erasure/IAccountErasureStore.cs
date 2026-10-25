@@ -1,5 +1,4 @@
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Application.Accounts.Erasure;
 
@@ -10,7 +9,7 @@ namespace CodigoActivo.Application.Accounts.Erasure;
 public interface IAccountErasureStore
 {
     /// <summary>
-    /// Locks the account, its dependents and the rows copied about them, so nothing changes them
+    /// Locks the account, its dependents and the rows that belong to them, so nothing changes them
     /// until the erasure commits.
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
@@ -19,26 +18,24 @@ public interface IAccountErasureStore
     public Task<bool> LockHouseholdAsync(UserId accountId, CancellationToken ct = default);
 
     /// <summary>
-    /// Builds the legal copy of the account and its household as they stand now.
+    /// Tracks every row the erasure deletes (the dependents, the signups, the terms decisions with
+    /// their history, the ratings and the news consent changes of the household), so their
+    /// deletion goes through the unit of work and leaves its data history.
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
-    /// <param name="erasure">Who erases it and when.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the JSON document of the copy.</returns>
-    public Task<string> CaptureLegalCopyAsync(
-        UserId accountId,
-        AccountErasure erasure,
-        CancellationToken ct = default
-    );
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task LoadHouseholdAsync(UserId accountId, CancellationToken ct = default);
 
     /// <summary>
-    /// Credits to another account the content the household created or last edited and the terms
-    /// decision changes it recorded.
+    /// Credits another account instead of the household as author, last editor or uploader of
+    /// content and as the account that recorded a terms decision about someone else. The data
+    /// history keeps the original credit.
     /// </summary>
-    /// <param name="accountId">Identifier of the account.</param>
-    /// <param name="heirId">Identifier of the account that inherits the content.</param>
+    /// <param name="accountId">Identifier of the account being erased.</param>
+    /// <param name="heirId">Identifier of the account credited instead.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that completes once the content is credited to the heir.</returns>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task HandOverAuthoredContentAsync(
         UserId accountId,
         UserId heirId,

@@ -5,7 +5,6 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -16,11 +15,8 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 public sealed class DeleteUserCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IDeletedAccountRepository deletedAccounts =
-        Substitute.For<IDeletedAccountRepository>();
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly TestClock clock = new();
     private readonly TestCurrentUser currentUser = new(isAdmin: true);
     private readonly FakeReadStore guardianships = new();
     private readonly DeleteUserCommandHandler sut;
@@ -31,8 +27,7 @@ public sealed class DeleteUserCommandHandlerTests
             users,
             ActingUsers.Policy(currentUser, guardianships),
             currentUser,
-            AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
-            clock
+            AccountErasers.Create(users, erasureStore, uow)
         );
     }
 
@@ -50,38 +45,15 @@ public sealed class DeleteUserCommandHandlerTests
     {
         await erasureStore
             .DidNotReceiveWithAnyArgs()
-            .CaptureLegalCopyAsync(default, default!, TestContext.Current.CancellationToken);
-        await deletedAccounts
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
+            .LoadHouseholdAsync(default, TestContext.Current.CancellationToken);
         users.DidNotReceiveWithAnyArgs().Remove(default!);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private async Task AssertErasedAsync(User user, AccountDeletionOrigin origin, Guid actorId)
+    private async Task AssertErasedAsync(User user)
     {
-        await erasureStore
-            .Received(1)
-            .CaptureLegalCopyAsync(
-                user.Id,
-                Arg.Is<AccountErasure>(erasure =>
-                    erasure.Origin == origin
-                    && erasure.ActorId == UserId.From(actorId)
-                    && erasure.DeletedAt == clock.UtcNow
-                ),
-                Arg.Any<CancellationToken>()
-            );
-        await deletedAccounts
-            .Received(1)
-            .AddAsync(
-                Arg.Is<DeletedAccount>(copy =>
-                    copy.Id == user.Id
-                    && copy.DeletedAt == clock.UtcNow
-                    && copy.Data == AccountErasers.LegalCopy
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        await erasureStore.Received(1).LoadHouseholdAsync(user.Id, Arg.Any<CancellationToken>());
         users.Received(1).Remove(user);
     }
 
@@ -107,7 +79,7 @@ public sealed class DeleteUserCommandHandlerTests
         var result = await DeleteAsync(user.Id.Value, administratorId);
 
         result.IsSuccess.Should().BeTrue();
-        await AssertErasedAsync(user, AccountDeletionOrigin.Administrator, administratorId);
+        await AssertErasedAsync(user);
     }
 
     [Fact]
@@ -146,7 +118,7 @@ public sealed class DeleteUserCommandHandlerTests
         var result = await DeleteAsync(user.Id.Value, administratorId);
 
         result.IsSuccess.Should().BeTrue();
-        await AssertErasedAsync(user, AccountDeletionOrigin.Administrator, administratorId);
+        await AssertErasedAsync(user);
     }
 
     [Fact]
@@ -160,7 +132,7 @@ public sealed class DeleteUserCommandHandlerTests
         var result = await DeleteAsync(minor.Id.Value, guardianId, isAdmin: false);
 
         result.IsSuccess.Should().BeTrue();
-        await AssertErasedAsync(minor, AccountDeletionOrigin.Guardian, guardianId);
+        await AssertErasedAsync(minor);
     }
 
     [Fact]
@@ -173,7 +145,7 @@ public sealed class DeleteUserCommandHandlerTests
         var result = await DeleteAsync(minor.Id.Value, administratorId);
 
         result.IsSuccess.Should().BeTrue();
-        await AssertErasedAsync(minor, AccountDeletionOrigin.Administrator, administratorId);
+        await AssertErasedAsync(minor);
     }
 
     [Fact]

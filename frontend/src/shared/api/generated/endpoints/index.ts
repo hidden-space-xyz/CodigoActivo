@@ -1,5 +1,6 @@
 export * from './activities/activities';
 export * from './auth/auth';
+export * from './blocked-data/blocked-data';
 export * from './emails/emails';
 export * from './events/events';
 export * from './files/files';

@@ -35,16 +35,16 @@ check enforce further conventions that this file leaves out; each failure names 
   response.
 - Take the signed-in user from `ICurrentUser`, never from the command or query, and check `ActingUserPolicy` in
   every use case that acts on behalf of another person; HTTP attributes are only a first gate.
-- Delete users only through `AccountEraser`. When `DeletedAccountCoverageTests` asks for a decision on a new user
-  column, also copy its data (`LegalCopy`, `DeletedAccountSnapshot`) or hand it over (`AccountErasureStore`): the
-  test only checks that the decision was recorded. Personal data a user may see also goes into
-  `GetPersonalData`, the copy they download from «Mi cuenta». Remove events, activities and signups only
-  through `ParticipationEraser`, and load a new signup or terms decision column in
-  `DeletedParticipationSnapshot` too.
+- Delete users only through `AccountEraser`, and events, activities and signups only through
+  `ParticipationEraser`. A new entity declares `HasHistory()` or `HasNoHistory()`; a historized one changes only
+  through the change tracker (no `ExecuteUpdate`/`ExecuteDelete`, no raw SQL writes), its historized dependents
+  use `ClientCascade` and the eraser loads them, and a new secret column is `ExcludedFromHistory()`.
+  `DataHistoryModelTests` and `DataHistoryConventionTests` enforce it. Personal data a user may see also goes
+  into `PersonalDataReader`, the copy they download from «Mi cuenta».
 - `AuditAction` and `AuditEntityType` are stored as text, so their members are only ever added. A handler that
   finds its main entity itself, such as an account by email, names it through `IAuditSubject`.
   `audit_log_entries` keeps user GUIDs without a foreign key on purpose: its entries outlive an erased account
-  until their retention ends, so the table is neither copied into `LegalCopy` nor handed over.
+  until their retention ends, so the table keeps no data history and is not handed over.
 - Expected failures return `Result`/`Result<T>` with a `DomainErrorCode` or an `ApplicationErrorCode`. Do not
   throw for business outcomes.
 - Put `*Request` records in `API/<Feature>/Contracts/`; shared binding primitives live in

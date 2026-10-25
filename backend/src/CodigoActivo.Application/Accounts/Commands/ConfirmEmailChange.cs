@@ -71,7 +71,7 @@ public sealed class ConfirmEmailChangeCommandHandler(
         }
 
         user.ConfirmEmailChange(now);
-        if (!await emailClaims.TryCommitAsync(user, holder, now, ct))
+        if (!await emailClaims.TryCommitAsync(user, holder, ct))
         {
             return Error.Conflict(ApplicationErrorCode.UserEmailAlreadyInUse);
         }

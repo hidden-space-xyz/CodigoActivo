@@ -1,5 +1,6 @@
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,6 +17,7 @@ public class StoredFileConfiguration : IEntityTypeConfiguration<StoredFile>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<StoredFile> builder)
     {
+        builder.HasHistory();
         builder.HasKey(f => f.Id);
 
         builder.Property(f => f.Name).IsRequired();

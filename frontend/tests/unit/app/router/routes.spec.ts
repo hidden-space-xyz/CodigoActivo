@@ -44,6 +44,7 @@ describe('routes', () => {
     expect(named('event-detail').props).toBe(true)
     expect(named('admin-diagnostics').path).toBe('/admin/diagnostics')
     expect(named('admin-audit').path).toBe('/admin/audit')
+    expect(named('admin-blocked-data').path).toBe('/admin/blocked-data')
   })
 
   it('keeps guest pages for guests and the account for signed-in users', () => {

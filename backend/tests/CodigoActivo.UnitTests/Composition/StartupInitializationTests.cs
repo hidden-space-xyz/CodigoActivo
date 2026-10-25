@@ -38,6 +38,19 @@ public sealed class StartupInitializationTests
         act.Should().Throw<OptionsValidationException>().WithMessage("*SMTP_PORT*");
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("not-an-email")]
+    public void ValidateConfigurationWithoutAPrivacyOfficerEmailStopsTheStart(string? email)
+    {
+        using var provider = BuildProvider(("PRIVACY_OFFICER_EMAIL", email));
+
+        var act = () => provider.ValidateConfiguration();
+
+        act.Should().Throw<OptionsValidationException>().WithMessage("*PRIVACY_OFFICER_EMAIL*");
+    }
+
     [Fact]
     public void ValidateConfigurationHighestSmtpPortIsAccepted()
     {
@@ -105,6 +118,7 @@ public sealed class StartupInitializationTests
                 {
                     ["SMTP_HOST"] = "smtp.app.test",
                     ["SMTP_FROM_ADDRESS"] = "sender@app.test",
+                    ["PRIVACY_OFFICER_EMAIL"] = "officer@app.test",
                     [setting.Key] = setting.Value,
                 }
             )

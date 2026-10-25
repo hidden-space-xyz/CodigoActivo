@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Composition;
+using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -20,6 +21,7 @@ public sealed class PasswordLockoutWiringTests
                 {
                     ["SMTP_HOST"] = "smtp.example.test",
                     ["SMTP_FROM_ADDRESS"] = "no-reply@example.test",
+                    ["DATA_PROTECTION_KEY"] = DataProtectionRootKeys.RandomBase64(),
                 }
             )
             .Build();

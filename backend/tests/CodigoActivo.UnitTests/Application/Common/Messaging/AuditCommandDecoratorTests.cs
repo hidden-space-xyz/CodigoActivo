@@ -7,6 +7,7 @@ using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Activities.Commands;
+using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Application.EventCategories.Commands;
@@ -31,6 +32,7 @@ public sealed class AuditCommandDecoratorTests
 
     private readonly RecordingAuditTrail trail = new();
     private readonly AuditSubject subject = new();
+    private readonly CommandScope commandScope = new();
     private readonly TestCurrentUser currentUser = new();
     private readonly IRequestOrigin origin = Substitute.For<IRequestOrigin>();
 
@@ -51,6 +53,7 @@ public sealed class AuditCommandDecoratorTests
             new AnsweringHandler<TCommand, TResult>(() => answer(subject)),
             trail,
             subject,
+            commandScope,
             currentUser,
             origin,
             logger ?? new RecordingLogger<AuditCommandDecorator<TCommand, TResult>>()
@@ -259,16 +262,60 @@ public sealed class AuditCommandDecoratorTests
     }
 
     [Fact]
+    public async Task HandleAsyncAnyCommandNamesItselfInTheCommandScopeWhileItRuns()
+    {
+        string? audited = null;
+        string? unaudited = null;
+
+        await HandleAsync<PurgeDataHistoryCommand, Result<int>>(
+            new PurgeDataHistoryCommand(),
+            _ =>
+            {
+                audited = commandScope.Command;
+                return 0;
+            }
+        );
+        await HandleAsync<SaveEventRatingCommand, Result>(
+            new SaveEventRatingCommand(EventId.New(), 5, null, null, null),
+            _ =>
+            {
+                unaudited = commandScope.Command;
+                return Result.Success();
+            }
+        );
+
+        audited.Should().Be("PurgeDataHistory");
+        unaudited.Should().Be("SaveEventRating");
+        commandScope.Command.Should().BeNull();
+    }
+
+    [Fact]
+    public void EnterNestedCommandGivesTheOuterNameBackWhenItEnds()
+    {
+        using (commandScope.Enter("Outer"))
+        {
+            using (commandScope.Enter("Inner"))
+            {
+                commandScope.Command.Should().Be("Inner");
+            }
+
+            commandScope.Command.Should().Be("Outer");
+        }
+
+        commandScope.Command.Should().BeNull();
+    }
+
+    [Fact]
     public async Task HandleAsyncScheduledCommandIsRecordedOnlyWhenItChangedSomething()
     {
         currentUser.Id = null;
 
-        await HandleAsync<PurgeDeletedAccountsCommand, Result<int>>(
-            new PurgeDeletedAccountsCommand(),
+        await HandleAsync<PurgeDataHistoryCommand, Result<int>>(
+            new PurgeDataHistoryCommand(),
             _ => 0
         );
-        await HandleAsync<PurgeDeletedAccountsCommand, Result<int>>(
-            new PurgeDeletedAccountsCommand(),
+        await HandleAsync<PurgeDataHistoryCommand, Result<int>>(
+            new PurgeDataHistoryCommand(),
             _ => 3
         );
 

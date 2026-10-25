@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
@@ -9,11 +10,11 @@ using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Catalogs;
 using CodigoActivo.Infrastructure.Database.Conversions;
+using CodigoActivo.Infrastructure.DataHistory;
 using Microsoft.EntityFrameworkCore;
 
 namespace CodigoActivo.Infrastructure.Database.Context;
@@ -22,8 +23,14 @@ namespace CodigoActivo.Infrastructure.Database.Context;
 /// Represents the Entity Framework session for CodigoActivo data.
 /// </summary>
 /// <param name="options">Configuration values used by the component.</param>
-public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> options)
-    : DbContext(options)
+/// <param name="history">
+/// Recorder of the data history, which the container always supplies (`DataHistoryWiringTests`);
+/// only the EF Core tools and tests that build the context by hand go without it.
+/// </param>
+public class CodigoActivoDbContext(
+    DbContextOptions<CodigoActivoDbContext> options,
+    DataHistoryRecorder? history = null
+) : DbContext(options)
 {
     /// <summary>
     /// Gets the users value.
@@ -181,18 +188,20 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
     public DbSet<DisposableEmailDomain> DisposableEmailDomains => Set<DisposableEmailDomain>();
 
     /// <summary>
-    /// Gets the deleted accounts value.
+    /// Gets the encrypted previous states of the historized rows that were changed or deleted.
     /// </summary>
-    public DbSet<DeletedAccount> DeletedAccounts => Set<DeletedAccount>();
+    public DbSet<DataHistoryEntry> DataHistory => Set<DataHistoryEntry>();
 
     /// <summary>
-    /// Gets the blocked copies of removed participation.
+    /// Gets the consultations of the blocked data.
     /// </summary>
-    public DbSet<DeletedParticipation> DeletedParticipations => Set<DeletedParticipation>();
+    public DbSet<BlockedDataConsultation> BlockedDataConsultations =>
+        Set<BlockedDataConsultation>();
 
     /// <summary>
-    /// Adds <see cref="DeletedAccountGuard"/> to every instance, whatever registered the options, so
-    /// no commit can delete a user without the legal copy.
+    /// Adds <see cref="InitialAdministratorGuard"/> to every instance, whatever registered the
+    /// options, so no commit can delete the initial administrator, and the data history recorder
+    /// of the scope, so no commit of a historized row goes without its history.
     /// </summary>
     /// <param name="optionsBuilder">Builder of the options of this instance.</param>
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -200,7 +209,11 @@ public class CodigoActivoDbContext(DbContextOptions<CodigoActivoDbContext> optio
         ArgumentNullException.ThrowIfNull(optionsBuilder);
 
         base.OnConfiguring(optionsBuilder);
-        optionsBuilder.AddInterceptors(DeletedAccountGuard.Instance);
+        optionsBuilder.AddInterceptors(InitialAdministratorGuard.Instance);
+        if (history is not null)
+        {
+            optionsBuilder.AddInterceptors(history);
+        }
     }
 
     /// <inheritdoc />

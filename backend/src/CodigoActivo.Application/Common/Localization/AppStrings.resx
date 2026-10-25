@@ -208,6 +208,39 @@ Equipo de Código Activo</value>
   <data name="emails.accountDeletionCode.ignoreNote" xml:space="preserve">
     <value>Si no has solicitado eliminar tu cuenta, no introduzcas este código y restablece tu contraseña cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
   </data>
+  <data name="emails.blockedDataConsultation.subject" xml:space="preserve">
+    <value>Se ha abierto una consulta de datos bloqueados</value>
+  </data>
+  <data name="emails.blockedDataConsultation.heading" xml:space="preserve">
+    <value>Consulta de datos bloqueados</value>
+  </data>
+  <data name="emails.blockedDataConsultation.introText" xml:space="preserve">
+    <value>{0} ha abierto una consulta de los datos bloqueados para «{1}», referencia «{2}».</value>
+  </data>
+  <data name="emails.blockedDataConsultation.introHtml" xml:space="preserve">
+    <value>&lt;b&gt;{0}&lt;/b&gt; ha abierto una consulta de los datos bloqueados para &lt;b&gt;«{1}»&lt;/b&gt;, referencia &lt;b&gt;«{2}»&lt;/b&gt;.</value>
+  </data>
+  <data name="emails.blockedDataConsultation.opened" xml:space="preserve">
+    <value>La abrió el {0} h y estará abierta 15 minutos.</value>
+  </data>
+  <data name="emails.blockedDataConsultation.note" xml:space="preserve">
+    <value>Los datos bloqueados solo pueden entregarse a jueces y tribunales, al Ministerio Fiscal o a las administraciones públicas competentes, en particular a la autoridad de protección de datos (artículo 32 de la LOPDGDD). Si no reconocéis esta consulta, la cuenta de la persona responsable de protección de datos puede estar en manos de otra persona: avisadla y cambiad su contraseña.</value>
+  </data>
+  <data name="emails.blockedDataConsultation.authority.Court" xml:space="preserve">
+    <value>un juzgado o tribunal</value>
+  </data>
+  <data name="emails.blockedDataConsultation.authority.Prosecutor" xml:space="preserve">
+    <value>el Ministerio Fiscal</value>
+  </data>
+  <data name="emails.blockedDataConsultation.authority.DataProtectionAuthority" xml:space="preserve">
+    <value>la autoridad de protección de datos</value>
+  </data>
+  <data name="emails.blockedDataConsultation.authority.PublicAdministration" xml:space="preserve">
+    <value>otra administración pública competente</value>
+  </data>
+  <data name="emails.blockedDataConsultation.authority.Claim" xml:space="preserve">
+    <value>una reclamación contra la asociación</value>
+  </data>
   <data name="emails.consentWithdrawn.subject" xml:space="preserve">
     <value>Se ha retirado un consentimiento</value>
   </data>
@@ -251,7 +284,7 @@ Equipo de Código Activo</value>
     <value>Si quiere seguir participando en nuestras actividades, desde ese día puede registrarse con su propia cuenta.</value>
   </data>
   <data name="emails.comingOfAge.blockedCopyNote" xml:space="preserve">
-    <value>Como en cualquier eliminación, guardaremos bloqueada la copia que exige la ley; nadie la consulta desde la web.</value>
+    <value>Como en cualquier eliminación, guardaremos bloqueados y cifrados los datos que exige la ley; solo se consultan para entregarlos a un juzgado o a la autoridad de protección de datos.</value>
   </data>
   <data name="emails.securityAlert.subject" xml:space="preserve">
     <value>Cambio de seguridad en tu cuenta de Código Activo</value>

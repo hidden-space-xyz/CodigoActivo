@@ -47,6 +47,7 @@ describe('AdminShell', () => {
       '/admin/users',
       '/admin/diagnostics',
       '/admin/audit',
+      '/admin/blocked-data',
       '/admin/legal',
       '/admin/catalogs',
     ])

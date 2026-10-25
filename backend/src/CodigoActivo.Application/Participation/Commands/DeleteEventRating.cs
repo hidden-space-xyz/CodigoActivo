@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
@@ -20,17 +19,15 @@ public sealed record DeleteEventRatingCommand(EventId EventId) : ICommand<Result
 
 /// <summary>
 /// Executes the command to delete the signed-in account's rating of an event, at any time and
-/// whatever became of its signups. The deleted rating is kept in a blocked copy.
+/// whatever became of its signups. The deleted rating is kept in the data history.
 /// </summary>
 /// <param name="ratings">Repository used to persist and retrieve ratings.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="eraser">Service that commits the deletion with the blocked copy.</param>
-/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="eraser">Service that commits the deletion with its data history.</param>
 public sealed class DeleteEventRatingCommandHandler(
     IEventRatingRepository ratings,
     ICurrentUser currentUser,
-    ParticipationEraser eraser,
-    IClock clock
+    ParticipationEraser eraser
 ) : ICommandHandler<DeleteEventRatingCommand, Result>
 {
     /// <summary>
@@ -53,7 +50,7 @@ public sealed class DeleteEventRatingCommandHandler(
         }
 
         ratings.Remove(rating);
-        await eraser.EraseAsync(ParticipationDeletion.OfRating(rating, clock.UtcNow), ct);
+        await eraser.EraseAsync(ParticipationDeletion.OfRating(rating), ct);
         return Result.Success();
     }
 }

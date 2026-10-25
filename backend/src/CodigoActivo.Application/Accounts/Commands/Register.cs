@@ -117,7 +117,7 @@ public sealed class RegisterCommandHandler(
             await users.AddAsync(child, ct);
         }
 
-        if (await emailClaims.TryCommitAsync(adult, holder, now, ct))
+        if (await emailClaims.TryCommitAsync(adult, holder, ct))
         {
             await TrySendVerificationEmailAsync(adult, otpCode, ct);
         }

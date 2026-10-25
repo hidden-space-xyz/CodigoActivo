@@ -2,7 +2,6 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -12,23 +11,14 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Erasure;
 
 public sealed class AccountEraserTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
-
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IDeletedAccountRepository deletedAccounts =
-        Substitute.For<IDeletedAccountRepository>();
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly AccountEraser sut;
 
     public AccountEraserTests()
     {
-        sut = AccountErasers.Create(users, deletedAccounts, erasureStore, uow);
-    }
-
-    private static AccountErasure ErasureBy(Guid actorId)
-    {
-        return new AccountErasure(AccountDeletionOrigin.Administrator, UserId.From(actorId), Now);
+        sut = AccountErasers.Create(users, erasureStore, uow);
     }
 
     [Fact]
@@ -37,34 +27,27 @@ public sealed class AccountEraserTests
         var account = NewUser();
         erasureStore.LockHouseholdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(false);
 
-        var erased = await sut.EraseAsync(
-            account,
-            ErasureBy(Guid.NewGuid()),
-            TestContext.Current.CancellationToken
-        );
+        var erased = await sut.EraseAsync(account, TestContext.Current.CancellationToken);
 
         erased.Should().BeFalse();
         await erasureStore
             .DidNotReceiveWithAnyArgs()
-            .CaptureLegalCopyAsync(default, default!, TestContext.Current.CancellationToken);
+            .LoadHouseholdAsync(default, TestContext.Current.CancellationToken);
         await erasureStore
             .DidNotReceiveWithAnyArgs()
             .HandOverAuthoredContentAsync(default, default, TestContext.Current.CancellationToken);
-        await deletedAccounts
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
         users.DidNotReceiveWithAnyArgs().Remove(default!);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+        account.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public async Task EraseAsyncLockedHouseholdCopiesHandsOverArchivesRemovesAndSavesInOrder()
+    public async Task EraseAsyncLockedHouseholdLoadsHandsOverRemovesAndSavesInOrder()
     {
         var account = NewUser();
-        var erasure = ErasureBy(Guid.NewGuid());
 
-        var erased = await sut.EraseAsync(account, erasure, TestContext.Current.CancellationToken);
+        var erased = await sut.EraseAsync(account, TestContext.Current.CancellationToken);
 
         erased.Should().BeTrue();
         Received.InOrder(() =>
@@ -74,27 +57,16 @@ public sealed class AccountEraserTests
                 Arg.Any<CancellationToken>()
             );
             _ = erasureStore.LockHouseholdAsync(account.Id, Arg.Any<CancellationToken>());
-            _ = erasureStore.CaptureLegalCopyAsync(
-                account.Id,
-                erasure,
-                Arg.Any<CancellationToken>()
-            );
+            _ = erasureStore.LoadHouseholdAsync(account.Id, Arg.Any<CancellationToken>());
             _ = erasureStore.HandOverAuthoredContentAsync(
                 account.Id,
                 InitialAdministrator.Id,
                 Arg.Any<CancellationToken>()
             );
-            _ = deletedAccounts.AddAsync(
-                Arg.Is<DeletedAccount>(copy =>
-                    copy.Id == account.Id
-                    && copy.DeletedAt == Now
-                    && copy.Data == AccountErasers.LegalCopy
-                ),
-                Arg.Any<CancellationToken>()
-            );
             users.Remove(account);
             _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
         });
+        account.PullDomainEvents().Should().ContainEquivalentOf(new AccountErased(account.Id));
     }
 
     [Fact]
@@ -102,11 +74,7 @@ public sealed class AccountEraserTests
     {
         var account = NewUser();
 
-        await sut.EraseAsync(
-            account,
-            ErasureBy(Guid.NewGuid()),
-            TestContext.Current.CancellationToken
-        );
+        await sut.EraseAsync(account, TestContext.Current.CancellationToken);
 
         await uow.Received(1)
             .ExecuteInTransactionAsync(
@@ -114,22 +82,15 @@ public sealed class AccountEraserTests
                 TestContext.Current.CancellationToken
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await deletedAccounts
-            .Received(1)
-            .AddAsync(Arg.Any<DeletedAccount>(), Arg.Any<CancellationToken>());
         users.Received(1).Remove(account);
     }
 
     [Fact]
-    public async Task EraseAsyncMissingAccountOrErasureThrows()
+    public async Task EraseAsyncMissingAccountThrowsBeforeTheTransaction()
     {
-        var withoutAccount = () =>
-            sut.EraseAsync(null!, ErasureBy(Guid.NewGuid()), TestContext.Current.CancellationToken);
-        var withoutErasure = () =>
-            sut.EraseAsync(NewUser(), null!, TestContext.Current.CancellationToken);
+        var withoutAccount = () => sut.EraseAsync(null!, TestContext.Current.CancellationToken);
 
         await withoutAccount.Should().ThrowAsync<ArgumentNullException>();
-        await withoutErasure.Should().ThrowAsync<ArgumentNullException>();
         await uow.DidNotReceiveWithAnyArgs()
             .ExecuteInTransactionAsync<bool>(default!, TestContext.Current.CancellationToken);
     }

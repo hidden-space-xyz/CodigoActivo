@@ -15,6 +15,7 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -1108,6 +1109,36 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         previous.Number.Should().Be(1);
         previous.Name.Should().Be("Reglamento");
         previous.Description.HasSameContentAs(RichText.Empty).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task TermsDocumentDeleteAfterAnUpdateRemovesEveryVersionKeepingItsHistory()
+    {
+        var termsDocumentId = await SeedTermsDocumentAsync("Reglamento");
+        var admin = await LoginAsAdminAsync();
+        using var updated = await admin.PutJsonAsync(
+            $"/api/events/termsDocument/{termsDocumentId}",
+            new UpdateTermsDocumentRequest(
+                "Reglamento",
+                "{\"type\":\"doc\"}",
+                TermsDocumentKind.Conditions
+            ),
+            Ct
+        );
+        updated.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var deleted = await admin.DeleteWithCsrfAsync(
+            $"/api/events/termsDocument/{termsDocumentId}",
+            Ct
+        );
+
+        deleted.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<TermsDocument>(termsDocumentId)).Should().BeNull();
+        (await DataHistoryAsync())
+            .Where(item => item.Record.Operation is DataHistoryOperation.Deleted)
+            .Select(item => item.Entry.Entity)
+            .Should()
+            .Contain([nameof(TermsDocument), nameof(TermsDocumentVersion)]);
     }
 
     [Fact]

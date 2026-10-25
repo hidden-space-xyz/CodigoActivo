@@ -46,6 +46,12 @@ public enum EmailKind
     /// Selects the notice that tells the association a consent was withdrawn.
     /// </summary>
     ConsentWithdrawalNotice,
+
+    /// <summary>
+    /// Selects the notice that tells the association a consultation of the blocked data was
+    /// opened.
+    /// </summary>
+    BlockedDataConsultationNotice,
 }
 
 /// <summary>

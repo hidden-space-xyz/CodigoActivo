@@ -1,13 +1,11 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -18,7 +16,7 @@ namespace CodigoActivo.Application.Users.Commands;
 public sealed record DeleteUserCommand(UserId UserId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the user, keeping the blocked copy the law requires and handing
+/// Executes the command to delete the user, keeping their data history blocked and handing
 /// the content credited to the account over to the initial administrator. It serves an
 /// administrator removing somebody else, another administrator included, and a guardian removing
 /// one of their minors; deleting one's own account goes through
@@ -29,13 +27,11 @@ public sealed record DeleteUserCommand(UserId UserId) : ICommand<Result>;
 /// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="accountEraser">Use case that erases the account after copying it.</param>
-/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class DeleteUserCommandHandler(
     IUserRepository users,
     ActingUserPolicy actingUser,
     ICurrentUser currentUser,
-    AccountEraser accountEraser,
-    IClock clock
+    AccountEraser accountEraser
 ) : ICommandHandler<DeleteUserCommand, Result>
 {
     /// <summary>
@@ -72,8 +68,7 @@ public sealed class DeleteUserCommandHandler(
             return Error.Forbidden(ApplicationErrorCode.UserSelfDeleteRequiresVerification);
         }
 
-        var erasure = AccountErasure.For(user, actingUserId, clock.UtcNow);
-        return await accountEraser.EraseAsync(user, erasure, ct)
+        return await accountEraser.EraseAsync(user, ct)
             ? Result.Success()
             : Error.NotFound(ApplicationErrorCode.UserNotFound);
     }

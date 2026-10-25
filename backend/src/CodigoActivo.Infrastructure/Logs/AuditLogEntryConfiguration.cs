@@ -1,3 +1,4 @@
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -17,6 +18,7 @@ public sealed class AuditLogEntryConfiguration : IEntityTypeConfiguration<AuditL
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<AuditLogEntry> builder)
     {
+        builder.HasNoHistory();
         builder.ToTable(LogTable.Audit.Name);
         builder.HasKey(entry => new { entry.OccurredAt, entry.Id });
 

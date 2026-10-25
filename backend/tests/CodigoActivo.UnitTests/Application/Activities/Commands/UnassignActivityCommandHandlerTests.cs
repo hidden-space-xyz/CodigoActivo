@@ -24,9 +24,8 @@ public sealed class UnassignActivityCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IParticipationArchive archive = Substitute.For<IParticipationArchive>();
-    private readonly IDeletedParticipationRepository deletedParticipations =
-        Substitute.For<IDeletedParticipationRepository>();
+    private readonly IParticipationErasureStore store =
+        Substitute.For<IParticipationErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly UnassignActivityCommandHandler sut;
 
@@ -37,8 +36,7 @@ public sealed class UnassignActivityCommandHandlerTests
             ActingUsers.Policy(currentUser),
             currentUser,
             new SignupGate(events, users, clock),
-            ParticipationErasers.Create(archive, deletedParticipations, uow),
-            clock
+            ParticipationErasers.Create(store, uow)
         );
     }
 
@@ -106,9 +104,6 @@ public sealed class UnassignActivityCommandHandlerTests
         result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
         activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(assignment);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(Arg.Any<CancellationToken>());
-        await deletedParticipations
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(Arg.Any<DeletedParticipation>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -126,21 +121,10 @@ public sealed class UnassignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        var deletion = ParticipationDeletion.OfSignup(
-            activity,
-            assignment.UserId,
-            adminId,
-            clock.UtcNow
-        );
+        var deletion = ParticipationDeletion.OfSignup(activity, assignment.UserId);
         deletion.Origin.Should().Be(ParticipationDeletionOrigin.SignupCancelled);
-        await archive.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
-        await archive.Received(1).CaptureCopyAsync(deletion, Arg.Any<CancellationToken>());
-        await deletedParticipations
-            .Received(1)
-            .AddAsync(
-                Arg.Is<DeletedParticipation>(copy => copy.Data == ParticipationErasers.Copy),
-                Arg.Any<CancellationToken>()
-            );
+        await store.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
+        await store.Received(1).LoadAsync(deletion, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

@@ -21,7 +21,7 @@ namespace CodigoActivo.Composition.Events;
 
 /// <summary>
 /// Registers events and what hangs from them: category types, terms documents, activities,
-/// signups, ratings and the blocked copies of removed participation.
+/// signups, ratings and the removal of participation.
 /// </summary>
 internal static class EventsRegistration
 {
@@ -46,8 +46,7 @@ internal static class EventsRegistration
         services.AddScoped<TermsGate>();
         services.AddScoped<ActivityValidator>();
         services.AddScoped<ActivitySignupNotifier>();
-        services.AddScoped<IDeletedParticipationRepository, DeletedParticipationRepository>();
-        services.AddScoped<IParticipationArchive, ParticipationArchive>();
+        services.AddScoped<IParticipationErasureStore, ParticipationErasureStore>();
         services.AddScoped<ParticipationEraser>();
         return services;
     }

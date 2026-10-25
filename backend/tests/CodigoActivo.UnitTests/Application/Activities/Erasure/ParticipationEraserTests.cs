@@ -1,10 +1,8 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Events;
-using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -13,31 +11,20 @@ namespace CodigoActivo.UnitTests.Application.Activities.Erasure;
 
 public sealed class ParticipationEraserTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
-
-    private readonly IParticipationArchive archive = Substitute.For<IParticipationArchive>();
-    private readonly IDeletedParticipationRepository deletedParticipations =
-        Substitute.For<IDeletedParticipationRepository>();
+    private readonly IParticipationErasureStore store =
+        Substitute.For<IParticipationErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly ParticipationDeletion deletion = ParticipationDeletion.OfEvent(
-        EventId.New(),
-        UserId.New(),
-        Now
-    );
+    private readonly ParticipationDeletion deletion = ParticipationDeletion.OfEvent(EventId.New());
     private readonly ParticipationEraser sut;
 
     public ParticipationEraserTests()
     {
-        sut = new ParticipationEraser(archive, deletedParticipations, uow.RunsTransactions());
+        sut = ParticipationErasers.Create(store, uow);
     }
 
     [Fact]
-    public async Task EraseAsyncLocksThenCopiesThenCommitsInOneTransaction()
+    public async Task EraseAsyncLocksThenLoadsThenCommitsInOneTransaction()
     {
-        archive
-            .CaptureCopyAsync(deletion, Arg.Any<CancellationToken>())
-            .Returns(ParticipationErasers.Copy);
-
         await sut.EraseAsync(deletion, TestContext.Current.CancellationToken);
 
         Received.InOrder(() =>
@@ -46,28 +33,19 @@ public sealed class ParticipationEraserTests
                 Arg.Any<Func<CancellationToken, Task<bool>>>(),
                 Arg.Any<CancellationToken>()
             );
-            archive.LockAsync(deletion, Arg.Any<CancellationToken>());
-            archive.CaptureCopyAsync(deletion, Arg.Any<CancellationToken>());
-            deletedParticipations.AddAsync(
-                Arg.Is<DeletedParticipation>(copy =>
-                    copy.Data == ParticipationErasers.Copy && copy.DeletedAt == Now
-                ),
-                Arg.Any<CancellationToken>()
-            );
+            store.LockAsync(deletion, Arg.Any<CancellationToken>());
+            store.LoadAsync(deletion, Arg.Any<CancellationToken>());
             uow.SaveChangesAsync(Arg.Any<CancellationToken>());
         });
     }
 
     [Fact]
-    public async Task EraseAsyncNothingToCopyCommitsTheRemovalWithoutACopy()
+    public async Task EraseAsyncMissingDeletionThrowsBeforeTheTransaction()
     {
-        archive.CaptureCopyAsync(deletion, Arg.Any<CancellationToken>()).Returns((string?)null);
+        var withoutDeletion = () => sut.EraseAsync(null!, TestContext.Current.CancellationToken);
 
-        await sut.EraseAsync(deletion, TestContext.Current.CancellationToken);
-
-        await deletedParticipations
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(Arg.Any<DeletedParticipation>(), Arg.Any<CancellationToken>());
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await withoutDeletion.Should().ThrowAsync<ArgumentNullException>();
+        await uow.DidNotReceiveWithAnyArgs()
+            .ExecuteInTransactionAsync<bool>(default!, TestContext.Current.CancellationToken);
     }
 }

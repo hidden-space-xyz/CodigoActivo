@@ -1,14 +1,17 @@
 using System.Net;
+using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Activities.Contracts;
+using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
+using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -147,6 +150,35 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
                 Ct
             )
         );
+    }
+
+    [Fact]
+    public async Task ActivityRemovalTakesASignupAddedAfterTheActivityWasLoaded()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        await SeedAssignmentAsync(activityId, TestSeedData.Users.AdminId);
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var activities = scope.ServiceProvider.GetRequiredService<IActivityRepository>();
+        var activity = (await activities.GetByIdAsync(ActivityId.From(activityId), Ct))!;
+        await SeedAssignmentAsync(activityId, TestSeedData.Users.MemberId);
+
+        activities.Remove(activity);
+        await scope
+            .ServiceProvider.GetRequiredService<ParticipationEraser>()
+            .EraseAsync(ParticipationDeletion.OfActivity(activity), Ct);
+
+        (await FindAsync<Activity>(activityId)).Should().BeNull();
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().BeNull();
+        (await DataHistoryAsync())
+            .Where(item =>
+                item.Entry.Entity == nameof(Assignment)
+                && item.Record.Operation is DataHistoryOperation.Deleted
+                && ((JsonElement)item.Record.Values[nameof(Assignment.ActivityId)]!).GetGuid()
+                    == activityId
+            )
+            .Select(item => ((JsonElement)item.Record.Values[nameof(Assignment.UserId)]!).GetGuid())
+            .Should()
+            .BeEquivalentTo([TestSeedData.Users.AdminId, TestSeedData.Users.MemberId]);
     }
 
     [Fact]

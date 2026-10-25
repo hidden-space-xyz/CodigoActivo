@@ -974,6 +974,174 @@
         }
       }
     },
+    "/api/blocked-data/access": {
+      "get": {
+        "tags": [
+          "BlockedData"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockedDataAccessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blocked-data/consultations": {
+      "get": {
+        "tags": [
+          "BlockedData"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockedDataConsultationResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "BlockedData"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenBlockedDataConsultationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockedDataConsultationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blocked-data/consultations/{consultationId}/searches": {
+      "post": {
+        "tags": [
+          "BlockedData"
+        ],
+        "parameters": [
+          {
+            "name": "consultationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchBlockedDataRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockedDataSearch"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blocked-data/consultations/{consultationId}/extracts": {
+      "post": {
+        "tags": [
+          "BlockedData"
+        ],
+        "parameters": [
+          {
+            "name": "consultationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportBlockedDataRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockedDataExport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/emails/users/{userId}": {
       "post": {
         "tags": [
@@ -5186,7 +5354,6 @@
           "ChangeAssignmentStatus",
           "CreateActivity",
           "DeleteActivity",
-          "PurgeDeletedParticipations",
           "UnassignActivity",
           "UpdateActivity",
           "SendEmailToEventAttendees",
@@ -5221,11 +5388,14 @@
           "ChangeUserType",
           "DeleteUser",
           "PurgeAdultDependents",
-          "PurgeDeletedAccounts",
           "ResetTwoFactor",
           "SendComingOfAgeNotices",
           "SetAdmin",
-          "UpdateUser"
+          "UpdateUser",
+          "PurgeDataHistory",
+          "OpenBlockedDataConsultation",
+          "SearchBlockedData",
+          "ExportBlockedData"
         ],
         "type": "string"
       },
@@ -5240,6 +5410,7 @@
       "AuditEntityType": {
         "enum": [
           "Activity",
+          "BlockedDataConsultation",
           "Event",
           "EventCategoryType",
           "LegalPolicy",
@@ -5409,6 +5580,300 @@
           },
           "authenticatorUri": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataAccessResponse": {
+        "required": [
+          "entities",
+          "isPrivacyOfficer",
+          "usesAuthenticator"
+        ],
+        "type": "object",
+        "properties": {
+          "isPrivacyOfficer": {
+            "type": "boolean"
+          },
+          "usesAuthenticator": {
+            "type": "boolean"
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataAuthority": {
+        "enum": [
+          "Court",
+          "Prosecutor",
+          "DataProtectionAuthority",
+          "PublicAdministration",
+          "Claim"
+        ],
+        "type": "string"
+      },
+      "BlockedDataCandidateResponse": {
+        "required": [
+          "accountId",
+          "entries",
+          "exists",
+          "firstName",
+          "lastName"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "guardianId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "exists": {
+            "type": "boolean"
+          },
+          "erasedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockedDataEntryCountResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataConsultationResponse": {
+        "required": [
+          "authority",
+          "expiresAt",
+          "extracts",
+          "foundAccounts",
+          "id",
+          "officerId",
+          "openedAt",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "officerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "officerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "authority": {
+            "$ref": "#/components/schemas/BlockedDataAuthority"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "foundAccounts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "extracts": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataConsultationResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockedDataConsultationResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataEntryCountResponse": {
+        "required": [
+          "count",
+          "entity",
+          "firstAt",
+          "lastAt"
+        ],
+        "type": "object",
+        "properties": {
+          "entity": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataEntryResponse": {
+        "required": [
+          "entity",
+          "id",
+          "occurredAt",
+          "readable",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entity": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "readable": {
+            "type": "boolean"
+          },
+          "operation": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "command": {
+            "type": "string",
+            "nullable": true
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataExport": {
+        "required": [
+          "accountId",
+          "authority",
+          "entities",
+          "entries",
+          "generatedAt",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "authority": {
+            "$ref": "#/components/schemas/BlockedDataAuthority"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockedDataEntryResponse"
+            }
+          },
+          "currentData": {
+            "$ref": "#/components/schemas/PersonalDataResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataSearch": {
+        "required": [
+          "candidates"
+        ],
+        "type": "object",
+        "properties": {
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockedDataCandidateResponse"
+            }
           }
         },
         "additionalProperties": false
@@ -6370,7 +6835,12 @@
           "TooManyRequests",
           "RequestValidationFailed",
           "ConcurrentUpdate",
-          "UnexpectedError"
+          "UnexpectedError",
+          "BlockedDataConsultationNotFound",
+          "BlockedDataConsultationExpired",
+          "BlockedDataAccountNotFound",
+          "BlockedDataOfficerOnly",
+          "BlockedDataAuthenticatorRequired"
         ],
         "type": "string"
       },
@@ -7590,6 +8060,36 @@
         },
         "additionalProperties": false
       },
+      "ExportBlockedDataRequest": {
+        "required": [
+          "accountId"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "FileResponse": {
         "required": [
           "extension",
@@ -8114,6 +8614,30 @@
           "pageSize": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OpenBlockedDataConsultationRequest": {
+        "required": [
+          "authority",
+          "code",
+          "currentPassword",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "authority": {
+            "$ref": "#/components/schemas/BlockedDataAuthority"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "currentPassword": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -8898,6 +9422,18 @@
           "suggestions": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SearchBlockedDataRequest": {
+        "required": [
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -9933,6 +10469,9 @@
     },
     {
       "name": "Auth"
+    },
+    {
+      "name": "BlockedData"
     },
     {
       "name": "Emails"

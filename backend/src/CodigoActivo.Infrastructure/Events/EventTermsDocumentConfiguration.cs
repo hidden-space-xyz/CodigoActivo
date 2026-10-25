@@ -1,5 +1,6 @@
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,6 +17,7 @@ public sealed class EventTermsDocumentConfiguration : IEntityTypeConfiguration<E
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<EventTermsDocument> builder)
     {
+        builder.HasNoHistory();
         builder.HasKey(x => new { x.EventId, x.TermsDocumentId });
 
         builder

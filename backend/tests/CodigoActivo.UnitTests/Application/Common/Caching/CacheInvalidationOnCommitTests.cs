@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Partners;
@@ -19,6 +20,7 @@ public sealed class CacheInvalidationOnCommitTests
     [
         typeof(AuthenticatorDisabled),
         typeof(AuthenticatorEnabled),
+        typeof(BlockedDataConsultationOpened),
         typeof(ContactDetailsReplaced),
         typeof(PasswordChanged),
         typeof(PasswordLocked),

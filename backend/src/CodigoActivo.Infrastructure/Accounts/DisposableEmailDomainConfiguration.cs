@@ -1,3 +1,4 @@
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,6 +21,7 @@ public sealed class DisposableEmailDomainConfiguration
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<DisposableEmailDomain> builder)
     {
+        builder.HasNoHistory();
         builder.HasKey(d => d.Domain);
 
         builder.Property(d => d.Domain).HasMaxLength(MaxDomainLength);

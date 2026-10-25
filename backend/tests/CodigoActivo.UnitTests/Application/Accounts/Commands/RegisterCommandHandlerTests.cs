@@ -12,7 +12,6 @@ using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -25,8 +24,6 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 public sealed class RegisterCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IDeletedAccountRepository deletedAccounts =
-        Substitute.For<IDeletedAccountRepository>();
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
@@ -57,7 +54,7 @@ public sealed class RegisterCommandHandlerTests
             new DisposableEmailChecker(disposableDomains),
             new EmailClaims(
                 users.LocksEveryAccount(),
-                AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
+                AccountErasers.Create(users, erasureStore, uow),
                 uow
             ),
             auditSubject
@@ -303,16 +300,7 @@ public sealed class RegisterCommandHandlerTests
         var adult = added.Should().ContainSingle().Subject;
         adult.Id.Should().NotBe(holder.Id);
         users.Received(1).Remove(holder);
-        await erasureStore
-            .Received(1)
-            .CaptureLegalCopyAsync(
-                holder.Id,
-                Arg.Is<AccountErasure>(erasure =>
-                    erasure.Origin == AccountDeletionOrigin.EmailClaimed
-                    && erasure.ActorId == adult.Id
-                ),
-                Arg.Any<CancellationToken>()
-            );
+        await erasureStore.Received(1).LoadHouseholdAsync(holder.Id, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         var email = composer.Composed.Should().ContainSingle().Subject;
         email.Name.Should().Be(nameof(IAccountEmailComposer.AccountVerification));

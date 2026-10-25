@@ -319,6 +319,7 @@ export default withVueTs(
             '/^pages\\.admin\\.eventRoster\\.rolePlural/u',
             '/^pages\\.admin\\.diagnostics\\.levels\\./u',
             '/^pages\\.admin\\.audit\\.(actions|actorTypes|entityTypes|outcomes|codes|deletedEntities)\\./u',
+            '/^pages\\.admin\\.blockedData\\.(authorities|entities)\\./u',
             '/^pages\\.account\\.personalData\\.(actors|sources)\\./u',
             '/^entities\\.event\\.status\\./u',
             '/^entities\\.user\\.gender\\./u',

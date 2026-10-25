@@ -336,7 +336,12 @@
     "TooManyRequests": "Has hecho demasiadas peticiones seguidas. Espera un momento y vuelve a intentarlo.",
     "RequestValidationFailed": "Los datos enviados no son válidos. Revisa el formulario e inténtalo de nuevo.",
     "ConcurrentUpdate": "Otra operación ha modificado estos datos al mismo tiempo. Inténtalo de nuevo.",
-    "UnexpectedError": "Ha ocurrido un error inesperado. Inténtalo de nuevo."
+    "UnexpectedError": "Ha ocurrido un error inesperado. Inténtalo de nuevo.",
+    "BlockedDataConsultationNotFound": "La consulta de datos bloqueados no existe o la abrió otra cuenta.",
+    "BlockedDataConsultationExpired": "La consulta de datos bloqueados ha terminado. Abre otra para seguir.",
+    "BlockedDataAccountNotFound": "Ninguna búsqueda de esta consulta encontró esa cuenta.",
+    "BlockedDataOfficerOnly": "Solo la persona responsable de protección de datos puede consultar los datos bloqueados.",
+    "BlockedDataAuthenticatorRequired": "Para consultar los datos bloqueados tu cuenta debe usar una aplicación de autenticación."
   },
   "pages": {
     "news": {
@@ -1461,6 +1466,7 @@
         },
         "entityTypes": {
           "Activity": "Actividad",
+          "BlockedDataConsultation": "Consulta de datos bloqueados",
           "Event": "Evento",
           "EventCategoryType": "Categoría",
           "LegalPolicy": "Política legal",
@@ -1473,6 +1479,7 @@
         },
         "deletedEntities": {
           "Activity": "Actividad eliminada",
+          "BlockedDataConsultation": "Consulta de datos bloqueados purgada",
           "Event": "Evento eliminado",
           "EventCategoryType": "Categoría eliminada",
           "LegalPolicy": "Política legal eliminada",
@@ -1515,7 +1522,6 @@
           "ChangeAssignmentStatus": "Cambiar el estado de una inscripción",
           "CreateActivity": "Crear una actividad",
           "DeleteActivity": "Eliminar una actividad",
-          "PurgeDeletedParticipations": "Purgar copias de inscripciones y decisiones eliminadas",
           "UnassignActivity": "Retirar una inscripción",
           "UpdateActivity": "Editar una actividad",
           "SendEmailToEventAttendees": "Enviar un email a los asistentes",
@@ -1550,11 +1556,14 @@
           "ChangeUserType": "Cambiar el tipo de usuario",
           "DeleteUser": "Eliminar un usuario",
           "PurgeAdultDependents": "Eliminar menores que han cumplido 18 años",
-          "PurgeDeletedAccounts": "Purgar copias de cuentas eliminadas",
           "ResetTwoFactor": "Restablecer el segundo factor",
           "SendComingOfAgeNotices": "Avisar de menores que van a cumplir 18 años",
           "SetAdmin": "Cambiar los permisos de administrador",
-          "UpdateUser": "Editar un usuario"
+          "UpdateUser": "Editar un usuario",
+          "PurgeDataHistory": "Purgar el historial de datos y las consultas caducadas",
+          "OpenBlockedDataConsultation": "Abrir una consulta de datos bloqueados",
+          "SearchBlockedData": "Buscar cuentas en los datos bloqueados",
+          "ExportBlockedData": "Descargar un extracto de datos bloqueados"
         },
         "codes": {
           "UniqueConstraintViolation": "Otra petición guardó el mismo dato a la vez.",
@@ -1567,7 +1576,94 @@
           "ActivityRoleCapacityOutOfRange": "Las plazas de un rol están fuera de rango.",
           "EventRatingScoreOutOfRange": "La puntuación está fuera de rango.",
           "EventRatingAnswerTooLong": "Una respuesta de la valoración es demasiado larga.",
-          "EventTermsSignatureInvalid": "La firma no es válida."
+          "EventTermsSignatureInvalid": "La firma no es válida.",
+          "BlockedDataReferenceRequired": "Falta la autoridad o la referencia de la consulta.",
+          "BlockedDataEntityUnknown": "Se pidió un tipo de dato que no tiene historial."
+        }
+      },
+      "blockedData": {
+        "header": {
+          "title": "Datos bloqueados",
+          "subtitle": "Historial cifrado de lo que se modificó o eliminó. Solo se entrega a juzgados, al Ministerio Fiscal o a la autoridad de protección de datos (art. 32 LOPDGDD)."
+        },
+        "authenticatorRequired": "Eres la persona responsable de protección de datos, pero para abrir una consulta tu cuenta debe usar una aplicación de autenticación.",
+        "authenticatorLink": "Actívala en «Mi cuenta».",
+        "open": {
+          "action": "Abrir consulta",
+          "title": "Abrir una consulta de datos bloqueados",
+          "intro": "Indica quién pide los datos y la referencia de la petición. La consulta dura 15 minutos, queda registrada y se avisa al contacto legal de la asociación.",
+          "authority": "Quién pide los datos",
+          "authorityPlaceholder": "Elige una autoridad",
+          "reference": "Referencia de la petición",
+          "password": "Tu contraseña",
+          "code": "Código de la aplicación de autenticación",
+          "confirm": "Confirmar y abrir",
+          "form": {
+            "problems": {
+              "authorityRequired": "Elige quién pide los datos.",
+              "referenceRequired": "Escribe la referencia de la petición.",
+              "passwordRequired": "Escribe tu contraseña.",
+              "codeInvalid": "Escribe los 6 dígitos que muestra la aplicación."
+            }
+          }
+        },
+        "consultation": {
+          "title": "Consulta abierta",
+          "meta": "Para {authority} · referencia «{reference}» · abierta hasta {expiresAt}",
+          "close": "Cerrar consulta",
+          "search": "Buscar una cuenta",
+          "searchPlaceholder": "Email, DNI/NIE, teléfono, nombre o identificador",
+          "searchHint": "Escribe al menos {count} caracteres; un nombre solo encuentra a quien lo contenga.",
+          "searchAction": "Buscar",
+          "none": "No hay ninguna cuenta, actual ni borrada, que coincida.",
+          "candidates": "Cuentas encontradas",
+          "exists": "Cuenta actual",
+          "erased": "Eliminada el {date}",
+          "minorOf": "menor a cargo de {guardian}",
+          "noEntries": "Sin historial",
+          "range": "Fechas del historial",
+          "entities": "Tipos de datos",
+          "allEntities": "Todos los tipos",
+          "download": "Descargar extracto"
+        },
+        "extract": {
+          "fileName": "codigo-activo-extracto-{date}.json"
+        },
+        "columns": {
+          "openedAt": "Abierta",
+          "officer": "Abierta por",
+          "erasedOfficer": "Cuenta eliminada",
+          "authority": "Para",
+          "reference": "Referencia",
+          "foundAccounts": "Cuentas",
+          "extracts": "Extractos"
+        },
+        "empty": {
+          "none": "Nadie ha consultado aún los datos bloqueados.",
+          "error": "No se pudieron cargar las consultas."
+        },
+        "authorities": {
+          "Court": "Un juzgado o tribunal",
+          "Prosecutor": "El Ministerio Fiscal",
+          "DataProtectionAuthority": "La autoridad de protección de datos",
+          "PublicAdministration": "Otra administración pública competente",
+          "Claim": "Una reclamación contra la asociación"
+        },
+        "entities": {
+          "Activity": "Actividades",
+          "Assignment": "Inscripciones",
+          "Event": "Eventos",
+          "EventRating": "Valoraciones",
+          "EventTermsAcceptance": "Decisiones sobre documentos",
+          "NewsConsentChange": "Consentimiento de noticias",
+          "NewsItem": "Novedades",
+          "Partner": "Patrocinadores",
+          "Resource": "Recursos",
+          "StoredFile": "Archivos",
+          "TermsDecisionChange": "Historial de decisiones",
+          "TermsDocument": "Documentos de términos",
+          "TermsDocumentVersion": "Versiones de documentos de términos",
+          "User": "Cuentas"
         }
       }
     },
@@ -1950,6 +2046,7 @@
         "users": "Usuarios",
         "diagnostics": "Diagnóstico",
         "audit": "Auditoría",
+        "blockedData": "Datos bloqueados",
         "legal": "Textos legales",
         "settings": "Configuración"
       },

@@ -45,6 +45,7 @@ interface RouteNamedMap {
   'admin-users': NamedRoute<'admin-users', '/admin/users'>
   'admin-diagnostics': NamedRoute<'admin-diagnostics', '/admin/diagnostics'>
   'admin-audit': NamedRoute<'admin-audit', '/admin/audit'>
+  'admin-blocked-data': NamedRoute<'admin-blocked-data', '/admin/blocked-data'>
   'admin-catalogs': NamedRoute<'admin-catalogs', '/admin/catalogs'>
   'admin-legal-policies': NamedRoute<'admin-legal-policies', '/admin/legal'>
   'not-found': RouteRecordInfo<

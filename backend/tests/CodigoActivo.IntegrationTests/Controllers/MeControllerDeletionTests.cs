@@ -12,7 +12,6 @@ using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -203,20 +202,10 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         return (await response.ReadJsonAsync<AccountDeletionStatusResponse>(Ct))!;
     }
 
-    private Task<List<DeletedAccount>> CopiesAsync()
+    private async Task<(string? Command, Guid? ActorId)> DeletionOfAsync(Guid userId)
     {
-        return Factory.QueryAsync(db => db.DeletedAccounts.AsNoTracking().ToListAsync(Ct));
-    }
-
-    private async Task<(string? Origin, Guid ActorId)> DeletionOfAsync(Guid userId)
-    {
-        var copy = (await CopiesAsync()).Single(c => c.Id == UserId.From(userId));
-        using var document = JsonDocument.Parse(copy.Data);
-        var deletion = document.RootElement.GetProperty("deletion");
-        return (
-            deletion.GetProperty("origin").GetString(),
-            deletion.GetProperty("actorId").GetGuid()
-        );
+        var erased = (await ErasedUsersAsync()).Single(user => user.UserId == userId);
+        return (erased.Command, erased.ActorId);
     }
 
     private async Task<(HttpClient Client, string Code)> SignedInMemberWithCodeAsync()
@@ -249,7 +238,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
             (await db.Assignments.CountAsync(Ct)).Should().Be(0);
             (await db.EventRatings.CountAsync(Ct))
                 .Should()
-                .Be(0, "the ratings of the account go with it, into its blocked copy");
+                .Be(0, "the ratings of the account go with it, into its data history");
             (await db.EventTermsAcceptances.CountAsync(Ct)).Should().Be(0);
             return true;
         });
@@ -257,16 +246,20 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         (await FindAsync<Event>(EventId)).Should().NotBeNull("the event itself belongs to nobody");
         (await FindAsync<Activity>(ActivityId)).Should().NotBeNull();
 
-        var copy = (await CopiesAsync())
+        (await ErasedUsersAsync())
             .Should()
-            .ContainSingle("the minors are kept inside the guardian's copy")
-            .Subject;
-        copy.Id.Value.Should().Be(TestSeedData.Users.MemberId);
-        copy.DeletedAt.Should().Be(Factory.Clock.UtcNow);
-        (await DeletionOfAsync(TestSeedData.Users.MemberId))
-            .Should()
-            .Be(("Self", TestSeedData.Users.MemberId));
-        copy.Data.Should().Contain(TestSeedData.Users.MemberChildId.ToString());
+            .BeEquivalentTo(
+                new List<(Guid, string?, Guid?)>
+                {
+                    (TestSeedData.Users.MemberId, "DeleteOwnAccount", TestSeedData.Users.MemberId),
+                    (
+                        TestSeedData.Users.MemberChildId,
+                        "DeleteOwnAccount",
+                        TestSeedData.Users.MemberId
+                    ),
+                },
+                "the minors leave their own history with the account"
+            );
     }
 
     [Fact]
@@ -473,10 +466,10 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         (await FindAsync<NewsItem>(newsItemId))!
             .CreatedBy.Value.Should()
             .Be(KnownIds.Users.InitialAdministrator);
-        (await CopiesAsync())
-            .Select(copy => copy.Id)
+        (await ErasedUsersAsync())
+            .Select(user => user.UserId)
             .Should()
-            .Equal(UserId.From(TestSeedData.Users.MemberId));
+            .BeEquivalentTo([TestSeedData.Users.MemberId, TestSeedData.Users.MemberChildId]);
     }
 
     [Fact]
@@ -529,7 +522,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         newsItem.UpdatedBy.Should().Be(UserId.From(KnownIds.Users.InitialAdministrator));
         (await DeletionOfAsync(TestSeedData.Users.MemberId))
             .Should()
-            .Be(("Administrator", TestSeedData.Users.AdminId));
+            .Be(("DeleteUser", TestSeedData.Users.AdminId));
     }
 
     [Fact]
@@ -587,16 +580,16 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         other.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().BeNull();
 
-        (await CopiesAsync())
-            .Select(copy => copy.Id.Value)
+        (await ErasedUsersAsync())
+            .Select(user => user.UserId)
             .Should()
             .BeEquivalentTo([TestSeedData.Users.MemberChildId, TestSeedData.Users.PendingId]);
         (await DeletionOfAsync(TestSeedData.Users.MemberChildId))
             .Should()
-            .Be(("Guardian", TestSeedData.Users.MemberId));
+            .Be(("DeleteUser", TestSeedData.Users.MemberId));
         (await DeletionOfAsync(TestSeedData.Users.PendingId))
             .Should()
-            .Be(("Administrator", TestSeedData.Users.AdminId));
+            .Be(("DeleteUser", TestSeedData.Users.AdminId));
     }
 
     [Fact]
@@ -613,6 +606,6 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await own.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
         await other.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
         (await FindAsync<User>(KnownIds.Users.InitialAdministrator)).Should().NotBeNull();
-        (await CopiesAsync()).Should().BeEmpty();
+        (await ErasedUsersAsync()).Should().BeEmpty();
     }
 }

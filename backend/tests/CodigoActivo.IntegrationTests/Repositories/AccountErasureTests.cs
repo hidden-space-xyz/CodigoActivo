@@ -14,10 +14,10 @@ using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
+using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -371,488 +371,244 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         });
     }
 
-    private Task SeedCopyAlreadyStoredForPendingAsync()
+    private Task<int> ForgetSeededHistoryAsync()
     {
-        return Factory.SeedAsync(db =>
-        {
-            db.News.Add(
-                Persisted.As<NewsItem>(
-                    new
-                    {
-                        Id = NewsItemId,
-                        Title = "Nota",
-                        Subtitle = "Sub",
-                        Description = "{}",
-                        ThumbnailId = ThumbnailId,
-                        CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.PendingId,
-                    }
-                )
-            );
-            db.DeletedAccounts.Add(
-                Persisted.As<DeletedAccount>(
-                    new
-                    {
-                        Id = TestSeedData.Users.PendingId,
-                        DeletedAt = SeededAt,
-                        Data = "{}",
-                    }
-                )
-            );
-            return Task.CompletedTask;
-        });
+        return Factory.QueryAsync(db => db.DataHistory.ExecuteDeleteAsync(Ct));
     }
 
-    private async Task AssertPendingKeptWithItsContentAsync()
+    private async Task<bool> EraseAsync(Guid userId, params Guid[] alsoTracked)
     {
-        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().NotBeNull();
-        (await FindAsync<NewsItem>(NewsItemId))!
-            .CreatedBy.Value.Should()
-            .Be(TestSeedData.Users.PendingId, "the handover is rolled back with the deletion");
-        (await CopiesAsync())
-            .Should()
-            .ContainSingle()
-            .Which.Data.Should()
-            .Be("{}", "only the copy stored before remains");
-    }
-
-    private async Task<bool> EraseAsync(
-        Guid userId,
-        AccountDeletionOrigin origin,
-        Guid actorId,
-        params Guid[] alsoTracked
-    )
-    {
+        await ForgetSeededHistoryAsync();
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
         var user = await db.Users.SingleAsync(u => u.Id == UserId.From(userId), Ct);
         var tracked = alsoTracked.Select(UserId.From).ToList();
         await db.Users.Where(u => tracked.Contains(u.Id)).LoadAsync(Ct);
         var eraser = scope.ServiceProvider.GetRequiredService<AccountEraser>();
-        return await eraser.EraseAsync(
-            user,
-            new AccountErasure(origin, UserId.From(actorId), Factory.Clock.UtcNow),
-            Ct
-        );
+        return await eraser.EraseAsync(user, Ct);
     }
 
     private async Task<bool> EraseThroughAsync(IInterceptor interceptor, Guid userId)
     {
+        await ForgetSeededHistoryAsync();
         var connectionString = await Factory.QueryAsync(db =>
             Task.FromResult(db.Database.GetConnectionString()!)
         );
+        await using var scope = Factory.Services.CreateAsyncScope();
         await using var db = new CodigoActivoDbContext(
             new DbContextOptionsBuilder<CodigoActivoDbContext>()
                 .UseNpgsql(connectionString)
                 .UseSnakeCaseNamingConvention()
-                .AddInterceptors(interceptor)
+                .AddInterceptors(
+                    interceptor,
+                    scope.ServiceProvider.GetRequiredService<DataHistoryRecorder>()
+                )
                 .Options
         );
         var user = await db.Users.SingleAsync(u => u.Id == UserId.From(userId), Ct);
         var uow = TestUnitOfWork.For(db);
         var eraser = new AccountEraser(
             new UserRepository(db, uow),
-            new DeletedAccountRepository(db),
             new AccountErasureStore(db),
             uow
         );
-        return await eraser.EraseAsync(
-            user,
-            new AccountErasure(
-                AccountDeletionOrigin.Self,
-                UserId.From(userId),
-                Factory.Clock.UtcNow
-            ),
-            Ct
+        return await eraser.EraseAsync(user, Ct);
+    }
+
+    private async Task<List<(DataHistoryEntry Entry, DataHistoryRecord Record)>> HistoryAsync()
+    {
+        var protector = Factory.Services.GetRequiredService<DataHistoryProtector>();
+        var entries = await Factory.QueryAsync(db =>
+            db.DataHistory.AsNoTracking().OrderBy(entry => entry.Id).ToListAsync(Ct)
         );
+        return [.. entries.Select(entry => (entry, protector.Unprotect(entry.Id, entry.Payload)))];
     }
 
-    private Task<List<DeletedAccount>> CopiesAsync()
+    private async Task<List<DataHistoryRecord>> DeletedAsync<TEntity>()
     {
-        return Factory.QueryAsync(db => db.DeletedAccounts.AsNoTracking().ToListAsync(Ct));
+        return
+        [
+            .. (await HistoryAsync())
+                .Where(item =>
+                    item.Entry.Entity == typeof(TEntity).Name
+                    && item.Record.Operation is DataHistoryOperation.Deleted
+                )
+                .Select(item => item.Record),
+        ];
     }
 
-    private async Task<JsonElement> CopyOfAsync(Guid userId)
+    private static string? Value(DataHistoryRecord record, string property)
     {
-        var copy = (await CopiesAsync()).Single(c => c.Id == UserId.From(userId));
-        using var document = JsonDocument.Parse(
-            copy.Data,
-            new JsonDocumentOptions { MaxDepth = 128 }
-        );
-        return document.RootElement.Clone();
+        return record.Values.TryGetValue(property, out var value) && value is JsonElement element
+            ? element.ValueKind is JsonValueKind.String
+                ? element.GetString()
+                : element.ToString()
+            : null;
     }
 
-    private static List<JsonElement> Items(JsonElement array)
+    private static Guid? GuidValue(DataHistoryRecord record, string property)
     {
-        return [.. array.EnumerateArray()];
-    }
-
-    private static Guid IdOf(JsonElement element, string property = "id")
-    {
-        return element.GetProperty(property).GetGuid();
+        return Guid.TryParse(Value(record, property), out var id) ? id : null;
     }
 
     [Fact]
-    public async Task EraseAsyncMemberStoresTheWholeHouseholdAndDeletesIt()
+    public async Task EraseAsyncGuardianDecisionForAMinorIsKeptUnderTheMinor()
     {
         await SeedHouseholdAsync();
-
-        var erased = await EraseAsync(
-            TestSeedData.Users.MemberId,
-            AccountDeletionOrigin.Self,
-            TestSeedData.Users.MemberId
-        );
-
-        erased.Should().BeTrue();
-        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
-        (await FindAsync<User>(TestSeedData.Users.MemberChildId)).Should().BeNull();
-        (await FindAsync<User>(TestSeedData.Users.BlockedId)).Should().NotBeNull();
-        await Factory.QueryAsync(async db =>
+        var member = TestSeedData.Users.MemberId;
+        var child = TestSeedData.Users.MemberChildId;
+        await Factory.SeedAsync(db =>
         {
-            (await db.Assignments.Select(a => a.UserId).ToListAsync(Ct))
-                .Should()
-                .Equal(UserId.From(TestSeedData.Users.BlockedId));
-            (await db.EventTermsAcceptances.Select(a => a.UserId).ToListAsync(Ct))
-                .Should()
-                .Equal(UserId.From(TestSeedData.Users.BlockedId));
-            (await db.NewsConsentChanges.AnyAsync(Ct)).Should().BeFalse();
-            (await db.EventRatings.Select(r => r.UserId).ToListAsync(Ct))
-                .Should()
-                .Equal(UserId.From(TestSeedData.Users.BlockedId));
-            return true;
+            db.EventTermsAcceptances.Add(
+                NewDecision(
+                    CampId,
+                    child,
+                    ConditionsId,
+                    accepted: true,
+                    SeededAt,
+                    decidedById: member
+                )
+            );
+            return Task.CompletedTask;
         });
 
-        var stored = (await CopiesAsync()).Should().ContainSingle().Subject;
-        stored.Id.Value.Should().Be(TestSeedData.Users.MemberId);
-        stored.DeletedAt.Should().Be(Factory.Clock.UtcNow);
+        (await EraseAsync(member)).Should().BeTrue();
 
-        var copy = await CopyOfAsync(TestSeedData.Users.MemberId);
-        copy.GetProperty("schemaVersion").GetInt32().Should().Be(9);
-        copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Self");
-        IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.MemberId);
-        copy.GetProperty("guardian").ValueKind.Should().Be(JsonValueKind.Null);
-
-        var account = copy.GetProperty("account");
-        IdOf(account).Should().Be(TestSeedData.Users.MemberId);
-        account.GetProperty("firstName").GetString().Should().Be("Marta");
-        account.GetProperty("lastName").GetString().Should().Be("Miembro");
-        account.GetProperty("email").GetString().Should().Be(TestSeedData.MemberEmail);
-        account.GetProperty("phone").GetString().Should().Be("+34600000002");
-        account.GetProperty("secondaryPhone").ValueKind.Should().Be(JsonValueKind.Null);
-        account.GetProperty("nationalId").GetString().Should().Be(TestSeedData.MemberNationalId);
-        account.GetProperty("gender").GetString().Should().Be("Female");
-        account.GetProperty("newsConsent").GetBoolean().Should().BeTrue();
-        account
-            .GetProperty("adultDeclaredAt")
-            .GetDateTimeOffset()
-            .Should()
-            .Be(account.GetProperty("createdAt").GetDateTimeOffset());
-        Items(account.GetProperty("newsConsentChanges"))
-            .Select(change =>
-                (
-                    change.GetProperty("granted").GetBoolean(),
-                    change.GetProperty("source").GetString(),
-                    change.GetProperty("changedAt").GetDateTimeOffset()
-                )
+        (await HistoryAsync())
+            .Where(item =>
+                item.Entry.Entity == nameof(TermsDecisionChange)
+                && GuidValue(item.Record, nameof(TermsDecisionChange.UserId)) == child
             )
             .Should()
-            .Equal(
-                (true, "Registration", SeededAt),
-                (false, "UnsubscribeLink", SeededAt.AddDays(2)),
-                (true, "Profile", SeededAt.AddDays(3))
+            .ContainSingle()
+            .Which.Entry.SubjectIds.Should()
+            .Contain(
+                [child, member],
+                "the decision is about the minor and was taken by the guardian"
             );
-        account.GetProperty("isAdmin").GetBoolean().Should().BeFalse();
-        account.GetProperty("twoFactorMethod").GetString().Should().Be("Authenticator");
-        account.GetProperty("userTypeName").GetString().Should().Be("Socio");
-        account.GetProperty("userStatusTypeName").GetString().Should().Be("Activo");
-        account.GetProperty("createdAt").GetDateTimeOffset().Should().Be(SeededAt);
-        account.GetProperty("lastLoginAt").GetDateTimeOffset().Should().Be(SeededAt.AddDays(5));
-        account.GetProperty("parentId").ValueKind.Should().Be(JsonValueKind.Null);
+    }
 
-        var dependent = Items(copy.GetProperty("dependents")).Should().ContainSingle().Subject;
-        IdOf(dependent).Should().Be(TestSeedData.Users.MemberChildId);
-        dependent.GetProperty("firstName").GetString().Should().Be("Mateo");
-        dependent.GetProperty("birthDate").GetString().Should().Be("2015-05-05");
-        IdOf(dependent, "parentId").Should().Be(TestSeedData.Users.MemberId);
-        dependent.GetProperty("userStatusTypeName").GetString().Should().Be("Dependiente");
-        dependent
-            .GetProperty("guardianshipDeclaredAt")
-            .GetDateTimeOffset()
-            .Should()
-            .Be(dependent.GetProperty("createdAt").GetDateTimeOffset());
-        account.GetProperty("guardianshipDeclaredAt").ValueKind.Should().Be(JsonValueKind.Null);
-        dependent.GetProperty("comingOfAgeNoticeSentAt").ValueKind.Should().Be(JsonValueKind.Null);
+    [Fact]
+    public async Task EraseAsyncMemberDeletesTheHouseholdAndKeepsEachRowInTheDataHistory()
+    {
+        await SeedHouseholdAsync();
+        var member = TestSeedData.Users.MemberId;
+        var child = TestSeedData.Users.MemberChildId;
+        Guid[] household = [member, child];
 
-        Items(copy.GetProperty("termsDocuments"))
-            .Select(document => document.GetProperty("name").GetString())
-            .Should()
-            .Equal("Condiciones", "Derechos de imagen", "Normas de la excursión");
-        var conditions = Items(copy.GetProperty("termsDocuments"))[0];
-        IdOf(conditions).Should().Be(ConditionsId);
-        conditions.GetProperty("version").GetInt32().Should().Be(1);
-        Items(conditions.GetProperty("previousVersions")).Should().BeEmpty();
-        var imageRights = Items(copy.GetProperty("termsDocuments"))[1];
-        imageRights.GetProperty("version").GetInt32().Should().Be(2);
-        var accepted = Items(imageRights.GetProperty("previousVersions"))
-            .Should()
-            .ContainSingle()
-            .Subject;
-        accepted.GetProperty("version").GetInt32().Should().Be(1);
-        accepted.GetProperty("name").GetString().Should().Be("Derechos de imagen");
-        accepted.GetProperty("text").ValueKind.Should().Be(JsonValueKind.Object);
-        conditions
-            .GetProperty("textAtDeletion")
-            .GetProperty("content")[0]
-            .GetProperty("content")[0]
-            .GetProperty("text")
-            .GetString()
-            .Should()
-            .Be("Acepto las normas");
+        var erased = await EraseAsync(member);
 
-        var events = Items(copy.GetProperty("events"));
-        events.Select(e => IdOf(e)).Should().Equal(CampId, TripId);
-
-        var camp = events[0];
-        camp.GetProperty("title").GetString().Should().Be("Campamento");
-        camp.GetProperty("startsOn").GetString().Should().Be("2026-06-01");
-        camp.GetProperty("endsOn").GetString().Should().Be("2026-06-02");
-        var campDecisions = Items(camp.GetProperty("termsDecisions"));
-        campDecisions
-            .Select(d => IdOf(d, "documentId"))
+        erased.Should().BeTrue();
+        (await FindAsync<User>(member)).Should().BeNull();
+        (await FindAsync<User>(child)).Should().BeNull();
+        (await DeletedAsync<User>())
+            .Select(record => GuidValue(record, nameof(User.Id)))
             .Should()
-            .Equal(ConditionsId, ImageRightsId);
-        campDecisions[0].GetProperty("accepted").GetBoolean().Should().BeTrue();
-        campDecisions[0]
-            .GetProperty("decidedAt")
-            .GetDateTimeOffset()
-            .Should()
-            .Be(ConditionsDecidedAt);
-        campDecisions[0]
-            .GetProperty("signature")
-            .GetBytesFromBase64()
-            .Should()
-            .Equal(TestSeedData.ValidPng());
-        Items(campDecisions[0].GetProperty("changes"))
-            .Should()
-            .ContainSingle()
-            .Which.GetProperty("signature")
-            .GetBytesFromBase64()
-            .Should()
-            .Equal(TestSeedData.ValidPng());
-        campDecisions[1].GetProperty("documentName").GetString().Should().Be("Derechos de imagen");
-        campDecisions[1].GetProperty("accepted").GetBoolean().Should().BeFalse();
-        campDecisions[1].GetProperty("signature").ValueKind.Should().Be(JsonValueKind.Null);
-        campDecisions[1].GetProperty("documentVersion").GetInt32().Should().Be(1);
-        Items(campDecisions[1].GetProperty("changes"))
-            .Should()
-            .AllSatisfy(change => change.GetProperty("documentVersion").GetInt32().Should().Be(1));
-        Items(campDecisions[1].GetProperty("changes"))
-            .Select(change =>
-                (
-                    change.GetProperty("accepted").GetBoolean(),
-                    change.GetProperty("changedAt").GetDateTimeOffset(),
-                    IdOf(change, "decidedBy"),
-                    IdOf(change, "recordedBy")
-                )
+            .BeEquivalentTo(household.Select(id => (Guid?)id));
+        (await DeletedAsync<Assignment>())
+            .Select(record =>
+                (GuidValue(record, nameof(Assignment.UserId)), GuidValue(record, "ActivityId"))
             )
             .Should()
-            .Equal(
-                (
-                    true,
-                    ImageRightsAcceptedAt,
-                    TestSeedData.Users.MemberId,
-                    TestSeedData.Users.MemberId
-                ),
-                (
-                    false,
-                    ImageRightsDecidedAt,
-                    TestSeedData.Users.MemberId,
-                    TestSeedData.Users.AdminId
-                )
-            );
-        campDecisions
-            .Select(d => IdOf(d, "decidedBy"))
+            .BeEquivalentTo([
+                ((Guid?)member, (Guid?)ClimbingId),
+                (child, ClimbingId),
+                (child, WorkshopId),
+            ]);
+        (await DeletedAsync<EventTermsAcceptance>())
+            .Select(record => GuidValue(record, "TermsDocumentId"))
             .Should()
-            .AllBeEquivalentTo(TestSeedData.Users.MemberId);
-        campDecisions
-            .Select(d => IdOf(d, "personId"))
+            .BeEquivalentTo([(Guid?)ConditionsId, ImageRightsId, TripRulesId]);
+        (await DeletedAsync<TermsDecisionChange>())
             .Should()
-            .AllBeEquivalentTo(TestSeedData.Users.MemberId);
-
-        var campActivities = Items(camp.GetProperty("activities"));
-        campActivities
-            .Select(a => (IdOf(a), IdOf(a, "participantId"), a.GetProperty("status").GetString()))
+            .HaveCount(4)
+            .And.OnlyContain(record => GuidValue(record, "UserId") == member);
+        (await DeletedAsync<EventRating>())
+            .Select(record => GuidValue(record, "EventId"))
             .Should()
-            .Equal(
-                (ClimbingId, TestSeedData.Users.MemberId, "Confirmada"),
-                (ClimbingId, TestSeedData.Users.MemberChildId, "Confirmada"),
-                (WorkshopId, TestSeedData.Users.MemberChildId, "Solicitada")
-            );
-        var volunteering = campActivities[0];
-        volunteering.GetProperty("title").GetString().Should().Be("Escalada");
-        volunteering.GetProperty("location").GetString().Should().Be("Sala Escalada");
-        volunteering.GetProperty("modality").GetString().Should().Be("Presencial");
-        volunteering.GetProperty("role").GetString().Should().Be("Voluntario");
-        volunteering.GetProperty("signedUpAt").GetDateTimeOffset().Should().Be(MemberSignedUpAt);
-        volunteering
-            .GetProperty("startsAt")
-            .GetDateTimeOffset()
+            .Equal(CampId);
+        (await DeletedAsync<NewsConsentChange>())
+            .Where(record => GuidValue(record, "UserId") == member)
             .Should()
-            .Be(new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero));
-        campActivities[2].GetProperty("modality").GetString().Should().Be("Online");
-        var campRating = Items(camp.GetProperty("ratings")).Should().ContainSingle().Subject;
-        IdOf(campRating, "authorId").Should().Be(TestSeedData.Users.MemberId);
-        campRating.GetProperty("score").GetInt32().Should().Be(4);
-        campRating.GetProperty("mostLiked").GetString().Should().Be("La escalada");
-        campRating.GetProperty("leastLiked").ValueKind.Should().Be(JsonValueKind.Null);
-        campRating.GetProperty("suggestions").GetString().Should().Be("Más sombra");
-
-        var trip = events[1];
-        Items(trip.GetProperty("termsDecisions"))
-            .Select(d => IdOf(d, "documentId"))
+            .HaveCount(3);
+        (await HistoryAsync())
             .Should()
-            .Equal(TripRulesId);
-        Items(trip.GetProperty("activities")).Should().BeEmpty();
-        Items(trip.GetProperty("ratings")).Should().BeEmpty();
+            .OnlyContain(item => item.Entry.SubjectIds.Intersect(household).Any())
+            .And.NotContain(item => item.Entry.SubjectIds.Contains(TestSeedData.Users.BlockedId));
+        (await Factory.QueryAsync(db => db.Assignments.CountAsync(Ct)))
+            .Should()
+            .Be(1, "the signup of the blocked user stays");
     }
 
     [Fact]
-    public async Task EraseAsyncNeverStoresCredentialsCodesOrSecrets()
+    public async Task EraseAsyncNeverKeepsCredentialsCodesOrSecretsInTheDataHistory()
     {
         await SeedHouseholdAsync();
 
-        await EraseAsync(
-            TestSeedData.Users.MemberId,
-            AccountDeletionOrigin.Self,
-            TestSeedData.Users.MemberId
-        );
+        await EraseAsync(TestSeedData.Users.MemberId);
 
-        var data = (await CopiesAsync()).Single().Data;
-        data.Should().NotContain(TestSeedData.PasswordHash);
-        data.Should().NotContain(AuthenticatorKey);
-        data.Should().NotContain(LoginCodeHash);
-        data.Should().NotContain(ResetCodeHash);
-        data.Should().NotContain(LoginChallengeId.ToString());
-        var account = (await CopyOfAsync(TestSeedData.Users.MemberId)).GetProperty("account");
-        foreach (
-            var key in new[]
-            {
-                "passwordHash",
-                "authenticatorKey",
-                "pendingAuthenticatorKey",
-                "loginCodeHash",
-                "passwordResetCodeHash",
-                "otpCodeHash",
-                "loginChallengeId",
-                "passwordFailedAttempts",
-                "twoFactorFailedAttempts",
-            }
-        )
-        {
-            account.TryGetProperty(key, out _).Should().BeFalse(key);
-        }
+        var record = (await DeletedAsync<User>()).Single(record =>
+            GuidValue(record, nameof(User.Id)) == TestSeedData.Users.MemberId
+        );
+        Value(record, nameof(User.Email)).Should().Be(TestSeedData.MemberEmail);
+        Value(record, nameof(User.TwoFactorMethod))
+            .Should()
+            .Be(nameof(TwoFactorMethod.Authenticator));
+        record
+            .Values.Keys.Should()
+            .NotContain(key =>
+                key == nameof(User.PasswordHash)
+                || key == nameof(User.LastLoginAt)
+                || key.StartsWith(nameof(User.Authenticator), StringComparison.Ordinal)
+                || key.StartsWith(nameof(User.LoginCode), StringComparison.Ordinal)
+                || key.StartsWith(nameof(User.PasswordResetCode), StringComparison.Ordinal)
+                || key.StartsWith(nameof(User.VerificationCode), StringComparison.Ordinal)
+                || key.StartsWith(nameof(User.LoginChallenge), StringComparison.Ordinal)
+                || key.StartsWith(nameof(User.EmailChange), StringComparison.Ordinal)
+                || key.StartsWith(nameof(User.TwoFactorLockout), StringComparison.Ordinal)
+                || key.StartsWith(nameof(User.PasswordLockout), StringComparison.Ordinal)
+            );
+        var values = JsonSerializer.Serialize(record.Values);
+        values.Should().NotContain(AuthenticatorKey).And.NotContain(LoginCodeHash);
+        values.Should().NotContain(ResetCodeHash);
     }
 
     [Fact]
-    public async Task EraseAsyncDependentStoresTheGuardianAndTheirDecisionsForItsEventsOnly()
+    public async Task EraseAsyncKeepsTheDataHistoryEncryptedAndBoundToItsEntry()
+    {
+        await SeedHouseholdAsync();
+
+        await EraseAsync(TestSeedData.Users.MemberId);
+
+        var entries = await Factory.QueryAsync(db =>
+            db.DataHistory.AsNoTracking().OrderBy(entry => entry.Id).ToListAsync(Ct)
+        );
+        entries.Should().NotBeEmpty();
+        entries
+            .Select(entry => System.Text.Encoding.UTF8.GetString(entry.Payload))
+            .Should()
+            .NotContain(payload => payload.Contains(TestSeedData.MemberEmail));
+        var protector = Factory.Services.GetRequiredService<DataHistoryProtector>();
+        var moved = () => protector.Unprotect(entries[1].Id, entries[0].Payload);
+        moved.Should().Throw<System.Security.Cryptography.CryptographicException>();
+    }
+
+    [Fact]
+    public async Task EraseAsyncWithTheDependentsTrackedStillRecordsEachUserOnce()
     {
         await SeedHouseholdAsync();
 
         var erased = await EraseAsync(
-            TestSeedData.Users.MemberChildId,
-            AccountDeletionOrigin.Guardian,
-            TestSeedData.Users.MemberId
-        );
-
-        erased.Should().BeTrue();
-        (await FindAsync<User>(TestSeedData.Users.MemberChildId)).Should().BeNull();
-        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().NotBeNull();
-        await Factory.QueryAsync(async db =>
-        {
-            (await db.Assignments.CountAsync(Ct)).Should().Be(2);
-            (await db.EventTermsAcceptances.CountAsync(Ct))
-                .Should()
-                .Be(4, "the guardian's decisions are theirs and stay");
-            return true;
-        });
-
-        var copy = await CopyOfAsync(TestSeedData.Users.MemberChildId);
-        copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Guardian");
-        IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.MemberId);
-        IdOf(copy.GetProperty("account")).Should().Be(TestSeedData.Users.MemberChildId);
-        Items(copy.GetProperty("dependents")).Should().BeEmpty();
-
-        var guardian = copy.GetProperty("guardian");
-        IdOf(guardian).Should().Be(TestSeedData.Users.MemberId);
-        guardian.GetProperty("firstName").GetString().Should().Be("Marta");
-        guardian.GetProperty("nationalId").GetString().Should().Be(TestSeedData.MemberNationalId);
-        guardian.GetProperty("email").GetString().Should().Be(TestSeedData.MemberEmail);
-        guardian.GetProperty("phone").GetString().Should().Be("+34600000002");
-
-        var camp = Items(copy.GetProperty("events")).Should().ContainSingle().Subject;
-        IdOf(camp).Should().Be(CampId);
-        Items(camp.GetProperty("termsDecisions"))
-            .Select(d => (IdOf(d, "documentId"), IdOf(d, "decidedBy")))
-            .Should()
-            .Equal(
-                (ConditionsId, TestSeedData.Users.MemberId),
-                (ImageRightsId, TestSeedData.Users.MemberId)
-            );
-        Items(camp.GetProperty("activities"))
-            .Select(a => IdOf(a, "participantId"))
-            .Should()
-            .AllBeEquivalentTo(TestSeedData.Users.MemberChildId);
-        Items(copy.GetProperty("termsDocuments"))
-            .Select(document => IdOf(document))
-            .Should()
-            .BeEquivalentTo([ConditionsId, ImageRightsId]);
-    }
-
-    [Fact]
-    public async Task EraseAsyncAccountWithoutParticipationStoresEmptyCollections()
-    {
-        var erased = await EraseAsync(
-            TestSeedData.Users.PendingId,
-            AccountDeletionOrigin.Administrator,
-            TestSeedData.Users.AdminId
-        );
-
-        erased.Should().BeTrue();
-        var copy = await CopyOfAsync(TestSeedData.Users.PendingId);
-        copy.GetProperty("deletion").GetProperty("origin").GetString().Should().Be("Administrator");
-        IdOf(copy.GetProperty("deletion"), "actorId").Should().Be(TestSeedData.Users.AdminId);
-        copy.GetProperty("account")
-            .GetProperty("userStatusTypeName")
-            .GetString()
-            .Should()
-            .Be("Pendiente");
-        Items(copy.GetProperty("dependents")).Should().BeEmpty();
-        Items(copy.GetProperty("termsDocuments")).Should().BeEmpty();
-        Items(copy.GetProperty("events")).Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task EraseAsyncWithTheDependentsTrackedStillStoresOneCopy()
-    {
-        await SeedHouseholdAsync();
-
-        var erased = await EraseAsync(
-            TestSeedData.Users.MemberId,
-            AccountDeletionOrigin.Self,
             TestSeedData.Users.MemberId,
             TestSeedData.Users.MemberChildId
         );
 
         erased.Should().BeTrue();
-        (await CopiesAsync())
-            .Select(c => c.Id)
-            .Should()
-            .Equal(UserId.From(TestSeedData.Users.MemberId));
-        (await FindAsync<User>(TestSeedData.Users.MemberChildId)).Should().BeNull();
+        (await DeletedAsync<User>()).Should().HaveCount(2);
     }
 
     [Fact]
-    public async Task EraseAsyncUserErasedMeanwhileReturnsFalseAndStoresNothingMore()
+    public async Task EraseAsyncUserErasedMeanwhileReturnsFalseAndRecordsNothingMore()
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
@@ -860,26 +616,14 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             u => u.Id == UserId.From(TestSeedData.Users.PendingId),
             Ct
         );
-        await EraseAsync(
-            TestSeedData.Users.PendingId,
-            AccountDeletionOrigin.Administrator,
-            TestSeedData.Users.AdminId
-        );
+        await EraseAsync(TestSeedData.Users.PendingId);
 
         var erased = await scope
             .ServiceProvider.GetRequiredService<AccountEraser>()
-            .EraseAsync(
-                stale,
-                new AccountErasure(
-                    AccountDeletionOrigin.Administrator,
-                    UserId.From(TestSeedData.Users.AdminId),
-                    Factory.Clock.UtcNow
-                ),
-                Ct
-            );
+            .EraseAsync(stale, Ct);
 
         erased.Should().BeFalse();
-        (await CopiesAsync()).Should().ContainSingle();
+        (await DeletedAsync<User>()).Should().ContainSingle();
     }
 
     [Fact]
@@ -902,46 +646,78 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 .IsSuccess.Should()
                 .BeTrue()
         );
+        await ForgetSeededHistoryAsync();
 
         var erase = () =>
-            scope
-                .ServiceProvider.GetRequiredService<AccountEraser>()
-                .EraseAsync(
-                    stale,
-                    AccountErasure.ForClaimedEmail(
-                        UserId.From(TestSeedData.Users.MemberId),
-                        Factory.Clock.UtcNow
-                    ),
-                    Ct
-                );
+            scope.ServiceProvider.GetRequiredService<AccountEraser>().EraseAsync(stale, Ct);
 
         var thrown = await erase.Should().ThrowAsync<ConcurrentUpdateException>();
         thrown.Which.EntityType.Should().Be<User>();
         (await FindAsync<User>(TestSeedData.Users.PendingId))!
             .Status.Should()
             .Be(UserStatus.Active);
-        (await CopiesAsync()).Should().BeEmpty();
+        (await HistoryAsync()).Should().BeEmpty();
     }
 
     [Fact]
-    public async Task EraseAsyncRefusedByTheDatabaseKeepsTheUserAndRollsBackTheHandover()
+    public async Task EraseAsyncRefusedByTheDatabaseKeepsTheUserTheHandoverAndNoHistory()
     {
         await SeedHouseholdAsync();
-        await SeedCopyAlreadyStoredForPendingAsync();
+        await Factory.SeedAsync(db =>
+        {
+            db.News.Add(
+                Persisted.As<NewsItem>(
+                    new
+                    {
+                        Id = NewsItemId,
+                        Title = "Nota",
+                        Subtitle = "Sub",
+                        Description = "{}",
+                        ThumbnailId = ThumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.PendingId,
+                    }
+                )
+            );
+            return Task.CompletedTask;
+        });
+        await ForgetSeededHistoryAsync();
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
+        var user = await db.Users.SingleAsync(
+            u => u.Id == UserId.From(TestSeedData.Users.PendingId),
+            Ct
+        );
+        db.Users.Add(
+            Persisted.As<User>(
+                new
+                {
+                    FirstName = "Duplicado",
+                    LastName = "Duplicado",
+                    Email = TestSeedData.MemberEmail,
+                    Gender = Gender.Other,
+                    Status = UserStatus.Pending,
+                    UserType = UserType.Member,
+                    CreatedAt = SeededAt,
+                }
+            )
+        );
 
         var erase = () =>
-            EraseAsync(
-                TestSeedData.Users.PendingId,
-                AccountDeletionOrigin.Administrator,
-                TestSeedData.Users.AdminId
-            );
+            scope.ServiceProvider.GetRequiredService<AccountEraser>().EraseAsync(user, Ct);
 
         await erase.Should().ThrowAsync<UniqueConstraintViolationException>();
-        await AssertPendingKeptWithItsContentAsync();
+        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().NotBeNull();
+        (await FindAsync<NewsItem>(NewsItemId))!
+            .CreatedBy.Value.Should()
+            .Be(TestSeedData.Users.PendingId, "the handover is rolled back with the deletion");
+        (await HistoryAsync())
+            .Should()
+            .BeEmpty("the history commits with the change or not at all");
     }
 
     [Fact]
-    public async Task EraseAsyncHandsEveryCreditOfTheHouseholdOverToTheInitialAdministrator()
+    public async Task EraseAsyncHandsEveryCreditOfTheHouseholdOverAndTheHistoryKeepsTheOriginal()
     {
         await SeedHouseholdAsync();
         var member = TestSeedData.Users.MemberId;
@@ -1044,7 +820,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             return Task.CompletedTask;
         });
 
-        var erased = await EraseAsync(member, AccountDeletionOrigin.Self, member);
+        var erased = await EraseAsync(member);
 
         erased.Should().BeTrue();
         var heir = KnownIds.Users.InitialAdministrator;
@@ -1072,8 +848,37 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         )
             .Value.Should()
             .Be(heir);
-        (await FindAsync<User>(member)).Should().BeNull();
-        (await FindAsync<User>(child)).Should().BeNull();
+
+        var handedOver = (await HistoryAsync())
+            .Where(item => item.Record.Operation is DataHistoryOperation.Modified)
+            .ToList();
+        handedOver
+            .Select(item => item.Entry.Entity)
+            .Should()
+            .BeEquivalentTo([
+                nameof(Event),
+                nameof(Activity),
+                nameof(NewsItem),
+                nameof(Partner),
+                nameof(Resource),
+                nameof(StoredFile),
+                nameof(TermsDecisionChange),
+            ]);
+        var originalNews = handedOver.Single(item => item.Entry.Entity == nameof(NewsItem)).Record;
+        GuidValue(originalNews, "CreatedBy").Should().Be(member);
+        var originalUpload = handedOver
+            .Single(item => item.Entry.Entity == nameof(StoredFile))
+            .Record;
+        GuidValue(originalUpload, "UploadedBy").Should().Be(child);
+        var originalChange = handedOver
+            .Single(item => item.Entry.Entity == nameof(TermsDecisionChange))
+            .Record;
+        GuidValue(originalChange, "RecordedById").Should().Be(member);
+        handedOver
+            .Should()
+            .OnlyContain(item =>
+                item.Entry.SubjectIds.Contains(member) || item.Entry.SubjectIds.Contains(child)
+            );
     }
 
     [Fact]
@@ -1082,7 +887,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         await SeedHouseholdAsync();
         var administrator = KnownIds.Users.InitialAdministrator;
 
-        var erase = () => EraseAsync(administrator, AccountDeletionOrigin.Self, administrator);
+        var erase = () => EraseAsync(administrator);
 
         await erase
             .Should()
@@ -1090,53 +895,28 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .WithMessage("*initial administrator*");
         (await FindAsync<User>(administrator)).Should().NotBeNull();
         (await FindAsync<Event>(CampId))!.CreatedBy.Value.Should().Be(administrator);
-        (await CopiesAsync()).Should().BeEmpty();
+        (await HistoryAsync()).Should().BeEmpty();
     }
 
     [Fact]
-    public async Task SaveChangesRemovingAUserWithoutErasingIsRefusedAndKeepsTheUser()
+    public async Task SaveChangesRemovingAUserWithoutLoadingItsRowsIsRefusedByTheDatabase()
     {
+        await SeedHouseholdAsync();
         await using var scope = Factory.Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
         var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var user = await users.GetByIdAsync(UserId.From(TestSeedData.Users.PendingId), Ct);
+        var user = await users.GetByIdAsync(UserId.From(TestSeedData.Users.BlockedId), Ct);
         users.Remove(user!);
 
         var save = () => uow.SaveChangesAsync(Ct);
 
-        await save.Should().ThrowAsync<InvalidOperationException>().WithMessage("*EraseAsync*");
-        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().NotBeNull();
+        await save.Should()
+            .ThrowAsync<DbUpdateException>("the signups it did not load would leave no history");
+        (await FindAsync<User>(TestSeedData.Users.BlockedId)).Should().NotBeNull();
     }
 
     [Fact]
-    public async Task PurgeAsyncDeletesCopiesUpToTheInstantAndKeepsLaterOnes()
-    {
-        var cutoff = Factory.Clock.UtcNow.AddYears(-2);
-        var before = Guid.NewGuid();
-        var exactly = Guid.NewGuid();
-        var after = Guid.NewGuid();
-        await Factory.SeedAsync(db =>
-        {
-            db.DeletedAccounts.AddRange(
-                Persisted.As<DeletedAccount>(
-                    new { Id = before, DeletedAt = cutoff.AddSeconds(-1) }
-                ),
-                Persisted.As<DeletedAccount>(new { Id = exactly, DeletedAt = cutoff }),
-                Persisted.As<DeletedAccount>(new { Id = after, DeletedAt = cutoff.AddSeconds(1) })
-            );
-            return Task.CompletedTask;
-        });
-
-        var purged = await Factory.QueryAsync(db =>
-            new DeletedAccountRepository(db).PurgeDeletedUpToAsync(cutoff, Ct)
-        );
-
-        purged.Should().Be(2);
-        (await CopiesAsync()).Select(c => c.Id).Should().Equal(UserId.From(after));
-    }
-
-    [Fact]
-    public async Task EraseAsyncLocksEveryHouseholdRowItCopiesBeforeReadingIt()
+    public async Task EraseAsyncLocksEveryHouseholdRowItLoadsBeforeReadingIt()
     {
         await SeedHouseholdAsync();
         var probe = new LockProbe(
@@ -1166,7 +946,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EraseAsyncAbortedByDeadlocksIsRetriedAndStoresOneCopy()
+    public async Task EraseAsyncAbortedByDeadlocksIsRetriedAndRecordsEachRowOnce()
     {
         await SeedHouseholdAsync();
         var deadlocks = new DeadlockInterceptor("FOR UPDATE", deadlocks: 2);
@@ -1175,15 +955,12 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
 
         erased.Should().BeTrue();
         deadlocks.Thrown.Should().Be(2);
-        (await CopiesAsync())
-            .Select(c => c.Id)
-            .Should()
-            .Equal(UserId.From(TestSeedData.Users.MemberId));
+        (await DeletedAsync<User>()).Should().HaveCount(2);
         (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
     }
 
     [Fact]
-    public async Task EraseAsyncAbortedByADeadlockWhileSavingIsRetriedAndStoresOneCopy()
+    public async Task EraseAsyncAbortedByADeadlockWhileSavingIsRetriedAndRecordsEachRowOnce()
     {
         await SeedHouseholdAsync();
         var deadlocks = new DeadlockInterceptor("DELETE FROM", deadlocks: 1);
@@ -1192,10 +969,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
 
         erased.Should().BeTrue();
         deadlocks.Thrown.Should().Be(1);
-        (await CopiesAsync())
-            .Select(c => c.Id)
-            .Should()
-            .Equal(UserId.From(TestSeedData.Users.MemberId));
+        (await DeletedAsync<User>()).Should().HaveCount(2);
+        (await DeletedAsync<Assignment>()).Should().HaveCount(3);
         (await FindAsync<User>(TestSeedData.Users.MemberChildId)).Should().BeNull();
     }
 
@@ -1214,123 +989,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .Which.SqlState.Should()
             .Be(PostgresErrorCodes.DeadlockDetected);
         deadlocks.Thrown.Should().Be(3);
-        (await CopiesAsync()).Should().BeEmpty();
+        (await HistoryAsync()).Should().BeEmpty();
         (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task EraseAsyncRefusedByTheDatabaseLeavesNoCopyStagedForALaterCommit()
-    {
-        await SeedHouseholdAsync();
-        await SeedCopyAlreadyStoredForPendingAsync();
-        await using var scope = Factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
-        var eraser = scope.ServiceProvider.GetRequiredService<AccountEraser>();
-        var user = await db.Users.SingleAsync(
-            u => u.Id == UserId.From(TestSeedData.Users.PendingId),
-            Ct
-        );
-        var erasure = new AccountErasure(
-            AccountDeletionOrigin.Administrator,
-            UserId.From(TestSeedData.Users.AdminId),
-            Factory.Clock.UtcNow
-        );
-
-        var erase = () => eraser.EraseAsync(user, erasure, Ct);
-        var save = () =>
-            scope.ServiceProvider.GetRequiredService<IUnitOfWork>().SaveChangesAsync(Ct);
-
-        await erase.Should().ThrowAsync<UniqueConstraintViolationException>();
-        await erase
-            .Should()
-            .ThrowAsync<UniqueConstraintViolationException>("a retry stages a fresh copy");
-        await save.Should().NotThrowAsync("the refused erasure leaves no deletion staged");
-        await AssertPendingKeptWithItsContentAsync();
-    }
-
-    [Fact]
-    public async Task EraseAsyncCommitsOtherStagedChangesThroughTheUnitOfWork()
-    {
-        await using var scope = Factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
-        var user = await db.Users.SingleAsync(
-            u => u.Id == UserId.From(TestSeedData.Users.PendingId),
-            Ct
-        );
-        db.Users.Add(
-            Persisted.As<User>(
-                new
-                {
-                    FirstName = "Duplicado",
-                    LastName = "Duplicado",
-                    Email = TestSeedData.MemberEmail,
-                    Gender = Gender.Other,
-                    Status = UserStatus.Pending,
-                    UserType = UserType.Member,
-                    CreatedAt = SeededAt,
-                }
-            )
-        );
-
-        var erase = () =>
-            scope
-                .ServiceProvider.GetRequiredService<AccountEraser>()
-                .EraseAsync(
-                    user,
-                    new AccountErasure(
-                        AccountDeletionOrigin.Administrator,
-                        UserId.From(TestSeedData.Users.AdminId),
-                        Factory.Clock.UtcNow
-                    ),
-                    Ct
-                );
-
-        await erase.Should().ThrowAsync<UniqueConstraintViolationException>();
-        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().NotBeNull();
-        (await CopiesAsync()).Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task EraseAsyncCopiesTermsDocumentsNestedAsDeepAsValidationAllows()
-    {
-        await SeedHouseholdAsync();
-        const int ValidatedMaxDepth = 64;
-        await Factory.SeedAsync(async db =>
-        {
-            var conditions = await db.TermsDocuments.SingleAsync(
-                d => d.Id == TermsDocumentId.From(ConditionsId),
-                Ct
-            );
-            conditions.Rewrite(
-                conditions.Name,
-                RichText.From(
-                    new string('[', ValidatedMaxDepth) + new string(']', ValidatedMaxDepth)
-                ),
-                conditions.RequiresSignature,
-                TermsDocumentKind.Conditions
-            );
-        });
-
-        var erased = await EraseAsync(
-            TestSeedData.Users.MemberId,
-            AccountDeletionOrigin.Self,
-            TestSeedData.Users.MemberId
-        );
-
-        erased.Should().BeTrue();
-        var text = Items(
-                (await CopyOfAsync(TestSeedData.Users.MemberId)).GetProperty("termsDocuments")
-            )
-            .Single(document => IdOf(document) == ConditionsId)
-            .GetProperty("textAtDeletion");
-        var depth = 0;
-        while (text.ValueKind is JsonValueKind.Array)
-        {
-            depth++;
-            text = text.GetArrayLength() is 0 ? default : text[0];
-        }
-
-        depth.Should().Be(ValidatedMaxDepth);
     }
 
     private sealed class DeadlockInterceptor(string trigger, int deadlocks) : DbCommandInterceptor

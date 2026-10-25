@@ -17,6 +17,7 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<Event> builder)
     {
+        builder.HasHistory();
         builder.HasKey(e => e.Id);
 
         builder.Property(e => e.Title).IsRequired();

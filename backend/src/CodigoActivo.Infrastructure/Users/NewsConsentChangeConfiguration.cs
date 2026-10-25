@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,6 +22,7 @@ public class NewsConsentChangeConfiguration : IEntityTypeConfiguration<NewsConse
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<NewsConsentChange> builder)
     {
+        builder.HasHistory();
         builder.Property<long>(Sequence).ValueGeneratedOnAdd();
         builder.HasKey(Sequence);
 
@@ -34,6 +36,6 @@ public class NewsConsentChangeConfiguration : IEntityTypeConfiguration<NewsConse
             .HasOne<User>()
             .WithMany(u => u.NewsConsentChanges)
             .HasForeignKey(x => x.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
     }
 }

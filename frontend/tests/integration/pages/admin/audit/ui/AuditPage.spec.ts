@@ -32,7 +32,7 @@ const purge = omit(
     actorName: null,
     actorEmail: null,
     clientIp: null,
-    action: 'PurgeDeletedAccounts',
+    action: 'PurgeDataHistory',
     entityId: null,
     entityName: null,
     related: [],

@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.Legal;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,6 +17,7 @@ public sealed class LegalPolicyVersionConfiguration : IEntityTypeConfiguration<L
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<LegalPolicyVersion> builder)
     {
+        builder.HasNoHistory();
         builder.HasKey(x => new { x.LegalPolicyId, x.Number });
         builder.Property(x => x.Number).ValueGeneratedNever();
         builder.Property(x => x.Content).IsRequired();

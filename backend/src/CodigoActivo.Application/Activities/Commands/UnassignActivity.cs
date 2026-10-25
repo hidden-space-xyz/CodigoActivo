@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Application.Activities.Signups;
 using CodigoActivo.Application.Common.Security;
@@ -22,21 +21,19 @@ public sealed record UnassignActivityCommand(ActivityId ActivityId, UserId UserI
 /// <summary>
 /// Executes the command to withdraw a person from an activity. The signed-in user may withdraw
 /// themselves or one of their dependents while the signup is open; an administrator may withdraw
-/// anyone at any time. The cancelled signup is kept in a blocked copy.
+/// anyone at any time. The cancelled signup is kept in the data history.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="signupGate">Gate that checks the signup window.</param>
-/// <param name="eraser">Service that commits the cancellation with the blocked copy.</param>
-/// <param name="clock">Clock used to obtain consistent application timestamps.</param>
+/// <param name="eraser">Service that commits the cancellation with its data history.</param>
 public sealed class UnassignActivityCommandHandler(
     IActivityRepository activities,
     ActingUserPolicy actingUser,
     ICurrentUser currentUser,
     SignupGate signupGate,
-    ParticipationEraser eraser,
-    IClock clock
+    ParticipationEraser eraser
 ) : ICommandHandler<UnassignActivityCommand, Result>
 {
     /// <summary>
@@ -81,15 +78,7 @@ public sealed class UnassignActivityCommandHandler(
             return unassigned;
         }
 
-        await eraser.EraseAsync(
-            ParticipationDeletion.OfSignup(
-                activity,
-                command.UserId,
-                currentUser.RequiredId(),
-                clock.UtcNow
-            ),
-            ct
-        );
+        await eraser.EraseAsync(ParticipationDeletion.OfSignup(activity, command.UserId), ct);
         return unassigned;
     }
 }

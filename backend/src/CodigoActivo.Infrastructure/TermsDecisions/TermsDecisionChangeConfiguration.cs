@@ -1,5 +1,6 @@
 using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -22,6 +23,7 @@ public sealed class TermsDecisionChangeConfiguration : IEntityTypeConfiguration<
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<TermsDecisionChange> builder)
     {
+        builder.HasHistory();
         builder.Property<long>(Sequence).ValueGeneratedOnAdd();
         builder.HasKey(Sequence);
 
@@ -37,13 +39,13 @@ public sealed class TermsDecisionChangeConfiguration : IEntityTypeConfiguration<
                 x.UserId,
                 x.TermsDocumentId,
             })
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
 
         builder
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(x => x.DecidedById)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.ClientCascade);
 
         builder
             .HasOne<User>()

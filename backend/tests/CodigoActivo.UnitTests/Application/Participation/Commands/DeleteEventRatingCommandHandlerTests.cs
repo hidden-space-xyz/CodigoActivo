@@ -21,9 +21,8 @@ public sealed class DeleteEventRatingCommandHandlerTests
     private readonly IEventRatingRepository ratings = Substitute.For<IEventRatingRepository>();
     private readonly TestCurrentUser currentUser = new(AuthorId);
     private readonly TestClock clock = new();
-    private readonly IParticipationArchive archive = Substitute.For<IParticipationArchive>();
-    private readonly IDeletedParticipationRepository deletedParticipations =
-        Substitute.For<IDeletedParticipationRepository>();
+    private readonly IParticipationErasureStore store =
+        Substitute.For<IParticipationErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly DeleteEventRatingCommandHandler sut;
 
@@ -32,8 +31,7 @@ public sealed class DeleteEventRatingCommandHandlerTests
         sut = new DeleteEventRatingCommandHandler(
             ratings,
             currentUser,
-            ParticipationErasers.Create(archive, deletedParticipations, uow),
-            clock
+            ParticipationErasers.Create(store, uow)
         );
     }
 
@@ -46,7 +44,7 @@ public sealed class DeleteEventRatingCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventRatingNotFound);
-        await archive.DidNotReceiveWithAnyArgs().LockAsync(default!, Arg.Any<CancellationToken>());
+        await store.DidNotReceiveWithAnyArgs().LockAsync(default!, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -64,18 +62,11 @@ public sealed class DeleteEventRatingCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         ratings.Received(1).Remove(rating);
-        var deletion = ParticipationDeletion.OfRating(rating, clock.UtcNow);
+        var deletion = ParticipationDeletion.OfRating(rating);
         deletion.Origin.Should().Be(ParticipationDeletionOrigin.RatingDeleted);
         deletion.PersonId.Should().Be(AuthorId);
-        deletion.ActorId.Should().Be(AuthorId);
         deletion.ActivityId.Should().BeNull();
-        await archive.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
-        await deletedParticipations
-            .Received(1)
-            .AddAsync(
-                Arg.Is<DeletedParticipation>(copy => copy.Data == ParticipationErasers.Copy),
-                Arg.Any<CancellationToken>()
-            );
+        await store.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

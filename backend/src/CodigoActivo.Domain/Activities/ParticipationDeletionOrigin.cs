@@ -1,7 +1,7 @@
 namespace CodigoActivo.Domain.Activities;
 
 /// <summary>
-/// Identifies what removed the participation a <see cref="DeletedParticipation"/> keeps.
+/// Identifies what a <see cref="ParticipationDeletion"/> removes.
 /// </summary>
 public enum ParticipationDeletionOrigin
 {

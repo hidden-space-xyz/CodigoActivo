@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,6 +16,7 @@ public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSess
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<UserSession> builder)
     {
+        builder.HasNoHistory();
         builder.HasKey(s => s.Id);
 
         builder.Property(s => s.CreatedAt).IsRequired();

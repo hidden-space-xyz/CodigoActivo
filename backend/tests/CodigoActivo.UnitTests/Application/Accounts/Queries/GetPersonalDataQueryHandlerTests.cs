@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Logs;
@@ -16,10 +17,12 @@ public sealed class GetPersonalDataQueryHandlerTests
     public GetPersonalDataQueryHandlerTests()
     {
         sut = new GetPersonalDataQueryHandler(
-            new FakeReadStore(),
-            new FakeQueryExecutor(),
-            logs,
-            new TestClock(),
+            new PersonalDataReader(
+                new FakeReadStore(),
+                new FakeQueryExecutor(),
+                logs,
+                new TestClock()
+            ),
             new TestCurrentUser()
         );
     }

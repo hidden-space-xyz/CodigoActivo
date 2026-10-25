@@ -129,6 +129,7 @@ or missing.
 | `APP_TIMEZONE`                  | IANA time-zone ID used by the application clock                               | `Europe/Madrid`                             | `Europe/Madrid`                                |
 | `DEMO_MODE`                     | `true` or `false`; locked on first start                                      | Required                                    | `false`                                        |
 | `BOOTSTRAP_ADMIN_EMAIL`         | Initial administrator email for an empty database                             | Required on an empty database               | Empty                                          |
+| `PRIVACY_OFFICER_EMAIL`         | Email of the administrator designated for data protection                     | Required                                    | Empty                                          |
 | `SMTP_HOST`                     | SMTP host; always required because login codes are emailed                    | Required                                    | Empty                                          |
 | `SMTP_PORT`                     | SMTP port                                                                     | `587`                                       | `587`                                          |
 | `SMTP_SECURITY`                 | `StartTls`, `SslOnConnect`, `None` or `Auto`; Production rejects the last two | `SslOnConnect` on port 465, else `StartTls` | Empty                                          |
@@ -148,6 +149,14 @@ variables (the site through `GET /api/legal-entity`); a `LEGAL_EMAIL` that is no
 rather than code so that personal details, such as a home address or a private phone, never reach the public
 repository; the association's public identity (name, domain, social profiles) is code, in `Organization`
 (backend) and `shared/config` (frontend).
+
+`PRIVACY_OFFICER_EMAIL` designates the only account that may consult the blocked data (see
+[SECURITY.md](SECURITY.md#blocked-data-consultations)): the administrator whose verified email it is, once that
+account uses an authenticator app. Use the personal mailbox of the person the board designated in writing,
+never a shared one such as `LEGAL_EMAIL`, since whoever reads the mailbox can reset the password. A value that
+is not a single address stops the start; to change the person, change it and restart the API. The development
+overlay defaults it to `BOOTSTRAP_ADMIN_EMAIL`. Back up the `api-dataprotection` volume with
+`secrets/data_protection_key`: without them the data history cannot be read.
 
 The privacy and cookie policies are not in the repository: administrators write and publish them in «Textos
 legales» of the administration panel, and the database keeps every version. A new installation without demo

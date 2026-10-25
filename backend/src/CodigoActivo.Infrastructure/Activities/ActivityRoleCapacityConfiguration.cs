@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Infrastructure.Database.Catalogs;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Conversions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -18,6 +19,7 @@ public class ActivityRoleCapacityConfiguration : IEntityTypeConfiguration<Activi
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<ActivityRoleCapacity> builder)
     {
+        builder.HasNoHistory();
         builder.HasKey(x => new { x.ActivityId, x.Role });
 
         builder

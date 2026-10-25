@@ -3,7 +3,6 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -14,8 +13,6 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 public sealed class PurgeAdultDependentsCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IDeletedAccountRepository deletedAccounts =
-        Substitute.For<IDeletedAccountRepository>();
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
@@ -25,7 +22,7 @@ public sealed class PurgeAdultDependentsCommandHandlerTests
     {
         sut = new PurgeAdultDependentsCommandHandler(
             users,
-            AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
+            AccountErasers.Create(users, erasureStore, uow),
             uow.RunsTransactions(),
             clock
         );
@@ -75,18 +72,7 @@ public sealed class PurgeAdultDependentsCommandHandlerTests
         users.Received(1).Remove(older);
         await erasureStore
             .Received(1)
-            .CaptureLegalCopyAsync(
-                turnsEighteenToday.Id,
-                Arg.Is<AccountErasure>(erasure =>
-                    erasure.Origin == AccountDeletionOrigin.CameOfAge
-                    && erasure.ActorId == turnsEighteenToday.Id
-                    && erasure.DeletedAt == clock.UtcNow
-                ),
-                Arg.Any<CancellationToken>()
-            );
-        await deletedAccounts
-            .Received(2)
-            .AddAsync(Arg.Any<DeletedAccount>(), Arg.Any<CancellationToken>());
+            .LoadHouseholdAsync(turnsEighteenToday.Id, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -100,9 +86,6 @@ public sealed class PurgeAdultDependentsCommandHandlerTests
 
         result.Value.Should().Be(0);
         users.DidNotReceiveWithAnyArgs().Remove(default!);
-        await deletedAccounts
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]

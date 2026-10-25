@@ -1,9 +1,14 @@
 using System.Net;
+using System.Text.Json;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.DataHistory;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
@@ -133,6 +138,36 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
             return Task.CompletedTask;
         });
         return id;
+    }
+
+    protected async Task<
+        List<(DataHistoryEntry Entry, DataHistoryRecord Record)>
+    > DataHistoryAsync()
+    {
+        var protector = Factory.Services.GetRequiredService<DataHistoryProtector>();
+        var entries = await Factory.QueryAsync(db =>
+            db.DataHistory.AsNoTracking().OrderBy(entry => entry.Id).ToListAsync(Ct)
+        );
+        return [.. entries.Select(entry => (entry, protector.Unprotect(entry.Id, entry.Payload)))];
+    }
+
+    protected async Task<List<(Guid UserId, string? Command, Guid? ActorId)>> ErasedUsersAsync()
+    {
+        return
+        [
+            .. (await DataHistoryAsync())
+                .Where(item =>
+                    item.Entry.Entity == nameof(User)
+                    && item.Record.Operation is DataHistoryOperation.Deleted
+                )
+                .Select(item =>
+                    (
+                        ((JsonElement)item.Record.Values[nameof(User.Id)]!).GetGuid(),
+                        item.Record.Command,
+                        item.Record.ActorId
+                    )
+                ),
+        ];
     }
 
     protected Task<T?> FindAsync<T>(Guid id)

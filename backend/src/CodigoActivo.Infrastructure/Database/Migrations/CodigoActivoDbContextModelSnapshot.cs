@@ -104,6 +104,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_activities_event_id_activity_starts_at");
 
                     b.ToTable("activities", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Activities.ActivityRoleCapacity", b =>
@@ -127,6 +129,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_activity_role_capacities_activity_role_type_id");
 
                     b.ToTable("activity_role_capacities", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Activities.Assignment", b =>
@@ -164,30 +168,124 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_assignments_assignment_status_id");
 
                     b.ToTable("assignments", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Activities.DeletedParticipation", b =>
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataConsultation", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Data")
+                    b.Property<string>("Authority")
                         .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("data");
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("authority");
 
-                    b.Property<DateTimeOffset>("DeletedAt")
+                    b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("OfficerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("officer_id");
+
+                    b.Property<DateTimeOffset>("OpenedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("opened_at");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reference");
 
                     b.HasKey("Id")
-                        .HasName("pk_deleted_participations");
+                        .HasName("pk_blocked_data_consultations");
 
-                    b.HasIndex("DeletedAt")
-                        .HasDatabaseName("ix_deleted_participations_deleted_at");
+                    b.HasIndex("OpenedAt")
+                        .HasDatabaseName("ix_blocked_data_consultations_opened_at");
 
-                    b.ToTable("deleted_participations", (string)null);
+                    b.ToTable("blocked_data_consultations", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataExtract", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("ConsultationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("consultation_id");
+
+                    b.PrimitiveCollection<string[]>("Entities")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("entities");
+
+                    b.Property<int>("EntryCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("entry_count");
+
+                    b.Property<DateTimeOffset>("ExtractedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("extracted_at");
+
+                    b.Property<DateOnly?>("From")
+                        .HasColumnType("date")
+                        .HasColumnName("from");
+
+                    b.Property<bool>("IncludesCurrentData")
+                        .HasColumnType("boolean")
+                        .HasColumnName("includes_current_data");
+
+                    b.Property<DateOnly?>("To")
+                        .HasColumnType("date")
+                        .HasColumnName("to");
+
+                    b.HasKey("Id")
+                        .HasName("pk_blocked_data_extracts");
+
+                    b.HasIndex("ConsultationId")
+                        .HasDatabaseName("ix_blocked_data_extracts_consultation_id");
+
+                    b.ToTable("blocked_data_extracts", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataFinding", b =>
+                {
+                    b.Property<Guid>("ConsultationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("consultation_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("FoundAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("found_at");
+
+                    b.HasKey("ConsultationId", "AccountId")
+                        .HasName("pk_blocked_data_findings");
+
+                    b.ToTable("blocked_data_findings", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.EventCategories.EventCategoryType", b =>
@@ -215,6 +313,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_event_category_types_name");
 
                     b.ToTable("event_category_types", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Events.Event", b =>
@@ -306,6 +406,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_events_updated_by");
 
                     b.ToTable("events", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Events.EventCategory", b =>
@@ -325,6 +427,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_event_categories_event_category_type_id");
 
                     b.ToTable("event_categories", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Events.EventRating", b =>
@@ -371,6 +475,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_event_ratings_event_id_user_id");
 
                     b.ToTable("event_ratings", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Events.EventTermsDocument", b =>
@@ -398,6 +504,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_event_terms_documents_terms_document_id");
 
                     b.ToTable("event_terms_documents", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Files.StoredFile", b =>
@@ -431,6 +539,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_files_uploaded_by");
 
                     b.ToTable("files", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Legal.LegalPolicy", b =>
@@ -466,6 +576,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_legal_policies_kind");
 
                     b.ToTable("legal_policies", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Legal.LegalPolicyVersion", b =>
@@ -491,6 +603,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasName("pk_legal_policy_versions");
 
                     b.ToTable("legal_policy_versions", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.News.NewsItem", b =>
@@ -559,6 +673,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_news_updated_by");
 
                     b.ToTable("news", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Partners.Partner", b =>
@@ -620,6 +736,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_partners_tier_from_date");
 
                     b.ToTable("partners", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Resources.Resource", b =>
@@ -690,6 +808,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_resources_updated_by");
 
                     b.ToTable("resources", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.TermsDecisions.EventTermsAcceptance", b =>
@@ -739,6 +859,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_event_terms_acceptances_user_id");
 
                     b.ToTable("event_terms_acceptances", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.TermsDecisions.TermsDecisionChange", b =>
@@ -799,6 +921,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_terms_decision_changes_event_id_user_id_terms_document_id");
 
                     b.ToTable("terms_decision_changes", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.TermsDocuments.TermsDocument", b =>
@@ -839,6 +963,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_terms_documents_name");
 
                     b.ToTable("terms_documents", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.TermsDocuments.TermsDocumentVersion", b =>
@@ -875,30 +1001,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasName("pk_terms_document_versions");
 
                     b.ToTable("terms_document_versions", (string)null);
-                });
 
-            modelBuilder.Entity("CodigoActivo.Domain.Users.Erasure.DeletedAccount", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Data")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("data");
-
-                    b.Property<DateTimeOffset>("DeletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_deleted_accounts");
-
-                    b.HasIndex("DeletedAt")
-                        .HasDatabaseName("ix_deleted_accounts_deleted_at");
-
-                    b.ToTable("deleted_accounts", (string)null);
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Users.NewsConsentChange", b =>
@@ -935,6 +1039,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_news_consent_changes_user_id");
 
                     b.ToTable("news_consent_changes", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Users.User", b =>
@@ -984,7 +1090,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_login_at");
+                        .HasColumnName("last_login_at")
+                        .HasAnnotation("CodigoActivo:DataHistoryExcluded", true);
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -1006,7 +1113,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")
-                        .HasColumnName("password_hash");
+                        .HasColumnName("password_hash")
+                        .HasAnnotation("CodigoActivo:DataHistoryExcluded", true);
 
                     b.Property<string>("Phone")
                         .HasColumnType("text")
@@ -1016,7 +1124,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
-                        .HasColumnName("xmin");
+                        .HasColumnName("xmin")
+                        .HasAnnotation("CodigoActivo:DataHistoryExcluded", true);
 
                     b.Property<string>("SecondaryPhone")
                         .HasColumnType("text")
@@ -1059,6 +1168,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                             b1.Property<string>("PendingKey")
                                 .HasColumnType("text")
                                 .HasColumnName("pending_authenticator_key");
+
+                            b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "EmailChange", "CodigoActivo.Domain.Users.User.EmailChange#EmailChange", b1 =>
@@ -1076,6 +1187,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                             b1.Property<string>("NewEmail")
                                 .HasColumnType("text")
                                 .HasColumnName("pending_email");
+
+                            b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "LoginChallenge", "CodigoActivo.Domain.Users.User.LoginChallenge#LoginChallenge", b1 =>
@@ -1089,6 +1202,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                             b1.Property<DateTimeOffset?>("StartedAt")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("login_challenge_started_at");
+
+                            b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "LoginCode", "CodigoActivo.Domain.Users.User.LoginCode#OneTimeCode", b1 =>
@@ -1106,6 +1221,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                             b1.Property<DateTimeOffset?>("LastSentAt")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("login_code_last_sent_at");
+
+                            b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "PasswordLockout", "CodigoActivo.Domain.Users.User.PasswordLockout#PasswordLockout", b1 =>
@@ -1119,6 +1236,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                             b1.Property<DateTimeOffset?>("LockedAt")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("password_locked_at");
+
+                            b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "PasswordResetCode", "CodigoActivo.Domain.Users.User.PasswordResetCode#OneTimeCode", b1 =>
@@ -1136,6 +1255,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                             b1.Property<DateTimeOffset?>("LastSentAt")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("password_reset_last_sent_at");
+
+                            b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "TwoFactorLockout", "CodigoActivo.Domain.Users.User.TwoFactorLockout#TwoFactorLockout", b1 =>
@@ -1149,6 +1270,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                             b1.Property<DateTimeOffset?>("LockedUntil")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("two_factor_locked_until");
+
+                            b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "VerificationCode", "CodigoActivo.Domain.Users.User.VerificationCode#OneTimeCode", b1 =>
@@ -1166,6 +1289,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                             b1.Property<DateTimeOffset?>("LastSentAt")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("otp_last_sent_at");
+
+                            b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
 
                     b.HasKey("Id")
@@ -1188,6 +1313,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_users_first_name_last_name");
 
                     b.ToTable("users", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Users.UserSession", b =>
@@ -1215,6 +1342,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_user_sessions_user_id");
 
                     b.ToTable("user_sessions", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Accounts.DisposableEmailDomain", b =>
@@ -1228,6 +1357,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasName("pk_disposable_email_domains");
 
                     b.ToTable("disposable_email_domains", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxContent", b =>
@@ -1260,6 +1391,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasName("pk_email_outbox_contents");
 
                     b.ToTable("email_outbox_contents", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxContentPart", b =>
@@ -1308,6 +1441,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_email_outbox_content_parts_content_id");
 
                     b.ToTable("email_outbox_content_parts", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxMessage", b =>
@@ -1379,6 +1514,50 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_email_outbox_messages_priority_next_attempt_at");
 
                     b.ToTable("email_outbox_messages", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Infrastructure.DataHistory.DataHistoryEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Entity")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("entity");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("payload");
+
+                    b.PrimitiveCollection<Guid[]>("SubjectIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("subject_ids");
+
+                    b.HasKey("Id")
+                        .HasName("pk_data_history");
+
+                    b.HasIndex("SubjectIds")
+                        .HasDatabaseName("ix_data_history_subject_ids");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SubjectIds"), "gin");
+
+                    b.HasIndex("Entity", "OccurredAt")
+                        .HasDatabaseName("ix_data_history_entity_occurred_at");
+
+                    b.ToTable("data_history", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.ActivityModalityEntry", b =>
@@ -1400,6 +1579,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_activity_modality_types_name");
 
                     b.ToTable("activity_modality_types", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.ActivityRoleEntry", b =>
@@ -1426,6 +1607,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_activity_role_types_name");
 
                     b.ToTable("activity_role_types", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.AssignmentStatusEntry", b =>
@@ -1458,6 +1641,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_assignment_status_types_name");
 
                     b.ToTable("assignment_status_types", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.ResourceTypeEntry", b =>
@@ -1494,6 +1679,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_resource_types_name");
 
                     b.ToTable("resource_types", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.UserStatusEntry", b =>
@@ -1526,6 +1713,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_user_status_types_name");
 
                     b.ToTable("user_status_types", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Database.Catalogs.UserTypeEntry", b =>
@@ -1558,6 +1747,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_user_types_name");
 
                     b.ToTable("user_types", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Logs.AuditLogEntry", b =>
@@ -1648,6 +1839,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasFilter("entity_id IS NOT NULL");
 
                     b.ToTable("audit_log_entries", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Infrastructure.Logs.DiagnosticLogEntry", b =>
@@ -1712,6 +1905,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_diagnostic_log_entries_level_occurred_at");
 
                     b.ToTable("diagnostic_log_entries", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Activities.Activity", b =>
@@ -1726,7 +1921,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Events.Event", null)
                         .WithMany()
                         .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_activities_events_event_id");
 
@@ -1773,7 +1968,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Activities.Activity", null)
                         .WithMany("Assignments")
                         .HasForeignKey("ActivityId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_assignments_activities_activity_id");
 
@@ -1794,9 +1989,29 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_assignments_users_user_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataExtract", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.BlockedData.BlockedDataConsultation", null)
+                        .WithMany("Extracts")
+                        .HasForeignKey("ConsultationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_blocked_data_extracts_blocked_data_consultations_consultati");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataFinding", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.BlockedData.BlockedDataConsultation", null)
+                        .WithMany("Findings")
+                        .HasForeignKey("ConsultationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_blocked_data_findings_blocked_data_consultations_consultati");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Events.Event", b =>
@@ -1844,14 +2059,14 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Events.Event", null)
                         .WithMany()
                         .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_event_ratings_events_event_id");
 
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_event_ratings_users_user_id");
                 });
@@ -1974,14 +2189,14 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("DecidedById")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_event_terms_acceptances_users_decided_by_id");
 
                     b.HasOne("CodigoActivo.Domain.Events.Event", null)
                         .WithMany()
                         .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_event_terms_acceptances_events_event_id");
 
@@ -1995,7 +2210,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_event_terms_acceptances_users_user_id");
                 });
@@ -2005,7 +2220,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("DecidedById")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_terms_decision_changes_users_decided_by_id");
 
@@ -2019,7 +2234,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.TermsDecisions.EventTermsAcceptance", null)
                         .WithMany("Changes")
                         .HasForeignKey("EventId", "UserId", "TermsDocumentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_terms_decision_changes_event_terms_acceptances_event_id_use");
                 });
@@ -2029,7 +2244,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.TermsDocuments.TermsDocument", null)
                         .WithMany("PreviousVersions")
                         .HasForeignKey("TermsDocumentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_terms_document_versions_terms_documents_terms_document_id");
                 });
@@ -2039,7 +2254,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany("NewsConsentChanges")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .IsRequired()
                         .HasConstraintName("fk_news_consent_changes_users_user_id");
                 });
@@ -2049,7 +2264,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.ClientCascade)
                         .HasConstraintName("fk_users_users_parent_id");
 
                     b.HasOne("CodigoActivo.Infrastructure.Database.Catalogs.UserStatusEntry", null)
@@ -2106,6 +2321,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Assignments");
 
                     b.Navigation("RoleCapacities");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataConsultation", b =>
+                {
+                    b.Navigation("Extracts");
+
+                    b.Navigation("Findings");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Events.Event", b =>

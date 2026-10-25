@@ -5,7 +5,6 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 
 namespace CodigoActivo.Application.Users.Commands;
 
@@ -15,12 +14,12 @@ namespace CodigoActivo.Application.Users.Commands;
 public sealed record PurgeAdultDependentsCommand : ICommand<Result<int>>, IScheduledCommand;
 
 /// <summary>
-/// Executes the command that erases, with a blocked copy, every dependent who has come of age, since
-/// their guardian no longer represents them. Each dependent is locked and checked again in its own
-/// transaction, so one whose birth date was corrected meanwhile is kept.
+/// Executes the command that erases every dependent who has come of age, keeping their data
+/// history, since their guardian no longer represents them. Each dependent is locked and checked
+/// again in its own transaction, so one whose birth date was corrected meanwhile is kept.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="eraser">Eraser that deletes an account through its blocked copy.</param>
+/// <param name="eraser">Eraser that deletes an account and keeps its data history.</param>
 /// <param name="uow">Unit of work that runs each erasure in its own transaction.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class PurgeAdultDependentsCommandHandler(
@@ -42,7 +41,6 @@ public sealed class PurgeAdultDependentsCommandHandler(
     )
     {
         var today = clock.Today;
-        var now = clock.UtcNow;
         var adults = await users.ListDependentsBornUpToAsync(today.LatestAdultBirthDate(), ct);
 
         var erased = 0;
@@ -50,7 +48,7 @@ public sealed class PurgeAdultDependentsCommandHandler(
         {
             if (
                 await uow.ExecuteInTransactionAsync(
-                    attempt => EraseIfStillOfAgeAsync(dependent, today, now, attempt),
+                    attempt => EraseIfStillOfAgeAsync(dependent, today, attempt),
                     ct
                 )
             )
@@ -65,16 +63,11 @@ public sealed class PurgeAdultDependentsCommandHandler(
     private async Task<bool> EraseIfStillOfAgeAsync(
         User dependent,
         DateOnly today,
-        DateTimeOffset now,
         CancellationToken ct
     )
     {
         return await users.LockAsync(dependent, ct)
             && dependent.HasComeOfAge(today)
-            && await eraser.EraseAsync(
-                dependent,
-                AccountErasure.ForComingOfAge(dependent, now),
-                ct
-            );
+            && await eraser.EraseAsync(dependent, ct);
     }
 }

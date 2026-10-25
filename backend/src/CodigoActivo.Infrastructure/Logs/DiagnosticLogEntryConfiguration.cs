@@ -1,3 +1,4 @@
+using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,6 +16,7 @@ public sealed class DiagnosticLogEntryConfiguration : IEntityTypeConfiguration<D
     /// <param name="builder">Entity Framework builder used to configure the mapped type.</param>
     public void Configure(EntityTypeBuilder<DiagnosticLogEntry> builder)
     {
+        builder.HasNoHistory();
         builder.ToTable(LogTable.Diagnostics.Name);
         builder.HasKey(entry => new { entry.OccurredAt, entry.Id });
 

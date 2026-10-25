@@ -4,7 +4,6 @@ using CodigoActivo.Application.Accounts.EmailAddresses;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
@@ -15,18 +14,15 @@ namespace CodigoActivo.UnitTests.Application.Accounts.EmailAddresses;
 public sealed class EmailClaimsTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IDeletedAccountRepository deletedAccounts =
-        Substitute.For<IDeletedAccountRepository>();
     private readonly IAccountErasureStore erasureStore = Substitute.For<IAccountErasureStore>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-    private readonly TestClock clock = new();
     private readonly EmailClaims sut;
 
     public EmailClaimsTests()
     {
         sut = new EmailClaims(
             users.LocksEveryAccount(),
-            AccountErasers.Create(users, deletedAccounts, erasureStore, uow),
+            AccountErasers.Create(users, erasureStore, uow),
             uow
         );
     }
@@ -37,12 +33,7 @@ public sealed class EmailClaimsTests
         var holder = NewUser(statusId: KnownIds.UserStatusTypes.Active);
 
         var act = () =>
-            sut.TryCommitAsync(
-                NewUser(),
-                holder,
-                clock.UtcNow,
-                TestContext.Current.CancellationToken
-            );
+            sut.TryCommitAsync(NewUser(), holder, TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ArgumentException>();
         users.DidNotReceiveWithAnyArgs().Remove(default!);
@@ -59,7 +50,6 @@ public sealed class EmailClaimsTests
         var committed = await sut.TryCommitAsync(
             NewUser(),
             holder,
-            clock.UtcNow,
             TestContext.Current.CancellationToken
         );
 
@@ -79,7 +69,6 @@ public sealed class EmailClaimsTests
         var committed = await sut.TryCommitAsync(
             NewUser(),
             holder,
-            clock.UtcNow,
             TestContext.Current.CancellationToken
         );
 
@@ -96,7 +85,6 @@ public sealed class EmailClaimsTests
         var committed = await sut.TryCommitAsync(
             NewUser(),
             holder,
-            clock.UtcNow,
             TestContext.Current.CancellationToken
         );
 
@@ -115,7 +103,6 @@ public sealed class EmailClaimsTests
         var committed = await sut.TryCommitAsync(
             NewUser(),
             holder,
-            clock.UtcNow,
             TestContext.Current.CancellationToken
         );
 

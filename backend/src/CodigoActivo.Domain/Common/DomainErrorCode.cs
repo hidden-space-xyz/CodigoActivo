@@ -293,4 +293,25 @@ public enum DomainErrorCode
     /// A legal policy was to be published without any text.
     /// </summary>
     LegalPolicyContentRequired,
+
+    /// <summary>
+    /// A consultation of the blocked data was to be opened without the authority or the
+    /// reference of the request.
+    /// </summary>
+    BlockedDataReferenceRequired,
+
+    /// <summary>
+    /// The consultation of the blocked data does not exist or another account opened it.
+    /// </summary>
+    BlockedDataConsultationNotFound,
+
+    /// <summary>
+    /// The consultation of the blocked data is over; a new one must be opened.
+    /// </summary>
+    BlockedDataConsultationExpired,
+
+    /// <summary>
+    /// No search of the consultation found the account.
+    /// </summary>
+    BlockedDataAccountNotFound,
 }

@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Domain.Users.Erasure;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -27,15 +26,13 @@ public sealed class UnverifiedAccountPurgeWorkerTests(CodigoActivoWebAppFactory 
         return Factory.QueryAsync(db => db.Users.Select(user => user.Id.Value).ToListAsync(Ct));
     }
 
-    private Task<List<Guid>> CopyIdsAsync()
+    private async Task<List<Guid>> ErasedIdsAsync()
     {
-        return Factory.QueryAsync(db =>
-            db.DeletedAccounts.Select(copy => copy.Id.Value).ToListAsync(Ct)
-        );
+        return [.. (await ErasedUsersAsync()).Select(user => user.UserId)];
     }
 
     [Fact]
-    public async Task PurgeAsyncErasesAnAccountUnverifiedForTwentyFourHoursWithItsDependentsAndKeepsACopy()
+    public async Task PurgeAsyncErasesAnAccountUnverifiedForTwentyFourHoursWithItsDependentsAndKeepsItsDataHistory()
     {
         var recentId = Guid.NewGuid();
         var recentChildId = Guid.NewGuid();
@@ -81,16 +78,16 @@ public sealed class UnverifiedAccountPurgeWorkerTests(CodigoActivoWebAppFactory 
         (await UserIdsAsync())
             .Should()
             .Contain([recentId, recentChildId, TestSeedData.Users.MemberId]);
-        (await CopyIdsAsync()).Should().Equal(TestSeedData.Users.PendingId);
+        (await ErasedIdsAsync()).Should().Equal(TestSeedData.Users.PendingId);
 
         Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddSeconds(1);
         (await Build().PurgeAsync(Ct)).Should().Be(1);
         (await UserIdsAsync()).Should().NotContain([recentId, recentChildId]);
-        (await CopyIdsAsync()).Should().BeEquivalentTo([TestSeedData.Users.PendingId, recentId]);
-        var copy = await Factory.QueryAsync(db =>
-            db.DeletedAccounts.SingleAsync(deleted => deleted.Id == UserId.From(recentId), Ct)
-        );
-        copy.Data.Should().Contain(nameof(AccountDeletionOrigin.VerificationExpired));
-        copy.Data.Should().Contain(recentChildId.ToString());
+        (await ErasedIdsAsync())
+            .Should()
+            .BeEquivalentTo([TestSeedData.Users.PendingId, recentId, recentChildId]);
+        (await ErasedUsersAsync())
+            .Should()
+            .OnlyContain(user => user.Command == "PurgeUnverifiedAccounts" && user.ActorId == null);
     }
 }
