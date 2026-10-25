@@ -332,6 +332,10 @@ requires every subdomain of the public host to work over HTTPS only. Kestrel doe
 
 ### Privacy and third parties
 
+Personal data processing follows the GDPR and the LOPDGDD, images of people follow LO 1/1982, and the
+representation of minors and the event conditions follow the Spanish Civil Code. Policies, documentation and
+code cite only these laws.
+
 - Browsers load nothing from third parties: fonts are bundled from Fontsource and served from the application
   origin; the CSP allows scripts, styles, fonts, images and connections only from `'self'` (plus inline styles
   and `data:`/`blob:` images), sets `base-uri 'none'` and adds `upgrade-insecure-requests` only when nginx's
