@@ -22,7 +22,7 @@ using CodigoActivo.Infrastructure.Users;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed class DataHistoryConventionTests
 {

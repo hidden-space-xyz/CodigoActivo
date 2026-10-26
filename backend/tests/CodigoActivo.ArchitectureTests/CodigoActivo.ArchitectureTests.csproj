@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CodigoActivo.API\CodigoActivo.API.csproj" />
+    <ProjectReference Include="..\..\src\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

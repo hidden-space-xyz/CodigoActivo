@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
 using AwesomeAssertions;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Database.Context;
@@ -6,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed class EntityConventionTests : IDisposable
 {
@@ -59,6 +61,65 @@ public sealed class EntityConventionTests : IDisposable
 
         navigations.Should().NotBeEmpty();
         offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void AggregateRootsNeverExposePublicConstructors()
+    {
+        var roots = DomainEntities().Where(typeof(IAggregateRoot).IsAssignableFrom).ToList();
+
+        var offenders = roots
+            .Where(type => type.GetConstructors().Length > 0)
+            .Select(type => type.Name)
+            .ToList();
+
+        roots.Should().NotBeEmpty();
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TypedIdentifiersAlwaysAreReadOnlyRecordStructsOverAGuidWithoutConversions()
+    {
+        var identifiers = ProductionAssemblies
+            .AllTypes.Where(type =>
+                type.GetInterfaces()
+                    .Any(contract =>
+                        contract.IsGenericType
+                        && contract.GetGenericTypeDefinition() == typeof(IEntityId<>)
+                    )
+            )
+            .ToList();
+
+        var offenders = identifiers
+            .Where(type =>
+                type.Assembly != ProductionAssemblies.Domain
+                || !type.Name.EndsWith("Id", StringComparison.Ordinal)
+                || !type.IsValueType
+                || !type.IsDefined(typeof(IsReadOnlyAttribute), inherit: false)
+                || !IsRecord(type)
+                || !type.GetFields(
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+                    )
+                    .Select(field => field.FieldType)
+                    .SequenceEqual([typeof(Guid)])
+                || type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .Any(method => method.Name is "op_Implicit" or "op_Explicit")
+            )
+            .Select(type => type.FullName)
+            .ToList();
+
+        identifiers.Should().HaveCountGreaterThan(10);
+        offenders.Should().BeEmpty();
+    }
+
+    private static bool IsRecord(Type type)
+    {
+        return type.GetMethod(
+            "PrintMembers",
+            BindingFlags.NonPublic | BindingFlags.Instance,
+            [typeof(StringBuilder)]
+        )
+            is not null;
     }
 
     [Fact]

@@ -2,7 +2,7 @@
 
 These are the backend conventions. Commands, including migrations and coverage, are in
 [CONTRIBUTING.md](../CONTRIBUTING.md#commands); the design is in [ARCHITECTURE.md](../ARCHITECTURE.md#backend).
-The unit tests under `tests/CodigoActivo.UnitTests/Architecture/`, the build's analyzers and the CI's CSharpier
+The architecture tests in `tests/CodigoActivo.ArchitectureTests/`, the build's analyzers and the CI's CSharpier
 check enforce further conventions that this file leaves out; each failure names the rule it guards.
 
 ## Rules
@@ -67,6 +67,9 @@ check enforce further conventions that this file leaves out; each failure names 
 
 - Unit tests use xUnit v3, AwesomeAssertions and NSubstitute. Test methods use three PascalCase segments, such as
   `RegisterAsyncNewAdultReturnsCreatedAndSendsOtp`.
+- A rule about the shape or the dependencies of production code goes in `CodigoActivo.ArchitectureTests`, read
+  from the compiled assemblies (`ProductionAssemblies`, `IlReferences`) or the sources (`BackendSources`). Its
+  reviewed lists name every accepted exception: extend one only after reviewing the new case.
 - Integration tests share one disposable PostgreSQL 18 Testcontainers instance. Each test class works on its own
   database, copied from a template migrated once (`PostgresDatabaseFixture`, or `Factory.Database` for classes
   on `CodigoActivoWebAppFactory`), so classes run in parallel and the tests of a class run one after another.

@@ -51,10 +51,10 @@ outbox for events or event sourcing.
 | `CodigoActivo.Composition`    | The composition root: registrations by feature, strict configuration-to-options mapping checked on start, data protection and database initialization | Domain, Application, Infrastructure |
 | `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, rate and concurrency limits, output caching, OpenAPI, SEO documents and startup | Composition                         |
 
-The `ProjectReference` graph is the source of truth for these boundaries. The tests under
-`tests/CodigoActivo.UnitTests/Architecture/` enforce the layer and feature dependencies (the API reaches neither
-Infrastructure nor EF Core) and further conventions; [backend/AGENTS.md](backend/AGENTS.md) lists the ones no
-check enforces.
+The `ProjectReference` graph is the source of truth for these boundaries. `tests/CodigoActivo.ArchitectureTests`
+enforces the layer and feature dependencies (the API reaches neither Infrastructure nor EF Core) and further
+conventions over the compiled assemblies and the sources; [backend/AGENTS.md](backend/AGENTS.md) lists the ones
+no check enforces.
 
 ### Domain and persistence
 

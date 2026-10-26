@@ -12,6 +12,7 @@
     <ProjectReference Include="..\CodigoActivo.Composition\CodigoActivo.Composition.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="CodigoActivo.ArchitectureTests" />
     <InternalsVisibleTo Include="CodigoActivo.IntegrationTests" />
     <InternalsVisibleTo Include="CodigoActivo.UnitTests" />
   </ItemGroup>

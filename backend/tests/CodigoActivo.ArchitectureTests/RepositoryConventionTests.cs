@@ -5,7 +5,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed class RepositoryConventionTests
 {

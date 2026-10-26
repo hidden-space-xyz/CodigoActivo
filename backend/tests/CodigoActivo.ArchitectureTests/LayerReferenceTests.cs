@@ -7,7 +7,7 @@ using CodigoActivo.Infrastructure.Communication;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed class LayerReferenceTests
 {
@@ -23,6 +23,14 @@ public sealed class LayerReferenceTests
         "CodigoActivo.Infrastructure",
         "CodigoActivo.Composition",
         "CodigoActivo.API",
+    ];
+
+    private static readonly string[] ForbiddenEverywhere =
+    [
+        "MediatR",
+        "AutoMapper",
+        "Mapster",
+        "FluentValidation",
     ];
 
     private static List<string> ReferencedAssemblyNames(Assembly assembly)
@@ -87,18 +95,33 @@ public sealed class LayerReferenceTests
     }
 
     [Fact]
-    public void ControllerSignaturesCodigoActivoTypesComeFromApplicationOrApi()
+    public void ProductionAssemblyReferencesNeverIncludeAMediatorMapperOrValidationLibrary()
     {
-        var controllers = typeof(ApiErrorResponseExtensions)
-            .Assembly.GetTypes()
-            .Where(type =>
-                type is { IsClass: true, IsAbstract: false }
-                && typeof(ControllerBase).IsAssignableFrom(type)
+        var offenders = ProductionAssemblies
+            .All.SelectMany(assembly =>
+                ReferencedAssemblyNames(assembly)
+                    .Where(name =>
+                        ForbiddenEverywhere.Any(prefix =>
+                            name.StartsWith(prefix, StringComparison.Ordinal)
+                        )
+                    )
+                    .Select(name => $"{assembly.GetName().Name} -> {name}")
             )
             .ToList();
 
-        var offenders = controllers
-            .SelectMany(SignatureTypes)
+        offenders
+            .Should()
+            .BeEmpty(
+                "use cases run through their registered handlers and decorators, mapping is "
+                    + "handwritten and messages are validated with DataAnnotations"
+            );
+    }
+
+    [Fact]
+    public void ControllerSignaturesCodigoActivoTypesComeFromApplicationOrApi()
+    {
+        var offenders = ProductionAssemblies
+            .Controllers.SelectMany(SignatureTypes)
             .Where(type =>
                 type.Namespace is { } ns
                 && ns.StartsWith("CodigoActivo", StringComparison.Ordinal)
@@ -108,7 +131,7 @@ public sealed class LayerReferenceTests
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
-        controllers.Should().NotBeEmpty();
+        ProductionAssemblies.Controllers.Should().NotBeEmpty();
         offenders.Should().BeEmpty();
     }
 

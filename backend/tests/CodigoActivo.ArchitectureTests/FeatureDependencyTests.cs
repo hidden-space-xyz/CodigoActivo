@@ -2,7 +2,7 @@ using System.Reflection;
 using AwesomeAssertions;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed class FeatureDependencyTests
 {
