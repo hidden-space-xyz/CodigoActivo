@@ -35,6 +35,10 @@ jobs:
           dotnet tool restore
       - name: Build backend
         run: dotnet build CodigoActivo.slnx --configuration Release --no-restore
+      - name: Architecture tests
+        run: >-
+          dotnet test tests/CodigoActivo.ArchitectureTests/CodigoActivo.ArchitectureTests.csproj
+          --configuration Release --no-build --no-restore
       - name: Unit tests with coverage
         run: >-
           dotnet test tests/CodigoActivo.UnitTests/CodigoActivo.UnitTests.csproj

@@ -1,11 +1,14 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using CodigoActivo.API.Diagnostics;
 using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Common.Diagnostics;
+using CodigoActivo.Infrastructure.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed partial class LoggingConventionTests
 {
@@ -154,6 +157,21 @@ public sealed partial class LoggingConventionTests
             .ToList();
 
         offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void LogEventsAlwaysAreDeclaredInTheLogClassOfTheirLayer()
+    {
+        Events()
+            .Select(entry => entry.Method.DeclaringType)
+            .Distinct()
+            .Should()
+            .BeEquivalentTo([
+                typeof(SecurityLog),
+                typeof(ApplicationLog),
+                typeof(InfrastructureLog),
+                typeof(ApiLog),
+            ]);
     }
 
     [Fact]

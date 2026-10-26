@@ -3,7 +3,7 @@ using AwesomeAssertions;
 using CodigoActivo.Infrastructure.Time;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed class ClockConventionTests
 {

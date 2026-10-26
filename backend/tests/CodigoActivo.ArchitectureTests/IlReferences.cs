@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 internal static class IlReferences
 {

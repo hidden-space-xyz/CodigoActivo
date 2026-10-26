@@ -71,6 +71,7 @@ name the solution or project:
 ```bash
 dotnet build CodigoActivo.slnx
 dotnet test --solution CodigoActivo.slnx
+dotnet test tests/CodigoActivo.ArchitectureTests
 dotnet test tests/CodigoActivo.UnitTests
 dotnet test tests/CodigoActivo.IntegrationTests
 dotnet test tests/CodigoActivo.UnitTests --filter "FullyQualifiedName~ClassName.MethodName"
@@ -97,9 +98,9 @@ has migrations. The tools build the context through `CodigoActivoDesignTimeDbCon
 database never resolves, so commands that touch a database need `--connection`.
 `Microsoft.EntityFrameworkCore.Design` stays out of the API.
 
-Backend coverage merges both test projects and must reach 90% of lines, branches and methods. It uses Microsoft
-Code Coverage with `tests/CodeCoverage.config`, which measures the production assemblies and excludes EF Core
-migrations:
+Backend coverage merges the unit and integration tests and must reach 90% of lines, branches and methods; the
+architecture tests check structure, not behavior, and stay out of it. It uses Microsoft Code Coverage with
+`tests/CodeCoverage.config`, which measures the production assemblies and excludes EF Core migrations:
 
 ```bash
 dotnet test tests/CodigoActivo.UnitTests --coverage --coverage-output-format cobertura --coverage-output unit.cobertura.xml --coverage-settings tests/CodeCoverage.config --results-directory TestResults/coverage

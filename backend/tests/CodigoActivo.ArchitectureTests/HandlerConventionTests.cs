@@ -1,4 +1,4 @@
-using System.Reflection;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts;
 using CodigoActivo.API.Security;
@@ -30,9 +30,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
-public sealed class HandlerConventionTests
+public sealed partial class HandlerConventionTests
 {
     private static readonly Type[] WriteAndEmailPorts =
     [
@@ -50,6 +50,14 @@ public sealed class HandlerConventionTests
         typeof(IDashboardCountsReader),
         typeof(ILogEntryReader),
     ];
+
+    [GeneratedRegex(
+        @"\[(?:Fact|Theory)\b[^{;]*?\bpublic\s+(?:async\s+)?[\w<>]+\s+(?<name>\w+)\s*\("
+    )]
+    private static partial Regex TestMethod();
+
+    [GeneratedRegex(@"\b(?:class|record|struct|interface)\s+(?!class\b|struct\b)(?<name>\w+)")]
+    private static partial Regex TypeDeclaration();
 
     private static List<(Type Handler, Type Contract)> HandlerImplementations()
     {
@@ -146,28 +154,57 @@ public sealed class HandlerConventionTests
     [Fact]
     public void HandlerUnitTestsAlwaysStartWithHandleAsync()
     {
-        var testClassNames = HandlerImplementations()
-            .Select(entry => entry.Handler.Name + "Tests")
+        var testFiles = HandlerImplementations()
+            .Select(entry => entry.Handler.Name + "Tests.cs")
             .ToHashSet(StringComparer.Ordinal);
-        var testClasses = typeof(HandlerConventionTests)
-            .Assembly.GetTypes()
-            .Where(type => testClassNames.Contains(type.Name))
+        var tests = BackendSources
+            .CSharpFiles(BackendSources.UnitTests)
+            .Where(file => testFiles.Contains(file.Name))
+            .SelectMany(file =>
+                TestMethod()
+                    .Matches(File.ReadAllText(file.FullName))
+                    .Select(match =>
+                        (
+                            Class: Path.GetFileNameWithoutExtension(file.Name),
+                            Method: match.Groups["name"].Value
+                        )
+                    )
+            )
             .ToList();
 
-        var offenders = testClasses
-            .SelectMany(type =>
-                type.GetMethods(
-                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly
-                )
-            )
-            .Where(method =>
-                method.IsDefined(typeof(FactAttribute))
-                && !method.Name.StartsWith("HandleAsync", StringComparison.Ordinal)
-            )
-            .Select(method => $"{method.DeclaringType!.Name}.{method.Name}")
+        var offenders = tests
+            .Where(test => !test.Method.StartsWith("HandleAsync", StringComparison.Ordinal))
+            .Select(test => $"{test.Class}.{test.Method}")
             .ToList();
 
-        testClasses.Should().NotBeEmpty();
+        tests.Should().HaveCountGreaterThan(100);
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void MessagesAndHandlersAlwaysShareTheFileNamedAfterTheirUseCase()
+    {
+        var declaredIn = BackendSources
+            .CSharpFiles(BackendSources.Production)
+            .SelectMany(file =>
+                TypeDeclaration()
+                    .Matches(File.ReadAllText(file.FullName))
+                    .Select(match => (Type: match.Groups["name"].Value, File: file.Name))
+            )
+            .ToLookup(declaration => declaration.Type, declaration => declaration.File);
+
+        var offenders = HandlerImplementations()
+            .Where(entry =>
+            {
+                var message = MessageOf(entry.Contract).Name;
+                var suffix = IsCommandContract(entry.Contract) ? "Command" : "Query";
+                string[] useCase = [message[..^suffix.Length] + ".cs"];
+                return !declaredIn[message].SequenceEqual(useCase)
+                    || !declaredIn[entry.Handler.Name].SequenceEqual(useCase);
+            })
+            .Select(entry => entry.Handler.Name)
+            .ToList();
+
         offenders.Should().BeEmpty();
     }
 
@@ -312,25 +349,16 @@ public sealed class HandlerConventionTests
     [Fact]
     public void ControllerServicesAlwaysAreHandlersOrTheReviewedOnes()
     {
-        var controllers = ProductionAssemblies
-            .Api.GetTypes()
-            .Where(type => typeof(ControllerBase).IsAssignableFrom(type))
-            .ToList();
-        var actionServices = controllers
-            .SelectMany(type =>
-                type.GetMethods(
-                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly
-                )
-            )
-            .SelectMany(action => action.GetParameters())
+        var actionServices = ProductionAssemblies
+            .ControllerActions.SelectMany(action => action.GetParameters())
             .Where(parameter =>
                 parameter.IsDefined(typeof(FromServicesAttribute), inherit: true)
                 || parameter.IsDefined(typeof(FromKeyedServicesAttribute), inherit: true)
             )
             .Select(parameter => parameter.ParameterType);
 
-        var services = controllers
-            .SelectMany(ConstructorParameterTypes)
+        var services = ProductionAssemblies
+            .Controllers.SelectMany(ConstructorParameterTypes)
             .Concat(actionServices)
             .ToList();
         var reviewed = services.Where(service => !IsHandlerContract(service)).Distinct().ToList();

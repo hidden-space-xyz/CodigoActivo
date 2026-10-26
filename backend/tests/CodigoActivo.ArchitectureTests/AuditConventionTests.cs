@@ -6,7 +6,7 @@ using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Common;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed class AuditConventionTests
 {

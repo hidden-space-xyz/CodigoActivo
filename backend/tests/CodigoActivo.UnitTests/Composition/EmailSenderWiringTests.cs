@@ -1,8 +1,5 @@
-using System.Reflection;
 using AwesomeAssertions;
-using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Emails;
 using CodigoActivo.Composition;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Communication;
@@ -17,63 +14,6 @@ namespace CodigoActivo.UnitTests.Composition;
 
 public sealed class EmailSenderWiringTests
 {
-    private static readonly Assembly[] ProductionAssemblies =
-    [
-        typeof(CodigoActivo.Domain.Common.Result).Assembly,
-        typeof(IEmailSender).Assembly,
-        typeof(SmtpEmailSender).Assembly,
-        typeof(DependencyInjection).Assembly,
-        typeof(ApiErrorResponseExtensions).Assembly,
-    ];
-
-    private static IEnumerable<Type> ProductionTypes()
-    {
-        return ProductionAssemblies.SelectMany(assembly => assembly.GetTypes());
-    }
-
-    [Fact]
-    public void ProductionCodeOnlyTheThrottlingDecoratorImplementsIEmailSender()
-    {
-        var implementations = ProductionTypes()
-            .Where(type =>
-                type is { IsClass: true, IsAbstract: false }
-                && typeof(IEmailSender).IsAssignableFrom(type)
-            )
-            .ToList();
-
-        implementations.Should().BeEquivalentTo([typeof(ThrottledEmailSender)]);
-    }
-
-    [Fact]
-    public void ProductionCodeOnlyTheOutboxDelivererDependsOnIEmailTransport()
-    {
-        var consumers = ProductionTypes()
-            .Where(type =>
-                type.GetConstructors()
-                    .SelectMany(constructor => constructor.GetParameters())
-                    .Any(parameter => parameter.ParameterType == typeof(IEmailTransport))
-            )
-            .ToList();
-
-        consumers.Should().BeEquivalentTo([typeof(EmailOutboxDeliverer)]);
-    }
-
-    [Fact]
-    public void ProductionCodeOnlyTheThrottlingDecoratorAndTheManualDispatcherDependOnIEmailOutbox()
-    {
-        var consumers = ProductionTypes()
-            .Where(type =>
-                type.GetConstructors()
-                    .SelectMany(constructor => constructor.GetParameters())
-                    .Any(parameter => parameter.ParameterType == typeof(IEmailOutbox))
-            )
-            .ToList();
-
-        consumers
-            .Should()
-            .BeEquivalentTo([typeof(ThrottledEmailSender), typeof(ManualEmailDispatcher)]);
-    }
-
     [Fact]
     public void AddCodigoActivoResolvesTheGuardedSenderAndTheRawTransportSeparately()
     {

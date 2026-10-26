@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Infrastructure.Database;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed class DataHistoryModelTests : IDisposable
 {

@@ -18,6 +18,7 @@
     </Project>
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/CodigoActivo.ArchitectureTests/CodigoActivo.ArchitectureTests.csproj" />
     <Project Path="tests/CodigoActivo.IntegrationTests/CodigoActivo.IntegrationTests.csproj" />
     <Project Path="tests/CodigoActivo.UnitTests/CodigoActivo.UnitTests.csproj" />
   </Folder>

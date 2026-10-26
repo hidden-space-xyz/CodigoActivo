@@ -1,21 +1,24 @@
 using System.Reflection;
 using AwesomeAssertions;
 using CodigoActivo.API.Caching;
-using CodigoActivo.API.Controllers.Abstractions;
 using CodigoActivo.Application.Activities.Queries;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Reports.Queries;
 using CodigoActivo.Application.Resources.Queries;
 using CodigoActivo.Application.Users.Queries;
+using CodigoActivo.Domain.BlockedData;
+using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.TermsDecisions;
+using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Caching;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.Extensions.Caching.Hybrid;
 using Xunit;
 
-namespace CodigoActivo.UnitTests.Architecture;
+namespace CodigoActivo.ArchitectureTests;
 
 public sealed class CachingConventionTests
 {
@@ -32,11 +35,26 @@ public sealed class CachingConventionTests
         typeof(GetDashboardAnalyticsQuery),
     ];
 
+    private static readonly Type[] EventsThatChangeNoCachedData =
+    [
+        typeof(AuthenticatorDisabled),
+        typeof(AuthenticatorEnabled),
+        typeof(BlockedDataConsultationOpened),
+        typeof(ContactDetailsReplaced),
+        typeof(PasswordChanged),
+        typeof(PasswordLocked),
+        typeof(PasswordReset),
+        typeof(TermsConsentWithdrawn),
+        typeof(TermsDocumentDeleted),
+        typeof(TwoFactorLocked),
+        typeof(TwoFactorReset),
+    ];
+
     [Fact]
     public void AnonymousReadActionsAlwaysDeclareOutputCacheBehavior()
     {
-        var offenders = ControllerActions()
-            .Where(IsReadAction)
+        var offenders = ProductionAssemblies
+            .ControllerActions.Where(IsReadAction)
             .Where(IsAnonymous)
             .Where(action => OutputCacheOf(action) is null)
             .Select(DisplayName)
@@ -48,8 +66,12 @@ public sealed class CachingConventionTests
     [Fact]
     public void OutputCachedActionsAlwaysAreAnonymousReadsWithRegisteredPolicies()
     {
-        var cachedActions = ControllerActions()
-            .Select(action => new { Action = action, Cache = OutputCacheOf(action) })
+        var cachedActions = ProductionAssemblies
+            .ControllerActions.Select(action => new
+            {
+                Action = action,
+                Cache = OutputCacheOf(action),
+            })
             .Where(entry => entry.Cache is { NoStore: false })
             .ToList();
 
@@ -79,6 +101,26 @@ public sealed class CachingConventionTests
     }
 
     [Fact]
+    public void DomainEventsAreMappedOrListedAsChangingNoCachedData()
+    {
+        var events = ProductionAssemblies
+            .AllTypes.Where(type =>
+                type is { IsClass: true, IsAbstract: false }
+                && typeof(IDomainEvent).IsAssignableFrom(type)
+            )
+            .ToList();
+        var unclassified = events
+            .Except(CacheTagsByEvent.MappedEvents)
+            .Except(EventsThatChangeNoCachedData)
+            .Select(type => type.Name)
+            .ToList();
+
+        events.Should().Contain(CacheTagsByEvent.MappedEvents.Concat(EventsThatChangeNoCachedData));
+        CacheTagsByEvent.MappedEvents.Should().NotIntersectWith(EventsThatChangeNoCachedData);
+        unclassified.Should().BeEmpty();
+    }
+
+    [Fact]
     public void HybridCacheIsOnlyUsedByTheCachingDecoratorAndTheInvalidator()
     {
         var consumers = ProductionAssemblies
@@ -95,18 +137,6 @@ public sealed class CachingConventionTests
         consumers
             .Should()
             .BeEquivalentTo([typeof(CachingQueryDecorator<,>), typeof(HttpCacheInvalidator)]);
-    }
-
-    private static IEnumerable<MethodInfo> ControllerActions()
-    {
-        return typeof(ApiControllerBase)
-            .Assembly.GetTypes()
-            .Where(type => !type.IsAbstract && typeof(ControllerBase).IsAssignableFrom(type))
-            .SelectMany(type =>
-                type.GetMethods(
-                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly
-                )
-            );
     }
 
     private static bool IsReadAction(MethodInfo action)
