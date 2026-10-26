@@ -54,6 +54,7 @@ describe('usePersonalDataDownload', () => {
     )
     expect(files.blobs[0]?.type).toBe('application/json')
     expect(JSON.parse((await files.blobs[0]?.text()) ?? '{}')).toMatchObject({
+      politicaDePrivacidad: { version: 3, enlace: `${window.location.origin}/privacy` },
       cuenta: { nombre: 'Ada', genero: t('entities.user.gender.Female') },
     })
     await vi.waitFor(() => expect(result.isDownloading.value).toBe(false))

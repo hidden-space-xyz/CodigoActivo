@@ -120,11 +120,14 @@ export async function deleteAccountRequest(input: DeleteAccountInput): Promise<v
 /**
  * Loads the copy of the personal data kept about the signed-in user and the minors in their care
  * (`GET /api/me/personal-data`) as an indented JSON file in Spanish, readable as it is and
- * importable elsewhere.
+ * importable elsewhere, that links the privacy policy in force at `privacyPolicyUrl`.
  */
-export async function getAccountPersonalDataRequest(t: Translate): Promise<Blob> {
+export async function getAccountPersonalDataRequest(
+  privacyPolicyUrl: string,
+  t: Translate,
+): Promise<Blob> {
   const { data } = await getApiMePersonalData()
-  return new Blob([JSON.stringify(toPersonalDataFile(data, t), null, 2)], {
+  return new Blob([JSON.stringify(toPersonalDataFile(data, privacyPolicyUrl, t), null, 2)], {
     type: 'application/json',
   })
 }

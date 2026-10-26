@@ -10,4 +10,6 @@ export interface PersonalDataTermsDecisionChangeResponse {
   documentVersion: number;
   changedAt: string;
   decidedByName: string;
+  /** @nullable */
+  signature?: string | null;
 }

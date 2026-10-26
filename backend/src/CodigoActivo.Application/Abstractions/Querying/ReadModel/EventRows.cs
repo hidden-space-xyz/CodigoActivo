@@ -227,6 +227,9 @@ public sealed class TermsDecisionChangeRow
 
     /// <summary>Gets when the change was made.</summary>
     public DateTimeOffset ChangedAt { get; init; }
+
+    /// <summary>Gets the PNG signature drawn for an acceptance, when the document asked for one.</summary>
+    public byte[]? Signature { get; init; }
 }
 
 /// <summary>

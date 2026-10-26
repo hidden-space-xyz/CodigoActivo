@@ -102,10 +102,16 @@ export interface AccountHistoryEntry {
 /**
  * Copy of the personal data kept about the signed-in user and the minors in their care, as the
  * file they download: Spanish names and labels, so they can read it as well as take it elsewhere.
- * Dates are ISO 8601 instants and the signatures base64 PNG images.
+ * Dates are ISO 8601 instants and the signatures base64 PNG images. It names the privacy policy in
+ * force, which tells why the data are kept, for how long and the rights over them.
  */
 export interface PersonalDataFile {
   readonly generadoEl: string
+  readonly politicaDePrivacidad: {
+    readonly version: number
+    readonly publicadaEl: string
+    readonly enlace: string
+  } | null
   readonly cuenta: {
     readonly id: string
     readonly nombre: string
@@ -162,12 +168,12 @@ export interface PersonalDataFile {
     readonly versionDelDocumento: number
     readonly aceptado: boolean
     readonly fecha: string
-    readonly firmaPngBase64: string | null
     readonly cambios: readonly {
       readonly aceptado: boolean
       readonly versionDelDocumento: number
       readonly fecha: string
       readonly decidioPor: string
+      readonly firmaPngBase64: string | null
     }[]
   }[]
   readonly valoraciones: readonly {

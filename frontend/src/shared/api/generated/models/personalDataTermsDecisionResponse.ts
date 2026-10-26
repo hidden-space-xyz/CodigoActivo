@@ -15,7 +15,5 @@ export interface PersonalDataTermsDecisionResponse {
   documentVersion: number;
   accepted: boolean;
   decidedAt: string;
-  /** @nullable */
-  signature?: string | null;
   changes: PersonalDataTermsDecisionChangeResponse[];
 }
