@@ -4,9 +4,11 @@ using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Logs.Contracts;
+using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Legal;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Logs;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -365,6 +367,68 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
                     (AuditEntityType.LegalPolicy, "Política de privacidad"),
                     (AuditEntityType.LegalPolicy, "Política de cookies"),
                 }
+            );
+    }
+
+    [Fact]
+    public async Task ListAuditLeavesBlockedDataConsultationsUnnamed()
+    {
+        var consultation = BlockedDataConsultation
+            .Open(
+                UserId.From(TestSeedData.Users.AdminId),
+                BlockedDataAuthority.Court,
+                "Diligencias previas 123/2026",
+                Morning
+            )
+            .Value;
+        await SeedAsync(
+            consultation,
+            Audit(
+                Morning,
+                AuditAction.OpenBlockedDataConsultation,
+                TestSeedData.Users.AdminId,
+                consultation.Id.Value,
+                entityType: "BlockedDataConsultation"
+            ),
+            Audit(
+                Morning.AddMinutes(1),
+                AuditAction.ExportBlockedData,
+                TestSeedData.Users.AdminId,
+                consultation.Id.Value,
+                entityType: "BlockedDataConsultation",
+                related: $$"""[{"type": "User", "id": "{{TestSeedData.Users.MemberId}}"}]"""
+            )
+        );
+        var admin = await LoginAsAdminAsync();
+
+        var page = await GetPageAsync<AuditLogEntryResponse>(admin, "/api/logs/audit");
+
+        page.Items.Select(entry =>
+                (entry.Action, entry.EntityType, entry.EntityId, entry.EntityName)
+            )
+            .Should()
+            .Equal(
+                (
+                    AuditAction.ExportBlockedData,
+                    AuditEntityType.BlockedDataConsultation,
+                    consultation.Id.Value,
+                    null
+                ),
+                (
+                    AuditAction.OpenBlockedDataConsultation,
+                    AuditEntityType.BlockedDataConsultation,
+                    consultation.Id.Value,
+                    null
+                )
+            );
+        page.Items[0]
+            .Related.Should()
+            .Equal(
+                new AuditRelatedEntityResponse(
+                    AuditEntityType.User,
+                    TestSeedData.Users.MemberId,
+                    "Marta Miembro"
+                )
             );
     }
 

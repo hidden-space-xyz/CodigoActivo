@@ -19,7 +19,8 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// index of the message for its text search, the containment index of the related entities and
 /// the B-tree indexes of the other columns; a period also prunes the daily partitions. Audit
 /// entries get the names of the accounts and things they mention, one query per kind of thing on
-/// the page, left out for those that no longer exist.
+/// the page, left out for those that no longer exist and for the consultations of the blocked data,
+/// whose reference only the privacy officer reads.
 /// </summary>
 /// <param name="context">Read-side database context.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -327,8 +328,12 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
         var names = new Dictionary<AuditEntityKey, string>();
         foreach (var kind in entities.GroupBy(entity => entity.Type, entity => entity.Id))
         {
-            var ids = kind.Distinct().ToList();
-            foreach (var named in await executor.ToListAsync(NamesOf(kind.Key, ids), ct))
+            if (NamesOf(kind.Key, [.. kind.Distinct()]) is not { } source)
+            {
+                continue;
+            }
+
+            foreach (var named in await executor.ToListAsync(source, ct))
             {
                 names[new AuditEntityKey(kind.Key, named.Id)] = named.Name;
             }
@@ -337,13 +342,14 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
         return names;
     }
 
-    private IQueryable<NamedEntity> NamesOf(AuditEntityType type, List<Guid> ids)
+    private IQueryable<NamedEntity>? NamesOf(AuditEntityType type, List<Guid> ids)
     {
         return type switch
         {
             AuditEntityType.Activity => context
                 .Activities.Where(row => ids.Contains(row.Id))
                 .Select(row => new NamedEntity(row.Id, row.Title)),
+            AuditEntityType.BlockedDataConsultation => null,
             AuditEntityType.Event => context
                 .Events.Where(row => ids.Contains(row.Id))
                 .Select(row => new NamedEntity(row.Id, row.Title)),
