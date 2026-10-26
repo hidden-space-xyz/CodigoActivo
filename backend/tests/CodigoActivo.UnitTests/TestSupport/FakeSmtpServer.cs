@@ -70,33 +70,35 @@ public sealed class FakeSmtpServer : IAsyncDisposable
 
     private async Task AcceptAsync()
     {
+        while (await AcceptUnlessStoppedAsync() is { } client)
+        {
+            lock (gate)
+            {
+                sessions.Add(HandleSessionAsync(client));
+            }
+        }
+    }
+
+    private async Task<TcpClient?> AcceptUnlessStoppedAsync()
+    {
         try
         {
-            while (true)
-            {
-                var client = await listener.AcceptTcpClientAsync(stopping.Token);
-                lock (gate)
-                {
-                    sessions.Add(HandleSessionAsync(client));
-                }
-            }
+            return await listener.AcceptTcpClientAsync(stopping.Token);
         }
         catch (Exception ex)
             when (ex is OperationCanceledException or SocketException or ObjectDisposedException)
-        { }
+        {
+            return null;
+        }
     }
 
     private async Task HandleSessionAsync(TcpClient client)
     {
-        try
+        using (client)
         {
-            using (client)
-            {
-                await RunSessionAsync(client.GetStream(), stopping.Token);
-            }
+            await RunSessionAsync(client.GetStream(), stopping.Token)
+                .ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
-        catch (Exception ex)
-            when (ex is IOException or OperationCanceledException or ObjectDisposedException) { }
     }
 
     private async Task RunSessionAsync(NetworkStream stream, CancellationToken ct)

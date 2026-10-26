@@ -32,8 +32,8 @@ authentication are not supported.
 - `POST /api/auth/logout` deletes the row of the presented session before clearing the cookies, so a copy of
   that cookie stops working immediately instead of lasting until its expiry. It is idempotent: it asks for no
   valid session, only the CSRF token, and always answers 204 after clearing the session and challenge
-  cookies, including when the row is already gone or its deletion fails, which is logged. Deleting an account
-  removes its rows by cascade.
+  cookies, including when the row is already gone or deleting it or ending a pending login challenge fails,
+  which is logged. Deleting an account removes its rows by cascade.
 - Every endpoint requires an authenticated session unless it is marked `[AllowAnonymous]` (fallback
   authorization policy).
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects

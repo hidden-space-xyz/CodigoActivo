@@ -97,12 +97,12 @@ public sealed class AssignHouseholdCommandHandler(
             return Error.Forbidden(ApplicationErrorCode.ActivityHouseholdMemberNotAllowed);
         }
 
-        foreach (var item in items)
+        foreach (
+            var allowedRole in items.Select(item =>
+                SignupEligibility.EnsureRoleAllowed(memberById[item.UserId], item.Role)
+            )
+        )
         {
-            var allowedRole = SignupEligibility.EnsureRoleAllowed(
-                memberById[item.UserId],
-                item.Role
-            );
             if (allowedRole.IsFailure)
             {
                 return allowedRole.Error!;

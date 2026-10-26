@@ -38,6 +38,21 @@ internal static partial class ApiLog
     internal static partial void SessionRevocationFailed(this ILogger logger, Exception exception);
 
     /// <summary>
+    /// Records that signing out could not end the pending login challenge, which leaves it usable
+    /// until it expires.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure raised while ending the challenge.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Failed to end the pending login challenge while signing out"
+    )]
+    internal static partial void ChallengeRevocationFailed(
+        this ILogger logger,
+        Exception exception
+    );
+
+    /// <summary>
     /// Records that the process is ending because starting or running the host failed.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>

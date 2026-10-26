@@ -438,7 +438,10 @@ public class AuthController : ApiControllerBase
             var pending = await HttpContext.AuthenticateAsync(TwoFactorAuthentication.Scheme);
             await challengeTickets.EndChallengeAsync(pending.Principal, ct);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException) { }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.ChallengeRevocationFailed(ex);
+        }
 
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignOutAsync(TwoFactorAuthentication.Scheme);

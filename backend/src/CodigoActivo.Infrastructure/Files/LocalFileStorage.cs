@@ -120,6 +120,25 @@ public sealed class LocalFileStorage : IFileStorage
         }
     }
 
+    /// <summary>
+    /// Deletes the selected local file, reporting a refusal of the file system instead of
+    /// throwing it.
+    /// </summary>
+    /// <param name="storedName">Storage-safe file name identifying the content.</param>
+    /// <returns><see langword="true"/> when no file is left under the name.</returns>
+    public bool TryDelete(string storedName)
+    {
+        try
+        {
+            Delete(storedName);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     private string ResolvePath(string storedName)
     {
         if (string.IsNullOrWhiteSpace(storedName))

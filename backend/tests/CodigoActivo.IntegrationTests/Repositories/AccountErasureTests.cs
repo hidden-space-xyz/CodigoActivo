@@ -510,15 +510,15 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 (GuidValue(record, nameof(Assignment.UserId)), GuidValue(record, "ActivityId"))
             )
             .Should()
-            .BeEquivalentTo([
-                ((Guid?)member, (Guid?)ClimbingId),
+            .BeEquivalentTo<(Guid?, Guid?)>([
+                (member, ClimbingId),
                 (child, ClimbingId),
                 (child, WorkshopId),
             ]);
         (await DeletedAsync<EventTermsAcceptance>())
             .Select(record => GuidValue(record, "TermsDocumentId"))
             .Should()
-            .BeEquivalentTo([(Guid?)ConditionsId, ImageRightsId, TripRulesId]);
+            .BeEquivalentTo<Guid?>([ConditionsId, ImageRightsId, TripRulesId]);
         (await DeletedAsync<TermsDecisionChange>())
             .Should()
             .HaveCount(4)

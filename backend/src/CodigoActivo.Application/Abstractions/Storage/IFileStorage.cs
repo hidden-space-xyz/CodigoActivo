@@ -37,4 +37,11 @@ public interface IFileStorage
     /// </summary>
     /// <param name="storedName">Storage-safe file name identifying the content.</param>
     public void Delete(string storedName);
+
+    /// <summary>
+    /// Deletes the stored content, if any, without raising a failure of the storage itself.
+    /// </summary>
+    /// <param name="storedName">Storage-safe file name identifying the content.</param>
+    /// <returns><see langword="true"/> when no content is left under the name.</returns>
+    public bool TryDelete(string storedName);
 }

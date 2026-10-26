@@ -63,11 +63,11 @@ public sealed class AccountSecurityNotifierTests
     {
         var user = NewUser();
 
-        await sut.NotifyAsync(user, AccountSecurityChange.PasswordLocked, CancellationToken.None);
+        await sut.NotifyAsync(user, AccountSecurityChange.CredentialLocked, CancellationToken.None);
 
         composer
             .Composed.Should()
-            .Equal(Alert("owner@test.com", "Owner", AccountSecurityChange.PasswordLocked));
+            .Equal(Alert("owner@test.com", "Owner", AccountSecurityChange.CredentialLocked));
         emailSender.Sent.Should().ContainSingle().Which.ToName.Should().Be("Owner");
     }
 
@@ -76,11 +76,11 @@ public sealed class AccountSecurityNotifierTests
     {
         var user = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
 
-        await sut.NotifyAsync(user, AccountSecurityChange.PasswordLocked, CancellationToken.None);
+        await sut.NotifyAsync(user, AccountSecurityChange.CredentialLocked, CancellationToken.None);
 
         composer
             .Composed.Should()
-            .Equal(Alert("owner@test.com", string.Empty, AccountSecurityChange.PasswordLocked));
+            .Equal(Alert("owner@test.com", string.Empty, AccountSecurityChange.CredentialLocked));
         emailSender.Sent.Should().ContainSingle().Which.ToName.Should().BeEmpty();
     }
 
@@ -89,7 +89,11 @@ public sealed class AccountSecurityNotifierTests
     {
         var user = NewUser(email: null);
 
-        await sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
+        await sut.NotifyAsync(
+            user,
+            AccountSecurityChange.CredentialChanged,
+            CancellationToken.None
+        );
 
         composer.Composed.Should().BeEmpty();
         emailSender.Sent.Should().BeEmpty();
@@ -100,11 +104,15 @@ public sealed class AccountSecurityNotifierTests
     {
         var user = NewUser(email: "owner@test.com");
 
-        await sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
+        await sut.NotifyAsync(
+            user,
+            AccountSecurityChange.CredentialChanged,
+            CancellationToken.None
+        );
 
         composer
             .Composed.Should()
-            .Equal(Alert("owner@test.com", "Owner", AccountSecurityChange.PasswordChanged));
+            .Equal(Alert("owner@test.com", "Owner", AccountSecurityChange.CredentialChanged));
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Subject.Should().Be(nameof(IAccountEmailComposer.SecurityAlert));
         message.ToAddress.Should().Be("owner@test.com");
@@ -124,7 +132,12 @@ public sealed class AccountSecurityNotifierTests
         composer
             .Composed.Should()
             .Equal(
-                Alert("old@test.com", "Owner", AccountSecurityChange.EmailChanged, "b***@test.com")
+                Alert(
+                    "old@test.com",
+                    "Owner",
+                    AccountSecurityChange.AddressChanged,
+                    "b***@test.com"
+                )
             );
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.Subject.Should().Be(nameof(IAccountEmailComposer.SecurityAlert));
@@ -165,7 +178,7 @@ public sealed class AccountSecurityNotifierTests
                 Alert(
                     "old@test.com",
                     "Owner",
-                    AccountSecurityChange.EmailAndPhoneChanged,
+                    AccountSecurityChange.AddressAndPhoneChanged,
                     "b***@test.com"
                 )
             );
@@ -179,14 +192,14 @@ public sealed class AccountSecurityNotifierTests
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
 
         Func<Task> act = () =>
-            sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
+            sut.NotifyAsync(user, AccountSecurityChange.CredentialChanged, CancellationToken.None);
 
         await act.Should().NotThrowAsync();
         var entry = logger.LevelEntries.Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Warning);
         entry
             .Message.Should()
-            .Be("A PasswordChanged security notification was dropped by the email limiter")
+            .Be("A CredentialChanged security notification was dropped by the email limiter")
             .And.NotContain(user.Id.ToString());
     }
 
@@ -197,7 +210,7 @@ public sealed class AccountSecurityNotifierTests
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
 
         Func<Task> act = () =>
-            sut.NotifyAsync(user, AccountSecurityChange.PasswordChanged, CancellationToken.None);
+            sut.NotifyAsync(user, AccountSecurityChange.CredentialChanged, CancellationToken.None);
 
         await act.Should().NotThrowAsync();
         var entry = logger.LevelEntries.Should().ContainSingle().Subject;

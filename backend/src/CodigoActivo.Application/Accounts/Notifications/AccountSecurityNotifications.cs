@@ -26,21 +26,21 @@ public sealed class AccountSecurityNotifications(
     public Task HandleAsync(PasswordChanged domainEvent, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
-        return NotifyAsync(domainEvent.UserId, AccountSecurityChange.PasswordChanged, ct);
+        return NotifyAsync(domainEvent.UserId, AccountSecurityChange.CredentialChanged, ct);
     }
 
     /// <inheritdoc />
     public Task HandleAsync(PasswordReset domainEvent, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
-        return NotifyAsync(domainEvent.UserId, AccountSecurityChange.PasswordReset, ct);
+        return NotifyAsync(domainEvent.UserId, AccountSecurityChange.CredentialReset, ct);
     }
 
     /// <inheritdoc />
     public Task HandleAsync(PasswordLocked domainEvent, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
-        return NotifyAsync(domainEvent.UserId, AccountSecurityChange.PasswordLocked, ct);
+        return NotifyAsync(domainEvent.UserId, AccountSecurityChange.CredentialLocked, ct);
     }
 
     /// <inheritdoc />

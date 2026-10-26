@@ -35,7 +35,7 @@ public sealed class ConcurrentRequestTests(CodigoActivoWebAppFactory factory)
             );
 
             statuses.Should().AllBeEquivalentTo(HttpStatusCode.NoContent);
-            EmailsTo(TestSeedData.MemberEmail, EmailKind.PasswordReset).Should().Be(1);
+            EmailsTo(TestSeedData.MemberEmail, EmailKind.AccessRecovery).Should().Be(1);
         }
     }
 

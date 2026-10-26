@@ -19,48 +19,53 @@ public sealed class ParticipationErasureStore(CodigoActivoDbContext context)
         ArgumentNullException.ThrowIfNull(deletion);
 
         var eventId = deletion.EventId.Value;
-        var activityId = deletion.ActivityId?.Value;
-        var personId = deletion.PersonId?.Value;
-        return deletion.Origin switch
+        return deletion switch
         {
-            ParticipationDeletionOrigin.EventDeleted => context.Database.ExecuteSqlAsync(
-                $"""
-                SELECT id FROM events WHERE id = {eventId} FOR UPDATE;
-                SELECT id FROM activities WHERE event_id = {eventId} ORDER BY id FOR UPDATE;
-                SELECT a.user_id
-                FROM assignments AS a
-                JOIN activities AS ac ON ac.id = a.activity_id
-                WHERE ac.event_id = {eventId}
-                FOR UPDATE OF a;
-                SELECT user_id FROM event_terms_acceptances WHERE event_id = {eventId} FOR UPDATE;
-                SELECT id FROM event_ratings WHERE event_id = {eventId} FOR UPDATE
-                """,
-                ct
-            ),
-            ParticipationDeletionOrigin.RatingDeleted => context.Database.ExecuteSqlAsync(
-                $"""
-                SELECT id
-                FROM event_ratings
-                WHERE event_id = {eventId} AND user_id = {personId}
-                FOR UPDATE
-                """,
-                ct
-            ),
-            ParticipationDeletionOrigin.ActivityDeleted => context.Database.ExecuteSqlAsync(
-                $"""
-                SELECT id FROM activities WHERE id = {activityId} FOR UPDATE;
-                SELECT user_id FROM assignments WHERE activity_id = {activityId} FOR UPDATE
-                """,
-                ct
-            ),
-            _ => context.Database.ExecuteSqlAsync(
+            { Origin: ParticipationDeletionOrigin.EventDeleted } =>
+                context.Database.ExecuteSqlAsync(
+                    $"""
+                    SELECT id FROM events WHERE id = {eventId} FOR UPDATE;
+                    SELECT id FROM activities WHERE event_id = {eventId} ORDER BY id FOR UPDATE;
+                    SELECT a.user_id
+                    FROM assignments AS a
+                    JOIN activities AS ac ON ac.id = a.activity_id
+                    WHERE ac.event_id = {eventId}
+                    FOR UPDATE OF a;
+                    SELECT user_id FROM event_terms_acceptances WHERE event_id = {eventId} FOR UPDATE;
+                    SELECT id FROM event_ratings WHERE event_id = {eventId} FOR UPDATE
+                    """,
+                    ct
+                ),
+            { Origin: ParticipationDeletionOrigin.RatingDeleted, PersonId: { } person } =>
+                context.Database.ExecuteSqlAsync(
+                    $"""
+                    SELECT id
+                    FROM event_ratings
+                    WHERE event_id = {eventId} AND user_id = {person.Value}
+                    FOR UPDATE
+                    """,
+                    ct
+                ),
+            { Origin: ParticipationDeletionOrigin.ActivityDeleted, ActivityId: { } activity } =>
+                context.Database.ExecuteSqlAsync(
+                    $"""
+                    SELECT id FROM activities WHERE id = {activity.Value} FOR UPDATE;
+                    SELECT user_id FROM assignments WHERE activity_id = {activity.Value} FOR UPDATE
+                    """,
+                    ct
+                ),
+            { ActivityId: { } activity, PersonId: { } person } => context.Database.ExecuteSqlAsync(
                 $"""
                 SELECT user_id
                 FROM assignments
-                WHERE activity_id = {activityId} AND user_id = {personId}
+                WHERE activity_id = {activity.Value} AND user_id = {person.Value}
                 FOR UPDATE
                 """,
                 ct
+            ),
+            _ => throw new ArgumentException(
+                "The deletion does not name the participation it removes.",
+                nameof(deletion)
             ),
         };
     }

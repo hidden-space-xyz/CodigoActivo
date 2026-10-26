@@ -282,8 +282,8 @@ public sealed class CreateFileCommandHandlerTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
         var id = added.Should().ContainSingle().Which.Id;
-        storage.Received(1).Delete($"{id}.webp");
-        storage.Received(1).Delete($"{id}.thumbnail.webp");
+        storage.Received(1).TryDelete($"{id}.webp");
+        storage.Received(1).TryDelete($"{id}.thumbnail.webp");
     }
 
     [Fact]
@@ -307,12 +307,14 @@ public sealed class CreateFileCommandHandlerTests
         await act.Should().ThrowAsync<IOException>();
         storage
             .Received(1)
-            .Delete(
+            .TryDelete(
                 Arg.Is<string>(name => !name.Contains(".thumbnail.", StringComparison.Ordinal))
             );
         storage
             .DidNotReceive()
-            .Delete(Arg.Is<string>(name => name.Contains(".thumbnail.", StringComparison.Ordinal)));
+            .TryDelete(
+                Arg.Is<string>(name => name.Contains(".thumbnail.", StringComparison.Ordinal))
+            );
         await AssertNothingPersistedAsync();
     }
 

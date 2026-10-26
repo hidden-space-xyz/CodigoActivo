@@ -381,6 +381,27 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task RemoveExhaustedAsyncSpentMessageReturnsItsKindAndAttempts()
+    {
+        await Store.TryEnqueueAsync(NotificationBatch("ana@example.test"), Ct);
+        for (var attempt = 1; attempt <= EmailQueueOptions.MaxAttempts; attempt++)
+        {
+            var now = Factory.Clock.UtcNow;
+            await Store.ClaimDueAsync(now, now + Options.Lease, 10, Ct);
+            Factory.Clock.UtcNow = now + Options.Lease + TimeSpan.FromSeconds(1);
+        }
+
+        var removed = await Store.RemoveExhaustedAsync(Factory.Clock.UtcNow, Ct);
+
+        removed
+            .Should()
+            .Equal(
+                new ExhaustedEmail(EmailKind.ActivityNotification, EmailQueueOptions.MaxAttempts)
+            );
+        (await PendingAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task DeliverDueAsyncEmptyOutboxStillClearsTheOrphanContent()
     {
         await Factory.SeedAsync(db =>

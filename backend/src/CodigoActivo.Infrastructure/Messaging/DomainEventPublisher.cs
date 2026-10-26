@@ -69,7 +69,7 @@ public sealed class DomainEventPublisher(
         {
             await effect();
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             logger.CommittedEffectFailed(handler.GetType().Name, ex);
         }

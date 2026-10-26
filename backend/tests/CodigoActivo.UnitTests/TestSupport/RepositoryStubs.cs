@@ -81,12 +81,7 @@ public static class RepositoryStubs
                 Arg.Any<IReadOnlyCollection<StoredFileId>>(),
                 Arg.Any<CancellationToken>()
             )
-            .Returns(call =>
-                exists
-                    ? (IReadOnlyList<StoredFileId>)
-                        [.. call.Arg<IReadOnlyCollection<StoredFileId>>()]
-                    : []
-            );
+            .Returns(call => exists ? call.Arg<IReadOnlyCollection<StoredFileId>>().ToList() : []);
     }
 
     public static void OnlyFilesExist(
@@ -100,8 +95,7 @@ public static class RepositoryStubs
                 Arg.Any<CancellationToken>()
             )
             .Returns(call =>
-                (IReadOnlyList<StoredFileId>)
-                    [.. call.Arg<IReadOnlyCollection<StoredFileId>>().Intersect(existing)]
+                call.Arg<IReadOnlyCollection<StoredFileId>>().Intersect(existing).ToList()
             );
     }
 }

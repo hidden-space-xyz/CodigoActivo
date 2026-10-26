@@ -12,9 +12,9 @@ public enum EmailKind
     AccountVerification,
 
     /// <summary>
-    /// Selects the password reset option.
+    /// Selects the password reset option, the email that recovers access to an account.
     /// </summary>
-    PasswordReset,
+    AccessRecovery,
 
     /// <summary>
     /// Selects the two factor login code option.

@@ -4,8 +4,6 @@ using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Npgsql;
-using NpgsqlTypes;
 
 namespace CodigoActivo.Infrastructure.Users;
 
@@ -180,19 +178,16 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
         var lockout = user.PasswordLockout;
         var challenge = user.LoginChallenge;
         var version = entry.Property<uint>(UserConfiguration.RowVersion);
-        var loadedVersion = new NpgsqlParameter<uint>
-        {
-            NpgsqlDbType = NpgsqlDbType.Xid,
-            TypedValue = version.OriginalValue,
-        };
+        long loadedVersion = version.OriginalValue;
+        Guid? challengeId = challenge.Id is { } id ? id.Value : null;
         FormattableString sql = $"""
             UPDATE users
             SET
                 password_failed_attempts = {lockout.FailedAttempts},
                 password_locked_at = {lockout.LockedAt},
-                login_challenge_id = {challenge.Id?.Value},
+                login_challenge_id = {challengeId},
                 login_challenge_started_at = {challenge.StartedAt}
-            WHERE id = {user.Id.Value} AND xmin = {loadedVersion}
+            WHERE id = {user.Id.Value} AND xmin::text::bigint = {loadedVersion}
             RETURNING xmin::text::bigint AS "Value"
             """;
         if (await Context.Database.SqlQuery<long>(sql).ToListAsync(ct) is not [var stored])

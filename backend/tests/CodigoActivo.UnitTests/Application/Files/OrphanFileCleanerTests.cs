@@ -30,9 +30,7 @@ public sealed class OrphanFileCleanerTests
                 Arg.Any<IReadOnlyCollection<StoredFileId>>(),
                 Arg.Any<CancellationToken>()
             )
-            .Returns(call =>
-                (IReadOnlyList<StoredFileId>)[.. call.Arg<IReadOnlyCollection<StoredFileId>>()]
-            );
+            .Returns(call => call.Arg<IReadOnlyCollection<StoredFileId>>().ToList());
     }
 
     private static StoredFile NewFile(string name = "photo.png", string extension = "png")
@@ -110,9 +108,9 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsyncEmptyCandidatesDoesNotTouchRepository()
+    public async Task TryDeleteOrphanedAsyncEmptyCandidatesDoesNotTouchRepository()
     {
-        await sut.DeleteOrphanedAsync([], TestContext.Current.CancellationToken);
+        await sut.TryDeleteOrphanedAsync([], TestContext.Current.CancellationToken);
 
         await files
             .DidNotReceiveWithAnyArgs()
@@ -161,7 +159,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsyncRepositoryThrowsSwallowsException()
+    public async Task TryDeleteOrphanedAsyncRepositoryThrowsSwallowsException()
     {
         files
             .When(f =>
@@ -172,34 +170,35 @@ public sealed class OrphanFileCleanerTests
             )
             .Do(_ => throw new InvalidOperationException("db down"));
 
-        var act = async () =>
-            await sut.DeleteOrphanedAsync(
-                [StoredFileId.From(Guid.NewGuid())],
-                TestContext.Current.CancellationToken
-            );
+        var deleted = await sut.TryDeleteOrphanedAsync(
+            [StoredFileId.From(Guid.NewGuid())],
+            TestContext.Current.CancellationToken
+        );
 
-        await act.Should().NotThrowAsync();
+        deleted.Should().BeFalse();
         await AssertNotSavedAsync();
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsyncStorageThrowsSwallowsExceptionAfterRemoving()
+    public async Task TryDeleteOrphanedAsyncStorageThrowsSwallowsExceptionAfterRemoving()
     {
         var orphan = NewFile();
         InUseFilesAre();
         StoredFilesAre(orphan);
         storage.When(s => s.Delete(Arg.Any<string>())).Do(_ => throw new IOException("locked"));
 
-        var act = async () =>
-            await sut.DeleteOrphanedAsync([orphan.Id], TestContext.Current.CancellationToken);
+        var deleted = await sut.TryDeleteOrphanedAsync(
+            [orphan.Id],
+            TestContext.Current.CancellationToken
+        );
 
-        await act.Should().NotThrowAsync();
+        deleted.Should().BeTrue();
         files.Received(1).Remove(orphan);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsyncSaveRefusedSwallowsExceptionAndKeepsContent()
+    public async Task TryDeleteOrphanedAsyncSaveRefusedSwallowsExceptionAndKeepsContent()
     {
         var orphan = NewFile();
         InUseFilesAre();
@@ -207,16 +206,18 @@ public sealed class OrphanFileCleanerTests
         uow.SaveChangesAsync(Arg.Any<CancellationToken>())
             .Returns<int>(_ => throw new InvalidOperationException("refused"));
 
-        var act = async () =>
-            await sut.DeleteOrphanedAsync([orphan.Id], TestContext.Current.CancellationToken);
+        var deleted = await sut.TryDeleteOrphanedAsync(
+            [orphan.Id],
+            TestContext.Current.CancellationToken
+        );
 
-        await act.Should().NotThrowAsync();
+        deleted.Should().BeFalse();
         files.Received(1).Remove(orphan);
         storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsyncTransactionNotRunTouchesNothingOutsideIt()
+    public async Task TryDeleteOrphanedAsyncTransactionNotRunTouchesNothingOutsideIt()
     {
         var orphan = NewFile();
         InUseFilesAre();
@@ -227,7 +228,7 @@ public sealed class OrphanFileCleanerTests
             )
             .Returns(Task.FromResult<IReadOnlyList<StoredFile>>([]));
 
-        await sut.DeleteOrphanedAsync([orphan.Id], TestContext.Current.CancellationToken);
+        await sut.TryDeleteOrphanedAsync([orphan.Id], TestContext.Current.CancellationToken);
 
         await files
             .DidNotReceiveWithAnyArgs()
@@ -241,19 +242,22 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsyncCandidatesAlreadyGoneDeletesNoContent()
+    public async Task TryDeleteOrphanedAsyncCandidatesAlreadyGoneDeletesNoContent()
     {
         InUseFilesAre();
         StoredFilesAre();
 
-        await sut.DeleteOrphanedAsync([StoredFileId.New()], TestContext.Current.CancellationToken);
+        await sut.TryDeleteOrphanedAsync(
+            [StoredFileId.New()],
+            TestContext.Current.CancellationToken
+        );
 
         files.DidNotReceiveWithAnyArgs().Remove(NewFile());
         storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
     }
 
     [Fact]
-    public async Task DeleteOrphanedAsyncCancelledPropagatesCancellation()
+    public async Task TryDeleteOrphanedAsyncCancelledPropagatesCancellation()
     {
         files
             .When(f =>
@@ -265,7 +269,7 @@ public sealed class OrphanFileCleanerTests
             .Do(_ => throw new OperationCanceledException());
 
         var act = async () =>
-            await sut.DeleteOrphanedAsync(
+            await sut.TryDeleteOrphanedAsync(
                 [StoredFileId.From(Guid.NewGuid())],
                 TestContext.Current.CancellationToken
             );

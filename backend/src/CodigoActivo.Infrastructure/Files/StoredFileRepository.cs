@@ -74,7 +74,7 @@ public class StoredFileRepository(CodigoActivoDbContext context)
 
     private async Task<IReadOnlyList<StoredFileId>> LockAsync(
         IReadOnlyCollection<StoredFileId> ids,
-        Func<Guid[], FormattableString> sql,
+        Func<IReadOnlyList<Guid>, FormattableString> sql,
         CancellationToken ct
     )
     {

@@ -89,13 +89,13 @@ internal sealed class DemoLogHistory : IDisposable
     /// </summary>
     /// <param name="facts">Demo data the audit entries follow.</param>
     /// <param name="clock">Clock that gives the end of the history and the local days.</param>
-    /// <param name="maxFailedPasswords">Wrong passwords that lock an account.</param>
+    /// <param name="maxFailedLogins">Wrong passwords that lock an account.</param>
     /// <param name="maxFailedCodes">Wrong codes that lock the second factor of an account.</param>
     /// <returns>The events of both log tables, oldest first; none when no demo adult is left.</returns>
     internal static DemoLogBatch Build(
         DemoLogFacts facts,
         IClock clock,
-        int maxFailedPasswords,
+        int maxFailedLogins,
         int maxFailedCodes
     )
     {
@@ -113,7 +113,7 @@ internal sealed class DemoLogHistory : IDisposable
         history.AddSignups();
         history.AddPublishedContent();
         history.AddAdministratorMornings();
-        history.AddPasswordAttack(adults[3 % adults.Count], maxFailedPasswords);
+        history.AddPasswordAttack(adults[3 % adults.Count], maxFailedLogins);
         history.AddSecondFactorLockout(adults[4 % adults.Count], maxFailedCodes);
         history.AddClosedSignup(adults[5 % adults.Count]);
         history.AddProfileUpdate(adults[1 % adults.Count]);
@@ -242,16 +242,12 @@ internal sealed class DemoLogHistory : IDisposable
     {
         var reviewedUntil = now - Span;
         foreach (
-            var day in Days()
+            var start in Days()
                 .Where(day => day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
+                .Select(day => Local(day, 9, day.DayNumber * 13 % 45))
+                .Where(InSpan)
         )
         {
-            var start = Local(day, 9, day.DayNumber * 13 % 45);
-            if (!InSpan(start))
-            {
-                continue;
-            }
-
             var caller = SignIn(Administrator, start);
             var at = start.AddMinutes(2);
             foreach (
@@ -278,14 +274,14 @@ internal sealed class DemoLogHistory : IDisposable
         }
     }
 
-    private void AddPasswordAttack(DemoLogUser victim, int maxFailedPasswords)
+    private void AddPasswordAttack(DemoLogUser victim, int maxFailedLogins)
     {
         var start = Local(Today.AddDays(-12), 1, 14);
         var attacker = Caller.Visitor(AttackerAddress);
         for (var attempt = 0; attempt < 3; attempt++)
         {
             Record(
-                start.AddSeconds(attempt * 9),
+                start + TimeSpan.FromSeconds(attempt * 9),
                 attacker,
                 AuditAction.Login,
                 null,
@@ -297,9 +293,9 @@ internal sealed class DemoLogHistory : IDisposable
         var account = UserEntity(victim.Id);
         var lockedAt = start;
         var lockingTrace = default(ActivityTraceId);
-        for (var attempt = 1; attempt <= maxFailedPasswords; attempt++)
+        for (var attempt = 1; attempt <= maxFailedLogins; attempt++)
         {
-            lockedAt = start.AddSeconds(40 + (attempt * 23));
+            lockedAt = start + TimeSpan.FromSeconds(40 + (attempt * 23));
             lockingTrace = Record(
                 lockedAt,
                 attacker,
@@ -313,7 +309,7 @@ internal sealed class DemoLogHistory : IDisposable
         Diagnose<AccountLockoutLog>(
             lockedAt.AddMilliseconds(-40),
             lockingTrace,
-            logger => logger.PasswordLockoutTriggered(maxFailedPasswords)
+            logger => logger.PasswordLockoutTriggered(maxFailedLogins)
         );
 
         var morning = Local(Today.AddDays(-11), 8, 41);
@@ -476,7 +472,7 @@ internal sealed class DemoLogHistory : IDisposable
         var lockingTrace = default(ActivityTraceId);
         for (var attempt = 1; attempt <= maxFailedCodes; attempt++)
         {
-            lockedAt = start.AddSeconds(attempt * 20);
+            lockedAt = start + TimeSpan.FromSeconds(attempt * 20);
             lockingTrace = Record(
                 lockedAt,
                 visitor,
@@ -510,7 +506,7 @@ internal sealed class DemoLogHistory : IDisposable
             EmailKind.ActivityNotification,
             EmailKind.AccountVerification,
             EmailKind.Manual,
-            EmailKind.PasswordReset,
+            EmailKind.AccessRecovery,
             EmailKind.SecurityAlert,
         ];
         var retried = 0;
@@ -554,7 +550,7 @@ internal sealed class DemoLogHistory : IDisposable
             outage.AddMinutes(38),
             default,
             logger =>
-                logger.EmailDeliveryAttemptFailed(3, EmailKind.PasswordReset, ServiceUnavailable())
+                logger.EmailDeliveryAttemptFailed(3, EmailKind.AccessRecovery, ServiceUnavailable())
         );
         Diagnose<EmailOutboxDeliverer>(
             Local(Today.AddDays(-9), 23, 12),

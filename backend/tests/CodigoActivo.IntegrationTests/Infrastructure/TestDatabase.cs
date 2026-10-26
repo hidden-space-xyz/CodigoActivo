@@ -33,14 +33,15 @@ internal static class TestDatabase
             }
 
             referencingTables.TryAdd(table, []);
-            foreach (var foreignKey in entity.GetForeignKeys())
+            var principals = entity
+                .GetForeignKeys()
+                .Select(foreignKey => TableOf(foreignKey.PrincipalEntityType))
+                .OfType<string>()
+                .Where(principal => principal != table);
+            foreach (var principal in principals)
             {
-                var principal = TableOf(foreignKey.PrincipalEntityType);
-                if (principal is not null && principal != table)
-                {
-                    referencingTables.TryAdd(principal, []);
-                    referencingTables[principal].Add(table);
-                }
+                referencingTables.TryAdd(principal, []);
+                referencingTables[principal].Add(table);
             }
         }
 

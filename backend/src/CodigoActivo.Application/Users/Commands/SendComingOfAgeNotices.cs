@@ -53,23 +53,17 @@ public sealed class SendComingOfAgeNoticesCommandHandler(
             ct
         );
 
-        var sent = 0;
-        foreach (
-            var dependent in dependents.Where(candidate => candidate.IsComingOfAgeNoticeDue(today))
-        )
-        {
-            if (
-                await uow.ExecuteInTransactionAsync(
-                    attempt => NotifyIfStillDueAsync(dependent, today, attempt),
-                    ct
-                )
-            )
-            {
-                sent++;
-            }
-        }
-
-        return sent;
+        return await dependents
+            .Where(candidate => candidate.IsComingOfAgeNoticeDue(today))
+            .ToAsyncEnumerable()
+            .CountAsync(
+                async (dependent, token) =>
+                    await uow.ExecuteInTransactionAsync(
+                        attempt => NotifyIfStillDueAsync(dependent, today, attempt),
+                        token
+                    ),
+                ct
+            );
     }
 
     private async Task<bool> NotifyIfStillDueAsync(

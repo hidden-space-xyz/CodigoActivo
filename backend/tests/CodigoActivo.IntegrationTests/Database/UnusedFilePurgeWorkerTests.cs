@@ -39,7 +39,7 @@ public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory
 
     private string StoredPath(StoredFile file)
     {
-        return Path.Combine(
+        return Path.Join(
             Factory.Services.GetRequiredService<FileStorageOptions>().RootPath,
             $"{file.Id}.png"
         );

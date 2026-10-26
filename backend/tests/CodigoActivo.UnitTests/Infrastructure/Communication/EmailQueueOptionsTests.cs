@@ -90,7 +90,7 @@ public sealed class EmailQueueOptionsTests
 
     [Theory]
     [InlineData(EmailKind.TwoFactorCode, EmailQueueOptions.CriticalPriority)]
-    [InlineData(EmailKind.PasswordReset, EmailQueueOptions.CriticalPriority)]
+    [InlineData(EmailKind.AccessRecovery, EmailQueueOptions.CriticalPriority)]
     [InlineData(EmailKind.AccountVerification, EmailQueueOptions.CriticalPriority)]
     [InlineData(EmailKind.SecurityAlert, EmailQueueOptions.StandardPriority)]
     [InlineData(EmailKind.ActivityNotification, EmailQueueOptions.StandardPriority)]
@@ -105,7 +105,7 @@ public sealed class EmailQueueOptionsTests
 
     [Theory]
     [InlineData(EmailKind.TwoFactorCode, true)]
-    [InlineData(EmailKind.PasswordReset, true)]
+    [InlineData(EmailKind.AccessRecovery, true)]
     [InlineData(EmailKind.AccountVerification, true)]
     [InlineData(EmailKind.SecurityAlert, false)]
     [InlineData(EmailKind.ActivityNotification, false)]

@@ -46,21 +46,16 @@ public sealed class PurgeUnverifiedAccountsCommandHandler(
             ct
         );
 
-        var erased = 0;
-        foreach (var account in expired)
-        {
-            if (
-                await uow.ExecuteInTransactionAsync(
-                    attempt => EraseIfStillExpiredAsync(account, now, attempt),
-                    ct
-                )
-            )
-            {
-                erased++;
-            }
-        }
-
-        return erased;
+        return await expired
+            .ToAsyncEnumerable()
+            .CountAsync(
+                async (account, token) =>
+                    await uow.ExecuteInTransactionAsync(
+                        attempt => EraseIfStillExpiredAsync(account, now, attempt),
+                        token
+                    ),
+                ct
+            );
     }
 
     private async Task<bool> EraseIfStillExpiredAsync(

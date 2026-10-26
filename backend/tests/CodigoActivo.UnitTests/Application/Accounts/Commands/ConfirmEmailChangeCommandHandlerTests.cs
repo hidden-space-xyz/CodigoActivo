@@ -181,7 +181,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
                     new EmailRecipient("old@test.com", user.FirstName)
                 )
                 {
-                    Change = AccountSecurityChange.EmailChanged,
+                    Change = AccountSecurityChange.AddressChanged,
                     OccurredAt = clock.UtcNow,
                     MaskedNewEmail = "n***@test.com",
                 }

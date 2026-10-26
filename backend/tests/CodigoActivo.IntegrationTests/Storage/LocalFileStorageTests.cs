@@ -173,6 +173,19 @@ public sealed class LocalFileStorageTests : IDisposable
         sut.Invoking(s => s.Delete("nothing-here.dat")).Should().NotThrow();
     }
 
+    [Fact]
+    public async Task TryDeleteExistingFileRemovesFileAndReportsIt()
+    {
+        await using var content = new MemoryStream([1, 2, 3]);
+        await sut.SaveAsync("temp.dat", content, Ct);
+
+        var deleted = sut.TryDelete("temp.dat");
+
+        deleted.Should().BeTrue();
+        var stream = await sut.OpenReadAsync("temp.dat", Ct);
+        stream.Should().BeNull();
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

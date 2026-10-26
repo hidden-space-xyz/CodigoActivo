@@ -194,7 +194,7 @@ public sealed class DiagnosticLogSinkTests(PostgresDatabaseFixture postgres)
                 .CreateLogger("Tests.Pipeline")
                 .EmailDeliveryAttemptFailed(
                     2,
-                    EmailKind.PasswordReset,
+                    EmailKind.AccessRecovery,
                     new InvalidOperationException("boom")
                 );
         }

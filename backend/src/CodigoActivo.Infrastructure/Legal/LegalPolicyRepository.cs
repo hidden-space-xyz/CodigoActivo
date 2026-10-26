@@ -16,8 +16,9 @@ public class LegalPolicyRepository(CodigoActivoDbContext context)
     /// <inheritdoc />
     public async Task<LegalPolicy?> LockAsync(LegalPolicyKind kind, CancellationToken ct = default)
     {
+        var storedKind = kind.ToString();
         FormattableString sql = $"""
-            SELECT id AS "Value" FROM legal_policies WHERE kind = {kind.ToString()} FOR UPDATE
+            SELECT id AS "Value" FROM legal_policies WHERE kind = {storedKind} FOR UPDATE
             """;
         var ids = await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct);
         if (ids.Count is 0)
