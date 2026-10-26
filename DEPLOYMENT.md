@@ -151,12 +151,15 @@ repository; the association's public identity (name, domain, social profiles) is
 (backend) and `shared/config` (frontend).
 
 `PRIVACY_OFFICER_EMAIL` designates the only account that may consult the blocked data (see
-[SECURITY.md](SECURITY.md#blocked-data-consultations)): the administrator whose verified email it is, once that
-account uses an authenticator app. Use the personal mailbox of the person the board designated in writing,
-never a shared one such as `LEGAL_EMAIL`, since whoever reads the mailbox can reset the password. A value that
-is not a single address stops the start; to change the person, change it and restart the API. The development
-overlay defaults it to `BOOTSTRAP_ADMIN_EMAIL`. Back up the `api-dataprotection` volume with
-`secrets/data_protection_key`: without them the data history cannot be read.
+[SECURITY.md](SECURITY.md#blocked-data-consultations)): the administrator whose verified email it is, whatever
+their second factor. Use the personal mailbox of the person the board designated in writing, never a shared one
+such as `LEGAL_EMAIL`, since whoever reads the mailbox can reset the password and, while the account uses
+emailed codes, also receives its second factor. A value that is not a single address stops the start; to change
+the person, change it and restart the API. The development overlay defaults it to `BOOTSTRAP_ADMIN_EMAIL`.
+
+Back up the `api-dataprotection` volume with every `db-data` backup and keep `secrets/data_protection_key`:
+without both the data history cannot be read. Data Protection adds a key every 90 days, so a copy of the volume
+older than the database copy cannot read the entries protected with the keys created since.
 
 The privacy and cookie policies are not in the repository: administrators write and publish them in
 «Políticas» of the administration panel, and the database keeps every version. A new installation without demo
