@@ -514,7 +514,12 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 {
                     attempts++;
                     await uow.SaveChangesAsync(attempt);
-                    return attempts > 1 ? true : throw Deadlock();
+                    if (attempts is 1)
+                    {
+                        throw Deadlock();
+                    }
+
+                    return true;
                 },
                 Ct
             );
@@ -672,7 +677,12 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 {
                     attempts++;
                     await LockPasswordAsync(users, user, attempt);
-                    return attempts > 1 ? true : throw Deadlock();
+                    if (attempts is 1)
+                    {
+                        throw Deadlock();
+                    }
+
+                    return true;
                 },
                 Ct
             );

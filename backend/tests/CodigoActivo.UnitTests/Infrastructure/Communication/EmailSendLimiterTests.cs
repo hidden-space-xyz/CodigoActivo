@@ -141,7 +141,7 @@ public sealed class EmailSendLimiterTests
         }
 
         limiter
-            .TryConsume(EmailKind.PasswordReset, "locked-out@example.test")
+            .TryConsume(EmailKind.AccessRecovery, "locked-out@example.test")
             .Scope.Should()
             .Be(EmailLimitScope.None);
         limiter
@@ -180,7 +180,7 @@ public sealed class EmailSendLimiterTests
 
         for (var i = 0; i < 8; i++)
         {
-            var kind = i % 2 == 0 ? EmailKind.AccountVerification : EmailKind.PasswordReset;
+            var kind = i % 2 == 0 ? EmailKind.AccountVerification : EmailKind.AccessRecovery;
             limiter
                 .TryConsume(kind, $"spray{i.ToString(CultureInfo.InvariantCulture)}@example.test")
                 .Scope.Should()
@@ -192,7 +192,7 @@ public sealed class EmailSendLimiterTests
             .Scope.Should()
             .Be(EmailLimitScope.Global, "anonymous credential mail stops before the login reserve");
         limiter
-            .TryConsume(EmailKind.PasswordReset, "spray-more@example.test")
+            .TryConsume(EmailKind.AccessRecovery, "spray-more@example.test")
             .Scope.Should()
             .Be(EmailLimitScope.Global);
         limiter
@@ -217,13 +217,13 @@ public sealed class EmailSendLimiterTests
         for (var i = 0; i < 3; i++)
         {
             limiter
-                .TryConsume(EmailKind.PasswordReset, Recipient)
+                .TryConsume(EmailKind.AccessRecovery, Recipient)
                 .Scope.Should()
                 .Be(EmailLimitScope.None);
         }
 
         limiter
-            .TryConsume(EmailKind.PasswordReset, Recipient)
+            .TryConsume(EmailKind.AccessRecovery, Recipient)
             .Scope.Should()
             .Be(EmailLimitScope.Recipient);
         limiter
@@ -377,7 +377,7 @@ public sealed class EmailSendLimiterTests
         }
 
         limiter
-            .TryConsume(EmailKind.PasswordReset, "member@example.test")
+            .TryConsume(EmailKind.AccessRecovery, "member@example.test")
             .Scope.Should()
             .Be(EmailLimitScope.None);
     }

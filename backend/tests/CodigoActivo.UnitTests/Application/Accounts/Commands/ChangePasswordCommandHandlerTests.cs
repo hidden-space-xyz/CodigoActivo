@@ -215,7 +215,7 @@ public sealed class ChangePasswordCommandHandlerTests
                     new EmailRecipient(user.Email!.Value, user.FirstName)
                 )
                 {
-                    Change = AccountSecurityChange.PasswordChanged,
+                    Change = AccountSecurityChange.CredentialChanged,
                     OccurredAt = clock.UtcNow,
                 }
             );

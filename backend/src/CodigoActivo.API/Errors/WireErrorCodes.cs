@@ -88,16 +88,17 @@ public static class WireErrorCodes
     private static void AddSameName<TCode>(Dictionary<Enum, ErrorCode> translations)
         where TCode : struct, Enum
     {
-        foreach (var code in Enum.GetValues<TCode>())
+        var sameName = Enum.GetValues<TCode>()
+            .Join(
+                Enum.GetValues<ErrorCode>(),
+                code => code.ToString(),
+                wire => wire.ToString(),
+                (code, wire) => (Code: code, Wire: wire),
+                StringComparer.Ordinal
+            );
+        foreach (var (code, wire) in sameName)
         {
-            if (
-                !translations.ContainsKey(code)
-                && Enum.TryParse<ErrorCode>(code.ToString(), out var wire)
-                && Enum.IsDefined(wire)
-            )
-            {
-                translations[code] = wire;
-            }
+            translations.TryAdd(code, wire);
         }
     }
 }

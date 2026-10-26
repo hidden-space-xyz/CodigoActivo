@@ -17,8 +17,10 @@ public interface IOrphanFileCleaner
     /// </summary>
     /// <param name="fileIds">Identifiers of the candidate files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    public Task DeleteOrphanedAsync(
+    /// <returns>
+    /// A task whose result is <see langword="false"/> when a failure left the orphans in place.
+    /// </returns>
+    public Task<bool> TryDeleteOrphanedAsync(
         IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default
     );
@@ -56,7 +58,7 @@ public sealed class OrphanFileCleaner(
 ) : IOrphanFileCleaner
 {
     /// <inheritdoc />
-    public async Task DeleteOrphanedAsync(
+    public async Task<bool> TryDeleteOrphanedAsync(
         IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default
     )
@@ -64,8 +66,12 @@ public sealed class OrphanFileCleaner(
         try
         {
             await PurgeOrphanedAsync(fileIds, ct);
+            return true;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException) { }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return false;
+        }
     }
 
     /// <inheritdoc />

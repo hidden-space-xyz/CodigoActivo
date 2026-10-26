@@ -52,7 +52,7 @@ public static class SecurityAlertEmail
         blocks.Add(EmailBlocks.Prose(Warning(change)));
         blocks.Add(EmailBlocks.Signoff());
 
-        var locked = change is AccountSecurityChange.PasswordLocked;
+        var locked = change is AccountSecurityChange.CredentialLocked;
         var content = EmailLayout.Render(
             new EmailDocument(
                 locked
@@ -87,8 +87,9 @@ public static class SecurityAlertEmail
     {
         return change switch
         {
-            AccountSecurityChange.PasswordChanged => AppStrings.EmailsSecurityAlertPasswordChanged,
-            AccountSecurityChange.PasswordReset => AppStrings.EmailsSecurityAlertPasswordReset,
+            AccountSecurityChange.CredentialChanged =>
+                AppStrings.EmailsSecurityAlertPasswordChanged,
+            AccountSecurityChange.CredentialReset => AppStrings.EmailsSecurityAlertPasswordReset,
             AccountSecurityChange.AuthenticatorEnabled =>
                 AppStrings.EmailsSecurityAlertAuthenticatorEnabled,
             AccountSecurityChange.AuthenticatorDisabled =>
@@ -96,11 +97,11 @@ public static class SecurityAlertEmail
             AccountSecurityChange.TwoFactorReset => AppStrings.EmailsSecurityAlertTwoFactorReset,
             AccountSecurityChange.AdminGranted => AppStrings.EmailsSecurityAlertAdminGranted,
             AccountSecurityChange.AdminRevoked => AppStrings.EmailsSecurityAlertAdminRevoked,
-            AccountSecurityChange.EmailChanged => AppStrings.EmailsSecurityAlertEmailChanged,
+            AccountSecurityChange.AddressChanged => AppStrings.EmailsSecurityAlertEmailChanged,
             AccountSecurityChange.PhoneChanged => AppStrings.EmailsSecurityAlertPhoneChanged,
-            AccountSecurityChange.EmailAndPhoneChanged =>
+            AccountSecurityChange.AddressAndPhoneChanged =>
                 AppStrings.EmailsSecurityAlertEmailAndPhoneChanged,
-            AccountSecurityChange.PasswordLocked => AppStrings.EmailsSecurityAlertPasswordLocked,
+            AccountSecurityChange.CredentialLocked => AppStrings.EmailsSecurityAlertPasswordLocked,
             _ => throw new ArgumentOutOfRangeException(nameof(change), change, null),
         };
     }
@@ -109,13 +110,13 @@ public static class SecurityAlertEmail
     {
         return change switch
         {
-            AccountSecurityChange.EmailChanged or AccountSecurityChange.EmailAndPhoneChanged =>
+            AccountSecurityChange.AddressChanged or AccountSecurityChange.AddressAndPhoneChanged =>
                 AppStrings.EmailsSecurityAlertEmailChangedWarning,
             AccountSecurityChange.TwoFactorReset
             or AccountSecurityChange.AdminGranted
             or AccountSecurityChange.AdminRevoked =>
                 AppStrings.EmailsSecurityAlertUnexpectedWarning,
-            AccountSecurityChange.PasswordLocked =>
+            AccountSecurityChange.CredentialLocked =>
                 AppStrings.EmailsSecurityAlertPasswordLockedWarning,
             _ => AppStrings.EmailsSecurityAlertWarning,
         };

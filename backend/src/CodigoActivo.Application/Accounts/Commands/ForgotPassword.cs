@@ -106,7 +106,7 @@ public sealed class ForgotPasswordCommandHandler(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.EmailSendFailed(EmailKind.PasswordReset, ex);
+            logger.EmailSendFailed(EmailKind.AccessRecovery, ex);
             return Result.Success();
         }
 

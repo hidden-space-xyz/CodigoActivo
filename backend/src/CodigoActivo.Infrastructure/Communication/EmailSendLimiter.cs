@@ -151,7 +151,7 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         return kind switch
         {
             EmailKind.TwoFactorCode => 0,
-            EmailKind.AccountVerification or EmailKind.PasswordReset =>
+            EmailKind.AccountVerification or EmailKind.AccessRecovery =>
                 options.EffectiveTwoFactorReserve,
             _ => options.EffectiveCredentialReserve,
         };

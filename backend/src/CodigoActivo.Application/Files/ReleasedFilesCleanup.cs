@@ -22,7 +22,7 @@ public sealed class ReleasedFilesCleanup(IOrphanFileCleaner orphanCleaner) : ICo
             .ToList();
         if (released.Count > 0)
         {
-            await orphanCleaner.DeleteOrphanedAsync(released, ct);
+            await orphanCleaner.TryDeleteOrphanedAsync(released, ct);
         }
     }
 }

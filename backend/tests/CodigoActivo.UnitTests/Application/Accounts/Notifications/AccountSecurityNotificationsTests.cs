@@ -46,7 +46,7 @@ public sealed class AccountSecurityNotificationsTests
                     new EmailRecipient(user.Email!.Value, user.FirstName)
                 )
                 {
-                    Change = AccountSecurityChange.PasswordLocked,
+                    Change = AccountSecurityChange.CredentialLocked,
                     OccurredAt = clock.UtcNow,
                 }
             );

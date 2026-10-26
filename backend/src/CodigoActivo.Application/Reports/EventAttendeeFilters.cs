@@ -83,14 +83,35 @@ public static class EventAttendeeFilters
     )
     {
         ArgumentNullException.ThrowIfNull(query);
-        var activityId = query.ActivityId;
-        var roleTypeId = query.RoleTypeId;
-        var statusId = query.StatusId;
 
-        return assignment =>
-            assignment.Activity.EventId == eventId
-            && (activityId == null || assignment.ActivityId == activityId)
-            && (roleTypeId == null || assignment.ActivityRoleTypeId == roleTypeId)
-            && (statusId == null || assignment.AssignmentStatusId == statusId);
+        Expression<Func<AssignmentRow, bool>> matching = assignment =>
+            assignment.Activity.EventId == eventId;
+        if (query.ActivityId is { } activityId)
+        {
+            matching = Both(matching, assignment => assignment.ActivityId == activityId);
+        }
+
+        if (query.RoleTypeId is { } roleTypeId)
+        {
+            matching = Both(matching, assignment => assignment.ActivityRoleTypeId == roleTypeId);
+        }
+
+        if (query.StatusId is { } statusId)
+        {
+            matching = Both(matching, assignment => assignment.AssignmentStatusId == statusId);
+        }
+
+        return matching;
+    }
+
+    private static Expression<Func<AssignmentRow, bool>> Both(
+        Expression<Func<AssignmentRow, bool>> first,
+        Expression<Func<AssignmentRow, bool>> second
+    )
+    {
+        return Expression.Lambda<Func<AssignmentRow, bool>>(
+            Expression.AndAlso(first.Body, Expression.Invoke(second, first.Parameters)),
+            first.Parameters
+        );
     }
 }

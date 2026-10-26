@@ -51,7 +51,7 @@ public static class PasswordResetEmail
         );
 
         return content.ToMessage(
-            EmailKind.PasswordReset,
+            EmailKind.AccessRecovery,
             toAddress,
             toName,
             AppStrings.EmailsPasswordResetSubject

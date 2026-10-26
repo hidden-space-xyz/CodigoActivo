@@ -43,21 +43,16 @@ public sealed class PurgeAdultDependentsCommandHandler(
         var today = clock.Today;
         var adults = await users.ListDependentsBornUpToAsync(today.LatestAdultBirthDate(), ct);
 
-        var erased = 0;
-        foreach (var dependent in adults)
-        {
-            if (
-                await uow.ExecuteInTransactionAsync(
-                    attempt => EraseIfStillOfAgeAsync(dependent, today, attempt),
-                    ct
-                )
-            )
-            {
-                erased++;
-            }
-        }
-
-        return erased;
+        return await adults
+            .ToAsyncEnumerable()
+            .CountAsync(
+                async (dependent, token) =>
+                    await uow.ExecuteInTransactionAsync(
+                        attempt => EraseIfStillOfAgeAsync(dependent, today, attempt),
+                        token
+                    ),
+                ct
+            );
     }
 
     private async Task<bool> EraseIfStillOfAgeAsync(

@@ -52,6 +52,8 @@ function installBrowserPolyfills(): void {
   })
 
   class NoopObserver {
+    constructor(readonly callback: unknown) {}
+
     observe(): void {}
     unobserve(): void {}
     disconnect(): void {}

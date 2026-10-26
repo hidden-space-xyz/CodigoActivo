@@ -33,7 +33,7 @@ export const SIGNATURE_PNG =
 const firstNames = ['Lucía', 'Hugo', 'Martina', 'Mateo', 'Sofía', 'Leo', 'Julia', 'Pablo', 'Vega']
 const lastNames = ['García Prieto', 'Fernández Rey', 'López Vidal', 'Martín Soto', 'Díaz Cano']
 const words = ['robótica', 'scratch', 'python', 'arduino', 'videojuegos', 'web', 'datos', 'taller']
-const nationalIdLetters = 'TRWAGMYFPDXBNJZSQVHLCKE'
+const nationalIds = ['12345678Z', '87654321X', '45678912S', '23456789D', '76543210S', '31415926L']
 
 export const DRAFT = 'Borrador k6'
 
@@ -41,12 +41,18 @@ export function published(items) {
   return items.filter((item) => !(item.title ?? item.name).startsWith(DRAFT))
 }
 
-export function pick(items, index = Math.floor(Math.random() * items.length)) {
-  return items[index % items.length]
+export function pick(items, index) {
+  if (!items.length) {
+    return undefined
+  }
+  return items[index === undefined ? randomInt(0, items.length - 1) : index % items.length]
 }
 
 export function randomInt(min, max) {
-  return min + Math.floor(Math.random() * (max - min + 1))
+  const range = max - min + 1
+  const unbiased = 2 ** 32 - (2 ** 32 % range)
+  const value = new DataView(crypto.getRandomValues(new Uint8Array(4)).buffer).getUint32(0)
+  return value < unbiased ? min + (value % range) : randomInt(min, max)
 }
 
 export function word() {
@@ -59,11 +65,6 @@ export function richText(text, image) {
     content.push({ type: 'image', attrs: { src: `/api/files/${image}/content`, alt: text } })
   }
   return JSON.stringify({ type: 'doc', content })
-}
-
-function nationalId() {
-  const number = randomInt(10000000, 99999999)
-  return `${number}${nationalIdLetters[number % 23]}`
 }
 
 function phone() {
@@ -99,7 +100,7 @@ export function registration(address, minors = 0) {
     email: address,
     phone: phone(),
     password: PASSWORD,
-    nationalId: nationalId(),
+    nationalId: pick(nationalIds),
     declaresAdult: true,
     newsConsent: true,
     minors: Array.from({ length: minors }, () => minor()),

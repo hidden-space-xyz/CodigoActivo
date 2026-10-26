@@ -34,7 +34,7 @@ public sealed class ReleasedFilesCleanupTests
 
         await orphanCleaner
             .Received(1)
-            .DeleteOrphanedAsync(
+            .TryDeleteOrphanedAsync(
                 Arg.Is<IReadOnlyCollection<StoredFileId>>(ids =>
                     ids.Count == 2 && ids.Contains(shared) && ids.Contains(other)
                 ),
@@ -57,7 +57,7 @@ public sealed class ReleasedFilesCleanupTests
 
         await orphanCleaner
             .DidNotReceiveWithAnyArgs()
-            .DeleteOrphanedAsync(
+            .TryDeleteOrphanedAsync(
                 Arg.Any<IReadOnlyCollection<StoredFileId>>(),
                 Arg.Any<CancellationToken>()
             );

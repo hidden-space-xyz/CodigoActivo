@@ -11,7 +11,9 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// Keeps the daily partitions of the log tables: it creates today's and the next days' ahead of
 /// time, drops those whose whole day is past the retention and removes the expired entries of the
 /// partition the cutoff falls in. Every statement runs in a short transaction of its own that
-/// gives up after a short lock wait, so maintenance never holds the tables for long.
+/// gives up after a short lock wait, so maintenance never holds the tables for long. A partition
+/// is created under a lock on its table that writes do not take, so callers creating the same day
+/// wait for each other instead of colliding.
 /// </summary>
 /// <param name="database">Connections of the log tables.</param>
 /// <param name="retention">How long the entries of each log table are kept.</param>
@@ -43,15 +45,13 @@ public sealed class LogPartitionMaintainer(
             }
 
             var cutoff = LogPartitions.CutoffOf(retention.Of(table), now);
-            foreach (var partition in await PartitionsAsync(connection, table, ct))
+            var expired = (await PartitionsAsync(connection, table, ct)).Where(partition =>
+                LogPartitions.TryParseDay(table, partition, out var day)
+                && LogPartitions.IsExpired(day, cutoff)
+            );
+            foreach (var partition in expired)
             {
-                if (
-                    LogPartitions.TryParseDay(table, partition, out var day)
-                    && LogPartitions.IsExpired(day, cutoff)
-                )
-                {
-                    await ExecuteAsync(connection, $"DROP TABLE IF EXISTS {partition}", null, ct);
-                }
+                await ExecuteAsync(connection, $"DROP TABLE IF EXISTS {partition}", null, ct);
             }
 
             await ExecuteAsync(
@@ -125,7 +125,7 @@ public sealed class LogPartitionMaintainer(
         return true;
     }
 
-    private static async Task CreateAsync(
+    private static Task CreateAsync(
         NpgsqlConnection connection,
         LogTable table,
         DateOnly day,
@@ -134,21 +134,14 @@ public sealed class LogPartitionMaintainer(
     {
         var from = Bound(day);
         var to = Bound(day.AddDays(1));
-        try
-        {
-            await ExecuteAsync(
-                connection,
-                $"CREATE TABLE IF NOT EXISTS {LogPartitions.NameOf(table, day)} PARTITION OF {table.Name} "
-                    + $"FOR VALUES FROM ('{from}') TO ('{to}')",
-                null,
-                ct
-            );
-        }
-        catch (PostgresException ex)
-            when (ex.SqlState
-                    is PostgresErrorCodes.DuplicateTable
-                        or PostgresErrorCodes.UniqueViolation
-            ) { }
+        return ExecuteAsync(
+            connection,
+            $"LOCK TABLE ONLY {table.Name} IN SHARE UPDATE EXCLUSIVE MODE; "
+                + $"CREATE TABLE IF NOT EXISTS {LogPartitions.NameOf(table, day)} PARTITION OF {table.Name} "
+                + $"FOR VALUES FROM ('{from}') TO ('{to}')",
+            null,
+            ct
+        );
     }
 
     private static string Bound(DateOnly day)

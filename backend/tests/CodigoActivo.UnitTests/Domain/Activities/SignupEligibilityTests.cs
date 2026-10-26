@@ -71,7 +71,7 @@ public sealed class SignupEligibilityTests
                 FirstName = "Ada",
                 LastName = "Lovelace",
                 UserType = type,
-                ParentId = guardianId?.Value,
+                ParentId = guardianId,
             }
         );
     }

@@ -6,14 +6,14 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 public enum AccountSecurityChange
 {
     /// <summary>
-    /// Selects the password changed option.
+    /// Selects the option for a changed password.
     /// </summary>
-    PasswordChanged,
+    CredentialChanged,
 
     /// <summary>
-    /// Selects the password reset through recovery option.
+    /// Selects the option for a password reset through recovery.
     /// </summary>
-    PasswordReset,
+    CredentialReset,
 
     /// <summary>
     /// Selects the authenticator confirmed option.
@@ -43,7 +43,7 @@ public enum AccountSecurityChange
     /// <summary>
     /// Selects the option for a replaced email, told to the previous address.
     /// </summary>
-    EmailChanged,
+    AddressChanged,
 
     /// <summary>
     /// Selects the option for a replaced phone or secondary phone.
@@ -54,10 +54,10 @@ public enum AccountSecurityChange
     /// Selects the option for a replaced email and phone in the same edit, told to the previous
     /// address.
     /// </summary>
-    EmailAndPhoneChanged,
+    AddressAndPhoneChanged,
 
     /// <summary>
-    /// Selects the account locked after repeated wrong passwords option.
+    /// Selects the option for an account locked after repeated wrong passwords.
     /// </summary>
-    PasswordLocked,
+    CredentialLocked,
 }

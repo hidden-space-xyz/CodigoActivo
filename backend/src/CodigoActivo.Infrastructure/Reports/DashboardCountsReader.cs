@@ -41,7 +41,9 @@ public sealed class DashboardCountsReader(CodigoActivoReadDbContext context)
             );
         }
 
-        var bounds = thresholds.Select(threshold => threshold.ToUniversalTime()).ToArray();
+        IReadOnlyList<DateTimeOffset> bounds = thresholds
+            .Select(threshold => threshold.ToUniversalTime())
+            .ToArray();
         FormattableString sql = $"""
             WITH created (source, key, created_at) AS (
                 SELECT 'users', user_type_id, created_at FROM users

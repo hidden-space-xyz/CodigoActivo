@@ -62,8 +62,8 @@ public sealed class AccountSecurityNotifier(
         var change = (newEmail, phonesChanged) switch
         {
             (null, _) => AccountSecurityChange.PhoneChanged,
-            (_, true) => AccountSecurityChange.EmailAndPhoneChanged,
-            _ => AccountSecurityChange.EmailChanged,
+            (_, true) => AccountSecurityChange.AddressAndPhoneChanged,
+            _ => AccountSecurityChange.AddressChanged,
         };
         return SendAsync(previousEmail, recipientName, change, newEmail.MaskEmail(), ct);
     }

@@ -80,7 +80,7 @@ public sealed class AccountEmailComposerTests
     {
         var message = sut.PasswordReset(Ana, AnaId, "a+b/c", Lifetime);
 
-        message.Kind.Should().Be(EmailKind.PasswordReset);
+        message.Kind.Should().Be(EmailKind.AccessRecovery);
         message.ToAddress.Should().Be("ana@test.com");
         message
             .TextBody.Should()
@@ -170,7 +170,7 @@ public sealed class AccountEmailComposerTests
     {
         var message = sut.SecurityAlert(
             Ana,
-            AccountSecurityChange.EmailChanged,
+            AccountSecurityChange.AddressChanged,
             clock.UtcNow,
             "b***@test.com"
         );

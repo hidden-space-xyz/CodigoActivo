@@ -84,11 +84,7 @@ public static class StoredVariants
     {
         foreach (var storedName in storedNames)
         {
-            try
-            {
-                storage.Delete(storedName);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            storage.TryDelete(storedName);
         }
     }
 }

@@ -198,6 +198,33 @@ public sealed class LogPartitionMaintainerTests(PostgresDatabaseFixture postgres
     }
 
     [Fact]
+    public async Task EnsurePartitionsAsyncConcurrentCallersCreateTheMissingDayOnce()
+    {
+        var day = new DateOnly(2026, 3, 2);
+        await LogTables.DropPartitionAsync(postgres, LogTable.Diagnostics, day);
+
+        var created = await Task.WhenAll(
+            Enumerable
+                .Range(0, 3)
+                .Select(async _ =>
+                {
+                    await using var connection = await database.OpenConnectionAsync(Ct);
+                    return await Maintainer.EnsurePartitionsAsync(
+                        connection,
+                        LogTable.Diagnostics,
+                        [day],
+                        Ct
+                    );
+                })
+        );
+
+        created.Should().AllSatisfy(inside => inside.Should().BeTrue());
+        (await LogTables.PartitionsAsync(postgres, LogTable.Diagnostics))
+            .Should()
+            .Contain("diagnostic_log_entries_p20260302");
+    }
+
+    [Fact]
     public async Task TryMaintainAsyncRecordsAFailureInsteadOfThrowingIt()
     {
         await using var unreachable = new LogDatabase("Host=127.0.0.1;Port=1;Database=unused");

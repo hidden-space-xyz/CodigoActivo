@@ -11,7 +11,7 @@ namespace CodigoActivo.UnitTests.Infrastructure.Seeders;
 
 public sealed class DemoLogHistoryTests
 {
-    private const int MaxFailedPasswords = 4;
+    private const int MaxFailedLogins = 4;
     private const int MaxFailedCodes = 3;
 
     private static readonly DateTimeOffset Now = new(2026, 7, 21, 10, 0, 0, TimeSpan.Zero);
@@ -93,7 +93,7 @@ public sealed class DemoLogHistoryTests
 
     private DemoLogBatch Build(DemoLogFacts? facts = null)
     {
-        return DemoLogHistory.Build(facts ?? Facts, clock, MaxFailedPasswords, MaxFailedCodes);
+        return DemoLogHistory.Build(facts ?? Facts, clock, MaxFailedLogins, MaxFailedCodes);
     }
 
     private List<AuditLogEntry> Audit()
@@ -225,7 +225,7 @@ public sealed class DemoLogHistoryTests
             )
             .ToList();
 
-        attempts.Should().HaveCount(MaxFailedPasswords);
+        attempts.Should().HaveCount(MaxFailedLogins);
         attempts.Should().OnlyContain(entry => entry.ErrorCode == "InvalidCredentials");
         var lockout = batch
             .Diagnostics.Select(DiagnosticLogEvents.ToEntry)

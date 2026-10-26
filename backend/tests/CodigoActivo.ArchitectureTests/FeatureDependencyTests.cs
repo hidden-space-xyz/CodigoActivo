@@ -22,13 +22,14 @@ public sealed class FeatureDependencyTests
             var used = dependencies.TryGetValue(slice, out var existing)
                 ? existing
                 : dependencies[slice] = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var target in IlReferences.TypesUsedBy(type).SelectMany(IlReferences.Expand))
-            {
-                if (SliceOf(target, prefix) is { } other && other != slice)
-                {
-                    used.Add(other);
-                }
-            }
+            used.UnionWith(
+                IlReferences
+                    .TypesUsedBy(type)
+                    .SelectMany(IlReferences.Expand)
+                    .Select(target => SliceOf(target, prefix))
+                    .OfType<string>()
+                    .Where(other => other != slice)
+            );
         }
 
         return dependencies;

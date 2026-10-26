@@ -91,7 +91,7 @@ public sealed class FakeAccountEmailComposer : IAccountEmailComposer
     )
     {
         return Compose(
-            EmailKind.PasswordReset,
+            EmailKind.AccessRecovery,
             new(nameof(PasswordReset), recipient)
             {
                 UserId = userId,

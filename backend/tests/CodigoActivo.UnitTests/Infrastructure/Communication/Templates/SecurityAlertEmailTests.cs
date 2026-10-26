@@ -16,10 +16,10 @@ public sealed class SecurityAlertEmailTests
         return new()
         {
             {
-                AccountSecurityChange.PasswordChanged,
+                AccountSecurityChange.CredentialChanged,
                 AppStrings.EmailsSecurityAlertPasswordChanged
             },
-            { AccountSecurityChange.PasswordReset, AppStrings.EmailsSecurityAlertPasswordReset },
+            { AccountSecurityChange.CredentialReset, AppStrings.EmailsSecurityAlertPasswordReset },
             {
                 AccountSecurityChange.AuthenticatorEnabled,
                 AppStrings.EmailsSecurityAlertAuthenticatorEnabled
@@ -31,13 +31,16 @@ public sealed class SecurityAlertEmailTests
             { AccountSecurityChange.TwoFactorReset, AppStrings.EmailsSecurityAlertTwoFactorReset },
             { AccountSecurityChange.AdminGranted, AppStrings.EmailsSecurityAlertAdminGranted },
             { AccountSecurityChange.AdminRevoked, AppStrings.EmailsSecurityAlertAdminRevoked },
-            { AccountSecurityChange.EmailChanged, AppStrings.EmailsSecurityAlertEmailChanged },
+            { AccountSecurityChange.AddressChanged, AppStrings.EmailsSecurityAlertEmailChanged },
             { AccountSecurityChange.PhoneChanged, AppStrings.EmailsSecurityAlertPhoneChanged },
             {
-                AccountSecurityChange.EmailAndPhoneChanged,
+                AccountSecurityChange.AddressAndPhoneChanged,
                 AppStrings.EmailsSecurityAlertEmailAndPhoneChanged
             },
-            { AccountSecurityChange.PasswordLocked, AppStrings.EmailsSecurityAlertPasswordLocked },
+            {
+                AccountSecurityChange.CredentialLocked,
+                AppStrings.EmailsSecurityAlertPasswordLocked
+            },
         };
     }
 
@@ -45,8 +48,8 @@ public sealed class SecurityAlertEmailTests
     {
         return new()
         {
-            { AccountSecurityChange.PasswordChanged, AppStrings.EmailsSecurityAlertWarning },
-            { AccountSecurityChange.PasswordReset, AppStrings.EmailsSecurityAlertWarning },
+            { AccountSecurityChange.CredentialChanged, AppStrings.EmailsSecurityAlertWarning },
+            { AccountSecurityChange.CredentialReset, AppStrings.EmailsSecurityAlertWarning },
             { AccountSecurityChange.AuthenticatorEnabled, AppStrings.EmailsSecurityAlertWarning },
             { AccountSecurityChange.AuthenticatorDisabled, AppStrings.EmailsSecurityAlertWarning },
             { AccountSecurityChange.PhoneChanged, AppStrings.EmailsSecurityAlertWarning },
@@ -57,15 +60,15 @@ public sealed class SecurityAlertEmailTests
             { AccountSecurityChange.AdminGranted, AppStrings.EmailsSecurityAlertUnexpectedWarning },
             { AccountSecurityChange.AdminRevoked, AppStrings.EmailsSecurityAlertUnexpectedWarning },
             {
-                AccountSecurityChange.EmailChanged,
+                AccountSecurityChange.AddressChanged,
                 AppStrings.EmailsSecurityAlertEmailChangedWarning
             },
             {
-                AccountSecurityChange.EmailAndPhoneChanged,
+                AccountSecurityChange.AddressAndPhoneChanged,
                 AppStrings.EmailsSecurityAlertEmailChangedWarning
             },
             {
-                AccountSecurityChange.PasswordLocked,
+                AccountSecurityChange.CredentialLocked,
                 AppStrings.EmailsSecurityAlertPasswordLockedWarning
             },
         };
@@ -138,7 +141,7 @@ public sealed class SecurityAlertEmailTests
             "https://app.test"
         );
 
-        var locked = change is AccountSecurityChange.PasswordLocked;
+        var locked = change is AccountSecurityChange.CredentialLocked;
         message
             .Subject.Should()
             .Be(
@@ -162,7 +165,7 @@ public sealed class SecurityAlertEmailTests
         var message = SecurityAlertEmail.Create(
             "owner@test.com",
             "<script>alert(1)</script>",
-            AccountSecurityChange.PasswordChanged,
+            AccountSecurityChange.CredentialChanged,
             OccurredAt,
             TimeZoneInfo.Utc,
             "https://app.test"
@@ -180,7 +183,7 @@ public sealed class SecurityAlertEmailTests
         var message = SecurityAlertEmail.Create(
             "owner@test.com",
             "Owner",
-            AccountSecurityChange.EmailChanged,
+            AccountSecurityChange.AddressChanged,
             OccurredAt,
             TimeZoneInfo.Utc,
             "https://app.test",
@@ -197,7 +200,7 @@ public sealed class SecurityAlertEmailTests
         var message = SecurityAlertEmail.Create(
             "owner@test.com",
             "Owner",
-            AccountSecurityChange.EmailChanged,
+            AccountSecurityChange.AddressChanged,
             OccurredAt,
             TimeZoneInfo.Utc,
             "https://app.test"

@@ -133,7 +133,7 @@ public sealed class EmailQueueOptions
     {
         return kind switch
         {
-            EmailKind.TwoFactorCode or EmailKind.PasswordReset or EmailKind.AccountVerification =>
+            EmailKind.TwoFactorCode or EmailKind.AccessRecovery or EmailKind.AccountVerification =>
                 CriticalPriority,
             EmailKind.SecurityAlert or EmailKind.ActivityNotification => StandardPriority,
             _ => BulkPriority,

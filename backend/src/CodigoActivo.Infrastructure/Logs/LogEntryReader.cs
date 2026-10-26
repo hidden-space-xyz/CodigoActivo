@@ -218,9 +218,8 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
                     && ids.Contains(entry.EntityId.Value)
                 )
             );
-        foreach (var id in ids)
+        foreach (var related in ids.Select(id => JsonSerializer.Serialize(new[] { new { id } })))
         {
-            var related = JsonSerializer.Serialize(new[] { new { id } });
             source = source.Union(
                 context
                     .Set<AuditLogRow>()

@@ -49,7 +49,7 @@ public sealed class DiagnosticLogEventsTests
             using var scope = logger.BeginScope(
                 new Dictionary<string, object> { ["RequestPath"] = "/api/users/ana@test.com" }
             );
-            logger.EmailDeliveryAttemptFailed(3, EmailKind.PasswordReset, Failure());
+            logger.EmailDeliveryAttemptFailed(3, EmailKind.AccessRecovery, Failure());
         });
 
         var entry = DiagnosticLogEvents.ToEntry(logEvent);
@@ -59,8 +59,8 @@ public sealed class DiagnosticLogEventsTests
         entry.EventName.Should().Be(nameof(InfrastructureLog.EmailDeliveryAttemptFailed));
         entry
             .Message.Should()
-            .Be("Attempt 3 to deliver a \"PasswordReset\" email failed and will be retried");
-        entry.Properties.Should().Be("""{"Attempts":3,"Kind":"PasswordReset"}""");
+            .Be("Attempt 3 to deliver a \"AccessRecovery\" email failed and will be retried");
+        entry.Properties.Should().Be("""{"Attempts":3,"Kind":"AccessRecovery"}""");
         entry.Exception.Should().StartWith("System.InvalidOperationException: boom");
         entry.Exception.Should().NotContain("\0");
         entry.OccurredAt.Offset.Should().Be(TimeSpan.Zero);

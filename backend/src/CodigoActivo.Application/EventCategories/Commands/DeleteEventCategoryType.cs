@@ -65,9 +65,11 @@ public sealed class DeleteEventCategoryTypeCommandHandler(
             return Error.NotFound(ApplicationErrorCode.EventCategoryTypeNotFound);
         }
 
-        foreach (var tagged in await events.LockTaggedWithAsync(categoryType.Id, ct))
+        var taggedEvents = await events.LockTaggedWithAsync(categoryType.Id, ct);
+        foreach (
+            var removed in taggedEvents.Select(tagged => tagged.RemoveCategory(categoryType.Id))
+        )
         {
-            var removed = tagged.RemoveCategory(categoryType.Id);
             if (removed.IsFailure)
             {
                 return removed;

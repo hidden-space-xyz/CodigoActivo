@@ -190,7 +190,7 @@ public sealed class ResetPasswordCommandHandlerTests
                     new EmailRecipient(user.Email!.Value, user.FirstName)
                 )
                 {
-                    Change = AccountSecurityChange.PasswordReset,
+                    Change = AccountSecurityChange.CredentialReset,
                     OccurredAt = clock.UtcNow,
                 }
             );

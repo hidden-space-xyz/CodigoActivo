@@ -261,16 +261,13 @@ public sealed class EmailOutboxStore(
                   AND (locked_until IS NULL OR locked_until <= {now.ToUniversalTime()})
                 FOR UPDATE SKIP LOCKED
             )
-            RETURNING kind, attempt_count
+            RETURNING *
             """;
-        var removed = await db.Database.SqlQuery<ExhaustedRow>(sql).ToListAsync(ct);
+        var removed = await db.EmailOutboxMessages.FromSql(sql).AsNoTracking().ToListAsync(ct);
 
         return
         [
-            .. removed.Select(row => new ExhaustedEmail(
-                Enum.Parse<EmailKind>(row.Kind),
-                row.AttemptCount
-            )),
+            .. removed.Select(message => new ExhaustedEmail(message.Kind, message.AttemptCount)),
         ];
     }
 
@@ -325,12 +322,5 @@ public sealed class EmailOutboxStore(
         return error.Length <= EmailOutboxMessage.LastErrorMaxLength
             ? error
             : error[..EmailOutboxMessage.LastErrorMaxLength];
-    }
-
-    internal sealed record ExhaustedRow
-    {
-        public string Kind { get; init; } = string.Empty;
-
-        public int AttemptCount { get; init; }
     }
 }

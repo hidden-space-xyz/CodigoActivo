@@ -72,20 +72,23 @@ public sealed class VipsImageProcessorTests : IDisposable
     {
         var processed = await ProcessAsync(TaggedJpeg(400, 300));
 
-        foreach (var variant in new[] { processed.Full, processed.Thumbnail })
-        {
-            using var image = Image.NewFromBuffer(variant);
-            image.Get("vips-loader").Should().Be("webpload_buffer");
-            image.Width.Should().Be(300);
-            image.Height.Should().Be(400);
-            image
-                .GetFields()
-                .Should()
-                .NotContain(field =>
-                    MetadataFields.Contains(field)
-                    || field.StartsWith("exif-", StringComparison.Ordinal)
-                );
-        }
+        ShouldBeUprightWebpWithoutMetadata(processed.Full);
+        ShouldBeUprightWebpWithoutMetadata(processed.Thumbnail);
+    }
+
+    private static void ShouldBeUprightWebpWithoutMetadata(byte[] variant)
+    {
+        using var image = Image.NewFromBuffer(variant);
+        image.Get("vips-loader").Should().Be("webpload_buffer");
+        image.Width.Should().Be(300);
+        image.Height.Should().Be(400);
+        image
+            .GetFields()
+            .Should()
+            .NotContain(field =>
+                MetadataFields.Contains(field)
+                || field.StartsWith("exif-", StringComparison.Ordinal)
+            );
     }
 
     [Fact]

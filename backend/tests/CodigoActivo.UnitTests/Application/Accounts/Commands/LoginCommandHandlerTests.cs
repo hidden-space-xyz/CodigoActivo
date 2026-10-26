@@ -367,7 +367,7 @@ public sealed class LoginCommandHandlerTests
                     new EmailRecipient("ana@test.com", "Ana")
                 )
                 {
-                    Change = AccountSecurityChange.PasswordLocked,
+                    Change = AccountSecurityChange.CredentialLocked,
                     OccurredAt = clock.UtcNow,
                 }
             );

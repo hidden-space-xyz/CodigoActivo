@@ -183,7 +183,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
                     new EmailRecipient("ana@test.com", user.FirstName)
                 )
                 {
-                    Change = AccountSecurityChange.PasswordLocked,
+                    Change = AccountSecurityChange.CredentialLocked,
                     OccurredAt = clock.UtcNow,
                 }
             );
