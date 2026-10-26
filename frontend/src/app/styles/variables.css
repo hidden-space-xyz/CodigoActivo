@@ -34,6 +34,18 @@
   --ca-azure-ink: #0b6fa0;
   --ca-azure-soft: rgba(21, 159, 222, 0.13);
 
+  --ca-mint-ink: #1a7a44;
+  --ca-mint-soft: rgba(46, 170, 96, 0.14);
+
+  --ca-teal-ink: #0a7377;
+  --ca-teal-soft: rgba(20, 160, 166, 0.13);
+
+  --ca-violet-ink: #6644d1;
+  --ca-violet-soft: rgba(124, 92, 230, 0.13);
+
+  --ca-coral-ink: #bf3a2c;
+  --ca-coral-soft: rgba(226, 84, 68, 0.13);
+
   --ca-success: #2e9e57;
   --ca-success-ink: #1f7340;
   --ca-success-soft: rgba(46, 158, 87, 0.13);
@@ -140,6 +152,18 @@
   --ca-azure: #22a6e4;
   --ca-azure-ink: #5cc5f2;
   --ca-azure-soft: rgba(34, 166, 228, 0.18);
+
+  --ca-mint-ink: #5be584;
+  --ca-mint-soft: rgba(91, 229, 132, 0.13);
+
+  --ca-teal-ink: #2dd4d9;
+  --ca-teal-soft: rgba(45, 212, 217, 0.13);
+
+  --ca-violet-ink: #a78bfa;
+  --ca-violet-soft: rgba(167, 139, 250, 0.13);
+
+  --ca-coral-ink: #ff6b5e;
+  --ca-coral-soft: rgba(255, 107, 94, 0.13);
 
   --ca-success: #4ed07e;
   --ca-success-ink: #4ed07e;

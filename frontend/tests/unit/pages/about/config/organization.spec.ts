@@ -17,7 +17,7 @@ describe('organization content', () => {
       expect(value.descriptionKey).toBe(`pages.about.organization.values.${value.id}.description`)
       expect(t(value.titleKey)).not.toBe(value.titleKey)
       expect(value.icon).not.toBe('')
-      expect(value.soft).toMatch(/^rgba\(/)
+      expect(value.soft).toMatch(/^var\(--ca-[a-z]+-soft\)$/)
     }
   })
 
@@ -31,7 +31,8 @@ describe('organization content', () => {
     for (const activity of ORGANIZATION_ACTIVITIES) {
       expect(activity.titleKey).toBe(`pages.about.organization.activities.${activity.id}.title`)
       expect(t(activity.descriptionKey)).not.toBe(activity.descriptionKey)
-      expect(activity.color).toMatch(/^#[0-9A-F]{6}$/i)
+      expect(activity.color).toMatch(/^var\(--ca-[a-z]+-ink\)$/)
+      expect(activity.soft).toBe(activity.color.replace('-ink)', '-soft)'))
     }
   })
 })
