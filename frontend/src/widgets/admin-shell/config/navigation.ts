@@ -24,5 +24,5 @@ export const ADMIN_NAV = [
     icon: 'lock',
   },
   { labelKey: 'widgets.adminShell.nav.legal', routeName: 'admin-legal-policies', icon: 'file' },
-  { labelKey: 'widgets.adminShell.nav.settings', routeName: 'admin-catalogs', icon: 'cog' },
+  { labelKey: 'widgets.adminShell.nav.catalogs', routeName: 'admin-catalogs', icon: 'cog' },
 ] as const satisfies readonly AdminNavItem[]
