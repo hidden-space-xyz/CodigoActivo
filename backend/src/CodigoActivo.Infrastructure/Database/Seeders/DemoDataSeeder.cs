@@ -116,30 +116,7 @@ public sealed class DemoDataSeeder(
             await DownloadImagesAsync(fileIds, ct);
 
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
-
-            context.Users.AddRange(graph.Users);
-            await context.SaveChangesAsync(ct);
-
-            context.Files.AddRange(graph.Files);
-            context.EventCategoryTypes.AddRange(graph.CategoryTypes);
-            context.TermsDocuments.AddRange(graph.TermsDocuments);
-            await context.SaveChangesAsync(ct);
-
-            context.Events.AddRange(graph.Events);
-            await context.SaveChangesAsync(ct);
-
-            context.Activities.AddRange(graph.Activities);
-            await context.SaveChangesAsync(ct);
-
-            context.EventRatings.AddRange(graph.Ratings);
-            await context.SaveChangesAsync(ct);
-
-            context.News.AddRange(graph.News);
-            context.Resources.AddRange(graph.Resources);
-            context.Partners.AddRange(graph.Partners);
-            context.LegalPolicies.AddRange(graph.LegalPolicies);
-            await context.SaveChangesAsync(ct);
-
+            await AddAsync(context, graph, ct);
             await transaction.CommitAsync(ct);
         }
         catch
@@ -151,6 +128,36 @@ public sealed class DemoDataSeeder(
 
             throw;
         }
+    }
+
+    internal static async Task AddAsync(
+        CodigoActivoDbContext context,
+        DemoGraph graph,
+        CancellationToken ct
+    )
+    {
+        context.Users.AddRange(graph.Users);
+        await context.SaveChangesAsync(ct);
+
+        context.Files.AddRange(graph.Files);
+        context.EventCategoryTypes.AddRange(graph.CategoryTypes);
+        context.TermsDocuments.AddRange(graph.TermsDocuments);
+        await context.SaveChangesAsync(ct);
+
+        context.Events.AddRange(graph.Events);
+        await context.SaveChangesAsync(ct);
+
+        context.Activities.AddRange(graph.Activities);
+        await context.SaveChangesAsync(ct);
+
+        context.EventRatings.AddRange(graph.Ratings);
+        await context.SaveChangesAsync(ct);
+
+        context.News.AddRange(graph.News);
+        context.Resources.AddRange(graph.Resources);
+        context.Partners.AddRange(graph.Partners);
+        context.LegalPolicies.AddRange(graph.LegalPolicies);
+        await context.SaveChangesAsync(ct);
     }
 
     internal static DemoGraph BuildGraph(
@@ -814,7 +821,7 @@ public sealed class DemoDataSeeder(
         return new($"dede{category:x4}-0000-0000-0000-{index:x12}");
     }
 
-    private static UserId DemoUser(int index)
+    internal static UserId DemoUser(int index)
     {
         return UserId.From(MakeId(1, index));
     }

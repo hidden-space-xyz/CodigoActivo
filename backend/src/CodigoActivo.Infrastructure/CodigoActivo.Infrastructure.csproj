@@ -26,6 +26,7 @@
     <Folder Include="Database\Migrations\" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="CodigoActivo.IntegrationTests" />
     <InternalsVisibleTo Include="CodigoActivo.UnitTests" />
   </ItemGroup>
   <ItemGroup>

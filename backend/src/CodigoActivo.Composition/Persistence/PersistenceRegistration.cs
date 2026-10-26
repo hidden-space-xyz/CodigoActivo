@@ -44,6 +44,7 @@ internal static class PersistenceRegistration
         services.AddScoped<DatabaseSeeder>();
         services.AddScoped<InitialAdministratorSeeder>();
         services.AddScoped<DemoDataSeeder>();
+        services.AddScoped<DemoDataHistorySeeder>();
         services.AddScoped<DemoLogSeeder>();
         return services;
     }
