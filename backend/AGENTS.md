@@ -67,7 +67,9 @@ check enforce further conventions that this file leaves out; each failure names 
 
 - Unit tests use xUnit v3, AwesomeAssertions and NSubstitute. Test methods use three PascalCase segments, such as
   `RegisterAsyncNewAdultReturnsCreatedAndSendsOtp`.
-- Integration tests share one disposable PostgreSQL 18 Testcontainers instance and run without parallelism.
+- Integration tests share one disposable PostgreSQL 18 Testcontainers instance. Each test class works on its own
+  database, copied from a template migrated once (`PostgresDatabaseFixture`, or `Factory.Database` for classes
+  on `CodigoActivoWebAppFactory`), so classes run in parallel and the tests of a class run one after another.
   The test host lifts the email guard and request rate limits (exercise them with the factory's
   `WithEmailGuard`/`WithRateLimits`), delivers the email outbox inline instead of running the background worker
   (tests that queue mail indirectly or advance the clock to a scheduled retry call

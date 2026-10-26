@@ -8,7 +8,9 @@ using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class LogPartitionMaintainerTests(PostgresContainerFixture postgres) : IAsyncLifetime
+public sealed class LogPartitionMaintainerTests(PostgresDatabaseFixture postgres)
+    : IClassFixture<PostgresDatabaseFixture>,
+        IAsyncLifetime
 {
     private static readonly DateTimeOffset Now = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
 

@@ -11,7 +11,9 @@ using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsyncLifetime
+public sealed class QueryExecutorTests(PostgresDatabaseFixture postgres)
+    : IClassFixture<PostgresDatabaseFixture>,
+        IAsyncLifetime
 {
     private static readonly DateTimeOffset Fixed = new(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -20,7 +22,7 @@ public sealed class QueryExecutorTests(PostgresContainerFixture postgres) : IAsy
     public async ValueTask InitializeAsync()
     {
         await using var db = postgres.CreateContext();
-        await TestDatabase.TruncateAllTablesAsync(db);
+        await TestDatabase.DeleteAllRowsAsync(db);
         await new DatabaseSeeder(db).SeedAsync(Ct);
     }
 

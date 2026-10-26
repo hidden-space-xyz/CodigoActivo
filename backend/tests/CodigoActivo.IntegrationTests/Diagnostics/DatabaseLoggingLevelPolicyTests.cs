@@ -17,8 +17,9 @@ using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Diagnostics;
 
-public sealed class DatabaseLoggingLevelPolicyTests(PostgresContainerFixture postgres)
-    : IAsyncLifetime
+public sealed class DatabaseLoggingLevelPolicyTests(PostgresDatabaseFixture postgres)
+    : IClassFixture<PostgresDatabaseFixture>,
+        IAsyncLifetime
 {
     private const string Email = "ana@test.com";
     private const string RouteTemplate = "/api/users/{id}";

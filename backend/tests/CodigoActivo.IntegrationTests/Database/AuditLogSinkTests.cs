@@ -9,7 +9,9 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class AuditLogSinkTests(PostgresContainerFixture postgres) : IAsyncLifetime
+public sealed class AuditLogSinkTests(PostgresDatabaseFixture postgres)
+    : IClassFixture<PostgresDatabaseFixture>,
+        IAsyncLifetime
 {
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 

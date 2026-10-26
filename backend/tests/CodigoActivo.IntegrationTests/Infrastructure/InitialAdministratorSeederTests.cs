@@ -7,15 +7,16 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-public sealed class InitialAdministratorSeederTests(PostgresContainerFixture postgres)
-    : IAsyncLifetime
+public sealed class InitialAdministratorSeederTests(PostgresDatabaseFixture postgres)
+    : IClassFixture<PostgresDatabaseFixture>,
+        IAsyncLifetime
 {
     private static readonly DateTimeOffset CreatedAt = new(2026, 9, 4, 12, 0, 0, TimeSpan.Zero);
 
     public async ValueTask InitializeAsync()
     {
         await using var db = postgres.CreateContext();
-        await TestDatabase.TruncateAllTablesAsync(db);
+        await TestDatabase.DeleteAllRowsAsync(db);
         await new DatabaseSeeder(db).SeedAsync(TestCancellation.Ct);
     }
 

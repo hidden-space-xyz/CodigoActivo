@@ -32,7 +32,9 @@ using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Repositories;
 
-public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncLifetime
+public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
+    : IClassFixture<PostgresDatabaseFixture>,
+        IAsyncLifetime
 {
     private static readonly DateTimeOffset Fixed = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
@@ -42,7 +44,7 @@ public sealed class RepositoryTests(PostgresContainerFixture postgres) : IAsyncL
     public async ValueTask InitializeAsync()
     {
         await using var db = postgres.CreateContext();
-        await TestDatabase.TruncateAllTablesAsync(db);
+        await TestDatabase.DeleteAllRowsAsync(db);
         await new DatabaseSeeder(db).SeedAsync(Ct);
 
         db.Users.Add(

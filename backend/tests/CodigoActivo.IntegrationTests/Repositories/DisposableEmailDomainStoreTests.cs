@@ -7,13 +7,14 @@ using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Repositories;
 
-public sealed class DisposableEmailDomainStoreTests(PostgresContainerFixture postgres)
-    : IAsyncLifetime
+public sealed class DisposableEmailDomainStoreTests(PostgresDatabaseFixture postgres)
+    : IClassFixture<PostgresDatabaseFixture>,
+        IAsyncLifetime
 {
     public async ValueTask InitializeAsync()
     {
         await using var db = postgres.CreateContext();
-        await TestDatabase.TruncateAllTablesAsync(db);
+        await TestDatabase.DeleteAllRowsAsync(db);
     }
 
     public ValueTask DisposeAsync()
