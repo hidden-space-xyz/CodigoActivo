@@ -85,10 +85,12 @@ function decisionActions(decision: EventTermsDecision): RowAction[] {
           />
         </template>
         <template #default="{ row }">
-          {{ row.documentName }}
-          <span class="document-version">{{
-            $t('pages.admin.eventDetail.terms.version', { version: row.documentVersion })
-          }}</span>
+          <span>
+            {{ row.documentName }}
+            <span class="document-version">{{
+              $t('pages.admin.eventDetail.terms.version', { version: row.documentVersion })
+            }}</span>
+          </span>
         </template>
       </el-table-column>
       <el-table-column

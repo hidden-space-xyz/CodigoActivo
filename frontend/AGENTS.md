@@ -24,8 +24,7 @@ this file leaves out, and each failure names the rule it guards.
   legal identity and contact details come from the API (`legalEntityQueries`), never from code.
 - Admin tables: bind each `useServerTable` column filter to the `DataTable` `search` box or to a
   `ColumnSearch`, `ColumnFilterSelect` or `ColumnFilterDate` inside it, and pass page-owned filters as
-  `extraFilters`; keep each cell slot's root a single element or component; build row actions with `RowActions`
-  (no per-action colours).
+  `extraFilters`; build row actions with `RowActions` (no per-action colours).
 
 ## Tests
 

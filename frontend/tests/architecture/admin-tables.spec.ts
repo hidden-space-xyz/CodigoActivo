@@ -33,6 +33,32 @@ function hasHeaderSlot(element: TemplateElement): boolean {
   )
 }
 
+function cellSlots(element: TemplateElement): TemplateElement[] {
+  return element.children.filter(
+    (child): child is TemplateElement =>
+      'tag' in child && child.tag === 'template' && !findDirective(child, 'slot', 'header'),
+  )
+}
+
+function continuesBranch(element: TemplateElement): boolean {
+  return element.props.some(({ name }) => name === 'else-if' || name === 'else')
+}
+
+function rootCount(slot: TemplateElement): number {
+  let roots = 0
+  let inText = false
+  for (const child of slot.children) {
+    if ('tag' in child) {
+      if (!continuesBranch(child)) roots += 1
+      inText = false
+    } else if (child.loc.source.trim() !== '') {
+      if (!inText) roots += 1
+      inText = true
+    }
+  }
+  return roots
+}
+
 describe('admin tables', () => {
   it('render RowActions in a width="100" align="right" fixed="right" column', () => {
     const rowActions = visits.filter(({ element }) => element.tag === 'RowActions')
@@ -61,6 +87,18 @@ describe('admin tables', () => {
         )
         .map(location),
       'An el-table-column with a #header slot keeps a label as well',
+    ).toEqual([])
+  })
+
+  it('render each cell slot as one element, component or text', () => {
+    const cells = visits.flatMap(({ path, element }) =>
+      element.tag === column ? cellSlots(element).map((slot) => ({ path, element: slot })) : [],
+    )
+    expect(cells).not.toHaveLength(0)
+
+    expect(
+      cells.filter(({ element }) => rootCount(element) !== 1).map(location),
+      'A cell slot renders a single root: an element or component (a v-if chain counts once) or text',
     ).toEqual([])
   })
 })
