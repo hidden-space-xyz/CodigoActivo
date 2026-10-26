@@ -1,5 +1,4 @@
 import { getApiFilesFileId, postApiFiles } from '@/shared/api/generated/endpoints/files/files'
-import type { FileResponse } from '@/shared/api/generated/models'
 import { unwrapOrNull } from '@/shared/api'
 
 /**
@@ -7,7 +6,7 @@ import { unwrapOrNull } from '@/shared/api'
  * empty when the file no longer exists.
  */
 export async function getThumbnailNameRequest(id: string): Promise<string> {
-  const meta = await unwrapOrNull<FileResponse>(getApiFilesFileId(id))
+  const meta = await unwrapOrNull(getApiFilesFileId(id))
   return meta?.name ?? ''
 }
 

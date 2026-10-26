@@ -116,7 +116,7 @@ Run frontend commands from `frontend/`:
 ```bash
 npm run dev             # Vite development server
 npm run build           # Type-check and production build
-npm test                # Vitest unit and integration tests
+npm test                # Vitest unit, integration and architecture tests
 npm run test:coverage   # Tests with the 90% coverage thresholds
 npm run lint            # ESLint, i18n and accessibility rules
 npm run lint:fix        # Safe ESLint fixes

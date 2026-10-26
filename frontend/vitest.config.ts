@@ -4,23 +4,31 @@ import { defineConfig, mergeConfig } from 'vitest/config'
 
 import viteConfig from './vite.config.ts'
 
+const browser = { environment: 'jsdom', setupFiles: ['tests/setup.ts'] }
+
 export default defineConfig((env) =>
   mergeConfig(viteConfig(env), {
     test: {
-      environment: 'jsdom',
       root: fileURLToPath(new URL('./', import.meta.url)),
-      setupFiles: ['tests/setup.ts'],
       restoreMocks: true,
       unstubGlobals: true,
       unstubEnvs: true,
       projects: [
         {
           extends: true,
-          test: { name: 'unit', include: ['tests/unit/**/*.spec.ts'] },
+          test: { ...browser, name: 'unit', include: ['tests/unit/**/*.spec.ts'] },
         },
         {
           extends: true,
-          test: { name: 'integration', include: ['tests/integration/**/*.spec.ts'] },
+          test: { ...browser, name: 'integration', include: ['tests/integration/**/*.spec.ts'] },
+        },
+        {
+          extends: true,
+          test: {
+            name: 'architecture',
+            environment: 'node',
+            include: ['tests/architecture/**/*.spec.ts'],
+          },
         },
       ],
       coverage: {

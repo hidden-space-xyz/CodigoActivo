@@ -387,8 +387,10 @@ not import one another (the only exception is the `@x` cross-import `entities/us
 slice exposes its public API through `index.ts`; `@` maps to `src`. Code starts in the page that uses it and
 moves down to a feature or entity only when a second slice needs it. Steiger (`npm run lint:fsd`) enforces the
 structure, including that a widget, feature or entity slice is used by at least two slices or by `app`.
-`eslint.config.js` enforces most coding rules; [frontend/AGENTS.md](frontend/AGENTS.md) lists the ones no check
-enforces.
+`eslint.config.js` enforces most coding rules and `frontend/tests/architecture/` what neither tool sees: the
+slice and segment layout, the roles of `api` segment files, lazy page routing, the ownership of `shared/config`
+values, theme variables and global classes, and the reviewed `@x` list. [frontend/AGENTS.md](frontend/AGENTS.md)
+lists the rules no check enforces.
 
 | Layer       | Responsibility                                                                                |
 | ----------- | --------------------------------------------------------------------------------------------- |
@@ -408,12 +410,13 @@ Segments mean the same in every slice: `ui` components, `model` state and pure r
 `src/shared/api/generated/{endpoints,models}` using `src/shared/api/http-client.ts` as its request mutator.
 Generated files are disposable and must never be edited manually.
 
-The generated client is an anti-corruption boundary: only `api` segments import it, and their `mapper.ts`
-turns wire DTOs into the slice's own `model/types.ts`. Dates stay ISO strings; views format them. Entities
-expose query keys (`xKeys`), `queryOptions` factories (`xQueries`), paged sources for `useServerTable` and
-`usePagedList`, and `mutationOptions` factories (`xMutations`) that list the keys they refresh in
-`meta.invalidates`; the query client invalidates them after a successful mutation, and a page adds keys of
-another slice with `alsoInvalidates`. Reports read by a single page (event statistics, attendees, ratings,
+The generated client is an anti-corruption boundary: only `api` segments import it. There `requests.ts` calls
+the endpoints, `mapper.ts` alone handles the wire DTOs and turns them into the slice's own `model/types.ts`,
+and `queries.ts` and `mutations.ts` hold the options factories. Dates stay ISO strings; views format them.
+Entities expose query keys (`xKeys`), `queryOptions` factories (`xQueries`), paged sources for
+`useServerTable` and `usePagedList`, and `mutationOptions` factories (`xMutations`) that list the keys they
+refresh in `meta.invalidates`; the query client invalidates them after a successful mutation, and a page adds
+keys of another slice with `alsoInvalidates`. Reports read by a single page (event statistics, attendees, ratings,
 badges, roster, dashboard analytics and the diagnostic and audit logs) live in that page's `api` segment.
 
 Person field rules mirror the backend `User` rules in one place, `entities/user`: `usePersonForm` (and the
