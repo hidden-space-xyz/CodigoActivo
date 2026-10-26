@@ -82,6 +82,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'SetAdmin',
   'UpdateUser',
   'PurgeDataHistory',
+  'RequestBlockedDataConsultationCode',
   'OpenBlockedDataConsultation',
   'SearchBlockedData',
   'ExportBlockedData',

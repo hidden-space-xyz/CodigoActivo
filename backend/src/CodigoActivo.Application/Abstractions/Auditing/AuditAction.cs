@@ -202,6 +202,9 @@ public enum AuditAction
     /// <summary>Purged the data history and the consultations past their retention.</summary>
     PurgeDataHistory,
 
+    /// <summary>Asked for the code that confirms opening a consultation of the blocked data.</summary>
+    RequestBlockedDataConsultationCode,
+
     /// <summary>Opened a consultation of the blocked data.</summary>
     OpenBlockedDataConsultation,
 

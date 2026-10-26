@@ -7,11 +7,9 @@ namespace CodigoActivo.Application.BlockedData.Contracts;
 /// Tells the signed-in administrator whether they may consult the blocked data.
 /// </summary>
 /// <param name="IsPrivacyOfficer">Whether the account is the one designated for data protection.</param>
-/// <param name="UsesAuthenticator">Whether the account uses an authenticator app.</param>
 /// <param name="Entities">Kinds of data an extract can be narrowed to.</param>
 public sealed record BlockedDataAccessResponse(
     bool IsPrivacyOfficer,
-    bool UsesAuthenticator,
     IReadOnlyList<string> Entities
 );
 

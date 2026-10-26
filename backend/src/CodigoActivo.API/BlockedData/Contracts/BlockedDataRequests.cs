@@ -7,12 +7,28 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.API.BlockedData.Contracts;
 
 /// <summary>
+/// Request to email the code that confirms opening a consultation of the blocked data.
+/// </summary>
+/// <param name="CurrentPassword">Password of the signed-in user.</param>
+public record BlockedDataConsultationCodeRequest([Required] [MaxLength(128)] string CurrentPassword)
+{
+    /// <summary>
+    /// Builds the command that emails the code.
+    /// </summary>
+    /// <returns>The command.</returns>
+    public RequestBlockedDataConsultationCodeCommand ToCommand()
+    {
+        return new RequestBlockedDataConsultationCodeCommand(CurrentPassword);
+    }
+}
+
+/// <summary>
 /// Request to open a consultation of the blocked data.
 /// </summary>
 /// <param name="Authority">Who the data is made available to.</param>
 /// <param name="Reference">Reference of the request, such as the number of the proceedings.</param>
 /// <param name="CurrentPassword">Password of the signed-in user.</param>
-/// <param name="Code">Code of the authenticator app.</param>
+/// <param name="Code">Code of the second factor.</param>
 public record OpenBlockedDataConsultationRequest(
     [Required] [EnumDataType(typeof(BlockedDataAuthority))] BlockedDataAuthority Authority,
     [Required] [MaxLength(BlockedDataConsultation.ReferenceMaxLength)] string Reference,

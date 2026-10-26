@@ -51,10 +51,14 @@ public sealed class PrivacyOfficerTests
         sut.Designates(isAdmin: true, isActive: true, null).Should().BeFalse();
     }
 
-    [Fact]
-    public async Task SignedInOfficerAsyncDesignatedAccountWithAuthenticatorReturnsIt()
+    [Theory]
+    [InlineData(TwoFactorMethod.Email)]
+    [InlineData(TwoFactorMethod.Authenticator)]
+    public async Task SignedInOfficerAsyncDesignatedAccountWithAnySecondFactorReturnsIt(
+        TwoFactorMethod method
+    )
     {
-        var user = SignedIn();
+        var user = SignedIn(method: method);
 
         var result = await sut.SignedInOfficerAsync(TestContext.Current.CancellationToken);
 
@@ -90,18 +94,5 @@ public sealed class PrivacyOfficerTests
         var result = await sut.SignedInOfficerAsync(TestContext.Current.CancellationToken);
 
         result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.BlockedDataOfficerOnly);
-    }
-
-    [Fact]
-    public async Task SignedInOfficerAsyncEmailedCodesAreRefusedUntilAnAuthenticatorIsUsed()
-    {
-        SignedIn(method: TwoFactorMethod.Email);
-
-        var result = await sut.SignedInOfficerAsync(TestContext.Current.CancellationToken);
-
-        result.ShouldFail(
-            ErrorKind.Forbidden,
-            ApplicationErrorCode.BlockedDataAuthenticatorRequired
-        );
     }
 }

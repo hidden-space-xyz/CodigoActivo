@@ -135,6 +135,27 @@ public sealed class LoginCodeIssuerTests
     }
 
     [Fact]
+    public async Task IssueBlockedDataConsultationAsyncEmailsTheConsultationCodeAndStoresOnlyItsHash()
+    {
+        var user = NewUser(email: "ana@test.com");
+
+        var result = await sut.IssueBlockedDataConsultationAsync(
+            user,
+            clock.UtcNow,
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.BlockedDataConsultationCode));
+        email.Recipient.Should().Be(new EmailRecipient("ana@test.com", "Ana"));
+        email.Lifetime.Should().Be(TimeSpan.FromMinutes(7));
+        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@test.com");
+        user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + email.Code);
+        user.LoginCode.ExpiresAt.Should().Be(clock.UtcNow.AddMinutes(7));
+    }
+
+    [Fact]
     public async Task IssueAccountDeletionAsyncUserWithoutEmailReturnsConflictWithoutEmailing()
     {
         var user = NewUser(email: null);

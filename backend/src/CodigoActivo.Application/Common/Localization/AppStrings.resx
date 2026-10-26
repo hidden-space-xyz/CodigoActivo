@@ -208,6 +208,27 @@ Equipo de Código Activo</value>
   <data name="emails.accountDeletionCode.ignoreNote" xml:space="preserve">
     <value>Si no has solicitado eliminar tu cuenta, no introduzcas este código y restablece tu contraseña cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
   </data>
+  <data name="emails.blockedDataConsultationCode.subject" xml:space="preserve">
+    <value>Confirma la consulta de datos bloqueados en Código Activo</value>
+  </data>
+  <data name="emails.blockedDataConsultationCode.heading" xml:space="preserve">
+    <value>Confirma la consulta de datos bloqueados</value>
+  </data>
+  <data name="emails.blockedDataConsultationCode.introText" xml:space="preserve">
+    <value>Hemos recibido una solicitud para abrir una consulta de los datos bloqueados de Código Activo con tu cuenta. Introduce este código para confirmarla:</value>
+  </data>
+  <data name="emails.blockedDataConsultationCode.introHtml" xml:space="preserve">
+    <value>Hemos recibido una solicitud para abrir una consulta de los datos bloqueados de &lt;b&gt;Código Activo&lt;/b&gt; con tu cuenta. Introduce este código para confirmarla:</value>
+  </data>
+  <data name="emails.blockedDataConsultationCode.expiryText" xml:space="preserve">
+    <value>El código caduca en {0} minutos y solo sirve una vez.</value>
+  </data>
+  <data name="emails.blockedDataConsultationCode.expiryHtml" xml:space="preserve">
+    <value>El código caduca en &lt;b&gt;{0} minutos&lt;/b&gt; y solo sirve una vez.</value>
+  </data>
+  <data name="emails.blockedDataConsultationCode.ignoreNote" xml:space="preserve">
+    <value>Si no has solicitado esta consulta, no introduzcas este código y restablece tu contraseña cuanto antes desde «¿Has olvidado tu contraseña?». Nunca compartas este código con nadie.</value>
+  </data>
   <data name="emails.blockedDataConsultation.subject" xml:space="preserve">
     <value>Se ha abierto una consulta de datos bloqueados</value>
   </data>

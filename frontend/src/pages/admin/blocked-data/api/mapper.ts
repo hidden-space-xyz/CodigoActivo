@@ -13,7 +13,6 @@ import type { BlockedDataAccess, Candidate, Consultation, ExtractFile } from '..
 export function toBlockedDataAccess(response: BlockedDataAccessResponse): BlockedDataAccess {
   return {
     isPrivacyOfficer: response.isPrivacyOfficer,
-    usesAuthenticator: response.usesAuthenticator,
     entities: response.entities,
   }
 }

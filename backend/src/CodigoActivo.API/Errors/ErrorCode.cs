@@ -674,9 +674,4 @@ public enum ErrorCode
     /// Only the administrator designated for data protection may consult the blocked data.
     /// </summary>
     BlockedDataOfficerOnly,
-
-    /// <summary>
-    /// The account designated for data protection must use an authenticator app.
-    /// </summary>
-    BlockedDataAuthenticatorRequired,
 }

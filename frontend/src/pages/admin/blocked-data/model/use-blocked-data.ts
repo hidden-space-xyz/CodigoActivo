@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useSession } from '@/entities/session'
 import { hasErrorCode } from '@/shared/api'
 import { BLOCKED_DATA_MIN_SEARCH_LENGTH } from '@/shared/config'
 import { toDateOnly } from '@/shared/lib/date'
@@ -10,7 +11,7 @@ import { getErrorMessage, useCrudFeedback } from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
 
 import { blockedDataMutations, blockedDataQueries, consultationList } from '../api/queries'
-import type { Candidate, Consultation, OpenConsultationInput } from './types'
+import type { Candidate, Consultation, ConsultationRequest } from './types'
 
 /** Errors after which the open consultation can no longer be used. */
 const CLOSING_ERRORS = [
@@ -22,12 +23,15 @@ const CLOSING_ERRORS = [
  * Blocked data page: every administrator sees the list of consultations, newest first, without
  * any of their data; the account designated for data protection opens one for a request, looks
  * accounts up in it and downloads an extract about the account it picks, narrowed to a range of
- * days and to kinds of data. A consultation that ended is closed with its error. Call it in
- * `setup`.
+ * days and to kinds of data. Opening takes two steps: the request and the password, which email a
+ * code unless the account reads it from an authenticator application, and then that code; closing
+ * the dialog forgets the request and its password. A consultation that ended is closed with its
+ * error. Call it in `setup`.
  */
 export function useBlockedData() {
   const { t } = useI18n()
   const feedback = useCrudFeedback()
+  const session = useSession()
   const access = useQuery(blockedDataQueries.access())
   const table = useServerTable({
     ...consultationList,
@@ -36,6 +40,7 @@ export function useBlockedData() {
 
   const dialogVisible = ref(false)
   const openError = ref('')
+  const pendingRequest = ref<ConsultationRequest | null>(null)
   const consultation = ref<Consultation | null>(null)
   const query = ref('')
   const candidates = ref<Candidate[]>([])
@@ -45,13 +50,23 @@ export function useBlockedData() {
   const entities = ref<string[]>([])
 
   const isOfficer = computed(() => access.data.value?.isPrivacyOfficer === true)
-  const usesAuthenticator = computed(() => access.data.value?.usesAuthenticator === true)
+  const usesAuthenticator = computed(() => session.user?.twoFactorMethod === 'Authenticator')
+  const email = computed(() => session.user?.email ?? '')
   const availableEntities = computed(() => access.data.value?.entities ?? [])
 
   function closeOn(error: unknown): void {
     if (CLOSING_ERRORS.some((code) => hasErrorCode(error, code))) closeConsultation()
     feedback.error(error)
   }
+
+  function showOpenError(error: unknown): void {
+    openError.value = getErrorMessage(error)
+  }
+
+  const requestingCode = useMutation({
+    ...blockedDataMutations.requestCode(),
+    onError: showOpenError,
+  })
 
   const opening = useMutation({
     ...blockedDataMutations.open(),
@@ -65,9 +80,7 @@ export function useBlockedData() {
       entities.value = []
       dialogVisible.value = false
     },
-    onError: (error) => {
-      openError.value = getErrorMessage(error)
-    },
+    onError: showOpenError,
   })
 
   const searching = useMutation({
@@ -91,16 +104,42 @@ export function useBlockedData() {
     onError: closeOn,
   })
 
-  /** Shows the dialog that opens a consultation, without any earlier error. */
+  watch(dialogVisible, (visible) => {
+    if (!visible) pendingRequest.value = null
+  })
+
+  /** Shows the dialog that opens a consultation at its first step, without any earlier error. */
   function startConsultation(): void {
     openError.value = ''
     dialogVisible.value = true
   }
 
-  /** Opens a consultation with what the dialog read. */
-  function openConsultation(input: OpenConsultationInput): void {
+  /** Moves on to the code of the request the dialog read, emailing it unless an app shows it. */
+  function continueConsultation(request: ConsultationRequest): void {
     openError.value = ''
-    opening.mutate(input)
+    if (usesAuthenticator.value) {
+      pendingRequest.value = request
+      return
+    }
+    requestingCode.mutate(request.currentPassword, {
+      onSuccess: () => {
+        pendingRequest.value = request
+      },
+    })
+  }
+
+  /** Emails another code for the request that awaits it. */
+  function resendCode(): void {
+    if (!pendingRequest.value) return
+    openError.value = ''
+    requestingCode.mutate(pendingRequest.value.currentPassword)
+  }
+
+  /** Opens the consultation that awaits its code. */
+  function openConsultation(code: string): void {
+    if (!pendingRequest.value) return
+    openError.value = ''
+    opening.mutate({ ...pendingRequest.value, code })
   }
 
   /** Looks the typed text up in the open consultation. */
@@ -137,9 +176,12 @@ export function useBlockedData() {
     table,
     isOfficer,
     usesAuthenticator,
+    email,
     availableEntities,
     dialogVisible,
+    codeStep: computed(() => pendingRequest.value !== null),
     openError,
+    sendingCode: computed(() => requestingCode.isPending.value),
     opening: computed(() => opening.isPending.value),
     consultation,
     query,
@@ -151,6 +193,8 @@ export function useBlockedData() {
     entities,
     extracting: computed(() => extracting.isPending.value),
     startConsultation,
+    continueConsultation,
+    resendCode,
     openConsultation,
     search,
     downloadExtract,

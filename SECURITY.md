@@ -154,10 +154,11 @@ Each user chooses one second factor from their account:
   an account that already uses an authenticator cannot enroll another one (`AuthenticatorAlreadyEnabled`)
   until it returns to email, so a session and the password alone cannot replace it.
 
-Wrong codes are counted per account across logins, authenticator removal and account deletion
-(`SecondFactorGuard`): after five failures the second factor locks for 15 minutes (`TwoFactorLocked`). A
-successful code resets the counter. These checks run with the account row locked and reloaded, so parallel
-attempts are counted one by one and an emailed code or a time step is accepted only once. Confirming a new
+Wrong codes are counted per account across logins, authenticator removal, account deletion and blocked data
+consultations (`SecondFactorGuard`): after five failures the second factor locks for 15 minutes
+(`TwoFactorLocked`). A successful code resets the counter. These checks run with the account row locked and
+reloaded, so parallel attempts are counted one by one and an emailed code or a time step is accepted only once.
+Confirming a new
 authenticator enrollment is not counted: it needs the session and the secret just issued to that session after
 its password. Enrollment URIs and shared keys are only returned to the authenticated
 owner over HTTPS and never logged.
@@ -218,16 +219,17 @@ since the row itself is the record, and neither does a change of excluded proper
 ### Blocked data consultations
 
 Only the [person designated for data protection](DEPLOYMENT.md#environment-variables) reads the history: the active
-administrator whose email is `PRIVACY_OFFICER_EMAIL` (`PrivacyOfficer`), only while the account uses an
-authenticator app (`BlockedDataAuthenticatorRequired`), since with emailed codes whoever reads the mailbox holds
-both factors. No administrator can grant it from the application. `GET /api/blocked-data/access` tells the
-signed-in administrator whether they are that person.
+administrator whose email is `PRIVACY_OFFICER_EMAIL` (`PrivacyOfficer`), whatever their second factor. No
+administrator can grant it from the application. `GET /api/blocked-data/access` tells the signed-in administrator
+whether they are that person.
 
 - `POST /api/blocked-data/consultations` (credentials rate limit) opens a consultation for 15 minutes with the
   authority it is for (court, prosecutor, data protection authority, another public administration or a claim
-  against the association) and the reference of the request, after the current password and an authenticator
-  code, counted like logins. `BlockedDataConsultationNotification` then emails `LEGAL_EMAIL`, so an access nobody
-  expected is noticed.
+  against the association) and the reference of the request, after the current password and a code of the
+  second factor, counted like logins and spent by the opening. An emailed code comes from
+  `POST /api/blocked-data/consultations/code`, which checks the password first and shares the stored login code,
+  lifetime and cooldown, like the account deletion code. `BlockedDataConsultationNotification` then emails
+  `LEGAL_EMAIL`, so an access nobody expected is noticed.
 - `POST .../{id}/searches` takes an identifier, email, DNI/NIE, phone or part of the name (at least three
   characters) in the body, never in the URL; finds existing accounts and, decrypting only past states of
   accounts, erased ones; adds their minors; and returns each with only its name, whether it exists and how many

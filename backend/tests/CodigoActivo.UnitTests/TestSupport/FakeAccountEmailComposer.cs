@@ -121,6 +121,18 @@ public sealed class FakeAccountEmailComposer : IAccountEmailComposer
         );
     }
 
+    public EmailMessage BlockedDataConsultationCode(
+        EmailRecipient recipient,
+        string code,
+        TimeSpan lifetime
+    )
+    {
+        return Compose(
+            EmailKind.TwoFactorCode,
+            new(nameof(BlockedDataConsultationCode), recipient) { Code = code, Lifetime = lifetime }
+        );
+    }
+
     public EmailMessage SecurityAlert(
         EmailRecipient recipient,
         AccountSecurityChange change,

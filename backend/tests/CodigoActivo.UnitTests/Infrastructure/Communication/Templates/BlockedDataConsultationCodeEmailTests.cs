@@ -1,0 +1,67 @@
+using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Infrastructure.Communication.Templates;
+using Xunit;
+
+namespace CodigoActivo.UnitTests.Infrastructure.Communication.Templates;
+
+public sealed class BlockedDataConsultationCodeEmailTests
+{
+    private const string SiteUrl = "https://app.test";
+
+    [Fact]
+    public void CreateValidRequestAddressesRecipientWithCodeAndLifetime()
+    {
+        var message = BlockedDataConsultationCodeEmail.Create(
+            "ana@test.com",
+            "Ana",
+            "482913",
+            SiteUrl,
+            TimeSpan.FromMinutes(10)
+        );
+
+        message.Kind.Should().Be(EmailKind.TwoFactorCode);
+        message.ToAddress.Should().Be("ana@test.com");
+        message.ToName.Should().Be("Ana");
+        message
+            .Subject.Should()
+            .Contain("datos bloqueados")
+            .And.NotContain("482913", "the code must not appear in the subject line");
+        message
+            .TextBody.Should()
+            .Contain("Ana")
+            .And.Contain("\n482913\n")
+            .And.Contain("10 minutos")
+            .And.Contain("Si no has solicitado esta consulta");
+        message.HtmlBody.Should().Contain("Ana").And.Contain(">482913<").And.Contain("10 minutos");
+    }
+
+    [Fact]
+    public void CreateShortLifetimeRoundsUpToOneMinute()
+    {
+        var message = BlockedDataConsultationCodeEmail.Create(
+            "ana@test.com",
+            "Ana",
+            "000000",
+            SiteUrl,
+            TimeSpan.FromSeconds(20)
+        );
+
+        message.TextBody.Should().Contain("1 minutos");
+    }
+
+    [Fact]
+    public void CreateScriptInNameOrCodeHtmlEncodesThem()
+    {
+        var message = BlockedDataConsultationCodeEmail.Create(
+            "ana@test.com",
+            "<script>alert(1)</script>",
+            "<b>1</b>",
+            SiteUrl,
+            TimeSpan.FromMinutes(10)
+        );
+
+        message.HtmlBody.Should().NotContain("<script>").And.Contain("&lt;script&gt;");
+        message.HtmlBody.Should().NotContain("<b>1</b>").And.Contain("&lt;b&gt;1&lt;/b&gt;");
+    }
+}

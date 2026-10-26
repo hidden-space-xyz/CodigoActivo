@@ -14,6 +14,7 @@ import {
   getBlockedDataAccessRequest,
   getConsultationPageRequest,
   openConsultationRequest,
+  requestConsultationCodeRequest,
   searchBlockedDataRequest,
 } from './requests'
 
@@ -42,9 +43,14 @@ export const blockedDataQueries = {
 
 /**
  * Mutation options of the consultations. Opening one, searching and taking an extract change
- * what the list shows, so all of them refresh it. They are never retried: each one is recorded.
+ * what the list shows, so all of them refresh it; asking for the emailed code changes nothing
+ * shown. They are never retried: each one is recorded.
  */
 export const blockedDataMutations = {
+  requestCode: () =>
+    mutationOptions({
+      mutationFn: (currentPassword: string) => requestConsultationCodeRequest(currentPassword),
+    }),
   open: () =>
     mutationOptions({
       mutationFn: (input: OpenConsultationInput) => openConsultationRequest(input),

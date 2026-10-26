@@ -141,5 +141,4 @@ export const ErrorCode = {
   BlockedDataConsultationExpired: 'BlockedDataConsultationExpired',
   BlockedDataAccountNotFound: 'BlockedDataAccountNotFound',
   BlockedDataOfficerOnly: 'BlockedDataOfficerOnly',
-  BlockedDataAuthenticatorRequired: 'BlockedDataAuthenticatorRequired',
 } as const;

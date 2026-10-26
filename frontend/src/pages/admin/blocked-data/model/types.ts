@@ -5,7 +5,6 @@ export type BlockedDataAuthority =
 /** What the signed-in administrator may do with the blocked data. */
 export interface BlockedDataAccess {
   readonly isPrivacyOfficer: boolean
-  readonly usesAuthenticator: boolean
   readonly entities: readonly string[]
 }
 
@@ -47,11 +46,15 @@ export interface Candidate {
   readonly entryCount: number
 }
 
-/** What opening a consultation sends. */
-export interface OpenConsultationInput {
+/** The request a consultation is opened for, with the password that authorizes it. */
+export interface ConsultationRequest {
   readonly authority: BlockedDataAuthority
   readonly reference: string
   readonly currentPassword: string
+}
+
+/** What opening a consultation sends. */
+export interface OpenConsultationInput extends ConsultationRequest {
   readonly code: string
 }
 

@@ -66,8 +66,28 @@ public class BlockedDataController : ApiControllerBase
     }
 
     /// <summary>
+    /// Emails the one-time code that confirms opening a consultation of the blocked data to the
+    /// designated account, after its current password. An account whose second factor is an
+    /// authenticator application reads its code from it instead.
+    /// </summary>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    [HttpPost("consultations/code")]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<ActionResult> RequestConsultationCodeAsync(
+        [FromBody] BlockedDataConsultationCodeRequest request,
+        [FromServices] ICommandHandler<RequestBlockedDataConsultationCodeCommand, Result> handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(), ct));
+    }
+
+    /// <summary>
     /// Opens a consultation of the blocked data for a request, after the password and a code of
-    /// the authenticator app of the designated account.
+    /// the second factor of the designated account.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
