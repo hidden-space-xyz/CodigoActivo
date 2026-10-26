@@ -7,6 +7,5 @@
 
 export interface BlockedDataAccessResponse {
   isPrivacyOfficer: boolean;
-  usesAuthenticator: boolean;
   entities: string[];
 }

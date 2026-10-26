@@ -340,8 +340,7 @@
     "BlockedDataConsultationNotFound": "La consulta de datos bloqueados no existe o la abrió otra cuenta.",
     "BlockedDataConsultationExpired": "La consulta de datos bloqueados ha terminado. Abre otra para seguir.",
     "BlockedDataAccountNotFound": "Ninguna búsqueda de esta consulta encontró esa cuenta.",
-    "BlockedDataOfficerOnly": "Solo la persona responsable de protección de datos puede consultar los datos bloqueados.",
-    "BlockedDataAuthenticatorRequired": "Para consultar los datos bloqueados tu cuenta debe usar una aplicación de autenticación."
+    "BlockedDataOfficerOnly": "Solo la persona responsable de protección de datos puede consultar los datos bloqueados."
   },
   "pages": {
     "news": {
@@ -1561,6 +1560,7 @@
           "SetAdmin": "Cambiar los permisos de administrador",
           "UpdateUser": "Editar un usuario",
           "PurgeDataHistory": "Purgar el historial de datos y las consultas caducadas",
+          "RequestBlockedDataConsultationCode": "Pedir el código para abrir una consulta de datos bloqueados",
           "OpenBlockedDataConsultation": "Abrir una consulta de datos bloqueados",
           "SearchBlockedData": "Buscar cuentas en los datos bloqueados",
           "ExportBlockedData": "Descargar un extracto de datos bloqueados"
@@ -1586,24 +1586,28 @@
           "title": "Datos bloqueados",
           "subtitle": "Historial cifrado de lo que se modificó o eliminó. Solo se entrega a juzgados, al Ministerio Fiscal o a la autoridad de protección de datos (art. 32 LOPDGDD)."
         },
-        "authenticatorRequired": "Eres la persona responsable de protección de datos, pero para abrir una consulta tu cuenta debe usar una aplicación de autenticación.",
-        "authenticatorLink": "Actívala en «Mi cuenta».",
         "open": {
           "action": "Abrir consulta",
           "title": "Abrir una consulta de datos bloqueados",
-          "intro": "Indica quién pide los datos y la referencia de la petición. La consulta dura 15 minutos, queda registrada y se avisa al contacto legal de la asociación.",
+          "intro": "Indica quién pide los datos y la referencia de la petición. La consulta dura 15 minutos, queda registrada y se avisa al contacto legal de la asociación. Después te pediremos tu código de verificación en dos pasos.",
           "authority": "Quién pide los datos",
           "authorityPlaceholder": "Elige una autoridad",
           "reference": "Referencia de la petición",
           "password": "Tu contraseña",
-          "code": "Código de la aplicación de autenticación",
+          "sendCode": "Enviar código",
+          "continue": "Continuar",
+          "codeSent": "Te hemos enviado un código a {email}. Escríbelo aquí para abrir la consulta.",
+          "authenticatorIntro": "Escribe el código que muestra ahora tu aplicación de autenticación. No te enviamos ningún correo.",
+          "code": "Código de verificación",
+          "resendPrompt": "¿No te ha llegado?",
+          "resend": "Reenviar código",
           "confirm": "Confirmar y abrir",
           "form": {
             "problems": {
               "authorityRequired": "Elige quién pide los datos.",
               "referenceRequired": "Escribe la referencia de la petición.",
               "passwordRequired": "Escribe tu contraseña.",
-              "codeInvalid": "Escribe los 6 dígitos que muestra la aplicación."
+              "codeInvalid": "Escribe los 6 dígitos del código."
             }
           }
         },

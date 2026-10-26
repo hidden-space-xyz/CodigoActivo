@@ -8,8 +8,7 @@ namespace CodigoActivo.Application.BlockedData;
 
 /// <summary>
 /// Decides who may consult the blocked data: the active administrator whose email is the one
-/// <see cref="PrivacyOfficerOptions"/> designates, and only while they use an authenticator app,
-/// since with emailed codes whoever reads the mailbox would hold both factors.
+/// <see cref="PrivacyOfficerOptions"/> designates, whatever their second factor.
 /// </summary>
 /// <param name="options">Designation of the person responsible for data protection.</param>
 /// <param name="users">Repository used to load the signed-in account.</param>
@@ -37,9 +36,8 @@ public sealed class PrivacyOfficer(
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result is the account, <see cref="ApplicationErrorCode.BlockedDataOfficerOnly"/>
-    /// for any other account, or <see cref="ApplicationErrorCode.BlockedDataAuthenticatorRequired"/>
-    /// while it has no authenticator app.
+    /// A task whose result is the account, or
+    /// <see cref="ApplicationErrorCode.BlockedDataOfficerOnly"/> for any other account.
     /// </returns>
     public async Task<Result<User>> SignedInOfficerAsync(CancellationToken ct = default)
     {
@@ -52,8 +50,6 @@ public sealed class PrivacyOfficer(
             return Error.Forbidden(ApplicationErrorCode.BlockedDataOfficerOnly);
         }
 
-        return user.TwoFactorMethod is TwoFactorMethod.Authenticator
-            ? user
-            : Error.Forbidden(ApplicationErrorCode.BlockedDataAuthenticatorRequired);
+        return user;
     }
 }

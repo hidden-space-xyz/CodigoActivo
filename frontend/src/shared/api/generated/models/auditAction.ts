@@ -74,6 +74,7 @@ export const AuditAction = {
   SetAdmin: 'SetAdmin',
   UpdateUser: 'UpdateUser',
   PurgeDataHistory: 'PurgeDataHistory',
+  RequestBlockedDataConsultationCode: 'RequestBlockedDataConsultationCode',
   OpenBlockedDataConsultation: 'OpenBlockedDataConsultation',
   SearchBlockedData: 'SearchBlockedData',
   ExportBlockedData: 'ExportBlockedData',

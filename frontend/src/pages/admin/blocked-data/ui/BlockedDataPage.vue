@@ -13,9 +13,12 @@ const {
   table,
   isOfficer,
   usesAuthenticator,
+  email,
   availableEntities,
   dialogVisible,
+  codeStep,
   openError,
+  sendingCode,
   opening,
   consultation,
   query,
@@ -27,6 +30,8 @@ const {
   entities,
   extracting,
   startConsultation,
+  continueConsultation,
+  resendCode,
   openConsultation,
   search,
   downloadExtract,
@@ -45,18 +50,11 @@ const {
           :label="$t('pages.admin.blockedData.open.action')"
           type="primary"
           icon="lock"
-          :disabled="!usesAuthenticator || consultation !== null"
+          :disabled="consultation !== null"
           @click="startConsultation"
         />
       </template>
     </AdminPageHeader>
-
-    <p v-if="isOfficer && !usesAuthenticator" class="notice" role="note">
-      {{ $t('pages.admin.blockedData.authenticatorRequired') }}
-      <RouterLink :to="{ name: 'account' }">{{
-        $t('pages.admin.blockedData.authenticatorLink')
-      }}</RouterLink>
-    </p>
 
     <ConsultationPanel
       v-if="consultation"
@@ -118,17 +116,15 @@ const {
 
     <OpenConsultationDialog
       v-model:visible="dialogVisible"
+      :code-step="codeStep"
+      :uses-authenticator="usesAuthenticator"
+      :email="email"
+      :sending-code="sendingCode"
       :saving="opening"
       :error="openError"
+      @continue="continueConsultation"
+      @resend="resendCode"
       @submit="openConsultation"
     />
   </div>
 </template>
-
-<style scoped>
-.notice {
-  margin: 0 0 20px;
-  line-height: 1.5;
-  color: var(--ca-text-muted);
-}
-</style>

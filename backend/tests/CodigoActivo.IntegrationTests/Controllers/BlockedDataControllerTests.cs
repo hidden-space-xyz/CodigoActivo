@@ -19,6 +19,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
 {
     private const string AccessUrl = "/api/blocked-data/access";
     private const string ConsultationsUrl = "/api/blocked-data/consultations";
+    private const string CodeUrl = "/api/blocked-data/consultations/code";
     private const string Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
     private const string Reference = "Diligencias previas 123/2026";
 
@@ -55,6 +56,14 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
             var member = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
             Persisted.Overwrite(member!, new { IsAdmin = true });
         });
+    }
+
+    private static Task<HttpResponseMessage> RequestCodeAsync(
+        HttpClient client,
+        string password = TestSeedData.Password
+    )
+    {
+        return client.PostJsonAsync(CodeUrl, new BlockedDataConsultationCodeRequest(password), Ct);
     }
 
     private static Task<HttpResponseMessage> OpenAsync(HttpClient client, string code)
@@ -123,7 +132,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
     }
 
     [Fact]
-    public async Task AccessDesignatedAdministratorWithEmailedCodesMustEnableTheApp()
+    public async Task AccessDesignatedAdministratorIsThePrivacyOfficer()
     {
         var admin = await LoginAsAdminAsync();
 
@@ -132,7 +141,6 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var access = (await response.ReadJsonAsync<BlockedDataAccessResponse>(Ct))!;
         access.IsPrivacyOfficer.Should().BeTrue();
-        access.UsesAuthenticator.Should().BeFalse();
         access.Entities.Should().Contain(["User", "Assignment", "EventTermsAcceptance"]);
     }
 
@@ -150,13 +158,46 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
     }
 
     [Fact]
-    public async Task OpenDesignatedAdministratorWithoutAuthenticatorIsRefused()
+    public async Task OpenDesignatedAdministratorWithEmailedCodesOpensOnceWithTheEmailedCode()
+    {
+        var admin = await LoginAsAdminAsync();
+        using var requested = await RequestCodeAsync(admin);
+        requested.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var code = Factory.EmailSender.LastLoginCodeSentTo(
+            TestSeedData.AdminCredentials.Identifier
+        );
+
+        using var opened = await OpenAsync(admin, code);
+        using var replayed = await OpenAsync(admin, code);
+
+        opened.StatusCode.Should().Be(HttpStatusCode.Created);
+        await replayed.ShouldBeBadRequestAsync(ErrorCode.TwoFactorCodeInvalid);
+        (await Factory.QueryAsync(db => Task.FromResult(db.BlockedDataConsultations.Count())))
+            .Should()
+            .Be(1);
+    }
+
+    [Fact]
+    public async Task CodeWrongPasswordIsRefusedWithoutEmailing()
     {
         var admin = await LoginAsAdminAsync();
 
-        using var response = await OpenAsync(admin, "123456");
+        using var response = await RequestCodeAsync(admin, "wrong-password");
 
-        await response.ShouldBeForbiddenAsync(ErrorCode.BlockedDataAuthenticatorRequired);
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
+        Factory.EmailSender.Sent.Should().NotContain(m => m.Kind == EmailKind.TwoFactorCode);
+    }
+
+    [Fact]
+    public async Task CodeAnotherAdministratorIsRefusedWithoutEmailing()
+    {
+        await PromoteMemberToAdministratorAsync();
+        var member = await LoginAsMemberAsync();
+
+        using var response = await RequestCodeAsync(member);
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.BlockedDataOfficerOnly);
+        Factory.EmailSender.Sent.Should().NotContain(m => m.Kind == EmailKind.TwoFactorCode);
     }
 
     [Fact]

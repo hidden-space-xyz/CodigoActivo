@@ -166,6 +166,36 @@ public static class AppStrings
         Get("emails.blockedDataConsultation.authority.Claim");
 
     /// <summary>
+    /// Gets the subject of the code that confirms opening a consultation of the blocked data.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationCodeSubject =>
+        Get("emails.blockedDataConsultationCode.subject");
+
+    /// <summary>
+    /// Gets the heading of the code that confirms opening a consultation of the blocked data.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationCodeHeading =>
+        Get("emails.blockedDataConsultationCode.heading");
+
+    /// <summary>
+    /// Gets the plain-text introduction of the code that confirms opening a consultation.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationCodeIntroText =>
+        Get("emails.blockedDataConsultationCode.introText");
+
+    /// <summary>
+    /// Gets the HTML introduction of the code that confirms opening a consultation.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationCodeIntroHtml =>
+        Get("emails.blockedDataConsultationCode.introHtml");
+
+    /// <summary>
+    /// Gets the closing note of the code that confirms opening a consultation.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationCodeIgnoreNote =>
+        Get("emails.blockedDataConsultationCode.ignoreNote");
+
+    /// <summary>
     /// Gets the emails consent withdrawn heading value.
     /// </summary>
     public static string EmailsConsentWithdrawnHeading => Get("emails.consentWithdrawn.heading");
@@ -701,6 +731,26 @@ public static class AppStrings
     public static string EmailsBlockedDataConsultationOpened(string openedAt)
     {
         return Format("emails.blockedDataConsultation.opened", openedAt);
+    }
+
+    /// <summary>
+    /// Formats the HTML lifetime of the code that confirms opening a consultation.
+    /// </summary>
+    /// <param name="minutes">The minutes value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsBlockedDataConsultationCodeExpiryHtml(int minutes)
+    {
+        return Format("emails.blockedDataConsultationCode.expiryHtml", minutes);
+    }
+
+    /// <summary>
+    /// Formats the plain-text lifetime of the code that confirms opening a consultation.
+    /// </summary>
+    /// <param name="minutes">The minutes value.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsBlockedDataConsultationCodeExpiryText(int minutes)
+    {
+        return Format("emails.blockedDataConsultationCode.expiryText", minutes);
     }
 
     /// <summary>

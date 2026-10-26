@@ -31,6 +31,7 @@ import type {
 
 import type {
   BlockedDataAccessResponse,
+  BlockedDataConsultationCodeRequest,
   BlockedDataConsultationResponse,
   BlockedDataConsultationResponsePagedResult,
   BlockedDataExport,
@@ -298,6 +299,104 @@ export function usePostApiBlockedDataConsultations<TData = Awaited<ReturnType<ty
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPostApiBlockedDataConsultationsQueryOptions(openBlockedDataConsultationRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiBlockedDataConsultationsCodeResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiBlockedDataConsultationsCodeResponseSuccess = (postApiBlockedDataConsultationsCodeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiBlockedDataConsultationsCodeResponse = (postApiBlockedDataConsultationsCodeResponseSuccess)
+
+export const getPostApiBlockedDataConsultationsCodeUrl = () => {
+
+
+
+
+  return `/api/blocked-data/consultations/code`
+}
+
+export const postApiBlockedDataConsultationsCode = async (blockedDataConsultationCodeRequest?: BlockedDataConsultationCodeRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiBlockedDataConsultationsCodeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiBlockedDataConsultationsCodeResponse>(getPostApiBlockedDataConsultationsCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(blockedDataConsultationCodeRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiBlockedDataConsultationsCodeQueryKey = (blockedDataConsultationCodeRequest?: MaybeRefOrGetter<BlockedDataConsultationCodeRequest>,) => {
+    return [
+    'POST', 'api','blocked-data','consultations','code', blockedDataConsultationCodeRequest
+    ] as const;
+    }
+
+
+export const getPostApiBlockedDataConsultationsCodeQueryOptions = <TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError = unknown>(blockedDataConsultationCodeRequest?: MaybeRefOrGetter<BlockedDataConsultationCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiBlockedDataConsultationsCodeQueryKey(blockedDataConsultationCodeRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>> = ({ signal }) => postApiBlockedDataConsultationsCode(toValue(blockedDataConsultationCodeRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError, TData>
+}
+
+export type PostApiBlockedDataConsultationsCodeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>>
+export type PostApiBlockedDataConsultationsCodeQueryError = unknown
+
+
+
+export function usePostApiBlockedDataConsultationsCode<TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError = unknown>(
+ blockedDataConsultationCodeRequest?: MaybeRefOrGetter<BlockedDataConsultationCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiBlockedDataConsultationsCodeQueryOptions(blockedDataConsultationCodeRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

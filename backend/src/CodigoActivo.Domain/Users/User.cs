@@ -737,6 +737,14 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
+    /// Spends the emailed second-factor code that was just accepted, so it cannot be used twice.
+    /// </summary>
+    public void SpendLoginCode()
+    {
+        ClearLoginCode();
+    }
+
+    /// <summary>
     /// Clears the emailed login code and its timestamps.
     /// </summary>
     private void ClearLoginCode()

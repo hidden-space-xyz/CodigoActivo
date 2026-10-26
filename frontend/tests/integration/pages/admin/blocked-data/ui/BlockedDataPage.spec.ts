@@ -63,10 +63,14 @@ const EXTRACT: BlockedDataExport = {
 }
 
 function serve(access: BlockedDataAccessResponse, list: BlockedDataConsultationResponse[] = []) {
-  const bodies: Record<string, unknown[]> = { open: [], search: [], extract: [] }
+  const bodies: Record<string, unknown[]> = { code: [], open: [], search: [], extract: [] }
   server.use(
     http.get('/api/blocked-data/access', () => HttpResponse.json(access)),
     http.get('/api/blocked-data/consultations', () => HttpResponse.json(paged(list))),
+    http.post('/api/blocked-data/consultations/code', async ({ request }) => {
+      bodies.code!.push(await request.json())
+      return new HttpResponse(null, { status: 204 })
+    }),
     http.post('/api/blocked-data/consultations', async ({ request }) => {
       bodies.open!.push(await request.json())
       return HttpResponse.json(CONSULTATION, { status: 201 })
@@ -94,6 +98,7 @@ async function fillDialog(
   authority: string,
   reference: string,
   code: string,
+  next = t('pages.admin.blockedData.open.continue'),
 ) {
   wrapper
     .findComponent(OpenConsultationDialog)
@@ -101,15 +106,17 @@ async function fillDialog(
     .vm.$emit('update:modelValue', authority)
   await typeInto('#blocked-reference', reference)
   await typeInto('#blocked-password', 'secret')
+  await click(findButton(next))
+  await vi.waitFor(() => expect(document.querySelector('#blocked-code')).not.toBeNull())
   await typeInto('#blocked-code', code)
   await click(findButton(t('pages.admin.blockedData.open.confirm')))
 }
 
-async function renderPage() {
+async function renderPage(twoFactorMethod: 'Email' | 'Authenticator' = 'Authenticator') {
   const rendered = await renderWithProviders(BlockedDataPage, {
     route: '/admin/blocked-data',
     attach: true,
-    user: { isAdmin: true },
+    user: { isAdmin: true, email: 'dpd@example.test', twoFactorMethod },
   })
   await flushPromises()
   return rendered
@@ -130,7 +137,7 @@ function saved() {
   return { blobs, names }
 }
 
-const OFFICER = { isPrivacyOfficer: true, usesAuthenticator: true, entities: ['User'] }
+const OFFICER = { isPrivacyOfficer: true, entities: ['User'] }
 
 describe('BlockedDataPage', () => {
   afterEach(() => {
@@ -138,7 +145,7 @@ describe('BlockedDataPage', () => {
   })
 
   it('lists the consultations to any administrator, without the action to open one', async () => {
-    serve({ isPrivacyOfficer: false, usesAuthenticator: false, entities: [] }, [
+    serve({ isPrivacyOfficer: false, entities: [] }, [
       { ...CONSULTATION, foundAccounts: 2, extracts: 1 },
     ])
 
@@ -150,13 +157,51 @@ describe('BlockedDataPage', () => {
     expect(wrapper.text()).not.toContain(t('pages.admin.blockedData.open.action'))
   })
 
-  it('tells the designated account without an authenticator app how to enable it', async () => {
-    serve({ isPrivacyOfficer: true, usesAuthenticator: false, entities: [] })
+  it('emails the code to a designated account without an authenticator app', async () => {
+    const bodies = serve(OFFICER)
+    const { wrapper } = await renderPage('Email')
 
-    const { wrapper } = await renderPage()
+    await click(findButton(t('pages.admin.blockedData.open.action')))
+    await fillDialog(
+      wrapper,
+      'Court',
+      'Diligencias 123/2026',
+      '123456',
+      t('pages.admin.blockedData.open.sendCode'),
+    )
+    await vi.waitFor(() => expect(bodies.open).toHaveLength(1))
 
-    expect(wrapper.text()).toContain(t('pages.admin.blockedData.authenticatorRequired'))
-    expect(findButton(t('pages.admin.blockedData.open.action')).disabled).toBe(true)
+    expect(bodies.code).toEqual([{ currentPassword: 'secret' }])
+    expect(bodies.open).toEqual([
+      {
+        authority: 'Court',
+        reference: 'Diligencias 123/2026',
+        currentPassword: 'secret',
+        code: '123456',
+      },
+    ])
+    expect(wrapper.text()).toContain(t('pages.admin.blockedData.consultation.title'))
+  })
+
+  it('keeps the first step when the code could not be emailed', async () => {
+    serve(OFFICER)
+    server.use(
+      http.post('/api/blocked-data/consultations/code', () =>
+        apiError(400, 'UserCurrentPasswordIncorrect'),
+      ),
+    )
+    const { wrapper } = await renderPage('Email')
+    const dialog = wrapper.findComponent(OpenConsultationDialog)
+
+    await click(findButton(t('pages.admin.blockedData.open.action')))
+    dialog.findComponent(ElSelect).vm.$emit('update:modelValue', 'Claim')
+    await typeInto('#blocked-reference', 'Ref')
+    await typeInto('#blocked-password', 'wrong')
+    await click(findButton(t('pages.admin.blockedData.open.sendCode')))
+    await vi.waitFor(() => expect(dialog.props('error')).not.toBe(''))
+
+    expect(dialog.props('error')).toBe(t('errors.UserCurrentPasswordIncorrect'))
+    expect(dialog.props('codeStep')).toBe(false)
   })
 
   it('opens a consultation, finds an account and downloads its extract', async () => {

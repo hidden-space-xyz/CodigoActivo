@@ -116,6 +116,23 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     }
 
     /// <inheritdoc />
+    public EmailMessage BlockedDataConsultationCode(
+        EmailRecipient recipient,
+        string code,
+        TimeSpan lifetime
+    )
+    {
+        ArgumentNullException.ThrowIfNull(recipient);
+        return BlockedDataConsultationCodeEmail.Create(
+            recipient.Address,
+            recipient.Name,
+            code,
+            SiteUrl,
+            lifetime
+        );
+    }
+
+    /// <inheritdoc />
     public EmailMessage SecurityAlert(
         EmailRecipient recipient,
         AccountSecurityChange change,

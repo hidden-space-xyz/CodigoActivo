@@ -2,6 +2,7 @@ import {
   getApiBlockedDataAccess,
   getApiBlockedDataConsultations,
   postApiBlockedDataConsultations,
+  postApiBlockedDataConsultationsCode,
   postApiBlockedDataConsultationsConsultationIdExtracts,
   postApiBlockedDataConsultationsConsultationIdSearches,
 } from '@/shared/api/generated/endpoints/blocked-data/blocked-data'
@@ -30,6 +31,15 @@ export async function getConsultationPageRequest(
   params: ConsultationListParams,
 ): Promise<ServerTablePage<Consultation>> {
   return toPage(await getApiBlockedDataConsultations(params), toConsultation)
+}
+
+/**
+ * Asks the API to email the code that confirms opening a consultation
+ * (`POST /api/blocked-data/consultations/code`). The password is verified first; an account with
+ * an authenticator application gets no email and reads the code from its app instead.
+ */
+export async function requestConsultationCodeRequest(currentPassword: string): Promise<void> {
+  await postApiBlockedDataConsultationsCode({ currentPassword })
 }
 
 /** Opens a consultation for a request. */

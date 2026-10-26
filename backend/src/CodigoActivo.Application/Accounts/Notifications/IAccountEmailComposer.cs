@@ -88,6 +88,20 @@ public interface IAccountEmailComposer
     );
 
     /// <summary>
+    /// Composes the message carrying the code that confirms opening a consultation of the blocked
+    /// data.
+    /// </summary>
+    /// <param name="recipient">Account designated for data protection.</param>
+    /// <param name="code">One-time confirmation code.</param>
+    /// <param name="lifetime">Validity of the code.</param>
+    /// <returns>The composed message.</returns>
+    public EmailMessage BlockedDataConsultationCode(
+        EmailRecipient recipient,
+        string code,
+        TimeSpan lifetime
+    );
+
+    /// <summary>
     /// Composes the alert about a change to the authentication data of an account.
     /// </summary>
     /// <param name="recipient">Account holder receiving the message.</param>

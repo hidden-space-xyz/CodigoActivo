@@ -127,6 +127,28 @@ public sealed class AccountEmails(
     }
 
     /// <summary>
+    /// Sends the email carrying the one-time code that confirms opening a consultation of the
+    /// blocked data.
+    /// </summary>
+    /// <param name="user">The user value.</param>
+    /// <param name="code">Plain code the user must type; it is never stored.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task SendBlockedDataConsultationCodeEmailAsync(
+        User user,
+        string code,
+        CancellationToken ct
+    )
+    {
+        var message = composer.BlockedDataConsultationCode(
+            Recipient(user),
+            code,
+            twoFactor.ChallengeLifetime
+        );
+        return emailSender.SendAsync(message, ct);
+    }
+
+    /// <summary>
     /// Tells the guardian of <paramref name="dependent"/> on which day it comes of age and is erased.
     /// </summary>
     /// <param name="guardian">Guardian of the dependent, with a verified email.</param>

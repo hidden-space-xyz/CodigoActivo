@@ -1064,6 +1064,27 @@
         }
       }
     },
+    "/api/blocked-data/consultations/code": {
+      "post": {
+        "tags": [
+          "BlockedData"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockedDataConsultationCodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/blocked-data/consultations/{consultationId}/searches": {
       "post": {
         "tags": [
@@ -5393,6 +5414,7 @@
           "SetAdmin",
           "UpdateUser",
           "PurgeDataHistory",
+          "RequestBlockedDataConsultationCode",
           "OpenBlockedDataConsultation",
           "SearchBlockedData",
           "ExportBlockedData"
@@ -5587,15 +5609,11 @@
       "BlockedDataAccessResponse": {
         "required": [
           "entities",
-          "isPrivacyOfficer",
-          "usesAuthenticator"
+          "isPrivacyOfficer"
         ],
         "type": "object",
         "properties": {
           "isPrivacyOfficer": {
-            "type": "boolean"
-          },
-          "usesAuthenticator": {
             "type": "boolean"
           },
           "entities": {
@@ -5655,6 +5673,18 @@
             "items": {
               "$ref": "#/components/schemas/BlockedDataEntryCountResponse"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataConsultationCodeRequest": {
+        "required": [
+          "currentPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -6839,8 +6869,7 @@
           "BlockedDataConsultationNotFound",
           "BlockedDataConsultationExpired",
           "BlockedDataAccountNotFound",
-          "BlockedDataOfficerOnly",
-          "BlockedDataAuthenticatorRequired"
+          "BlockedDataOfficerOnly"
         ],
         "type": "string"
       },

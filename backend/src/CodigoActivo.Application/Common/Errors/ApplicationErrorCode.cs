@@ -379,12 +379,6 @@ public enum ApplicationErrorCode
     BlockedDataOfficerOnly,
 
     /// <summary>
-    /// The account designated for data protection must use an authenticator app to consult the
-    /// blocked data.
-    /// </summary>
-    BlockedDataAuthenticatorRequired,
-
-    /// <summary>
     /// An extract was narrowed to a kind of data that keeps no history.
     /// </summary>
     BlockedDataEntityUnknown,

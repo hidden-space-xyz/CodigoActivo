@@ -35,6 +35,7 @@ export * from './authenticatorSetupResponse';
 export * from './blockedDataAccessResponse';
 export * from './blockedDataAuthority';
 export * from './blockedDataCandidateResponse';
+export * from './blockedDataConsultationCodeRequest';
 export * from './blockedDataConsultationResponse';
 export * from './blockedDataConsultationResponsePagedResult';
 export * from './blockedDataEntryCountResponse';

@@ -13,8 +13,8 @@ namespace CodigoActivo.Application.Accounts.SecondFactor;
 /// with any other staged change, because the calling handler then fails, and it locks the second
 /// factor for a while once the limit is reached, so short codes cannot be brute forced. The lock
 /// raises <see cref="TwoFactorLocked"/>, recorded in the security log once it is committed. An
-/// accepted authenticator code records its time step on the account for the caller to save with
-/// its change.
+/// accepted code is spent on the account, an authenticator code by recording its time step and an
+/// emailed code by clearing it, for the caller to save with its change.
 /// </summary>
 /// <param name="uow">Unit of work used to commit the counted failure.</param>
 /// <param name="otpValidator">Validator of emailed codes.</param>
@@ -70,6 +70,10 @@ public sealed class SecondFactorGuard(
         if (usedStep is { } step)
         {
             user.RecordAuthenticatorStep(step);
+        }
+        else
+        {
+            user.SpendLoginCode();
         }
 
         return Result.Success();

@@ -68,6 +68,7 @@ export type AuditAction =
   | 'SetAdmin'
   | 'UpdateUser'
   | 'PurgeDataHistory'
+  | 'RequestBlockedDataConsultationCode'
   | 'OpenBlockedDataConsultation'
   | 'SearchBlockedData'
   | 'ExportBlockedData'

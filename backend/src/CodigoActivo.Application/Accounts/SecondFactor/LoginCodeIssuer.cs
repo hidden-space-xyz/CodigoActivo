@@ -59,6 +59,29 @@ public sealed class LoginCodeIssuer(
     }
 
     /// <summary>
+    /// Emails a fresh code that confirms opening a consultation of the blocked data and stages its
+    /// hash on the entity. The code lives in the same fields as the login code, so it shares its
+    /// lifetime, its resend cooldown and the second-factor lockout. The caller commits.
+    /// </summary>
+    /// <param name="user">Account designated for data protection.</param>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    public Task<Result> IssueBlockedDataConsultationAsync(
+        User user,
+        DateTimeOffset now,
+        CancellationToken ct
+    )
+    {
+        return IssueCoreAsync(
+            user,
+            now,
+            accountEmails.SendBlockedDataConsultationCodeEmailAsync,
+            ct
+        );
+    }
+
+    /// <summary>
     /// Tells why a new code may not be emailed to the user now: the account may not receive codes
     /// (<see cref="User.MayReceiveLoginCode"/>) or the last one was sent within the resend cooldown.
     /// </summary>

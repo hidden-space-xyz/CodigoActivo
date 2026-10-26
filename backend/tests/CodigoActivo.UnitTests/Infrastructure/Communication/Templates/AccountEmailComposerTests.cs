@@ -150,6 +150,22 @@ public sealed class AccountEmailComposerTests
     }
 
     [Fact]
+    public void BlockedDataConsultationCodeValidRequestShowsTheCodeAndItsLifetimeOutsideTheSubject()
+    {
+        var message = sut.BlockedDataConsultationCode(Ana, "482913", Lifetime);
+
+        message.Kind.Should().Be(EmailKind.TwoFactorCode);
+        message.ToAddress.Should().Be("ana@test.com");
+        message.ToName.Should().Be("Ana");
+        message.Subject.Should().Contain("datos bloqueados").And.NotContain("482913");
+        message
+            .TextBody.Should()
+            .Contain("\n482913\n")
+            .And.Contain("15 minutos")
+            .And.Contain(SiteFooter);
+    }
+
+    [Fact]
     public void SecurityAlertMaskedNewEmailIsQuotedAndTheRecipientGreeted()
     {
         var message = sut.SecurityAlert(
