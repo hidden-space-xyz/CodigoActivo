@@ -389,8 +389,10 @@ code cite only these laws.
   so the text in force on any date can be shown.
 - `GET /api/me/personal-data` (report rate limit) gives the signed-in user a copy of their own and their
   dependents' personal data (articles 15 and 20 GDPR), which «Mi cuenta» saves as a JSON file with Spanish
-  names and labels: the account with any unconfirmed new email, the news consent history, the dependents, the
-  household's signups, the terms decisions about the household with who took them, their signatures and their history, the user's event ratings, the open sessions and the audit
+  names and labels. It names and links the privacy policy version in force, which gives the information of
+  article 15.1, and holds the account with any unconfirmed new email, the news consent history, the dependents, the
+  household's signups, the terms decisions about the household with every change, who took it and the
+  signature kept for it, withdrawn acceptances included, the user's event ratings, the open sessions and the audit
   entries the user ran or that name a household member as main or related entity, logins before the session
   included (time, action, outcome, kind of actor and client IP, without the IP when an administrator ran it
   and never what else the entry touched). It reads only the caller's household and never holds password or

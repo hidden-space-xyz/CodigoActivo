@@ -183,9 +183,14 @@ describe('account mapper', () => {
 
 describe('toPersonalDataFile', () => {
   it('names every field in Spanish and labels the codes as the site does', () => {
-    const file = toPersonalDataFile(buildPersonalDataResponse(), t)
+    const file = toPersonalDataFile(buildPersonalDataResponse(), 'https://site.test/privacy', t)
 
     expect(file.generadoEl).toBe('2026-10-18T10:00:00Z')
+    expect(file.politicaDePrivacidad).toEqual({
+      version: 3,
+      publicadaEl: '2026-09-01T00:00:00Z',
+      enlace: 'https://site.test/privacy',
+    })
     expect(file.cuenta).toEqual({
       id: 'user-1',
       nombre: 'Ada',
@@ -247,22 +252,23 @@ describe('toPersonalDataFile', () => {
         decidioPor: 'Ada Lovelace',
         evento: 'Hackatón',
         documento: 'Uso de imágenes',
-        versionDelDocumento: 2,
-        aceptado: true,
+        versionDelDocumento: 1,
+        aceptado: false,
         fecha: '2026-05-01T00:00:00Z',
-        firmaPngBase64: 'iVBORw0KGgo=',
         cambios: [
           {
-            aceptado: false,
+            aceptado: true,
             versionDelDocumento: 1,
             fecha: '2026-04-01T00:00:00Z',
             decidioPor: 'Ada Lovelace',
+            firmaPngBase64: 'iVBORw0KGgo=',
           },
           {
-            aceptado: true,
-            versionDelDocumento: 2,
+            aceptado: false,
+            versionDelDocumento: 1,
             fecha: '2026-05-01T00:00:00Z',
             decidioPor: 'Ada Lovelace',
+            firmaPngBase64: null,
           },
         ],
       },
@@ -302,5 +308,14 @@ describe('toPersonalDataFile', () => {
         ip: null,
       },
     ])
+  })
+
+  it('names no privacy policy while none is published', () => {
+    const copy = buildPersonalDataResponse()
+    delete copy.privacyPolicy
+
+    const file = toPersonalDataFile(copy, 'https://site.test/privacy', t)
+
+    expect(file.politicaDePrivacidad).toBeNull()
   })
 })

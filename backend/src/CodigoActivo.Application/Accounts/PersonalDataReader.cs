@@ -1,7 +1,9 @@
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Legal.Contracts;
 using CodigoActivo.Application.Logs;
 using CodigoActivo.Domain.Common;
 
@@ -10,8 +12,10 @@ namespace CodigoActivo.Application.Accounts;
 /// <summary>
 /// Copies the personal data kept about an account and the minors in their care: the account, the
 /// news consent history, the minors, the signups of the household, the decisions on event
-/// documents about the household with their signatures, the ratings the account wrote, the open
-/// sessions and the audit entries about the household that the log still holds.
+/// documents about the household with every change and the signature kept for it, the ratings the
+/// account wrote, the open sessions and the audit entries about the household that the log still
+/// holds. The copy names the privacy policy in force, which tells why and for how long they are
+/// kept.
 /// </summary>
 /// <param name="readStore">Read side the copy reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -134,14 +138,14 @@ public sealed class PersonalDataReader(
                     a.TermsDocumentVersion,
                     a.Accepted,
                     a.DecidedAt,
-                    a.Signature,
                     a.Changes.OrderBy(c => c.ChangedAt)
                         .ThenBy(c => c.Id)
                         .Select(c => new PersonalDataTermsDecisionChangeResponse(
                             c.Accepted,
                             c.TermsDocumentVersion,
                             c.ChangedAt,
-                            c.DecidedBy.FirstName + " " + c.DecidedBy.LastName
+                            c.DecidedBy.FirstName + " " + c.DecidedBy.LastName,
+                            c.Signature
                         ))
                         .ToList()
                 )),
@@ -174,9 +178,19 @@ public sealed class PersonalDataReader(
             [userId, .. dependents.Select(dependent => dependent.Id)],
             ct
         );
+        var privacyPolicy = await executor.FirstOrDefaultAsync(
+            readStore
+                .LegalPolicies.Where(policy => policy.Kind == LegalPolicyKind.Privacy)
+                .Select(policy => new LegalPolicyVersionResponse(
+                    policy.Version,
+                    policy.PublishedAt
+                )),
+            ct
+        );
 
         return new PersonalDataResponse(
             clock.UtcNow,
+            privacyPolicy,
             account,
             consentChanges,
             dependents,

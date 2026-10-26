@@ -8981,6 +8981,9 @@
             "type": "string",
             "format": "date-time"
           },
+          "privacyPolicy": {
+            "$ref": "#/components/schemas/LegalPolicyVersionResponse"
+          },
           "account": {
             "$ref": "#/components/schemas/PersonalDataAccountResponse"
           },
@@ -9130,11 +9133,6 @@
           "decidedAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "signature": {
-            "type": "string",
-            "format": "byte",
-            "nullable": true
           },
           "changes": {
             "type": "array",
@@ -10486,6 +10484,11 @@
           },
           "decidedByName": {
             "type": "string"
+          },
+          "signature": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
           }
         },
         "additionalProperties": false

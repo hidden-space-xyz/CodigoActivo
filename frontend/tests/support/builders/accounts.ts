@@ -90,6 +90,7 @@ export function buildPersonalDataResponse(
 ): PersonalDataResponse {
   return {
     generatedAt: '2026-10-18T10:00:00Z',
+    privacyPolicy: { version: 3, publishedAt: '2026-09-01T00:00:00Z' },
     account: {
       id: 'user-1',
       firstName: 'Ada',
@@ -147,22 +148,23 @@ export function buildPersonalDataResponse(
         decidedByName: 'Ada Lovelace',
         eventTitle: 'Hackatón',
         documentName: 'Uso de imágenes',
-        documentVersion: 2,
-        accepted: true,
+        documentVersion: 1,
+        accepted: false,
         decidedAt: '2026-05-01T00:00:00Z',
-        signature: 'iVBORw0KGgo=',
         changes: [
           {
-            accepted: false,
+            accepted: true,
             documentVersion: 1,
             changedAt: '2026-04-01T00:00:00Z',
             decidedByName: 'Ada Lovelace',
+            signature: 'iVBORw0KGgo=',
           },
           {
-            accepted: true,
-            documentVersion: 2,
+            accepted: false,
+            documentVersion: 1,
             changedAt: '2026-05-01T00:00:00Z',
             decidedByName: 'Ada Lovelace',
+            signature: null,
           },
         ],
       },

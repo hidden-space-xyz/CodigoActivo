@@ -2,10 +2,13 @@ using System.Net;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Legal.Contracts;
 using CodigoActivo.Application.Logs.Contracts;
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
@@ -124,12 +127,29 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
                 Assignment(TestSeedData.Users.BlockedId, ActivityRole.Participant),
                 Assignment(OtherChildId, ActivityRole.Participant)
             );
+            var withdrawn = Decision(
+                TestSeedData.Users.MemberId,
+                HandwrittenSignature.FromStored(TestSeedData.ValidPng())
+            );
+            withdrawn.Withdraw(
+                UserId.From(TestSeedData.Users.MemberId),
+                UserId.From(TestSeedData.Users.MemberId),
+                Morning
+            );
             db.EventTermsAcceptances.AddRange(
-                Decision(
-                    TestSeedData.Users.MemberId,
-                    HandwrittenSignature.FromStored(TestSeedData.ValidPng())
-                ),
+                withdrawn,
                 Decision(TestSeedData.Users.BlockedId, null)
+            );
+            db.LegalPolicies.Add(
+                LegalPolicy
+                    .Publish(
+                        LegalPolicyKind.Privacy,
+                        RichText.From(
+                            """{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Texto"}]}]}"""
+                        ),
+                        SeededAt
+                    )
+                    .Value
             );
             db.NewsConsentChanges.AddRange(
                 ConsentChange(TestSeedData.Users.MemberId, true),
@@ -273,6 +293,7 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
         var data = (await response.ReadJsonAsync<PersonalDataResponse>(Ct))!;
         data.GeneratedAt.Should().Be(Factory.Clock.UtcNow);
+        data.PrivacyPolicy.Should().Be(new LegalPolicyVersionResponse(1, SeededAt));
         data.Account.Id.Should().Be(TestSeedData.Users.MemberId);
         data.Account.Email.Should().Be(TestSeedData.MemberEmail);
         data.Account.NationalId.Should().Be(TestSeedData.MemberNationalId);
@@ -298,11 +319,25 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
             });
         var decision = data.TermsDecisions.Should().ContainSingle().Subject;
         decision.DocumentName.Should().Be("Uso de imágenes");
-        decision.Accepted.Should().BeTrue();
-        decision.Signature.Should().Equal(TestSeedData.ValidPng());
+        decision.Accepted.Should().BeFalse();
         decision
             .Changes.Should()
-            .Equal(new PersonalDataTermsDecisionChangeResponse(true, 1, SeededAt, "Marta Miembro"));
+            .SatisfyRespectively(
+                accepted =>
+                {
+                    accepted.Accepted.Should().BeTrue();
+                    accepted.DocumentVersion.Should().Be(1);
+                    accepted.ChangedAt.Should().Be(SeededAt);
+                    accepted.DecidedByName.Should().Be("Marta Miembro");
+                    accepted.Signature.Should().Equal(TestSeedData.ValidPng());
+                },
+                withdrawal =>
+                {
+                    withdrawal.Accepted.Should().BeFalse();
+                    withdrawal.ChangedAt.Should().Be(Morning);
+                    withdrawal.Signature.Should().BeNull();
+                }
+            );
         data.Ratings.Should()
             .Equal(new PersonalDataRatingResponse("Hackatón", 5, "El taller", null, null));
         data.Sessions.Should().ContainSingle();

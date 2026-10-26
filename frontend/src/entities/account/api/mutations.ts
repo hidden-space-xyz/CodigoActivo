@@ -92,12 +92,13 @@ export const accountMutations = {
       mutationFn: (input: DeleteAccountInput) => deleteAccountRequest(input),
     }),
   /**
-   * Fetches the copy of the signed-in user's personal data as a JSON file labelled with `t`. It runs
-   * on demand and is never cached, so the copy does not linger in the query cache.
+   * Fetches the copy of the signed-in user's personal data as a JSON file labelled with `t` that
+   * links the privacy policy at `privacyPolicyUrl`. It runs on demand and is never cached, so the
+   * copy does not linger in the query cache.
    */
-  personalData: (t: Translate) =>
+  personalData: (privacyPolicyUrl: string, t: Translate) =>
     mutationOptions({
-      mutationFn: () => getAccountPersonalDataRequest(t),
+      mutationFn: () => getAccountPersonalDataRequest(privacyPolicyUrl, t),
     }),
   rateEvent: () =>
     mutationOptions({

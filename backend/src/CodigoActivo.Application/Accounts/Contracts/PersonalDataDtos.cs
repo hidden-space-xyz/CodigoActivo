@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+using CodigoActivo.Application.Legal.Contracts;
 using CodigoActivo.Application.Logs.Contracts;
 
 namespace CodigoActivo.Application.Accounts.Contracts;
@@ -10,6 +11,11 @@ namespace CodigoActivo.Application.Accounts.Contracts;
 /// touched are left out.
 /// </summary>
 /// <param name="GeneratedAt">When the copy was made.</param>
+/// <param name="PrivacyPolicy">
+/// The version of the privacy policy in force when the copy was made, which tells the purposes,
+/// legal bases, recipients, retention periods and rights article 15.1 GDPR asks for, or
+/// <see langword="null"/> while none is published.
+/// </param>
 /// <param name="Account">The signed-in user's account.</param>
 /// <param name="NewsConsentChanges">Every change of the news consent, oldest first.</param>
 /// <param name="Dependents">The minors in the user's care.</param>
@@ -24,6 +30,7 @@ namespace CodigoActivo.Application.Accounts.Contracts;
 /// </param>
 public sealed record PersonalDataResponse(
     DateTimeOffset GeneratedAt,
+    LegalPolicyVersionResponse? PrivacyPolicy,
     PersonalDataAccountResponse Account,
     IReadOnlyList<PersonalDataConsentChangeResponse> NewsConsentChanges,
     IReadOnlyList<PersonalDataDependentResponse> Dependents,
@@ -167,8 +174,10 @@ public sealed record PersonalDataRatingResponse(
 /// <param name="DocumentVersion">Version of the document the decision was last taken on.</param>
 /// <param name="Accepted">Whether the document is accepted now.</param>
 /// <param name="DecidedAt">When it was last decided.</param>
-/// <param name="Signature">Handwritten signature as a PNG image, when the document asked for one and is accepted now.</param>
-/// <param name="Changes">Every acceptance, decline and withdrawal of the decision, oldest first.</param>
+/// <param name="Changes">
+/// Every acceptance, decline and withdrawal of the decision, oldest first, each with the signature
+/// kept for it.
+/// </param>
 public sealed record PersonalDataTermsDecisionResponse(
     Guid PersonId,
     string PersonName,
@@ -178,7 +187,6 @@ public sealed record PersonalDataTermsDecisionResponse(
     int DocumentVersion,
     bool Accepted,
     DateTimeOffset DecidedAt,
-    byte[]? Signature,
     IReadOnlyList<PersonalDataTermsDecisionChangeResponse> Changes
 );
 
@@ -189,11 +197,16 @@ public sealed record PersonalDataTermsDecisionResponse(
 /// <param name="DocumentVersion">Version of the document the change was made on.</param>
 /// <param name="ChangedAt">When it changed.</param>
 /// <param name="DecidedByName">Full name of who decided: the person or their guardian.</param>
+/// <param name="Signature">
+/// Handwritten signature drawn for an acceptance, as a PNG image, when the document asked for one;
+/// it stays after a withdrawal, which never makes unlawful what the acceptance allowed.
+/// </param>
 public sealed record PersonalDataTermsDecisionChangeResponse(
     bool Accepted,
     int DocumentVersion,
     DateTimeOffset ChangedAt,
-    string DecidedByName
+    string DecidedByName,
+    byte[]? Signature
 );
 
 /// <summary>

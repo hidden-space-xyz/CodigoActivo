@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { AccountAuditEntryResponse } from './accountAuditEntryResponse';
+import type { LegalPolicyVersionResponse } from './legalPolicyVersionResponse';
 import type { PersonalDataAccountResponse } from './personalDataAccountResponse';
 import type { PersonalDataConsentChangeResponse } from './personalDataConsentChangeResponse';
 import type { PersonalDataDependentResponse } from './personalDataDependentResponse';
@@ -15,6 +16,7 @@ import type { PersonalDataTermsDecisionResponse } from './personalDataTermsDecis
 
 export interface PersonalDataResponse {
   generatedAt: string;
+  privacyPolicy?: LegalPolicyVersionResponse;
   account: PersonalDataAccountResponse;
   newsConsentChanges: PersonalDataConsentChangeResponse[];
   dependents: PersonalDataDependentResponse[];

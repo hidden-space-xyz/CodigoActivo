@@ -231,10 +231,12 @@ describe('account requests', () => {
     const copy = buildPersonalDataResponse()
     server.use(http.get('/api/me/personal-data', () => HttpResponse.json(copy)))
 
-    const file = await getAccountPersonalDataRequest(t)
+    const file = await getAccountPersonalDataRequest('https://site.test/privacy', t)
 
     expect(file.type).toBe('application/json')
-    await expect(file.text()).resolves.toBe(JSON.stringify(toPersonalDataFile(copy, t), null, 2))
+    await expect(file.text()).resolves.toBe(
+      JSON.stringify(toPersonalDataFile(copy, 'https://site.test/privacy', t), null, 2),
+    )
   })
 
   it('asks for the deletion code and deletes the own account with the password and the code', async () => {

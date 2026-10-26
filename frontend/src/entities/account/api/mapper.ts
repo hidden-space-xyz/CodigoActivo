@@ -216,12 +216,24 @@ function securityLogActor(entry: AccountAuditEntryResponse, t: Translate): strin
 
 /**
  * Turns the copy of the personal data into the file the user downloads, with Spanish names and the
- * labels the site shows instead of the codes the API answers with.
+ * labels the site shows instead of the codes the API answers with. The privacy policy in force is
+ * linked at `privacyPolicyUrl`.
  */
-export function toPersonalDataFile(data: PersonalDataResponse, t: Translate): PersonalDataFile {
-  const { account } = data
+export function toPersonalDataFile(
+  data: PersonalDataResponse,
+  privacyPolicyUrl: string,
+  t: Translate,
+): PersonalDataFile {
+  const { account, privacyPolicy } = data
   return {
     generadoEl: data.generatedAt,
+    politicaDePrivacidad: privacyPolicy
+      ? {
+          version: privacyPolicy.version,
+          publicadaEl: privacyPolicy.publishedAt,
+          enlace: privacyPolicyUrl,
+        }
+      : null,
     cuenta: {
       id: account.id,
       nombre: account.firstName,
@@ -278,12 +290,12 @@ export function toPersonalDataFile(data: PersonalDataResponse, t: Translate): Pe
       versionDelDocumento: decision.documentVersion,
       aceptado: decision.accepted,
       fecha: decision.decidedAt,
-      firmaPngBase64: decision.signature ?? null,
       cambios: decision.changes.map((change) => ({
         aceptado: change.accepted,
         versionDelDocumento: change.documentVersion,
         fecha: change.changedAt,
         decidioPor: change.decidedByName,
+        firmaPngBase64: change.signature ?? null,
       })),
     })),
     valoraciones: data.ratings.map((rating) => ({
