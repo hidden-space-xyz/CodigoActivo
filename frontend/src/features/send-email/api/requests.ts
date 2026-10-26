@@ -5,11 +5,6 @@ import {
   postApiEmailsUsers,
   postApiEmailsUsersUserId,
 } from '@/shared/api/generated/endpoints/emails/emails'
-import type {
-  EmailAudienceResponse,
-  PostApiEmailsUsersBody,
-  SendEmailResultResponse,
-} from '@/shared/api/generated/models'
 
 import type {
   EmailAudience,
@@ -17,23 +12,7 @@ import type {
   SendEmailPayload,
   SendEmailResult,
 } from '../model/types'
-
-function toEmailAudience(audience: EmailAudienceResponse): EmailAudience {
-  return { recipients: audience.recipients, withoutConsent: audience.withoutConsent }
-}
-
-function toSendEmailResult(result: SendEmailResultResponse): SendEmailResult {
-  return { queued: result.queued, skipped: result.skipped }
-}
-
-function toEmailBody(payload: SendEmailPayload): PostApiEmailsUsersBody {
-  const subject = payload.subject.trim()
-  const body = payload.body.trim()
-  const { purpose } = payload
-  return payload.attachments.length > 0
-    ? { subject, body, purpose, attachments: [...payload.attachments] }
-    : { subject, body, purpose }
-}
+import { toEmailAudience, toEmailBody, toSendEmailResult } from './mapper'
 
 /** Queues an email for a single user (`POST /api/emails/users/{userId}`). */
 export async function sendEmailToUserRequest(
