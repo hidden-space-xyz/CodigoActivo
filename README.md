@@ -33,13 +33,13 @@ managed through Vue I18n.
 
 ## Technology
 
-| Area     | Main technologies                                                                        |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Backend  | ASP.NET Core on .NET 10, EF Core, PostgreSQL 18, Argon2id, Otp.NET, MailKit, OpenAPI     |
-| Frontend | Vue 3, Vite, TypeScript, Element Plus, TanStack Query, Vue I18n, TipTap, Chart.js, Orval |
-| Quality  | .NET analyzers, CSharpier, ESLint, Stylelint, Steiger, Knip, Prettier, `vue-tsc`         |
-| Tests    | xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers, Vitest, Vue Test Utils, MSW    |
-| Runtime  | Docker Compose and unprivileged nginx                                                    |
+| Area     | Main technologies                                                                         |
+| -------- | ----------------------------------------------------------------------------------------- |
+| Backend  | ASP.NET Core on .NET 10, EF Core, PostgreSQL 18, Argon2id, Otp.NET, MailKit, OpenAPI      |
+| Frontend | Vue 3, Vite, TypeScript, Element Plus, TanStack Query, Vue I18n, TipTap, Chart.js, Orval  |
+| Quality  | .NET analyzers, CSharpier, ESLint, Stylelint, Steiger, Knip, Prettier, `vue-tsc`          |
+| Tests    | xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers, Vitest, Vue Test Utils, MSW, k6 |
+| Runtime  | Docker Compose and unprivileged nginx                                                     |
 
 ## Repository
 

@@ -120,6 +120,7 @@ coverage*.xml
 coverage*.info
 coveragereport/
 BenchmarkDotNet.Artifacts/
+backend/tests/performance/results/
 
 *.nupkg
 *.snupkg

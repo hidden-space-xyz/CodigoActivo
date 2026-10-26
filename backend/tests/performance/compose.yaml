@@ -1,0 +1,122 @@
+name: codigoactivo-performance
+
+x-database: &database
+  POSTGRES_DB: codigoactivo
+  POSTGRES_USER: codigoactivo
+
+x-admin: &admin
+  BOOTSTRAP_ADMIN_EMAIL: admin@performance.codigoactivo.test
+
+x-server: &server
+  cpuset: ${PERF_SERVER_CPUSET:-0-3}
+
+x-tools: &tools
+  cpuset: ${PERF_TOOLS_CPUSET:-4-11}
+
+services:
+  secrets:
+    image: postgres:18-alpine
+    entrypoint:
+      - sh
+      - -c
+      - for key in postgres_password data_protection_key; do [ -s "/secrets/$$key" ] || head -c 32 /dev/urandom | base64 | tr -d '\n' > "/secrets/$$key"; done; chmod 444 /secrets/*
+    volumes:
+      - secrets:/secrets
+
+  db:
+    <<: *server
+    image: postgres:18-alpine
+    mem_limit: ${PERF_DB_MEMORY:-3g}
+    depends_on:
+      secrets:
+        condition: service_completed_successfully
+    environment:
+      <<: *database
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - db-data:/var/lib/postgresql
+      - secrets:/run/secrets:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+      start_interval: 1s
+
+  mailpit:
+    <<: *tools
+    image: axllent/mailpit:v1.31.5
+    environment:
+      MP_MAX_MESSAGES: 50000
+
+  api:
+    <<: *server
+    image: codigoactivo-api-performance
+    mem_limit: ${PERF_API_MEMORY:-4g}
+    build:
+      context: ../..
+      dockerfile: src/CodigoActivo.API/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      <<: [*database, *admin]
+      ASPNETCORE_ENVIRONMENT: Staging
+      POSTGRES_HOST: db
+      APP_BASE_URL: https://performance.codigoactivo.test/
+      APP_TIMEZONE: Europe/Madrid
+      DEMO_MODE: "true"
+      PRIVACY_OFFICER_EMAIL: admin@performance.codigoactivo.test
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_SECURITY: None
+      SMTP_FROM_ADDRESS: no-reply@performance.codigoactivo.test
+      SMTP_FROM_NAME: Código Activo (rendimiento)
+      LEGAL_NAME: Código Activo (rendimiento)
+      LEGAL_TAX_ID: G00000000
+      LEGAL_ADDRESS: León (rendimiento)
+      LEGAL_REGISTRY: Sin inscripción (rendimiento)
+      LEGAL_EMAIL: contacto@performance.codigoactivo.test
+    volumes:
+      - secrets:/run/secrets:ro
+      - api-files:/app/files
+      - api-dataprotection:/home/app/.aspnet/DataProtection-Keys
+      - api-state:/app/state
+    read_only: true
+    tmpfs: [/tmp]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null --header='X-Forwarded-Proto: https' http://127.0.0.1:8080/api/auth/csrf"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10m
+      start_interval: 2s
+
+  k6:
+    <<: *tools
+    image: grafana/k6:2.2.0
+    profiles: [k6]
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      <<: *admin
+      API_URL: http://api:8080
+      MAILPIT_URL: http://mailpit:8025
+      K6_WEB_DASHBOARD: "true"
+      K6_WEB_DASHBOARD_EXPORT: /results/report.html
+    working_dir: /scripts
+    volumes:
+      - ./k6:/scripts:ro
+      - ./results:/results
+    command: [run, main.js]
+
+volumes:
+  secrets:
+  db-data:
+  api-files:
+  api-dataprotection:
+  api-state:
