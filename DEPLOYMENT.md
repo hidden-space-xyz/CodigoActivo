@@ -318,6 +318,12 @@ data: logins, signups, published content, a password attack, email outages and s
 writes a new one once the audit log holds no entry of a demo account younger than the diagnostic retention;
 entries already past the retention of their log are left out. A failure to write it is logged as a warning
 and does not stop the start.
+It also replays a year of changes and erasures of personal data through the data history, so «Datos
+bloqueados» has something to consult: demo accounts that replaced their email and phone, withdrew their news
+consent, left an activity or deleted a rating, and three former accounts erased by their holder together with
+a minor (Lozano Prieto), by the administrator (Ibáñez Robles) and by the purge of unverified accounts (Gallego
+Herrera). It runs once, in one transaction, while the history holds nothing about those former accounts; a
+failure stops that start.
 
 Changing mode requires destroying all named volumes and therefore all application data:
 

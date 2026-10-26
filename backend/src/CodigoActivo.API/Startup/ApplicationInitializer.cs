@@ -31,6 +31,7 @@ internal static class ApplicationInitializer
 
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         await services.SeedDemoDataAsync(cancellation.Token);
+        await services.SeedDemoDataHistoryAsync(cancellation.Token);
         await services.SeedDemoLogsAsync(cancellation.Token);
     }
 }

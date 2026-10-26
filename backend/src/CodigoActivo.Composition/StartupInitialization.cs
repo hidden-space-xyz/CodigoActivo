@@ -122,6 +122,21 @@ public static class StartupInitialization
     }
 
     /// <summary>
+    /// Replays the changes and erasures of personal data of demo mode when the data history has
+    /// none, so the blocked data have something to consult.
+    /// </summary>
+    /// <param name="services">Scoped service provider.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public static Task SeedDemoDataHistoryAsync(
+        this IServiceProvider services,
+        CancellationToken ct
+    )
+    {
+        return services.GetRequiredService<DemoDataHistorySeeder>().SeedAsync(ct);
+    }
+
+    /// <summary>
     /// Adds the invented diagnostic and audit history of demo mode when the log tables have none.
     /// A failure is logged and does not stop the start.
     /// </summary>

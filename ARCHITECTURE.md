@@ -183,7 +183,7 @@ check enforces.
 - Startup validates the configuration, applies migrations, seeds catalogs, creates the initial administrator
   (`InitialAdministrator.Id`) when the user table is empty, locks the selected demo mode only once that
   succeeded, refuses a database that has users but not that
-  account, and adds demo data and an invented log history when enabled.
+  account, and adds demo data, a replayed data history and an invented log history when enabled.
 - Infrastructure is organized by feature too: each feature folder (`Users/`, `Events/`, `Activities/`, `News/`,
   `Files/`...) holds its EF configurations, repositories and background services; `Database/` keeps the
   contexts, conventions, catalogs, shared configurations and repository base, the unit of work, the query
