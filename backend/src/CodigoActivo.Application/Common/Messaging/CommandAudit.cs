@@ -9,8 +9,9 @@ namespace CodigoActivo.Application.Common.Messaging;
 
 /// <summary>
 /// Reads what the audit log keeps of a command and of its result, and nothing else: the typed
-/// identifiers it names. Texts, flags, numbers, dates, streams and every other value are never
-/// read, so emails, passwords, codes, signatures and secrets never reach the log.
+/// identifiers it names. Texts, flags, numbers, dates, streams, every other value and the
+/// properties marked <see cref="UnauditedAttribute"/> are never read, so emails, passwords, codes,
+/// signatures and secrets never reach the log.
 /// </summary>
 public static class CommandAudit
 {
@@ -152,7 +153,10 @@ public static class CommandAudit
                 [
                     .. candidate
                         .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                        .Where(property => property.GetIndexParameters().Length is 0)
+                        .Where(property =>
+                            property.GetIndexParameters().Length is 0
+                            && !property.IsDefined(typeof(UnauditedAttribute), inherit: false)
+                        )
                         .OrderBy(property => property.MetadataToken),
                 ]
         );

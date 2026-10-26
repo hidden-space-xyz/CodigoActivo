@@ -107,8 +107,8 @@ export const AUDIT_ENTITY_TYPES: readonly AuditEntityType[] = [
 ]
 
 /**
- * Kind of entity the audit log never names: a consultation of the blocked data, whose reference
- * only the privacy officer reads.
+ * Kind of entity the audit log never names: a consultation of the blocked data, which «Archivo
+ * legal» lists by its request.
  */
 type UnnamedEntityType = 'BlockedDataConsultation'
 

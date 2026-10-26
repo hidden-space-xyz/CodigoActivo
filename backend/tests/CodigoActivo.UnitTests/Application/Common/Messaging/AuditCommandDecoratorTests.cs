@@ -7,6 +7,7 @@ using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Activities.Commands;
+using CodigoActivo.Application.BlockedData;
 using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Messaging;
@@ -14,6 +15,7 @@ using CodigoActivo.Application.EventCategories.Commands;
 using CodigoActivo.Application.Participation.Commands;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
@@ -199,6 +201,34 @@ public sealed class AuditCommandDecoratorTests
 
         var record = trail.Records.Should().ContainSingle().Subject;
         record.Entity.Should().Be(new AuditEntity(AuditEntityType.User, account.Value));
+        record.Related.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncBlockedDataExtractNeverNamesItsAccount()
+    {
+        var consultation = BlockedDataConsultationId.New();
+        var account = UserId.New();
+
+        await HandleAsync<ExportBlockedDataCommand, Result<BlockedDataExport>>(
+            new ExportBlockedDataCommand(consultation, account, null, null, []),
+            _ => new BlockedDataExport(
+                DateTimeOffset.UnixEpoch,
+                BlockedDataAuthority.Court,
+                "Diligencias previas 123/2026",
+                account.Value,
+                null,
+                null,
+                [],
+                [],
+                null
+            )
+        );
+
+        var record = trail.Records.Should().ContainSingle().Subject;
+        record
+            .Entity.Should()
+            .Be(new AuditEntity(AuditEntityType.BlockedDataConsultation, consultation.Value));
         record.Related.Should().BeEmpty();
     }
 

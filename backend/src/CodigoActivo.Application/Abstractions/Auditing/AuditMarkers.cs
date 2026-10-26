@@ -7,6 +7,14 @@ namespace CodigoActivo.Application.Abstractions.Auditing;
 public interface IUnaudited;
 
 /// <summary>
+/// Marks a property of a command the audit log never reads, because naming what it holds would
+/// undo a promise of the application, such as only the privacy officer knowing whose blocked data
+/// was extracted.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class UnauditedAttribute : Attribute;
+
+/// <summary>
 /// Marks a command the application runs on its own schedule: it is recorded as run by the system,
 /// and only when it changed something.
 /// </summary>

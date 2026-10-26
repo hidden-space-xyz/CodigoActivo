@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
@@ -15,13 +16,16 @@ namespace CodigoActivo.Application.BlockedData.Commands;
 /// Carries the input required to take an extract of the blocked data about an account.
 /// </summary>
 /// <param name="ConsultationId">Identifier of the open consultation.</param>
-/// <param name="AccountId">Identifier of an account a search of the consultation found.</param>
+/// <param name="AccountId">
+/// Identifier of an account a search of the consultation found, left out of the audit log so only
+/// the privacy officer knows whose blocked data was extracted.
+/// </param>
 /// <param name="From">First day covered, or <see langword="null"/> for no limit.</param>
 /// <param name="To">Last day covered, or <see langword="null"/> for no limit.</param>
 /// <param name="Entities">Kinds of data covered; empty for every kind.</param>
 public sealed record ExportBlockedDataCommand(
     BlockedDataConsultationId ConsultationId,
-    UserId AccountId,
+    [property: Unaudited] UserId AccountId,
     DateOnly? From,
     DateOnly? To,
     [property: MaxLength(32)] IReadOnlyList<string> Entities
