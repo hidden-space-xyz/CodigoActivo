@@ -158,8 +158,8 @@ is not a single address stops the start; to change the person, change it and res
 overlay defaults it to `BOOTSTRAP_ADMIN_EMAIL`. Back up the `api-dataprotection` volume with
 `secrets/data_protection_key`: without them the data history cannot be read.
 
-The privacy and cookie policies are not in the repository: administrators write and publish them in «Textos
-legales» of the administration panel, and the database keeps every version. A new installation without demo
+The privacy and cookie policies are not in the repository: administrators write and publish them in
+«Políticas» of the administration panel, and the database keeps every version. A new installation without demo
 data starts without them, and `/privacy` and `/cookies` say they are not published yet, so publish both before
 opening the site. They state the log retentions, the cookies and the hosting, email and file storage
 providers; publish new versions in the same release as any change to them.
@@ -318,8 +318,8 @@ data: logins, signups, published content, a password attack, email outages and s
 writes a new one once the audit log holds no entry of a demo account younger than the diagnostic retention;
 entries already past the retention of their log are left out. A failure to write it is logged as a warning
 and does not stop the start.
-It also replays a year of changes and erasures of personal data through the data history, so «Datos
-bloqueados» has something to consult: demo accounts that replaced their email and phone, withdrew their news
+It also replays a year of changes and erasures of personal data through the data history, so «Archivo
+legal» has something to consult: demo accounts that replaced their email and phone, withdrew their news
 consent, left an activity or deleted a rating, and three former accounts erased by their holder together with
 a minor (Lozano Prieto), by the administrator (Ibáñez Robles) and by the purge of unverified accounts (Gallego
 Herrera). It runs once, in one transaction, while the history holds nothing about those former accounts; a

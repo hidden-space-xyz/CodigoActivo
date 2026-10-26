@@ -284,7 +284,7 @@ under `/api/events/{eventId}/terms/decisions`. A given consent is withdrawn with
 [SECURITY.md](SECURITY.md#privacy-and-third-parties).
 
 The privacy and cookie policies are `LegalPolicy` aggregates, at most one per `LegalPolicyKind` (unique `kind`),
-whose text-only rich text administrators write in «Textos legales» (`/admin/legal`). The repository holds no
+whose text-only rich text administrators write in «Políticas» (`/admin/legal`). The repository holds no
 policy text; demo mode seeds a short generic example of each. `PublishLegalPolicy`
 (`PUT /api/legal-policies/{kind}`) locks the policy and creates it on its first publication; later ones keep the
 version they replace as a `LegalPolicyVersion` with its publication date, and the same content changes nothing.

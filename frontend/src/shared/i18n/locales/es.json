@@ -943,7 +943,7 @@
           "termsConsentOptional": "Consentimiento: nunca obligatorio",
           "hints": {
             "earlySignupStart": "Si la indicas, socios y patrocinadores podrán inscribirse desde esa fecha, antes que el resto.",
-            "termsDocuments": "Al inscribirse, o inscribir a los menores a su cargo, en la primera actividad del evento, se decide sobre estos documentos por cada persona. Las condiciones se añaden como obligatorias; desmarca las que sean opcionales. Los consentimientos, como el de uso de imágenes, nunca son obligatorios. El orden de la lista es el orden en que se mostrarán. Se gestionan en Configuración."
+            "termsDocuments": "Al inscribirse, o inscribir a los menores a su cargo, en la primera actividad del evento, se decide sobre estos documentos por cada persona. Las condiciones se añaden como obligatorias; desmarca las que sean opcionales. Los consentimientos, como el de uso de imágenes, nunca son obligatorios. El orden de la lista es el orden en que se mostrarán. Se gestionan en Catálogos."
           },
           "problems": {
             "categoriesRequired": "Selecciona al menos una categoría.",
@@ -1066,13 +1066,13 @@
           }
         },
         "header": {
-          "title": "Configuración",
-          "subtitle": "Catálogos configurables del sistema"
+          "title": "Catálogos",
+          "subtitle": "Las categorías de los eventos y los documentos de condiciones y consentimientos"
         }
       },
       "legalPolicies": {
         "header": {
-          "title": "Textos legales",
+          "title": "Políticas",
           "subtitle": "La política de privacidad y la de cookies que publica la web. Cada vez que publicas un cambio se crea una versión nueva y se conservan las anteriores."
         },
         "tabs": {
@@ -1583,7 +1583,7 @@
       },
       "blockedData": {
         "header": {
-          "title": "Datos bloqueados",
+          "title": "Archivo legal",
           "subtitle": "Historial cifrado de lo que se modificó o eliminó. Solo se entrega a juzgados, al Ministerio Fiscal o a la autoridad de protección de datos (art. 32 LOPDGDD)."
         },
         "open": {
@@ -2050,9 +2050,9 @@
         "users": "Usuarios",
         "diagnostics": "Diagnóstico",
         "audit": "Auditoría",
-        "blockedData": "Datos bloqueados",
-        "legal": "Textos legales",
-        "settings": "Configuración"
+        "blockedData": "Archivo legal",
+        "legal": "Políticas",
+        "catalogs": "Catálogos"
       },
       "menuTitle": "Administración",
       "goToSite": "Ir al sitio"
