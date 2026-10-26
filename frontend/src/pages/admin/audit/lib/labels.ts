@@ -106,6 +106,12 @@ export const AUDIT_ENTITY_TYPES: readonly AuditEntityType[] = [
   'BlockedDataConsultation',
 ]
 
+/**
+ * Kind of entity the audit log never names: a consultation of the blocked data, whose reference
+ * only the privacy officer reads.
+ */
+type UnnamedEntityType = 'BlockedDataConsultation'
+
 /** Every outcome, in the order the outcome filter lists them. */
 export const AUDIT_OUTCOMES: readonly AuditOutcome[] = ['Succeeded', 'Rejected', 'Failed']
 
@@ -131,8 +137,17 @@ export function entityTypeLabelKey(entityType: AuditEntityType): TranslationKey 
 }
 
 /** Translation key of the label of a kind of entity that no longer exists. */
-function deletedEntityLabelKey(entityType: AuditEntityType): TranslationKey {
+function deletedEntityLabelKey(
+  entityType: Exclude<AuditEntityType, UnnamedEntityType>,
+): TranslationKey {
   return `pages.admin.audit.deletedEntities.${entityType}`
+}
+
+/** An entity without a name: by its kind when the audit log never names it, or as removed. */
+function unnamedEntityLabel(entity: AuditEntityRef, t: Translate): string {
+  return entity.type === 'BlockedDataConsultation'
+    ? t(entityTypeLabelKey(entity.type))
+    : t(deletedEntityLabelKey(entity.type))
 }
 
 /** Translation key of the name of an outcome. */
@@ -154,16 +169,22 @@ export function actorLabel(entry: AuditEntry, t: Translate): string {
   return entry.actorName || t(deletedEntityLabelKey('User'))
 }
 
-/** An entity by its name, or as removed, such as «Evento eliminado», once it no longer exists. */
+/**
+ * An entity by its name, by its kind when the audit log never names it, or as removed, such as
+ * «Evento eliminado», once it no longer exists.
+ */
 export function entityLabel(entity: AuditEntityRef, t: Translate): string {
-  return entity.name || t(deletedEntityLabelKey(entity.type))
+  return entity.name || unnamedEntityLabel(entity, t)
 }
 
-/** A related entity by its kind and name, such as «Usuario: Marta Miembro», or as removed. */
+/**
+ * A related entity with its kind and name, such as «Usuario: Marta Miembro», by its kind alone
+ * when the audit log never names it, or as removed.
+ */
 export function relatedLabel(entity: AuditEntityRef, t: Translate): string {
   return entity.name
     ? `${t(entityTypeLabelKey(entity.type))}: ${entity.name}`
-    : t(deletedEntityLabelKey(entity.type))
+    : unnamedEntityLabel(entity, t)
 }
 
 /**

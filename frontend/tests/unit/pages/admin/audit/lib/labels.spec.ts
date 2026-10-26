@@ -77,6 +77,17 @@ describe('audit labels', () => {
     )
   })
 
+  it('names a consultation of the blocked data by its kind, never as removed', () => {
+    const consultation = {
+      type: 'BlockedDataConsultation',
+      id: 'consultation-1',
+      name: '',
+    } as const
+
+    expect(entityLabel(consultation, t)).toBe('Consulta de datos bloqueados')
+    expect(relatedLabel(consultation, t)).toBe('Consulta de datos bloqueados')
+  })
+
   it('has a removed label for every kind of entity', () => {
     for (const entityType of AUDIT_ENTITY_TYPES) {
       expect(entityLabel({ type: entityType, id: 'x', name: '' }, t)).not.toContain('pages.')
