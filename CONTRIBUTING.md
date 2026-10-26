@@ -77,7 +77,7 @@ dotnet test tests/CodigoActivo.UnitTests --filter "FullyQualifiedName~ClassName.
 ```
 
 Integration tests require Docker unless `CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty, disposable
-PostgreSQL database.
+PostgreSQL database whose role may create databases: it becomes the template each test class copies.
 
 Create migrations with:
 

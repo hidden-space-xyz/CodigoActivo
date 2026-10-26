@@ -9,13 +9,13 @@ namespace CodigoActivo.IntegrationTests.Infrastructure;
 /// </summary>
 internal static class LogTables
 {
-    public static async Task TruncateAsync(PostgresContainerFixture postgres)
+    public static async Task TruncateAsync(PostgresDatabaseFixture postgres)
     {
         await ExecuteAsync(postgres, "TRUNCATE diagnostic_log_entries, audit_log_entries");
     }
 
     public static async Task<List<string>> PartitionsAsync(
-        PostgresContainerFixture postgres,
+        PostgresDatabaseFixture postgres,
         LogTable table
     )
     {
@@ -45,7 +45,7 @@ internal static class LogTables
     }
 
     public static Task CreatePartitionAsync(
-        PostgresContainerFixture postgres,
+        PostgresDatabaseFixture postgres,
         LogTable table,
         DateOnly day
     )
@@ -58,7 +58,7 @@ internal static class LogTables
     }
 
     public static Task DropPartitionAsync(
-        PostgresContainerFixture postgres,
+        PostgresDatabaseFixture postgres,
         LogTable table,
         DateOnly day
     )
@@ -67,7 +67,7 @@ internal static class LogTables
     }
 
     public static async Task<List<DiagnosticLogEntry>> DiagnosticEntriesAsync(
-        PostgresContainerFixture postgres
+        PostgresDatabaseFixture postgres
     )
     {
         await using var db = postgres.CreateContext();
@@ -78,7 +78,7 @@ internal static class LogTables
     }
 
     public static async Task<List<AuditLogEntry>> AuditEntriesAsync(
-        PostgresContainerFixture postgres
+        PostgresDatabaseFixture postgres
     )
     {
         await using var db = postgres.CreateContext();
@@ -88,7 +88,7 @@ internal static class LogTables
             .ToListAsync(TestCancellation.Ct);
     }
 
-    private static async Task ExecuteAsync(PostgresContainerFixture postgres, string sql)
+    private static async Task ExecuteAsync(PostgresDatabaseFixture postgres, string sql)
     {
         await using var db = postgres.CreateContext();
         await db.Database.ExecuteSqlRawAsync(sql, TestCancellation.Ct);

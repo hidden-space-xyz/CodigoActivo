@@ -14,7 +14,9 @@ using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class DiagnosticLogSinkTests(PostgresContainerFixture postgres) : IAsyncLifetime
+public sealed class DiagnosticLogSinkTests(PostgresDatabaseFixture postgres)
+    : IClassFixture<PostgresDatabaseFixture>,
+        IAsyncLifetime
 {
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 

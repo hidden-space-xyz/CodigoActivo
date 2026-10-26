@@ -13,10 +13,8 @@ using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class DemoLogSeederTests(
-    CodigoActivoWebAppFactory factory,
-    PostgresContainerFixture postgres
-) : IntegrationTestBase(factory)
+public sealed class DemoLogSeederTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
 {
     private static readonly Guid[] DemoAdults =
     [
@@ -75,8 +73,8 @@ public sealed class DemoLogSeederTests(
         await SeedDemoAdultsAsync();
 
         await SeedHistoryAsync();
-        var audit = await LogTables.AuditEntriesAsync(postgres);
-        var diagnostics = await LogTables.DiagnosticEntriesAsync(postgres);
+        var audit = await LogTables.AuditEntriesAsync(Factory.Database);
+        var diagnostics = await LogTables.DiagnosticEntriesAsync(Factory.Database);
         await SeedHistoryAsync();
 
         audit
@@ -84,9 +82,11 @@ public sealed class DemoLogSeederTests(
             .Contain(entry => entry.Action == "EndSession" && entry.ActorId == DemoAdults[0]);
         audit.Should().Contain(entry => entry.Action == "RemoveExpiredSessions");
         diagnostics.Should().Contain(entry => entry.EventName == "PasswordLockoutTriggered");
-        (await LogTables.AuditEntriesAsync(postgres)).Should().HaveCount(audit.Count);
-        (await LogTables.DiagnosticEntriesAsync(postgres)).Should().HaveCount(diagnostics.Count);
-        (await LogTables.PartitionsAsync(postgres, LogTable.Audit))
+        (await LogTables.AuditEntriesAsync(Factory.Database)).Should().HaveCount(audit.Count);
+        (await LogTables.DiagnosticEntriesAsync(Factory.Database))
+            .Should()
+            .HaveCount(diagnostics.Count);
+        (await LogTables.PartitionsAsync(Factory.Database, LogTable.Audit))
             .Should()
             .Contain(LogPartitions.NameOf(LogTable.Audit, Factory.Clock.Today.AddDays(-12)));
     }
@@ -96,12 +96,12 @@ public sealed class DemoLogSeederTests(
     {
         await SeedDemoAdultsAsync();
         await SeedHistoryAsync();
-        var first = await LogTables.AuditEntriesAsync(postgres);
+        var first = await LogTables.AuditEntriesAsync(Factory.Database);
 
         AdvanceClock(LogRetentionOptions.DefaultDiagnostics);
         await SeedHistoryAsync();
 
-        var entries = await LogTables.AuditEntriesAsync(postgres);
+        var entries = await LogTables.AuditEntriesAsync(Factory.Database);
         entries.Should().HaveCountGreaterThan(first.Count);
         entries[^1]
             .OccurredAt.Should()
@@ -133,13 +133,13 @@ public sealed class DemoLogSeederTests(
         await seeder.SeedAsync(Ct);
 
         var now = Factory.Clock.UtcNow;
-        (await LogTables.DiagnosticEntriesAsync(postgres))
+        (await LogTables.DiagnosticEntriesAsync(Factory.Database))
             .Should()
             .NotBeEmpty()
             .And.OnlyContain(entry =>
                 entry.OccurredAt >= LogPartitions.CutoffOf(retention.Diagnostics, now)
             );
-        (await LogTables.AuditEntriesAsync(postgres))
+        (await LogTables.AuditEntriesAsync(Factory.Database))
             .Should()
             .NotBeEmpty()
             .And.OnlyContain(entry =>
@@ -153,8 +153,8 @@ public sealed class DemoLogSeederTests(
     {
         await SeedHistoryAsync();
 
-        (await LogTables.AuditEntriesAsync(postgres)).Should().BeEmpty();
-        (await LogTables.DiagnosticEntriesAsync(postgres)).Should().BeEmpty();
+        (await LogTables.AuditEntriesAsync(Factory.Database)).Should().BeEmpty();
+        (await LogTables.DiagnosticEntriesAsync(Factory.Database)).Should().BeEmpty();
     }
 
     [Fact]
@@ -186,6 +186,6 @@ public sealed class DemoLogSeederTests(
             .ContainSingle()
             .Which.Should()
             .StartWith("Warning CodigoActivo.Infrastructure.Database.Seeders.DemoLogSeeder:");
-        (await LogTables.AuditEntriesAsync(postgres)).Should().BeEmpty();
+        (await LogTables.AuditEntriesAsync(Factory.Database)).Should().BeEmpty();
     }
 }

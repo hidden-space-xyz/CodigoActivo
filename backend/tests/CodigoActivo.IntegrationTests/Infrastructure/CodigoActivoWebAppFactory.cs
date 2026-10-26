@@ -26,14 +26,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
-public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
+public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private static readonly DateTimeOffset ClockOrigin = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly PostgresContainerFixture postgres;
     private readonly string fileStorageRoot = CreateFileStorageRoot();
     private readonly string deploymentModeFile = CreateDeploymentModeFilePath();
     private readonly string keyRingDirectory = CreateKeyRingDirectoryPath();
@@ -46,11 +46,16 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
     /// Sends every request over HTTPS, as the production proxy does, so the HTTPS redirection
     /// lets it through instead of warning that it has no port to redirect to.
     /// </summary>
-    public CodigoActivoWebAppFactory(PostgresContainerFixture postgres)
+    public CodigoActivoWebAppFactory(PostgresServerFixture server)
     {
-        this.postgres = postgres;
+        Database = new PostgresDatabaseFixture(server);
         ClientOptions.BaseAddress = new Uri("https://localhost");
     }
+
+    /// <summary>
+    /// Database of the test class, which the hosts of this factory and its derived ones share.
+    /// </summary>
+    public PostgresDatabaseFixture Database { get; }
 
     public TestClock Clock { get; } = new();
 
@@ -161,7 +166,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
             UseTestDatabase(services);
 
             services.RemoveAll<LogDatabase>();
-            services.AddSingleton(_ => new LogDatabase(postgres.ConnectionString));
+            services.AddSingleton(_ => new LogDatabase(Database.ConnectionString));
             services.RemoveAll<IAuditTrail>();
             services.AddSingleton<IAuditTrail>(Audit);
 
@@ -272,10 +277,10 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         }
 
         services.AddDbContext<CodigoActivoDbContext>(options =>
-            options.UseWriteDatabase(postgres.ConnectionString)
+            options.UseWriteDatabase(Database.ConnectionString)
         );
         services.AddDbContext<CodigoActivoReadDbContext>(options =>
-            options.UseReadDatabase(postgres.ConnectionString)
+            options.UseReadDatabase(Database.ConnectionString)
         );
     }
 
@@ -291,14 +296,14 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
 
     public async Task EmptyDatabaseAsync()
     {
-        await using var db = postgres.CreateContext();
-        await TestDatabase.TruncateAllTablesAsync(db);
+        await using var db = Database.CreateContext();
+        await TestDatabase.DeleteAllRowsAsync(db);
     }
 
     private async Task SeedFreshDatabaseAsync()
     {
-        await using var db = postgres.CreateContext();
-        await TestDatabase.TruncateAllTablesAsync(db);
+        await using var db = Database.CreateContext();
+        await TestDatabase.DeleteAllRowsAsync(db);
         await new DatabaseSeeder(db).SeedAsync(TestCancellation.Ct);
         await TestSeedData.SeedUsersAsync(db, TestCancellation.Ct);
     }
@@ -340,9 +345,15 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>
         return await query(db);
     }
 
+    public ValueTask InitializeAsync()
+    {
+        return Database.InitializeAsync();
+    }
+
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
+        await Database.DisposeAsync();
         TryDeleteDirectory(fileStorageRoot);
         TryDeleteDirectory(keyRingDirectory);
         var deploymentStateRoot = Path.GetDirectoryName(deploymentModeFile);
