@@ -92,7 +92,7 @@ export type AuditOutcome = 'Succeeded' | 'Rejected' | 'Failed'
 
 /**
  * One thing an audited command named: a person's full name or a title, empty when it no longer
- * exists.
+ * exists or is a consultation of the blocked data, which the audit log never names.
  */
 export interface AuditEntityRef {
   readonly type: AuditEntityType

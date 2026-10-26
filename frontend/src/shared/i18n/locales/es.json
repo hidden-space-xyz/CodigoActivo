@@ -1478,7 +1478,6 @@
         },
         "deletedEntities": {
           "Activity": "Actividad eliminada",
-          "BlockedDataConsultation": "Consulta de datos bloqueados purgada",
           "Event": "Evento eliminado",
           "EventCategoryType": "Categoría eliminada",
           "LegalPolicy": "Política legal eliminada",
