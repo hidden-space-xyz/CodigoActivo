@@ -395,8 +395,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
                 AuditAction.ExportBlockedData,
                 TestSeedData.Users.AdminId,
                 consultation.Id.Value,
-                entityType: "BlockedDataConsultation",
-                related: $$"""[{"type": "User", "id": "{{TestSeedData.Users.MemberId}}"}]"""
+                entityType: "BlockedDataConsultation"
             )
         );
         var admin = await LoginAsAdminAsync();
@@ -419,15 +418,6 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
                     AuditEntityType.BlockedDataConsultation,
                     consultation.Id.Value,
                     null
-                )
-            );
-        page.Items[0]
-            .Related.Should()
-            .Equal(
-                new AuditRelatedEntityResponse(
-                    AuditEntityType.User,
-                    TestSeedData.Users.MemberId,
-                    "Marta Miembro"
                 )
             );
     }

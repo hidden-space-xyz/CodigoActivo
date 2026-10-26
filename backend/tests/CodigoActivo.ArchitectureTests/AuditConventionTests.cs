@@ -84,6 +84,22 @@ public sealed class AuditConventionTests
     }
 
     [Fact]
+    public void OnlyTheAccountOfABlockedDataExtractIsAnUnauditedProperty()
+    {
+        ProductionAssemblies
+            .Application.GetTypes()
+            .SelectMany(type =>
+                type.GetProperties()
+                    .Where(property =>
+                        property.IsDefined(typeof(UnauditedAttribute), inherit: false)
+                    )
+                    .Select(property => $"{type.Name}.{property.Name}")
+            )
+            .Should()
+            .BeEquivalentTo("ExportBlockedDataCommand.AccountId");
+    }
+
+    [Fact]
     public void AuditEntityTypesAreTheTypedIdentifiersThatMayBeRecorded()
     {
         var identifiers = ProductionAssemblies

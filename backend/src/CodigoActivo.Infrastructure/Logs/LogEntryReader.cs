@@ -20,7 +20,7 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// the B-tree indexes of the other columns; a period also prunes the daily partitions. Audit
 /// entries get the names of the accounts and things they mention, one query per kind of thing on
 /// the page, left out for those that no longer exist and for the consultations of the blocked data,
-/// whose reference only the privacy officer reads.
+/// which the legal archive lists by their request.
 /// </summary>
 /// <param name="context">Read-side database context.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>

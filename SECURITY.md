@@ -486,7 +486,7 @@ access can still read the author.
 The API keeps two logs, both read only by administrators: the diagnostic log and the
 [audit log](#audit-log). The diagnostic log follows GDPR data minimization: only failures and warnings an
 operator has to diagnose are recorded, so normal use writes nothing to it, and none of its entries outlives
-its retention (30 days by default). Never in the diagnostic log: names, emails, phone numbers, anything typed
+its retention (30 days). Never in the diagnostic log: names, emails, phone numbers, anything typed
 by the client, the requested path or query, client IP, user agent, cookies, tokens and one-time codes. Logged:
 counters, enum/kind values, error/SMTP/HTTP codes, the HTTP
 method, the matched endpoint's route template, and exception type/message/stack traces. No event template
@@ -555,8 +555,7 @@ such as the path of a file under `/app/files`; it is written as is.
   [DEPLOYMENT.md](DEPLOYMENT.md#production-topology).
 - **What administrators see**: the diagnostic log shows them trace ids, route templates, the GUIDs exception
   messages quote and, in the audit log, client IPs and the names of the accounts and things each command
-  named, or that they were removed since; a consultation of the blocked data stays unnamed, since only the
-  privacy officer reads its reference and authority. Raising a framework category such as `Microsoft.AspNetCore` to
+  named, or that they were removed since; a consultation of the blocked data is shown only by its kind. Raising a framework category such as `Microsoft.AspNetCore` to
   `Information` would store requested paths and query strings there too.
 
 ### Audit log
@@ -571,7 +570,9 @@ that error responses show as their reference. It never stores anything typed by 
 passwords, one-time codes, signatures, secrets and free text stay out, and so does the requested path. Login,
 password reset and verification requests record the account the email belongs to, so failed logins are
 attributed to their account. Saving or deleting an event rating is never recorded, and the scheduled purges are recorded
-only when they removed something. The account ids have no foreign key, so an erased account's entries remain
+only when they removed something. An extract of the blocked data never names its account (`[Unaudited]`), so only the
+privacy officer knows whose blocked data was handed over: neither the other administrators nor that person read
+it in the audit log or the personal data copy (LOPDGDD article 32). The account ids have no foreign key, so an erased account's entries remain
 until the audit retention ends; they are not part of the data history.
 
 Only administrators read either log: `GET /api/logs/diagnostics`, `/api/logs/diagnostics/{id}` and

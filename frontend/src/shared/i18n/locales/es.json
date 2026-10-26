@@ -1430,7 +1430,7 @@
       "audit": {
         "header": {
           "title": "Auditoría",
-          "subtitle": "Quién hizo qué, cuándo, desde dónde y con qué resultado."
+          "subtitle": "Quién hizo qué, cuándo, desde dónde y con qué resultado. Úsala solo para proteger la web y resolver incidencias."
         },
         "columns": {
           "occurredAt": "Fecha",
