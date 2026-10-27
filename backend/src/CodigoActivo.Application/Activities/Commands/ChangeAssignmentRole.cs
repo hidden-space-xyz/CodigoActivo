@@ -20,11 +20,14 @@ public sealed record ChangeAssignmentRoleCommand(
 
 /// <summary>
 /// Executes the command to change the role of a person signed up to an activity, keeping the status
-/// and date of the signup. The type of the person is not checked against the role.
+/// and date of the signup. The new role must be allowed by the type of the person, as on signup.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-public sealed class ChangeAssignmentRoleCommandHandler(IActivityRepository activities)
-    : ICommandHandler<ChangeAssignmentRoleCommand, Result>
+/// <param name="users">Repository used to persist and retrieve users.</param>
+public sealed class ChangeAssignmentRoleCommandHandler(
+    IActivityRepository activities,
+    IUserRepository users
+) : ICommandHandler<ChangeAssignmentRoleCommand, Result>
 {
     /// <summary>
     /// Handles the request to change the role of a person signed up to an activity.
@@ -32,9 +35,10 @@ public sealed class ChangeAssignmentRoleCommandHandler(IActivityRepository activ
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result reports success, also when the role does not change, or
-    /// <see cref="DomainErrorCode.ActivityAssignmentNotFound"/> when the activity or the signup is
-    /// missing.
+    /// A task whose result reports success, also when the role does not change;
+    /// <see cref="DomainErrorCode.ActivityAssignmentNotFound"/> when the activity, the person or
+    /// the signup is missing, or <see cref="DomainErrorCode.ActivityRoleNotAllowed"/> when the type
+    /// of the person does not allow the role.
     /// </returns>
     public async Task<Result> HandleAsync(
         ChangeAssignmentRoleCommand command,
@@ -47,6 +51,18 @@ public sealed class ChangeAssignmentRoleCommandHandler(IActivityRepository activ
         if (activity is null)
         {
             return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
+        }
+
+        var person = await users.GetByIdAsync(command.UserId, ct);
+        if (person is null)
+        {
+            return Error.NotFound(DomainErrorCode.ActivityAssignmentNotFound);
+        }
+
+        var allowedRole = SignupEligibility.EnsureRoleAllowed(person, command.Role);
+        if (allowedRole.IsFailure)
+        {
+            return allowedRole;
         }
 
         return activity.ChangeAssignmentRole(command.UserId, command.Role);

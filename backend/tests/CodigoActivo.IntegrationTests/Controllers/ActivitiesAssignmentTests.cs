@@ -509,7 +509,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ChangeRoleAdminSetsLeaderForParticipantTypeUserUpdatesRole()
+    public async Task ChangeRoleAdminSetsLeaderForParticipantTypeUserReturnsBadRequest()
     {
         var (_, activityId) = await SeedActivityAsync();
         await SeedAssignmentAsync(
@@ -526,9 +526,9 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        await response.ShouldBeBadRequestAsync(ErrorCode.ActivityRoleNotAllowed);
         var stored = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId);
-        stored!.Role.Should().Be(ActivityRole.Leader);
+        stored!.Role.Should().Be(ActivityRole.Participant);
     }
 
     [Fact]

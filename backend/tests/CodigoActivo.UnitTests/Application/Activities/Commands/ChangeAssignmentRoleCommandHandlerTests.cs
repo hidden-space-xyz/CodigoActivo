@@ -17,11 +17,12 @@ namespace CodigoActivo.UnitTests.Application.Activities.Commands;
 public sealed class ChangeAssignmentRoleCommandHandlerTests
 {
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
+    private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly ChangeAssignmentRoleCommandHandler sut;
 
     public ChangeAssignmentRoleCommandHandlerTests()
     {
-        sut = new ChangeAssignmentRoleCommandHandler(activities);
+        sut = new ChangeAssignmentRoleCommandHandler(activities, users);
     }
 
     private Task<Result> ChangeRoleAsync(
@@ -51,17 +52,59 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
     [Fact]
     public async Task HandleAsyncAssignmentMissingReturnsNotFound()
     {
+        var userId = Guid.NewGuid();
         var activity = NewActivity();
         activities.Finds(activity);
+        users.TargetUser(userId, KnownIds.UserTypes.Member);
 
         var result = await ChangeRoleAsync(
             activity.Id.Value,
-            Guid.NewGuid(),
+            userId,
             new ChangeAssignmentRoleRequest(KnownIds.ActivityRoleTypes.Volunteer)
         );
 
         result.Error!.Kind.Should().Be(ErrorKind.NotFound);
         result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentNotFound);
+    }
+
+    [Fact]
+    public async Task HandleAsyncPersonMissingReturnsAssignmentNotFound()
+    {
+        var userId = Guid.NewGuid();
+        var activity = NewActivity();
+        var assignment = activity.SignUp(userId);
+        activities.Finds(activity);
+        users.HouseholdUsers();
+
+        var result = await ChangeRoleAsync(
+            activity.Id.Value,
+            userId,
+            new ChangeAssignmentRoleRequest(KnownIds.ActivityRoleTypes.Volunteer)
+        );
+
+        result.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
+        assignment.Role.Should().Be(ActivityRole.Participant);
+        activity.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncLeaderRoleForNonMemberReturnsRoleNotAllowed()
+    {
+        var userId = Guid.NewGuid();
+        var activity = NewActivity();
+        var assignment = activity.SignUp(userId);
+        activities.Finds(activity);
+        users.TargetUser(userId, KnownIds.UserTypes.Participant);
+
+        var result = await ChangeRoleAsync(
+            activity.Id.Value,
+            userId,
+            new ChangeAssignmentRoleRequest(KnownIds.ActivityRoleTypes.Leader)
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityRoleNotAllowed);
+        assignment.Role.Should().Be(ActivityRole.Participant);
+        activity.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
@@ -73,6 +116,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
         var assignment = activity.SignUp(userId);
         var signedUpStatus = assignment.Status;
         activities.Finds(activity);
+        users.TargetUser(userId, KnownIds.UserTypes.Member);
 
         var result = await ChangeRoleAsync(
             activity.Id.Value,
@@ -104,6 +148,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
             AssignmentStatus.Confirmed
         );
         activities.Finds(activity);
+        users.TargetUser(userId, KnownIds.UserTypes.Participant);
 
         var result = await ChangeRoleAsync(
             activity.Id.Value,
