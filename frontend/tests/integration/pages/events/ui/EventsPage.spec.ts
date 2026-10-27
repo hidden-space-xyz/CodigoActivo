@@ -113,6 +113,18 @@ describe('events page', () => {
     ])
   })
 
+  it('says so when no upcoming event is scheduled', async () => {
+    serveEventsApi({ past: () => ({ items: [pastEvent('past-1', 'Primero')] }) })
+
+    const { wrapper } = await renderPage()
+
+    expect(wrapper.find('.board').exists()).toBe(false)
+    expect(wrapper.find('.events-section .events-loading').text()).toBe(
+      t('pages.events.noUpcoming'),
+    )
+    expect(wrapper.find('.events-grid').text()).toContain('Primero')
+  })
+
   it('loads more upcoming events on demand', async () => {
     const { upcomingPages } = serveEventsApi({
       upcoming: [buildEventListItem({ id: 'up-1', title: 'Hackathon' })],
