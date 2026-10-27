@@ -94,6 +94,9 @@ public sealed class EmailQueueOptionsTests
     [InlineData(EmailKind.AccountVerification, EmailQueueOptions.CriticalPriority)]
     [InlineData(EmailKind.SecurityAlert, EmailQueueOptions.StandardPriority)]
     [InlineData(EmailKind.ActivityNotification, EmailQueueOptions.StandardPriority)]
+    [InlineData(EmailKind.ComingOfAgeNotice, EmailQueueOptions.StandardPriority)]
+    [InlineData(EmailKind.ConsentWithdrawalNotice, EmailQueueOptions.StandardPriority)]
+    [InlineData(EmailKind.BlockedDataConsultationNotice, EmailQueueOptions.StandardPriority)]
     [InlineData(EmailKind.Manual, EmailQueueOptions.BulkPriority)]
     public void PriorityOfInteractiveMailLeavesBeforeAutomaticAndBulkMail(
         EmailKind kind,
@@ -103,14 +106,26 @@ public sealed class EmailQueueOptionsTests
         EmailQueueOptions.PriorityOf(kind).Should().Be(expected);
     }
 
+    [Fact]
+    public void PriorityOfEveryKindKeepsTheBulkPriorityForManualMailOnly()
+    {
+        Enum.GetValues<EmailKind>()
+            .Where(kind => EmailQueueOptions.PriorityOf(kind) == EmailQueueOptions.BulkPriority)
+            .Should()
+            .Equal(EmailKind.Manual);
+    }
+
     [Theory]
     [InlineData(EmailKind.TwoFactorCode, true)]
     [InlineData(EmailKind.AccessRecovery, true)]
     [InlineData(EmailKind.AccountVerification, true)]
+    [InlineData(EmailKind.ConsentWithdrawalNotice, true)]
+    [InlineData(EmailKind.BlockedDataConsultationNotice, true)]
     [InlineData(EmailKind.SecurityAlert, false)]
     [InlineData(EmailKind.ActivityNotification, false)]
+    [InlineData(EmailKind.ComingOfAgeNotice, false)]
     [InlineData(EmailKind.Manual, false)]
-    public void IsCapacityExemptOnlyTheMailSomebodyIsWaitingFor(EmailKind kind, bool expected)
+    public void IsCapacityExemptOnlyTheMailAFullOutboxMayNotHoldBack(EmailKind kind, bool expected)
     {
         EmailQueueOptions.IsCapacityExempt(kind).Should().Be(expected);
     }

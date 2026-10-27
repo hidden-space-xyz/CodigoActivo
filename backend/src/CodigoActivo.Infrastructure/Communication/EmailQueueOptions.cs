@@ -12,20 +12,20 @@ public sealed class EmailQueueOptions
     /// <summary>
     /// Identifies the stored priority of the interactive email a person is waiting for: the login
     /// code, the password reset and the account verification. These leave before anything else and
-    /// are the kinds <see cref="IsCapacityExempt"/> keeps accepting with a full outbox.
+    /// a full outbox never holds them back.
     /// </summary>
     public const int CriticalPriority = 0;
 
     /// <summary>
-    /// Identifies the stored priority of security alerts and activity notifications, automatic mail
-    /// that nobody is waiting in front of a screen for.
+    /// Identifies the stored priority of the automatic mail to one recipient that nobody is waiting in
+    /// front of a screen for: security alerts, activity decisions, the coming-of-age notice to a
+    /// guardian and the consent withdrawal and blocked data consultation notices to the association.
     /// </summary>
     public const int StandardPriority = 1;
 
     /// <summary>
     /// Identifies the stored priority of administrator-written mail, which yields to everything else
-    /// because one batch can hold hundreds of recipients, and of every other kind
-    /// <see cref="PriorityOf"/> does not name, such as the coming-of-age and consent notices.
+    /// because one batch can hold hundreds of recipients.
     /// </summary>
     public const int BulkPriority = 2;
 
@@ -67,9 +67,8 @@ public sealed class EmailQueueOptions
     /// It is a soft limit: the count that guards an enqueue and the insert that follows it run at the
     /// READ COMMITTED isolation of the database, so batches stored at the same time do not see each
     /// other and the pending rows may exceed this value by the recipients of the batches that were in
-    /// flight. It only holds back the mail nobody is waiting for: the kinds
-    /// <see cref="IsCapacityExempt"/> accepts are stored past it and still occupy the pending rows it
-    /// counts.
+    /// flight. The kinds <see cref="IsCapacityExempt"/> accepts are stored past it and still occupy
+    /// the pending rows it counts.
     /// </summary>
     public int Capacity { get; set; } = 1000;
 
@@ -137,17 +136,23 @@ public sealed class EmailQueueOptions
     /// </summary>
     /// <param name="kind">Email category whose priority is wanted.</param>
     /// <returns>
-    /// <see cref="CriticalPriority"/>, <see cref="StandardPriority"/> or, for every other kind,
-    /// <see cref="BulkPriority"/>; lower values are claimed first.
+    /// <see cref="CriticalPriority"/>, <see cref="StandardPriority"/> or, only for
+    /// administrator-written mail, <see cref="BulkPriority"/>; lower values are claimed first.
     /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException">The kind has no priority assigned.</exception>
     public static int PriorityOf(EmailKind kind)
     {
         return kind switch
         {
             EmailKind.TwoFactorCode or EmailKind.AccessRecovery or EmailKind.AccountVerification =>
                 CriticalPriority,
-            EmailKind.SecurityAlert or EmailKind.ActivityNotification => StandardPriority,
-            _ => BulkPriority,
+            EmailKind.SecurityAlert
+            or EmailKind.ActivityNotification
+            or EmailKind.ComingOfAgeNotice
+            or EmailKind.ConsentWithdrawalNotice
+            or EmailKind.BlockedDataConsultationNotice => StandardPriority,
+            EmailKind.Manual => BulkPriority,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
         };
     }
 
@@ -155,17 +160,20 @@ public sealed class EmailQueueOptions
     /// Determines whether an email kind is accepted even when the outbox already holds
     /// <see cref="Capacity"/> messages. A full outbox, which an unreachable SMTP server and a few
     /// bulk mailings are enough to produce, must never stop a person from completing a login,
-    /// resetting a password or verifying a new account; those kinds stay bounded by the per-recipient
-    /// quota and the global budget of the email guard instead.
+    /// resetting a password or verifying a new account, nor lose the notice that tells the
+    /// association a consent was withdrawn or the blocked data were consulted, which nothing sends
+    /// again. Those kinds stay bounded by the per-recipient quota and the global budget of the email
+    /// guard instead.
     /// </summary>
     /// <param name="kind">Email category being stored.</param>
     /// <returns>
-    /// <see langword="true"/> for the kinds of <see cref="CriticalPriority"/>; otherwise,
-    /// <see langword="false"/>.
+    /// <see langword="true"/> for the kinds of <see cref="CriticalPriority"/> and the consent
+    /// withdrawal and blocked data consultation notices; otherwise, <see langword="false"/>.
     /// </returns>
     public static bool IsCapacityExempt(EmailKind kind)
     {
-        return PriorityOf(kind) == CriticalPriority;
+        return PriorityOf(kind) == CriticalPriority
+            || kind is EmailKind.ConsentWithdrawalNotice or EmailKind.BlockedDataConsultationNotice;
     }
 
     /// <summary>
