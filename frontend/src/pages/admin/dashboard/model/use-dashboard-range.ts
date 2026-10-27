@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 
+import { ANALYTICS_FIRST_YEAR, ANALYTICS_LAST_YEAR } from '@/shared/config'
 import type { TranslationKey } from '@/shared/i18n'
 import { toDateOnly } from '@/shared/lib/date'
 
@@ -21,10 +22,13 @@ export const RANGE_OPTIONS: readonly RangeOption[] = [
   { value: '12m', labelKey: 'pages.admin.dashboard.range.preset12m' },
 ]
 
-/** Whether the API refuses to chart `date`: analytics only cover days from 2000 to 2099. */
+/**
+ * Whether the API refuses to chart `date`: analytics only cover the years from
+ * `ANALYTICS_FIRST_YEAR` to `ANALYTICS_LAST_YEAR`.
+ */
 export function isOutsideAnalyticsDays(date: Date): boolean {
   const year = date.getFullYear()
-  return year < 2000 || year > 2099
+  return year < ANALYTICS_FIRST_YEAR || year > ANALYTICS_LAST_YEAR
 }
 
 function startOfToday(): Date {

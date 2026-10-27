@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { MAX_DEPENDENTS } from '@/entities/user'
 import {
   canAddMinor,
   createEmptyMinor,
   createEmptyRegistrationForm,
 } from '@/pages/register/model/registration-form'
+import { MAX_DEPENDENTS } from '@/shared/config'
 
 describe('registration form factories', () => {
   it('creates a blank form without minors', () => {

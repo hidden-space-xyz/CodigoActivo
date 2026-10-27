@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { CATALOG_NAME_MAX_LENGTH } from '@/shared/config'
 import { ColorTag } from '@/shared/ui/color-tag'
 
 import { DEFAULT_CATEGORY_COLOR, toHexColor } from '../model/category-form'
@@ -30,7 +31,7 @@ function pickColor(value: string | null): void {
       <el-input
         id="event-category-name"
         v-model="name"
-        :maxlength="120"
+        :maxlength="CATALOG_NAME_MAX_LENGTH"
         :class="{ 'ca-invalid': invalid }"
         :aria-invalid="invalid"
       />

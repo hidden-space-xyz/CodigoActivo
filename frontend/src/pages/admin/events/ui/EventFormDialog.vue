@@ -6,6 +6,7 @@ import { eventCategoryQueries } from '@/entities/event-category'
 import type { EventDetail, EventInput } from '@/entities/event'
 import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
 import { termsDocumentQueries } from '@/entities/terms-document'
+import { SUBTITLE_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/shared/config'
 import { isDayAfter, isDayBefore } from '@/shared/lib/date'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
@@ -98,7 +99,7 @@ async function save(): Promise<void> {
         <el-input
           id="event-title"
           v-model="draft.title"
-          :maxlength="200"
+          :maxlength="TITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('title') }"
           :aria-invalid="invalid('title')"
         />
@@ -110,7 +111,7 @@ async function save(): Promise<void> {
         <el-input
           id="event-subtitle"
           v-model="draft.subtitle"
-          :maxlength="300"
+          :maxlength="SUBTITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('subtitle') }"
           :aria-invalid="invalid('subtitle')"
         />

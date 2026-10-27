@@ -3,6 +3,12 @@ import { watch } from 'vue'
 
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
 import type { Partner, PartnerInput } from '@/entities/partner'
+import {
+  PARTNER_MAX_TIER,
+  PARTNER_MIN_TIER,
+  PARTNER_NAME_MAX_LENGTH,
+  URL_MAX_LENGTH,
+} from '@/shared/config'
 import { isDayAfter } from '@/shared/lib/date'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
@@ -62,7 +68,7 @@ async function save(): Promise<void> {
         <el-input
           id="partner-name"
           v-model="draft.name"
-          :maxlength="200"
+          :maxlength="PARTNER_NAME_MAX_LENGTH"
           :class="{ 'ca-invalid': errors.name }"
           :aria-invalid="!!errors.name"
           :aria-describedby="errors.name ? 'partner-name-error' : undefined"
@@ -94,8 +100,8 @@ async function save(): Promise<void> {
         <el-input-number
           id="partner-tier"
           v-model="draft.tier"
-          :min="0"
-          :max="2147483647"
+          :min="PARTNER_MIN_TIER"
+          :max="PARTNER_MAX_TIER"
           :precision="0"
           controls-position="right"
         />
@@ -109,7 +115,7 @@ async function save(): Promise<void> {
           id="partner-website"
           v-model="draft.website"
           type="url"
-          :maxlength="500"
+          :maxlength="URL_MAX_LENGTH"
           :placeholder="$t('pages.admin.partners.form.urlPlaceholder')"
           :class="{ 'ca-invalid': errors.website }"
           :aria-invalid="!!errors.website"

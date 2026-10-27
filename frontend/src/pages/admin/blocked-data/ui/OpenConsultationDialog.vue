@@ -2,7 +2,11 @@
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { BLOCKED_DATA_REFERENCE_MAX_LENGTH } from '@/shared/config'
+import {
+  BLOCKED_DATA_REFERENCE_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  TWO_FACTOR_CODE_MAX_LENGTH,
+} from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
 
@@ -133,7 +137,7 @@ function confirm(): void {
             type="password"
             show-password
             autocomplete="current-password"
-            :maxlength="128"
+            :maxlength="PASSWORD_MAX_LENGTH"
             :class="{ 'ca-invalid': invalid('password') }"
             :aria-invalid="invalid('password')"
             :aria-describedby="errors.password ? 'blocked-password-error' : undefined"
@@ -162,7 +166,7 @@ function confirm(): void {
             v-model="codeDraft.code"
             inputmode="numeric"
             autocomplete="one-time-code"
-            :maxlength="16"
+            :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
             :class="{ 'ca-invalid': codeInvalid('code') }"
             :aria-invalid="codeInvalid('code')"
             :aria-describedby="codeErrors.code ? 'blocked-code-error' : undefined"

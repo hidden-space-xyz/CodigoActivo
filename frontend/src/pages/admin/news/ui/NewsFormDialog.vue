@@ -3,6 +3,7 @@ import { watch } from 'vue'
 
 import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
 import type { NewsItem, NewsItemInput } from '@/entities/news-item'
+import { SUBTITLE_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
@@ -58,7 +59,7 @@ async function save(): Promise<void> {
         <el-input
           id="news-title"
           v-model="draft.title"
-          :maxlength="200"
+          :maxlength="TITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('title') }"
           :aria-invalid="invalid('title')"
         />
@@ -70,7 +71,7 @@ async function save(): Promise<void> {
         <el-input
           id="news-subtitle"
           v-model="draft.subtitle"
-          :maxlength="300"
+          :maxlength="SUBTITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('subtitle') }"
           :aria-invalid="invalid('subtitle')"
         />

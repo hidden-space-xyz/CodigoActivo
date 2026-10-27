@@ -7,6 +7,16 @@ import TextAlign from '@tiptap/extension-text-align'
 import { Color, TextStyle } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 
+import {
+  RICH_TEXT_CODE_LANGUAGE_MAX_LENGTH,
+  RICH_TEXT_LABEL_MAX_LENGTH,
+  RICH_TEXT_MAX_CELL_SPAN,
+  RICH_TEXT_MAX_COLUMN_WIDTH,
+  RICH_TEXT_MAX_DEPTH,
+  RICH_TEXT_MAX_LENGTH,
+  RICH_TEXT_MAX_LIST_START,
+  RICH_TEXT_MAX_NODES,
+} from '@/shared/config'
 import { hasControlCharacter, toWebUrl } from '@/shared/lib/navigation'
 
 const EMPTY_DOC: JSONContent = { type: 'doc', content: [] }
@@ -16,6 +26,7 @@ export const EMPTY_DOC_JSON = JSON.stringify(EMPTY_DOC)
 const FILE_CONTENT_URL =
   /^\/api\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/content$/i
 const SAFE_COLOR = /^#[0-9a-f]{6}$/i
+const CODE_LANGUAGE = /^[a-z0-9_+.-]+$/i
 const SAFE_ALIGNMENTS = new Set(['left', 'center', 'right'])
 const SAFE_NODE_TYPES = new Set([
   'doc',
@@ -46,9 +57,7 @@ const SAFE_MARK_TYPES = new Set([
   'highlight',
 ])
 const TEXT_ONLY_NODE_TYPES = new Set([...SAFE_NODE_TYPES].filter((type) => type !== 'image'))
-const MAX_RICH_TEXT_NODES = 5_000
 const MAX_RICH_TEXT_CHARACTERS = 500_000
-const MAX_RICH_TEXT_DEPTH = 50
 
 /** Options shared by the editor extensions and the parser. */
 export interface RichTextOptions {
@@ -165,8 +174,8 @@ function sanitizeNode(value: JSONContent, state: SanitizeState, depth: number): 
     typeof value !== 'object' ||
     typeof value.type !== 'string' ||
     !state.nodeTypes.has(value.type) ||
-    depth > MAX_RICH_TEXT_DEPTH ||
-    state.nodes >= MAX_RICH_TEXT_NODES
+    depth > RICH_TEXT_MAX_DEPTH ||
+    state.nodes >= RICH_TEXT_MAX_NODES
   ) {
     return null
   }
@@ -217,29 +226,33 @@ function sanitizeNodeAttrs(
   }
 
   if (type === 'orderedList' && Number.isInteger(attrs.start)) {
-    clean.start = Math.min(100_000, Math.max(1, Number(attrs.start)))
+    clean.start = Math.min(RICH_TEXT_MAX_LIST_START, Math.max(1, Number(attrs.start)))
   }
 
   if (type === 'codeBlock' && typeof attrs.language === 'string') {
     const language = attrs.language.trim()
-    if (/^[a-z0-9_+.-]{1,40}$/i.test(language)) clean.language = language
+    if (language.length <= RICH_TEXT_CODE_LANGUAGE_MAX_LENGTH && CODE_LANGUAGE.test(language)) {
+      clean.language = language
+    }
   }
 
   if (type === 'image' && typeof attrs.src === 'string' && FILE_CONTENT_URL.test(attrs.src)) {
     clean.src = attrs.src
-    if (typeof attrs.alt === 'string') clean.alt = attrs.alt.slice(0, 300)
-    if (typeof attrs.title === 'string') clean.title = attrs.title.slice(0, 300)
+    if (typeof attrs.alt === 'string') clean.alt = attrs.alt.slice(0, RICH_TEXT_LABEL_MAX_LENGTH)
+    if (typeof attrs.title === 'string') {
+      clean.title = attrs.title.slice(0, RICH_TEXT_LABEL_MAX_LENGTH)
+    }
   }
 
   if (type === 'tableCell' || type === 'tableHeader') {
-    const colspan = boundedInteger(attrs.colspan, 1, 100)
-    const rowspan = boundedInteger(attrs.rowspan, 1, 100)
+    const colspan = boundedInteger(attrs.colspan, 1, RICH_TEXT_MAX_CELL_SPAN)
+    const rowspan = boundedInteger(attrs.rowspan, 1, RICH_TEXT_MAX_CELL_SPAN)
     if (colspan !== undefined) clean.colspan = colspan
     if (rowspan !== undefined) clean.rowspan = rowspan
     if (Array.isArray(attrs.colwidth)) {
       clean.colwidth = attrs.colwidth
         .slice(0, colspan ?? 1)
-        .map((width) => boundedInteger(width, 10, 2_000))
+        .map((width) => boundedInteger(width, 10, RICH_TEXT_MAX_COLUMN_WIDTH))
         .filter((width): width is number => width !== undefined)
     }
   }
@@ -303,11 +316,9 @@ export function serializeRichText(json: JSONContent): string {
   return JSON.stringify(json)
 }
 
-const RICH_TEXT_MAX_LENGTH = 262_144
-
 /**
  * Whether a serialized document is longer than the API stores: every rich-text description is
- * limited to 262,144 characters of JSON.
+ * limited to `RICH_TEXT_MAX_LENGTH` characters of JSON.
  */
 export function isRichTextTooLong(value: string): boolean {
   return value.length > RICH_TEXT_MAX_LENGTH

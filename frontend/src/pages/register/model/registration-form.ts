@@ -1,10 +1,6 @@
 import type { RegistrationInput } from '@/entities/account'
-import {
-  MAX_DEPENDENTS,
-  parseDependentPerson,
-  parseIndependentPerson,
-  type Gender,
-} from '@/entities/user'
+import { parseDependentPerson, parseIndependentPerson, type Gender } from '@/entities/user'
+import { MAX_DEPENDENTS } from '@/shared/config'
 
 /** Editable data for a minor registered alongside the adult. */
 export interface MinorForm {

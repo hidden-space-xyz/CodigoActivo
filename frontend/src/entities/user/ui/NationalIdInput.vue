@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+import { NATIONAL_ID_MAX_LENGTH } from '@/shared/config'
+
 import { nationalIdError, normalizeNationalId } from '../model/national-id'
 
 const props = defineProps<{
@@ -55,7 +57,7 @@ function onBlur(): void {
       autocomplete="off"
       autocapitalize="characters"
       spellcheck="false"
-      :maxlength="12"
+      :maxlength="NATIONAL_ID_MAX_LENGTH"
       :class="{ 'ca-invalid': visibleProblem !== null }"
       :aria-invalid="visibleProblem !== null"
       :aria-describedby="visibleProblem ? `${id}-error` : undefined"
