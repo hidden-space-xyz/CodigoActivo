@@ -21,9 +21,9 @@ public sealed record ResetTwoFactorCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to reset a user's second factor to email: it drops the authenticator and the
-/// pending login code and lifts the second-factor lock. The holder is told by email only when the
-/// account used an authenticator.
+/// Executes the command to reset a user's second factor to email: it drops the authenticator, the
+/// pending login code and the open login challenge, and lifts the second-factor lock. The holder is
+/// told by email only when the account used an authenticator.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>

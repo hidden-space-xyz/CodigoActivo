@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Errors;
+using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Application.Users.Contracts;
@@ -455,6 +456,28 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         });
 
         var response = await PresentAsync(client, code);
+
+        await response.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
+    }
+
+    [Fact]
+    public async Task TwoFactorResetByAnAdministratorAfterThePasswordStepInvalidatesTheChallenge()
+    {
+        await SeedAuthenticatorAsync(TestSeedData.Users.MemberId);
+        var client = await StartMemberChallengeAsync();
+        var admin = await LoginAsAdminAsync();
+        using (
+            var reset = await admin.PostJsonAsync(
+                $"/api/users/{TestSeedData.Users.MemberId}/two-factor/reset",
+                new ResetTwoFactorRequest(TestSeedData.Password),
+                Ct
+            )
+        )
+        {
+            reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        var response = await client.PostJsonAsync(ResendUrl, body: null, Ct);
 
         await response.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
     }

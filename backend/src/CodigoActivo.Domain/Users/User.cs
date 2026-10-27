@@ -890,7 +890,8 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Promotes the pending authenticator to the active second factor. Only an enrollment that is
     /// still waiting can be promoted, and it never replaces an authenticator that is already
-    /// active. It drops any emailed login code and raises <see cref="AuthenticatorEnabled"/>.
+    /// active. It drops any emailed login code, closes the open second-factor challenge and raises
+    /// <see cref="AuthenticatorEnabled"/>.
     /// </summary>
     /// <param name="usedStep">Time step of the code that confirmed the enrollment.</param>
     /// <param name="now">Current timestamp.</param>
@@ -914,6 +915,7 @@ public class User : AggregateRoot<UserId>
         Authenticator = Authenticator.Activate(usedStep);
         TwoFactorMethod = TwoFactorMethod.Authenticator;
         ClearLoginCode();
+        ClearLoginChallenge();
         UpdatedAt = now;
         Raise(new AuthenticatorEnabled(Id));
         return Result.Success();
@@ -921,8 +923,8 @@ public class User : AggregateRoot<UserId>
 
     /// <summary>
     /// Goes back to email as the second factor at the request of the holder, who proved they still
-    /// control the authenticator, forgets the failed attempts and raises
-    /// <see cref="AuthenticatorDisabled"/>.
+    /// control the authenticator, closes the open second-factor challenge, forgets the failed
+    /// attempts and raises <see cref="AuthenticatorDisabled"/>.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
     public void DisableAuthenticator(DateTimeOffset now)
@@ -933,21 +935,23 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Makes email the second factor again and forgets any authenticator, active or pending.
+    /// Makes email the second factor again, forgets any authenticator, active or pending, and
+    /// closes the open second-factor challenge, which belongs to the factor it was opened for.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
     private void UseEmailTwoFactor(DateTimeOffset now)
     {
         TwoFactorMethod = TwoFactorMethod.Email;
         Authenticator = default;
+        ClearLoginChallenge();
         UpdatedAt = now;
     }
 
     /// <summary>
-    /// Returns the second factor to its default state: email, no authenticator, no lock and no
-    /// emailed login code. Used by administrators when a user loses access to their authenticator
-    /// or locked their second factor. It raises <see cref="TwoFactorReset"/> only when the account
-    /// used an authenticator.
+    /// Returns the second factor to its default state: email, no authenticator, no lock, no
+    /// emailed login code and no open challenge. Used by administrators when a user loses access
+    /// to their authenticator or locked their second factor. It raises
+    /// <see cref="TwoFactorReset"/> only when the account used an authenticator.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
     /// <returns><see langword="true"/> when the account used an authenticator and now uses email.</returns>
